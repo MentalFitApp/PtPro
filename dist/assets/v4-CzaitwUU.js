@@ -1,0 +1,6 @@
+import{c}from"./proxy-QSBDSPTy.js";/**
+ * @license lucide-react v0.378.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const l=c("CloudUpload",[["path",{d:"M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242",key:"1pljnt"}],["path",{d:"M12 12v9",key:"192myk"}],["path",{d:"m16 16-4-4-4 4",key:"119tzi"}]]);let e;const p=new Uint8Array(16);function i(){if(!e&&(e=typeof crypto<"u"&&crypto.getRandomValues&&crypto.getRandomValues.bind(crypto),!e))throw new Error("crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported");return e(p)}const d=[];for(let n=0;n<256;++n)d.push((n+256).toString(16).slice(1));function y(n,t=0){return d[n[t+0]]+d[n[t+1]]+d[n[t+2]]+d[n[t+3]]+"-"+d[n[t+4]]+d[n[t+5]]+"-"+d[n[t+6]]+d[n[t+7]]+"-"+d[n[t+8]]+d[n[t+9]]+"-"+d[n[t+10]]+d[n[t+11]]+d[n[t+12]]+d[n[t+13]]+d[n[t+14]]+d[n[t+15]]}const m=typeof crypto<"u"&&crypto.randomUUID&&crypto.randomUUID.bind(crypto),o={randomUUID:m};function U(n,t,a){if(o.randomUUID&&!n)return o.randomUUID();n=n||{};const u=n.random||(n.rng||i)();return u[6]=u[6]&15|64,u[8]=u[8]&63|128,y(u)}export{l as C,U as v};

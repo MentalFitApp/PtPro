@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-zinc-950 text-slate-200 font-sans;
+  }
+}
+
+/* --- EFFETTO AURORA MIGLIORATO --- */
+.aurora-background {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: -10;
+  background-color: #111827; /* Sfondo leggermente più chiaro */
+}
+
+.aurora-background::before,
+.aurora-background::after {
+  content: '';
+  position: absolute;
+  width: 900px;  /* Aumentata la dimensione */
+  height: 900px;
+  border-radius: 50%;
+  opacity: 0.45; /* Aumentata l'opacità per renderlo più visibile */
+  mix-blend-mode: screen;
+  filter: blur(120px); /* Aumentata leggermente la sfocatura */
+  animation: pulse 30s infinite alternate;
+}
+
+/* Colore primario del tema (Rosso/Magenta) */
+.aurora-background::before {
+  background: radial-gradient(circle, rgba(225, 29, 72, 0.7), transparent 65%);
+  top: -30%;
+  left: -25%;
+  animation-duration: 35s;
+}
+
+/* Colore secondario di contrasto (Blu/Viola) */
+.aurora-background::after {
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.6), transparent 65%);
+  bottom: -30%;
+  right: -25%;
+  animation-delay: -15s;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.9) translate(0px, 0px); }
+  100% { transform: scale(1.3) translate(80px, -60px); }
+}
+
+/* --- BORDO SFUMATO PER LE SCHEDE --- */
+.gradient-border {
+  position: relative;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: -1;
+  margin: -1px;
+  border-radius: inherit;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+}
+
