@@ -1,18 +1,19 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, onSnapshot, collectionGroup, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, collectionGroup, doc, setDoc, getDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { auth } from "../firebase";
+import { signOut } from "firebase/auth";
 import { db } from "../firebase";
-// --- 1. NUOVE ICONE E GRAFICI ---
 import { 
   DollarSign, CheckCircle, RefreshCw, BarChart3, Bell, Target, 
-  BookOpen, Plus, Clock, FileText, TrendingUp, User, Users
+  BookOpen, Plus, Clock, FileText, TrendingUp, User, Users, LogOut 
 } from "lucide-react";
 import { 
   AreaChart, Area, Bar, BarChart, XAxis, YAxis, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { motion, AnimatePresence } from "framer-motion";
 
-// --- HELPERS (invariati nella logica) ---
+// --- HELPERS ---
 function toDate(x) {
   if (!x) return null;
   if (typeof x?.toDate === 'function') return x.toDate();
@@ -35,8 +36,7 @@ const timeAgo = (date) => {
   return "ora";
 };
 
-// --- 2. COMPONENTI UI AGGIORNATI ---
-
+// --- COMPONENTI UI ---
 const StatCard = ({ title, value, icon, isCurrency = false, isPercentage = false }) => (
   <div className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border h-full">
     <div className="flex items-center gap-3 text-slate-400">
@@ -75,7 +75,7 @@ const ActivityItem = ({ item, navigate }) => {
         <p className="text-sm font-semibold text-slate-200">{item.clientName}</p>
         <p className="text-xs text-slate-400">{item.description}</p>
       </div>
-       <div className="text-xs text-slate-500 flex-shrink-0">
+      <div className="text-xs text-slate-500 flex-shrink-0">
         {timeAgo(item.date)}
       </div>
     </motion.button>
@@ -108,168 +108,298 @@ const RechartsChart = ({ chartData, dataType }) => {
               <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
             </linearGradient>
           </defs>
-          <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false}/>
-          <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `€${val/1000}k`}/>
-          <Tooltip content={<CustomTooltip />}/>
-          <Area type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+          <XAxis dataKey="name" stroke="#6b7280" tick={{ fontSize: 12 }} />
+          <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
+          <Tooltip content={<CustomTooltip />} />
+          <Area type="monotone" dataKey="value" stroke="#22c55e" fillOpacity={1} fill="url(#colorRevenue)" />
         </AreaChart>
       ) : (
         <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-          <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false}/>
-          <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false}/>
-          <Tooltip content={<CustomTooltip />}/>
-          <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+          <XAxis dataKey="name" stroke="#6b7280" tick={{ fontSize: 12 }} />
+          <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
+          <Tooltip content={<CustomTooltip />} />
+          <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
         </BarChart>
       )}
     </ResponsiveContainer>
   );
 };
 
+// --- QuickNotes Component ---
 const QuickNotes = () => {
-    const [notes, setNotes] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-    const notesRef = doc(db, 'app-data', 'quickNotes');
-
-    useEffect(() => {
-        const getNotes = async () => {
-            const docSnap = await getDoc(notesRef);
-            if (docSnap.exists()) {
-                setNotes(docSnap.data().content);
-            }
-        };
-        getNotes();
-    }, []);
-
-    useEffect(() => {
-        const handler = setTimeout(async () => {
-            if (notes === undefined || notes === null) return;
-            setIsSaving(true);
-            try {
-                await setDoc(notesRef, { content: notes, lastUpdated: serverTimestamp() });
-            } catch (error) {
-                console.error("Error saving notes:", error);
-            } finally {
-                setTimeout(() => setIsSaving(false), 1000);
-            }
-        }, 1500); 
-
-        return () => clearTimeout(handler);
-    }, [notes]);
-
-    return (
-        <div className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border h-full flex flex-col">
-            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-slate-200"><BookOpen size={18}/> Appunti Rapidi</h2>
-            <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full h-full bg-transparent text-sm text-slate-400 outline-none resize-none"
-                placeholder="Scrivi qui le tue idee o cose da fare..."
-            />
-            <p className="text-xs text-right text-slate-500 mt-2 h-4">
-                {isSaving && 'Salvataggio...'}
-            </p>
-        </div>
-    );
+  const [notes, setNotes] = useState('');
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'app-data', 'quickNotes'), (docSnap) => docSnap.exists() && setNotes(docSnap.data().content || ''));
+    return () => unsub();
+  }, []);
+  const saveNotes = async () => {
+    await setDoc(doc(db, 'app-data', 'quickNotes'), { content: notes, updatedAt: serverTimestamp() });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+  return (
+    <div className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border">
+      <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-slate-200"><BookOpen size={18}/> Note Rapide</h2>
+      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full h-32 p-3 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 resize-none text-slate-200" placeholder="Annota idee, promemoria o task rapidi..."/>
+      <button onClick={saveNotes} className="mt-3 px-4 py-2 bg-rose-600 text-sm font-semibold rounded-lg hover:bg-rose-700 transition-colors flex items-center justify-center gap-2 w-full">
+        {saved ? <><Check size={16}/> Salvato!</> : <><Plus size={16}/> Salva Note</>}
+      </button>
+    </div>
+  );
 };
-
-// --- 3. IL COMPONENTE DASHBOARD FINALE ---
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
-  const [allPayments, setAllPayments] = useState([]);
-  const [allChecks, setAllChecks] = useState([]);
-  const [allAnamnesis, setAllAnamnesis] = useState([]);
+  const [activityFeed, setActivityFeed] = useState([]);
+  const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [chartDataType, setChartDataType] = useState('revenue');
-  const [chartTimeRange, setChartTimeRange] = useState('yearly');
-  const clientNameMap = useMemo(() => clients.reduce((acc, client) => ({ ...acc, [client.id]: client.name }), {}), [clients]);
+  const [chartTimeRange, setChartTimeRange] = useState('monthly');
+  const [chartData, setChartData] = useState([]);
+  const [lastViewed, setLastViewed] = useState(null);
+  const [focusClient, setFocusClient] = useState(null);
+  const [retentionRate, setRetentionRate] = useState(0);
+  const [loading, setLoading] = useState(true);
 
+  // --- User name and logout ---
+  const [userName, setUserName] = useState('');
   useEffect(() => {
-    const unsubClients = onSnapshot(collection(db, "clients"), snap => setClients(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-    const unsubPayments = onSnapshot(collectionGroup(db, 'payments'), snap => setAllPayments(snap.docs.map(doc => ({ ...doc.data(), clientId: doc.ref.path.split('/')[1] }))));
-    const unsubChecks = onSnapshot(collectionGroup(db, 'checks'), snap => setAllChecks(snap.docs.map(doc => ({ ...doc.data(), clientId: doc.ref.path.split('/')[1] }))));
-    const unsubAnamnesis = onSnapshot(collectionGroup(db, 'anamnesi'), snap => setAllAnamnesis(snap.docs.map(doc => ({ ...doc.data(), clientId: doc.ref.path.split('/')[1] }))));
-    return () => { unsubClients(); unsubPayments(); unsubChecks(); unsubAnamnesis(); };
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        setUserName(user.displayName || user.email || 'Admin');
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
-  const { clientStats, monthlyIncome, activityFeed, chartData, focusClient, retentionRate } = useMemo(() => {
-    const now = new Date();
-    const validClientIds = new Set(clients.map(c => c.id));
-    const validPayments = allPayments.filter(p => validClientIds.has(p.clientId));
-
-    const activeClients = clients.filter(c => !toDate(c.scadenza) || toDate(c.scadenza) >= now).length;
-
-    let chartDataPoints;
-    if (chartTimeRange === 'yearly') {
-        const months = Array.from({ length: 12 }, (_, i) => {
-          const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
-          return { name: d.toLocaleString('it-IT', { month: 'short' }), revenue: 0, clients: 0 };
-        });
-        validPayments.forEach(p => {
-          const paymentDate = toDate(p.paymentDate);
-          if(paymentDate){
-            const diffMonths = (now.getFullYear() - paymentDate.getFullYear()) * 12 + (now.getMonth() - paymentDate.getMonth());
-            if (diffMonths >= 0 && diffMonths < 12) months[11 - diffMonths].revenue += p.amount;
-          }
-        });
-        clients.forEach(c => {
-          const created = toDate(c.createdAt);
-          if(created){
-            const diffMonths = (now.getFullYear() - created.getFullYear()) * 12 + (now.getMonth() - created.getMonth());
-            if (diffMonths >= 0 && diffMonths < 12) months[11 - diffMonths].clients++;
-          }
-        });
-        chartDataPoints = months.map(m => ({ name: m.name, value: m[chartDataType] }));
-    } else { // monthly
-        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        const days = Array.from({ length: daysInMonth }, (_, i) => ({ name: `${i + 1}`, revenue: 0, clients: 0 }));
-        validPayments.forEach(p => {
-          const paymentDate = toDate(p.paymentDate);
-          if (paymentDate && paymentDate.getFullYear() === now.getFullYear() && paymentDate.getMonth() === now.getMonth()) days[paymentDate.getDate() - 1].revenue += p.amount;
-        });
-        clients.forEach(c => {
-          const created = toDate(c.createdAt);
-          if (created && created.getFullYear() === now.getFullYear() && created.getMonth() === now.getMonth()) days[created.getDate() - 1].clients++;
-        });
-        chartDataPoints = days.map(d => ({ name: d.name, value: d[chartDataType] }));
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate('/login');
+    } catch (error) {
+      console.error("Logout error:", error);
     }
-    
-    const expiringNotifs = clients.filter(c => { const end = toDate(c.scadenza); if (!end) return false; const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24)); return diffDays >= 0 && diffDays <= 15; }).map(c => ({ type: 'expiring', date: c.scadenza, clientId: c.id, description: `Scade tra ${Math.ceil((toDate(c.scadenza) - now) / (1000 * 60 * 60 * 24))} giorni` }));
-    const checkNotifs = allChecks.map(c => ({ type: 'new_check', date: c.createdAt, clientId: c.clientId, description: `Ha inviato un nuovo check` }));
-    const anamnesiNotifs = allAnamnesis.map(a => ({ type: 'new_anamnesi', date: a.createdAt, clientId: a.clientId, description: `Ha compilato l'anamnesi` }));
-    const feed = [...expiringNotifs, ...checkNotifs, ...anamnesiNotifs].sort((a,b) => (toDate(b.date) || 0) - (toDate(a.date) || 0)).map(item => ({...item, clientName: clientNameMap[item.clientId]})).filter(item => item.clientName);
-    
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const clientsActiveLastMonth = new Set(clients.filter(c => toDate(c.scadenza) > lastMonthStart).map(c => c.id));
-    const clientsActiveThisMonth = new Set(clients.filter(c => toDate(c.scadenza) > thisMonthStart).map(c => c.id));
-    const retained = [...clientsActiveLastMonth].filter(id => clientsActiveThisMonth.has(id)).length;
-    const retention = clientsActiveLastMonth.size > 0 ? Math.round((retained / clientsActiveLastMonth.size) * 100) : 100;
-    
-    const activeClientsList = clients.filter(c => !toDate(c.scadenza) || toDate(c.scadenza) >= now);
-    const focusClient = activeClientsList.length > 0 ? activeClientsList[new Date().getDate() % activeClientsList.length] : null;
-    const focusClientGoal = allAnamnesis.find(a => a.clientId === focusClient?.id)?.mainGoal;
+  };
 
-    return {
-      clientStats: { total: clients.length, active: activeClients },
-      monthlyIncome: validPayments.filter(p => toDate(p.paymentDate)?.getMonth() === now.getMonth() && toDate(p.paymentDate)?.getFullYear() === now.getFullYear()).reduce((sum, p) => sum + p.amount, 0),
-      activityFeed: feed,
-      chartData: chartDataPoints,
-      focusClient: focusClient ? { ...focusClient, goal: focusClientGoal } : null,
-      retentionRate: retention,
+  // --- Client stats calculation ---
+  const clientStats = useMemo(() => {
+    const now = new Date();
+    const active = clients.filter(c => {
+      const expiry = toDate(c.scadenza);
+      return expiry && expiry > now;
+    }).length;
+    return { active };
+  }, [clients]);
+
+  // --- Fetch clients ---
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'clients'), (snap) => {
+      const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setClients(clientList);
+      setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  // --- Fetch lastViewed and update on load ---
+  useEffect(() => {
+    const lastViewedRef = doc(db, 'app-data', 'lastViewed');
+    const fetchLastViewed = async () => {
+      const docSnap = await getDoc(lastViewedRef);
+      const lastViewedTime = docSnap.exists() ? docSnap.data().timestamp : null;
+      setLastViewed(lastViewedTime);
+      await setDoc(lastViewedRef, { timestamp: serverTimestamp() }, { merge: true });
     };
-  }, [clients, allPayments, allChecks, allAnamnesis, clientNameMap, chartDataType, chartTimeRange]);
-  
-  const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.08 } } };
-  const itemVariants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } };
+    fetchLastViewed();
+  }, []);
+
+  // --- Activity feed listeners ---
+  useEffect(() => {
+    if (!lastViewed) return;
+
+    // Listener for new checks
+    const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));
+    const unsubChecks = onSnapshot(checksQuery, async (snap) => {
+      const newChecks = [];
+      for (const doc of snap.docs) {
+        if (doc.data().createdAt > lastViewed) {
+          const clientId = doc.ref.parent.parent.id;
+          const clientDoc = await getDoc(doc(db, 'clients', clientId));
+          newChecks.push({
+            type: 'new_check',
+            clientId,
+            clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
+            description: 'Ha inviato un nuovo check-in',
+            date: doc.data().createdAt
+          });
+        }
+      }
+      setActivityFeed(prev => [...prev, ...newChecks].sort((a, b) => toDate(b.date) - toDate(a.date)));
+    });
+
+    // Listener for new anamnesi
+    const anamnesiQuery = query(collectionGroup(db, 'anamnesi'), orderBy('submittedAt', 'desc'));
+    const unsubAnamnesi = onSnapshot(anamnesiQuery, async (snap) => {
+      const newAnamnesi = [];
+      for (const doc of snap.docs) {
+        if (doc.data().submittedAt > lastViewed) {
+          const clientId = doc.ref.parent.parent.id;
+          const clientDoc = await getDoc(doc(db, 'clients', clientId));
+          newAnamnesi.push({
+            type: 'new_anamnesi',
+            clientId,
+            clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
+            description: 'Ha compilato l\'anamnesi iniziale',
+            date: doc.data().submittedAt
+          });
+        }
+      }
+      setActivityFeed(prev => [...prev, ...newAnamnesi].sort((a, b) => toDate(b.date) - toDate(a.date)));
+    });
+
+    // Listener for expiring subscriptions
+    const clientsQuery = query(collection(db, 'clients'));
+    const unsubClients = onSnapshot(clientsQuery, (snap) => {
+      const expiring = snap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(c => {
+          const expiry = toDate(c.scadenza);
+          if (!expiry) return false;
+          const daysLeft = (expiry - new Date()) / (1000 * 60 * 60 * 24);
+          return daysLeft <= 15 && daysLeft > 0;
+        })
+        .map(c => ({
+          type: 'expiring',
+          clientId: c.id,
+          clientName: c.name,
+          description: `Abbonamento in scadenza tra ${Math.ceil((toDate(c.scadenza) - new Date()) / (1000 * 60 * 60 * 24))} giorni`,
+          date: c.scadenza
+        }));
+      setActivityFeed(prev => {
+        const nonExpiring = prev.filter(item => item.type !== 'expiring');
+        return [...nonExpiring, ...expiring].sort((a, b) => toDate(b.date) - toDate(a.date));
+      });
+    });
+
+    return () => {
+      unsubChecks();
+      unsubAnamnesi();
+      unsubClients();
+    };
+  }, [lastViewed]);
+
+  // --- Monthly income calculation ---
+  useEffect(() => {
+    const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'desc'));
+    const unsubPayments = onSnapshot(paymentsQuery, (snap) => {
+      const currentMonth = new Date().getMonth();
+      const income = snap.docs
+        .filter(doc => toDate(doc.data().paymentDate)?.getMonth() === currentMonth)
+        .reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+      setMonthlyIncome(income);
+    });
+    return () => unsubPayments();
+  }, []);
+
+  // --- Chart data calculation ---
+  useEffect(() => {
+    const generateChartData = () => {
+      if (chartDataType === 'revenue') {
+        const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'asc'));
+        const unsub = onSnapshot(paymentsQuery, (snap) => {
+          let data = [];
+          if (chartTimeRange === 'monthly') {
+            const monthlyData = snap.docs.reduce((acc, doc) => {
+              const date = toDate(doc.data().paymentDate);
+              if (date) {
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                acc[key] = (acc[key] || 0) + (doc.data().amount || 0);
+              }
+              return acc;
+            }, {});
+            data = Object.entries(monthlyData).map(([name, value]) => ({ name, value }));
+          } else {
+            const yearlyData = snap.docs.reduce((acc, doc) => {
+              const date = toDate(doc.data().paymentDate);
+              if (date) {
+                const key = date.getFullYear().toString();
+                acc[key] = (acc[key] || 0) + (doc.data().amount || 0);
+              }
+              return acc;
+            }, {});
+            data = Object.entries(yearlyData).map(([name, value]) => ({ name, value }));
+          }
+          setChartData(data);
+        });
+        return () => unsub();
+      } else {
+        const clientsQuery = query(collection(db, 'clients'), orderBy('createdAt', 'asc'));
+        const unsub = onSnapshot(clientsQuery, (snap) => {
+          let data = [];
+          if (chartTimeRange === 'monthly') {
+            const monthlyData = snap.docs.reduce((acc, doc) => {
+              const date = toDate(doc.data().createdAt);
+              if (date) {
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                acc[key] = (acc[key] || 0) + 1;
+              }
+              return acc;
+            }, {});
+            data = Object.entries(monthlyData).map(([name, value]) => ({ name, value }));
+          } else {
+            const yearlyData = snap.docs.reduce((acc, doc) => {
+              const date = toDate(doc.data().createdAt);
+              if (date) {
+                const key = date.getFullYear().toString();
+                acc[key] = (acc[key] || 0) + 1;
+              }
+              return acc;
+            }, {});
+            data = Object.entries(yearlyData).map(([name, value]) => ({ name, value }));
+          }
+          setChartData(data);
+        });
+        return () => unsub();
+      }
+    };
+    return generateChartData();
+  }, [chartDataType, chartTimeRange]);
+
+  // --- Focus client selection ---
+  useEffect(() => {
+    if (clients.length > 0) {
+      const randomClient = clients[Math.floor(Math.random() * clients.length)];
+      setFocusClient({ name: randomClient.name, goal: randomClient.goal });
+    }
+  }, [clients]);
+
+  // --- Retention rate calculation ---
+  useEffect(() => {
+    if (clients.length > 0) {
+      const retained = clients.filter(c => {
+        const expiry = toDate(c.scadenza);
+        return expiry && expiry > new Date();
+      }).length;
+      setRetentionRate(Math.round((retained / clients.length) * 100));
+    }
+  }, [clients]);
+
+  const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
 
   return (
-    <motion.div className="w-full" variants={containerVariants} initial="hidden" animate="visible">
-      <motion.div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8" variants={itemVariants}>
-        <div>
-          <h1 className="text-3xl font-bold text-slate-50">Command Center</h1>
-          <p className="text-slate-400 mt-1">La tua panoramica di business in tempo reale.</p>
+    <motion.div initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.1 } } }} className="w-full space-y-6">
+      <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+          <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2"><TrendingUp size={28}/> Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-slate-300 font-semibold">{userName}</span>
+            <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg transition-colors">
+              <LogOut size={16} /> Logout
+            </button>
+          </div>
         </div>
+        <p className="text-slate-400 mb-4">Panoramica delle metriche chiave e progressi in tempo reale.</p>
         <div className="flex gap-2">
             <button onClick={() => navigate('/clients')} className="px-4 py-2 bg-zinc-800/80 text-sm font-semibold rounded-lg hover:bg-zinc-700/80 transition-colors flex items-center gap-2"><Users size={16}/> Gestisci</button>
             <button onClick={() => navigate('/new')} className="px-4 py-2 bg-rose-600 text-sm font-semibold rounded-lg hover:bg-rose-700 transition-colors flex items-center gap-2"><Plus size={16}/> Nuovo</button>

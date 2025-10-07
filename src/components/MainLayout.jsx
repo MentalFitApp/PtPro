@@ -1,20 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-// Importiamo le nuove, fantastiche icone da Lucide
 import { LayoutGrid, Users, MessageSquare, Rocket, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Il nostro nuovo sfondo animato "Aurora"
-const AnimatedBackground = () => (
-  <div className="aurora-background" />
-);
+const AnimatedBackground = () => {
+  useEffect(() => {
+    const starsContainer = document.querySelector('.stars');
+    if (!starsContainer) return;
 
-// Link di navigazione aggiornati con le nuove icone e stile
+    const createStar = () => {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = `${Math.random() * 100}%`;
+      star.style.top = `${Math.random() * 100}%`;
+      // Variazione casuale della durata dell'animazione per un effetto più naturale
+      star.style.animationDuration = `${Math.random() * 10 + 15}s, 3s`; // drift: 15-25s, twinkle: 3s
+      starsContainer.appendChild(star);
+    };
+
+    for (let i = 0; i < 150; i++) { // Aumentato a 150 stelle per un effetto più ricco
+      createStar();
+    }
+
+    return () => {
+      while (starsContainer.firstChild) {
+        starsContainer.removeChild(starsContainer.firstChild);
+      }
+    };
+  }, []);
+
+  return (
+    <div className="starry-background">
+      <div className="stars"></div>
+    </div>
+  );
+};
+
 const navLinks = [
   { to: '/', icon: <LayoutGrid size={18} />, label: 'Dashboard' },
   { to: '/clients', icon: <Users size={18} />, label: 'Clienti' },
   { to: '/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
-  { to: '/updates', icon: <Rocket size={18} />, label: 'Novità' }, // Icona più dinamica!
+  { to: '/updates', icon: <Rocket size={18} />, label: 'Novità' },
 ];
 
 const NavLink = ({ to, icon, label, onClick }) => {
@@ -25,7 +51,7 @@ const NavLink = ({ to, icon, label, onClick }) => {
       onClick={onClick}
       className={`flex items-center gap-3 w-full p-2.5 rounded-lg text-sm transition-colors ${
         isActive 
-          ? 'bg-rose-600/10 text-rose-500 font-semibold' // Stile "attivo" più vibrante
+          ? 'bg-rose-600/10 text-rose-500 font-semibold'
           : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
       }`}
     >
@@ -34,7 +60,6 @@ const NavLink = ({ to, icon, label, onClick }) => {
   );
 };
 
-// La sidebar ora ha il nuovo bordo sfumato e uno sfondo più scuro
 const SidebarContent = ({ onLinkClick }) => {
   const navigate = useNavigate();
   return (
@@ -65,13 +90,9 @@ export default function MainLayout() {
   return (
     <div className="relative min-h-screen">
       <AnimatedBackground />
-
-      {/* Sidebar per Desktop */}
       <div className="hidden md:flex md:fixed h-full z-20">
         <SidebarContent />
       </div>
-
-      {/* Menu a scomparsa per Mobile */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -85,16 +106,13 @@ export default function MainLayout() {
           </motion.div>
         )}
       </AnimatePresence>
-
       <div className="flex-1 md:ml-60">
-        {/* Header per Mobile */}
         <header className="md:hidden sticky top-0 bg-zinc-950/70 backdrop-blur-lg h-16 flex items-center justify-between px-4 border-b border-white/10 z-40">
-           <h2 className="text-lg font-bold">FitFlow Pro</h2>
+          <h2 className="text-lg font-bold">FitFlow Pro</h2>
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-slate-200">
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </header>
-
         <main className="p-4 sm:p-6 lg:p-8">
           <motion.div
             key={location.pathname}

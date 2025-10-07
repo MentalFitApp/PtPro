@@ -36,7 +36,7 @@ export default function NewClient() {
   
   const showNotification = (message, type = 'error') => {
     setNotification({ message, type });
-    setTimeout(() => setNotification({ message: '', type: '' }), 6000); // Aumentato il tempo per errori lunghi
+    setTimeout(() => setNotification({ message: '', type: '' }), 6000);
   };
 
   const onSubmit = async (data) => {
@@ -85,10 +85,13 @@ export default function NewClient() {
     }
   };
   
-  // --- TESTO DA COPIARE AGGIORNATO ---
   const copyToClipboard = () => {
-      const loginLink = "https://mentalfitmanager.github.io/#/client-login";
+      // --- CORREZIONE QUI ---
+      // Il link ora punta al sito corretto e alla pagina di login del cliente.
+      const loginLink = "https://MentalFitApp.github.io/PtPro/client-login";
+      
       const text = `Ciao ${newClientCredentials.name},\n\nBenvenuto in PT Manager, la tua area personale per monitorare i progressi e comunicare con il tuo coach!\n\nEcco le credenziali per il tuo primo accesso:\n\nLink: ${loginLink}\nEmail: ${newClientCredentials.email}\nPassword Temporanea: ${newClientCredentials.password}\n\nAl primo accesso ti verrà chiesto di impostare una password personale.\nA presto!`;
+      
       navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
@@ -135,4 +138,3 @@ export default function NewClient() {
     </>
   );
 }
-

@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
-// --- 1. IMPORTIAMO LE NUOVE ICONE ---
-import { LogIn, Mail, Lock } from 'lucide-react';
+import { LogIn, Mail, Lock, Key } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-// Componente per lo sfondo animato (lo stesso del MainLayout)
+// Componente per lo sfondo animato
 const AnimatedBackground = () => (
   <div className="absolute inset-0 -z-10 overflow-hidden bg-zinc-950">
     <div className="aurora-background"></div>
@@ -36,7 +35,11 @@ export default function Login() {
     }
   };
 
-  // --- 2. NUOVI STILI PER IL FORM ---
+  const handleResetPassword = () => {
+    navigate('/client/forgot-password');
+  };
+
+  // Stili per il form
   const inputContainerStyle = "relative";
   const inputStyle = "w-full p-3 pl-10 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 transition-all text-slate-200";
   const iconStyle = "absolute left-3 top-1/2 -translate-y-1/2 text-slate-400";
@@ -91,6 +94,17 @@ export default function Login() {
             </button>
           </div>
         </form>
+        {/* Pulsante Reset Password con stile animato */}
+        <motion.button
+          onClick={handleResetPassword}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-white bg-rose-600 rounded-lg transition-colors"
+          whileHover={{ scale: 1.05, opacity: 0.9 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+        >
+          <Key size={18} />
+          Reset Password
+        </motion.button>
       </motion.div>
     </div>
   );
