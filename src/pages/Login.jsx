@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase';
-import { LogIn, Mail, Lock, Key } from 'lucide-react';
+import { LogIn, Mail, Lock, KeyRound } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Componente per lo sfondo animato
 const AnimatedBackground = () => (
   <div className="absolute inset-0 -z-10 overflow-hidden bg-zinc-950">
-    <div className="aurora-background"></div>
+    <div className="starry-background">
+      <div className="stars"></div>
+    </div>
   </div>
 );
 
@@ -19,12 +21,30 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Controlla se l'utente è già autenticato
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log('Utente già autenticato:', user.uid);
+        sessionStorage.setItem('app_role', 'admin');
+        navigate('/');
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (isSubmitting) {
+      console.log('Submit bloccato: già in corso');
+      return;
+    }
     setError('');
     setIsSubmitting(true);
+    console.log('Tentativo di login con email:', email);
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      console.log('Login riuscito, reindirizzamento...');
       sessionStorage.setItem('app_role', 'admin');
       navigate('/');
     } catch (err) {
@@ -36,6 +56,7 @@ export default function Login() {
   };
 
   const handleResetPassword = () => {
+    console.log('Navigazione a /client/forgot-password');
     navigate('/client/forgot-password');
   };
 
@@ -54,8 +75,8 @@ export default function Login() {
         transition={{ duration: 0.5, ease: "easeInOut" }}
       >
         <div className="text-center">
-            <h2 className="text-3xl font-bold text-slate-50">Accesso Admin</h2>
-            <p className="text-slate-400 mt-2">Bentornato, accedi al tuo Command Center.</p>
+          <h2 className="text-3xl font-bold text-slate-50">Accesso Admin</h2>
+          <p className="text-slate-400 mt-2">Bentornato, accedi al tuo Command Center.</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-6">
           <div className={inputContainerStyle}>
@@ -68,6 +89,7 @@ export default function Login() {
               placeholder="Email"
               className={inputStyle}
               autoComplete="email"
+              disabled={isSubmitting}
             />
           </div>
           <div className={inputContainerStyle}>
@@ -80,30 +102,33 @@ export default function Login() {
               placeholder="Password"
               className={inputStyle}
               autoComplete="current-password"
+              disabled={isSubmitting}
             />
           </div>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <div>
-            <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors disabled:bg-rose-900 disabled:cursor-not-allowed"
+            <motion.button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors disabled:bg-rose-900 disabled:cursor-not-allowed"
+              whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+              whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
+              transition={{ duration: 0.2 }}
             >
               <LogIn size={18} />
               {isSubmitting ? 'Accesso in corso...' : 'Accedi'}
-            </button>
+            </motion.button>
           </div>
         </form>
-        {/* Pulsante Reset Password con stile animato */}
         <motion.button
           onClick={handleResetPassword}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-white bg-rose-600 rounded-lg transition-colors"
-          whileHover={{ scale: 1.05, opacity: 0.9 }}
-          whileTap={{ scale: 0.95 }}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 font-semibold text-slate-200 bg-rose-600/80 rounded-lg hover:bg-rose-700 transition-colors border border-rose-500/30"
+          whileHover={{ scale: 1.02, y: -1 }}
+          whileTap={{ scale: 0.98 }}
           transition={{ duration: 0.2 }}
         >
-          <Key size={18} />
-          Reset Password
+          <KeyRound size={18} />
+          Recupera Password
         </motion.button>
       </motion.div>
     </div>

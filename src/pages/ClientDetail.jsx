@@ -52,9 +52,11 @@ export default function ClientDetail() {
   // Estrai id con fallback per HashRouter
   const id = params.clientId || (() => {
     const pathname = location.pathname;
-    const match = pathname.match(/\/client\/([a-zA-Z0-9]+)/);
+    console.log('URL completo:', window.location.href);
+    console.log('Pathname:', pathname);
+    const match = pathname.match(/\/client\/([a-zA-Z0-9_-]+)/);
     const fallbackId = match ? match[1] : null;
-    console.log('Fallback ID estratto dall\'URL:', fallbackId, 'Pathname:', pathname);
+    console.log('Fallback ID estratto:', fallbackId);
     return fallbackId;
   })();
 
