@@ -23,3 +23,6 @@ pnpm-debug.log*
 # Cache files
 .cache/
 *.vite/
+node_modules
+node_modules
+node_modules

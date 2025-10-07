@@ -1,47 +1,78 @@
+# Nome del processo automatico
 name: Deploy static content to Pages
 
+# Trigger: si avvia ogni volta che invii ("push") al branch "main"
 on:
   push:
     branches: ["main"]
+  # Permette anche di avviarlo manualmente dalla tab "Actions"
   workflow_dispatch:
 
+# Permessi necessari per permettere all'action di scrivere sulla pagina di GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# Impostazione per evitare esecuzioni multiple in contemporanea
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
+# Lavori da eseguire
 jobs:
+  # L'unico lavoro che abbiamo, chiamato "deploy"
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      # 1. Scarica il codice dal tuo repository
       - name: Checkout
         uses: actions/checkout@v4
+        
+      # 2. Installa pnpm
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 8
+          
+      # 3. Installa Node.js
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'pnpm'
+          
+      # 4. Installa le dipendenze del progetto
       - name: Install dependencies
         run: pnpm install
+        
+      # 5. Costruisce il sito per la produzione
       - name: Build
+        # QUA È DOVE USIAMO LE CHIAVI SEGRETE
+        env:
+          VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
+          VITE_AUTH_DOMAIN: ${{ secrets.VITE_AUTH_DOMAIN }}
+          VITE_PROJECT_ID: ${{ secrets.VITE_PROJECT_ID }}
+          VITE_STORAGE_BUCKET: ${{ secrets.VITE_STORAGE_BUCKET }}
+          VITE_MESSAGING_SENDER_ID: ${{ secrets.VITE_MESSAGING_SENDER_ID }}
+          VITE_APP_ID: ${{ secrets.VITE_APP_ID }}
+          VITE_MEASUREMENT_ID: ${{ secrets.VITE_MEASUREMENT_ID }}
         run: pnpm run build
+        
+      # 6. Prepara l'artefatto per la pubblicazione
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        
+      # 7. Carica l'artefatto (la cartella 'dist')
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: './dist'
+          
+      # 8. Pubblica il sito su GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
