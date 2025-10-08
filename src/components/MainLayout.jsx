@@ -87,7 +87,7 @@ export default function MainLayout() {
   const location = useLocation();
 
   useEffect(() => {
-    setIsMobileMenuOpen(false);
+    setIsMobileMenuOpen(false); // Chiude il menu al cambio di rotta
   }, [location.pathname]);
 
   return (
