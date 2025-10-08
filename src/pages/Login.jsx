@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 import { LogIn, Mail, Lock, KeyRound } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -21,13 +21,21 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Controlla se l'utente è già autenticato
+  // Controlla se l'utente è già autenticato all'avvio
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        console.log('Utente già autenticato:', user.uid);
-        sessionStorage.setItem('app_role', 'admin');
-        navigate('/');
+        const uid = user.uid;
+        console.log('Utente autenticato all\'avvio:', uid);
+        // Verifica se l'UID è un Owner
+        const isAdmin = ["QwWST9OVOlTOi5oheyCqfpXLOLg2", "3j0AXIRa4XdHq1ywCl4UBxJNsku2", "AeZKjJYu5zMZ4mvffaGiqCBb0cF2"].includes(uid);
+        if (isAdmin) {
+          sessionStorage.setItem('app_role', 'admin');
+          navigate('/');
+        } else {
+          console.log('Utente non autorizzato come admin:', uid);
+          auth.signOut(); // Disconnetti se non è un admin
+        }
       }
     });
     return () => unsubscribe();
@@ -43,13 +51,26 @@ export default function Login() {
     setIsSubmitting(true);
     console.log('Tentativo di login con email:', email);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      console.log('Login riuscito, reindirizzamento...');
-      sessionStorage.setItem('app_role', 'admin');
-      navigate('/');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+      console.log('Login riuscito, UID:', uid);
+
+      // Verifica se l'UID è un Owner
+      const isAdmin = ["QwWST9OVOlTOi5oheyCqfpXLOLg2", "3j0AXIRa4XdHq1ywCl4UBxJNsku2", "AeZKjJYu5zMZ4mvffaGiqCBb0cF2"].includes(uid);
+      if (isAdmin) {
+        sessionStorage.setItem('app_role', 'admin');
+        navigate('/');
+      } else {
+        throw new Error('Solo gli amministratori possono accedere a questa area.');
+      }
     } catch (err) {
-      setError("Credenziali non valide. Riprova.");
-      console.error("Errore di login admin:", err);
+      console.error("Errore di login admin:", err.code, err.message);
+      setError(err.message === 'auth/wrong-password' || err.message === 'auth/user-not-found' 
+        ? "Credenziali non valide. Riprova." 
+        : err.message);
+      if (auth.currentUser) {
+        await auth.signOut(); // Disconnetti in caso di errore
+      }
     } finally {
       setIsSubmitting(false);
     }
