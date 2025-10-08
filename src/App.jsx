@@ -4,7 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
-// --- 1. IMPORT DINAMICI ---
+// Import dinamici
 const MainLayout = React.lazy(() => import('./components/MainLayout'));
 const Login = React.lazy(() => import('./pages/Login'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -22,9 +22,10 @@ const ClientChecks = React.lazy(() => import('./pages/ClientChecks'));
 const ClientPayments = React.lazy(() => import('./pages/ClientPayments'));
 const ClientChat = React.lazy(() => import('./pages/ClientChat'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
-const AdminAnamnesi = React.lazy(() => import('./pages/AdminAnamnesi')); // Nuovo import
+const AdminAnamnesi = React.lazy(() => import('./pages/AdminAnamnesi'));
+const CoachDashboard = React.lazy(() => import('./pages/CoachDashboard'));
 
-// --- 2. SPINNER DI CARICAMENTO PER LE PAGINE ---
+// Spinner di caricamento
 const PageSpinner = () => (
   <div className="flex justify-center items-center h-screen w-full bg-zinc-950">
     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
@@ -50,6 +51,7 @@ export default function App() {
     isLoading: true,
     user: null,
     isClient: false,
+    isCoach: false,
   });
 
   useEffect(() => {
@@ -61,17 +63,19 @@ export default function App() {
         try {
           const clientDoc = await getDoc(clientDocRef);
           const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient;
-          console.log('Ruolo utente:', { isClient: isCurrentUserAClient, sessionRole });
+          const isCurrentUserACoach = currentUser.uid === 'l0RI8TzFjbNVoAdmcxNQkP9mWb12';
+          console.log('Ruolo utente:', { isClient: isCurrentUserAClient, isCoach: isCurrentUserACoach, sessionRole });
           if (sessionRole === 'admin' && isCurrentUserAClient) {
             console.log('Logout forzato: utente cliente che tenta accesso admin');
             await signOut(auth);
-            setAuthInfo({ isLoading: false, user: null, isClient: false });
+            setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false });
             return;
           }
           setAuthInfo({
             isLoading: false,
             user: currentUser,
             isClient: isCurrentUserAClient,
+            isCoach: isCurrentUserACoach,
           });
         } catch (error) {
           console.error('Errore nel recupero del documento cliente:', error);
@@ -79,11 +83,12 @@ export default function App() {
             isLoading: false,
             user: currentUser,
             isClient: false,
+            isCoach: currentUser.uid === 'l0RI8TzFjbNVoAdmcxNQkP9mWb12',
           });
         }
       } else {
         sessionStorage.removeItem('app_role');
-        setAuthInfo({ isLoading: false, user: null, isClient: false });
+        setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false });
       }
     });
     return () => unsubscribe();
@@ -100,7 +105,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/client-login" element={<ClientLogin />} />
           <Route path="/client/forgot-password" element={<ForgotPassword />} />
-          <Route element={<ProtectedRoute isAllowed={authInfo.user && !authInfo.isClient} redirectPath="/login" />}>
+          <Route element={<ProtectedRoute isAllowed={authInfo.user && !authInfo.isClient && !authInfo.isCoach} redirectPath="/login" />}>
             <Route element={<MainLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/clients" element={<Clients />} />
@@ -109,7 +114,7 @@ export default function App() {
               <Route path="/edit/:clientId" element={<EditClient />} />
               <Route path="/updates" element={<Updates />} />
               <Route path="/chat" element={<AdminChat />} />
-              <Route path="/admin/anamnesi/:uid" element={<AdminAnamnesi />} /> {/* Nuova rotta per l'anamnesi admin */}
+              <Route path="/admin/anamnesi/:uid" element={<AdminAnamnesi />} />
             </Route>
           </Route>
           <Route element={<ProtectedRoute isAllowed={authInfo.user && authInfo.isClient} redirectPath="/client-login" />}>
@@ -120,6 +125,11 @@ export default function App() {
             <Route path="/client/payments" element={<ClientPayments />} />
             <Route path="/client/chat" element={<ClientChat />} />
           </Route>
+          <Route element={<ProtectedRoute isAllowed={authInfo.user && authInfo.isCoach} redirectPath="/login" />}>
+            <Route element={<MainLayout />}>
+              <Route path="/coach-dashboard" element={<CoachDashboard />} />
+            </Route>
+          </Route>
           <Route 
             path="*" 
             element={
@@ -127,7 +137,9 @@ export default function App() {
                 ? <Navigate to="/login" /> 
                 : authInfo.isClient 
                   ? <Navigate to="/client/dashboard" /> 
-                  : <Navigate to="/" />
+                  : authInfo.isCoach 
+                    ? <Navigate to="/coach-dashboard" />
+                    : <Navigate to="/" />
             } 
           />
         </Routes>

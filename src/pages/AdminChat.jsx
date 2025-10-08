@@ -2,235 +2,324 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getAuth } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, doc, addDoc, serverTimestamp, setDoc, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase.js';
-// --- 1. NUOVE ICONE DA LUCIDE-REACT ---
-import { Send, MessageSquare, Search } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Send, MessageSquare, Search, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// --- 2. SPINNER AGGIORNATO CON IL NUOVO COLORE ---
-const LoadingSpinner = () => (
-    <div className="flex justify-center items-center h-full p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
+// AnimatedBackground per tema stellato
+const AnimatedBackground = () => {
+  useEffect(() => {
+    const starsContainer = document.querySelector('.stars');
+    if (!starsContainer) return;
+
+    const createStar = () => {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = `${Math.random() * 100}%`;
+      star.style.top = `${Math.random() * 100}%`;
+      star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
+      starsContainer.appendChild(star);
+    };
+
+    for (let i = 0; i < 50; i++) {
+      createStar();
+    }
+
+    return () => {
+      while (starsContainer.firstChild) {
+        starsContainer.removeChild(starsContainer.firstChild);
+      }
+    };
+  }, []);
+
+  return (
+    <div className="starry-background">
+      <div className="stars"></div>
     </div>
+  );
+};
+
+// Spinner di caricamento
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center h-full p-4">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
+  </div>
+);
+
+// Notifica per errori
+const Notification = ({ message, onDismiss }) => (
+  <AnimatePresence>
+    {message && (
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -50 }}
+        className="fixed top-5 right-5 z-50 flex items-center gap-4 p-4 rounded-lg border bg-red-900/80 text-red-300 border-red-500/30 backdrop-blur-md shadow-lg"
+      >
+        <AlertCircle size={20} />
+        <p>{message}</p>
+        <button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/10">
+          <AlertCircle size={16} />
+        </button>
+      </motion.div>
+    )}
+  </AnimatePresence>
 );
 
 const AdminChat = () => {
-    const [chats, setChats] = useState([]);
-    const [selectedChatId, setSelectedChatId] = useState(null);
-    const [messages, setMessages] = useState([]);
-    const [newMessage, setNewMessage] = useState('');
-    const [loadingChats, setLoadingChats] = useState(true);
-    const [loadingMessages, setLoadingMessages] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const messagesEndRef = useRef(null);
+  const [chats, setChats] = useState([]);
+  const [selectedChatId, setSelectedChatId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loadingChats, setLoadingChats] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState('');
+  const messagesEndRef = useRef(null);
 
-    const auth = getAuth();
-    const adminUser = auth.currentUser;
-    const adminUIDs = ["QwWST9OVOlTOi5oheyCqfpXLOLg2", "AeZKjJYu5zMZ4mvffaGiqCBb0cF2", "3j0AXIRa4XdHq1ywCl4UBxJNsku2", "l0RI8TzFjbNVoAdmcxNQkP9mWb12"];
+  const auth = getAuth();
+  const adminUser = auth.currentUser;
+  const adminUIDs = ["QwWST9OVOlTOi5oheyCqfpXLOLg2", "AeZKjJYu5zMZ4mvffaGiqCBb0cF2", "3j0AXIRa4XdHq1ywCl4UBxJNsku2", "l0RI8TzFjbNVoAdmcxNQkP9mWb12"];
 
-    useEffect(() => {
-        if (!adminUser) return;
-        const chatsRef = collection(db, 'chats');
-        const q = query(chatsRef, where('participants', 'array-contains-any', adminUIDs), orderBy('lastUpdate', 'desc'));
+  // Carica le chat
+  useEffect(() => {
+    if (!adminUser) return;
+    const chatsRef = collection(db, 'chats');
+    const q = query(chatsRef, where('participants', 'array-contains-any', adminUIDs), orderBy('lastUpdate', 'desc'));
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setChats(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            setLoadingChats(false);
-        }, (error) => {
-            console.error("Errore nel caricare le chat:", error);
-            setLoadingChats(false);
-        });
-        return () => unsubscribe();
-    }, [adminUser]);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setChats(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoadingChats(false);
+    }, (error) => {
+      console.error("Errore nel caricare le chat:", error);
+      setError("Errore nel caricamento delle chat. Riprova.");
+      setLoadingChats(false);
+    });
+    return () => unsubscribe();
+  }, [adminUser]);
 
-    useEffect(() => {
-        if (!selectedChatId) { setMessages([]); return; }
-        setLoadingMessages(true);
-        const messagesRef = collection(db, 'chats', selectedChatId, 'messages');
-        const q = query(messagesRef, orderBy('createdAt'));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            setLoadingMessages(false);
-        }, (error) => {
-            console.error("Errore nel caricare i messaggi:", error);
-            setLoadingMessages(false);
-        });
-        return () => unsubscribe();
-    }, [selectedChatId]);
-    
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+  // Carica i messaggi della chat selezionata
+  useEffect(() => {
+    if (!selectedChatId) {
+      setMessages([]);
+      return;
+    }
+    setLoadingMessages(true);
+    const messagesRef = collection(db, 'chats', selectedChatId, 'messages');
+    const q = query(messagesRef, orderBy('createdAt'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoadingMessages(false);
+    }, (error) => {
+      console.error("Errore nel caricare i messaggi:", error);
+      setError("Errore nel caricamento dei messaggi. Riprova.");
+      setLoadingMessages(false);
+    });
+    return () => unsubscribe();
+  }, [selectedChatId]);
+  
+  // Scorri all'ultimo messaggio
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-    useEffect(() => {
-        const searchClients = async () => {
-            if (searchQuery.trim().length < 2) {
-                setSearchResults([]);
-                setIsSearching(false);
-                return;
-            }
-            setIsSearching(true);
-            const clientsRef = collection(db, 'clients');
-            const searchTerm = searchQuery.toLowerCase();
-            const q = query(clientsRef, 
-                where('name_lowercase', '>=', searchTerm), 
-                where('name_lowercase', '<=', searchTerm + '\uf8ff'),
-                limit(10)
-            );
-            try {
-                const querySnapshot = await getDocs(q);
-                setSearchResults(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            } catch (error) {
-                console.error("Errore nella ricerca (indice Firestore mancante?):", error);
-            }
-            setIsSearching(false);
-        };
-        const debounceSearch = setTimeout(() => {
-            searchClients();
-        }, 300);
-        return () => clearTimeout(debounceSearch);
-    }, [searchQuery]);
-
-    const handleSelectClient = async (client) => {
-        if (!adminUser) return;
-        const primaryAdminUID = adminUIDs[0];
-        const newChatId = [client.id, primaryAdminUID].sort().join('_');
-        
-        const chatRef = doc(db, 'chats', newChatId);
-        const existingChat = chats.find(chat => chat.id === newChatId);
-        if (!existingChat) {
-             await setDoc(chatRef, {
-                participants: [client.id, primaryAdminUID],
-                participantNames: { [client.id]: client.name, [primaryAdminUID]: "Coach" },
-                lastMessage: "Conversazione iniziata",
-                lastUpdate: serverTimestamp()
-            }, { merge: true });
-        }
-        setSelectedChatId(newChatId);
-        setSearchQuery('');
+  // Ricerca clienti
+  useEffect(() => {
+    const searchClients = async () => {
+      if (searchQuery.trim().length < 2) {
         setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+      setIsSearching(true);
+      const clientsRef = collection(db, 'clients');
+      const searchTerm = searchQuery.toLowerCase();
+      const q = query(clientsRef, 
+        where('name_lowercase', '>=', searchTerm), 
+        where('name_lowercase', '<=', searchTerm + '\uf8ff'),
+        limit(10)
+      );
+      try {
+        const querySnapshot = await getDocs(q);
+        setSearchResults(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        console.error("Errore nella ricerca (indice Firestore mancante?):", error);
+        setError("Errore nella ricerca dei clienti. Riprova.");
+      }
+      setIsSearching(false);
     };
+    const debounceSearch = setTimeout(() => {
+      searchClients();
+    }, 300);
+    return () => clearTimeout(debounceSearch);
+  }, [searchQuery]);
 
-    const handleSendMessage = async (e) => {
-        e.preventDefault();
-        if (newMessage.trim() === '' || !selectedChatId || !adminUser) return;
-        const messagesRef = collection(db, 'chats', selectedChatId, 'messages');
-        await addDoc(messagesRef, {
-            text: newMessage,
-            createdAt: serverTimestamp(),
-            senderId: adminUser.uid
-        });
-        await setDoc(doc(db, 'chats', selectedChatId), {
-            lastMessage: newMessage,
-            lastUpdate: serverTimestamp(),
-        }, { merge: true });
-        setNewMessage('');
-    };
-
-    const getSelectedChatName = () => {
-        if (!selectedChatId) return 'Chat';
-        const chat = chats.find(c => c.id === selectedChatId);
-        if (!chat) return 'Chat';
-        const clientUID = chat.participants.find(p => !adminUIDs.includes(p));
-        return chat.participantNames?.[clientUID] || 'Cliente';
-    };
+  // Seleziona cliente e crea chat
+  const handleSelectClient = async (client) => {
+    if (!adminUser) return;
+    const primaryAdminUID = adminUIDs.includes(adminUser.uid) ? adminUser.uid : adminUIDs[0];
+    const newChatId = [client.id, primaryAdminUID].sort().join('_');
     
-    return (
-        // --- 3. CONTAINER PRINCIPALE CON STILI AGGIORNATI ---
-        <div className="flex h-[calc(100vh-120px)] bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border overflow-hidden">
-            <div className="w-1/3 border-r border-white/10 flex flex-col">
-                <div className="p-4 border-b border-white/10">
-                    <div className="relative">
-                        <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" size={18}/>
-                        <input
-                            type="text"
-                            placeholder="Cerca o avvia una chat..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-zinc-900/70 p-2 pl-10 rounded-lg border border-white/10 outline-none focus:ring-2 focus:ring-rose-500 text-slate-200"
-                        />
-                    </div>
+    const chatRef = doc(db, 'chats', newChatId);
+    const existingChat = chats.find(chat => chat.id === newChatId);
+    if (!existingChat) {
+      try {
+        await setDoc(chatRef, {
+          participants: [client.id, primaryAdminUID],
+          participantNames: { [client.id]: client.name, [primaryAdminUID]: adminUser.displayName || "Coach" },
+          lastMessage: "Conversazione iniziata",
+          lastUpdate: serverTimestamp()
+        }, { merge: true });
+      } catch (error) {
+        console.error("Errore nella creazione della chat:", error);
+        setError("Errore nell'avvio della chat. Riprova.");
+      }
+    }
+    setSelectedChatId(newChatId);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  // Invia messaggio
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (newMessage.trim() === '' || !selectedChatId || !adminUser) return;
+    try {
+      const messagesRef = collection(db, 'chats', selectedChatId, 'messages');
+      await addDoc(messagesRef, {
+        text: newMessage,
+        createdAt: serverTimestamp(),
+        senderId: adminUser.uid
+      });
+      await setDoc(doc(db, 'chats', selectedChatId), {
+        lastMessage: newMessage,
+        lastUpdate: serverTimestamp(),
+      }, { merge: true });
+      setNewMessage('');
+    } catch (error) {
+      console.error("Errore nell'invio del messaggio:", error);
+      setError("Errore nell'invio del messaggio. Riprova.");
+    }
+  };
+
+  // Ottieni nome chat selezionata
+  const getSelectedChatName = () => {
+    if (!selectedChatId) return 'Chat';
+    const chat = chats.find(c => c.id === selectedChatId);
+    if (!chat) return 'Chat';
+    const clientUID = chat.participants.find(p => !adminUIDs.includes(p));
+    return chat.participantNames?.[clientUID] || 'Cliente';
+  };
+
+  // Chiudi notifica
+  const dismissError = () => setError('');
+
+  return (
+    <div className="min-h-screen relative">
+      <AnimatedBackground />
+      <Notification message={error} onDismiss={dismissError} />
+      <div className="flex h-[calc(100vh-120px)] bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border overflow-hidden m-4 sm:m-6">
+        <div className="w-full sm:w-1/3 border-r border-white/10 flex flex-col">
+          <div className="p-4 border-b border-white/10">
+            <div className="relative">
+              <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" size={18}/>
+              <input
+                type="text"
+                placeholder="Cerca o avvia una chat..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-zinc-900/70 p-2 pl-10 rounded-lg border border-white/10 outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base"
+              />
+            </div>
+          </div>
+          {searchQuery.length > 1 ? (
+            <div className="flex-1 overflow-y-auto">
+              {isSearching && <p className="p-4 text-slate-400 text-sm">Ricerca in corso...</p>}
+              {!isSearching && searchResults.length === 0 && <p className="p-4 text-slate-400 text-sm">Nessun cliente trovato.</p>}
+              {!isSearching && searchResults.map(client => (
+                <div key={client.id} onClick={() => handleSelectClient(client)} className="p-4 cursor-pointer hover:bg-white/5 transition-colors">
+                  <p className="font-semibold text-slate-100">{client.name}</p>
+                  <p className="text-sm text-slate-400">{client.email}</p>
                 </div>
-                {searchQuery.length > 1 ? (
-                    <div className="flex-1 overflow-y-auto">
-                        {isSearching && <p className="p-4 text-slate-400 text-sm">Ricerca in corso...</p>}
-                        {!isSearching && searchResults.length === 0 && <p className="p-4 text-slate-400 text-sm">Nessun cliente trovato.</p>}
-                        {!isSearching && searchResults.map(client => (
-                            <div key={client.id} onClick={() => handleSelectClient(client)} className="p-4 cursor-pointer hover:bg-white/5 transition-colors">
-                                <p className="font-semibold text-slate-100">{client.name}</p>
-                                <p className="text-sm text-slate-400">{client.email}</p>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <>
-                        {loadingChats ? <LoadingSpinner /> : (
-                            <div className="flex-1 overflow-y-auto">
-                                {chats.map(chat => {
-                                    const clientUID = chat.participants.find(p => !adminUIDs.includes(p));
-                                    const clientName = chat.participantNames ? chat.participantNames[clientUID] : 'Cliente';
-                                    return (
-                                        <div
-                                            key={chat.id}
-                                            onClick={() => setSelectedChatId(chat.id)}
-                                            className={`p-4 cursor-pointer border-l-4 transition-colors ${selectedChatId === chat.id ? 'bg-rose-600/20 border-rose-500' : 'border-transparent hover:bg-white/5'}`}
-                                        >
-                                            <p className="font-semibold text-slate-100">{clientName || 'Cliente'}</p>
-                                            <p className="text-sm text-slate-400 truncate">{chat.lastMessage}</p>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </>
-                )}
+              ))}
             </div>
-            
-            <div className="w-2/3 flex flex-col bg-zinc-900/50">
-                {selectedChatId ? (
-                    <>
-                        <div className="p-4 border-b border-white/10">
-                             <h3 className="font-bold text-lg text-slate-50">{getSelectedChatName()}</h3>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                           {loadingMessages ? <LoadingSpinner /> : messages.map(msg => (
-                               <div key={msg.id} className={`flex ${adminUIDs.includes(msg.senderId) ? 'justify-end' : 'justify-start'}`}>
-                                   <motion.div 
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className={`max-w-md p-3 rounded-2xl text-slate-100 ${adminUIDs.includes(msg.senderId) ? 'bg-rose-600 rounded-br-none' : 'bg-zinc-800 rounded-bl-none'}`}
-                                    >
-                                       <p className="break-words">{msg.text}</p>
-                                   </motion.div>
-                               </div>
-                           ))}
-                           <div ref={messagesEndRef} />
-                        </div>
-                        <div className="p-4 border-t border-white/10">
-                            <form onSubmit={handleSendMessage} className="flex items-center gap-4">
-                                <input
-                                    type="text"
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    placeholder="Scrivi una risposta..."
-                                    className="flex-1 p-3 bg-zinc-800 border border-white/10 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-white"
-                                />
-                                <button type="submit" className="p-3 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-colors disabled:opacity-50" disabled={!newMessage.trim()}>
-                                    <Send size={20} />
-                                </button>
-                            </form>
-                        </div>
-                    </>
-                ) : (
-                    <div className="flex flex-col justify-center items-center h-full text-slate-500">
-                        <MessageSquare size={48} />
-                        <p className="mt-4">Seleziona una conversazione o cercane una nuova.</p>
-                    </div>
-                )}
-            </div>
+          ) : (
+            <>
+              {loadingChats ? <LoadingSpinner /> : (
+                <div className="flex-1 overflow-y-auto">
+                  {chats.map(chat => {
+                    const clientUID = chat.participants.find(p => !adminUIDs.includes(p));
+                    const clientName = chat.participantNames?.[clientUID] || 'Cliente';
+                    return (
+                      <div
+                        key={chat.id}
+                        onClick={() => setSelectedChatId(chat.id)}
+                        className={`p-4 cursor-pointer border-l-4 transition-colors ${selectedChatId === chat.id ? 'bg-rose-600/20 border-rose-500' : 'border-transparent hover:bg-white/5'}`}
+                      >
+                        <p className="font-semibold text-slate-100">{clientName}</p>
+                        <p className="text-sm text-slate-400">{chat.lastMessage || 'Nessun messaggio'}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
         </div>
-    );
+        
+        <div className="w-full sm:w-2/3 flex flex-col bg-zinc-900/50">
+          {selectedChatId ? (
+            <>
+              <div className="p-4 border-b border-white/10">
+                <h3 className="font-bold text-lg text-slate-50">{getSelectedChatName()}</h3>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                {loadingMessages ? <LoadingSpinner /> : messages.map(msg => (
+                  <div key={msg.id} className={`flex ${adminUIDs.includes(msg.senderId) ? 'justify-end' : 'justify-start'}`}>
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`max-w-[70%] sm:max-w-md p-3 rounded-2xl shadow-md ${adminUIDs.includes(msg.senderId) ? 'bg-rose-600 rounded-br-none' : 'bg-zinc-800 rounded-bl-none'}`}
+                    >
+                      <p className="text-white break-words text-sm sm:text-base">{msg.text}</p>
+                      <p className="text-xs text-slate-300/70 mt-1.5 text-right">
+                        {msg.createdAt?.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </motion.div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+              <div className="p-4 sm:p-6 border-t border-white/10">
+                <form onSubmit={handleSendMessage} className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Scrivi una risposta..."
+                    className="flex-1 p-3 bg-zinc-800 border border-white/10 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-white text-sm sm:text-base"
+                  />
+                  <button
+                    type="submit"
+                    className="p-3 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-colors disabled:opacity-50"
+                    disabled={!newMessage.trim()}
+                  >
+                    <Send size={20} />
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col justify-center items-center h-full text-slate-500">
+              <MessageSquare size={48} />
+              <p className="mt-4">Seleziona una conversazione o cercane una nuova.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default AdminChat;
