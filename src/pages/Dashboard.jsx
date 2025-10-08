@@ -143,7 +143,7 @@ const QuickNotes = () => {
       <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-slate-200"><BookOpen size={18}/> Note Rapide</h2>
       <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full h-32 p-3 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 resize-none text-slate-200" placeholder="Annota idee, promemoria o task rapidi..."/>
       <button onClick={saveNotes} className="mt-3 px-4 py-2 bg-rose-600 text-sm font-semibold rounded-lg hover:bg-rose-700 transition-colors flex items-center justify-center gap-2 w-full">
-        {saved ? <><Check size={16}/> Salvato!</> : <><Plus size={16}/> Salva Note</>}
+        {saved ? <><CheckCircle size={16}/> Salvato!</> : <><Plus size={16}/> Salva Note</>}
       </button>
     </div>
   );
@@ -223,7 +223,7 @@ export default function Dashboard() {
     const unsubChecks = onSnapshot(checksQuery, async (snap) => {
       const newChecks = [];
       for (const doc of snap.docs) {
-        if (doc.data().createdAt > lastViewed) {
+        if (toDate(doc.data().createdAt) > toDate(lastViewed)) {
           const clientId = doc.ref.parent.parent.id;
           const clientDoc = await getDoc(doc(db, 'clients', clientId));
           newChecks.push({
@@ -243,7 +243,7 @@ export default function Dashboard() {
     const unsubAnamnesi = onSnapshot(anamnesiQuery, async (snap) => {
       const newAnamnesi = [];
       for (const doc of snap.docs) {
-        if (doc.data().submittedAt > lastViewed) {
+        if (toDate(doc.data().submittedAt) > toDate(lastViewed)) {
           const clientId = doc.ref.parent.parent.id;
           const clientDoc = await getDoc(doc(db, 'clients', clientId));
           newAnamnesi.push({
@@ -293,9 +293,12 @@ export default function Dashboard() {
   useEffect(() => {
     const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'desc'));
     const unsubPayments = onSnapshot(paymentsQuery, (snap) => {
-      const currentMonth = new Date().getMonth();
+      const now = new Date();
       const income = snap.docs
-        .filter(doc => toDate(doc.data().paymentDate)?.getMonth() === currentMonth)
+        .filter(doc => {
+          const paymentDate = toDate(doc.data().paymentDate);
+          return paymentDate && paymentDate.getMonth() === now.getMonth() && paymentDate.getFullYear() === now.getFullYear();
+        })
         .reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
       setMonthlyIncome(income);
     });
@@ -305,62 +308,57 @@ export default function Dashboard() {
   // --- Chart data calculation ---
   useEffect(() => {
     const generateChartData = () => {
+      const now = new Date();
       if (chartDataType === 'revenue') {
         const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'asc'));
         const unsub = onSnapshot(paymentsQuery, (snap) => {
           let data = [];
+          const monthlyData = {};
+          snap.docs.forEach(doc => {
+            const date = toDate(doc.data().paymentDate);
+            if (date) {
+              const key = chartTimeRange === 'monthly' ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : date.getFullYear().toString();
+              monthlyData[key] = (monthlyData[key] || 0) + (doc.data().amount || 0);
+            }
+          });
           if (chartTimeRange === 'monthly') {
-            const monthlyData = snap.docs.reduce((acc, doc) => {
-              const date = toDate(doc.data().paymentDate);
-              if (date) {
-                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                acc[key] = (acc[key] || 0) + (doc.data().amount || 0);
-              }
-              return acc;
-            }, {});
-            data = Object.entries(monthlyData).map(([name, value]) => ({ name, value }));
+            // Limit to last 12 months
+            for (let i = 11; i >= 0; i--) {
+              const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
+              data.push({ name: key, value: monthlyData[key] || 0 });
+            }
           } else {
-            const yearlyData = snap.docs.reduce((acc, doc) => {
-              const date = toDate(doc.data().paymentDate);
-              if (date) {
-                const key = date.getFullYear().toString();
-                acc[key] = (acc[key] || 0) + (doc.data().amount || 0);
-              }
-              return acc;
-            }, {});
-            data = Object.entries(yearlyData).map(([name, value]) => ({ name, value }));
+            data = Object.entries(monthlyData).sort((a, b) => a[0] - b[0]).map(([name, value]) => ({ name, value }));
           }
           setChartData(data);
         });
-        return () => unsub();
+        return unsub;
       } else {
         const clientsQuery = query(collection(db, 'clients'), orderBy('createdAt', 'asc'));
         const unsub = onSnapshot(clientsQuery, (snap) => {
           let data = [];
+          const monthlyData = {};
+          snap.docs.forEach(doc => {
+            const date = toDate(doc.data().createdAt);
+            if (date) {
+              const key = chartTimeRange === 'monthly' ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : date.getFullYear().toString();
+              monthlyData[key] = (monthlyData[key] || 0) + 1;
+            }
+          });
           if (chartTimeRange === 'monthly') {
-            const monthlyData = snap.docs.reduce((acc, doc) => {
-              const date = toDate(doc.data().createdAt);
-              if (date) {
-                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                acc[key] = (acc[key] || 0) + 1;
-              }
-              return acc;
-            }, {});
-            data = Object.entries(monthlyData).map(([name, value]) => ({ name, value }));
+            // Limit to last 12 months
+            for (let i = 11; i >= 0; i--) {
+              const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
+              data.push({ name: key, value: monthlyData[key] || 0 });
+            }
           } else {
-            const yearlyData = snap.docs.reduce((acc, doc) => {
-              const date = toDate(doc.data().createdAt);
-              if (date) {
-                const key = date.getFullYear().toString();
-                acc[key] = (acc[key] || 0) + 1;
-              }
-              return acc;
-            }, {});
-            data = Object.entries(yearlyData).map(([name, value]) => ({ name, value }));
+            data = Object.entries(monthlyData).sort((a, b) => a[0] - b[0]).map(([name, value]) => ({ name, value }));
           }
           setChartData(data);
         });
-        return () => unsub();
+        return unsub;
       }
     };
     return generateChartData();

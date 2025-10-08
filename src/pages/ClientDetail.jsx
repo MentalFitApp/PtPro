@@ -2,8 +2,28 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
-import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft } from "lucide-react";
+import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check } from "lucide-react";
 import { motion } from "framer-motion";
+
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="text-center text-red-400 p-8">
+          Si è verificato un errore: {this.state.error.message}. Riprova o contatta il supporto.
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Funzione di utilità per convertire timestamp
 function toDate(x) {
@@ -13,7 +33,7 @@ function toDate(x) {
   return isNaN(d) ? null : d;
 }
 
-// Funzione per calcolare lo stato del pagamento (coerente con Clients.jsx)
+// Funzione per calcolare lo stato del pagamento
 const getPaymentStatus = (scadenza) => {
   if (!scadenza) return 'na';
   const expiryDate = toDate(scadenza);
@@ -25,7 +45,7 @@ const getPaymentStatus = (scadenza) => {
   return 'paid';
 };
 
-// Componente PaymentStatusBadge (coerente con Clients.jsx)
+// Componente PaymentStatusBadge
 const PaymentStatusBadge = ({ status }) => {
   const styles = {
     paid: "bg-emerald-900/80 text-emerald-300 border border-emerald-500/30",
@@ -48,6 +68,7 @@ export default function ClientDetail() {
   const [payments, setPayments] = useState([]);
   const [anamnesi, setAnamnesi] = useState(null);
   const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   // Estrai id con fallback per HashRouter
   const id = params.clientId || (() => {
@@ -134,7 +155,7 @@ export default function ClientDetail() {
     }
   };
 
-  // Handle update scadenza (for testing the status update)
+  // Handle update scadenza
   const handleUpdateScadenza = async () => {
     const newScadenza = prompt("Inserisci la nuova data di scadenza (YYYY-MM-DD):");
     if (newScadenza) {
@@ -147,6 +168,17 @@ export default function ClientDetail() {
         alert("Data non valida o errore nell'aggiornamento");
       }
     }
+  };
+
+  // Handle copy credentials to clipboard
+  const copyCredentialsToClipboard = () => {
+    const loginLink = "https://MentalFitApp.github.io/PtPro/client-login";
+    const tempPassword = client.tempPassword || "Password non disponibile (contatta l’amministratore per reimpostarla)";
+    const text = `Ciao ${client.name || 'Cliente'},\n\nBenvenuto in PT Manager, la tua area personale per monitorare i progressi e comunicare con il tuo coach!\n\nEcco le credenziali per il tuo accesso:\n\nLink: ${loginLink}\nEmail: ${client.email || 'N/D'}\nPassword Temporanea: ${tempPassword}\n\nAl primo accesso ti verrà chiesto di impostare una password personale.\nA presto!`;
+
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   if (error) return (
@@ -170,143 +202,158 @@ export default function ClientDetail() {
   );
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="w-full max-w-4xl mx-auto p-4"
-    >
-      <div className="mb-6">
-        <button
-          onClick={() => navigate('/clients')}
-          className="flex items-center gap-2 text-slate-400 hover:text-rose-400 transition-colors"
-        >
-          <ArrowLeft size={18} /> Torna ai Clienti
-        </button>
-      </div>
-
-      <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <h1 className="text-3xl font-bold text-slate-50">{client.name || 'Cliente'}</h1>
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate(`/edit/${id}`)}
-              className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg transition-colors"
-            >
-              <Edit size={16} /> Modifica
-            </button>
-            <button
-              onClick={handleDelete}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
-            >
-              <Trash2 size={16} /> Elimina
-            </button>
-            <button
-              onClick={handleUpdateScadenza}
-              className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition-colors"
-            >
-              <Calendar size={16} /> Aggiorna Scadenza
-            </button>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 bg-zinc-900/70 p-1 rounded-lg border border-white/10">
+    <ErrorBoundary>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="w-full max-w-4xl mx-auto p-4"
+      >
+        <div className="mb-6">
           <button
-            onClick={() => setActiveTab('info')}
-            className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'info' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            onClick={() => navigate('/clients')}
+            className="flex items-center gap-2 text-slate-400 hover:text-rose-400 transition-colors"
           >
-            Informazioni
-          </button>
-          <button
-            onClick={() => setActiveTab('checkIns')}
-            className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'checkIns' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
-          >
-            Check-Ins
-          </button>
-          <button
-            onClick={() => setActiveTab('payments')}
-            className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'payments' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
-          >
-            Pagamenti
-          </button>
-          <button
-            onClick={() => setActiveTab('anamnesi')}
-            className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'anamnesi' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
-          >
-            Anamnesi
+            <ArrowLeft size={18} /> Torna ai Clienti
           </button>
         </div>
 
-        {/* Content */}
-        {activeTab === 'info' && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <User className="text-slate-400" size={18} />
-              <p className="text-slate-200">Nome: <span className="font-semibold">{client.name || 'N/D'}</span></p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Mail className="text-slate-400" size={18} />
-              <p className="text-slate-200">Email: <span className="font-semibold">{client.email || 'N/D'}</span></p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Phone className="text-slate-400" size={18} />
-              <p className="text-slate-200">Telefono: <span className="font-semibold">{client.phone || 'N/D'}</span></p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Calendar className="text-slate-400" size={18} />
-              <p className="text-slate-200">Scadenza: <span className="font-semibold">{client.scadenza ? toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D' : 'N/D'}</span></p>
-            </div>
-            <div className="flex items-center gap-3">
-              <DollarSign className="text-slate-400" size={18} />
-              <p className="text-slate-200">Stato Pagamento: <PaymentStatusBadge status={getPaymentStatus(client.scadenza)} /></p>
+        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <h1 className="text-3xl font-bold text-slate-50">{client.name || 'Cliente'}</h1>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate(`/edit/${id}`)}
+                className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg transition-colors"
+              >
+                <Edit size={16} /> Modifica
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+              >
+                <Trash2 size={16} /> Elimina
+              </button>
+              <button
+                onClick={handleUpdateScadenza}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition-colors"
+              >
+                <Calendar size={16} /> Aggiorna Scadenza
+              </button>
             </div>
           </div>
-        )}
 
-        {activeTab === 'checkIns' && (
-          <div className="space-y-4">
-            {checkIns.length > 0 ? (
-              checkIns.map(check => (
-                <div key={check.id} className="p-4 bg-zinc-900/70 rounded-lg border border-white/10">
-                  <p className="text-sm text-slate-400">Data: {toDate(check.createdAt)?.toLocaleDateString('it-IT') || 'N/D'}</p>
-                  <p className="text-sm text-slate-200">Peso: {check.weight || 'N/D'} kg</p>
-                  <p className="text-sm text-slate-200">Note: {check.notes || 'Nessuna nota'}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-slate-400 text-center">Nessun check-in disponibile.</p>
-            )}
+          {/* Tabs */}
+          <div className="flex gap-2 mb-6 bg-zinc-900/70 p-1 rounded-lg border border-white/10">
+            <button
+              onClick={() => setActiveTab('info')}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'info' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            >
+              Informazioni
+            </button>
+            <button
+              onClick={() => setActiveTab('checkIns')}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'checkIns' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            >
+              Check-Ins
+            </button>
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'payments' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            >
+              Pagamenti
+            </button>
+            <button
+              onClick={() => setActiveTab('anamnesi')}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'anamnesi' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            >
+              Anamnesi
+            </button>
           </div>
-        )}
 
-        {activeTab === 'payments' && (
-          <div className="space-y-4">
-            {payments.length > 0 ? (
-              payments.map(payment => (
-                <div key={payment.id} className="p-4 bg-zinc-900/70 rounded-lg border border-white/10">
-                  <p className="text-sm text-slate-400">Data: {toDate(payment.paymentDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
-                  <p className="text-sm text-slate-200">Importo: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(payment.amount || 0)}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-slate-400 text-center">Nessun pagamento registrato.</p>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'anamnesi' && (
-          <div className="space-y-4">
-            {anamnesi ? (
-              <div className="p-4 bg-zinc-900/70 rounded-lg border border-white/10">
-                <p className="text-sm text-slate-400">Inviata il: {toDate(anamnesi.submittedAt)?.toLocaleDateString('it-IT') || 'N/D'}</p>
-                <p className="text-sm text-slate-200">Dettagli: {JSON.stringify(anamnesi, null, 2)}</p>
+          {/* Content */}
+          {activeTab === 'info' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <User className="text-slate-400" size={18} />
+                <p className="text-slate-200">Nome: <span className="font-semibold">{client.name || 'N/D'}</span></p>
               </div>
-            ) : (
-              <p className="text-sm text-slate-400 text-center">Nessuna anamnesi disponibile.</p>
-            )}
-          </div>
-        )}
-      </div>
-    </motion.div>
+              <div className="flex items-center gap-3">
+                <Mail className="text-slate-400" size={18} />
+                <div className="flex items-center gap-2">
+                  <p className="text-slate-200">Email: <span className="font-semibold">{client.email || 'N/D'}</span></p>
+                  <button
+                    onClick={copyCredentialsToClipboard}
+                    className="p-1 text-slate-400 hover:text-emerald-400 rounded-md transition-colors"
+                  >
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  {client.tempPassword
+                    ? "Al primo accesso ti verrà chiesto di impostare una password personale."
+                    : "Password non disponibile. Contatta l’amministratore per reimpostarla."}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone className="text-slate-400" size={18} />
+                <p className="text-slate-200">Telefono: <span className="font-semibold">{client.phone || 'N/D'}</span></p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Calendar className="text-slate-400" size={18} />
+                <p className="text-slate-200">Scadenza: <span className="font-semibold">{client.scadenza ? toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D' : 'N/D'}</span></p>
+              </div>
+              <div className="flex items-center gap-3">
+                <DollarSign className="text-slate-400" size={18} />
+                <p className="text-slate-200">Stato Pagamento: <PaymentStatusBadge status={getPaymentStatus(client.scadenza)} /></p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'checkIns' && (
+            <div className="space-y-4">
+              {checkIns.length > 0 ? (
+                checkIns.map(check => (
+                  <div key={check.id} className="p-4 bg-zinc-900/70 rounded-lg border border-white/10">
+                    <p className="text-sm text-slate-400">Data: {toDate(check.createdAt)?.toLocaleDateString('it-IT') || 'N/D'}</p>
+                    <p className="text-sm text-slate-200">Peso: {check.weight || 'N/D'} kg</p>
+                    <p className="text-sm text-slate-200">Note: {check.notes || 'Nessuna nota'}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-400 text-center">Nessun check-in disponibile.</p>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'payments' && (
+            <div className="space-y-4">
+              {payments.length > 0 ? (
+                payments.map(payment => (
+                  <div key={payment.id} className="p-4 bg-zinc-900/70 rounded-lg border border-white/10">
+                    <p className="text-sm text-slate-400">Data: {toDate(payment.paymentDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
+                    <p className="text-sm text-slate-200">Importo: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(payment.amount || 0)}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-400 text-center">Nessun pagamento registrato.</p>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'anamnesi' && (
+            <div className="space-y-4">
+              {anamnesi ? (
+                <div className="p-4 bg-zinc-900/70 rounded-lg border border-white/10">
+                  <p className="text-sm text-slate-400">Inviata il: {toDate(anamnesi.submittedAt)?.toLocaleDateString('it-IT') || 'N/D'}</p>
+                  <p className="text-sm text-slate-200">Dettagli: {JSON.stringify(anamnesi, null, 2)}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 text-center">Nessuna anamnesi disponibile.</p>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </ErrorBoundary>
   );
 }
