@@ -2,10 +2,11 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from './firebase';
+import { db, auth } from './firebase';
 
 // Import dinamici
 const MainLayout = React.lazy(() => import('./components/MainLayout'));
+const ClientLayout = React.lazy(() => import('./components/ClientLayout')); // Nuovo layout per client
 const Login = React.lazy(() => import('./pages/Login'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Clients = React.lazy(() => import('./pages/Clients'));
@@ -118,12 +119,14 @@ export default function App() {
             </Route>
           </Route>
           <Route element={<ProtectedRoute isAllowed={authInfo.user && authInfo.isClient} redirectPath="/client-login" />}>
-            <Route path="/client/first-access" element={<FirstAccess />} />
-            <Route path="/client/dashboard" element={<ClientDashboard />} />
-            <Route path="/client/anamnesi" element={<ClientAnamnesi />} />
-            <Route path="/client/checks" element={<ClientChecks />} />
-            <Route path="/client/payments" element={<ClientPayments />} />
-            <Route path="/client/chat" element={<ClientChat />} />
+            <Route element={<ClientLayout />}> {/* Nuovo layout per client */}
+              <Route path="/client/first-access" element={<FirstAccess />} />
+              <Route path="/client/dashboard" element={<ClientDashboard />} />
+              <Route path="/client/anamnesi" element={<ClientAnamnesi />} />
+              <Route path="/client/checks" element={<ClientChecks />} />
+              <Route path="/client/payments" element={<ClientPayments />} />
+              <Route path="/client/chat" element={<ClientChat />} />
+            </Route>
           </Route>
           <Route element={<ProtectedRoute isAllowed={authInfo.user && authInfo.isCoach} redirectPath="/login" />}>
             <Route element={<MainLayout />}>
