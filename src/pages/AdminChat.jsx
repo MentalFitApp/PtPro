@@ -93,7 +93,7 @@ const AdminChat = () => {
       setLoadingChats(false);
     }, (error) => {
       console.error("Errore nel caricare le chat:", error);
-      setError("Errore nel caricamento delle chat. Riprova.");
+      setError("Errore nel caricamento delle chat. Contatta il supporto.");
       setLoadingChats(false);
     });
     return () => unsubscribe();
@@ -113,12 +113,12 @@ const AdminChat = () => {
       setLoadingMessages(false);
     }, (error) => {
       console.error("Errore nel caricare i messaggi:", error);
-      setError("Errore nel caricamento dei messaggi. Riprova.");
+      setError("Errore nel caricamento dei messaggi: permessi insufficienti. Contatta il supporto.");
       setLoadingMessages(false);
     });
     return () => unsubscribe();
   }, [selectedChatId]);
-  
+
   // Scorri all'ultimo messaggio
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -145,7 +145,7 @@ const AdminChat = () => {
         setSearchResults(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
         console.error("Errore nella ricerca (indice Firestore mancante?):", error);
-        setError("Errore nella ricerca dei clienti. Riprova.");
+        setError("Errore nella ricerca dei clienti. Assicurati che l'indice Firestore sia configurato.");
       }
       setIsSearching(false);
     };
