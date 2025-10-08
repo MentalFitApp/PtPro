@@ -7,9 +7,10 @@ import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, Searc
 import { motion, AnimatePresence } from "framer-motion";
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend, Filler } from 'chart.js';
+import { it } from 'date-fns/locale'; // Importa la localizzazione italiana
 import { format } from 'date-fns';
-import 'chart.js/auto'; // Importa tutto Chart.js con adattatori inclusi
 
+// Registra i componenti di Chart.js e l'adattatore date-fns
 ChartJS.register(LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend, Filler);
 
 // AnimatedBackground per tema stellato
@@ -170,6 +171,7 @@ export default function CoachDashboard() {
   const [isSearching, setIsSearching] = useState(false);
   const [checkData, setCheckData] = useState([]);
   const [userName, setUserName] = useState('');
+  const [chartError, setChartError] = useState(null);
 
   // Verifica coach
   const COACH_UID = "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
@@ -319,18 +321,23 @@ export default function CoachDashboard() {
   useEffect(() => {
     const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));
     const unsubChecks = onSnapshot(checksQuery, (snap) => {
-      const checks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const monthlyData = {};
-      checks.forEach(check => {
-        const date = toDate(check.createdAt);
-        if (!date) return;
-        const monthYear = format(date, 'yyyy-MM');
-        monthlyData[monthYear] = (monthlyData[monthYear] || 0) + 1;
-      });
-      const sortedData = Object.entries(monthlyData)
-        .map(([key, value]) => ({ date: new Date(key), count: value }))
-        .sort((a, b) => a.date - b.date);
-      setCheckData(sortedData);
+      try {
+        const checks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const monthlyData = {};
+        checks.forEach(check => {
+          const date = toDate(check.createdAt);
+          if (!date) return;
+          const monthYear = format(date, 'yyyy-MM', { locale: it });
+          monthlyData[monthYear] = (monthlyData[monthYear] || 0) + 1;
+        });
+        const sortedData = Object.entries(monthlyData)
+          .map(([key, value]) => ({ date: new Date(key), count: value }))
+          .sort((a, b) => a.date - b.date);
+        setCheckData(sortedData);
+      } catch (error) {
+        console.error("Errore nel caricamento dei dati del grafico:", error);
+        setChartError("Errore nel caricamento del grafico dei check.");
+      }
     });
     return () => unsubChecks();
   }, []);
@@ -440,7 +447,7 @@ export default function CoachDashboard() {
         type: 'time', 
         time: { unit: 'month' }, 
         title: { display: true, text: 'Mese' },
-        adapters: { date: { locale: 'it' } } // Configurazione locale italiana
+        adapters: { date: { locale: it } } // Localizzazione italiana
       },
       y: { 
         beginAtZero: true, 
@@ -558,7 +565,11 @@ export default function CoachDashboard() {
                 <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
                   <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><BarChart size={20} /> Statistiche Check</h2>
                   <div className="h-64">
-                    <Line data={chartData} options={chartOptions} />
+                    {chartError ? (
+                      <p className="text-red-500 text-center">{chartError}</p>
+                    ) : (
+                      <Line data={chartData} options={chartOptions} />
+                    )}
                   </div>
                 </motion.div>
               </div>
