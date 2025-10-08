@@ -188,7 +188,7 @@ const ClientAnamnesi = () => {
 
       <header className="flex justify-between items-center mb-8 flex-col sm:flex-row gap-4">
         <h1 className="text-3xl sm:text-4xl font-bold text-slate-50">Anamnesi Cliente</h1>
-        <button onClick={() => navigate('/clients')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-slate-300 text-sm font-semibold rounded-lg transition-colors"><ArrowLeft size={16} /><span>Torna ai Clienti</span></button>
+        <button onClick={() => navigate('/client/dashboard')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-slate-300 text-sm font-semibold rounded-lg transition-colors"><ArrowLeft size={16} /><span>Torna alla mia dashboard</span></button>
       </header>
       
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

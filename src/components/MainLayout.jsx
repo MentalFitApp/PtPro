@@ -3,36 +3,47 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { LayoutGrid, Users, MessageSquare, Rocket, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// AnimatedBackground con stelle puntiformi
 const AnimatedBackground = () => {
+  const starsContainerRef = useRef(null);
+  const isInitialized = useRef(false);
+
   useEffect(() => {
-    const starsContainer = document.querySelector('.stars');
-    if (!starsContainer) return;
+    if (isInitialized.current) return;
 
-    const createStar = () => {
-      const star = document.createElement('div');
-      star.className = 'star';
-      star.style.left = `${Math.random() * 100}%`;
-      star.style.top = `${Math.random() * 100}%`;
-      star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
-      starsContainer.appendChild(star);
-    };
-
-    for (let i = 0; i < 50; i++) {
-      createStar();
+    let starsContainer = document.querySelector('.stars');
+    if (!starsContainer) {
+      starsContainer = document.createElement('div');
+      starsContainer.className = 'stars';
+      const starryBackground = document.querySelector('.starry-background');
+      if (!starryBackground) {
+        const bg = document.createElement('div');
+        bg.className = 'starry-background';
+        document.body.appendChild(bg);
+        bg.appendChild(starsContainer);
+      } else {
+        starryBackground.appendChild(starsContainer);
+      }
+      starsContainerRef.current = starsContainer;
+    } else {
+      starsContainerRef.current = starsContainer;
     }
 
-    return () => {
-      while (starsContainer.firstChild) {
-        starsContainer.removeChild(starsContainer.firstChild);
-      }
-    };
+    // Crea 50 stelle con var CSS random
+    for (let i = 0; i < 50; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.setProperty('--top-offset', `${Math.random() * 100}vh`);
+      star.style.setProperty('--fall-duration', `${8 + Math.random() * 6}s`); // 8-14s
+      star.style.setProperty('--fall-delay', `${Math.random() * 5}s`);
+      star.style.setProperty('--star-width', `${1 + Math.random() * 2}px`); // 1-3px
+      starsContainerRef.current.appendChild(star);
+    }
+
+    isInitialized.current = true;
   }, []);
 
-  return (
-    <div className="starry-background">
-      <div className="stars"></div>
-    </div>
-  );
+  return null;
 };
 
 const navLinks = [
@@ -79,6 +90,7 @@ const SidebarContent = ({ onLinkClick, onClose }) => {
             onClick={() => {
               navigate(link.to);
               if (onLinkClick) onLinkClick();
+              if (onClose) onClose();
             }}
           />
         ))}
@@ -92,12 +104,10 @@ export default function MainLayout() {
   const location = useLocation();
   const menuRef = useRef(null);
 
-  // Chiude il menu al cambio di rotta
   useEffect(() => {
     setIsMobileMenuOpen(false);
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
-  // Gestore click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -106,13 +116,25 @@ export default function MainLayout() {
     };
 
     if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 100);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div className="relative min-h-screen flex flex-col md:flex-row">

@@ -1,55 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, onSnapshot, collectionGroup, doc, getDoc, setDoc, serverTimestamp, query, orderBy, where, getDocs, limit } from "firebase/firestore";
+import { collection, onSnapshot, collectionGroup, doc, getDoc, setDoc, serverTimestamp, query, orderBy, where, getDocs, limit, addDoc } from "firebase/firestore";
 import { auth, db, toDate, calcolaStatoPercorso } from "../firebase";
 import { signOut } from "firebase/auth";
-import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, Search } from "lucide-react";
+import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, Search, Send } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-// AnimatedBackground per tema stellato
-const AnimatedBackground = () => {
-  const starsContainerRef = useRef(null);
-
-  useEffect(() => {
-    // Crea il contenitore delle stelle solo se non esiste
-    if (!starsContainerRef.current) {
-      starsContainerRef.current = document.createElement('div');
-      starsContainerRef.current.className = 'stars';
-      const starryBackground = document.querySelector('.starry-background');
-      if (starryBackground) {
-        starryBackground.appendChild(starsContainerRef.current);
-      }
-    }
-
-    const createStar = () => {
-      const star = document.createElement('div');
-      star.className = 'star';
-      star.style.left = `${Math.random() * 100}%`;
-      star.style.top = `${Math.random() * 100}%`;
-      star.style.width = `${Math.random() * 2 + 1}px`;
-      star.style.height = star.style.width;
-      star.style.animationDuration = `${Math.random() * 30 + 30}s, 5s`;
-      starsContainerRef.current.appendChild(star);
-    };
-
-    // Crea stelle solo se il contenitore è vuoto
-    if (starsContainerRef.current.childElementCount === 0) {
-      for (let i = 0; i < 50; i++) {
-        createStar();
-      }
-    }
-
-    // Cleanup: rimuove il contenitore solo allo smontaggio completo
-    return () => {
-      if (starsContainerRef.current) {
-        starsContainerRef.current.remove();
-        starsContainerRef.current = null;
-      }
-    };
-  }, []);
-
-  return <div className="starry-background" />;
-};
 
 // Helper per calcolare il tempo trascorso
 const timeAgo = (date) => {
@@ -428,7 +383,6 @@ export default function CoachDashboard() {
 
   return (
     <div className="min-h-screen text-slate-200 p-4 sm:p-8 relative">
-      <AnimatedBackground />
       <motion.div initial="hidden" animate="visible" variants={containerVariants}>
         <motion.header variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">

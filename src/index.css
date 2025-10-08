@@ -21,21 +21,70 @@
   height: 100vh;
   overflow: hidden;
   z-index: -10;
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
 }
 
 .stars {
-  position: absolute;
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 100%;
-  background: transparent;
+  height: 120%;
+  transform: rotate(-45deg);
+  z-index: -9;
 }
 
 .star {
+  --star-color: #ffffff;
+  --star-width: var(--star-width, 2px);
+  --fall-duration: var(--fall-duration, 9s);
+  --fall-delay: var(--fall-delay, 0s);
+  --top-offset: var(--top-offset, 50vh);
+
   position: absolute;
-  background: rgba(255, 215, 0, 0.8);
+  top: var(--top-offset);
+  left: 0;
+  width: var(--star-width);
+  height: var(--star-width);
+  background: var(--star-color);
   border-radius: 50%;
-  animation: twinkle 5s ease-in-out infinite, drift 60s linear infinite;
+  box-shadow: 0 0 4px var(--star-color);
+  transform: translate3d(104em, 0, 0);
+  animation: fall var(--fall-duration) var(--fall-delay) linear infinite, twinkle 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.star::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(var(--star-width) / -2);
+  width: 6em; /* Lunghezza scia */
+  height: 1px;
+  background: linear-gradient(to left, rgba(255, 255, 255, 0.8), transparent);
+  animation: tail-fade var(--fall-duration) var(--fall-delay) ease-out infinite;
+  z-index: -7;
+}
+
+@keyframes fall {
+  to {
+    transform: translate3d(-30em, 0, 0);
+  }
+}
+
+@keyframes tail-fade {
+  0%, 50% {
+    width: 6em;
+    opacity: 0.8;
+  }
+  70% {
+    width: 3em;
+    opacity: 0.4;
+  }
+  100% {
+    width: 0;
+    opacity: 0;
+  }
 }
 
 @keyframes twinkle {
@@ -43,14 +92,9 @@
   50% { opacity: 1; }
 }
 
-@keyframes drift {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(50px, -100vh); }
-}
-
-.star:nth-child(3n) { width: 1px; height: 1px; }
-.star:nth-child(2n) { width: 2px; height: 2px; }
-.star:nth-child(1n) { width: 3px; height: 3px; }
+.star:nth-child(3n) { --star-width: 1px; }
+.star:nth-child(2n) { --star-width: 2px; }
+.star:nth-child(1n) { --star-width: 3px; }
 
 /* --- BORDO SFUMATO PER LE SCHEDE --- */
 .gradient-border {
