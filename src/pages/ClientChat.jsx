@@ -85,7 +85,49 @@ export default function ClientChat() {
     { uid: 'l0RI8TzFjbNVoAdmcxNQkP9mWb12', name: 'Mattia (Coach)' },
   ];
 
-  // Carica chat e messaggi
+  // Inizializza chat se non esiste
+  const initializeChat = async (recipientUid) => {
+    if (!user || !recipientUid) return;
+    
+    const generatedChatId = [user.uid, recipientUid].sort().join('_');
+    setChatId(generatedChatId);
+
+    try {
+      const chatDocRef = doc(db, 'chats', generatedChatId);
+      const clientDoc = await getDoc(doc(db, 'clients', user.uid));
+      const clientName = clientDoc.exists() ? clientDoc.data().name : user.email;
+
+      await setDoc(chatDocRef, {
+        participants: [user.uid, recipientUid],
+        participantNames: {
+          [user.uid]: clientName,
+          [recipientUid]: RECIPIENTS.find(r => r.uid === recipientUid).name,
+        },
+        lastMessage: '',
+        lastUpdate: serverTimestamp(),
+      }, { merge: true });
+
+      const messagesCollectionRef = collection(db, 'chats', generatedChatId, 'messages');
+      const q = query(messagesCollectionRef, orderBy('createdAt'));
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const messagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setMessages(messagesData);
+        setLoading(false);
+      }, (error) => {
+        console.error("Errore nello snapshot della chat:", error);
+        setError("Errore: non hai accesso a questa chat. Contatta il supporto.");
+        setLoading(false);
+      });
+
+      return unsubscribe;
+    } catch (error) {
+      console.error("Errore nell'inizializzazione della chat:", error);
+      setError("Errore nell'avvio della chat. Riprova.");
+      setLoading(false);
+    }
+  };
+
+  // Carica chat quando cambia destinatario
   useEffect(() => {
     if (!user) {
       navigate('/client-login');
@@ -97,23 +139,8 @@ export default function ClientChat() {
       return;
     }
 
-    const generatedChatId = [user.uid, recipient.uid].sort().join('_');
-    setChatId(generatedChatId);
-
-    const messagesCollectionRef = collection(db, 'chats', generatedChatId, 'messages');
-    const q = query(messagesCollectionRef, orderBy('createdAt'));
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const messagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setMessages(messagesData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Errore nello snapshot della chat:", error);
-      setError("Errore: non hai accesso a questa chat. Contatta il supporto.");
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    const unsubscribe = initializeChat(recipient.uid);
+    return () => unsubscribe && unsubscribe();
   }, [user, navigate, recipient]);
 
   // Scorri automaticamente all'ultimo messaggio
@@ -121,7 +148,7 @@ export default function ClientChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Invia messaggio e crea/aggiorna chat
+  // Invia messaggio
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (newMessage.trim() === '' || !chatId || !recipient) return;
@@ -161,8 +188,9 @@ export default function ClientChat() {
     const selectedUid = e.target.value;
     const selectedRecipient = RECIPIENTS.find(r => r.uid === selectedUid);
     setRecipient(selectedRecipient);
-    setMessages([]); // Resetta i messaggi quando cambia destinatario
+    setMessages([]);
     setChatId(null);
+    setError('');
   };
 
   // Chiudi notifica
