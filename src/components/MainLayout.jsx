@@ -86,6 +86,10 @@ export default function MainLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
   return (
     <div className="relative min-h-screen flex flex-col md:flex-row">
       <AnimatedBackground />
@@ -107,10 +111,12 @@ export default function MainLayout() {
       </AnimatePresence>
       <div className="flex-1 w-full md:ml-60">
         <header className="md:hidden sticky top-0 bg-zinc-950/70 backdrop-blur-lg h-16 flex items-center justify-between px-4 border-b border-white/10 z-40">
-          <h2 className="text-lg font-bold text-slate-100">FitFlow Pro</h2>
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-slate-200">
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-slate-200">
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+            <h2 className="text-lg font-bold text-slate-100">FitFlow Pro</h2>
+          </div>
         </header>
         <main className="p-4 sm:p-6 lg:p-8 pt-16 md:pt-0 min-h-[calc(100vh-4rem)]">
           <motion.div

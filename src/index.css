@@ -12,11 +12,16 @@
 
 /* --- EFFETTO SFONDO STELLATO ANIMATO --- */
 .starry-background {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
   z-index: -10;
-  background: linear-gradient(135deg, #1a1a2e, #16213e); /* Sfondo scuro per contrasto */
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
 }
 
 .stars {
@@ -26,15 +31,13 @@
   background: transparent;
 }
 
-/* Generazione dinamica delle stelle tramite JavaScript (gestita in MainLayout) */
 .star {
   position: absolute;
-  background: rgba(255, 215, 0, 0.8); /* Giallo dorato visibile */
+  background: rgba(255, 215, 0, 0.8);
   border-radius: 50%;
-  animation: twinkle 5s ease-in-out infinite, drift 60s linear infinite; /* Rallentato a 5s twinkle, 60s drift */
+  animation: twinkle 5s ease-in-out infinite, drift 60s linear infinite;
 }
 
-/* Animazioni */
 @keyframes twinkle {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 1; }
@@ -45,7 +48,6 @@
   100% { transform: translate(50px, -100vh); }
 }
 
-/* Dimensioni variabili per un effetto naturale */
 .star:nth-child(3n) { width: 1px; height: 1px; }
 .star:nth-child(2n) { width: 2px; height: 2px; }
 .star:nth-child(1n) { width: 3px; height: 3px; }

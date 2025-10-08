@@ -204,7 +204,7 @@ export default function ClientDetail() {
         </div>
 
         <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center flex-wrap gap-4 mb-6">
             <h1 className="text-3xl font-bold text-slate-50">{client.name || 'Cliente'}</h1>
             <div className="flex gap-3">
               <button
