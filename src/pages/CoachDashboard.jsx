@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { collection, onSnapshot, collectionGroup, doc, getDoc, setDoc, serverTimestamp, query, orderBy, where, getDocs, limit } from "firebase/firestore";
 import { auth, db, toDate, calcolaStatoPercorso } from "../firebase";
@@ -6,46 +6,20 @@ import { signOut } from "firebase/auth";
 import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Stili CSS per l'effetto stellato
-const starryStyles = `
-  .starry-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -10;
-    background: #0a0a0a;
-    overflow: hidden;
-  }
-  .stars {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-  }
-  .star {
-    position: absolute;
-    background: white;
-    border-radius: 50%;
-    opacity: 0;
-    animation: twinkle 5s infinite, drift linear infinite;
-  }
-  @keyframes twinkle {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 1; }
-  }
-  @keyframes drift {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(-100vh); }
-  }
-`;
-
 // AnimatedBackground per tema stellato
 const AnimatedBackground = () => {
+  const starsContainerRef = useRef(null);
+
   useEffect(() => {
-    const starsContainer = document.createElement('div');
-    starsContainer.className = 'stars';
-    document.querySelector('.starry-background')?.appendChild(starsContainer);
+    // Crea il contenitore delle stelle solo se non esiste
+    if (!starsContainerRef.current) {
+      starsContainerRef.current = document.createElement('div');
+      starsContainerRef.current.className = 'stars';
+      const starryBackground = document.querySelector('.starry-background');
+      if (starryBackground) {
+        starryBackground.appendChild(starsContainerRef.current);
+      }
+    }
 
     const createStar = () => {
       const star = document.createElement('div');
@@ -54,26 +28,27 @@ const AnimatedBackground = () => {
       star.style.top = `${Math.random() * 100}%`;
       star.style.width = `${Math.random() * 2 + 1}px`;
       star.style.height = star.style.width;
-      star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
-      starsContainer.appendChild(star);
+      star.style.animationDuration = `${Math.random() * 30 + 30}s, 5s`;
+      starsContainerRef.current.appendChild(star);
     };
 
-    for (let i = 0; i < 50; i++) {
-      createStar();
+    // Crea stelle solo se il contenitore è vuoto
+    if (starsContainerRef.current.childElementCount === 0) {
+      for (let i = 0; i < 50; i++) {
+        createStar();
+      }
     }
 
-    // Cleanup: rimuove solo al vero smontaggio del componente
+    // Cleanup: rimuove il contenitore solo allo smontaggio completo
     return () => {
-      starsContainer.remove();
+      if (starsContainerRef.current) {
+        starsContainerRef.current.remove();
+        starsContainerRef.current = null;
+      }
     };
   }, []);
 
-  return (
-    <>
-      <style>{starryStyles}</style>
-      <div className="starry-background"></div>
-    </>
-  );
+  return <div className="starry-background" />;
 };
 
 // Helper per calcolare il tempo trascorso
