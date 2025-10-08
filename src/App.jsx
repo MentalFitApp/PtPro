@@ -63,7 +63,7 @@ export default function App() {
         try {
           const clientDoc = await getDoc(clientDocRef);
           const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient;
-          const isCurrentUserACoach = currentUser.uid === 'l0RI8TzFjbNVoAdmcxNQkP9mWb12';
+          const isCurrentUserACoach = currentUser.uid === 'l0RI8TzFjbNVoAdmcXNQkP9mWb12';
           console.log('Ruolo utente:', { isClient: isCurrentUserAClient, isCoach: isCurrentUserACoach, sessionRole });
           if (sessionRole === 'admin' && isCurrentUserAClient) {
             console.log('Logout forzato: utente cliente che tenta accesso admin');
@@ -83,7 +83,7 @@ export default function App() {
             isLoading: false,
             user: currentUser,
             isClient: false,
-            isCoach: currentUser.uid === 'l0RI8TzFjbNVoAdmcxNQkP9mWb12',
+            isCoach: currentUser.uid === 'l0RI8TzFjbNVoAdmcXNQkP9mWb12',
           });
         }
       } else {

@@ -50,7 +50,7 @@ export default function Login() {
     "QwWST9OVOlTOi5oheyCqfpXLOLg2",
     "3j0AXIRa4XdHq1ywCl4UBxJNsku2",
     "AeZKjJYu5zMZ4mvffaGiqCBb0cF2",
-    "l0RI8TzFjbNVoAdmcxNQkP9mWb12" // Coach Mattia
+    "l0RI8TzFjbNVoAdmcXNQkP9mWb12" // Coach Mattia
   ];
 
   // Controlla se l'utente è già autenticato all'avvio
@@ -60,11 +60,13 @@ export default function Login() {
         const uid = user.uid;
         console.log('Utente autenticato all\'avvio:', uid);
         if (authorizedUsers.includes(uid)) {
-          sessionStorage.setItem('app_role', uid === "l0RI8TzFjbNVoAdmcxNQkP9mWb12" ? 'coach' : 'admin');
-          navigate(uid === "l0RI8TzFjbNVoAdmcxNQkP9mWb12" ? '/coach-dashboard' : '/');
+          const isCoach = uid === "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
+          sessionStorage.setItem('app_role', isCoach ? 'coach' : 'admin');
+          navigate(isCoach ? '/coach-dashboard' : '/');
         } else {
           console.log('Utente non autorizzato:', uid);
           auth.signOut();
+          setError('Solo amministratori e coach possono accedere a questa area.');
         }
       }
     });
@@ -86,14 +88,15 @@ export default function Login() {
       console.log('Login riuscito, UID:', uid);
 
       if (authorizedUsers.includes(uid)) {
-        sessionStorage.setItem('app_role', uid === "l0RI8TzFjbNVoAdmcxNQkP9mWb12" ? 'coach' : 'admin');
-        navigate(uid === "l0RI8TzFjbNVoAdmcxNQkP9mWb12" ? '/coach-dashboard' : '/');
+        const isCoach = uid === "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
+        sessionStorage.setItem('app_role', isCoach ? 'coach' : 'admin');
+        navigate(isCoach ? '/coach-dashboard' : '/');
       } else {
         throw new Error('Solo amministratori e coach possono accedere a questa area.');
       }
     } catch (err) {
       console.error("Errore di login:", err.code, err.message);
-      setError(err.message === 'auth/wrong-password' || err.message === 'auth/user-not-found' 
+      setError(err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' 
         ? "Credenziali non valide. Riprova." 
         : err.message);
       if (auth.currentUser) {
