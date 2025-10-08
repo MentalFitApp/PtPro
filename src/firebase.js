@@ -1,11 +1,9 @@
-// Importa le funzioni che ti servono dagli SDK
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { getFirestore, doc, getDoc, getDocs, collection, onSnapshot, updateDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-// La configurazione legge i valori sicuri dalle variabili d'ambiente
-// Abbiamo aggiunto 'export' qui per renderla disponibile ad altri file
+// Configurazione Firebase
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
   authDomain: import.meta.env.VITE_AUTH_DOMAIN,
@@ -13,16 +11,47 @@ export const firebaseConfig = {
   storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_APP_ID,
-  measurementId: import.meta.env.VITE_MEASUREMENT_ID
+  measurementId: import.meta.env.VITE_MEASUREMENT_ID,
 };
 
 // Inizializza Firebase
 const app = initializeApp(firebaseConfig);
 
-// Inizializza e esporta i servizi Firebase che userai nel resto dell'app
+// Servizi Firebase
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// Esporta l'app principale, può essere utile
+// Funzione per calcolare e aggiornare lo stato del percorso
+export const updateStatoPercorso = async (userId) => {
+  const clientRef = doc(db, "clients", userId);
+  const clientSnap = await getDoc(clientRef);
+  if (!clientSnap.exists()) return;
+
+  const dataScadenza = clientSnap.data().scadenza;
+  const stato = calcolaStatoPercorso(dataScadenza);
+
+  await updateDoc(clientRef, { statoPercorso: stato });
+};
+
+// Funzione di calcolo stato percorso
+export const calcolaStatoPercorso = (dataScadenza) => {
+  if (!dataScadenza) return "na";
+  const oggi = new Date();
+  const scadenza = toDate(dataScadenza);
+  if (!scadenza) return "na";
+  const diffGiorni = Math.ceil((scadenza - oggi) / (1000 * 60 * 60 * 24));
+  if (diffGiorni < 0) return "non_rinnovato";
+  if (diffGiorni <= 7) return "rinnovato";
+  return "attivo";
+};
+
+// Funzione di utilità per convertire timestamp
+export const toDate = (x) => {
+  if (!x) return null;
+  if (typeof x?.toDate === "function") return x.toDate();
+  const d = new Date(x);
+  return isNaN(d) ? null : d;
+};
+
 export default app;

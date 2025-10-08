@@ -16,7 +16,7 @@
   inset: 0;
   overflow: hidden;
   z-index: -10;
-  background-color: #000;
+  background: linear-gradient(135deg, #1a1a2e, #16213e); /* Sfondo scuro per contrasto */
 }
 
 .stars {
@@ -26,31 +26,29 @@
   background: transparent;
 }
 
+/* Generazione dinamica delle stelle tramite JavaScript (gestita in MainLayout) */
 .star {
   position: absolute;
-  background: rgba(255, 50, 50, 0.6);
+  background: rgba(255, 215, 0, 0.8); /* Giallo dorato visibile */
   border-radius: 50%;
-  animation: twinkle 3s infinite alternate, drift 60s linear infinite;
+  animation: twinkle 5s ease-in-out infinite, drift 60s linear infinite; /* Rallentato a 5s twinkle, 60s drift */
 }
 
+/* Animazioni */
 @keyframes twinkle {
-  0% { opacity: 0.3; }
-  100% { opacity: 0.6; }
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
 @keyframes drift {
-  0% {
-    transform: translate(0, 0);
-  }
-  100% {
-    transform: translate(50px, -100vh); /* Movimento fluido verso l'alto con leggera deriva laterale */
-  }
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(50px, -100vh); }
 }
 
-/* Dimensioni e ritardi casuali per le stelle */
-.star:nth-child(3n) { width: 1px; height: 1px; animation-delay: -0.1s; }
-.star:nth-child(2n) { width: 2px; height: 2px; animation-delay: -0.5s; }
-.star:nth-child(1n) { width: 3px; height: 3px; animation-delay: -1s; }
+/* Dimensioni variabili per un effetto naturale */
+.star:nth-child(3n) { width: 1px; height: 1px; }
+.star:nth-child(2n) { width: 2px; height: 2px; }
+.star:nth-child(1n) { width: 3px; height: 3px; }
 
 /* --- BORDO SFUMATO PER LE SCHEDE --- */
 .gradient-border {

@@ -22,6 +22,7 @@ const ClientChecks = React.lazy(() => import('./pages/ClientChecks'));
 const ClientPayments = React.lazy(() => import('./pages/ClientPayments'));
 const ClientChat = React.lazy(() => import('./pages/ClientChat'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
+const AdminAnamnesi = React.lazy(() => import('./pages/AdminAnamnesi')); // Nuovo import
 
 // --- 2. SPINNER DI CARICAMENTO PER LE PAGINE ---
 const PageSpinner = () => (
@@ -108,6 +109,7 @@ export default function App() {
               <Route path="/edit/:clientId" element={<EditClient />} />
               <Route path="/updates" element={<Updates />} />
               <Route path="/chat" element={<AdminChat />} />
+              <Route path="/admin/anamnesi/:uid" element={<AdminAnamnesi />} /> {/* Nuova rotta per l'anamnesi admin */}
             </Route>
           </Route>
           <Route element={<ProtectedRoute isAllowed={authInfo.user && authInfo.isClient} redirectPath="/client-login" />}>

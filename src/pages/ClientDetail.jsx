@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, toDate, calcolaStatoPercorso, updateStatoPercorso } from "../firebase";
 import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -25,35 +25,15 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Funzione di utilità per convertire timestamp
-function toDate(x) {
-  if (!x) return null;
-  if (typeof x?.toDate === "function") return x.toDate();
-  const d = new Date(x);
-  return isNaN(d) ? null : d;
-}
-
-// Funzione per calcolare lo stato del pagamento
-const getPaymentStatus = (scadenza) => {
-  if (!scadenza) return 'na';
-  const expiryDate = toDate(scadenza);
-  if (!expiryDate) return 'na';
-  const now = new Date();
-  const diffDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-  if (diffDays < 0) return 'expired';
-  if (diffDays <= 15) return 'expiring';
-  return 'paid';
-};
-
-// Componente PaymentStatusBadge
-const PaymentStatusBadge = ({ status }) => {
+// Componente PathStatusBadge
+const PathStatusBadge = ({ status }) => {
   const styles = {
-    paid: "bg-emerald-900/80 text-emerald-300 border border-emerald-500/30",
-    expiring: "bg-amber-900/80 text-amber-300 border border-amber-500/30",
-    expired: "bg-red-900/80 text-red-400 border border-red-500/30",
+    attivo: "bg-emerald-900/80 text-emerald-300 border border-emerald-500/30",
+    rinnovato: "bg-amber-900/80 text-amber-300 border border-amber-500/30",
+    non_rinnovato: "bg-red-900/80 text-red-400 border border-red-500/30",
     na: "bg-zinc-700/80 text-zinc-300 border border-zinc-500/30",
   };
-  const labels = { paid: 'Pagato', expiring: 'In Scadenza', expired: 'Scaduto', na: 'N/D' };
+  const labels = { attivo: 'Attivo', rinnovato: 'In Scadenza', non_rinnovato: 'Scaduto', na: 'N/D' };
   return <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${styles[status] || styles.na}`}>{labels[status] || 'N/D'}</span>;
 };
 
@@ -64,27 +44,30 @@ export default function ClientDetail() {
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('info');
-  const [checkIns, setCheckIns] = useState([]);
+  const [checks, setChecks] = useState([]);
   const [payments, setPayments] = useState([]);
   const [anamnesi, setAnamnesi] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  // Estrai id con fallback per HashRouter
+  // Estrai id con fallback per HashRouter e debug
   const id = params.clientId || (() => {
     const pathname = location.pathname;
     console.log('URL completo:', window.location.href);
     console.log('Pathname:', pathname);
     const match = pathname.match(/\/client\/([a-zA-Z0-9_-]+)/);
     const fallbackId = match ? match[1] : null;
-    console.log('Fallback ID estratto:', fallbackId);
-    return fallbackId;
+    console.log('ID estratto da params o URL:', params.clientId || fallbackId);
+    if (!fallbackId && !params.clientId) {
+      setError("ID cliente non trovato. Reindirizzamento alla lista dei clienti...");
+      setTimeout(() => navigate('/clients'), 3000);
+      return null;
+    }
+    return fallbackId || params.clientId;
   })();
 
   // Fetch client data in real-time
   useEffect(() => {
-    console.log('ID cliente ricevuto da useParams:', params.clientId);
-    console.log('ID finale usato:', id);
     if (!id || typeof id !== 'string' || id.trim() === '') {
       setError("ID cliente non valido. Reindirizzamento alla lista dei clienti...");
       setTimeout(() => navigate('/clients'), 3000);
@@ -95,8 +78,10 @@ export default function ClientDetail() {
     const clientRef = doc(db, 'clients', id);
     const unsubClient = onSnapshot(clientRef, (docSnap) => {
       if (docSnap.exists()) {
-        setClient({ id: docSnap.id, ...docSnap.data() });
-        console.log('Dati cliente:', { id: docSnap.id, ...docSnap.data() });
+        const clientData = { id: docSnap.id, ...docSnap.data() };
+        setClient(clientData);
+        console.log('Dati cliente caricati:', clientData);
+        updateStatoPercorso(id);
       } else {
         setClient(null);
         setError("Cliente non trovato. Reindirizzamento alla lista dei clienti...");
@@ -118,12 +103,12 @@ export default function ClientDetail() {
       console.error("Errore nel recupero dell'anamnesi:", error);
     });
 
-    // Fetch check-ins
-    const checkInsQuery = query(collection(db, 'clients', id, 'checks'), orderBy('createdAt', 'desc'));
-    const unsubCheckIns = onSnapshot(checkInsQuery, (snap) => {
-      setCheckIns(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    // Fetch checks
+    const checksQuery = query(collection(db, 'clients', id, 'checks'), orderBy('createdAt', 'desc'));
+    const unsubChecks = onSnapshot(checksQuery, (snap) => {
+      setChecks(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, (error) => {
-      console.error("Errore nel recupero dei check-ins:", error);
+      console.error("Errore nel recupero dei checks:", error);
     });
 
     // Fetch payments
@@ -137,7 +122,7 @@ export default function ClientDetail() {
     return () => {
       unsubClient();
       unsubAnamnesi();
-      unsubCheckIns();
+      unsubChecks();
       unsubPayments();
     };
   }, [id, navigate, location.pathname]);
@@ -163,6 +148,7 @@ export default function ClientDetail() {
         const date = new Date(newScadenza);
         if (isNaN(date)) throw new Error("Data non valida");
         await updateDoc(doc(db, 'clients', id), { scadenza: date });
+        updateStatoPercorso(id);
       } catch (err) {
         console.error("Errore nell'aggiornamento della scadenza:", err);
         alert("Data non valida o errore nell'aggiornamento");
@@ -172,7 +158,7 @@ export default function ClientDetail() {
 
   // Handle copy credentials to clipboard
   const copyCredentialsToClipboard = () => {
-    const loginLink = "https://MentalFitApp.github.io/PtPro/client-login";
+    const loginLink = "https://MentalFitApp.github.io/PtPro/#/client-login";
     const tempPassword = client.tempPassword || "Password non disponibile (contatta l’amministratore per reimpostarla)";
     const text = `Ciao ${client.name || 'Cliente'},\n\nBenvenuto in PT Manager, la tua area personale per monitorare i progressi e comunicare con il tuo coach!\n\nEcco le credenziali per il tuo accesso:\n\nLink: ${loginLink}\nEmail: ${client.email || 'N/D'}\nPassword Temporanea: ${tempPassword}\n\nAl primo accesso ti verrà chiesto di impostare una password personale.\nA presto!`;
 
@@ -206,7 +192,7 @@ export default function ClientDetail() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="w-full max-w-4xl mx-auto p-4"
+        className="w-full max-w-4xl mx-auto p-4 sm:p-6"
       >
         <div className="mb-6">
           <button
@@ -243,7 +229,7 @@ export default function ClientDetail() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 mb-6 bg-zinc-900/70 p-1 rounded-lg border border-white/10">
+          <div className="flex flex-wrap gap-2 mb-6 bg-zinc-900/70 p-1 rounded-lg border border-white/10">
             <button
               onClick={() => setActiveTab('info')}
               className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'info' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
@@ -251,10 +237,10 @@ export default function ClientDetail() {
               Informazioni
             </button>
             <button
-              onClick={() => setActiveTab('checkIns')}
-              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'checkIns' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+              onClick={() => setActiveTab('check')}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'check' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
             >
-              Check-Ins
+              Check
             </button>
             <button
               onClick={() => setActiveTab('payments')}
@@ -304,15 +290,15 @@ export default function ClientDetail() {
               </div>
               <div className="flex items-center gap-3">
                 <DollarSign className="text-slate-400" size={18} />
-                <p className="text-slate-200">Stato Pagamento: <PaymentStatusBadge status={getPaymentStatus(client.scadenza)} /></p>
+                <p className="text-slate-200">Stato Percorso: <PathStatusBadge status={client.statoPercorso || calcolaStatoPercorso(client.scadenza)} /></p>
               </div>
             </div>
           )}
 
-          {activeTab === 'checkIns' && (
+          {activeTab === 'check' && (
             <div className="space-y-4">
-              {checkIns.length > 0 ? (
-                checkIns.map(check => (
+              {checks.length > 0 ? (
+                checks.map(check => (
                   <div key={check.id} className="p-4 bg-zinc-900/70 rounded-lg border border-white/10">
                     <p className="text-sm text-slate-400">Data: {toDate(check.createdAt)?.toLocaleDateString('it-IT') || 'N/D'}</p>
                     <p className="text-sm text-slate-200">Peso: {check.weight || 'N/D'} kg</p>
@@ -320,7 +306,7 @@ export default function ClientDetail() {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-slate-400 text-center">Nessun check-in disponibile.</p>
+                <p className="text-sm text-slate-400 text-center">Nessun check disponibile.</p>
               )}
             </div>
           )}
@@ -343,9 +329,46 @@ export default function ClientDetail() {
           {activeTab === 'anamnesi' && (
             <div className="space-y-4">
               {anamnesi ? (
-                <div className="p-4 bg-zinc-900/70 rounded-lg border border-white/10">
-                  <p className="text-sm text-slate-400">Inviata il: {toDate(anamnesi.submittedAt)?.toLocaleDateString('it-IT') || 'N/D'}</p>
-                  <p className="text-sm text-slate-200">Dettagli: {JSON.stringify(anamnesi, null, 2)}</p>
+                <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-4">
+                  <h4 className="font-bold text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 flex items-center gap-2"><FileText size={16} /> Dettagli Anamnesi</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                    <div><span className="text-sm font-semibold text-slate-400">Nome:</span> <span className="text-slate-200">{anamnesi.firstName || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Cognome:</span> <span className="text-slate-200">{anamnesi.lastName || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Data di Nascita:</span> <span className="text-slate-200">{anamnesi.birthDate || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Lavoro:</span> <span className="text-slate-200">{anamnesi.job || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Peso (kg):</span> <span className="text-slate-200">{anamnesi.weight || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Altezza (cm):</span> <span className="text-slate-200">{anamnesi.height || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Pasti al Giorno:</span> <span className="text-slate-200">{anamnesi.mealsPerDay || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Tipo Colazione:</span> <span className="text-slate-200">{anamnesi.breakfastType || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Alimenti Preferiti:</span> <span className="text-slate-200">{anamnesi.desiredFoods || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Alimenti da Evitare:</span> <span className="text-slate-200">{anamnesi.dislikedFoods || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Allergie/Intolleranze:</span> <span className="text-slate-200">{anamnesi.intolerances || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Problemi di Digestione:</span> <span className="text-slate-200">{anamnesi.digestionIssues || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Allenamenti a Settimana:</span> <span className="text-slate-200">{anamnesi.workoutsPerWeek || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Dettagli Allenamento:</span> <span className="text-slate-200">{anamnesi.trainingDetails || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Orario e Durata:</span> <span className="text-slate-200">{anamnesi.trainingTime || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Infortuni:</span> <span className="text-slate-200">{anamnesi.injuries || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Farmaci:</span> <span className="text-slate-200">{anamnesi.medications || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Integratori:</span> <span className="text-slate-200">{anamnesi.supplements || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Obiettivo Principale:</span> <span className="text-slate-200">{anamnesi.mainGoal || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Durata Percorso:</span> <span className="text-slate-200">{anamnesi.programDuration || '-'}</span></div>
+                    <div><span className="text-sm font-semibold text-slate-400">Data Invio:</span> <span className="text-slate-200">{toDate(anamnesi.submittedAt)?.toLocaleDateString('it-IT') || '-'}</span></div>
+                    {anamnesi.notes && (
+                      <div className="col-span-2"><span className="text-sm font-semibold text-slate-400">Note:</span> <span className="text-slate-200">{anamnesi.notes}</span></div>
+                    )}
+                  </div>
+                  {anamnesi.photoURLs && (
+                    <div className="mt-4 col-span-2">
+                      <h5 className="font-semibold text-slate-400">Foto:</h5>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                        {['front', 'back', 'left', 'right'].map(type => (
+                          anamnesi.photoURLs[type] ? (
+                            <img key={type} src={anamnesi.photoURLs[type]} alt={`${type} view`} className="w-full h-24 object-cover rounded-lg hover:scale-105 transition-transform" />
+                          ) : <div key={type} className="w-full h-24 bg-zinc-900 rounded-lg flex items-center justify-center text-slate-500">Nessuna foto</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-slate-400 text-center">Nessuna anamnesi disponibile.</p>

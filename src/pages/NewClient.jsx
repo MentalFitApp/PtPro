@@ -18,6 +18,7 @@ const Notification = ({ message, type, onDismiss }) => (
         )}
     </AnimatePresence>
 );
+
 const generatePassword = () => {
   const length = 8;
   const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -52,6 +53,7 @@ export default function NewClient() {
       const durationNum = parseInt(data.duration, 10);
       const expiryDate = new Date();
       expiryDate.setMonth(expiryDate.getMonth() + durationNum);
+      expiryDate.setDate(expiryDate.getDate() + 7); // Aggiunge 7 giorni
       batch.set(newClientRef, {
         name: data.name, name_lowercase: data.name.toLowerCase(), email: data.email,
         phone: data.phone || null, status: 'attivo', planType: data.planType,
@@ -86,10 +88,7 @@ export default function NewClient() {
   };
   
   const copyToClipboard = () => {
-      // --- CORREZIONE QUI ---
-      // Il link ora punta al sito corretto e alla pagina di login del cliente.
-      const loginLink = "https://MentalFitApp.github.io/PtPro/client-login";
-      
+      const loginLink = "https://MentalFitApp.github.io/PtPro/#/client-login";
       const text = `Ciao ${newClientCredentials.name},\n\nBenvenuto in PT Manager, la tua area personale per monitorare i progressi e comunicare con il tuo coach!\n\nEcco le credenziali per il tuo primo accesso:\n\nLink: ${loginLink}\nEmail: ${newClientCredentials.email}\nPassword Temporanea: ${newClientCredentials.password}\n\nAl primo accesso ti verrà chiesto di impostare una password personale.\nA presto!`;
       
       navigator.clipboard.writeText(text);

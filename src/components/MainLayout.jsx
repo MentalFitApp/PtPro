@@ -13,12 +13,11 @@ const AnimatedBackground = () => {
       star.className = 'star';
       star.style.left = `${Math.random() * 100}%`;
       star.style.top = `${Math.random() * 100}%`;
-      // Variazione casuale della durata dell'animazione per un effetto più naturale
-      star.style.animationDuration = `${Math.random() * 10 + 15}s, 3s`; // drift: 15-25s, twinkle: 3s
+      star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
       starsContainer.appendChild(star);
     };
 
-    for (let i = 0; i < 150; i++) { // Aumentato a 150 stelle per un effetto più ricco
+    for (let i = 0; i < 50; i++) {
       createStar();
     }
 
@@ -45,7 +44,7 @@ const navLinks = [
 
 const NavLink = ({ to, icon, label, onClick }) => {
   const location = useLocation();
-  const isActive = location.pathname === to;
+  const isActive = location.pathname === to || location.pathname.startsWith(to + '/');
   return (
     <button
       onClick={onClick}
@@ -63,7 +62,7 @@ const NavLink = ({ to, icon, label, onClick }) => {
 const SidebarContent = ({ onLinkClick }) => {
   const navigate = useNavigate();
   return (
-    <aside className="w-60 bg-zinc-950/60 backdrop-blur-xl p-4 flex flex-col h-full gradient-border">
+    <aside className="w-full md:w-60 bg-zinc-950/60 backdrop-blur-xl p-4 flex flex-col h-full gradient-border">
       <h2 className="text-2xl font-bold mb-10 px-2 text-slate-100">FitFlow Pro</h2>
       <nav className="flex flex-col gap-2">
         {navLinks.map(link => (
@@ -88,9 +87,9 @@ export default function MainLayout() {
   const location = useLocation();
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen flex flex-col md:flex-row">
       <AnimatedBackground />
-      <div className="hidden md:flex md:fixed h-full z-20">
+      <div className="hidden md:flex md:fixed h-screen z-20">
         <SidebarContent />
       </div>
       <AnimatePresence>
@@ -100,20 +99,20 @@ export default function MainLayout() {
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', stiffness: 400, damping: 40 }}
-            className="fixed top-0 left-0 h-full z-50 md:hidden"
+            className="fixed top-0 left-0 h-full w-64 z-50 md:hidden bg-zinc-950/80 backdrop-blur-lg"
           >
             <SidebarContent onLinkClick={() => setIsMobileMenuOpen(false)} />
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="flex-1 md:ml-60">
+      <div className="flex-1 w-full md:ml-60">
         <header className="md:hidden sticky top-0 bg-zinc-950/70 backdrop-blur-lg h-16 flex items-center justify-between px-4 border-b border-white/10 z-40">
-          <h2 className="text-lg font-bold">FitFlow Pro</h2>
+          <h2 className="text-lg font-bold text-slate-100">FitFlow Pro</h2>
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-slate-200">
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </header>
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className="p-4 sm:p-6 lg:p-8 pt-16 md:pt-0 min-h-[calc(100vh-4rem)]">
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 20 }}

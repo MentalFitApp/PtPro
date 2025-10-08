@@ -1,25 +1,20 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { collection, onSnapshot, collectionGroup, doc, setDoc, getDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
-import { auth } from "../firebase";
+import { auth, db, toDate, calcolaStatoPercorso } from "../firebase";
 import { signOut } from "firebase/auth";
-import { db } from "../firebase";
 import { 
   DollarSign, CheckCircle, RefreshCw, BarChart3, Bell, Target, 
   BookOpen, Plus, Clock, FileText, TrendingUp, User, Users, LogOut 
 } from "lucide-react";
-import { 
-  AreaChart, Area, Bar, BarChart, XAxis, YAxis, Tooltip, ResponsiveContainer 
-} from 'recharts';
+import { Line } from "react-chartjs-2";
+import { Chart as ChartJS, LineElement, PointElement, LinearScale, CategoryScale, Title, Tooltip, Legend, Filler } from "chart.js";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Registra i componenti di Chart.js
+ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Title, Tooltip, Legend, Filler);
+
 // --- HELPERS ---
-function toDate(x) {
-  if (!x) return null;
-  if (typeof x?.toDate === 'function') return x.toDate();
-  const d = new Date(x);
-  return isNaN(d) ? null : d;
-}
 const timeAgo = (date) => {
   if (!date) return '';
   const seconds = Math.floor((new Date() - toDate(date)) / 1000);
@@ -82,49 +77,6 @@ const ActivityItem = ({ item, navigate }) => {
   );
 };
 
-const RechartsChart = ({ chartData, dataType }) => {
-  const currencyFormatter = (value) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value);
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-zinc-900/80 backdrop-blur-sm p-3 rounded-lg border border-white/10 text-sm">
-          <p className="label text-slate-300 font-semibold">{`${label}`}</p>
-          <p className="intro text-slate-400" style={{ color: payload[0].color }}>
-            {`${dataType === 'revenue' ? 'Fatturato' : 'Nuovi Clienti'}: ${dataType === 'revenue' ? currencyFormatter(payload[0].value) : payload[0].value}`}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-  
-  return(
-    <ResponsiveContainer width="100%" height="100%">
-      {dataType === 'revenue' ? (
-        <AreaChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-          <defs>
-            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.6}/>
-              <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <XAxis dataKey="name" stroke="#6b7280" tick={{ fontSize: 12 }} />
-          <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
-          <Tooltip content={<CustomTooltip />} />
-          <Area type="monotone" dataKey="value" stroke="#22c55e" fillOpacity={1} fill="url(#colorRevenue)" />
-        </AreaChart>
-      ) : (
-        <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-          <XAxis dataKey="name" stroke="#6b7280" tick={{ fontSize: 12 }} />
-          <YAxis stroke="#6b7280" tick={{ fontSize: 12 }} />
-          <Tooltip content={<CustomTooltip />} />
-          <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      )}
-    </ResponsiveContainer>
-  );
-};
-
 // --- QuickNotes Component ---
 const QuickNotes = () => {
   const [notes, setNotes] = useState('');
@@ -154,13 +106,33 @@ export default function Dashboard() {
   const [clients, setClients] = useState([]);
   const [activityFeed, setActivityFeed] = useState([]);
   const [monthlyIncome, setMonthlyIncome] = useState(0);
-  const [chartDataType, setChartDataType] = useState('revenue');
-  const [chartTimeRange, setChartTimeRange] = useState('monthly');
-  const [chartData, setChartData] = useState([]);
   const [lastViewed, setLastViewed] = useState(null);
   const [focusClient, setFocusClient] = useState(null);
   const [retentionRate, setRetentionRate] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [chartDataType, setChartDataType] = useState('revenue');
+  const [chartTimeRange, setChartTimeRange] = useState('monthly');
+  const [chartData, setChartData] = useState([]);
+
+  // --- Calcolo distribuzione stati ---
+  const statusDistribution = useMemo(() => {
+    const counts = {
+      attivo: 0,
+      rinnovato: 0,
+      non_rinnovato: 0,
+      na: 0,
+    };
+    clients.forEach(c => {
+      const status = c.statoPercorso || calcolaStatoPercorso(c.scadenza);
+      counts[status]++;
+    });
+    return [
+      { name: 'Attivo', value: counts.attivo, color: '#10B981' },
+      { name: 'In Scadenza', value: counts.rinnovato, color: '#F59E0B' },
+      { name: 'Scaduto', value: counts.non_rinnovato, color: '#EF4444' },
+      { name: 'N/D', value: counts.na, color: '#6B7280' },
+    ].filter(item => item.value > 0);
+  }, [clients]);
 
   // --- User name and logout ---
   const [userName, setUserName] = useState('');
@@ -305,6 +277,25 @@ export default function Dashboard() {
     return () => unsubPayments();
   }, []);
 
+  // --- Retention rate calculation ---
+  useEffect(() => {
+    if (clients.length > 0) {
+      const retained = clients.filter(c => {
+        const expiry = toDate(c.scadenza);
+        return expiry && expiry > new Date();
+      }).length;
+      setRetentionRate(Math.round((retained / clients.length) * 100));
+    }
+  }, [clients]);
+
+  // --- Focus client selection ---
+  useEffect(() => {
+    if (clients.length > 0) {
+      const randomClient = clients[Math.floor(Math.random() * clients.length)];
+      setFocusClient({ name: randomClient.name, goal: randomClient.goal });
+    }
+  }, [clients]);
+
   // --- Chart data calculation ---
   useEffect(() => {
     const generateChartData = () => {
@@ -322,7 +313,7 @@ export default function Dashboard() {
             }
           });
           if (chartTimeRange === 'monthly') {
-            // Limit to last 12 months
+            // Ultimi 12 mesi
             for (let i = 11; i >= 0; i--) {
               const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
               const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
@@ -347,7 +338,7 @@ export default function Dashboard() {
             }
           });
           if (chartTimeRange === 'monthly') {
-            // Limit to last 12 months
+            // Ultimi 12 mesi
             for (let i = 11; i >= 0; i--) {
               const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
               const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
@@ -364,24 +355,71 @@ export default function Dashboard() {
     return generateChartData();
   }, [chartDataType, chartTimeRange]);
 
-  // --- Focus client selection ---
-  useEffect(() => {
-    if (clients.length > 0) {
-      const randomClient = clients[Math.floor(Math.random() * clients.length)];
-      setFocusClient({ name: randomClient.name, goal: randomClient.goal });
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        grid: {
+          display: false
+        },
+        ticks: {
+          color: "#e2e8f0",
+          font: {
+            size: 12
+          }
+        }
+      },
+      y: {
+        grid: {
+          color: "rgba(255, 255, 255, 0.1)"
+        },
+        ticks: {
+          color: "#e2e8f0",
+          font: {
+            size: 12
+          },
+          callback: function(value) {
+            return chartDataType === 'revenue' ? `€${value}` : value;
+          }
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        position: "top",
+        labels: {
+          font: {
+            size: 12,
+            family: "'Inter', sans-serif",
+            weight: "500"
+          },
+          color: "#e2e8f0"
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(tooltipItem) {
+            return `${tooltipItem.dataset.label}: ${chartDataType === 'revenue' ? `€${tooltipItem.raw}` : tooltipItem.raw}`;
+          }
+        }
+      }
     }
-  }, [clients]);
+  };
 
-  // --- Retention rate calculation ---
-  useEffect(() => {
-    if (clients.length > 0) {
-      const retained = clients.filter(c => {
-        const expiry = toDate(c.scadenza);
-        return expiry && expiry > new Date();
-      }).length;
-      setRetentionRate(Math.round((retained / clients.length) * 100));
-    }
-  }, [clients]);
+  const chartDataConfig = {
+    labels: chartData.map(item => item.name),
+    datasets: [{
+      label: chartDataType === 'revenue' ? 'Fatturato (€)' : 'Nuovi Clienti',
+      data: chartData.map(item => item.value),
+      borderColor: chartDataType === 'revenue' ? '#22c55e' : '#6366f1',
+      backgroundColor: chartDataType === 'revenue' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(99, 102, 241, 0.2)',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 4,
+      pointHoverRadius: 6
+    }]
+  };
 
   const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
 
@@ -399,57 +437,57 @@ export default function Dashboard() {
         </div>
         <p className="text-slate-400 mb-4">Panoramica delle metriche chiave e progressi in tempo reale.</p>
         <div className="flex gap-2">
-            <button onClick={() => navigate('/clients')} className="px-4 py-2 bg-zinc-800/80 text-sm font-semibold rounded-lg hover:bg-zinc-700/80 transition-colors flex items-center gap-2"><Users size={16}/> Gestisci</button>
-            <button onClick={() => navigate('/new')} className="px-4 py-2 bg-rose-600 text-sm font-semibold rounded-lg hover:bg-rose-700 transition-colors flex items-center gap-2"><Plus size={16}/> Nuovo</button>
+          <button onClick={() => navigate('/clients')} className="px-4 py-2 bg-zinc-800/80 text-sm font-semibold rounded-lg hover:bg-zinc-700/80 transition-colors flex items-center gap-2"><Users size={16}/> Gestisci</button>
+          <button onClick={() => navigate('/new')} className="px-4 py-2 bg-rose-600 text-sm font-semibold rounded-lg hover:bg-rose-700 transition-colors flex items-center gap-2"><Plus size={16}/> Nuovo</button>
         </div>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              <StatCard title="Incasso Mensile" value={monthlyIncome} icon={<DollarSign className="text-green-500"/>} isCurrency={true} />
-              <StatCard title="Clienti Attivi" value={clientStats.active} icon={<CheckCircle className="text-blue-500"/>} />
-              <StatCard title="Retention Rate" value={retentionRate} icon={<RefreshCw className="text-amber-500"/>} isPercentage={true} />
+            <StatCard title="Incasso Mensile" value={monthlyIncome} icon={<DollarSign className="text-green-500"/>} isCurrency={true} />
+            <StatCard title="Clienti Attivi" value={clientStats.active} icon={<CheckCircle className="text-blue-500"/>} />
+            <StatCard title="Retention Rate" value={retentionRate} icon={<RefreshCw className="text-amber-500"/>} isPercentage={true} />
           </motion.div>
           <motion.div className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border h-[450px] flex flex-col" variants={itemVariants}>
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-4">
-               <h2 className="text-lg font-semibold text-slate-200 flex items-center gap-2"><BarChart3 size={20}/> Business Overview</h2>
-               <div className="flex gap-2 bg-zinc-900/70 p-1 rounded-lg border border-white/5">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+              <h2 className="text-lg font-semibold text-slate-200 flex items-center gap-2"><BarChart3 size={20} /> Andamento Business</h2>
+              <div className="flex gap-2 bg-zinc-900/70 p-1 rounded-lg border border-white/5">
                 <button onClick={() => setChartDataType('revenue')} className={`px-3 py-1 text-sm rounded-md transition ${chartDataType === 'revenue' ? 'bg-zinc-700 text-white' : 'text-slate-400'}`}>Fatturato</button>
                 <button onClick={() => setChartDataType('clients')} className={`px-3 py-1 text-sm rounded-md transition ${chartDataType === 'clients' ? 'bg-zinc-700 text-white' : 'text-slate-400'}`}>Clienti</button>
-               </div>
+              </div>
             </div>
             <div className="flex-1">
-              <RechartsChart chartData={chartData} dataType={chartDataType}/>
+              <Line data={chartDataConfig} options={chartOptions} />
             </div>
             <div className="flex justify-center mt-4">
-               <div className="flex gap-2 bg-zinc-900/70 p-1 rounded-lg border border-white/5">
+              <div className="flex gap-2 bg-zinc-900/70 p-1 rounded-lg border border-white/5">
                 <button onClick={() => setChartTimeRange('monthly')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'monthly' ? 'bg-zinc-700 text-white' : 'text-slate-400'}`}>Mese</button>
                 <button onClick={() => setChartTimeRange('yearly')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'yearly' ? 'bg-zinc-700 text-white' : 'text-slate-400'}`}>Anno</button>
-               </div>
+              </div>
             </div>
           </motion.div>
-           <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-6" variants={itemVariants}>
-              {focusClient && (
-                <div className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border">
-                    <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-slate-200"><Target size={18}/> Focus del Giorno</h2>
-                    <p className="font-bold text-xl text-rose-500">{focusClient.name}</p>
-                    <p className="text-sm text-slate-400 mt-1">Obiettivo: "{focusClient.goal || 'Non specificato'}"</p>
-                </div>
-              )}
-               <QuickNotes />
-           </motion.div>
+          <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-6" variants={itemVariants}>
+            {focusClient && (
+              <div className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border">
+                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-slate-200"><Target size={18} /> Focus del Giorno</h2>
+                <p className="text-sm font-bold text-rose-500">{focusClient.name}</p>
+                <p className="text-sm text-slate-400 mt-1">Obiettivo: "{focusClient.goal || 'Non specificato'}"</p>
+              </div>
+            )}
+            <QuickNotes />
+          </motion.div>
         </div>
         
         <motion.div className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border" variants={itemVariants}>
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20}/> Feed Attività</h2>
-            <div className="space-y-3 max-h-[90vh] lg:max-h-[calc(100vh-14rem)] overflow-y-auto pr-2">
-              <AnimatePresence>
-                {activityFeed.length > 0 ? activityFeed.map(item => (
-                  <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds}`} item={item} navigate={navigate} />
-                )) : <p className="text-sm text-slate-500 p-4 text-center">Nessuna attività recente.</p>}
-              </AnimatePresence>
-            </div>
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Feed Attività</h2>
+          <div className="space-y-3 max-h-[90vh] lg:max-h-[calc(100vh-14rem)] overflow-y-auto pr-2">
+            <AnimatePresence>
+              {activityFeed.length > 0 ? activityFeed.map(item => (
+                <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds}`} item={item} navigate={navigate} />
+              )) : <p className="text-sm text-slate-500 p-4 text-center">Nessuna attività recente.</p>}
+            </AnimatePresence>
+          </div>
         </motion.div>
       </div>
     </motion.div>
