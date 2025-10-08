@@ -7,8 +7,8 @@ import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, Searc
 import { motion, AnimatePresence } from "framer-motion";
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend, Filler } from 'chart.js';
-import { format } from 'date-fns'; // Import corretto per date-fns
-import 'chart.js/adapter-date-fns'; // Adattatore per le scale temporali
+import { format } from 'date-fns';
+import 'chart.js/auto'; // Importa tutto Chart.js con adattatori inclusi
 
 ChartJS.register(LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend, Filler);
 
@@ -436,8 +436,16 @@ export default function CoachDashboard() {
 
   const chartOptions = {
     scales: {
-      x: { type: 'time', time: { unit: 'month' }, title: { display: true, text: 'Mese' } },
-      y: { beginAtZero: true, title: { display: true, text: 'Numero di check' } },
+      x: { 
+        type: 'time', 
+        time: { unit: 'month' }, 
+        title: { display: true, text: 'Mese' },
+        adapters: { date: { locale: 'it' } } // Configurazione locale italiana
+      },
+      y: { 
+        beginAtZero: true, 
+        title: { display: true, text: 'Numero di check' } 
+      },
     },
     plugins: {
       legend: { display: true },
