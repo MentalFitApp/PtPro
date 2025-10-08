@@ -6,9 +6,11 @@ import { signOut } from "firebase/auth";
 import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, Search, BarChart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend } from 'chart.js';
-import 'chart.js/adapter-date-fns';
-ChartJS.register(LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend);
+import { Chart as ChartJS, LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend, Filler } from 'chart.js';
+import { format } from 'date-fns'; // Import corretto per date-fns
+import 'chart.js/adapter-date-fns'; // Adattatore per le scale temporali
+
+ChartJS.register(LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend, Filler);
 
 // AnimatedBackground per tema stellato
 const AnimatedBackground = () => {
@@ -281,7 +283,7 @@ export default function CoachDashboard() {
 
   // Fetch chats
   useEffect(() => {
-    if (!activeTab === 'chat') return;
+    if (activeTab !== 'chat') return;
     const chatsRef = collection(db, 'chats');
     const q = query(chatsRef, where('participants', 'array-contains', COACH_UID), orderBy('lastUpdate', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -322,7 +324,7 @@ export default function CoachDashboard() {
       checks.forEach(check => {
         const date = toDate(check.createdAt);
         if (!date) return;
-        const monthYear = `${date.getFullYear()}-${date.getMonth() + 1}`;
+        const monthYear = format(date, 'yyyy-MM');
         monthlyData[monthYear] = (monthlyData[monthYear] || 0) + 1;
       });
       const sortedData = Object.entries(monthlyData)
