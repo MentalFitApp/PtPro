@@ -27,42 +27,8 @@ const calendarStyles = `
 .check-submitted::after { content: ''; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background-color: #10b981; }
 `;
 
-// AnimatedBackground per tema stellato
-const AnimatedBackground = () => {
-  useEffect(() => {
-    const starsContainer = document.querySelector('.stars');
-    if (!starsContainer) return;
-
-    const createStar = () => {
-      const star = document.createElement('div');
-      star.className = 'star';
-      star.style.left = `${Math.random() * 100}%`;
-      star.style.top = `${Math.random() * 100}%`;
-      star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
-      starsContainer.appendChild(star);
-    };
-
-    for (let i = 0; i < 50; i++) {
-      createStar();
-    }
-
-    return () => {
-      while (starsContainer.firstChild) {
-        starsContainer.removeChild(starsContainer.firstChild);
-      }
-    };
-  }, []);
-
-  return (
-    <div className="starry-background">
-      <div className="stars"></div>
-    </div>
-  );
-};
-
 const LoadingSpinner = () => (
   <div className="min-h-screen flex justify-center items-center relative">
-    <AnimatedBackground />
     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
   </div>
 );
@@ -328,24 +294,12 @@ export default function ClientChecks() {
     }
   };
 
-  const renderContentForDate = () => {
-    const checkOnDate = checks.find(c => c.createdAt && c.createdAt.toDate().toDateString() === selectedDate.toDateString());
-    if (formState.id || !checkOnDate) {
-      return <ClientUploadForm {...{ formState, setFormState, handleSubmit, isUploading, handleFileChange }} />;
-    }
-    if (checkOnDate) {
-      return <CheckDetails check={checkOnDate} handleEditClick={handleEditClick} />;
-    }
-    return <p className="text-center text-slate-400 p-8">Nessun check previsto o registrato per questa data.</p>;
-  };
-
   if (loading) return <LoadingSpinner />;
 
   return (
     <>
       <style>{calendarStyles}</style>
       <div className="min-h-screen text-slate-200 p-4 sm:p-8 relative">
-        <AnimatedBackground />
         <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-50">I miei Check</h1>

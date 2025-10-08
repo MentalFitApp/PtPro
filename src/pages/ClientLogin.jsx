@@ -6,39 +6,6 @@ import { db, auth } from '../firebase.js';
 import { LogIn, Mail, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-// AnimatedBackground per tema stellato
-const AnimatedBackground = () => {
-  useEffect(() => {
-    const starsContainer = document.querySelector('.stars');
-    if (!starsContainer) return;
-
-    const createStar = () => {
-      const star = document.createElement('div');
-      star.className = 'star';
-      star.style.left = `${Math.random() * 100}%`;
-      star.style.top = `${Math.random() * 100}%`;
-      star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
-      starsContainer.appendChild(star);
-    };
-
-    for (let i = 0; i < 50; i++) {
-      createStar();
-    }
-
-    return () => {
-      while (starsContainer.firstChild) {
-        starsContainer.removeChild(starsContainer.firstChild);
-      }
-    };
-  }, []);
-
-  return (
-    <div className="starry-background">
-      <div className="stars"></div>
-    </div>
-  );
-};
-
 const ClientLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -83,7 +50,6 @@ const ClientLogin = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
-      <AnimatedBackground />
       <motion.div 
         className="w-full max-w-md bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-8 space-y-8 shadow-2xl shadow-black/20"
         initial={{ opacity: 0, scale: 0.9 }}
