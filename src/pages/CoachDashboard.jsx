@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, onSnapshot, collectionGroup, doc, getDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, collectionGroup, doc, getDoc, setDoc, serverTimestamp, query, orderBy, where, getDocs, limit } from "firebase/firestore";
 import { auth, db, toDate, calcolaStatoPercorso } from "../firebase";
 import { signOut } from "firebase/auth";
-import { CheckCircle, Clock, FileText, Users, LogOut, Bell, TrendingUp } from "lucide-react";
+import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, Search, BarChart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend } from 'chart.js';
+import 'chart.js/adapter-date-fns';
+ChartJS.register(LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend);
 
 // AnimatedBackground per tema stellato
 const AnimatedBackground = () => {
@@ -101,16 +105,73 @@ const ActivityItem = ({ item, navigate, variants }) => {
   );
 };
 
+// Componente ClientItem
+const ClientItem = ({ client, navigate, variants }) => {
+  const stato = calcolaStatoPercorso(client.scadenza);
+  const styles = {
+    attivo: "bg-emerald-900/80 text-emerald-300 border border-emerald-500/30",
+    rinnovato: "bg-amber-900/80 text-amber-300 border border-amber-500/30",
+    non_rinnovato: "bg-red-900/80 text-red-400 border border-red-500/30",
+    na: "bg-zinc-700/80 text-zinc-300 border border-zinc-500/30",
+  };
+  const labels = { attivo: 'Attivo', rinnovato: 'In Scadenza', non_rinnovato: 'Scaduto', na: 'N/D' };
+
+  return (
+    <motion.div
+      variants={variants}
+      className="p-3 rounded-lg bg-slate-500/5 hover:bg-slate-500/10 transition-colors"
+      onClick={() => navigate(`/client/${client.id}`)}
+    >
+      <div className="flex justify-between items-center">
+        <p className="text-sm font-semibold text-slate-200">{client.name}</p>
+        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${styles[stato] || styles.na}`}>
+          {labels[stato] || 'N/D'}
+        </span>
+      </div>
+      <p className="text-xs text-slate-400 mt-1">{client.email || 'N/D'}</p>
+    </motion.div>
+  );
+};
+
+// Componente ChatItem
+const ChatItem = ({ chat, setSelectedChatId, selectedChatId, adminUIDs }) => {
+  const clientUID = chat.participants.find(p => !adminUIDs.includes(p));
+  const clientName = chat.participantNames?.[clientUID] || 'Cliente';
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`p-4 cursor-pointer border-l-4 transition-colors ${selectedChatId === chat.id ? 'bg-rose-600/20 border-rose-500' : 'border-transparent hover:bg-white/5'}`}
+      onClick={() => setSelectedChatId(chat.id)}
+    >
+      <p className="font-semibold text-slate-100">{clientName}</p>
+      <p className="text-sm text-slate-400">{chat.lastMessage || 'Nessun messaggio'}</p>
+    </motion.div>
+  );
+};
+
 export default function CoachDashboard() {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [activityFeed, setActivityFeed] = useState([]);
   const [lastViewed, setLastViewed] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [chats, setChats] = useState([]);
+  const [selectedChatId, setSelectedChatId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loadingChats, setLoadingChats] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [checkData, setCheckData] = useState([]);
+  const [userName, setUserName] = useState('');
 
   // Verifica coach
   const COACH_UID = "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
-  const [userName, setUserName] = useState('');
+  const adminUIDs = ["QwWST9OVOlTOi5oheyCqfpXLOLg2", "AeZKjJYu5zMZ4mvffaGiqCBb0cF2", "3j0AXIRa4XdHq1ywCl4UBxJNsku2", COACH_UID];
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
@@ -134,7 +195,7 @@ export default function CoachDashboard() {
     return () => unsub();
   }, []);
 
-  // Fetch lastViewed e aggiorna
+  // Fetch lastViewed
   useEffect(() => {
     const lastViewedRef = doc(db, 'app-data', 'lastViewed');
     const fetchLastViewed = async () => {
@@ -218,6 +279,133 @@ export default function CoachDashboard() {
     };
   }, [lastViewed]);
 
+  // Fetch chats
+  useEffect(() => {
+    if (!activeTab === 'chat') return;
+    const chatsRef = collection(db, 'chats');
+    const q = query(chatsRef, where('participants', 'array-contains', COACH_UID), orderBy('lastUpdate', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setChats(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoadingChats(false);
+    }, (error) => {
+      console.error("Errore nel caricare le chat:", error);
+      setLoadingChats(false);
+    });
+    return () => unsubscribe();
+  }, [activeTab]);
+
+  // Fetch messages
+  useEffect(() => {
+    if (!selectedChatId) {
+      setMessages([]);
+      return;
+    }
+    setLoadingMessages(true);
+    const messagesRef = collection(db, 'chats', selectedChatId, 'messages');
+    const q = query(messagesRef, orderBy('createdAt'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoadingMessages(false);
+    }, (error) => {
+      console.error("Errore nel caricare i messaggi:", error);
+      setLoadingMessages(false);
+    });
+    return () => unsubscribe();
+  }, [selectedChatId]);
+
+  // Fetch check data for graph
+  useEffect(() => {
+    const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));
+    const unsubChecks = onSnapshot(checksQuery, (snap) => {
+      const checks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const monthlyData = {};
+      checks.forEach(check => {
+        const date = toDate(check.createdAt);
+        if (!date) return;
+        const monthYear = `${date.getFullYear()}-${date.getMonth() + 1}`;
+        monthlyData[monthYear] = (monthlyData[monthYear] || 0) + 1;
+      });
+      const sortedData = Object.entries(monthlyData)
+        .map(([key, value]) => ({ date: new Date(key), count: value }))
+        .sort((a, b) => a.date - b.date);
+      setCheckData(sortedData);
+    });
+    return () => unsubChecks();
+  }, []);
+
+  // Search clients
+  useEffect(() => {
+    const searchClients = async () => {
+      if (searchQuery.trim().length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+      setIsSearching(true);
+      const clientsRef = collection(db, 'clients');
+      const searchTerm = searchQuery.toLowerCase();
+      const q = query(clientsRef, 
+        where('name_lowercase', '>=', searchTerm), 
+        where('name_lowercase', '<=', searchTerm + '\uf8ff'),
+        limit(10)
+      );
+      try {
+        const querySnapshot = await getDocs(q);
+        setSearchResults(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        console.error("Errore nella ricerca:", error);
+      }
+      setIsSearching(false);
+    };
+    const debounceSearch = setTimeout(() => {
+      searchClients();
+    }, 300);
+    return () => clearTimeout(debounceSearch);
+  }, [searchQuery]);
+
+  // Handle send message
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (newMessage.trim() === '' || !selectedChatId) return;
+    try {
+      const messagesRef = collection(db, 'chats', selectedChatId, 'messages');
+      await addDoc(messagesRef, {
+        text: newMessage,
+        createdAt: serverTimestamp(),
+        senderId: COACH_UID
+      });
+      await setDoc(doc(db, 'chats', selectedChatId), {
+        lastMessage: newMessage,
+        lastUpdate: serverTimestamp(),
+      }, { merge: true });
+      setNewMessage('');
+    } catch (error) {
+      console.error("Errore nell'invio del messaggio:", error);
+    }
+  };
+
+  // Handle select client for chat
+  const handleSelectClient = async (client) => {
+    const newChatId = [client.id, COACH_UID].sort().join('_');
+    const chatRef = doc(db, 'chats', newChatId);
+    const existingChat = chats.find(chat => chat.id === newChatId);
+    if (!existingChat) {
+      try {
+        await setDoc(chatRef, {
+          participants: [client.id, COACH_UID],
+          participantNames: { [client.id]: client.name, [COACH_UID]: "Coach Mattia" },
+          lastMessage: "Conversazione iniziata",
+          lastUpdate: serverTimestamp()
+        }, { merge: true });
+      } catch (error) {
+        console.error("Errore nella creazione della chat:", error);
+      }
+    }
+    setSelectedChatId(newChatId);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
   // Statistiche clienti
   const clientStats = React.useMemo(() => {
     const now = new Date();
@@ -231,6 +419,29 @@ export default function CoachDashboard() {
     }).length;
     return { active, expiring };
   }, [clients]);
+
+  // Dati per il grafico
+  const chartData = {
+    datasets: [{
+      label: 'Check inviati',
+      data: checkData.map(d => ({ x: d.date, y: d.count })),
+      borderColor: '#f43f5e',
+      backgroundColor: 'rgba(244, 63, 94, 0.2)',
+      fill: true,
+      tension: 0.4,
+    }],
+  };
+
+  const chartOptions = {
+    scales: {
+      x: { type: 'time', time: { unit: 'month' }, title: { display: true, text: 'Mese' } },
+      y: { beginAtZero: true, title: { display: true, text: 'Numero di check' } },
+    },
+    plugins: {
+      legend: { display: true },
+      title: { display: true, text: 'Check Inviati per Mese' },
+    },
+  };
 
   const handleLogout = async () => {
     try {
@@ -257,7 +468,7 @@ export default function CoachDashboard() {
       <motion.div initial="hidden" animate="visible" variants={containerVariants}>
         <motion.header variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2"><TrendingUp size={28}/> Coach Dashboard</h1>
+            <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2"><Users size={28}/> Coach Dashboard</h1>
             <div className="flex items-center gap-4">
               <span className="text-slate-300 font-semibold">{userName}</span>
               <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg transition-colors">
@@ -265,44 +476,214 @@ export default function CoachDashboard() {
               </button>
             </div>
           </div>
-          <p className="text-slate-400 mb-4">Panoramica dei tuoi clienti e attività recenti.</p>
-          <div className="flex gap-2">
-            <button onClick={() => navigate('/clients')} className="px-4 py-2 bg-zinc-800/80 text-sm font-semibold rounded-lg hover:bg-zinc-700/80 transition-colors flex items-center gap-2"><Users size={16}/> Gestisci Clienti</button>
+          <p className="text-slate-400 mb-4">Gestisci i tuoi clienti e monitora le loro attività.</p>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'overview' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            >
+              Panoramica
+            </button>
+            <button
+              onClick={() => setActiveTab('clients')}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'clients' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            >
+              Clienti
+            </button>
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'chat' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            >
+              Chat
+            </button>
+            <button
+              onClick={() => setActiveTab('checks')}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'checks' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            >
+              Check
+            </button>
+            <button
+              onClick={() => setActiveTab('anamnesi')}
+              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'anamnesi' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+            >
+              Anamnesi
+            </button>
           </div>
         </motion.header>
 
         <main className="mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
-            <StatCard 
-              title="Clienti Attivi" 
-              value={clientStats.active} 
-              icon={<CheckCircle className="text-blue-500"/>}
-              variants={itemVariants}
-            />
-            <StatCard 
-              title="Scadenze Prossime" 
-              value={clientStats.expiring} 
-              icon={<Clock className="text-yellow-500"/>}
-              variants={itemVariants}
-            />
-            <StatCard 
-              title="Totale Clienti" 
-              value={clients.length} 
-              icon={<Users className="text-cyan-500"/>}
-              variants={itemVariants}
-            />
-          </div>
-          
-          <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Feed Attività</h2>
-            <div className="space-y-3 max-h-[90vh] lg:max-h-[calc(100vh-14rem)] overflow-y-auto pr-2">
-              <AnimatePresence>
-                {activityFeed.length > 0 ? activityFeed.map(item => (
-                  <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds}`} item={item} navigate={navigate} variants={itemVariants} />
-                )) : <p className="text-sm text-slate-500 p-4 text-center">Nessuna attività recente.</p>}
-              </AnimatePresence>
-            </div>
-          </motion.div>
+          {activeTab === 'overview' && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+                <StatCard 
+                  title="Clienti Attivi" 
+                  value={clientStats.active} 
+                  icon={<CheckCircle className="text-blue-500"/>}
+                  variants={itemVariants}
+                />
+                <StatCard 
+                  title="Scadenze Prossime" 
+                  value={clientStats.expiring} 
+                  icon={<Clock className="text-yellow-500"/>}
+                  variants={itemVariants}
+                />
+                <StatCard 
+                  title="Totale Clienti" 
+                  value={clients.length} 
+                  icon={<Users className="text-cyan-500"/>}
+                  variants={itemVariants}
+                />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Feed Attività</h2>
+                  <div className="space-y-3 max-h-[90vh] lg:max-h-[calc(100vh-14rem)] overflow-y-auto pr-2">
+                    <AnimatePresence>
+                      {activityFeed.length > 0 ? activityFeed.map(item => (
+                        <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds}`} item={item} navigate={navigate} variants={itemVariants} />
+                      )) : <p className="text-sm text-slate-500 p-4 text-center">Nessuna attività recente.</p>}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+                <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><BarChart size={20} /> Statistiche Check</h2>
+                  <div className="h-64">
+                    <Line data={chartData} options={chartOptions} />
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          )}
+          {activeTab === 'clients' && (
+            <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Users size={20} /> Elenco Clienti</h2>
+              <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
+                {clients.map(client => (
+                  <ClientItem key={client.id} client={client} navigate={navigate} variants={itemVariants} />
+                ))}
+              </div>
+            </motion.div>
+          )}
+          {activeTab === 'chat' && (
+            <motion.div variants={itemVariants} className="flex flex-col lg:flex-row h-[calc(100vh-14rem)] bg-zinc-950/60 backdrop-blur-xl rounded-xl gradient-border overflow-hidden">
+              <div className="w-full lg:w-1/3 border-r border-white/10 flex flex-col">
+                <div className="p-4 border-b border-white/10">
+                  <div className="relative">
+                    <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" size={18}/>
+                    <input
+                      type="text"
+                      placeholder="Cerca o avvia una chat..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-zinc-900/70 p-2 pl-10 rounded-lg border border-white/10 outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base"
+                    />
+                  </div>
+                </div>
+                {searchQuery.length > 1 ? (
+                  <div className="flex-1 overflow-y-auto">
+                    {isSearching && <p className="p-4 text-slate-400 text-sm">Ricerca in corso...</p>}
+                    {!isSearching && searchResults.length === 0 && <p className="p-4 text-slate-400 text-sm">Nessun cliente trovato.</p>}
+                    {!isSearching && searchResults.map(client => (
+                      <div key={client.id} onClick={() => handleSelectClient(client)} className="p-4 cursor-pointer hover:bg-white/5 transition-colors">
+                        <p className="font-semibold text-slate-100">{client.name}</p>
+                        <p className="text-sm text-slate-400">{client.email}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-y-auto">
+                    {loadingChats ? (
+                      <div className="flex justify-center items-center h-full p-4">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
+                      </div>
+                    ) : (
+                      chats.map(chat => (
+                        <ChatItem key={chat.id} chat={chat} setSelectedChatId={setSelectedChatId} selectedChatId={selectedChatId} adminUIDs={adminUIDs} />
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="w-full lg:w-2/3 flex flex-col bg-zinc-900/50">
+                {selectedChatId ? (
+                  <>
+                    <div className="p-4 border-b border-white/10">
+                      <h3 className="font-bold text-lg text-slate-50">
+                        {chats.find(c => c.id === selectedChatId)?.participantNames?.[chats.find(c => c.id === selectedChatId)?.participants.find(p => !adminUIDs.includes(p))] || 'Cliente'}
+                      </h3>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                      {loadingMessages ? (
+                        <div className="flex justify-center items-center h-full p-4">
+                          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
+                        </div>
+                      ) : messages.map(msg => (
+                        <div key={msg.id} className={`flex ${adminUIDs.includes(msg.senderId) ? 'justify-end' : 'justify-start'}`}>
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`max-w-[70%] sm:max-w-md p-3 rounded-2xl shadow-md ${adminUIDs.includes(msg.senderId) ? 'bg-rose-600 rounded-br-none' : 'bg-zinc-800 rounded-bl-none'}`}
+                          >
+                            <p className="text-white break-words text-sm sm:text-base">{msg.text}</p>
+                            <p className="text-xs text-slate-300/70 mt-1.5 text-right">
+                              {msg.createdAt?.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </motion.div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-4 sm:p-6 border-t border-white/10">
+                      <form onSubmit={handleSendMessage} className="flex items-center gap-3">
+                        <input
+                          type="text"
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          placeholder="Scrivi una risposta..."
+                          className="flex-1 p-3 bg-zinc-800 border border-white/10 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-white text-sm sm:text-base"
+                        />
+                        <button
+                          type="submit"
+                          className="p-3 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-colors disabled:opacity-50"
+                          disabled={!newMessage.trim()}
+                        >
+                          <Send size={20} />
+                        </button>
+                      </form>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col justify-center items-center h-full text-slate-500">
+                    <MessageSquare size={48} />
+                    <p className="mt-4">Seleziona una conversazione o cercane una nuova.</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+          {activeTab === 'checks' && (
+            <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><CheckCircle size={20} /> Check Recenti</h2>
+              <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
+                <AnimatePresence>
+                  {activityFeed.filter(item => item.type === 'new_check').map(item => (
+                    <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds}`} item={item} navigate={navigate} variants={itemVariants} />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+          {activeTab === 'anamnesi' && (
+            <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><FileText size={20} /> Anamnesi Inviate</h2>
+              <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
+                <AnimatePresence>
+                  {activityFeed.filter(item => item.type === 'new_anamnesi').map(item => (
+                    <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds}`} item={item} navigate={navigate} variants={itemVariants} />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
         </main>
       </motion.div>
     </div>
