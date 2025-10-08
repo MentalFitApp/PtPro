@@ -1,30 +1,36 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 
 // AnimatedBackground globale
 const AnimatedBackground = () => {
   useEffect(() => {
-    const starsContainer = document.querySelector('.stars');
-    if (!starsContainer) return;
-
-    const createStar = () => {
-      const star = document.createElement('div');
-      star.className = 'star';
-      star.style.left = `${Math.random() * 100}%`;
-      star.style.top = `${Math.random() * 100}%`;
-      star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
-      starsContainer.appendChild(star);
-    };
-
-    for (let i = 0; i < 50; i++) {
-      createStar();
+    let starsContainer = document.querySelector('.stars');
+    if (!starsContainer) {
+      starsContainer = document.createElement('div');
+      starsContainer.className = 'stars';
+      const starryBackground = document.querySelector('.starry-background');
+      if (!starryBackground) {
+        const bg = document.createElement('div');
+        bg.className = 'starry-background';
+        document.body.appendChild(bg);
+        bg.appendChild(starsContainer);
+      } else {
+        starryBackground.appendChild(starsContainer);
+      }
     }
 
-    return () => {
-      while (starsContainer.firstChild) {
-        starsContainer.removeChild(starsContainer.firstChild);
-      }
-    };
+    // Crea 50 stelle
+    for (let i = 0; i < 50; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.setProperty('--top-offset', `${Math.random() * 100}vh`);
+      star.style.setProperty('--fall-duration', `${8 + Math.random() * 6}s`); // 8-14s
+      star.style.setProperty('--fall-delay', `${Math.random() * 5}s`);
+      star.style.setProperty('--star-width', `${1 + Math.random() * 2}px`); // 1-3px
+      starsContainer.appendChild(star);
+    }
+
+    // Nessun cleanup per mantenere stelle
   }, []);
 
   return (
