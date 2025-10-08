@@ -109,7 +109,7 @@ export default function CoachDashboard() {
   const [loading, setLoading] = useState(true);
 
   // Verifica coach
-  const COACH_UID = "l0RI8TzFjbNVoAdmcxNQkP9mWb12";
+  const COACH_UID = "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
