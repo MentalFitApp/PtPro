@@ -3,15 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { collection, onSnapshot, collectionGroup, doc, getDoc, setDoc, serverTimestamp, query, orderBy, where, getDocs, limit } from "firebase/firestore";
 import { auth, db, toDate, calcolaStatoPercorso } from "../firebase";
 import { signOut } from "firebase/auth";
-import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, Search, BarChart } from "lucide-react";
+import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend, Filler } from 'chart.js';
-import { it } from 'date-fns/locale'; // Importa la localizzazione italiana
-import { format } from 'date-fns';
-
-// Registra i componenti di Chart.js e l'adattatore date-fns
-ChartJS.register(LineElement, PointElement, LinearScale, TimeScale, Title, Tooltip, Legend, Filler);
 
 // AnimatedBackground per tema stellato
 const AnimatedBackground = () => {
@@ -169,9 +162,7 @@ export default function CoachDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [checkData, setCheckData] = useState([]);
   const [userName, setUserName] = useState('');
-  const [chartError, setChartError] = useState(null);
 
   // Verifica coach
   const COACH_UID = "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
@@ -317,31 +308,6 @@ export default function CoachDashboard() {
     return () => unsubscribe();
   }, [selectedChatId]);
 
-  // Fetch check data for graph
-  useEffect(() => {
-    const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));
-    const unsubChecks = onSnapshot(checksQuery, (snap) => {
-      try {
-        const checks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const monthlyData = {};
-        checks.forEach(check => {
-          const date = toDate(check.createdAt);
-          if (!date) return;
-          const monthYear = format(date, 'yyyy-MM', { locale: it });
-          monthlyData[monthYear] = (monthlyData[monthYear] || 0) + 1;
-        });
-        const sortedData = Object.entries(monthlyData)
-          .map(([key, value]) => ({ date: new Date(key), count: value }))
-          .sort((a, b) => a.date - b.date);
-        setCheckData(sortedData);
-      } catch (error) {
-        console.error("Errore nel caricamento dei dati del grafico:", error);
-        setChartError("Errore nel caricamento del grafico dei check.");
-      }
-    });
-    return () => unsubChecks();
-  }, []);
-
   // Search clients
   useEffect(() => {
     const searchClients = async () => {
@@ -429,37 +395,6 @@ export default function CoachDashboard() {
     return { active, expiring };
   }, [clients]);
 
-  // Dati per il grafico
-  const chartData = {
-    datasets: [{
-      label: 'Check inviati',
-      data: checkData.map(d => ({ x: d.date, y: d.count })),
-      borderColor: '#f43f5e',
-      backgroundColor: 'rgba(244, 63, 94, 0.2)',
-      fill: true,
-      tension: 0.4,
-    }],
-  };
-
-  const chartOptions = {
-    scales: {
-      x: { 
-        type: 'time', 
-        time: { unit: 'month' }, 
-        title: { display: true, text: 'Mese' },
-        adapters: { date: { locale: it } } // Localizzazione italiana
-      },
-      y: { 
-        beginAtZero: true, 
-        title: { display: true, text: 'Numero di check' } 
-      },
-    },
-    plugins: {
-      legend: { display: true },
-      title: { display: true, text: 'Check Inviati per Mese' },
-    },
-  };
-
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -530,50 +465,26 @@ export default function CoachDashboard() {
 
         <main className="mt-6">
           {activeTab === 'overview' && (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
-                <StatCard 
-                  title="Clienti Attivi" 
-                  value={clientStats.active} 
-                  icon={<CheckCircle className="text-blue-500"/>}
-                  variants={itemVariants}
-                />
-                <StatCard 
-                  title="Scadenze Prossime" 
-                  value={clientStats.expiring} 
-                  icon={<Clock className="text-yellow-500"/>}
-                  variants={itemVariants}
-                />
-                <StatCard 
-                  title="Totale Clienti" 
-                  value={clients.length} 
-                  icon={<Users className="text-cyan-500"/>}
-                  variants={itemVariants}
-                />
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Feed Attività</h2>
-                  <div className="space-y-3 max-h-[90vh] lg:max-h-[calc(100vh-14rem)] overflow-y-auto pr-2">
-                    <AnimatePresence>
-                      {activityFeed.length > 0 ? activityFeed.map(item => (
-                        <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds}`} item={item} navigate={navigate} variants={itemVariants} />
-                      )) : <p className="text-sm text-slate-500 p-4 text-center">Nessuna attività recente.</p>}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-                <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><BarChart size={20} /> Statistiche Check</h2>
-                  <div className="h-64">
-                    {chartError ? (
-                      <p className="text-red-500 text-center">{chartError}</p>
-                    ) : (
-                      <Line data={chartData} options={chartOptions} />
-                    )}
-                  </div>
-                </motion.div>
-              </div>
-            </>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+              <StatCard 
+                title="Clienti Attivi" 
+                value={clientStats.active} 
+                icon={<CheckCircle className="text-blue-500"/>}
+                variants={itemVariants}
+              />
+              <StatCard 
+                title="Scadenze Prossime" 
+                value={clientStats.expiring} 
+                icon={<Clock className="text-yellow-500"/>}
+                variants={itemVariants}
+              />
+              <StatCard 
+                title="Totale Clienti" 
+                value={clients.length} 
+                icon={<Users className="text-cyan-500"/>}
+                variants={itemVariants}
+              />
+            </div>
           )}
           {activeTab === 'clients' && (
             <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
