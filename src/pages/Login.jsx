@@ -6,13 +6,37 @@ import { LogIn, Mail, Lock, KeyRound } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Componente per lo sfondo animato
-const AnimatedBackground = () => (
-  <div className="absolute inset-0 -z-10 overflow-hidden bg-zinc-950">
+const AnimatedBackground = () => {
+  useEffect(() => {
+    const starsContainer = document.querySelector('.stars');
+    if (!starsContainer) return;
+
+    const createStar = () => {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = `${Math.random() * 100}%`;
+      star.style.top = `${Math.random() * 100}%`;
+      star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
+      starsContainer.appendChild(star);
+    };
+
+    for (let i = 0; i < 50; i++) {
+      createStar();
+    }
+
+    return () => {
+      while (starsContainer.firstChild) {
+        starsContainer.removeChild(starsContainer.firstChild);
+      }
+    };
+  }, []);
+
+  return (
     <div className="starry-background">
       <div className="stars"></div>
     </div>
-  </div>
-);
+  );
+};
 
 export default function Login() {
   const navigate = useNavigate();
@@ -21,20 +45,26 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // UID di admin e coach
+  const authorizedUsers = [
+    "QwWST9OVOlTOi5oheyCqfpXLOLg2",
+    "3j0AXIRa4XdHq1ywCl4UBxJNsku2",
+    "AeZKjJYu5zMZ4mvffaGiqCBb0cF2",
+    "l0RI8TzFjbNVoAdmcxNQkP9mWb12" // Coach Mattia
+  ];
+
   // Controlla se l'utente è già autenticato all'avvio
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         const uid = user.uid;
         console.log('Utente autenticato all\'avvio:', uid);
-        // Verifica se l'UID è un Owner
-        const isAdmin = ["QwWST9OVOlTOi5oheyCqfpXLOLg2", "3j0AXIRa4XdHq1ywCl4UBxJNsku2", "AeZKjJYu5zMZ4mvffaGiqCBb0cF2"].includes(uid);
-        if (isAdmin) {
-          sessionStorage.setItem('app_role', 'admin');
-          navigate('/');
+        if (authorizedUsers.includes(uid)) {
+          sessionStorage.setItem('app_role', uid === "l0RI8TzFjbNVoAdmcxNQkP9mWb12" ? 'coach' : 'admin');
+          navigate(uid === "l0RI8TzFjbNVoAdmcxNQkP9mWb12" ? '/coach-dashboard' : '/');
         } else {
-          console.log('Utente non autorizzato come admin:', uid);
-          auth.signOut(); // Disconnetti se non è un admin
+          console.log('Utente non autorizzato:', uid);
+          auth.signOut();
         }
       }
     });
@@ -55,21 +85,19 @@ export default function Login() {
       const uid = userCredential.user.uid;
       console.log('Login riuscito, UID:', uid);
 
-      // Verifica se l'UID è un Owner
-      const isAdmin = ["QwWST9OVOlTOi5oheyCqfpXLOLg2", "3j0AXIRa4XdHq1ywCl4UBxJNsku2", "AeZKjJYu5zMZ4mvffaGiqCBb0cF2"].includes(uid);
-      if (isAdmin) {
-        sessionStorage.setItem('app_role', 'admin');
-        navigate('/');
+      if (authorizedUsers.includes(uid)) {
+        sessionStorage.setItem('app_role', uid === "l0RI8TzFjbNVoAdmcxNQkP9mWb12" ? 'coach' : 'admin');
+        navigate(uid === "l0RI8TzFjbNVoAdmcxNQkP9mWb12" ? '/coach-dashboard' : '/');
       } else {
-        throw new Error('Solo gli amministratori possono accedere a questa area.');
+        throw new Error('Solo amministratori e coach possono accedere a questa area.');
       }
     } catch (err) {
-      console.error("Errore di login admin:", err.code, err.message);
+      console.error("Errore di login:", err.code, err.message);
       setError(err.message === 'auth/wrong-password' || err.message === 'auth/user-not-found' 
         ? "Credenziali non valide. Riprova." 
         : err.message);
       if (auth.currentUser) {
-        await auth.signOut(); // Disconnetti in caso di errore
+        await auth.signOut();
       }
     } finally {
       setIsSubmitting(false);
@@ -87,7 +115,7 @@ export default function Login() {
   const iconStyle = "absolute left-3 top-1/2 -translate-y-1/2 text-slate-400";
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
       <AnimatedBackground />
       <motion.div 
         className="w-full max-w-md bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-8 space-y-8 shadow-2xl shadow-black/20"
@@ -96,8 +124,8 @@ export default function Login() {
         transition={{ duration: 0.5, ease: "easeInOut" }}
       >
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-slate-50">Accesso Admin</h2>
-          <p className="text-slate-400 mt-2">Bentornato, accedi al tuo Command Center.</p>
+          <h2 className="text-3xl font-bold text-slate-50">Area Admin/Coach</h2>
+          <p className="text-slate-400 mt-2">Accedi per gestire i tuoi clienti.</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-6">
           <div className={inputContainerStyle}>
