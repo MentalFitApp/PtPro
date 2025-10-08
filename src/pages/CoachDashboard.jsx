@@ -6,17 +6,54 @@ import { signOut } from "firebase/auth";
 import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Stili CSS per l'effetto stellato
+const starryStyles = `
+  .starry-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -10;
+    background: #0a0a0a;
+    overflow: hidden;
+  }
+  .stars {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+  }
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    opacity: 0;
+    animation: twinkle 5s infinite, drift linear infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+  }
+  @keyframes drift {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-100vh); }
+  }
+`;
+
 // AnimatedBackground per tema stellato
 const AnimatedBackground = () => {
   useEffect(() => {
-    const starsContainer = document.querySelector('.stars');
-    if (!starsContainer) return;
+    const starsContainer = document.createElement('div');
+    starsContainer.className = 'stars';
+    document.querySelector('.starry-background')?.appendChild(starsContainer);
 
     const createStar = () => {
       const star = document.createElement('div');
       star.className = 'star';
       star.style.left = `${Math.random() * 100}%`;
       star.style.top = `${Math.random() * 100}%`;
+      star.style.width = `${Math.random() * 2 + 1}px`;
+      star.style.height = star.style.width;
       star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
       starsContainer.appendChild(star);
     };
@@ -25,17 +62,17 @@ const AnimatedBackground = () => {
       createStar();
     }
 
+    // Cleanup: rimuove solo al vero smontaggio del componente
     return () => {
-      while (starsContainer.firstChild) {
-        starsContainer.removeChild(starsContainer.firstChild);
-      }
+      starsContainer.remove();
     };
   }, []);
 
   return (
-    <div className="starry-background">
-      <div className="stars"></div>
-    </div>
+    <>
+      <style>{starryStyles}</style>
+      <div className="starry-background"></div>
+    </>
   );
 };
 
