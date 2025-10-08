@@ -59,11 +59,16 @@ const NavLink = ({ to, icon, label, onClick }) => {
   );
 };
 
-const SidebarContent = ({ onLinkClick }) => {
+const SidebarContent = ({ onLinkClick, onClose }) => {
   const navigate = useNavigate();
   return (
-    <aside className="w-full md:w-60 bg-zinc-950/60 backdrop-blur-xl p-4 flex flex-col h-full gradient-border">
-      <h2 className="text-2xl font-bold mb-10 px-2 text-slate-100">FitFlow Pro</h2>
+    <aside className="w-full h-full bg-zinc-950/60 backdrop-blur-xl p-4 flex flex-col gradient-border">
+      <div className="flex justify-between items-center mb-10">
+        <h2 className="text-2xl font-bold px-2 text-slate-100">FitFlow Pro</h2>
+        <button onClick={onClose} className="md:hidden text-slate-200 p-2">
+          <X size={24} />
+        </button>
+      </div>
       <nav className="flex flex-col gap-2">
         {navLinks.map(link => (
           <NavLink 
@@ -113,7 +118,7 @@ export default function MainLayout() {
     <div className="relative min-h-screen flex flex-col md:flex-row">
       <AnimatedBackground />
       <div className="hidden md:flex md:fixed h-screen z-20">
-        <SidebarContent />
+        <SidebarContent onLinkClick={() => setIsMobileMenuOpen(false)} />
       </div>
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -125,7 +130,10 @@ export default function MainLayout() {
             transition={{ type: 'spring', stiffness: 400, damping: 40 }}
             className="fixed top-0 left-0 h-full w-64 z-50 md:hidden bg-zinc-950/80 backdrop-blur-lg"
           >
-            <SidebarContent onLinkClick={() => setIsMobileMenuOpen(false)} />
+            <SidebarContent 
+              onLinkClick={() => setIsMobileMenuOpen(false)} 
+              onClose={() => setIsMobileMenuOpen(false)}
+            />
           </motion.div>
         )}
       </AnimatePresence>
