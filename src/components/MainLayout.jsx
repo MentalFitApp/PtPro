@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { LayoutGrid, Users, MessageSquare, Rocket, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -85,10 +85,29 @@ const SidebarContent = ({ onLinkClick }) => {
 export default function MainLayout() { 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const menuRef = useRef(null);
 
+  // Chiude il menu al cambio di rotta
   useEffect(() => {
-    setIsMobileMenuOpen(false); // Chiude il menu al cambio di rotta
+    setIsMobileMenuOpen(false);
   }, [location.pathname]);
+
+  // Gestore click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
 
   return (
     <div className="relative min-h-screen flex flex-col md:flex-row">
@@ -99,6 +118,7 @@ export default function MainLayout() {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
+            ref={menuRef}
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
