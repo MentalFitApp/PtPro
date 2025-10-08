@@ -6,43 +6,10 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// AnimatedBackground per tema stellato
-const AnimatedBackground = () => {
-  useEffect(() => {
-    const starsContainer = document.querySelector('.stars');
-    if (!starsContainer) return;
-
-    const createStar = () => {
-      const star = document.createElement('div');
-      star.className = 'star';
-      star.style.left = `${Math.random() * 100}%`;
-      star.style.top = `${Math.random() * 100}%`;
-      star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
-      starsContainer.appendChild(star);
-    };
-
-    for (let i = 0; i < 50; i++) {
-      createStar();
-    }
-
-    return () => {
-      while (starsContainer.firstChild) {
-        starsContainer.removeChild(starsContainer.firstChild);
-      }
-    };
-  }, []);
-
-  return (
-    <div className="starry-background">
-      <div className="stars"></div>
-    </div>
-  );
-};
-
 // Spinner di caricamento
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-zinc-950 text-slate-200 flex flex-col justify-center items-center">
-    <div className="w-12 h-12 rounded-full border-4 border-zinc-700 border-t-rose-500 animate-spin"></div>
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
     <p className="mt-4 text-slate-400">Caricamento chat...</p>
   </div>
 );
@@ -78,14 +45,15 @@ export default function ClientChat() {
   const [chatId, setChatId] = useState(null);
   const [recipient, setRecipient] = useState(null);
   const messagesEndRef = useRef(null);
+  const unsubscribeRef = useRef(null);
 
-  // UID per Maurizio (owner) e Mattia (coach)
+  // UID per Maurizio e Mattia
   const RECIPIENTS = [
-    { uid: 'QwWST9OVOlTOi5oheyCqfpXLOLg2', name: 'Maurizio (Owner)' },
-    { uid: 'l0RI8TzFjbNVoAdmcxNQkP9mWb12', name: 'Mattia (Coach)' },
+    { uid: 'QwWST9OVOlTOi5oheyCqfpXLOLg2', name: 'Maurizio' },
+    { uid: 'l0RI8TzFjbNVoAdmcXNQkP9mWb12', name: 'Mattia' },
   ];
 
-  // Inizializza chat se non esiste
+  // Inizializza chat
   const initializeChat = async (recipientUid) => {
     if (!user || !recipientUid) return;
     
@@ -119,7 +87,7 @@ export default function ClientChat() {
         setLoading(false);
       });
 
-      return unsubscribe;
+      unsubscribeRef.current = unsubscribe;
     } catch (error) {
       console.error("Errore nell'inizializzazione della chat:", error);
       setError("Errore nell'avvio della chat. Riprova.");
@@ -139,8 +107,21 @@ export default function ClientChat() {
       return;
     }
 
-    const unsubscribe = initializeChat(recipient.uid);
-    return () => unsubscribe && unsubscribe();
+    // Cleanup snapshot precedente
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
+    }
+
+    setMessages([]);
+    setChatId(null);
+    initializeChat(recipient.uid);
+
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+    };
   }, [user, navigate, recipient]);
 
   // Scorri automaticamente all'ultimo messaggio
@@ -188,9 +169,8 @@ export default function ClientChat() {
     const selectedUid = e.target.value;
     const selectedRecipient = RECIPIENTS.find(r => r.uid === selectedUid);
     setRecipient(selectedRecipient);
-    setMessages([]);
-    setChatId(null);
     setError('');
+    setLoading(true);
   };
 
   // Chiudi notifica
@@ -200,7 +180,6 @@ export default function ClientChat() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-slate-200 font-sans flex flex-col h-screen relative">
-      <AnimatedBackground />
       <Notification message={error} onDismiss={dismissError} />
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-zinc-950/70 backdrop-blur-lg border-b border-white/10 sticky top-0 z-10">
@@ -216,7 +195,7 @@ export default function ClientChat() {
         <select
           value={recipient ? recipient.uid : ''}
           onChange={handleRecipientChange}
-          className="bg-zinc-900/70 border border-white/10 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-rose-500 text-slate-200"
+          className="bg-zinc-900/70 border border-white/10 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 shadow-md transition-shadow"
         >
           <option value="" disabled>Seleziona destinatario</option>
           {RECIPIENTS.map(r => (
@@ -225,7 +204,7 @@ export default function ClientChat() {
         </select>
       </header>
       {/* Area messaggi */}
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-zinc-950/50">
         {recipient ? (
           messages.length > 0 ? (
             <AnimatePresence>
@@ -237,11 +216,11 @@ export default function ClientChat() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <div className={`max-w-[70%] sm:max-w-md p-3 rounded-2xl shadow-md ${
-                    msg.senderId === user.uid ? 'bg-rose-600 rounded-br-none' : 'bg-zinc-800 rounded-bl-none'
+                  <div className={`max-w-[80%] p-3 rounded-2xl shadow-sm ${
+                    msg.senderId === user.uid ? 'bg-rose-600/90 text-white rounded-br-none' : 'bg-cyan-600/90 text-white rounded-bl-none'
                   }`}>
-                    <p className="text-white break-words text-sm sm:text-base">{msg.text}</p>
-                    <p className="text-xs text-slate-300/70 mt-1.5 text-right">
+                    <p className="break-words text-sm sm:text-base">{msg.text}</p>
+                    <p className="text-xs text-slate-200/70 mt-1 text-right">
                       {msg.createdAt?.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
@@ -249,27 +228,27 @@ export default function ClientChat() {
               ))}
             </AnimatePresence>
           ) : (
-            <p className="text-slate-400 text-center">Nessun messaggio. Inizia la conversazione!</p>
+            <p className="text-slate-400 text-center py-8">Nessun messaggio. Inizia la conversazione!</p>
           )
         ) : (
-          <p className="text-slate-400 text-center">Seleziona un destinatario per iniziare la chat.</p>
+          <p className="text-slate-400 text-center py-8">Seleziona un destinatario per iniziare la chat.</p>
         )}
         <div ref={messagesEndRef} />
       </main>
       {/* Footer con input */}
-      <footer className="p-4 sm:p-6 bg-zinc-950/70 backdrop-blur-lg border-t border-white/10 sticky bottom-0">
-        <form onSubmit={handleSendMessage} className="flex items-center gap-3">
+      <footer className="p-4 bg-zinc-950/70 backdrop-blur-lg border-t border-white/10 sticky bottom-0">
+        <form onSubmit={handleSendMessage} className="flex items-center gap-3 max-w-3xl mx-auto">
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Scrivi un messaggio..."
-            className="flex-1 p-3 bg-zinc-900 border border-zinc-700 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base transition-all"
+            className="flex-1 p-3 bg-zinc-900 border border-zinc-700 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base transition-all placeholder:text-slate-500 shadow-sm"
             disabled={!recipient}
           />
           <button
             type="submit"
-            className="p-3 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-colors disabled:bg-rose-900 disabled:cursor-not-allowed"
+            className="p-3 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-colors disabled:bg-rose-900 disabled:cursor-not-allowed shadow-md"
             disabled={!newMessage.trim() || !recipient}
           >
             <Send size={20} />

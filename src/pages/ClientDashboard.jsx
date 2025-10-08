@@ -6,42 +6,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-// AnimatedBackground per tema stellato
-const AnimatedBackground = () => {
-  useEffect(() => {
-    const starsContainer = document.querySelector('.stars');
-    if (!starsContainer) return;
-
-    const createStar = () => {
-      const star = document.createElement('div');
-      star.className = 'star';
-      star.style.left = `${Math.random() * 100}%`;
-      star.style.top = `${Math.random() * 100}%`;
-      star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
-      starsContainer.appendChild(star);
-    };
-
-    for (let i = 0; i < 50; i++) {
-      createStar();
-    }
-
-    return () => {
-      while (starsContainer.firstChild) {
-        starsContainer.removeChild(starsContainer.firstChild);
-      }
-    };
-  }, []);
-
-  return (
-    <div className="starry-background">
-      <div className="stars"></div>
-    </div>
-  );
-};
-
 const LoadingSpinner = () => (
   <div className="min-h-screen flex justify-center items-center relative">
-    <AnimatedBackground />
     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
   </div>
 );
@@ -140,7 +106,7 @@ const ClientDashboard = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const nextCheckDate = new Date(lastCheckDate);
-    nextCheckDate.setDate(nextCheckDate.getDate() + 7); // Prossimo check fra 7 giorni
+    nextCheckDate.setDate(nextCheckDate.getDate() + 7);
     const diffDays = Math.max(0, Math.ceil((nextCheckDate - today) / (1000 * 60 * 60 * 24)));
     nextCheckText = diffDays === 0 ? 'Oggi' : `${diffDays} giorni`;
     nextCheckSubtext = `Prossimo check suggerito: ${nextCheckDate.toLocaleDateString('it-IT')}`;
@@ -158,7 +124,6 @@ const ClientDashboard = () => {
 
   return (
     <div className="min-h-screen text-slate-200 p-4 sm:p-8 relative">
-      <AnimatedBackground />
       <motion.div initial="hidden" animate="visible" variants={containerVariants}>
         <motion.header variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
