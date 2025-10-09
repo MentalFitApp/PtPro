@@ -73,6 +73,8 @@ export default function App() {
         const sessionRole = sessionStorage.getItem('app_role');
         const clientDocRef = doc(db, 'clients', currentUser.uid);
         try {
+          // Ritardo controllato per stabilizzare l'autenticazione
+          await new Promise(resolve => setTimeout(resolve, 500));
           const clientDoc = await getDoc(clientDocRef);
           const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
           const isCurrentUserACoach = currentUser.uid === 'l0RI8TzFjbNVoAdmcXNQkP9mWb12';

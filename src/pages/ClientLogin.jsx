@@ -83,7 +83,8 @@ const ClientLogin = () => {
           }
         } catch (err) {
           console.error("Errore nel recupero del documento cliente:", err);
-          setError("Errore nel verificare l'account cliente. Contatta il supporto.");
+          setError("Errore nel verificare l'account cliente. Verifica i permessi o contatta il supporto.");
+          // Non eseguiamo signOut qui, lasciamo che App.jsx gestisca lo stato
         }
       }
       setIsCheckingAuth(false);
