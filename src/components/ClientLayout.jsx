@@ -8,15 +8,13 @@ const AnimatedBackground = () => {
     if (!starsContainer) {
       starsContainer = document.createElement('div');
       starsContainer.className = 'stars';
-      const starryBackground = document.querySelector('.starry-background');
+      let starryBackground = document.querySelector('.starry-background');
       if (!starryBackground) {
-        const bg = document.createElement('div');
-        bg.className = 'starry-background';
-        document.body.appendChild(bg);
-        bg.appendChild(starsContainer);
-      } else {
-        starryBackground.appendChild(starsContainer);
+        starryBackground = document.createElement('div');
+        starryBackground.className = 'starry-background';
+        document.body.appendChild(starryBackground);
       }
+      starryBackground.appendChild(starsContainer);
     }
 
     // Crea 50 stelle
@@ -29,8 +27,6 @@ const AnimatedBackground = () => {
       star.style.setProperty('--star-width', `${1 + Math.random() * 2}px`); // 1-3px
       starsContainer.appendChild(star);
     }
-
-    // Nessun cleanup per mantenere stelle
   }, []);
 
   return (
@@ -41,10 +37,15 @@ const AnimatedBackground = () => {
 };
 
 export default function ClientLayout() { 
-  return (
-    <div className="relative min-h-screen flex flex-col">
-      <AnimatedBackground />
-      <Outlet />
-    </div>
-  );
+  try {
+    return (
+      <div className="relative min-h-screen flex flex-col">
+        <AnimatedBackground />
+        <Outlet />
+      </div>
+    );
+  } catch (error) {
+    console.error('Errore in ClientLayout:', error);
+    return <div className="min-h-screen bg-zinc-950 text-red-400 flex justify-center items-center">Errore di caricamento: {error.message}</div>;
+  }
 }
