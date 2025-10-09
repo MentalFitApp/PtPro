@@ -3,7 +3,7 @@ import { getAuth, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight } from 'lucide-react';
+import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const LoadingSpinner = () => (
@@ -42,51 +42,92 @@ const ClientDashboard = () => {
   const [clientData, setClientData] = useState(null);
   const [lastCheckDate, setLastCheckDate] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
 
   useEffect(() => {
-    if (user) {
-      const fetchClientData = async () => {
-        const clientDocRef = doc(db, 'clients', user.uid);
+    if (!user) {
+      console.log('ClientDashboard: Nessun utente autenticato, reindirizzamento a /client-login');
+      navigate('/client-login');
+      return;
+    }
+
+    console.log('ClientDashboard: Caricamento dati per UID:', user.uid, user.email);
+
+    // Carica dati cliente
+    const fetchClientData = async () => {
+      try {
+        const clientDocRef = doc(db, 'clients', user.uid); // Correzione della stringa
         const docSnap = await getDoc(clientDocRef);
         if (docSnap.exists()) {
           setClientData(docSnap.data());
+          console.log('ClientDashboard: Dati cliente:', docSnap.data());
         } else {
-          await signOut(auth);
+          setError('Documento cliente non trovato.');
+          console.log('ClientDashboard: Documento cliente non trovato per UID:', user.uid);
           navigate('/client-login');
         }
-        setLoading(false);
-      };
+      } catch (err) {
+        console.error('ClientDashboard: Errore nel recupero del documento cliente:', err.code, err.message, { uid: user.uid, email: user.email });
+        setError('Errore nel caricamento dei dati cliente: ' + err.message);
+        navigate('/client-login');
+      }
+    };
 
-      const fetchLastCheck = () => {
-        const checksCollectionRef = collection(db, `clients/${user.uid}/checks`);
-        const q = query(checksCollectionRef, orderBy('createdAt', 'desc'));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+    // Listener per check-in
+    const fetchLastCheck = () => {
+      const checksCollectionRef = collection(db, `clients/${user.uid}/checks`);
+      const q = query(checksCollectionRef, orderBy('createdAt', 'desc'));
+      let snapshotCount = 0; // Contatore per debug
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        snapshotCount++;
+        console.log(`ClientDashboard: Snapshot #${snapshotCount}, documenti:`, snapshot.docs.length);
+        try {
           const checks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           const latestCheck = checks[0]?.createdAt?.toDate();
           setLastCheckDate(latestCheck || null);
-        });
-        return unsubscribe;
-      };
+          if (checks.length === 0) {
+            setError('Nessun check-in disponibile. Carica il tuo primo check.');
+          }
+        } catch (err) {
+          console.error('ClientDashboard: Errore nel caricamento dei check-in:', err.code, err.message, { uid: user.uid, email: user.email });
+          setError('Errore nel caricamento dei check-in: ' + (err.code === 'permission-denied' ? 'Permessi insufficienti.' : err.message));
+        }
+      }, (err) => {
+        console.error('ClientDashboard: Errore snapshot check-in:', err.code, err.message, { uid: user.uid, email: user.email });
+        setError('Errore nel caricamento dei check-in: ' + (err.code === 'permission-denied' ? 'Permessi insufficienti.' : err.message));
+      });
+      return unsubscribe;
+    };
 
-      fetchClientData();
-      return fetchLastCheck();
-    } else {
-      navigate('/client-login');
-    }
+    fetchClientData().finally(() => setLoading(false));
+    return fetchLastCheck();
   }, [user, navigate]);
 
   const handleLogout = () => {
     signOut(auth).then(() => {
       sessionStorage.removeItem('app_role');
+      console.log('ClientDashboard: Logout eseguito per UID:', user.uid);
       navigate('/client-login');
+    }).catch(err => {
+      console.error('ClientDashboard: Errore durante il logout:', err.code, err.message);
+      setError('Errore durante il logout: ' + err.message);
     });
   };
 
   if (loading) return <LoadingSpinner />;
-  if (!clientData) return <p className="text-center text-red-400 p-8">Errore nel caricamento dei dati.</p>;
+  if (!clientData) {
+    return (
+      <div className="min-h-screen flex justify-center items-center p-8 relative">
+        <p className="text-center text-red-400 flex items-center gap-2">
+          <AlertCircle size={18} />
+          {error || 'Errore nel caricamento dei dati.'}
+        </p>
+      </div>
+    );
+  }
 
   let giorniRimanenti = 'N/D';
   let dataScadenzaFormatted = 'Non impostata';

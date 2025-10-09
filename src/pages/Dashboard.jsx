@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { collection, onSnapshot, collectionGroup, doc, setDoc, getDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
-import { auth, db, toDate, calcolaStatoPercorso } from "../firebase";
+import { auth, db, toDate } from "../firebase";
 import { signOut } from "firebase/auth";
 import { 
   DollarSign, CheckCircle, RefreshCw, BarChart3, Bell, Target, 
-  BookOpen, Plus, Clock, FileText, TrendingUp, User, Users, LogOut 
+  Plus, Clock, FileText, TrendingUp, Users, LogOut 
 } from "lucide-react";
 import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, LineElement, PointElement, LinearScale, CategoryScale, Title, Tooltip, Legend, Filler } from "chart.js";
@@ -77,42 +77,6 @@ const ActivityItem = ({ item, navigate }) => {
   );
 };
 
-// --- QuickNotes Component ---
-const QuickNotes = () => {
-  const [notes, setNotes] = useState('');
-  const [saved, setSaved] = useState(false);
-  useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'app-data', 'quickNotes'), (docSnap) => docSnap.exists() && setNotes(docSnap.data().content || ''), (error) => {
-      console.error("Errore snapshot note rapide:", error);
-      if (error.code === 'permission-denied') {
-        alert("Permessi insufficienti per accedere alle note rapide.");
-      }
-    });
-    return () => unsub();
-  }, []);
-  const saveNotes = async () => {
-    try {
-      await setDoc(doc(db, 'app-data', 'quickNotes'), { content: notes, updatedAt: serverTimestamp() });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch (error) {
-      console.error("Errore nel salvataggio delle note:", error);
-      if (error.code === 'permission-denied') {
-        alert("Permessi insufficienti per salvare le note rapide.");
-      }
-    }
-  };
-  return (
-    <div className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border">
-      <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-slate-200"><BookOpen size={18}/> Note Rapide</h2>
-      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full h-32 p-3 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 resize-none text-slate-200" placeholder="Annota idee, promemoria o task rapidi..."/>
-      <button onClick={saveNotes} className="mt-3 px-4 py-2 bg-rose-600 text-sm font-semibold rounded-lg hover:bg-rose-700 transition-colors flex items-center justify-center gap-2 w-full">
-        {saved ? <><CheckCircle size={16}/> Salvato!</> : <><Plus size={16}/> Salva Note</>}
-      </button>
-    </div>
-  );
-};
-
 export default function Dashboard() {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
@@ -160,7 +124,16 @@ export default function Dashboard() {
 
   // --- Fetch clients ---
   useEffect(() => {
+    let snapshotCount = 0;
     const unsub = onSnapshot(collection(db, 'clients'), (snap) => {
+      snapshotCount++;
+      console.log(`Dashboard: Client snapshot #${snapshotCount}, documenti:`, snap.docs.length);
+      if (snapshotCount > 10) {
+        console.warn('Dashboard: Excessive client snapshots detected, stopping listener');
+        unsub();
+        setErrorMessage('Errore: troppe richieste al server per i clienti. Contatta l\'assistenza.');
+        return;
+      }
       try {
         const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setClients(clientList);
@@ -205,8 +178,17 @@ export default function Dashboard() {
   useEffect(() => {
     if (!lastViewed) return;
 
+    let checksSnapshotCount = 0;
     const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));
     const unsubChecks = onSnapshot(checksQuery, async (snap) => {
+      checksSnapshotCount++;
+      console.log(`Dashboard: Checks snapshot #${checksSnapshotCount}, documenti:`, snap.docs.length);
+      if (checksSnapshotCount > 10) {
+        console.warn('Dashboard: Excessive checks snapshots detected, stopping listener');
+        unsubChecks();
+        setErrorMessage('Errore: troppe richieste al server per i check. Contatta l\'assistenza.');
+        return;
+      }
       try {
         const newChecks = [];
         for (const doc of snap.docs) {
@@ -236,8 +218,17 @@ export default function Dashboard() {
       }
     });
 
+    let anamnesiSnapshotCount = 0;
     const anamnesiQuery = query(collectionGroup(db, 'anamnesi'), orderBy('submittedAt', 'desc'));
     const unsubAnamnesi = onSnapshot(anamnesiQuery, async (snap) => {
+      anamnesiSnapshotCount++;
+      console.log(`Dashboard: Anamnesi snapshot #${anamnesiSnapshotCount}, documenti:`, snap.docs.length);
+      if (anamnesiSnapshotCount > 10) {
+        console.warn('Dashboard: Excessive anamnesi snapshots detected, stopping listener');
+        unsubAnamnesi();
+        setErrorMessage('Errore: troppe richieste al server per le anamnesi. Contatta l\'assistenza.');
+        return;
+      }
       try {
         const newAnamnesi = [];
         for (const doc of snap.docs) {
@@ -267,8 +258,17 @@ export default function Dashboard() {
       }
     });
 
+    let clientsSnapshotCount = 0;
     const clientsQuery = query(collection(db, 'clients'));
     const unsubClients = onSnapshot(clientsQuery, (snap) => {
+      clientsSnapshotCount++;
+      console.log(`Dashboard: Clients snapshot #${clientsSnapshotCount}, documenti:`, snap.docs.length);
+      if (clientsSnapshotCount > 10) {
+        console.warn('Dashboard: Excessive clients snapshots detected, stopping listener');
+        unsubClients();
+        setErrorMessage('Errore: troppe richieste al server per i clienti. Contatta l\'assistenza.');
+        return;
+      }
       try {
         const expiring = snap.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
@@ -311,8 +311,17 @@ export default function Dashboard() {
 
   // --- Monthly income calculation ---
   useEffect(() => {
+    let snapshotCount = 0;
     const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'desc'));
     const unsubPayments = onSnapshot(paymentsQuery, (snap) => {
+      snapshotCount++;
+      console.log(`Dashboard: Payments snapshot #${snapshotCount}, documenti:`, snap.docs.length);
+      if (snapshotCount > 10) {
+        console.warn('Dashboard: Excessive payments snapshots detected, stopping listener');
+        unsubPayments();
+        setErrorMessage('Errore: troppe richieste al server per i pagamenti. Contatta l\'assistenza.');
+        return;
+      }
       try {
         const now = new Date();
         const income = snap.docs
@@ -358,11 +367,19 @@ export default function Dashboard() {
 
   // --- Chart data calculation ---
   useEffect(() => {
+    let snapshotCount = 0;
     const generateChartData = () => {
-      const now = new Date();
       if (chartDataType === 'revenue') {
         const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'asc'));
         const unsub = onSnapshot(paymentsQuery, (snap) => {
+          snapshotCount++;
+          console.log(`Dashboard: Chart revenue snapshot #${snapshotCount}, documenti:`, snap.docs.length);
+          if (snapshotCount > 10) {
+            console.warn('Dashboard: Excessive chart revenue snapshots detected, stopping listener');
+            unsub();
+            setErrorMessage('Errore: troppe richieste al server per il grafico dei ricavi. Contatta l\'assistenza.');
+            return;
+          }
           try {
             let data = [];
             const monthlyData = {};
@@ -374,7 +391,7 @@ export default function Dashboard() {
               }
             });
             if (chartTimeRange === 'monthly') {
-              // Ultimi 12 mesi
+              const now = new Date();
               for (let i = 11; i >= 0; i--) {
                 const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
                 const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
@@ -400,6 +417,14 @@ export default function Dashboard() {
       } else {
         const clientsQuery = query(collection(db, 'clients'), orderBy('createdAt', 'asc'));
         const unsub = onSnapshot(clientsQuery, (snap) => {
+          snapshotCount++;
+          console.log(`Dashboard: Chart clients snapshot #${snapshotCount}, documenti:`, snap.docs.length);
+          if (snapshotCount > 10) {
+            console.warn('Dashboard: Excessive chart clients snapshots detected, stopping listener');
+            unsub();
+            setErrorMessage('Errore: troppe richieste al server per il grafico dei clienti. Contatta l\'assistenza.');
+            return;
+          }
           try {
             let data = [];
             const monthlyData = {};
@@ -411,7 +436,7 @@ export default function Dashboard() {
               }
             });
             if (chartTimeRange === 'monthly') {
-              // Ultimi 12 mesi
+              const now = new Date();
               for (let i = 11; i >= 0; i--) {
                 const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
                 const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
@@ -565,7 +590,7 @@ export default function Dashboard() {
               </div>
             </div>
           </motion.div>
-          <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-6" variants={itemVariants}>
+          <motion.div className="grid grid-cols-1 md:grid-cols-1 gap-6" variants={itemVariants}>
             {focusClient && (
               <div className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border">
                 <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-slate-200"><Target size={18} /> Focus del Giorno</h2>
@@ -573,7 +598,6 @@ export default function Dashboard() {
                 <p className="text-sm text-slate-400 mt-1">Obiettivo: "{focusClient.goal || 'Non specificato'}"</p>
               </div>
             )}
-            <QuickNotes />
           </motion.div>
         </div>
         

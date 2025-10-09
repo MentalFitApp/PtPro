@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
-import { Routes, Route, Navigate, Outlet, useNavigate } from "react-router-dom";
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
 // Import dinamici
@@ -53,22 +53,32 @@ export default function App() {
     isCoach: false,
     isAdmin: false,
   });
-  const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!isMounted || isProcessing) return;
-
-      setIsProcessing(true);
+      if (!isMounted) return;
       console.log('onAuthStateChanged:', currentUser ? `Utente autenticato: ${currentUser.uid} (${currentUser.email})` : 'Nessun utente autenticato');
       try {
         if (currentUser) {
           const sessionRole = sessionStorage.getItem('app_role');
           const clientDocRef = doc(db, 'clients', currentUser.uid);
           const clientDoc = await getDoc(clientDocRef, { source: 'server' });
-          const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
+          let isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
+
+          // Create client document if it doesn't exist
+          if (!clientDoc.exists()) {
+            await setDoc(clientDocRef, {
+              name: currentUser.displayName || 'Unknown',
+              email: currentUser.email,
+              isClient: true,
+              firstLogin: false
+            }, { merge: true });
+            console.log('Client document created for UID:', currentUser.uid);
+            isCurrentUserAClient = true;
+          }
+
           const isCurrentUserACoach = currentUser.uid === 'l0RI8TzFjbNVoAdmcXNQkP9mWb12';
           const isCurrentUserAdmin = [
             "QwWST9OVOlTOi5oheyCqfpXLOLg2",
@@ -101,7 +111,7 @@ export default function App() {
             console.log('Accesso non autorizzato per UID:', currentUser.uid);
             sessionStorage.removeItem('app_role');
             setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false, isAdmin: false });
-            await auth.signOut();
+            await signOut(auth);
             navigate('/client-login');
             return;
           }
@@ -126,10 +136,8 @@ export default function App() {
         });
         sessionStorage.removeItem('app_role');
         setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false, isAdmin: false });
-        await auth.signOut();
+        await signOut(auth);
         navigate('/client-login');
-      } finally {
-        setIsProcessing(false);
       }
     });
 
@@ -137,7 +145,7 @@ export default function App() {
       isMounted = false;
       unsubscribe();
     };
-  }, [isProcessing, navigate]);
+  }, [navigate]);
 
   if (authInfo.isLoading) return <AuthSpinner />;
 
