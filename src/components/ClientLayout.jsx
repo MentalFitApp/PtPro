@@ -4,16 +4,18 @@ import { Outlet } from 'react-router-dom';
 // AnimatedBackground globale
 const AnimatedBackground = () => {
   useEffect(() => {
+    // Crea un container unico per evitare conflitti
+    let starryBackground = document.querySelector('.starry-background');
+    if (!starryBackground) {
+      starryBackground = document.createElement('div');
+      starryBackground.className = 'starry-background';
+      document.body.appendChild(starryBackground);
+    }
+
     let starsContainer = document.querySelector('.stars');
     if (!starsContainer) {
       starsContainer = document.createElement('div');
       starsContainer.className = 'stars';
-      let starryBackground = document.querySelector('.starry-background');
-      if (!starryBackground) {
-        starryBackground = document.createElement('div');
-        starryBackground.className = 'starry-background';
-        document.body.appendChild(starryBackground);
-      }
       starryBackground.appendChild(starsContainer);
     }
 

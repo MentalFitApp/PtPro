@@ -177,6 +177,7 @@ export default function ClientChecks() {
   const [formState, setFormState] = useState({ id: null, notes: '', weight: '', photos: {}, photoPreviews: {} });
   const [isUploading, setIsUploading] = useState(false);
   const [notification, setNotification] = useState({ message: '', type: '' });
+  const [error, setError] = useState(null);
   
   const navigate = useNavigate();
   const auth = getAuth();
@@ -189,21 +190,31 @@ export default function ClientChecks() {
       return;
     }
     const fetchInitialData = async () => {
-      const clientDocRef = doc(db, 'clients', user.uid);
-      const clientDoc = await getDoc(clientDocRef);
-      if (clientDoc.exists() && clientDoc.data().createdAt) {
-        setClientStartDate(clientDoc.data().createdAt.toDate());
-      } else {
-        setClientStartDate(new Date());
-      }
-      
-      const checksCollectionRef = collection(db, `clients/${user.uid}/checks`);
-      const q = query(checksCollectionRef, orderBy('createdAt', 'desc'));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        setChecks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      try {
+        const clientDocRef = doc(db, 'clients', user.uid);
+        const clientDoc = await getDoc(clientDocRef);
+        if (clientDoc.exists() && clientDoc.data().createdAt) {
+          setClientStartDate(clientDoc.data().createdAt.toDate());
+        } else {
+          setClientStartDate(new Date());
+        }
+        
+        const checksCollectionRef = collection(db, `clients/${user.uid}/checks`);
+        const q = query(checksCollectionRef, orderBy('createdAt', 'desc'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          setChecks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          setLoading(false);
+        }, (err) => {
+          console.error("Errore snapshot checks:", err);
+          setError("Errore nel caricamento dei check.");
+          setLoading(false);
+        });
+        return unsubscribe;
+      } catch (err) {
+        console.error("Errore fetchInitialData:", err);
+        setError("Errore nel caricamento dei dati.");
         setLoading(false);
-      });
-      return unsubscribe;
+      }
     };
     fetchInitialData();
   }, [user, navigate]);
@@ -214,48 +225,70 @@ export default function ClientChecks() {
   };
 
   const getSuggestedCheckDays = (date) => {
-    if (!checks.length) return [];
-    const firstCheck = checks.reduce((earliest, check) => {
-      const checkDate = check.createdAt?.toDate();
-      return (!earliest || (checkDate && checkDate < earliest)) ? checkDate : earliest;
-    }, null);
-    if (!firstCheck) return [];
-    let checkDays = [];
-    let currentCheckDate = new Date(firstCheck.getTime());
-    while (currentCheckDate.getTime() < new Date(date.getFullYear(), date.getMonth() + 2, 1).getTime()) {
-      if (currentCheckDate.getMonth() === date.getMonth() && currentCheckDate.getFullYear() === date.getFullYear()) {
-        checkDays.push(new Date(currentCheckDate.getTime()));
+    try {
+      if (!checks.length) return [];
+      const firstCheck = checks.reduce((earliest, check) => {
+        const checkDate = check.createdAt?.toDate();
+        return (!earliest || (checkDate && checkDate < earliest)) ? checkDate : earliest;
+      }, null);
+      if (!firstCheck) return [];
+      let checkDays = [];
+      let currentCheckDate = new Date(firstCheck.getTime());
+      const endDate = new Date(date.getFullYear(), date.getMonth() + 2, 1);
+      while (currentCheckDate.getTime() < endDate.getTime()) {
+        if (currentCheckDate.getMonth() === date.getMonth() && currentCheckDate.getFullYear() === date.getFullYear()) {
+          checkDays.push(new Date(currentCheckDate.getTime()));
+        }
+        currentCheckDate.setDate(currentCheckDate.getDate() + 7);
       }
-      currentCheckDate.setDate(currentCheckDate.getDate() + 7); // Suggerimento settimanale
+      return checkDays;
+    } catch (err) {
+      console.error("Errore getSuggestedCheckDays:", err);
+      return [];
     }
-    return checkDays;
   };
 
   const tileClassName = ({ date, view }) => {
-    if (view === 'month') {
-      if (checks.some(c => c.createdAt && c.createdAt.toDate().toDateString() === date.toDateString())) {
-        return 'check-submitted';
+    try {
+      if (view === 'month') {
+        if (checks.some(c => c.createdAt && c.createdAt.toDate && c.createdAt.toDate().toDateString() === date.toDateString())) {
+          return 'check-submitted';
+        }
+        if (getSuggestedCheckDays(date).some(d => d.toDateString() === date.toDateString())) {
+          return 'check-day';
+        }
       }
-      if (getSuggestedCheckDays(date).some(d => d.toDateString() === date.toDateString())) {
-        return 'check-day';
-      }
+      return null;
+    } catch (err) {
+      console.error("Errore tileClassName:", err);
+      return null;
     }
   };
   
   const handleFileChange = (e, type) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormState(prev => ({
-        ...prev,
-        photos: { ...prev.photos, [type]: file },
-        photoPreviews: { ...prev.photoPreviews, [type]: URL.createObjectURL(file) }
-      }));
+    try {
+      const file = e.target.files[0];
+      if (file) {
+        setFormState(prev => ({
+          ...prev,
+          photos: { ...prev.photos, [type]: file },
+          photoPreviews: { ...prev.photoPreviews, [type]: URL.createObjectURL(file) }
+        }));
+      }
+    } catch (err) {
+      console.error("Errore handleFileChange:", err);
+      showNotification("Errore nel caricamento della foto.");
     }
   };
   
   const handleEditClick = (check) => {
-    setSelectedDate(check.createdAt.toDate());
-    setFormState({ id: check.id, notes: check.notes, weight: check.weight, photos: {}, photoPreviews: check.photoURLs });
+    try {
+      setSelectedDate(check.createdAt.toDate());
+      setFormState({ id: check.id, notes: check.notes || '', weight: check.weight || '', photos: {}, photoPreviews: check.photoURLs || {} });
+    } catch (err) {
+      console.error("Errore handleEditClick:", err);
+      showNotification("Errore nella modifica del check.");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -287,13 +320,30 @@ export default function ClientChecks() {
       }
       setFormState({ id: null, notes: '', weight: '', photos: {}, photoPreviews: {} });
     } catch (error) {
-      console.error("Errore:", error);
+      console.error("Errore handleSubmit:", error);
       showNotification("Si è verificato un errore.");
     } finally {
       setIsUploading(false);
     }
   };
 
+  const renderContentForDate = () => {
+    try {
+      const checkOnDate = checks.find(c => c.createdAt && c.createdAt.toDate && c.createdAt.toDate().toDateString() === selectedDate.toDateString());
+      if (formState.id || !checkOnDate) {
+        return <ClientUploadForm {...{ formState, setFormState, handleSubmit, isUploading, handleFileChange }} />;
+      }
+      if (checkOnDate) {
+        return <CheckDetails check={checkOnDate} handleEditClick={handleEditClick} />;
+      }
+      return <p className="text-center text-slate-400 p-8">Nessun check previsto o registrato per questa data.</p>;
+    } catch (err) {
+      console.error("Errore renderContentForDate:", err);
+      return <p className="text-center text-red-400 p-8">Errore nel caricamento del contenuto.</p>;
+    }
+  };
+
+  if (error) return <div className="min-h-screen bg-zinc-950 text-red-400 flex justify-center items-center">{error}</div>;
   if (loading) return <LoadingSpinner />;
 
   return (
