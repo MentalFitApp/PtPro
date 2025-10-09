@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { LayoutGrid, Users, MessageSquare, Rocket, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// AnimatedBackground con stelle puntiformi
+// AnimatedBackground globale
 const AnimatedBackground = () => {
   const starsContainerRef = useRef(null);
   const isInitialized = useRef(false);
@@ -29,7 +29,7 @@ const AnimatedBackground = () => {
       starsContainerRef.current = starsContainer;
     }
 
-    // Crea 50 stelle con var CSS random
+    // Crea 50 stelle
     for (let i = 0; i < 50; i++) {
       const star = document.createElement('div');
       star.className = 'star';

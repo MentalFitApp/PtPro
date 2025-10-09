@@ -6,7 +6,7 @@ import { db, auth } from './firebase';
 
 // Import dinamici
 const MainLayout = React.lazy(() => import('./components/MainLayout'));
-const ClientLayout = React.lazy(() => import('./components/ClientLayout')); // Nuovo layout per client
+const ClientLayout = React.lazy(() => import('./components/ClientLayout'));
 const Login = React.lazy(() => import('./pages/Login'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Clients = React.lazy(() => import('./pages/Clients'));
@@ -25,6 +25,10 @@ const ClientChat = React.lazy(() => import('./pages/ClientChat'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
 const AdminAnamnesi = React.lazy(() => import('./pages/AdminAnamnesi'));
 const CoachDashboard = React.lazy(() => import('./pages/CoachDashboard'));
+const CoachAnamnesi = React.lazy(() => import('./pages/CoachAnamnesi'));
+const CoachUpdates = React.lazy(() => import('./pages/CoachUpdates'));
+const CoachClients = React.lazy(() => import('./pages/CoachClients')); // Nuova pagina
+const CoachChat = React.lazy(() => import('./pages/CoachChat')); // Nuova pagina
 
 // Spinner di caricamento
 const PageSpinner = () => (
@@ -119,7 +123,7 @@ export default function App() {
             </Route>
           </Route>
           <Route element={<ProtectedRoute isAllowed={authInfo.user && authInfo.isClient} redirectPath="/client-login" />}>
-            <Route element={<ClientLayout />}> {/* Nuovo layout per client */}
+            <Route element={<ClientLayout />}>
               <Route path="/client/first-access" element={<FirstAccess />} />
               <Route path="/client/dashboard" element={<ClientDashboard />} />
               <Route path="/client/anamnesi" element={<ClientAnamnesi />} />
@@ -131,6 +135,10 @@ export default function App() {
           <Route element={<ProtectedRoute isAllowed={authInfo.user && authInfo.isCoach} redirectPath="/login" />}>
             <Route element={<MainLayout />}>
               <Route path="/coach-dashboard" element={<CoachDashboard />} />
+              <Route path="/coach/anamnesi" element={<CoachAnamnesi />} />
+              <Route path="/coach/updates" element={<CoachUpdates />} />
+              <Route path="/coach/clients" element={<CoachClients />} />
+              <Route path="/coach/chat" element={<CoachChat />} />
             </Route>
           </Route>
           <Route 
