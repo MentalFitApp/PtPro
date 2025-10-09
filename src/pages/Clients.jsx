@@ -118,6 +118,7 @@ export default function Clients() {
   const [dateFilter, setDateFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
   const [anamnesiStatus, setAnamnesiStatus] = useState({});
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const handleLogout = async () => {
     try {
@@ -129,6 +130,8 @@ export default function Clients() {
   };
 
   useEffect(() => {
+    console.log('Utente autenticato:', auth.currentUser?.uid, 'Email:', auth.currentUser?.email);
+
     const unsub = onSnapshot(collection(db, "clients"), async (snap) => {
       try {
         const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -137,9 +140,17 @@ export default function Clients() {
         // Verifica stato anamnesi per ogni cliente
         const anamnesiStatusTemp = {};
         for (const client of clientList) {
-          const anamnesiRef = doc(db, `clients/${client.id}/anamnesi`, 'initial');
-          const anamnesiDoc = await getDoc(anamnesiRef);
-          anamnesiStatusTemp[client.id] = anamnesiDoc.exists();
+          try {
+            const anamnesiRef = doc(db, `clients/${client.id}/anamnesi`, 'initial');
+            const anamnesiDoc = await getDoc(anamnesiRef);
+            anamnesiStatusTemp[client.id] = anamnesiDoc.exists();
+          } catch (err) {
+            console.error(`Errore nel recupero anamnesi per cliente ${client.id}:`, err);
+            if (err.code === 'permission-denied') {
+              setErrorMessage("Permessi insufficienti per accedere ai dati dell'anamnesi. Contatta l'amministratore.");
+            }
+            anamnesiStatusTemp[client.id] = false;
+          }
         }
         setAnamnesiStatus(anamnesiStatusTemp);
 
@@ -153,10 +164,14 @@ export default function Clients() {
       }
     }, (error) => {
       console.error("Errore snapshot clienti:", error);
+      if (error.code === 'permission-denied') {
+        setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
+        navigate('/login');
+      }
       setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [navigate]);
 
   const handleDelete = async () => {
     if (!clientToDelete) return;
@@ -214,6 +229,20 @@ export default function Clients() {
     rinnovato: clients.filter(c => c.statoPercorso === 'rinnovato').length,
     non_rinnovato: clients.filter(c => c.statoPercorso === 'non_rinnovato').length,
   }), [clients]);
+
+  if (errorMessage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="bg-red-900/80 p-6 rounded-lg text-center">
+          <h2 className="text-xl font-bold text-red-300 mb-2">Accesso Negato</h2>
+          <p className="text-red-400">{errorMessage}</p>
+          <button onClick={handleLogout} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">
+            Torna al Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

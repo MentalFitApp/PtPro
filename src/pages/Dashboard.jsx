@@ -82,13 +82,25 @@ const QuickNotes = () => {
   const [notes, setNotes] = useState('');
   const [saved, setSaved] = useState(false);
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'app-data', 'quickNotes'), (docSnap) => docSnap.exists() && setNotes(docSnap.data().content || ''));
+    const unsub = onSnapshot(doc(db, 'app-data', 'quickNotes'), (docSnap) => docSnap.exists() && setNotes(docSnap.data().content || ''), (error) => {
+      console.error("Errore snapshot note rapide:", error);
+      if (error.code === 'permission-denied') {
+        alert("Permessi insufficienti per accedere alle note rapide.");
+      }
+    });
     return () => unsub();
   }, []);
   const saveNotes = async () => {
-    await setDoc(doc(db, 'app-data', 'quickNotes'), { content: notes, updatedAt: serverTimestamp() });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      await setDoc(doc(db, 'app-data', 'quickNotes'), { content: notes, updatedAt: serverTimestamp() });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (error) {
+      console.error("Errore nel salvataggio delle note:", error);
+      if (error.code === 'permission-denied') {
+        alert("Permessi insufficienti per salvare le note rapide.");
+      }
+    }
   };
   return (
     <div className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border">
@@ -113,30 +125,12 @@ export default function Dashboard() {
   const [chartDataType, setChartDataType] = useState('revenue');
   const [chartTimeRange, setChartTimeRange] = useState('monthly');
   const [chartData, setChartData] = useState([]);
-
-  // --- Calcolo distribuzione stati ---
-  const statusDistribution = useMemo(() => {
-    const counts = {
-      attivo: 0,
-      rinnovato: 0,
-      non_rinnovato: 0,
-      na: 0,
-    };
-    clients.forEach(c => {
-      const status = c.statoPercorso || calcolaStatoPercorso(c.scadenza);
-      counts[status]++;
-    });
-    return [
-      { name: 'Attivo', value: counts.attivo, color: '#10B981' },
-      { name: 'In Scadenza', value: counts.rinnovato, color: '#F59E0B' },
-      { name: 'Scaduto', value: counts.non_rinnovato, color: '#EF4444' },
-      { name: 'N/D', value: counts.na, color: '#6B7280' },
-    ].filter(item => item.value > 0);
-  }, [clients]);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   // --- User name and logout ---
   const [userName, setUserName] = useState('');
   useEffect(() => {
+    console.log('Utente autenticato:', auth.currentUser?.uid, 'Email:', auth.currentUser?.email);
     const unsubscribe = auth.onAuthStateChanged(user => {
       if (user) {
         setUserName(user.displayName || user.email || 'Admin');
@@ -167,8 +161,22 @@ export default function Dashboard() {
   // --- Fetch clients ---
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'clients'), (snap) => {
-      const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setClients(clientList);
+      try {
+        const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setClients(clientList);
+        setLoading(false);
+      } catch (error) {
+        console.error("Errore nel recupero dei clienti:", error);
+        if (error.code === 'permission-denied') {
+          setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
+        }
+        setLoading(false);
+      }
+    }, (error) => {
+      console.error("Errore snapshot clienti:", error);
+      if (error.code === 'permission-denied') {
+        setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
+      }
       setLoading(false);
     });
     return () => unsub();
@@ -178,10 +186,17 @@ export default function Dashboard() {
   useEffect(() => {
     const lastViewedRef = doc(db, 'app-data', 'lastViewed');
     const fetchLastViewed = async () => {
-      const docSnap = await getDoc(lastViewedRef);
-      const lastViewedTime = docSnap.exists() ? docSnap.data().timestamp : null;
-      setLastViewed(lastViewedTime);
-      await setDoc(lastViewedRef, { timestamp: serverTimestamp() }, { merge: true });
+      try {
+        const docSnap = await getDoc(lastViewedRef);
+        const lastViewedTime = docSnap.exists() ? docSnap.data().timestamp : null;
+        setLastViewed(lastViewedTime);
+        await setDoc(lastViewedRef, { timestamp: serverTimestamp() }, { merge: true });
+      } catch (error) {
+        console.error("Errore nel recupero di lastViewed:", error);
+        if (error.code === 'permission-denied') {
+          setErrorMessage("Permessi insufficienti per accedere ai dati di lastViewed. Contatta l'amministratore.");
+        }
+      }
     };
     fetchLastViewed();
   }, []);
@@ -190,68 +205,101 @@ export default function Dashboard() {
   useEffect(() => {
     if (!lastViewed) return;
 
-    // Listener for new checks
     const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));
     const unsubChecks = onSnapshot(checksQuery, async (snap) => {
-      const newChecks = [];
-      for (const doc of snap.docs) {
-        if (toDate(doc.data().createdAt) > toDate(lastViewed)) {
-          const clientId = doc.ref.parent.parent.id;
-          const clientDoc = await getDoc(doc(db, 'clients', clientId));
-          newChecks.push({
-            type: 'new_check',
-            clientId,
-            clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
-            description: 'Ha inviato un nuovo check-in',
-            date: doc.data().createdAt
-          });
+      try {
+        const newChecks = [];
+        for (const doc of snap.docs) {
+          if (toDate(doc.data().createdAt) > toDate(lastViewed)) {
+            const clientId = doc.ref.parent.parent.id;
+            const clientDoc = await getDoc(doc(db, 'clients', clientId));
+            newChecks.push({
+              type: 'new_check',
+              clientId,
+              clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
+              description: 'Ha inviato un nuovo check-in',
+              date: doc.data().createdAt
+            });
+          }
+        }
+        setActivityFeed(prev => [...prev, ...newChecks].sort((a, b) => toDate(b.date) - toDate(a.date)));
+      } catch (error) {
+        console.error("Errore snapshot checks:", error);
+        if (error.code === 'permission-denied') {
+          setErrorMessage("Permessi insufficienti per accedere ai dati dei check. Contatta l'amministratore.");
         }
       }
-      setActivityFeed(prev => [...prev, ...newChecks].sort((a, b) => toDate(b.date) - toDate(a.date)));
+    }, (error) => {
+      console.error("Errore snapshot checks:", error);
+      if (error.code === 'permission-denied') {
+        setErrorMessage("Permessi insufficienti per accedere ai dati dei check. Contatta l'amministratore.");
+      }
     });
 
-    // Listener for new anamnesi
     const anamnesiQuery = query(collectionGroup(db, 'anamnesi'), orderBy('submittedAt', 'desc'));
     const unsubAnamnesi = onSnapshot(anamnesiQuery, async (snap) => {
-      const newAnamnesi = [];
-      for (const doc of snap.docs) {
-        if (toDate(doc.data().submittedAt) > toDate(lastViewed)) {
-          const clientId = doc.ref.parent.parent.id;
-          const clientDoc = await getDoc(doc(db, 'clients', clientId));
-          newAnamnesi.push({
-            type: 'new_anamnesi',
-            clientId,
-            clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
-            description: 'Ha compilato l\'anamnesi iniziale',
-            date: doc.data().submittedAt
-          });
+      try {
+        const newAnamnesi = [];
+        for (const doc of snap.docs) {
+          if (toDate(doc.data().submittedAt) > toDate(lastViewed)) {
+            const clientId = doc.ref.parent.parent.id;
+            const clientDoc = await getDoc(doc(db, 'clients', clientId));
+            newAnamnesi.push({
+              type: 'new_anamnesi',
+              clientId,
+              clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
+              description: 'Ha compilato l\'anamnesi iniziale',
+              date: doc.data().submittedAt
+            });
+          }
+        }
+        setActivityFeed(prev => [...prev, ...newAnamnesi].sort((a, b) => toDate(b.date) - toDate(a.date)));
+      } catch (error) {
+        console.error("Errore snapshot anamnesi:", error);
+        if (error.code === 'permission-denied') {
+          setErrorMessage("Permessi insufficienti per accedere ai dati delle anamnesi. Contatta l'amministratore.");
         }
       }
-      setActivityFeed(prev => [...prev, ...newAnamnesi].sort((a, b) => toDate(b.date) - toDate(a.date)));
+    }, (error) => {
+      console.error("Errore snapshot anamnesi:", error);
+      if (error.code === 'permission-denied') {
+        setErrorMessage("Permessi insufficienti per accedere ai dati delle anamnesi. Contatta l'amministratore.");
+      }
     });
 
-    // Listener for expiring subscriptions
     const clientsQuery = query(collection(db, 'clients'));
     const unsubClients = onSnapshot(clientsQuery, (snap) => {
-      const expiring = snap.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(c => {
-          const expiry = toDate(c.scadenza);
-          if (!expiry) return false;
-          const daysLeft = (expiry - new Date()) / (1000 * 60 * 60 * 24);
-          return daysLeft <= 15 && daysLeft > 0;
-        })
-        .map(c => ({
-          type: 'expiring',
-          clientId: c.id,
-          clientName: c.name,
-          description: `Abbonamento in scadenza tra ${Math.ceil((toDate(c.scadenza) - new Date()) / (1000 * 60 * 60 * 24))} giorni`,
-          date: c.scadenza
-        }));
-      setActivityFeed(prev => {
-        const nonExpiring = prev.filter(item => item.type !== 'expiring');
-        return [...nonExpiring, ...expiring].sort((a, b) => toDate(b.date) - toDate(a.date));
-      });
+      try {
+        const expiring = snap.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(c => {
+            const expiry = toDate(c.scadenza);
+            if (!expiry) return false;
+            const daysLeft = (expiry - new Date()) / (1000 * 60 * 60 * 24);
+            return daysLeft <= 15 && daysLeft > 0;
+          })
+          .map(c => ({
+            type: 'expiring',
+            clientId: c.id,
+            clientName: c.name,
+            description: `Abbonamento in scadenza tra ${Math.ceil((toDate(c.scadenza) - new Date()) / (1000 * 60 * 60 * 24))} giorni`,
+            date: c.scadenza
+          }));
+        setActivityFeed(prev => {
+          const nonExpiring = prev.filter(item => item.type !== 'expiring');
+          return [...nonExpiring, ...expiring].sort((a, b) => toDate(b.date) - toDate(a.date));
+        });
+      } catch (error) {
+        console.error("Errore snapshot clienti:", error);
+        if (error.code === 'permission-denied') {
+          setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
+        }
+      }
+    }, (error) => {
+      console.error("Errore snapshot clienti:", error);
+      if (error.code === 'permission-denied') {
+        setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
+      }
     });
 
     return () => {
@@ -265,14 +313,26 @@ export default function Dashboard() {
   useEffect(() => {
     const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'desc'));
     const unsubPayments = onSnapshot(paymentsQuery, (snap) => {
-      const now = new Date();
-      const income = snap.docs
-        .filter(doc => {
-          const paymentDate = toDate(doc.data().paymentDate);
-          return paymentDate && paymentDate.getMonth() === now.getMonth() && paymentDate.getFullYear() === now.getFullYear();
-        })
-        .reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
-      setMonthlyIncome(income);
+      try {
+        const now = new Date();
+        const income = snap.docs
+          .filter(doc => {
+            const paymentDate = toDate(doc.data().paymentDate);
+            return paymentDate && paymentDate.getMonth() === now.getMonth() && paymentDate.getFullYear() === now.getFullYear();
+          })
+          .reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+        setMonthlyIncome(income);
+      } catch (error) {
+        console.error("Errore snapshot pagamenti:", error);
+        if (error.code === 'permission-denied') {
+          setErrorMessage("Permessi insufficienti per accedere ai dati dei pagamenti. Contatta l'amministratore.");
+        }
+      }
+    }, (error) => {
+      console.error("Errore snapshot pagamenti:", error);
+      if (error.code === 'permission-denied') {
+        setErrorMessage("Permessi insufficienti per accedere ai dati dei pagamenti. Contatta l'amministratore.");
+      }
     });
     return () => unsubPayments();
   }, []);
@@ -303,51 +363,75 @@ export default function Dashboard() {
       if (chartDataType === 'revenue') {
         const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'asc'));
         const unsub = onSnapshot(paymentsQuery, (snap) => {
-          let data = [];
-          const monthlyData = {};
-          snap.docs.forEach(doc => {
-            const date = toDate(doc.data().paymentDate);
-            if (date) {
-              const key = chartTimeRange === 'monthly' ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : date.getFullYear().toString();
-              monthlyData[key] = (monthlyData[key] || 0) + (doc.data().amount || 0);
+          try {
+            let data = [];
+            const monthlyData = {};
+            snap.docs.forEach(doc => {
+              const date = toDate(doc.data().paymentDate);
+              if (date) {
+                const key = chartTimeRange === 'monthly' ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : date.getFullYear().toString();
+                monthlyData[key] = (monthlyData[key] || 0) + (doc.data().amount || 0);
+              }
+            });
+            if (chartTimeRange === 'monthly') {
+              // Ultimi 12 mesi
+              for (let i = 11; i >= 0; i--) {
+                const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
+                data.push({ name: key, value: monthlyData[key] || 0 });
+              }
+            } else {
+              data = Object.entries(monthlyData).sort((a, b) => a[0] - b[0]).map(([name, value]) => ({ name, value }));
             }
-          });
-          if (chartTimeRange === 'monthly') {
-            // Ultimi 12 mesi
-            for (let i = 11; i >= 0; i--) {
-              const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-              const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
-              data.push({ name: key, value: monthlyData[key] || 0 });
+            setChartData(data);
+          } catch (error) {
+            console.error("Errore snapshot pagamenti per chart:", error);
+            if (error.code === 'permission-denied') {
+              setErrorMessage("Permessi insufficienti per accedere ai dati dei pagamenti. Contatta l'amministratore.");
             }
-          } else {
-            data = Object.entries(monthlyData).sort((a, b) => a[0] - b[0]).map(([name, value]) => ({ name, value }));
           }
-          setChartData(data);
+        }, (error) => {
+          console.error("Errore snapshot pagamenti per chart:", error);
+          if (error.code === 'permission-denied') {
+            setErrorMessage("Permessi insufficienti per accedere ai dati dei pagamenti. Contatta l'amministratore.");
+          }
         });
         return unsub;
       } else {
         const clientsQuery = query(collection(db, 'clients'), orderBy('createdAt', 'asc'));
         const unsub = onSnapshot(clientsQuery, (snap) => {
-          let data = [];
-          const monthlyData = {};
-          snap.docs.forEach(doc => {
-            const date = toDate(doc.data().createdAt);
-            if (date) {
-              const key = chartTimeRange === 'monthly' ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : date.getFullYear().toString();
-              monthlyData[key] = (monthlyData[key] || 0) + 1;
+          try {
+            let data = [];
+            const monthlyData = {};
+            snap.docs.forEach(doc => {
+              const date = toDate(doc.data().createdAt);
+              if (date) {
+                const key = chartTimeRange === 'monthly' ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : date.getFullYear().toString();
+                monthlyData[key] = (monthlyData[key] || 0) + 1;
+              }
+            });
+            if (chartTimeRange === 'monthly') {
+              // Ultimi 12 mesi
+              for (let i = 11; i >= 0; i--) {
+                const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
+                data.push({ name: key, value: monthlyData[key] || 0 });
+              }
+            } else {
+              data = Object.entries(monthlyData).sort((a, b) => a[0] - b[0]).map(([name, value]) => ({ name, value }));
             }
-          });
-          if (chartTimeRange === 'monthly') {
-            // Ultimi 12 mesi
-            for (let i = 11; i >= 0; i--) {
-              const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-              const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
-              data.push({ name: key, value: monthlyData[key] || 0 });
+            setChartData(data);
+          } catch (error) {
+            console.error("Errore snapshot clienti per chart:", error);
+            if (error.code === 'permission-denied') {
+              setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
             }
-          } else {
-            data = Object.entries(monthlyData).sort((a, b) => a[0] - b[0]).map(([name, value]) => ({ name, value }));
           }
-          setChartData(data);
+        }, (error) => {
+          console.error("Errore snapshot clienti per chart:", error);
+          if (error.code === 'permission-denied') {
+            setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
+          }
         });
         return unsub;
       }
@@ -422,6 +506,20 @@ export default function Dashboard() {
   };
 
   const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
+
+  if (errorMessage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="bg-red-900/80 p-6 rounded-lg text-center">
+          <h2 className="text-xl font-bold text-red-300 mb-2">Accesso Negato</h2>
+          <p className="text-red-400">{errorMessage}</p>
+          <button onClick={handleLogout} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">
+            Torna al Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.1 } } }} className="w-full space-y-6">

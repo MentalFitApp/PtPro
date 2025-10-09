@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
-import { HashRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet, useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
@@ -41,17 +41,9 @@ const PageSpinner = () => (
 const AuthSpinner = () => (
   <div className="flex flex-col justify-center items-center min-h-screen bg-zinc-950 text-slate-200">
     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
-    <p className="mt-4 text-sm">Caricamento autenticazione...</p>
+    <p className="mt-4 text-sm">Verifica autenticazione...</p>
   </div>
 );
-
-const ProtectedRoute = ({ isAllowed, redirectPath, children }) => {
-  if (!isAllowed) {
-    console.log('Accesso negato, reindirizzamento a:', redirectPath);
-    return <Navigate to={redirectPath} replace />;
-  }
-  return children ? children : <Outlet />;
-};
 
 export default function App() {
   const [authInfo, setAuthInfo] = useState({
@@ -59,8 +51,10 @@ export default function App() {
     user: null,
     isClient: false,
     isCoach: false,
+    isAdmin: false,
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
@@ -68,14 +62,12 @@ export default function App() {
       if (!isMounted || isProcessing) return;
 
       setIsProcessing(true);
-      console.log('onAuthStateChanged:', currentUser ? `Utente autenticato: ${currentUser.uid}` : 'Nessun utente autenticato');
-      if (currentUser) {
-        const sessionRole = sessionStorage.getItem('app_role');
-        const clientDocRef = doc(db, 'clients', currentUser.uid);
-        try {
-          // Ritardo controllato per stabilizzare l'autenticazione
-          await new Promise(resolve => setTimeout(resolve, 500));
-          const clientDoc = await getDoc(clientDocRef);
+      console.log('onAuthStateChanged:', currentUser ? `Utente autenticato: ${currentUser.uid} (${currentUser.email})` : 'Nessun utente autenticato');
+      try {
+        if (currentUser) {
+          const sessionRole = sessionStorage.getItem('app_role');
+          const clientDocRef = doc(db, 'clients', currentUser.uid);
+          const clientDoc = await getDoc(clientDocRef, { source: 'server' });
           const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
           const isCurrentUserACoach = currentUser.uid === 'l0RI8TzFjbNVoAdmcXNQkP9mWb12';
           const isCurrentUserAdmin = [
@@ -84,9 +76,17 @@ export default function App() {
             "AeZKjJYu5zMZ4mvffaGiqCBb0cF2"
           ].includes(currentUser.uid);
 
-          console.log('Ruolo utente:', { isClient: isCurrentUserAClient, isCoach: isCurrentUserACoach, isAdmin: isCurrentUserAdmin, sessionRole });
+          console.log('Ruolo utente:', {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            isClient: isCurrentUserAClient,
+            isCoach: isCurrentUserACoach,
+            isAdmin: isCurrentUserAdmin,
+            sessionRole,
+            clientDocData: clientDoc.exists() ? clientDoc.data() : null
+          });
 
-          if (sessionRole && sessionRole !== (isCurrentUserAClient ? 'client' : isCurrentUserACoach ? 'coach' : 'admin')) {
+          if (sessionRole && sessionRole !== (isCurrentUserAClient ? 'client' : isCurrentUserACoach ? 'coach' : isCurrentUserAdmin ? 'admin' : null)) {
             console.log('Conflitto ruolo, reset sessionStorage:', sessionRole);
             sessionStorage.removeItem('app_role');
           }
@@ -97,6 +97,13 @@ export default function App() {
             sessionStorage.setItem('app_role', 'client');
           } else if (isCurrentUserAdmin) {
             sessionStorage.setItem('app_role', 'admin');
+          } else {
+            console.log('Accesso non autorizzato per UID:', currentUser.uid);
+            sessionStorage.removeItem('app_role');
+            setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false, isAdmin: false });
+            await auth.signOut();
+            navigate('/client-login');
+            return;
           }
 
           setAuthInfo({
@@ -104,87 +111,75 @@ export default function App() {
             user: currentUser,
             isClient: isCurrentUserAClient,
             isCoach: isCurrentUserACoach,
+            isAdmin: isCurrentUserAdmin,
           });
-        } catch (error) {
-          console.error('Errore nel recupero del documento cliente:', error);
-          // Non eseguiamo signOut, permettiamo alla pagina di login di gestire l'errore
-          setAuthInfo({
-            isLoading: false,
-            user: currentUser,
-            isClient: false,
-            isCoach: currentUser.uid === 'l0RI8TzFjbNVoAdmcXNQkP9mWb12',
-          });
+        } else {
+          sessionStorage.removeItem('app_role');
+          setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false, isAdmin: false });
         }
-      } else {
+      } catch (error) {
+        console.error('Errore nel recupero del documento cliente:', error, {
+          uid: currentUser?.uid,
+          email: currentUser?.email,
+          code: error.code,
+          message: error.message
+        });
         sessionStorage.removeItem('app_role');
-        setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false });
+        setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false, isAdmin: false });
+        await auth.signOut();
+        navigate('/client-login');
+      } finally {
+        setIsProcessing(false);
       }
-      setIsProcessing(false);
     });
 
     return () => {
       isMounted = false;
       unsubscribe();
     };
-  }, [isProcessing]);
+  }, [isProcessing, navigate]);
 
-  if (authInfo.isLoading) {
-    return <AuthSpinner />;
-  }
+  if (authInfo.isLoading) return <AuthSpinner />;
 
   return (
-    <HashRouter>
-      <Suspense fallback={<PageSpinner />}>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/client-login" element={<ClientLogin />} />
-          <Route path="/client/forgot-password" element={<ForgotPassword />} />
-          <Route element={<ProtectedRoute isAllowed={authInfo.user && !authInfo.isClient && !authInfo.isCoach} redirectPath="/login" />}>
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/clients" element={<Clients />} />
-              <Route path="/new" element={<NewClient />} />
-              <Route path="/client/:clientId" element={<ClientDetail />} />
-              <Route path="/edit/:clientId" element={<EditClient />} />
-              <Route path="/updates" element={<Updates />} />
-              <Route path="/chat" element={<AdminChat />} />
-              <Route path="/admin/anamnesi/:uid" element={<AdminAnamnesi />} />
-            </Route>
-          </Route>
-          <Route element={<ProtectedRoute isAllowed={authInfo.user && authInfo.isClient} redirectPath="/client-login" />}>
-            <Route element={<ClientLayout />}>
-              <Route path="/client/first-access" element={<FirstAccess />} />
-              <Route path="/client/dashboard" element={<ClientDashboard />} />
-              <Route path="/client/anamnesi" element={<ClientAnamnesi />} />
-              <Route path="/client/checks" element={<ClientChecks />} />
-              <Route path="/client/payments" element={<ClientPayments />} />
-              <Route path="/client/chat" element={<ClientChat />} />
-            </Route>
-          </Route>
-          <Route element={<ProtectedRoute isAllowed={authInfo.user && authInfo.isCoach} redirectPath="/login" />}>
-            <Route element={<MainLayout />}>
-              <Route path="/coach-dashboard" element={<CoachDashboard />} />
-              <Route path="/coach/anamnesi" element={<CoachAnamnesi />} />
-              <Route path="/coach/updates" element={<CoachUpdates />} />
-              <Route path="/coach/clients" element={<CoachClients />} />
-              <Route path="/coach/chat" element={<CoachChat />} />
-              <Route path="/coach/client/:clientId" element={<CoachClientDetail />} />
-            </Route>
-          </Route>
-          <Route 
-            path="*" 
-            element={
-              !authInfo.user 
-                ? <Navigate to="/login" /> 
-                : authInfo.isClient 
-                  ? <Navigate to="/client/dashboard" /> 
-                  : authInfo.isCoach 
-                    ? <Navigate to="/coach-dashboard" />
-                    : <Navigate to="/" />
-            } 
-          />
-        </Routes>
-      </Suspense>
-    </HashRouter>
+    <Suspense fallback={<PageSpinner />}>
+      <Routes>
+        {/* Rotte pubbliche */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/client-login" element={<ClientLogin />} />
+        <Route path="/client/forgot-password" element={<ForgotPassword />} />
+
+        {/* Rotte per admin/coach */}
+        <Route element={authInfo.isCoach || authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/clients" element={<Clients />} />
+          <Route path="/new" element={<NewClient />} />
+          <Route path="/client/:id" element={<ClientDetail />} />
+          <Route path="/edit/:id" element={<EditClient />} />
+          <Route path="/updates" element={<Updates />} />
+          <Route path="/chat" element={<AdminChat />} />
+          <Route path="/client/:id/anamnesi" element={<AdminAnamnesi />} />
+          <Route path="/coach" element={<CoachDashboard />} />
+          <Route path="/coach/clients" element={<CoachClients />} />
+          <Route path="/coach/client/:id" element={<CoachClientDetail />} />
+          <Route path="/coach/anamnesi" element={<CoachAnamnesi />} />
+          <Route path="/coach/updates" element={<CoachUpdates />} />
+          <Route path="/coach/chat" element={<CoachChat />} />
+        </Route>
+
+        {/* Rotte per clienti */}
+        <Route element={authInfo.isClient ? <ClientLayout /> : <Navigate to="/client-login" replace />}>
+          <Route path="/client/first-access" element={<FirstAccess />} />
+          <Route path="/client/dashboard" element={<ClientDashboard />} />
+          <Route path="/client/anamnesi" element={<ClientAnamnesi />} />
+          <Route path="/client/checks" element={<ClientChecks />} />
+          <Route path="/client/payments" element={<ClientPayments />} />
+          <Route path="/client/chat" element={<ClientChat />} />
+        </Route>
+
+        {/* Rotta di default */}
+        <Route path="*" element={<Navigate to={authInfo.isClient ? "/client/dashboard" : "/login"} replace />} />
+      </Routes>
+    </Suspense>
   );
 }

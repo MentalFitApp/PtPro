@@ -1,32 +1,50 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAuth } from 'firebase/auth';
-import { collection, query, where, orderBy, onSnapshot, doc, addDoc, serverTimestamp, setDoc, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, addDoc, serverTimestamp, setDoc, getDocs, limit, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase.js';
-import { Send, MessageSquare, Search, AlertCircle } from 'lucide-react';
+import { Send, MessageSquare, Search, AlertCircle, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // AnimatedBackground per tema stellato
 const AnimatedBackground = () => {
-  useEffect(() => {
-    const starsContainer = document.querySelector('.stars');
-    if (!starsContainer) return;
+  const starsContainerRef = useRef(null);
+  const isInitialized = useRef(false);
 
-    const createStar = () => {
+  useEffect(() => {
+    if (isInitialized.current) return;
+
+    let starsContainer = document.querySelector('.stars');
+    if (!starsContainer) {
+      starsContainer = document.createElement('div');
+      starsContainer.className = 'stars';
+      let starryBackground = document.querySelector('.starry-background');
+      if (!starryBackground) {
+        starryBackground = document.createElement('div');
+        starryBackground.className = 'starry-background';
+        document.body.appendChild(starryBackground);
+      }
+      starryBackground.appendChild(starsContainer);
+      starsContainerRef.current = starsContainer;
+    } else {
+      starsContainerRef.current = starsContainer;
+    }
+
+    for (let i = 0; i < 50; i++) {
       const star = document.createElement('div');
       star.className = 'star';
       star.style.left = `${Math.random() * 100}%`;
       star.style.top = `${Math.random() * 100}%`;
       star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
-      starsContainer.appendChild(star);
-    };
-
-    for (let i = 0; i < 50; i++) {
-      createStar();
+      starsContainerRef.current.appendChild(star);
     }
 
+    isInitialized.current = true;
+
     return () => {
-      while (starsContainer.firstChild) {
-        starsContainer.removeChild(starsContainer.firstChild);
+      if (starsContainerRef.current) {
+        while (starsContainerRef.current.firstChild) {
+          starsContainerRef.current.removeChild(starsContainerRef.current.firstChild);
+        }
       }
     };
   }, []);
@@ -45,20 +63,22 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Notifica per errori
-const Notification = ({ message, onDismiss }) => (
+// Notifica per errori e successi
+const Notification = ({ message, type, onDismiss }) => (
   <AnimatePresence>
     {message && (
       <motion.div
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -50 }}
-        className="fixed top-5 right-5 z-50 flex items-center gap-4 p-4 rounded-lg border bg-red-900/80 text-red-300 border-red-500/30 backdrop-blur-md shadow-lg"
+        className={`fixed top-5 right-5 z-50 flex items-center gap-4 p-4 rounded-lg border ${
+          type === 'error' ? 'bg-red-900/80 text-red-300 border-red-500/30' : 'bg-emerald-900/80 text-emerald-300 border-emerald-500/30'
+        } backdrop-blur-md shadow-lg`}
       >
         <AlertCircle size={20} />
         <p>{message}</p>
         <button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/10">
-          <AlertCircle size={16} />
+          <X size={16} />
         </button>
       </motion.div>
     )}
@@ -75,29 +95,59 @@ const AdminChat = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState('');
+  const [notification, setNotification] = useState({ message: '', type: '' });
   const messagesEndRef = useRef(null);
 
   const auth = getAuth();
   const adminUser = auth.currentUser;
-  const adminUIDs = ["QwWST9OVOlTOi5oheyCqfpXLOLg2", "AeZKjJYu5zMZ4mvffaGiqCBb0cF2", "3j0AXIRa4XdHq1ywCl4UBxJNsku2", "l0RI8TzFjbNVoAdmcxNQkP9mWb12"];
+  const adminUIDs = [
+    "QwWST9OVOlTOi5oheyCqfpXLOLg2",
+    "AeZKjJYu5zMZ4mvffaGiqCBb0cF2",
+    "3j0AXIRa4XdHq1ywCl4UBxJNsku2",
+    "l0RI8TzFjbNVoAdmcXNQkP9mWb12"
+  ];
+  const isCoach = adminUser && (adminUIDs.includes(adminUser.uid) || adminUser.uid === 'l0RI8TzFjbNVoAdmcXNQkP9mWb12');
+
+  // Mostra notifica
+  const showNotification = (message, type = 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification({ message: '', type: '' }), 6000);
+  };
+
+  // Verifica se l'utente è coach
+  useEffect(() => {
+    if (!adminUser) {
+      showNotification("Utente non autenticato. Effettua il login.", 'error');
+      return;
+    }
+    if (!isCoach) {
+      showNotification("Accesso non autorizzato. Area riservata ai coach o admin.", 'error');
+    }
+    console.log('Utente autenticato:', adminUser?.uid, adminUser?.email, { isCoach });
+  }, [adminUser, isCoach]);
 
   // Carica le chat
   useEffect(() => {
-    if (!adminUser) return;
+    if (!adminUser || !isCoach) return;
+
     const chatsRef = collection(db, 'chats');
-    const q = query(chatsRef, where('participants', 'array-contains-any', adminUIDs), orderBy('lastUpdate', 'desc'));
+    const q = query(
+      chatsRef,
+      where('participants', 'array-contains-any', adminUIDs),
+      orderBy('lastUpdate', 'desc'),
+      limit(100)
+    );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setChats(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoadingChats(false);
     }, (error) => {
-      console.error("Errore nel caricare le chat:", error);
-      setError("Errore nel caricamento delle chat. Contatta il supporto.");
+      console.error("Errore nel caricare le chat:", error.code, error.message, { uid: adminUser?.uid });
+      showNotification("Errore nel caricamento delle chat. Contatta il supporto.", 'error');
       setLoadingChats(false);
     });
     return () => unsubscribe();
-  }, [adminUser]);
+  }, [adminUser, isCoach]);
 
   // Carica i messaggi della chat selezionata
   useEffect(() => {
@@ -107,17 +157,17 @@ const AdminChat = () => {
     }
     setLoadingMessages(true);
     const messagesRef = collection(db, 'chats', selectedChatId, 'messages');
-    const q = query(messagesRef, orderBy('createdAt'));
+    const q = query(messagesRef, orderBy('createdAt'), limit(100));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoadingMessages(false);
     }, (error) => {
-      console.error("Errore nel caricare i messaggi:", error);
-      setError("Errore nel caricamento dei messaggi: permessi insufficienti. Contatta il supporto.");
+      console.error("Errore nel caricare i messaggi:", error.code, error.message, { uid: adminUser?.uid });
+      showNotification("Errore nel caricamento dei messaggi: permessi insufficienti. Contatta il supporto.", 'error');
       setLoadingMessages(false);
     });
     return () => unsubscribe();
-  }, [selectedChatId]);
+  }, [selectedChatId, adminUser]);
 
   // Scorri all'ultimo messaggio
   useEffect(() => {
@@ -135,8 +185,9 @@ const AdminChat = () => {
       setIsSearching(true);
       const clientsRef = collection(db, 'clients');
       const searchTerm = searchQuery.toLowerCase();
-      const q = query(clientsRef, 
-        where('name_lowercase', '>=', searchTerm), 
+      const q = query(
+        clientsRef,
+        where('name_lowercase', '>=', searchTerm),
         where('name_lowercase', '<=', searchTerm + '\uf8ff'),
         limit(10)
       );
@@ -144,8 +195,8 @@ const AdminChat = () => {
         const querySnapshot = await getDocs(q);
         setSearchResults(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
-        console.error("Errore nella ricerca (indice Firestore mancante?):", error);
-        setError("Errore nella ricerca dei clienti. Assicurati che l'indice Firestore sia configurato.");
+        console.error("Errore nella ricerca (indice Firestore mancante?):", error.code, error.message, { uid: adminUser?.uid });
+        showNotification("Errore nella ricerca dei clienti. Assicurati che l'indice Firestore sia configurato.", 'error');
       }
       setIsSearching(false);
     };
@@ -153,14 +204,14 @@ const AdminChat = () => {
       searchClients();
     }, 300);
     return () => clearTimeout(debounceSearch);
-  }, [searchQuery]);
+  }, [searchQuery, adminUser]);
 
   // Seleziona cliente e crea chat
   const handleSelectClient = async (client) => {
-    if (!adminUser) return;
+    if (!adminUser || !isCoach) return;
     const primaryAdminUID = adminUIDs.includes(adminUser.uid) ? adminUser.uid : adminUIDs[0];
     const newChatId = [client.id, primaryAdminUID].sort().join('_');
-    
+
     const chatRef = doc(db, 'chats', newChatId);
     const existingChat = chats.find(chat => chat.id === newChatId);
     if (!existingChat) {
@@ -172,8 +223,8 @@ const AdminChat = () => {
           lastUpdate: serverTimestamp()
         }, { merge: true });
       } catch (error) {
-        console.error("Errore nella creazione della chat:", error);
-        setError("Errore nell'avvio della chat. Riprova.");
+        console.error("Errore nella creazione della chat:", error.code, error.message, { uid: adminUser?.uid });
+        showNotification("Errore nell'avvio della chat. Riprova.", 'error');
       }
     }
     setSelectedChatId(newChatId);
@@ -184,7 +235,7 @@ const AdminChat = () => {
   // Invia messaggio
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (newMessage.trim() === '' || !selectedChatId || !adminUser) return;
+    if (newMessage.trim() === '' || !selectedChatId || !adminUser || !isCoach) return;
     try {
       const messagesRef = collection(db, 'chats', selectedChatId, 'messages');
       await addDoc(messagesRef, {
@@ -198,8 +249,24 @@ const AdminChat = () => {
       }, { merge: true });
       setNewMessage('');
     } catch (error) {
-      console.error("Errore nell'invio del messaggio:", error);
-      setError("Errore nell'invio del messaggio. Riprova.");
+      console.error("Errore nell'invio del messaggio:", error.code, error.message, { uid: adminUser?.uid });
+      showNotification("Errore nell'invio del messaggio. Riprova.", 'error');
+    }
+  };
+
+  // Elimina chat
+  const handleDeleteChat = async () => {
+    if (!selectedChatId || !adminUser || !isCoach) return;
+    try {
+      const chatRef = doc(db, 'chats', selectedChatId);
+      await deleteDoc(chatRef);
+      console.log('Documento chat eliminato:', chatRef.path);
+      setSelectedChatId(null);
+      setMessages([]);
+      showNotification("Chat eliminata con successo!", 'success');
+    } catch (error) {
+      console.error("Errore nell'eliminazione della chat:", error.code, error.message, { uid: adminUser?.uid });
+      showNotification("Errore nell'eliminazione della chat. Riprova.", 'error');
     }
   };
 
@@ -213,12 +280,12 @@ const AdminChat = () => {
   };
 
   // Chiudi notifica
-  const dismissError = () => setError('');
+  const dismissNotification = () => setNotification({ message: '', type: '' });
 
   return (
     <div className="min-h-screen relative">
       <AnimatedBackground />
-      <Notification message={error} onDismiss={dismissError} />
+      <Notification message={notification.message} type={notification.type} onDismiss={dismissNotification} />
       <div className="flex h-[calc(100vh-120px)] bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border overflow-hidden m-4 sm:m-6">
         <div className="w-full sm:w-1/3 border-r border-white/10 flex flex-col">
           <div className="p-4 border-b border-white/10">
@@ -271,8 +338,15 @@ const AdminChat = () => {
         <div className="w-full sm:w-2/3 flex flex-col bg-zinc-900/50">
           {selectedChatId ? (
             <>
-              <div className="p-4 border-b border-white/10">
+              <div className="p-4 border-b border-white/10 flex justify-between items-center">
                 <h3 className="font-bold text-lg text-slate-50">{getSelectedChatName()}</h3>
+                <button
+                  onClick={handleDeleteChat}
+                  className="p-2 text-red-400 hover:bg-red-900/30 rounded-md transition-colors"
+                  title="Elimina Chat"
+                >
+                  <Trash2 size={18} />
+                </button>
               </div>
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                 {loadingMessages ? <LoadingSpinner /> : messages.map(msg => (

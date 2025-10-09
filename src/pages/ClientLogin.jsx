@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, getAuth } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { db, auth } from '../firebase';
+import { db } from '../firebase';
 import { LogIn, Mail, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -30,7 +30,6 @@ const AnimatedBackground = () => {
       starsContainerRef.current = starsContainer;
     }
 
-    // Crea 50 stelle
     for (let i = 0; i < 50; i++) {
       const star = document.createElement('div');
       star.className = 'star';
@@ -66,25 +65,31 @@ const ClientLogin = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const navigate = useNavigate();
+  const auth = getAuth();
 
   // Controlla se l'utente è già autenticato
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        console.log('Utente autenticato all\'avvio:', user.uid);
+        console.log('Utente autenticato all\'avvio:', user.uid, user.email);
         const userDocRef = doc(db, "clients", user.uid);
         try {
-          const userDoc = await getDoc(userDocRef);
+          const userDoc = await getDoc(userDocRef, { source: 'server' });
+          console.log('Dati documento cliente:', userDoc.exists() ? userDoc.data() : 'Documento non trovato');
           if (userDoc.exists() && userDoc.data().isClient === true) {
             sessionStorage.setItem('app_role', 'client');
-            navigate(userDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard', { replace: true });
+            const isFirstLogin = userDoc.data().firstLogin === true;
+            navigate(isFirstLogin ? '/client/first-access' : '/client/dashboard', { replace: true });
           } else {
             setError("Accesso non autorizzato. Area riservata ai clienti.");
+            await auth.signOut();
+            navigate('/client-login');
           }
         } catch (err) {
-          console.error("Errore nel recupero del documento cliente:", err);
+          console.error("Errore nel recupero del documento cliente:", err.code, err.message, { uid: user.uid, email: user.email });
           setError("Errore nel verificare l'account cliente. Verifica i permessi o contatta il supporto.");
-          // Non eseguiamo signOut qui, lasciamo che App.jsx gestisca lo stato
+          await auth.signOut();
+          navigate('/client-login');
         }
       }
       setIsCheckingAuth(false);
@@ -105,14 +110,17 @@ const ClientLogin = () => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       const userDocRef = doc(db, "clients", user.uid);
-      const userDoc = await getDoc(userDocRef);
+      const userDoc = await getDoc(userDocRef, { source: 'server' });
 
+      console.log('Dati documento cliente:', userDoc.exists() ? userDoc.data() : 'Documento non trovato');
       if (userDoc.exists() && userDoc.data().isClient === true) {
         sessionStorage.setItem('app_role', 'client');
         const isFirstLogin = userDoc.data().firstLogin === true;
         navigate(isFirstLogin ? '/client/first-access' : '/client/dashboard', { replace: true });
       } else {
         setError("Accesso non autorizzato. Area riservata ai clienti.");
+        await auth.signOut();
+        navigate('/client-login');
       }
     } catch (err) {
       console.error("Errore di login:", err.code, err.message);

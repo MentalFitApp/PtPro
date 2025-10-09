@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { getAuth, updatePassword } from "firebase/auth";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from '../firebase.js';
-// --- 1. NUOVE ICONE DA LUCIDE-REACT ---
 import { KeyRound, Lock, CheckCircle2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion'; // Importa AnimatePresence
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -71,16 +70,16 @@ const FirstAccess = () => {
       await updatePassword(user, newPassword);
       const userDocRef = doc(db, "clients", user.uid);
       await updateDoc(userDocRef, { firstLogin: false });
+      console.log('Campo firstLogin aggiornato a false per UID:', user.uid);
       setSuccess("Password aggiornata! Sarai reindirizzato alla dashboard.");
       setTimeout(() => navigate('/client/dashboard'), 3000);
     } catch (err) {
-      setError("Si è verificato un errore. Riprova.");
-      console.error("Errore aggiornamento password:", err);
+      console.error("Errore aggiornamento password:", err.code, err.message, { uid: user?.uid });
+      setError("Si è verificato un errore durante l'aggiornamento della password: " + err.message);
       setIsSubmitting(false);
     }
   };
 
-  // --- 3. STILI AGGIORNATI ---
   const inputStyle = "w-full pl-10 pr-3 py-2.5 mt-1 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200 placeholder:text-slate-500";
   const labelStyle = "block text-sm font-medium text-slate-300";
 
