@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -27,8 +27,8 @@ const AdminAnamnesi = React.lazy(() => import('./pages/AdminAnamnesi'));
 const CoachDashboard = React.lazy(() => import('./pages/CoachDashboard'));
 const CoachAnamnesi = React.lazy(() => import('./pages/CoachAnamnesi'));
 const CoachUpdates = React.lazy(() => import('./pages/CoachUpdates'));
-const CoachClients = React.lazy(() => import('./pages/CoachClients')); // Nuova pagina
-const CoachChat = React.lazy(() => import('./pages/CoachChat')); // Nuova pagina
+const CoachClients = React.lazy(() => import('./pages/CoachClients'));
+const CoachChat = React.lazy(() => import('./pages/CoachChat'));
 
 // Spinner di caricamento
 const PageSpinner = () => (
@@ -70,12 +70,20 @@ export default function App() {
           const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient;
           const isCurrentUserACoach = currentUser.uid === 'l0RI8TzFjbNVoAdmcXNQkP9mWb12';
           console.log('Ruolo utente:', { isClient: isCurrentUserAClient, isCoach: isCurrentUserACoach, sessionRole });
+
           if (sessionRole === 'admin' && isCurrentUserAClient) {
             console.log('Logout forzato: utente cliente che tenta accesso admin');
             await signOut(auth);
             setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false });
             return;
           }
+
+          if (isCurrentUserACoach) {
+            sessionStorage.setItem('app_role', 'coach');
+          } else if (isCurrentUserAClient) {
+            sessionStorage.setItem('app_role', 'client');
+          }
+
           setAuthInfo({
             isLoading: false,
             user: currentUser,
