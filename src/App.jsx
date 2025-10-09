@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { HashRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
@@ -60,12 +60,14 @@ export default function App() {
     isClient: false,
     isCoach: false,
   });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!isMounted) return;
+      if (!isMounted || isProcessing) return;
 
+      setIsProcessing(true);
       console.log('onAuthStateChanged:', currentUser ? `Utente autenticato: ${currentUser.uid}` : 'Nessun utente autenticato');
       if (currentUser) {
         const sessionRole = sessionStorage.getItem('app_role');
@@ -82,11 +84,9 @@ export default function App() {
 
           console.log('Ruolo utente:', { isClient: isCurrentUserAClient, isCoach: isCurrentUserACoach, isAdmin: isCurrentUserAdmin, sessionRole });
 
-          if (sessionRole === 'client' && !isCurrentUserAClient) {
-            console.log('Logout forzato: ruolo client non valido');
-            await signOut(auth);
-            setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false });
-            return;
+          if (sessionRole && sessionRole !== (isCurrentUserAClient ? 'client' : isCurrentUserACoach ? 'coach' : 'admin')) {
+            console.log('Conflitto ruolo, reset sessionStorage:', sessionRole);
+            sessionStorage.removeItem('app_role');
           }
 
           if (isCurrentUserACoach) {
@@ -116,13 +116,14 @@ export default function App() {
         sessionStorage.removeItem('app_role');
         setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false });
       }
+      setIsProcessing(false);
     });
 
     return () => {
       isMounted = false;
       unsubscribe();
     };
-  }, []);
+  }, [isProcessing]);
 
   if (authInfo.isLoading) {
     return <AuthSpinner />;
