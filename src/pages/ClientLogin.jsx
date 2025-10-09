@@ -83,7 +83,7 @@ const ClientLogin = () => {
           }
         } catch (err) {
           console.error("Errore nel recupero del documento cliente:", err);
-          setError("Errore nel verificare l'account cliente.");
+          setError("Errore nel verificare l'account cliente. Contatta il supporto.");
         }
       }
       setIsCheckingAuth(false);
@@ -114,10 +114,10 @@ const ClientLogin = () => {
         setError("Accesso non autorizzato. Area riservata ai clienti.");
       }
     } catch (err) {
-      console.error("Errore di login:", err.message);
+      console.error("Errore di login:", err.code, err.message);
       setError(err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' 
         ? "Credenziali non valide. Riprova." 
-        : "Errore durante il login. Riprova.");
+        : "Errore durante il login: " + err.message);
     } finally {
       setIsSubmitting(false);
     }

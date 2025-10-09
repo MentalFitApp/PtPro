@@ -74,7 +74,7 @@ export default function App() {
         const clientDocRef = doc(db, 'clients', currentUser.uid);
         try {
           const clientDoc = await getDoc(clientDocRef);
-          const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient;
+          const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
           const isCurrentUserACoach = currentUser.uid === 'l0RI8TzFjbNVoAdmcXNQkP9mWb12';
           const isCurrentUserAdmin = [
             "QwWST9OVOlTOi5oheyCqfpXLOLg2",
@@ -105,6 +105,7 @@ export default function App() {
           });
         } catch (error) {
           console.error('Errore nel recupero del documento cliente:', error);
+          // Non eseguiamo signOut, permettiamo alla pagina di login di gestire l'errore
           setAuthInfo({
             isLoading: false,
             user: currentUser,
