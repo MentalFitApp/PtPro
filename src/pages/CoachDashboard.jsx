@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, collectionGroup, doc, getDoc, setDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, collectionGroup, doc, getDoc, setDoc, serverTimestamp, query, orderBy, where } from 'firebase/firestore';
 import { auth, db, toDate, calcolaStatoPercorso } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { CheckCircle, Clock, FileText, Users, LogOut, Bell } from 'lucide-react';
+import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, PlusCircle, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Helper per calcolare il tempo trascorso
@@ -41,14 +41,33 @@ const StatCard = ({ title, value, icon, isPercentage = false, variants }) => (
   </motion.div>
 );
 
+// Componente QuickAction
+const QuickAction = ({ to, title, icon, variants }) => (
+  <motion.div variants={variants}>
+    <button
+      onClick={to}
+      className="group bg-zinc-900/70 hover:bg-zinc-800/90 border border-white/10 rounded-lg p-4 flex items-center gap-4 transition-all duration-300 w-full"
+    >
+      <div className="bg-zinc-800 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-white p-3 rounded-lg transition-colors duration-300">
+        {icon}
+      </div>
+      <div className="flex-1">
+        <h4 className="font-bold text-slate-200">{title}</h4>
+      </div>
+      <ChevronRight className="text-slate-500 group-hover:text-white transition-colors duration-300" />
+    </button>
+  </motion.div>
+);
+
 // Componente ActivityItem
 const ActivityItem = ({ item, navigate, variants }) => {
   const icons = {
     expiring: <Clock className="text-yellow-500" size={18}/>,
     new_check: <CheckCircle className="text-green-500" size={18}/>,
     new_anamnesi: <FileText className="text-blue-500" size={18}/>,
+    new_message: <MessageSquare className="text-rose-500" size={18}/>,
   };
-  const tabMap = { expiring: 'info', new_check: 'checks', new_anamnesi: 'anamnesi' };
+  const tabMap = { expiring: 'info', new_check: 'checks', new_anamnesi: 'anamnesi', new_message: 'chat' };
 
   return (
     <motion.button
@@ -73,47 +92,18 @@ const ActivityItem = ({ item, navigate, variants }) => {
   );
 };
 
-// Componente ClientItem
-const ClientItem = ({ client, navigate, variants }) => {
-  const stato = calcolaStatoPercorso(client.scadenza) || 'na';
-  const styles = {
-    attivo: "bg-emerald-900/80 text-emerald-300 border border-emerald-500/30",
-    rinnovato: "bg-amber-900/80 text-amber-300 border border-amber-500/30",
-    non_rinnovato: "bg-red-900/80 text-red-400 border border-red-500/30",
-    na: "bg-zinc-700/80 text-zinc-300 border border-zinc-500/30",
-  };
-  const labels = { attivo: 'Attivo', rinnovato: 'In Scadenza', non_rinnovato: 'Scaduto', na: 'N/D' };
-
-  return (
-    <motion.div
-      variants={variants}
-      className="p-3 rounded-lg bg-slate-500/5 hover:bg-slate-500/10 transition-colors"
-      onClick={() => navigate(`/client/${client.id}`)}
-    >
-      <div className="flex justify-between items-center">
-        <p className="text-sm font-semibold text-slate-200">{client.name}</p>
-        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${styles[stato] || styles.na}`}>
-          {labels[stato] || 'N/D'}
-        </span>
-      </div>
-      <p className="text-xs text-slate-400 mt-1">{client.email || 'N/D'}</p>
-    </motion.div>
-  );
-};
-
 export default function CoachDashboard() {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [activityFeed, setActivityFeed] = useState([]);
   const [lastViewed, setLastViewed] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
   const [userName, setUserName] = useState('');
   const [error, setError] = useState(null);
+  const COACH_UID = "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
+  const adminUIDs = ["QwWST9OVOlTOi5oheyCqfpXLOLg2", "AeZKjJYu5zMZ4mvffaGiqCBb0cF2", "3j0AXIRa4XdHq1ywCl4UBxJNsku2", COACH_UID];
 
   // Verifica coach
-  const COACH_UID = "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
-
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       if (user && user.uid === COACH_UID) {
@@ -215,6 +205,31 @@ export default function CoachDashboard() {
       }
     });
 
+    const chatsQuery = query(collection(db, 'chats'), where('participants', 'array-contains', COACH_UID), orderBy('lastUpdate', 'desc'));
+    const unsubChats = onSnapshot(chatsQuery, async (snap) => {
+      try {
+        const newMessages = [];
+        for (const doc of snap.docs) {
+          const chatData = doc.data();
+          const clientId = chatData.participants.find(p => !adminUIDs.includes(p));
+          if (chatData.lastUpdate && toDate(chatData.lastUpdate) > toDate(lastViewed)) {
+            const clientDoc = await getDoc(doc(db, 'clients', clientId));
+            newMessages.push({
+              type: 'new_message',
+              clientId,
+              clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
+              description: `Nuovo messaggio: ${chatData.lastMessage.slice(0, 30)}...`,
+              date: chatData.lastUpdate
+            });
+          }
+        }
+        setActivityFeed(prev => [...prev, ...newMessages].sort((a, b) => toDate(b.date) - toDate(a.date)));
+      } catch (err) {
+        console.error("Errore snapshot chats:", err);
+        setError("Errore nel caricamento dei messaggi.");
+      }
+    });
+
     const clientsQuery = query(collection(db, 'clients'));
     const unsubClients = onSnapshot(clientsQuery, (snap) => {
       try {
@@ -246,6 +261,7 @@ export default function CoachDashboard() {
     return () => {
       unsubChecks();
       unsubAnamnesi();
+      unsubChats();
       unsubClients();
     };
   }, [lastViewed]);
@@ -308,95 +324,53 @@ export default function CoachDashboard() {
             </div>
           </div>
           <p className="text-slate-400 mb-4">Gestisci i tuoi clienti e monitora le loro attività.</p>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'overview' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
-            >
-              Panoramica
-            </button>
-            <button
-              onClick={() => navigate('/coach/clients')}
-              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'clients' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
-            >
-              Clienti
-            </button>
-            <button
-              onClick={() => navigate('/coach/chat')}
-              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'chat' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
-            >
-              Chat
-            </button>
-            <button
-              onClick={() => navigate('/coach/anamnesi')}
-              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'anamnesi' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
-            >
-              Anamnesi
-            </button>
-            <button
-              onClick={() => navigate('/coach/updates')}
-              className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === 'updates' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
-            >
-              Aggiornamenti
-            </button>
-          </div>
         </motion.header>
 
         <main className="mt-6">
-          {activeTab === 'overview' && (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
-                <StatCard 
-                  title="Clienti Attivi" 
-                  value={clientStats.active} 
-                  icon={<CheckCircle className="text-blue-500"/>}
-                  variants={itemVariants}
-                />
-                <StatCard 
-                  title="Scadenze Prossime" 
-                  value={clientStats.expiring} 
-                  icon={<Clock className="text-yellow-500"/>}
-                  variants={itemVariants}
-                />
-                <StatCard 
-                  title="Totale Clienti" 
-                  value={clients.length} 
-                  icon={<Users className="text-cyan-500"/>}
-                  variants={itemVariants}
-                />
-              </div>
-              <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Attività Recenti</h2>
-                <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
-                  <AnimatePresence>
-                    {activityFeed.length > 0 ? (
-                      activityFeed.map(item => (
-                        <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds}`} item={item} navigate={navigate} variants={itemVariants} />
-                      ))
-                    ) : (
-                      <p className="text-slate-400 text-center p-4">Nessun aggiornamento recente.</p>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-            </>
-          )}
-          {activeTab === 'clients' && (
-            <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Users size={20} /> Elenco Clienti</h2>
-              <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
-                {loading ? (
-                  <div className="flex justify-center items-center h-32">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
-                  </div>
-                ) : (
-                  clients.map(client => (
-                    <ClientItem key={client.id} client={client} navigate={navigate} variants={itemVariants} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+            <StatCard 
+              title="Clienti Attivi" 
+              value={clientStats.active} 
+              icon={<CheckCircle className="text-blue-500"/>}
+              variants={itemVariants}
+            />
+            <StatCard 
+              title="Scadenze Prossime" 
+              value={clientStats.expiring} 
+              icon={<Clock className="text-yellow-500"/>}
+              variants={itemVariants}
+            />
+            <StatCard 
+              title="Totale Clienti" 
+              value={clients.length} 
+              icon={<Users className="text-cyan-500"/>}
+              variants={itemVariants}
+            />
+          </div>
+          <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Aggiornamenti Recenti</h2>
+            <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
+              <AnimatePresence>
+                {activityFeed.length > 0 ? (
+                  activityFeed.map(item => (
+                    <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds}`} item={item} navigate={navigate} variants={itemVariants} />
                   ))
+                ) : (
+                  <p className="text-slate-400 text-center p-4">Nessun aggiornamento recente.</p>
                 )}
-              </div>
-            </motion.div>
-          )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+          <motion.div variants={itemVariants} className="mt-8 bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+            <h2 className="text-lg font-semibold mb-4 text-slate-200">Funzioni Utili</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <QuickAction to={() => navigate('/coach/clients')} title="Gestisci Clienti" icon={<Users size={22} />} variants={itemVariants} />
+              <QuickAction to={() => navigate('/new')} title="Aggiungi Nuovo Cliente" icon={<PlusCircle size={22} />} variants={itemVariants} />
+              <QuickAction to={() => navigate('/coach/chat')} title="Invia Messaggio" icon={<MessageSquare size={22} />} variants={itemVariants} />
+              <QuickAction to={() => navigate('/coach/anamnesi')} title="Visualizza Anamnesi" icon={<FileText size={22} />} variants={itemVariants} />
+              <QuickAction to={() => navigate('/coach/updates')} title="Aggiornamenti" icon={<Bell size={22} />} variants={itemVariants} />
+            </div>
+          </motion.div>
         </main>
       </motion.div>
     </div>

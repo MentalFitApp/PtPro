@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db, toDate, calcolaStatoPercorso } from '../firebase';
-import { Users, ArrowLeft, FileText } from 'lucide-react';
+import { Users, ArrowLeft, FileText, Search, Calendar, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const LoadingSpinner = () => (
@@ -11,8 +11,8 @@ const LoadingSpinner = () => (
   </div>
 );
 
-const ClientItem = ({ client, navigate, hasAnamnesi, variants }) => {
-  const stato = calcolaStatoPercorso(client.scadenza);
+const ClientItem = ({ client, navigate, hasAnamnesi, lastCheck, variants }) => {
+  const stato = calcolaStatoPercorso(client.scadenza) || 'na';
   const styles = {
     attivo: "bg-emerald-900/80 text-emerald-300 border border-emerald-500/30",
     rinnovato: "bg-amber-900/80 text-amber-300 border border-amber-500/30",
@@ -25,7 +25,7 @@ const ClientItem = ({ client, navigate, hasAnamnesi, variants }) => {
     <motion.div
       variants={variants}
       className="p-3 rounded-lg bg-slate-500/5 hover:bg-slate-500/10 transition-colors"
-      onClick={() => navigate(`/client/${client.id}`)}
+      onClick={() => navigate(`/coach/client/${client.id}`)} // Naviga a CoachClientDetail
     >
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
@@ -36,7 +36,14 @@ const ClientItem = ({ client, navigate, hasAnamnesi, variants }) => {
           {labels[stato] || 'N/D'}
         </span>
       </div>
-      <p className="text-xs text-slate-400 mt-1">{client.email || 'N/D'}</p>
+      <div className="text-xs text-slate-400 mt-1 flex items-center gap-4">
+        <span className="flex items-center gap-1">
+          <Calendar size={14} /> Scadenza: {client.scadenza ? toDate(client.scadenza).toLocaleDateString('it-IT') : 'N/D'}
+        </span>
+        <span className="flex items-center gap-1">
+          <Clock size={14} /> Ultimo Check: {lastCheck ? toDate(lastCheck).toLocaleDateString('it-IT') : 'Nessuno'}
+        </span>
+      </div>
     </motion.div>
   );
 };
@@ -44,22 +51,33 @@ const ClientItem = ({ client, navigate, hasAnamnesi, variants }) => {
 export default function CoachClients() {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
+  const [filteredClients, setFilteredClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [anamnesiStatus, setAnamnesiStatus] = useState({});
+  const [lastChecks, setLastChecks] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'clients'), async (snap) => {
       try {
         const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const anamnesiStatusTemp = {};
+        const lastChecksTemp = {};
         for (const client of clientList) {
           const anamnesiRef = doc(db, `clients/${client.id}/anamnesi`, 'initial');
           const anamnesiDoc = await getDoc(anamnesiRef);
           anamnesiStatusTemp[client.id] = anamnesiDoc.exists();
+
+          const checksQuery = query(collection(db, `clients/${client.id}/checks`), orderBy('createdAt', 'desc'), limit(1));
+          const checksSnap = await getDocs(checksQuery);
+          lastChecksTemp[client.id] = checksSnap.docs[0]?.data().createdAt || null;
         }
         setAnamnesiStatus(anamnesiStatusTemp);
+        setLastChecks(lastChecksTemp);
         setClients(clientList);
+        setFilteredClients(clientList);
         setLoading(false);
       } catch (err) {
         console.error("Errore nel fetch clients:", err);
@@ -73,6 +91,21 @@ export default function CoachClients() {
     });
     return () => unsub();
   }, []);
+
+  // Filtro e ricerca
+  useEffect(() => {
+    let result = [...clients];
+    if (searchQuery) {
+      result = result.filter(client => 
+        client.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        client.email?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    if (statusFilter !== 'all') {
+      result = result.filter(client => calcolaStatoPercorso(client.scadenza) === statusFilter);
+    }
+    setFilteredClients(result);
+  }, [searchQuery, statusFilter, clients]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -102,16 +135,38 @@ export default function CoachClients() {
           </button>
         </motion.header>
         <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Users size={20} /> Clienti</h2>
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" size={18}/>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cerca per nome o email..."
+                className="w-full bg-zinc-900/70 p-2 pl-10 rounded-lg border border-white/10 outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-zinc-900/70 border border-white/10 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-rose-500 text-slate-200"
+            >
+              <option value="all">Tutti</option>
+              <option value="attivo">Attivo</option>
+              <option value="rinnovato">In Scadenza</option>
+              <option value="non_rinnovato">Scaduto</option>
+            </select>
+          </div>
           <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
             <AnimatePresence>
-              {clients.length > 0 ? (
-                clients.map(client => (
+              {filteredClients.length > 0 ? (
+                filteredClients.map(client => (
                   <ClientItem
                     key={client.id}
                     client={client}
                     navigate={navigate}
                     hasAnamnesi={anamnesiStatus[client.id]}
+                    lastCheck={lastChecks[client.id]}
                     variants={itemVariants}
                   />
                 ))

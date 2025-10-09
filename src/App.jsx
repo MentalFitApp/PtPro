@@ -29,6 +29,7 @@ const CoachAnamnesi = React.lazy(() => import('./pages/CoachAnamnesi'));
 const CoachUpdates = React.lazy(() => import('./pages/CoachUpdates'));
 const CoachClients = React.lazy(() => import('./pages/CoachClients'));
 const CoachChat = React.lazy(() => import('./pages/CoachChat'));
+const CoachClientDetail = React.lazy(() => import('./pages/CoachClientDetail'));
 
 // Spinner di caricamento
 const PageSpinner = () => (
@@ -38,8 +39,9 @@ const PageSpinner = () => (
 );
 
 const AuthSpinner = () => (
-  <div className="flex justify-center items-center min-h-screen bg-background text-foreground">
-    Caricamento...
+  <div className="flex flex-col justify-center items-center min-h-screen bg-zinc-950 text-slate-200">
+    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+    <p className="mt-4 text-sm">Caricamento autenticazione...</p>
   </div>
 );
 
@@ -60,7 +62,10 @@ export default function App() {
   });
 
   useEffect(() => {
+    let isMounted = true;
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!isMounted) return;
+
       console.log('onAuthStateChanged:', currentUser ? `Utente autenticato: ${currentUser.uid}` : 'Nessun utente autenticato');
       if (currentUser) {
         const sessionRole = sessionStorage.getItem('app_role');
@@ -69,10 +74,16 @@ export default function App() {
           const clientDoc = await getDoc(clientDocRef);
           const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient;
           const isCurrentUserACoach = currentUser.uid === 'l0RI8TzFjbNVoAdmcXNQkP9mWb12';
-          console.log('Ruolo utente:', { isClient: isCurrentUserAClient, isCoach: isCurrentUserACoach, sessionRole });
+          const isCurrentUserAdmin = [
+            "QwWST9OVOlTOi5oheyCqfpXLOLg2",
+            "3j0AXIRa4XdHq1ywCl4UBxJNsku2",
+            "AeZKjJYu5zMZ4mvffaGiqCBb0cF2"
+          ].includes(currentUser.uid);
 
-          if (sessionRole === 'admin' && isCurrentUserAClient) {
-            console.log('Logout forzato: utente cliente che tenta accesso admin');
+          console.log('Ruolo utente:', { isClient: isCurrentUserAClient, isCoach: isCurrentUserACoach, isAdmin: isCurrentUserAdmin, sessionRole });
+
+          if (sessionRole === 'client' && !isCurrentUserAClient) {
+            console.log('Logout forzato: ruolo client non valido');
             await signOut(auth);
             setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false });
             return;
@@ -82,6 +93,8 @@ export default function App() {
             sessionStorage.setItem('app_role', 'coach');
           } else if (isCurrentUserAClient) {
             sessionStorage.setItem('app_role', 'client');
+          } else if (isCurrentUserAdmin) {
+            sessionStorage.setItem('app_role', 'admin');
           }
 
           setAuthInfo({
@@ -104,7 +117,11 @@ export default function App() {
         setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false });
       }
     });
-    return () => unsubscribe();
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   if (authInfo.isLoading) {
@@ -147,6 +164,7 @@ export default function App() {
               <Route path="/coach/updates" element={<CoachUpdates />} />
               <Route path="/coach/clients" element={<CoachClients />} />
               <Route path="/coach/chat" element={<CoachChat />} />
+              <Route path="/coach/client/:clientId" element={<CoachClientDetail />} />
             </Route>
           </Route>
           <Route 

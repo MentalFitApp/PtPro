@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { db, auth, toDate, calcolaStatoPercorso, updateStatoPercorso } from "../firebase";
-import { collection, onSnapshot, deleteDoc, doc } from "firebase/firestore";
+import { collection, onSnapshot, deleteDoc, doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-import { UserPlus, FilePenLine, Trash2, Search, ChevronDown, ChevronUp, Filter, AlertTriangle, LogOut, Download } from "lucide-react";
+import { UserPlus, FilePenLine, Trash2, Search, ChevronDown, ChevronUp, Filter, AlertTriangle, LogOut, Download, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Papa from 'papaparse';
 
@@ -26,7 +26,7 @@ const exportToCSV = (clients) => {
   link.click();
 };
 
-// Componenti Badge
+// Componente Badge
 const PathStatusBadge = ({ status }) => {
   const styles = {
     attivo: "bg-emerald-900/80 text-emerald-300 border border-emerald-500/30",
@@ -37,6 +37,13 @@ const PathStatusBadge = ({ status }) => {
   const labels = { attivo: 'Attivo', rinnovato: 'In Scadenza', non_rinnovato: 'Scaduto', na: 'N/D' };
   return <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${styles[status]}`}>{labels[status]}</span>;
 };
+
+// Componente AnamnesiBadge
+const AnamnesiBadge = ({ hasAnamnesi }) => (
+  <span className={`px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${hasAnamnesi ? 'bg-green-900/80 text-green-300 border border-green-500/30' : 'bg-gray-700/80 text-gray-300 border border-gray-500/30'}`}>
+    <FileText size={12} /> {hasAnamnesi ? 'Inviata' : 'Non Inviata'}
+  </span>
+);
 
 // Modal di conferma
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, clientName }) => (
@@ -110,6 +117,7 @@ export default function Clients() {
   const [sortDir, setSortDir] = useState("desc");
   const [dateFilter, setDateFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
+  const [anamnesiStatus, setAnamnesiStatus] = useState({});
 
   const handleLogout = async () => {
     try {
@@ -121,15 +129,30 @@ export default function Clients() {
   };
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "clients"), (snap) => {
-      const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      console.log('Clienti recuperati da Firestore:', clientList);
-      setClients(clientList);
-      // Aggiorna stato percorso per ogni cliente
-      clientList.forEach(client => updateStatoPercorso(client.id));
-      setLoading(false);
+    const unsub = onSnapshot(collection(db, "clients"), async (snap) => {
+      try {
+        const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log('Clienti recuperati da Firestore:', clientList);
+
+        // Verifica stato anamnesi per ogni cliente
+        const anamnesiStatusTemp = {};
+        for (const client of clientList) {
+          const anamnesiRef = doc(db, `clients/${client.id}/anamnesi`, 'initial');
+          const anamnesiDoc = await getDoc(anamnesiRef);
+          anamnesiStatusTemp[client.id] = anamnesiDoc.exists();
+        }
+        setAnamnesiStatus(anamnesiStatusTemp);
+
+        // Aggiorna stato percorso e imposta lista clienti
+        clientList.forEach(client => updateStatoPercorso(client.id));
+        setClients(clientList);
+        setLoading(false);
+      } catch (error) {
+        console.error("Errore nel recupero dei clienti:", error);
+        setLoading(false);
+      }
     }, (error) => {
-      console.error("Errore nel recupero dei clienti:", error);
+      console.error("Errore snapshot clienti:", error);
       setLoading(false);
     });
     return () => unsub();
@@ -281,7 +304,10 @@ export default function Clients() {
                         {c.name || "-"}
                       </button>
                     </td>
-                    <td className="p-4"><PathStatusBadge status={c.statoPercorso || calcolaStatoPercorso(c.scadenza)} /></td>
+                    <td className="p-4 flex gap-2 items-center">
+                      <PathStatusBadge status={c.statoPercorso || calcolaStatoPercorso(c.scadenza)} />
+                      <AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} />
+                    </td>
                     <td className="p-4">{toDate(c.scadenza)?.toLocaleDateString('it-IT') || "-"}</td>
                     <td className="p-4">{toDate(c.createdAt)?.toLocaleDateString('it-IT') || "-"}</td>
                     <td className="p-4">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { LayoutGrid, Users, MessageSquare, Rocket, Menu, X } from 'lucide-react';
+import { LayoutGrid, Users, MessageSquare, FileText, Bell, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // AnimatedBackground globale
@@ -50,7 +50,15 @@ const navLinks = [
   { to: '/', icon: <LayoutGrid size={18} />, label: 'Dashboard' },
   { to: '/clients', icon: <Users size={18} />, label: 'Clienti' },
   { to: '/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
-  { to: '/updates', icon: <Rocket size={18} />, label: 'Novità' },
+  { to: '/updates', icon: <Bell size={18} />, label: 'Novità' },
+];
+
+const coachNavLinks = [
+  { to: '/coach-dashboard', icon: <LayoutGrid size={18} />, label: 'Dashboard' },
+  { to: '/coach/clients', icon: <Users size={18} />, label: 'Clienti' },
+  { to: '/coach/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
+  { to: '/coach/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
+  { to: '/coach/updates', icon: <Bell size={18} />, label: 'Aggiornamenti' },
 ];
 
 const NavLink = ({ to, icon, label, onClick }) => {
@@ -70,8 +78,9 @@ const NavLink = ({ to, icon, label, onClick }) => {
   );
 };
 
-const SidebarContent = ({ onLinkClick, onClose }) => {
+const SidebarContent = ({ onLinkClick, onClose, isCoach }) => {
   const navigate = useNavigate();
+  const links = isCoach ? coachNavLinks : navLinks;
   return (
     <aside className="w-full h-full bg-zinc-950/60 backdrop-blur-xl p-4 flex flex-col gradient-border">
       <div className="flex justify-between items-center mb-10">
@@ -81,7 +90,7 @@ const SidebarContent = ({ onLinkClick, onClose }) => {
         </button>
       </div>
       <nav className="flex flex-col gap-2">
-        {navLinks.map(link => (
+        {links.map(link => (
           <NavLink 
             key={link.to}
             to={link.to} 
@@ -103,6 +112,11 @@ export default function MainLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const menuRef = useRef(null);
+  const [isCoach, setIsCoach] = useState(false);
+
+  useEffect(() => {
+    setIsCoach(location.pathname.startsWith('/coach'));
+  }, [location.pathname]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -140,7 +154,7 @@ export default function MainLayout() {
     <div className="relative min-h-screen flex flex-col md:flex-row">
       <AnimatedBackground />
       <div className="hidden md:flex md:fixed h-screen z-20">
-        <SidebarContent onLinkClick={() => setIsMobileMenuOpen(false)} />
+        <SidebarContent onLinkClick={() => setIsMobileMenuOpen(false)} isCoach={isCoach} />
       </div>
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -155,6 +169,7 @@ export default function MainLayout() {
             <SidebarContent 
               onLinkClick={() => setIsMobileMenuOpen(false)} 
               onClose={() => setIsMobileMenuOpen(false)}
+              isCoach={isCoach}
             />
           </motion.div>
         )}

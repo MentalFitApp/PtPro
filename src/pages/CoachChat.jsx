@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAuth } from 'firebase/auth';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, setDoc, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, AlertCircle, Search } from 'lucide-react';
+import { ArrowLeft, Send, AlertCircle, Search, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const LoadingSpinner = () => (
@@ -59,6 +59,9 @@ export default function CoachChat() {
   const [chatId, setChatId] = useState(null);
   const [chats, setChats] = useState([]);
   const [selectedChatId, setSelectedChatId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const messagesEndRef = useRef(null);
   const unsubscribeRef = useRef(null);
   const COACH_UID = "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
@@ -89,12 +92,18 @@ export default function CoachChat() {
       const messagesCollectionRef = collection(db, 'chats', generatedChatId, 'messages');
       const q = query(messagesCollectionRef, orderBy('createdAt'));
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const messagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setMessages(messagesData);
-        setLoading(false);
+        try {
+          const messagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setMessages(messagesData);
+          setLoading(false);
+        } catch (err) {
+          console.error("Errore nello snapshot della chat:", err);
+          setError("Errore: non hai accesso a questa chat. Contatta il supporto.");
+          setLoading(false);
+        }
       }, (error) => {
-        console.error("Errore nello snapshot della chat:", error);
-        setError("Errore: non hai accesso a questa chat. Contatta il supporto.");
+        console.error("Errore snapshot messaggi:", error);
+        setError("Errore nel caricamento dei messaggi.");
         setLoading(false);
       });
 
@@ -116,10 +125,16 @@ export default function CoachChat() {
     const chatsRef = collection(db, 'chats');
     const q = query(chatsRef, where('participants', 'array-contains', COACH_UID), orderBy('lastUpdate', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setChats(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setLoading(false);
-    }, (error) => {
-      console.error("Errore nel caricare le chat:", error);
+      try {
+        setChats(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        setLoading(false);
+      } catch (err) {
+        console.error("Errore nel caricare le chat:", err);
+        setError("Errore nel caricamento delle chat.");
+        setLoading(false);
+      }
+    }, (err) => {
+      console.error("Errore snapshot chats:", err);
       setError("Errore nel caricamento delle chat.");
       setLoading(false);
     });
@@ -142,11 +157,17 @@ export default function CoachChat() {
     const messagesCollectionRef = collection(db, 'chats', selectedChatId, 'messages');
     const q = query(messagesCollectionRef, orderBy('createdAt'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const messagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setMessages(messagesData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Errore nello snapshot dei messaggi:", error);
+      try {
+        const messagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setMessages(messagesData);
+        setLoading(false);
+      } catch (err) {
+        console.error("Errore nello snapshot dei messaggi:", err);
+        setError("Errore nel caricamento dei messaggi.");
+        setLoading(false);
+      }
+    }, (err) => {
+      console.error("Errore snapshot messaggi:", err);
       setError("Errore nel caricamento dei messaggi.");
       setLoading(false);
     });
@@ -154,6 +175,37 @@ export default function CoachChat() {
     unsubscribeRef.current = unsubscribe;
     return () => unsubscribe && unsubscribe();
   }, [selectedChatId]);
+
+  // Ricerca clienti
+  useEffect(() => {
+    const searchClients = async () => {
+      if (searchQuery.trim().length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+      setIsSearching(true);
+      const clientsRef = collection(db, 'clients');
+      const searchTerm = searchQuery.toLowerCase();
+      const q = query(clientsRef, 
+        where('name_lowercase', '>=', searchTerm), 
+        where('name_lowercase', '<=', searchTerm + '\uf8ff'),
+        limit(10)
+      );
+      try {
+        const querySnapshot = await getDocs(q);
+        setSearchResults(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        console.error("Errore nella ricerca:", error);
+        setError("Errore nella ricerca dei clienti.");
+      }
+      setIsSearching(false);
+    };
+    const debounceSearch = setTimeout(() => {
+      searchClients();
+    }, 300);
+    return () => clearTimeout(debounceSearch);
+  }, [searchQuery]);
 
   // Scorri automaticamente all'ultimo messaggio
   useEffect(() => {
@@ -195,6 +247,30 @@ export default function CoachChat() {
     setLoading(true);
   };
 
+  // Avvia nuova chat
+  const handleSelectClient = async (client) => {
+    const newChatId = [client.id, COACH_UID].sort().join('_');
+    const chatRef = doc(db, 'chats', newChatId);
+    const existingChat = chats.find(chat => chat.id === newChatId);
+    if (!existingChat) {
+      try {
+        await setDoc(chatRef, {
+          participants: [client.id, COACH_UID],
+          participantNames: { [client.id]: client.name, [COACH_UID]: "Coach Mattia" },
+          lastMessage: "Conversazione iniziata",
+          lastUpdate: serverTimestamp()
+        }, { merge: true });
+      } catch (error) {
+        console.error("Errore nella creazione della chat:", error);
+        setError("Errore nella creazione della chat.");
+      }
+    }
+    setSelectedChatId(newChatId);
+    setChatId(newChatId);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
   // Chiudi notifica
   const dismissError = () => setError('');
 
@@ -223,10 +299,24 @@ export default function CoachChat() {
               <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" size={18}/>
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cerca cliente..."
                 className="w-full bg-zinc-900/70 p-2 pl-10 rounded-lg border border-white/10 outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base"
               />
             </div>
+            {searchQuery.length > 1 && (
+              <div className="mt-2">
+                {isSearching && <p className="p-4 text-slate-400 text-sm">Ricerca in corso...</p>}
+                {!isSearching && searchResults.length === 0 && <p className="p-4 text-slate-400 text-sm">Nessun cliente trovato.</p>}
+                {!isSearching && searchResults.map(client => (
+                  <div key={client.id} onClick={() => handleSelectClient(client)} className="p-4 cursor-pointer hover:bg-white/5 transition-colors">
+                    <p className="font-semibold text-slate-100">{client.name}</p>
+                    <p className="text-sm text-slate-400">{client.email}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto">
             {chats.length > 0 ? (
@@ -300,7 +390,7 @@ export default function CoachChat() {
             </>
           ) : (
             <div className="flex flex-col justify-center items-center h-full text-slate-500">
-              <Send size={48} />
+              <MessageSquare size={48} />
               <p className="mt-4">Seleziona una conversazione per iniziare.</p>
             </div>
           )}

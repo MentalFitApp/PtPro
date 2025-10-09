@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -7,26 +7,48 @@ import { motion } from 'framer-motion';
 
 // Componente per lo sfondo animato
 const AnimatedBackground = () => {
+  const starsContainerRef = useRef(null);
+  const isInitialized = useRef(false);
+
   useEffect(() => {
-    const starsContainer = document.querySelector('.stars');
-    if (!starsContainer) return;
+    if (isInitialized.current) return;
 
-    const createStar = () => {
-      const star = document.createElement('div');
-      star.className = 'star';
-      star.style.left = `${Math.random() * 100}%`;
-      star.style.top = `${Math.random() * 100}%`;
-      star.style.animationDuration = `${Math.random() * 30 + 40}s, 5s`;
-      starsContainer.appendChild(star);
-    };
-
-    for (let i = 0; i < 50; i++) {
-      createStar();
+    let starsContainer = document.querySelector('.stars');
+    if (!starsContainer) {
+      starsContainer = document.createElement('div');
+      starsContainer.className = 'stars';
+      const starryBackground = document.querySelector('.starry-background');
+      if (!starryBackground) {
+        const bg = document.createElement('div');
+        bg.className = 'starry-background';
+        document.body.appendChild(bg);
+        bg.appendChild(starsContainer);
+      } else {
+        starryBackground.appendChild(starsContainer);
+      }
+      starsContainerRef.current = starsContainer;
+    } else {
+      starsContainerRef.current = starsContainer;
     }
 
+    // Crea 50 stelle
+    for (let i = 0; i < 50; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.setProperty('--top-offset', `${Math.random() * 100}vh`);
+      star.style.setProperty('--fall-duration', `${8 + Math.random() * 6}s`); // 8-14s
+      star.style.setProperty('--fall-delay', `${Math.random() * 5}s`);
+      star.style.setProperty('--star-width', `${1 + Math.random() * 2}px`); // 1-3px
+      starsContainerRef.current.appendChild(star);
+    }
+
+    isInitialized.current = true;
+
     return () => {
-      while (starsContainer.firstChild) {
-        starsContainer.removeChild(starsContainer.firstChild);
+      if (starsContainerRef.current) {
+        while (starsContainerRef.current.firstChild) {
+          starsContainerRef.current.removeChild(starsContainerRef.current.firstChild);
+        }
       }
     };
   }, []);
@@ -44,6 +66,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // UID di admin e coach
   const authorizedUsers = [
@@ -62,21 +85,22 @@ export default function Login() {
         if (authorizedUsers.includes(uid)) {
           const isCoach = uid === "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
           sessionStorage.setItem('app_role', isCoach ? 'coach' : 'admin');
-          navigate(isCoach ? '/coach-dashboard' : '/');
+          navigate(isCoach ? '/coach-dashboard' : '/', { replace: true });
         } else {
           console.log('Utente non autorizzato:', uid);
           auth.signOut();
           setError('Solo amministratori e coach possono accedere a questa area.');
         }
       }
+      setIsCheckingAuth(false);
     });
     return () => unsubscribe();
   }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (isSubmitting) {
-      console.log('Submit bloccato: già in corso');
+    if (isSubmitting || isCheckingAuth) {
+      console.log('Submit bloccato: già in corso o autenticazione in corso');
       return;
     }
     setError('');
@@ -90,7 +114,7 @@ export default function Login() {
       if (authorizedUsers.includes(uid)) {
         const isCoach = uid === "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
         sessionStorage.setItem('app_role', isCoach ? 'coach' : 'admin');
-        navigate(isCoach ? '/coach-dashboard' : '/');
+        navigate(isCoach ? '/coach-dashboard' : '/', { replace: true });
       } else {
         throw new Error('Solo amministratori e coach possono accedere a questa area.');
       }
@@ -117,6 +141,18 @@ export default function Login() {
   const inputStyle = "w-full p-3 pl-10 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 transition-all text-slate-200";
   const iconStyle = "absolute left-3 top-1/2 -translate-y-1/2 text-slate-400";
 
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
+        <AnimatedBackground />
+        <div className="flex flex-col justify-center items-center text-slate-200">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+          <p className="mt-4 text-sm">Verifica autenticazione...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
       <AnimatedBackground />
@@ -141,7 +177,7 @@ export default function Login() {
               placeholder="Email"
               className={inputStyle}
               autoComplete="email"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isCheckingAuth}
             />
           </div>
           <div className={inputContainerStyle}>
@@ -154,17 +190,17 @@ export default function Login() {
               placeholder="Password"
               className={inputStyle}
               autoComplete="current-password"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isCheckingAuth}
             />
           </div>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <div>
             <motion.button 
               type="submit" 
-              disabled={isSubmitting}
+              disabled={isSubmitting || isCheckingAuth}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors disabled:bg-rose-900 disabled:cursor-not-allowed"
-              whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
-              whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
+              whileHover={{ scale: (isSubmitting || isCheckingAuth) ? 1 : 1.02 }}
+              whileTap={{ scale: (isSubmitting || isCheckingAuth) ? 1 : 0.98 }}
               transition={{ duration: 0.2 }}
             >
               <LogIn size={18} />

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, collectionGroup, query, orderBy, onSnapshot, getDoc, doc } from 'firebase/firestore';
+import { collection, collectionGroup, query, orderBy, onSnapshot, getDoc, doc, setDoc, where, serverTimestamp } from 'firebase/firestore';
 import { db, toDate, calcolaStatoPercorso } from '../firebase';
-import { CheckCircle, Clock, FileText, MessageSquare, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Clock, FileText, MessageSquare, ArrowLeft, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Helper per calcolare il tempo trascorso
@@ -159,7 +159,7 @@ export default function CoachUpdates() {
               clientId,
               clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
               description: `Nuovo messaggio: ${chatData.lastMessage.slice(0, 30)}...`,
-              date: chatData.lastUpdate
+              date: doc.data().lastUpdate
             });
           }
         }
