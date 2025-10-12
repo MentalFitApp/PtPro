@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAuth } from 'firebase/auth';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, setDoc, where, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, setDoc, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, AlertCircle, Search, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Send, AlertCircle, Search, MessageSquare, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const LoadingSpinner = () => (
@@ -20,20 +20,20 @@ const Notification = ({ message, onDismiss }) => (
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -50 }}
-        className="fixed top-5 right-5 z-50 flex items-center gap-4 p-4 rounded-lg border bg-red-900/80 text-red-300 border-red-500/30 backdrop-blur-md shadow-lg"
+        className="fixed top-5 right-5 z-[1000] flex items-center gap-4 p-4 rounded-lg border bg-red-900/80 text-red-300 border-red-500/30 backdrop-blur-md shadow-lg"
       >
         <AlertCircle size={20} />
         <p>{message}</p>
         <button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/10">
-          <AlertCircle size={16} />
+          <X size={16} />
         </button>
       </motion.div>
     )}
   </AnimatePresence>
 );
 
-const ChatItem = ({ chat, setSelectedChatId, selectedChatId, adminUIDs }) => {
-  const clientUID = chat.participants.find(p => !adminUIDs.includes(p));
+const ChatItem = ({ chat, setSelectedChatId, selectedChatId, coachUid }) => {
+  const clientUID = chat.participants.find(p => p !== coachUid);
   const clientName = chat.participantNames?.[clientUID] || 'Cliente';
   return (
     <motion.div
@@ -64,82 +64,67 @@ export default function CoachChat() {
   const [isSearching, setIsSearching] = useState(false);
   const messagesEndRef = useRef(null);
   const unsubscribeRef = useRef(null);
-  const COACH_UID = "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
-  const adminUIDs = ["QwWST9OVOlTOi5oheyCqfpXLOLg2", "AeZKjJYu5zMZ4mvffaGiqCBb0cF2", "3j0AXIRa4XdHq1ywCl4UBxJNsku2", COACH_UID];
 
-  // Inizializza chat
-  const initializeChat = async (clientId) => {
-    if (!user || !clientId) return;
-    
-    const generatedChatId = [user.uid, clientId].sort().join('_');
-    setChatId(generatedChatId);
-
-    try {
-      const chatDocRef = doc(db, 'chats', generatedChatId);
-      const clientDoc = await getDoc(doc(db, 'clients', clientId));
-      const clientName = clientDoc.exists() ? clientDoc.data().name : 'Cliente';
-
-      await setDoc(chatDocRef, {
-        participants: [user.uid, clientId],
-        participantNames: {
-          [user.uid]: 'Coach Mattia',
-          [clientId]: clientName,
-        },
-        lastMessage: '',
-        lastUpdate: serverTimestamp(),
-      }, { merge: true });
-
-      const messagesCollectionRef = collection(db, 'chats', generatedChatId, 'messages');
-      const q = query(messagesCollectionRef, orderBy('createdAt'));
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        try {
-          const messagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setMessages(messagesData);
-          setLoading(false);
-        } catch (err) {
-          console.error("Errore nello snapshot della chat:", err);
-          setError("Errore: non hai accesso a questa chat. Contatta il supporto.");
-          setLoading(false);
-        }
-      }, (error) => {
-        console.error("Errore snapshot messaggi:", error);
-        setError("Errore nel caricamento dei messaggi.");
-        setLoading(false);
-      });
-
-      unsubscribeRef.current = unsubscribe;
-    } catch (error) {
-      console.error("Errore nell'inizializzazione della chat:", error);
-      setError("Errore nell'avvio della chat. Riprova.");
-      setLoading(false);
-    }
-  };
-
-  // Carica chats
+  // Verifica autenticazione
   useEffect(() => {
     if (!user) {
+      console.log('Nessun utente autenticato, redirect a /login');
       navigate('/login');
       return;
     }
+    console.log('Utente autenticato:', { uid: user.uid, email: user.email });
+
+    // Verifica ruolo coach
+    const checkCoachRole = async () => {
+      try {
+        const coachDocRef = doc(db, 'roles', 'coaches');
+        const coachDoc = await getDoc(coachDocRef);
+        const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(user.uid);
+        console.log('Debug ruolo coach:', {
+          uid: user.uid,
+          coachDocExists: coachDoc.exists(),
+          coachUids: coachDoc.data()?.uids,
+          isCoach
+        });
+        if (!isCoach) {
+          console.warn('Accesso non autorizzato per CoachChat:', user.uid);
+          sessionStorage.removeItem('app_role');
+          await auth.signOut();
+          navigate('/login');
+        }
+      } catch (err) {
+        console.error('Errore verifica ruolo coach:', err);
+        setError('Errore nella verifica del ruolo coach.');
+        setLoading(false);
+      }
+    };
+    checkCoachRole();
+  }, [user, navigate]);
+
+  // Carica chats
+  useEffect(() => {
+    if (!user) return;
 
     const chatsRef = collection(db, 'chats');
-    const q = query(chatsRef, where('participants', 'array-contains', COACH_UID), orderBy('lastUpdate', 'desc'));
+    const q = query(chatsRef, where('participants', 'array-contains', user.uid), orderBy('lastUpdate', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       try {
-        setChats(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const chatList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log('Chats caricate:', { count: chatList.length, chats: chatList.map(c => ({ id: c.id, participants: c.participants })) });
+        setChats(chatList);
         setLoading(false);
       } catch (err) {
         console.error("Errore nel caricare le chat:", err);
-        setError("Errore nel caricamento delle chat.");
+        setError(err.code === 'permission-denied' ? 'Permessi insufficienti per accedere alle chat.' : 'Errore nel caricamento delle chat.');
         setLoading(false);
       }
     }, (err) => {
       console.error("Errore snapshot chats:", err);
-      setError("Errore nel caricamento delle chat.");
+      setError(err.code === 'permission-denied' ? 'Permessi insufficienti per accedere alle chat.' : 'Errore nel caricamento delle chat.');
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [user, navigate]);
+  }, [user]);
 
   // Carica messaggi quando cambia chat
   useEffect(() => {
@@ -159,16 +144,17 @@ export default function CoachChat() {
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       try {
         const messagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log('Messaggi caricati per chat:', selectedChatId, { count: messagesData.length });
         setMessages(messagesData);
         setLoading(false);
       } catch (err) {
         console.error("Errore nello snapshot dei messaggi:", err);
-        setError("Errore nel caricamento dei messaggi.");
+        setError(err.code === 'permission-denied' ? 'Permessi insufficienti per i messaggi.' : 'Errore nel caricamento dei messaggi.');
         setLoading(false);
       }
     }, (err) => {
       console.error("Errore snapshot messaggi:", err);
-      setError("Errore nel caricamento dei messaggi.");
+      setError(err.code === 'permission-denied' ? 'Permessi insufficienti per i messaggi.' : 'Errore nel caricamento dei messaggi.');
       setLoading(false);
     });
 
@@ -190,14 +176,16 @@ export default function CoachChat() {
       const q = query(clientsRef, 
         where('name_lowercase', '>=', searchTerm), 
         where('name_lowercase', '<=', searchTerm + '\uf8ff'),
-        limit(10)
+        limit(10) // Aggiunto limit importato
       );
       try {
         const querySnapshot = await getDocs(q);
-        setSearchResults(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log('Risultati ricerca clienti:', { count: results.length, results });
+        setSearchResults(results);
       } catch (error) {
         console.error("Errore nella ricerca:", error);
-        setError("Errore nella ricerca dei clienti.");
+        setError(error.code === 'permission-denied' ? 'Permessi insufficienti per la ricerca clienti.' : 'Errore nella ricerca dei clienti.');
       }
       setIsSearching(false);
     };
@@ -211,6 +199,57 @@ export default function CoachChat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Inizializza chat
+  const initializeChat = async (clientId) => {
+    if (!user || !clientId) return;
+    
+    const generatedChatId = [user.uid, clientId].sort().join('_');
+    setChatId(generatedChatId);
+
+    try {
+      const chatDocRef = doc(db, 'chats', generatedChatId);
+      const clientDoc = await getDoc(doc(db, 'clients', clientId));
+      const clientName = clientDoc.exists() ? clientDoc.data().name : 'Cliente';
+
+      console.log('Inizializzazione chat:', { chatId: generatedChatId, clientId, clientName });
+
+      await setDoc(chatDocRef, {
+        participants: [user.uid, clientId],
+        participantNames: {
+          [user.uid]: user.displayName || 'Coach',
+          [clientId]: clientName,
+        },
+        lastMessage: 'Conversazione iniziata',
+        lastUpdate: serverTimestamp(),
+      }, { merge: true });
+
+      const messagesCollectionRef = collection(db, 'chats', generatedChatId, 'messages');
+      const q = query(messagesCollectionRef, orderBy('createdAt'));
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        try {
+          const messagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          console.log('Messaggi iniziali caricati:', { count: messagesData.length });
+          setMessages(messagesData);
+          setLoading(false);
+        } catch (err) {
+          console.error("Errore nello snapshot della chat:", err);
+          setError(err.code === 'permission-denied' ? 'Permessi insufficienti per la chat.' : 'Errore nel caricamento dei messaggi.');
+          setLoading(false);
+        }
+      }, (error) => {
+        console.error("Errore snapshot messaggi:", error);
+        setError(error.code === 'permission-denied' ? 'Permessi insufficienti per i messaggi.' : 'Errore nel caricamento dei messaggi.');
+        setLoading(false);
+      });
+
+      unsubscribeRef.current = unsubscribe;
+    } catch (error) {
+      console.error("Errore nell'inizializzazione della chat:", error);
+      setError(error.code === 'permission-denied' ? 'Permessi insufficienti per avviare la chat.' : 'Errore nell\'avvio della chat.');
+      setLoading(false);
+    }
+  };
 
   // Invia messaggio
   const handleSendMessage = async (e) => {
@@ -233,14 +272,16 @@ export default function CoachChat() {
         lastMessage: tempMessage,
         lastUpdate: serverTimestamp(),
       }, { merge: true });
+      console.log('Messaggio inviato:', { chatId, text: tempMessage });
     } catch (error) {
       console.error("Errore nell'invio del messaggio:", error);
-      setError("Errore nell'invio del messaggio. Riprova.");
+      setError(error.code === 'permission-denied' ? 'Permessi insufficienti per inviare il messaggio.' : 'Errore nell\'invio del messaggio.');
     }
   };
 
   // Selezione chat
   const handleSelectChat = (chatId) => {
+    console.log('Selezionata chat:', chatId);
     setSelectedChatId(chatId);
     setChatId(chatId);
     setError('');
@@ -249,20 +290,21 @@ export default function CoachChat() {
 
   // Avvia nuova chat
   const handleSelectClient = async (client) => {
-    const newChatId = [client.id, COACH_UID].sort().join('_');
+    const newChatId = [client.id, user.uid].sort().join('_');
     const chatRef = doc(db, 'chats', newChatId);
     const existingChat = chats.find(chat => chat.id === newChatId);
     if (!existingChat) {
       try {
         await setDoc(chatRef, {
-          participants: [client.id, COACH_UID],
-          participantNames: { [client.id]: client.name, [COACH_UID]: "Coach Mattia" },
-          lastMessage: "Conversazione iniziata",
+          participants: [client.id, user.uid],
+          participantNames: { [client.id]: client.name, [user.uid]: user.displayName || 'Coach' },
+          lastMessage: 'Conversazione iniziata',
           lastUpdate: serverTimestamp()
         }, { merge: true });
+        console.log('Nuova chat creata:', newChatId);
       } catch (error) {
         console.error("Errore nella creazione della chat:", error);
-        setError("Errore nella creazione della chat.");
+        setError(error.code === 'permission-denied' ? 'Permessi insufficienti per creare la chat.' : 'Errore nella creazione della chat.');
       }
     }
     setSelectedChatId(newChatId);
@@ -280,10 +322,10 @@ export default function CoachChat() {
     <div className="min-h-screen bg-zinc-950 text-slate-200 font-sans flex flex-col h-screen relative">
       <Notification message={error} onDismiss={dismissError} />
       {/* Header */}
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-zinc-950/70 backdrop-blur-lg border-b border-white/10 sticky top-0 z-10">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-zinc-950/70 backdrop-blur-lg border-b border-white/10 sticky top-0 z-[10]">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/coach-dashboard')}
+            onClick={() => navigate('/coach')}
             className="flex items-center gap-2 px-3 py-2 bg-zinc-800/80 hover:bg-zinc-700/80 text-slate-200 text-sm font-semibold rounded-lg transition-colors"
           >
             <ArrowLeft size={16} /><span>Dashboard</span>
@@ -326,7 +368,7 @@ export default function CoachChat() {
                   chat={chat}
                   setSelectedChatId={handleSelectChat}
                   selectedChatId={selectedChatId}
-                  adminUIDs={adminUIDs}
+                  coachUid={user.uid}
                 />
               ))
             ) : (
@@ -339,7 +381,7 @@ export default function CoachChat() {
             <>
               <div className="p-4 border-b border-white/10">
                 <h3 className="font-bold text-lg text-slate-50">
-                  {chats.find(c => c.id === selectedChatId)?.participantNames?.[chats.find(c => c.id === selectedChatId)?.participants.find(p => !adminUIDs.includes(p))] || 'Cliente'}
+                  {chats.find(c => c.id === selectedChatId)?.participantNames?.[chats.find(c => c.id === selectedChatId)?.participants.find(p => p !== user.uid)] || 'Cliente'}
                 </h3>
               </div>
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">

@@ -77,7 +77,7 @@ const ActivityItem = ({ item, navigate, variants }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -10 }}
       transition={{ duration: 0.3 }}
-      onClick={() => navigate(`/client/${item.clientId}?tab=${tabMap[item.type]}`)}
+      onClick={() => navigate(`/coach/client/${item.clientId}?tab=${tabMap[item.type]}`)}
       className="w-full flex items-start gap-4 p-3 rounded-lg bg-slate-500/5 hover:bg-slate-500/10 transition-colors text-left"
     >
       <div className="mt-1 flex-shrink-0">{icons[item.type]}</div>
@@ -100,16 +100,41 @@ export default function CoachDashboard() {
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
   const [error, setError] = useState(null);
-  const COACH_UID = "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
-  const adminUIDs = ["QwWST9OVOlTOi5oheyCqfpXLOLg2", "AeZKjJYu5zMZ4mvffaGiqCBb0cF2", "3j0AXIRa4XdHq1ywCl4UBxJNsku2", COACH_UID];
 
   // Verifica coach
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      if (user && user.uid === COACH_UID) {
-        setUserName(user.displayName || user.email || 'Coach Mattia');
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          const coachDocRef = doc(db, 'roles', 'coaches');
+          const coachDoc = await getDoc(coachDocRef);
+          const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(user.uid);
+          
+          console.log('Debug ruolo coach in CoachDashboard:', {
+            uid: user.uid,
+            email: user.email,
+            coachDocExists: coachDoc.exists(),
+            coachUids: coachDoc.data()?.uids,
+            isCoach
+          });
+
+          if (isCoach) {
+            setUserName(user.displayName || user.email || 'Coach');
+            sessionStorage.setItem('app_role', 'coach');
+          } else {
+            console.warn('Accesso non autorizzato per CoachDashboard:', user.uid);
+            sessionStorage.removeItem('app_role');
+            await signOut(auth);
+            navigate('/login');
+          }
+        } catch (err) {
+          console.error('Errore verifica ruolo coach:', err);
+          setError('Errore nella verifica del ruolo coach.');
+          await signOut(auth);
+          navigate('/login');
+        }
       } else {
-        signOut(auth);
+        console.warn('Nessun utente autenticato, redirect a /login');
         navigate('/login');
       }
     });
@@ -205,13 +230,13 @@ export default function CoachDashboard() {
       }
     });
 
-    const chatsQuery = query(collection(db, 'chats'), where('participants', 'array-contains', COACH_UID), orderBy('lastUpdate', 'desc'));
+    const chatsQuery = query(collection(db, 'chats'), where('participants', 'array-contains', auth.currentUser?.uid), orderBy('lastUpdate', 'desc'));
     const unsubChats = onSnapshot(chatsQuery, async (snap) => {
       try {
         const newMessages = [];
         for (const doc of snap.docs) {
           const chatData = doc.data();
-          const clientId = chatData.participants.find(p => !adminUIDs.includes(p));
+          const clientId = chatData.participants.find(p => p !== auth.currentUser?.uid);
           if (chatData.lastUpdate && toDate(chatData.lastUpdate) > toDate(lastViewed)) {
             const clientDoc = await getDoc(doc(db, 'clients', clientId));
             newMessages.push({
@@ -287,6 +312,7 @@ export default function CoachDashboard() {
 
   const handleLogout = async () => {
     try {
+      sessionStorage.removeItem('app_role');
       await signOut(auth);
       navigate('/login');
     } catch (error) {

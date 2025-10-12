@@ -54,7 +54,7 @@ const navLinks = [
 ];
 
 const coachNavLinks = [
-  { to: '/coach-dashboard', icon: <LayoutGrid size={18} />, label: 'Dashboard' },
+  { to: '/coach', icon: <LayoutGrid size={18} />, label: 'Dashboard' },
   { to: '/coach/clients', icon: <Users size={18} />, label: 'Clienti' },
   { to: '/coach/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/coach/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
@@ -115,6 +115,7 @@ export default function MainLayout() {
   const [isCoach, setIsCoach] = useState(false);
 
   useEffect(() => {
+    console.log('MainLayout: pathname corrente:', location.pathname);
     setIsCoach(location.pathname.startsWith('/coach'));
   }, [location.pathname]);
 
@@ -153,7 +154,7 @@ export default function MainLayout() {
   return (
     <div className="relative min-h-screen flex flex-col md:flex-row">
       <AnimatedBackground />
-      <div className="hidden md:flex md:fixed h-screen z-20">
+      <div className="hidden md:flex md:fixed h-screen z-[50]">
         <SidebarContent onLinkClick={() => setIsMobileMenuOpen(false)} isCoach={isCoach} />
       </div>
       <AnimatePresence>
@@ -164,7 +165,7 @@ export default function MainLayout() {
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', stiffness: 400, damping: 40 }}
-            className="fixed top-0 left-0 h-full w-64 z-50 md:hidden bg-zinc-950/80 backdrop-blur-lg"
+            className="fixed top-0 left-0 h-full w-64 z-[100] md:hidden bg-zinc-950/80 backdrop-blur-lg"
           >
             <SidebarContent 
               onLinkClick={() => setIsMobileMenuOpen(false)} 
@@ -174,16 +175,19 @@ export default function MainLayout() {
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="flex-1 w-full md:ml-60">
-        <header className="md:hidden sticky top-0 bg-zinc-950/70 backdrop-blur-lg h-16 flex items-center justify-between px-4 border-b border-white/10 z-40">
+      <div className="flex-1 w-full md:ml-60 z-[10]">
+        <header className="md:hidden sticky top-0 bg-zinc-950/70 backdrop-blur-lg h-16 flex items-center justify-between px-4 border-b border-white/10 z-[60]">
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-slate-200">
+            <button onClick={() => {
+              console.log('Cliccato menu mobile, isMobileMenuOpen:', !isMobileMenuOpen);
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+            }} className="text-slate-200">
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
             <h2 className="text-lg font-bold text-slate-100">FitFlow Pro</h2>
           </div>
         </header>
-        <main className="p-4 sm:p-6 lg:p-8 pt-16 md:pt-0 min-h-[calc(100vh-4rem)]">
+        <main className="p-4 sm:p-6 lg:p-8 pt-16 md:pt-0 min-h-[calc(100vh-4rem)] z-[10]">
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 20 }}

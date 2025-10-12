@@ -52,7 +52,9 @@ export default function App() {
     isClient: false,
     isCoach: false,
     isAdmin: false,
+    error: null,
   });
+  const [lastNavigated, setLastNavigated] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -64,27 +66,48 @@ export default function App() {
         if (currentUser) {
           const sessionRole = sessionStorage.getItem('app_role');
           const clientDocRef = doc(db, 'clients', currentUser.uid);
-          const clientDoc = await getDoc(clientDocRef, { source: 'server' });
+
+          // Fetch ruoli da /roles
+          const adminDocRef = doc(db, 'roles', 'admins');
+          const coachDocRef = doc(db, 'roles', 'coaches');
+          const [adminDoc, coachDoc, clientDoc] = await Promise.all([
+            getDoc(adminDocRef, { source: 'server' }).catch(err => {
+              console.error('Errore fetch /roles/admins:', err.message);
+              return { exists: () => false, data: () => ({ uids: [] }) };
+            }),
+            getDoc(coachDocRef, { source: 'server' }).catch(err => {
+              console.error('Errore fetch /roles/coaches:', err.message);
+              return { exists: () => false, data: () => ({ uids: [] }) };
+            }),
+            getDoc(clientDocRef, { source: 'server' }).catch(err => {
+              console.error('Errore fetch /clients:', err.message);
+              return { exists: () => false, data: () => ({}) };
+            })
+          ]);
+
+          const isCurrentUserAdmin = adminDoc.exists() && adminDoc.data().uids.includes(currentUser.uid);
+          const isCurrentUserACoach = coachDoc.exists() && coachDoc.data().uids.includes(currentUser.uid);
           let isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
 
-          // Create client document if it doesn't exist
-          if (!clientDoc.exists()) {
+          console.log('Debug ruolo coach:', {
+            uid: currentUser.uid,
+            coachDocExists: coachDoc.exists(),
+            coachUids: coachDoc.data()?.uids,
+            isCoach: isCurrentUserACoach,
+            sessionRole
+          });
+
+          // Crea il doc solo se non esiste e non è coach/admin
+          if (!isCurrentUserACoach && !isCurrentUserAdmin && !clientDoc.exists()) {
             await setDoc(clientDocRef, {
               name: currentUser.displayName || 'Unknown',
               email: currentUser.email,
               isClient: true,
-              firstLogin: false
+              firstLogin: true
             }, { merge: true });
             console.log('Client document created for UID:', currentUser.uid);
             isCurrentUserAClient = true;
           }
-
-          const isCurrentUserACoach = currentUser.uid === 'l0RI8TzFjbNVoAdmcXNQkP9mWb12';
-          const isCurrentUserAdmin = [
-            "QwWST9OVOlTOi5oheyCqfpXLOLg2",
-            "3j0AXIRa4XdHq1ywCl4UBxJNsku2",
-            "AeZKjJYu5zMZ4mvffaGiqCBb0cF2"
-          ].includes(currentUser.uid);
 
           console.log('Ruolo utente:', {
             uid: currentUser.uid,
@@ -93,7 +116,7 @@ export default function App() {
             isCoach: isCurrentUserACoach,
             isAdmin: isCurrentUserAdmin,
             sessionRole,
-            clientDocData: clientDoc.exists() ? clientDoc.data() : null
+            clientDocData: isCurrentUserAClient ? clientDoc.data() : null
           });
 
           if (sessionRole && sessionRole !== (isCurrentUserAClient ? 'client' : isCurrentUserACoach ? 'coach' : isCurrentUserAdmin ? 'admin' : null)) {
@@ -101,19 +124,49 @@ export default function App() {
             sessionStorage.removeItem('app_role');
           }
 
-          if (isCurrentUserACoach) {
-            sessionStorage.setItem('app_role', 'coach');
+          let role = null;
+          let targetRoute = null;
+          if (isCurrentUserAdmin) {
+            role = 'admin';
+            targetRoute = '/';
+            if (clientDoc.exists()) {
+              console.warn('Documento client errato per admin:', currentUser.uid, 'Eliminare manualmente da /clients');
+            }
+          } else if (isCurrentUserACoach) {
+            role = 'coach';
+            targetRoute = '/coach';
+            if (clientDoc.exists()) {
+              console.warn('Documento client errato per coach:', currentUser.uid, 'Eliminare manualmente da /clients');
+            }
           } else if (isCurrentUserAClient) {
-            sessionStorage.setItem('app_role', 'client');
-          } else if (isCurrentUserAdmin) {
-            sessionStorage.setItem('app_role', 'admin');
+            role = 'client';
+            const clientDocData = clientDoc.exists() ? clientDoc.data() : {};
+            targetRoute = clientDocData.firstLogin ? '/client/first-access' : '/client/dashboard';
           } else {
-            console.log('Accesso non autorizzato per UID:', currentUser.uid);
+            console.warn('Accesso non autorizzato per UID:', currentUser.uid);
             sessionStorage.removeItem('app_role');
-            setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false, isAdmin: false });
+            setAuthInfo({
+              isLoading: false,
+              user: null,
+              isClient: false,
+              isCoach: false,
+              isAdmin: false,
+              error: 'Accesso non autorizzato'
+            });
             await signOut(auth);
-            navigate('/client-login');
+            if (lastNavigated !== '/client-login') {
+              setLastNavigated('/client-login');
+              navigate('/client-login');
+            }
             return;
+          }
+
+          sessionStorage.setItem('app_role', role);
+
+          // Preveni loop di navigazione
+          if (lastNavigated !== targetRoute) {
+            setLastNavigated(targetRoute);
+            navigate(targetRoute);
           }
 
           setAuthInfo({
@@ -122,22 +175,59 @@ export default function App() {
             isClient: isCurrentUserAClient,
             isCoach: isCurrentUserACoach,
             isAdmin: isCurrentUserAdmin,
+            error: null
           });
         } else {
           sessionStorage.removeItem('app_role');
-          setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false, isAdmin: false });
+          setAuthInfo({
+            isLoading: false,
+            user: null,
+            isClient: false,
+            isCoach: false,
+            isAdmin: false,
+            error: null
+          });
+          if (lastNavigated !== '/login') {
+            setLastNavigated('/login');
+            navigate('/login');
+          }
         }
       } catch (error) {
-        console.error('Errore nel recupero del documento cliente:', error, {
+        console.error('Errore nel recupero del documento cliente:', error.message, {
           uid: currentUser?.uid,
           email: currentUser?.email,
           code: error.code,
           message: error.message
         });
-        sessionStorage.removeItem('app_role');
-        setAuthInfo({ isLoading: false, user: null, isClient: false, isCoach: false, isAdmin: false });
-        await signOut(auth);
-        navigate('/client-login');
+        if (error.code !== 'permission-denied') {
+          sessionStorage.removeItem('app_role');
+          setAuthInfo({
+            isLoading: false,
+            user: null,
+            isClient: false,
+            isCoach: false,
+            isAdmin: false,
+            error: error.message
+          });
+          if (lastNavigated !== '/client-login') {
+            setLastNavigated('/client-login');
+            navigate('/client-login');
+          }
+        } else {
+          console.warn('Permessi insufficienti, ma mantengo autenticazione');
+          setAuthInfo({
+            isLoading: false,
+            user: currentUser,
+            isClient: false,
+            isCoach: false,
+            isAdmin: false,
+            error: 'Permessi insufficienti per accedere ai ruoli. Verifica le regole Firestore.'
+          });
+          if (lastNavigated !== '/login') {
+            setLastNavigated('/login');
+            navigate('/login');
+          }
+        }
       }
     });
 
@@ -148,6 +238,7 @@ export default function App() {
   }, [navigate]);
 
   if (authInfo.isLoading) return <AuthSpinner />;
+  if (authInfo.error) return <div className="text-red-500 text-center p-4">{authInfo.error}</div>;
 
   return (
     <Suspense fallback={<PageSpinner />}>

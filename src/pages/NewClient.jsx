@@ -31,7 +31,7 @@ const Notification = ({ message, type, onDismiss }) => (
 
 const generatePassword = () => {
   const length = 8;
-  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
   let retVal = "";
   for (let i = 0, n = charset.length; i < length; ++i) {
     retVal += charset.charAt(Math.floor(Math.random() * n));
@@ -41,7 +41,18 @@ const generatePassword = () => {
 
 export default function NewClient() {
   const navigate = useNavigate();
-  const { register, handleSubmit, reset, formState: { isSubmitting, errors } } = useForm();
+  const { register, handleSubmit, reset, formState: { isSubmitting, errors } } = useForm({
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      planType: '',
+      duration: '',
+      customExpiryDate: '',
+      paymentAmount: '',
+      paymentMethod: ''
+    }
+  });
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [newClientCredentials, setNewClientCredentials] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -79,19 +90,12 @@ export default function NewClient() {
         return;
       }
 
-      // Validazione del pagamento
-      let paymentAmount = data.paymentAmount ? parseFloat(data.paymentAmount) : null;
-      if (paymentAmount && (isNaN(paymentAmount) || paymentAmount <= 0)) {
-        showNotification("L'importo del pagamento deve essere maggiore di 0.", 'error');
-        return;
-      }
-
       console.log('Inizio creazione cliente:', {
         email: data.email,
         name: data.name,
-        paymentAmount,
+        paymentAmount: data.paymentAmount,
         userId: getAuth().currentUser?.uid,
-        isCoach: [
+        isCoachOrAdmin: [
           "QwWST9OVOlTOi5oheyCqfpXLOLg2",
           "3j0AXIRa4XdHq1ywCl4UBxJNsku2",
           "AeZKjJYu5zMZ4mvffaGiqCBb0cF2",
@@ -104,7 +108,7 @@ export default function NewClient() {
       console.log('Utente creato con UID:', newUserId);
 
       const newClientRef = doc(db, 'clients', newUserId);
-      await setDoc(newClientRef, {
+      const clientData = {
         name: data.name,
         name_lowercase: data.name.toLowerCase(),
         email: data.email,
@@ -116,13 +120,14 @@ export default function NewClient() {
         isClient: true,
         firstLogin: true,
         tempPassword: tempPassword
-      });
+      };
+      await setDoc(newClientRef, clientData);
       console.log('Documento cliente creato:', newClientRef.path);
 
-      if (paymentAmount) {
+      if (data.paymentAmount) {
         const paymentRef = doc(collection(db, 'clients', newUserId, 'payments'));
         const paymentData = {
-          amount: paymentAmount,
+          amount: parseFloat(data.paymentAmount),
           duration: useCustomDate ? 'personalizzata' : `${parseInt(data.duration, 10)} mes${parseInt(data.duration, 10) > 1 ? 'i' : 'e'}`,
           paymentMethod: data.paymentMethod || null,
           paymentDate: serverTimestamp(),
@@ -135,9 +140,10 @@ export default function NewClient() {
       setNewClientCredentials({ name: data.name, email: data.email, password: tempPassword });
       setShowSuccessModal(true);
       showNotification('Cliente creato con successo!', 'success');
+      reset();
     } catch (error) {
       console.error("Errore nella creazione del cliente:", error.code, error.message, { data });
-      if (error.code === 'permission-denied' || error.message.includes('permission-denied')) {
+      if (error.code === 'permission-denied') {
         showNotification("Permessi insufficienti. Assicurati di avere i privilegi di coach o admin.", 'error');
       } else if (error.code === 'auth/email-already-in-use') {
         showNotification('Questa email è già in uso da un altro utente.', 'error');
@@ -182,29 +188,117 @@ export default function NewClient() {
           <div className={sectionStyle}>
             <h4 className={headingStyle}>1. Anagrafica</h4>
             <div className="space-y-4">
-              <div><label className={labelStyle}>Nome e Cognome*</label><input {...register('name', { required: 'Il nome è obbligatorio' })} className={inputStyle} /><p className={errorStyle}>{errors.name?.message}</p></div>
-              <div><label className={labelStyle}>Email (sarà il suo username)*</label><input type="email" {...register('email', { required: 'L\'email è obbligatoria' })} className={inputStyle} /><p className={errorStyle}>{errors.email?.message}</p></div>
-              <div><label className={labelStyle}>Telefono (Opzionale)</label><input {...register('phone')} className={inputStyle} /></div>
+              <div>
+                <label className={labelStyle}>Nome e Cognome*</label>
+                <input 
+                  {...register('name', { 
+                    required: 'Il nome è obbligatorio',
+                    minLength: { value: 2, message: 'Il nome deve essere lungo almeno 2 caratteri' }
+                  })} 
+                  className={inputStyle} 
+                />
+                {errors.name && <p className={errorStyle}>{errors.name.message}</p>}
+              </div>
+              <div>
+                <label className={labelStyle}>Email (sarà il suo username)*</label>
+                <input 
+                  type="email" 
+                  {...register('email', { 
+                    required: 'L\'email è obbligatoria',
+                    pattern: { 
+                      value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                      message: 'Inserisci un\'email valida'
+                    }
+                  })} 
+                  className={inputStyle} 
+                />
+                {errors.email && <p className={errorStyle}>{errors.email.message}</p>}
+              </div>
+              <div>
+                <label className={labelStyle}>Telefono (Opzionale)</label>
+                <input 
+                  {...register('phone', { 
+                    pattern: { 
+                      value: /^\+?[0-9]{7,15}$/,
+                      message: 'Inserisci un numero di telefono valido (7-15 cifre)'
+                    }
+                  })} 
+                  className={inputStyle} 
+                />
+                {errors.phone && <p className={errorStyle}>{errors.phone.message}</p>}
+              </div>
             </div>
           </div>
           <div className={sectionStyle}>
             <h4 className={headingStyle}>2. Dettagli Percorso</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className={labelStyle}>Tipo di Percorso*</label><select {...register('planType', { required: 'Il tipo di percorso è obbligatorio' })} className={inputStyle}><option value="allenamento">Solo Allenamento</option><option value="alimentazione">Solo Alimentazione</option><option value="completo">Completo</option></select><p className={errorStyle}>{errors.planType?.message}</p></div>
+              <div>
+                <label className={labelStyle}>Tipo di Percorso*</label>
+                <select 
+                  {...register('planType', { required: 'Il tipo di percorso è obbligatorio' })} 
+                  className={inputStyle}
+                >
+                  <option value="">Seleziona tipo</option>
+                  <option value="allenamento">Solo Allenamento</option>
+                  <option value="alimentazione">Solo Alimentazione</option>
+                  <option value="completo">Completo</option>
+                </select>
+                {errors.planType && <p className={errorStyle}>{errors.planType.message}</p>}
+              </div>
               <div>
                 <label className={labelStyle}>Modalità Scadenza*</label>
                 <div className="flex items-center gap-4 mb-2">
                   <label className="flex items-center gap-2">
-                    <input type="radio" checked={!useCustomDate} onChange={() => setUseCustomDate(false)} className="text-rose-500" /> Durata in mesi
+                    <input 
+                      type="radio" 
+                      checked={!useCustomDate} 
+                      onChange={() => setUseCustomDate(false)} 
+                      className="text-rose-500" 
+                    /> 
+                    Durata in mesi
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="radio" checked={useCustomDate} onChange={() => setUseCustomDate(true)} className="text-rose-500" /> Data personalizzata
+                    <input 
+                      type="radio" 
+                      checked={useCustomDate} 
+                      onChange={() => setUseCustomDate(true)} 
+                      className="text-rose-500" 
+                    /> 
+                    Data personalizzata
                   </label>
                 </div>
                 {!useCustomDate ? (
-                  <div><label className={labelStyle}>Durata del Percorso*</label><select {...register('duration', { required: !useCustomDate && 'La durata è obbligatoria' })} className={inputStyle}><option value="">Seleziona durata</option>{[...Array(24).keys()].map(i => <option key={i+1} value={i+1}>{i+1} mes{i > 0 ? 'i' : 'e'}</option>)}</select><p className={errorStyle}>{errors.duration?.message}</p></div>
+                  <div>
+                    <label className={labelStyle}>Durata del Percorso*</label>
+                    <select 
+                      {...register('duration', { required: !useCustomDate && 'La durata è obbligatoria' })} 
+                      className={inputStyle}
+                    >
+                      <option value="">Seleziona durata</option>
+                      {[...Array(24).keys()].map(i => (
+                        <option key={i+1} value={i+1}>{i+1} mes{i > 0 ? 'i' : 'e'}</option>
+                      ))}
+                    </select>
+                    {errors.duration && <p className={errorStyle}>{errors.duration.message}</p>}
+                  </div>
                 ) : (
-                  <div><label className={labelStyle}>Data di Scadenza*</label><input type="date" {...register('customExpiryDate', { required: useCustomDate && 'La data di scadenza è obbligatoria' })} className={inputStyle} /><p className={errorStyle}>{errors.customExpiryDate?.message}</p></div>
+                  <div>
+                    <label className={labelStyle}>Data di Scadenza*</label>
+                    <input 
+                      type="date" 
+                      {...register('customExpiryDate', { 
+                        required: useCustomDate && 'La data di scadenza è obbligatoria',
+                        validate: value => {
+                          if (!useCustomDate) return true;
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return new Date(value) >= today || 'La data di scadenza non può essere nel passato';
+                        }
+                      })} 
+                      className={inputStyle} 
+                    />
+                    {errors.customExpiryDate && <p className={errorStyle}>{errors.customExpiryDate.message}</p>}
+                  </div>
                 )}
               </div>
             </div>
@@ -212,14 +306,38 @@ export default function NewClient() {
           <div className={sectionStyle}>
             <h4 className={headingStyle}><DollarSign size={20}/> 3. Primo Pagamento (Opzionale)</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className={labelStyle}>Importo Pagato (€)</label><input type="number" step="0.01" {...register('paymentAmount', { validate: value => !value || parseFloat(value) > 0 || 'L\'importo deve essere maggiore di 0' })} className={inputStyle} /><p className={errorStyle}>{errors.paymentAmount?.message}</p></div>
-              <div><label className={labelStyle}>Metodo di Pagamento</label><input {...register('paymentMethod')} className={inputStyle} placeholder="Es. Bonifico" /></div>
+              <div>
+                <label className={labelStyle}>Importo Pagato (€)</label>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  {...register('paymentAmount', { 
+                    validate: value => !value || parseFloat(value) > 0 || 'L\'importo deve essere maggiore di 0'
+                  })} 
+                  className={inputStyle} 
+                />
+                {errors.paymentAmount && <p className={errorStyle}>{errors.paymentAmount.message}</p>}
+              </div>
+              <div>
+                <label className={labelStyle}>Metodo di Pagamento</label>
+                <input 
+                  {...register('paymentMethod')} 
+                  className={inputStyle} 
+                  placeholder="Es. Bonifico" 
+                />
+              </div>
             </div>
           </div>
           <div className="flex justify-end pt-4">
-            <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition disabled:opacity-50 font-semibold disabled:cursor-not-allowed">
+            <motion.button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition disabled:opacity-50 font-semibold disabled:cursor-not-allowed"
+              whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
+              whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
+            >
               <Save size={16} /> {isSubmitting ? 'Creazione in corso...' : 'Crea Cliente e Genera Password'}
-            </button>
+            </motion.button>
           </div>
         </form>
       </motion.div>

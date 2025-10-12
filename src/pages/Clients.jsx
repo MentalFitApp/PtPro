@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { db, auth, toDate, calcolaStatoPercorso, updateStatoPercorso } from "../firebase";
 import { collection, onSnapshot, deleteDoc, doc, getDoc } from "firebase/firestore";
@@ -6,6 +6,28 @@ import { signOut } from "firebase/auth";
 import { UserPlus, FilePenLine, Trash2, Search, ChevronDown, ChevronUp, Filter, AlertTriangle, LogOut, Download, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Papa from 'papaparse';
+
+// --- COMPONENTI UI RIUTILIZZABILI ---
+const Notification = ({ message, type, onDismiss }) => (
+  <AnimatePresence>
+    {message && (
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -50 }}
+        className={`fixed top-5 right-5 z-50 flex items-center gap-4 p-4 rounded-lg border ${
+          type === 'error' ? 'bg-red-900/80 text-red-300 border-red-500/30' : 'bg-emerald-900/80 text-emerald-300 border-emerald-500/30'
+        } backdrop-blur-md shadow-lg`}
+      >
+        <AlertTriangle className={type === 'error' ? 'text-red-400' : 'text-emerald-400'} />
+        <p>{message}</p>
+        <button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/10">
+          <X size={16} />
+        </button>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
 
 // Funzione per esportare in CSV
 const exportToCSV = (clients) => {
@@ -113,12 +135,17 @@ export default function Clients() {
   const [clientToDelete, setClientToDelete] = useState(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState(new URLSearchParams(location.search).get('filter') || "all");
-  const [sortKey, setSortKey] = useState("createdAt");
-  const [sortDir, setSortDir] = useState("desc");
   const [dateFilter, setDateFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
   const [anamnesiStatus, setAnamnesiStatus] = useState({});
-  const [errorMessage, setErrorMessage] = useState(null);
+  const [notification, setNotification] = useState({ message: '', type: '' });
+  const [sortKey, setSortKey] = useState("createdAt"); // Assicuriamo che sortKey sia sempre definito
+  const [sortDir, setSortDir] = useState("desc");
+
+  const showNotification = (message, type = 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification({ message: '', type: '' }), 6000);
+  };
 
   const handleLogout = async () => {
     try {
@@ -126,11 +153,23 @@ export default function Clients() {
       navigate('/login');
     } catch (error) {
       console.error("Logout error:", error);
+      showNotification(`Errore durante il logout: ${error.message}`, 'error');
     }
   };
 
   useEffect(() => {
     console.log('Utente autenticato:', auth.currentUser?.uid, 'Email:', auth.currentUser?.email);
+    const role = sessionStorage.getItem('app_role');
+    if (role !== 'admin' && role !== 'coach') {
+      console.warn('Accesso non autorizzato a Clients, redirect');
+      signOut(auth).then(() => {
+        navigate('/login');
+      }).catch(err => {
+        console.error('Errore durante il logout:', err);
+        showNotification(`Errore durante il logout: ${err.message}`, 'error');
+      });
+      return;
+    }
 
     const unsub = onSnapshot(collection(db, "clients"), async (snap) => {
       try {
@@ -147,7 +186,7 @@ export default function Clients() {
           } catch (err) {
             console.error(`Errore nel recupero anamnesi per cliente ${client.id}:`, err);
             if (err.code === 'permission-denied') {
-              setErrorMessage("Permessi insufficienti per accedere ai dati dell'anamnesi. Contatta l'amministratore.");
+              showNotification("Permessi insufficienti per accedere ai dati dell'anamnesi.", 'error');
             }
             anamnesiStatusTemp[client.id] = false;
           }
@@ -160,12 +199,16 @@ export default function Clients() {
         setLoading(false);
       } catch (error) {
         console.error("Errore nel recupero dei clienti:", error);
+        if (error.code === 'permission-denied') {
+          showNotification("Permessi insufficienti per accedere ai dati dei clienti.", 'error');
+          navigate('/login');
+        }
         setLoading(false);
       }
     }, (error) => {
       console.error("Errore snapshot clienti:", error);
       if (error.code === 'permission-denied') {
-        setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
+        showNotification("Permessi insufficienti per accedere ai dati dei clienti.", 'error');
         navigate('/login');
       }
       setLoading(false);
@@ -177,13 +220,17 @@ export default function Clients() {
     if (!clientToDelete) return;
     try {
       await deleteDoc(doc(db, 'clients', clientToDelete.id));
+      showNotification('Cliente eliminato con successo!', 'success');
+    } catch (error) {
+      console.error("Errore nell'eliminazione del cliente:", error);
+      showNotification(`Errore nell'eliminazione del cliente: ${error.message}`, 'error');
+    } finally {
       setClientToDelete(null);
-    } catch (err) {
-      console.error("Errore nell'eliminazione del cliente:", err);
     }
   };
 
   const toggleSort = (key) => {
+    if (!key) return; // Protezione contro key undefined
     if (sortKey === key) {
       setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
     } else {
@@ -193,6 +240,7 @@ export default function Clients() {
   };
 
   const filteredClients = useMemo(() => {
+    console.log('Calcolo filteredClients con:', { query, statusFilter, dateFilter, paymentFilter, sortKey, sortDir });
     let result = [...clients];
     if (query) {
       const q = query.toLowerCase();
@@ -203,15 +251,25 @@ export default function Clients() {
     }
     if (dateFilter) {
       const date = new Date(dateFilter);
-      result = result.filter(c => toDate(c.createdAt)?.toDateString() === date.toDateString());
+      if (!isNaN(date)) {
+        result = result.filter(c => toDate(c.createdAt)?.toDateString() === date.toDateString());
+      } else {
+        showNotification('Data non valida.', 'error');
+      }
     }
     if (paymentFilter) {
-      result = result.filter(c => {
-        const totalPayments = c.payments ? c.payments.reduce((sum, p) => sum + (p.amount || 0), 0) : 0;
-        return totalPayments < parseFloat(paymentFilter);
-      });
+      const paymentValue = parseFloat(paymentFilter);
+      if (!isNaN(paymentValue) && paymentValue >= 0) {
+        result = result.filter(c => {
+          const totalPayments = c.payments ? c.payments.reduce((sum, p) => sum + (p.amount || 0), 0) : 0;
+          return totalPayments < paymentValue;
+        });
+      } else {
+        showNotification('Valore di pagamento non valido.', 'error');
+      }
     }
     return result.sort((a, b) => {
+      if (!sortKey) return 0; // Protezione contro sortKey undefined
       const aVal = a[sortKey] || '';
       const bVal = b[sortKey] || '';
       if (sortKey === 'scadenza' || sortKey === 'createdAt') {
@@ -230,22 +288,15 @@ export default function Clients() {
     non_rinnovato: clients.filter(c => c.statoPercorso === 'non_rinnovato').length,
   }), [clients]);
 
-  if (errorMessage) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-red-900/80 p-6 rounded-lg text-center">
-          <h2 className="text-xl font-bold text-red-300 mb-2">Accesso Negato</h2>
-          <p className="text-red-400">{errorMessage}</p>
-          <button onClick={handleLogout} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">
-            Torna al Login
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+    </div>
+  );
 
   return (
     <>
+      <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
       <ConfirmationModal
         isOpen={!!clientToDelete}
         onClose={() => setClientToDelete(null)}
@@ -292,7 +343,18 @@ export default function Clients() {
             <input
               type="date"
               value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value) {
+                  const date = new Date(value);
+                  const today = new Date();
+                  if (date > today) {
+                    showNotification('La data di filtro non può essere futura.', 'error');
+                    return;
+                  }
+                }
+                setDateFilter(value);
+              }}
               className="bg-zinc-900/70 border border-white/10 rounded-lg px-3 py-2 w-full outline-none focus:ring-2 focus:ring-rose-500"
             />
           </div>
@@ -301,7 +363,14 @@ export default function Clients() {
               type="number"
               placeholder="Pagamenti <"
               value={paymentFilter}
-              onChange={(e) => setPaymentFilter(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value && (isNaN(value) || parseFloat(value) < 0)) {
+                  showNotification('Inserisci un valore di pagamento valido.', 'error');
+                  return;
+                }
+                setPaymentFilter(value);
+              }}
               className="bg-zinc-900/70 border border-white/10 rounded-lg px-3 py-2 w-full outline-none focus:ring-2 focus:ring-rose-500"
             />
           </div>

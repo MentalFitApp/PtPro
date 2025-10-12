@@ -1,14 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { db, toDate } from '../firebase';
-import { Users, ArrowLeft, FileText, CheckCircle, Calendar, Clock } from 'lucide-react';
+import { db, toDate, auth } from '../firebase';
+import { Users, ArrowLeft, FileText, CheckCircle, Calendar, Clock, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const LoadingSpinner = () => (
   <div className="min-h-screen flex justify-center items-center relative">
     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
   </div>
+);
+
+const Notification = ({ message, onDismiss }) => (
+  <AnimatePresence>
+    {message && (
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -50 }}
+        className="fixed top-5 right-5 z-[1000] flex items-center gap-4 p-4 rounded-lg border bg-red-900/80 text-red-300 border-red-500/30 backdrop-blur-md shadow-lg"
+      >
+        <p>{message}</p>
+        <button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/10">
+          <X size={16} />
+        </button>
+      </motion.div>
+    )}
+  </AnimatePresence>
 );
 
 const AnamnesiSection = ({ title, data, variants }) => (
@@ -28,11 +46,11 @@ const AnamnesiSection = ({ title, data, variants }) => (
 const CheckItem = ({ check, variants }) => (
   <motion.div variants={variants} className="p-3 rounded-lg bg-slate-500/5 hover:bg-slate-500/10 transition-colors">
     <div className="flex justify-between items-center">
-      <p className="text-sm font-semibold text-slate-200">Check del {toDate(check.createdAt).toLocaleDateString('it-IT')}</p>
+      <p className="text-sm font-semibold text-slate-200">Check del {toDate(check.createdAt)?.toLocaleDateString('it-IT') || 'N/D'}</p>
     </div>
     <div className="text-xs text-slate-400 mt-1 flex items-center gap-4">
       <span className="flex items-center gap-1">
-        <Calendar size={14} /> Data: {toDate(check.createdAt).toLocaleString('it-IT')}
+        <Calendar size={14} /> Data: {toDate(check.createdAt)?.toLocaleString('it-IT') || 'N/D'}
       </span>
       {check.weight && (
         <span className="flex items-center gap-1">
@@ -53,6 +71,39 @@ export default function CoachClientDetail() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!auth.currentUser) {
+      console.log('Nessun utente autenticato, redirect a /login');
+      navigate('/login');
+      return;
+    }
+    console.log('Utente autenticato:', { uid: auth.currentUser.uid, email: auth.currentUser.email });
+
+    // Verifica ruolo coach
+    const checkCoachRole = async () => {
+      try {
+        const coachDocRef = doc(db, 'roles', 'coaches');
+        const coachDoc = await getDoc(coachDocRef);
+        const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(auth.currentUser.uid);
+        console.log('Debug ruolo coach:', {
+          uid: auth.currentUser.uid,
+          coachDocExists: coachDoc.exists(),
+          coachUids: coachDoc.data()?.uids,
+          isCoach
+        });
+        if (!isCoach) {
+          console.warn('Accesso non autorizzato per CoachClientDetail:', auth.currentUser.uid);
+          sessionStorage.removeItem('app_role');
+          await auth.signOut();
+          navigate('/login');
+        }
+      } catch (err) {
+        console.error('Errore verifica ruolo coach:', err);
+        setError('Errore nella verifica del ruolo coach.');
+        setLoading(false);
+      }
+    };
+    checkCoachRole();
+
     const fetchClientData = async () => {
       try {
         // Fetch dati cliente
@@ -73,26 +124,27 @@ export default function CoachClientDetail() {
         const unsubChecks = onSnapshot(checksQuery, (snap) => {
           try {
             const checksData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log('Checks caricati:', { count: checksData.length, clientId });
             setChecks(checksData);
           } catch (err) {
             console.error("Errore snapshot checks:", err);
-            setError("Errore nel caricamento dei checks.");
+            setError(err.code === 'permission-denied' ? 'Permessi insufficienti per accedere ai check.' : 'Errore nel caricamento dei checks.');
           }
         }, (err) => {
           console.error("Errore snapshot checks:", err);
-          setError("Errore nel caricamento dei checks.");
+          setError(err.code === 'permission-denied' ? 'Permessi insufficienti per accedere ai check.' : 'Errore nel caricamento dei checks.');
         });
 
         setLoading(false);
         return () => unsubChecks();
       } catch (err) {
         console.error("Errore nel fetch dati cliente:", err);
-        setError("Errore nel caricamento dei dati del cliente.");
+        setError(err.code === 'permission-denied' ? 'Permessi insufficienti per accedere ai dati del cliente.' : 'Errore nel caricamento dei dati del cliente.');
         setLoading(false);
       }
     };
     fetchClientData();
-  }, [clientId]);
+  }, [clientId, navigate]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -104,7 +156,11 @@ export default function CoachClientDetail() {
     visible: { y: 0, opacity: 1 },
   };
 
-  if (error) return <div className="min-h-screen bg-zinc-950 text-red-400 flex justify-center items-center">{error}</div>;
+  if (error) return (
+    <div className="min-h-screen bg-zinc-950 text-red-400 flex justify-center items-center">
+      <Notification message={error} onDismiss={() => setError(null)} />
+    </div>
+  );
   if (loading) return <LoadingSpinner />;
 
   return (

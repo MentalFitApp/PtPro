@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } from "firebase/firestore";
-import { db, toDate, calcolaStatoPercorso, updateStatoPercorso } from "../firebase";
-import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check } from "lucide-react";
-import { motion } from "framer-motion";
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } from 'firebase/firestore';
+import { db, toDate, calcolaStatoPercorso, updateStatoPercorso } from '../firebase';
+import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -76,7 +76,7 @@ export default function ClientDetail() {
     }
 
     const clientRef = doc(db, 'clients', id);
-    const unsubClient = onSnapshot(clientRef, (docSnap) => {
+    const unsubClient = onSnapshot(clientRef, async (docSnap) => {
       if (docSnap.exists()) {
         const clientData = { id: docSnap.id, ...docSnap.data() };
         setClient(clientData);
@@ -105,8 +105,24 @@ export default function ClientDetail() {
 
     // Fetch checks
     const checksQuery = query(collection(db, 'clients', id, 'checks'), orderBy('createdAt', 'desc'));
-    const unsubChecks = onSnapshot(checksQuery, (snap) => {
-      setChecks(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    const unsubChecks = onSnapshot(checksQuery, async (snap) => {
+      const checksData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const updatedChecks = await Promise.all(checksData.map(async (check) => {
+        if (check.photoURLs) {
+          const photoPromises = Object.entries(check.photoURLs).map(async ([type, path]) => {
+            if (path && typeof path === 'string' && !path.startsWith('http')) {
+              const fileRef = ref(storage, path);
+              const url = await getDownloadURL(fileRef).catch(() => null);
+              return { type, url };
+            }
+            return { type, url: path };
+          });
+          const photos = await Promise.all(photoPromises);
+          return { ...check, photoURLs: Object.fromEntries(photos.map(p => [p.type, p.url])) };
+        }
+        return check;
+      }));
+      setChecks(updatedChecks);
     }, (error) => {
       console.error("Errore nel recupero dei checks:", error);
     });
@@ -303,6 +319,17 @@ export default function ClientDetail() {
                     <p className="text-sm text-slate-400">Data: {toDate(check.createdAt)?.toLocaleDateString('it-IT') || 'N/D'}</p>
                     <p className="text-sm text-slate-200">Peso: {check.weight || 'N/D'} kg</p>
                     <p className="text-sm text-slate-200">Note: {check.notes || 'Nessuna nota'}</p>
+                    {check.photoURLs && (
+                      <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {['front', 'right', 'left', 'back'].map((type) => (
+                          check.photoURLs[type] ? (
+                            <img key={type} src={check.photoURLs[type]} alt={`${type} view`} className="w-full h-24 object-cover rounded-lg" />
+                          ) : (
+                            <div key={type} className="w-full h-24 bg-zinc-900 rounded-lg flex items-center justify-center text-slate-500">Nessuna foto</div>
+                          )
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))
               ) : (

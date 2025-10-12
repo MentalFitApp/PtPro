@@ -1,224 +1,229 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase';
-import { LogIn, Mail, Lock, KeyRound } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { auth, db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { Lock, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-// Componente per lo sfondo animato
-const AnimatedBackground = () => {
-  const starsContainerRef = useRef(null);
-  const isInitialized = useRef(false);
-
-  useEffect(() => {
-    if (isInitialized.current) return;
-
-    let starsContainer = document.querySelector('.stars');
-    if (!starsContainer) {
-      starsContainer = document.createElement('div');
-      starsContainer.className = 'stars';
-      const starryBackground = document.querySelector('.starry-background');
-      if (!starryBackground) {
-        const bg = document.createElement('div');
-        bg.className = 'starry-background';
-        document.body.appendChild(bg);
-        bg.appendChild(starsContainer);
-      } else {
-        starryBackground.appendChild(starsContainer);
-      }
-      starsContainerRef.current = starsContainer;
-    } else {
-      starsContainerRef.current = starsContainer;
-    }
-
-    // Crea 50 stelle
-    for (let i = 0; i < 50; i++) {
-      const star = document.createElement('div');
-      star.className = 'star';
-      star.style.setProperty('--top-offset', `${Math.random() * 100}vh`);
-      star.style.setProperty('--fall-duration', `${8 + Math.random() * 6}s`); // 8-14s
-      star.style.setProperty('--fall-delay', `${Math.random() * 5}s`);
-      star.style.setProperty('--star-width', `${1 + Math.random() * 2}px`); // 1-3px
-      starsContainerRef.current.appendChild(star);
-    }
-
-    isInitialized.current = true;
-
-    return () => {
-      if (starsContainerRef.current) {
-        while (starsContainerRef.current.firstChild) {
-          starsContainerRef.current.removeChild(starsContainerRef.current.firstChild);
-        }
-      }
-    };
-  }, []);
-
-  return (
-    <div className="starry-background">
-      <div className="stars"></div>
-    </div>
-  );
-};
-
-export default function Login() {
-  const navigate = useNavigate();
+const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
-  // UID di admin e coach
-  const authorizedUsers = [
-    "QwWST9OVOlTOi5oheyCqfpXLOLg2",
-    "3j0AXIRa4XdHq1ywCl4UBxJNsku2",
-    "AeZKjJYu5zMZ4mvffaGiqCBb0cF2",
-    "l0RI8TzFjbNVoAdmcXNQkP9mWb12" // Coach Mattia
-  ];
-
-  // Controlla se l'utente è già autenticato all'avvio
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        const uid = user.uid;
-        console.log('Utente autenticato all\'avvio:', uid);
-        if (authorizedUsers.includes(uid)) {
-          const isCoach = uid === "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
-          sessionStorage.setItem('app_role', isCoach ? 'coach' : 'admin');
-          navigate(isCoach ? '/coach-dashboard' : '/', { replace: true });
-        } else {
-          console.log('Utente non autorizzato:', uid);
-          auth.signOut();
-          setError('Solo amministratori e coach possono accedere a questa area.');
+        console.log('Utente autenticato all\'avvio:', { uid: user.uid, email: user.email });
+        try {
+          // Verifica ruolo
+          const adminDocRef = doc(db, 'roles', 'admins');
+          const coachDocRef = doc(db, 'roles', 'coaches');
+          const clientDocRef = doc(db, 'clients', user.uid);
+          const [adminDoc, coachDoc, clientDoc] = await Promise.all([
+            getDoc(adminDocRef).catch(err => {
+              console.error('Errore fetch /roles/admins:', err.message);
+              return { exists: () => false, data: () => ({ uids: [] }) };
+            }),
+            getDoc(coachDocRef).catch(err => {
+              console.error('Errore fetch /roles/coaches:', err.message);
+              return { exists: () => false, data: () => ({ uids: [] }) };
+            }),
+            getDoc(clientDocRef).catch(err => {
+              console.error('Errore fetch /clients:', err.message);
+              return { exists: () => false, data: () => ({}) };
+            })
+          ]);
+
+          const isAdmin = adminDoc.exists() && adminDoc.data().uids.includes(user.uid);
+          const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(user.uid);
+          const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
+
+          console.log('Debug ruolo in Login:', {
+            uid: user.uid,
+            email: user.email,
+            isAdmin,
+            isCoach,
+            isClient,
+            adminUids: adminDoc.data()?.uids,
+            coachUids: coachDoc.data()?.uids
+          });
+
+          const sessionRole = sessionStorage.getItem('app_role');
+          if (isAdmin) {
+            sessionStorage.setItem('app_role', 'admin');
+            navigate('/');
+          } else if (isCoach) {
+            sessionStorage.setItem('app_role', 'coach');
+            navigate('/coach');
+          } else if (isClient) {
+            sessionStorage.setItem('app_role', 'client');
+            navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
+          } else {
+            console.warn('Ruolo non riconosciuto per UID:', user.uid);
+            sessionStorage.removeItem('app_role');
+            await signOut(auth);
+            setError('Accesso non autorizzato. Usa il login client se sei un cliente.');
+            navigate('/client-login');
+          }
+        } catch (err) {
+          console.error('Errore verifica ruolo:', err);
+          setError('Errore durante la verifica del ruolo. Riprova.');
+          await signOut(auth);
+          navigate('/client-login');
         }
       }
       setIsCheckingAuth(false);
     });
+
     return () => unsubscribe();
   }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (isSubmitting || isCheckingAuth) {
-      console.log('Submit bloccato: già in corso o autenticazione in corso');
-      return;
-    }
     setError('');
-    setIsSubmitting(true);
-    console.log('Tentativo di login con email:', email);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const uid = userCredential.user.uid;
-      console.log('Login riuscito, UID:', uid);
+      console.log('Login riuscito:', { uid: userCredential.user.uid, email: userCredential.user.email });
 
-      if (authorizedUsers.includes(uid)) {
-        const isCoach = uid === "l0RI8TzFjbNVoAdmcXNQkP9mWb12";
-        sessionStorage.setItem('app_role', isCoach ? 'coach' : 'admin');
-        navigate(isCoach ? '/coach-dashboard' : '/', { replace: true });
+      // Verifica ruolo
+      const adminDocRef = doc(db, 'roles', 'admins');
+      const coachDocRef = doc(db, 'roles', 'coaches');
+      const clientDocRef = doc(db, 'clients', userCredential.user.uid);
+      const [adminDoc, coachDoc, clientDoc] = await Promise.all([
+        getDoc(adminDocRef),
+        getDoc(coachDocRef),
+        getDoc(clientDocRef)
+      ]);
+
+      const isAdmin = adminDoc.exists() && adminDoc.data().uids.includes(userCredential.user.uid);
+      const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(userCredential.user.uid);
+      const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
+
+      console.log('Debug ruolo post-login:', {
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+        isAdmin,
+        isCoach,
+        isClient,
+        adminUids: adminDoc.data()?.uids,
+        coachUids: coachDoc.data()?.uids
+      });
+
+      if (isAdmin) {
+        sessionStorage.setItem('app_role', 'admin');
+        navigate('/');
+      } else if (isCoach) {
+        sessionStorage.setItem('app_role', 'coach');
+        navigate('/coach');
+      } else if (isClient) {
+        sessionStorage.setItem('app_role', 'client');
+        navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
       } else {
-        throw new Error('Solo amministratori e coach possono accedere a questa area.');
+        console.warn('Ruolo non riconosciuto per UID:', userCredential.user.uid);
+        sessionStorage.removeItem('app_role');
+        await signOut(auth);
+        setError('Accesso non autorizzato. Usa il login client se sei un cliente.');
+        navigate('/client-login');
       }
-    } catch (err) {
-      console.error("Errore di login:", err.code, err.message);
-      setError(err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' 
-        ? "Credenziali non valide. Riprova." 
-        : err.message);
-      if (auth.currentUser) {
-        await auth.signOut();
+    } catch (error) {
+      console.error('Errore login:', error.code, error.message);
+      if (error.code === 'auth/wrong-password') {
+        setError('Password errata. Riprova o reimposta la password.');
+      } else if (error.code === 'auth/user-not-found') {
+        setError('Utente non trovato. Verifica l\'email o usa il login client.');
+      } else {
+        setError('Errore durante il login: ' + error.message);
       }
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const handleResetPassword = () => {
-    console.log('Navigazione a /client/forgot-password');
-    navigate('/client/forgot-password');
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError('Inserisci un\'email per reimpostare la password.');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setError('Email di reimpostazione password inviata. Controlla la tua casella di posta.');
+    } catch (error) {
+      console.error('Errore reset password:', error);
+      setError('Errore nell\'invio dell\'email di reimpostazione: ' + error.message);
+    }
   };
 
-  // Stili per il form
-  const inputContainerStyle = "relative";
-  const inputStyle = "w-full p-3 pl-10 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 transition-all text-slate-200";
-  const iconStyle = "absolute left-3 top-1/2 -translate-y-1/2 text-slate-400";
+  const inputStyle = "w-full p-2.5 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
+  const labelStyle = "block mb-1 text-sm font-medium text-slate-300";
+  const buttonStyle = "w-full p-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg transition-colors disabled:bg-rose-900 disabled:cursor-not-allowed";
 
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
-        <AnimatedBackground />
-        <div className="flex flex-col justify-center items-center text-slate-200">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
-          <p className="mt-4 text-sm">Verifica autenticazione...</p>
-        </div>
-      </div>
-    );
-  }
+  if (isCheckingAuth) return (
+    <div className="min-h-screen flex justify-center items-center bg-zinc-950">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
-      <AnimatedBackground />
-      <motion.div 
-        className="w-full max-w-md bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-8 space-y-8 shadow-2xl shadow-black/20"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 sm:p-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6 sm:p-8"
       >
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-slate-50">Area Admin/Coach</h2>
-          <p className="text-slate-400 mt-2">Accedi per gestire i tuoi clienti.</p>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl font-bold text-slate-50">Login Coach/Admin</h1>
+          <Link to="/client-login" className="flex items-center gap-2 text-sm text-slate-400 hover:text-rose-500">
+            <ArrowLeft size={16} /> Login Cliente
+          </Link>
         </div>
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div className={inputContainerStyle}>
-            <Mail size={18} className={iconStyle} />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="Email"
-              className={inputStyle}
-              autoComplete="email"
-              disabled={isSubmitting || isCheckingAuth}
-            />
-          </div>
-          <div className={inputContainerStyle}>
-            <Lock size={18} className={iconStyle} />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Password"
-              className={inputStyle}
-              autoComplete="current-password"
-              disabled={isSubmitting || isCheckingAuth}
-            />
-          </div>
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <motion.button 
-              type="submit" 
-              disabled={isSubmitting || isCheckingAuth}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors disabled:bg-rose-900 disabled:cursor-not-allowed"
-              whileHover={{ scale: (isSubmitting || isCheckingAuth) ? 1 : 1.02 }}
-              whileTap={{ scale: (isSubmitting || isCheckingAuth) ? 1 : 0.98 }}
-              transition={{ duration: 0.2 }}
-            >
-              <LogIn size={18} />
-              {isSubmitting ? 'Accesso in corso...' : 'Accedi'}
-            </motion.button>
+            <label className={labelStyle}>Email</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={`${inputStyle} pl-10`}
+                placeholder="Inserisci la tua email"
+              />
+            </div>
           </div>
+          <div>
+            <label className={labelStyle}>Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`${inputStyle} pl-10 pr-10`}
+                placeholder="Inserisci la tua password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          <button type="submit" className={buttonStyle}>Accedi</button>
         </form>
-        <motion.button
+        <button
           onClick={handleResetPassword}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 font-semibold text-slate-200 bg-rose-600/80 rounded-lg hover:bg-rose-700 transition-colors border border-rose-500/30"
-          whileHover={{ scale: 1.02, y: -1 }}
-          whileTap={{ scale: 0.98 }}
-          transition={{ duration: 0.2 }}
+          className="mt-4 text-sm text-slate-400 hover:text-rose-500 w-full text-center"
         >
-          <KeyRound size={18} />
-          Recupera Password
-        </motion.button>
+          Password dimenticata?
+        </button>
       </motion.div>
     </div>
   );
-}
+};
+
+export default Login;

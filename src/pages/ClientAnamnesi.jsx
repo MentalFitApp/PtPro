@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { getAuth } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db } from '../firebase.js';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, FilePenLine, Camera, UploadCloud, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
+import { uploadPhoto } from '../storageUtils';
 
 // --- COMPONENTI UI RIUTILIZZABILI ---
 const AnimatedBackground = () => (
@@ -54,9 +54,8 @@ const ClientAnamnesi = () => {
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
-  const storage = getStorage();
 
-  const { register, handleSubmit, setValue, formState: { isSubmitting } } = useForm();
+  const { register, handleSubmit, setValue, formState: { isSubmitting, errors } } = useForm();
 
   useEffect(() => {
     if (!user) {
@@ -99,6 +98,15 @@ const ClientAnamnesi = () => {
     const file = e.target.files[0];
     console.log(`File selected for ${type}:`, file?.name);
     if (file) {
+      // Validazione file
+      if (file.size > 5 * 1024 * 1024) {
+        showNotification(`Il file ${file.name} supera il limite di 5MB`, 'error');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        showNotification(`Il file ${file.name} non è un'immagine valida`, 'error');
+        return;
+      }
       setPhotos(prev => ({ ...prev, [type]: file }));
       setPhotoPreviews(prev => ({ ...prev, [type]: URL.createObjectURL(file) }));
       showNotification(`Foto ${type} selezionata con successo!`, 'success');
@@ -109,12 +117,12 @@ const ClientAnamnesi = () => {
 
   const onSubmit = async (data) => {
     if (!user) {
-      showNotification('Utente non autenticato. Effettua il login.');
+      showNotification('Utente non autenticato. Effettua il login.', 'error');
       return;
     }
 
-    if (!anamnesiData && Object.values(photos).some(p => p === null)) {
-      showNotification('Per favore, carica tutte e 4 le foto iniziali.');
+    if (!anamnesiData && Object.values(photos).every(p => p === null)) {
+      showNotification('Per favore, carica almeno una foto iniziale.', 'error');
       return;
     }
 
@@ -130,15 +138,12 @@ const ClientAnamnesi = () => {
             try {
               const filePath = `clients/${user.uid}/anamnesi_photos/${type}-${uuidv4()}.jpg`;
               console.log(`Uploading ${type} to ${filePath}`);
-              const fileRef = ref(storage, filePath);
-              const uploadResult = await uploadBytes(fileRef, file);
-              console.log(`Upload successful for ${type}:`, uploadResult);
-              const url = await getDownloadURL(fileRef);
+              const url = await uploadPhoto(file, user.uid, 'anamnesi_photos');
               console.log(`Download URL for ${type}: ${url}`);
               return { type, url };
             } catch (uploadError) {
               console.error(`Error uploading ${type} photo:`, uploadError.code, uploadError.message);
-              throw uploadError;
+              throw new Error(`Errore nell'upload della foto ${type}: ${uploadError.message}`);
             }
           })
         );
@@ -152,11 +157,12 @@ const ClientAnamnesi = () => {
       await setDoc(doc(db, `clients/${user.uid}/anamnesi`, 'initial'), dataToSave, { merge: true });
 
       setAnamnesiData(dataToSave);
+      setPhotos({ front: null, right: null, left: null, back: null });
       setIsEditing(false);
       showNotification('Anamnesi salvata con successo!', 'success');
     } catch (error) {
       console.error('Errore nel salvataggio:', error.code, error.message, error);
-      showNotification(`Si è verificato un errore durante il salvataggio: ${error.message}`);
+      showNotification(`Si è verificato un errore durante il salvataggio: ${error.message}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -208,6 +214,7 @@ const ClientAnamnesi = () => {
               handleFileChange(e, type);
             }}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer pointer-events-auto z-10"
+            disabled={loading || isSubmitting}
           />
         </div>
       </div>
@@ -259,41 +266,129 @@ const ClientAnamnesi = () => {
             <div className={sectionStyle}>
               <h4 className={headingStyle}><FilePenLine size={16} /> Dati Anagrafici e Misure</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label className={labelStyle}>Nome*</label><input {...register('firstName', { required: true })} className={inputStyle} /></div>
-                <div><label className={labelStyle}>Cognome*</label><input {...register('lastName', { required: true })} className={inputStyle} /></div>
-                <div><label className={labelStyle}>Data di Nascita*</label><input type="date" {...register('birthDate', { required: true })} className={inputStyle} /></div>
-                <div><label className={labelStyle}>Che lavoro fai?*</label><input {...register('job', { required: true })} className={inputStyle} placeholder="Es. Impiegato, studente..." /></div>
-                <div><label className={labelStyle}>Peso (kg)*</label><input type="number" step="0.1" {...register('weight', { required: true })} className={inputStyle} placeholder="Es. 75.5" /></div>
-                <div><label className={labelStyle}>Altezza (cm)*</label><input type="number" {...register('height', { required: true })} className={inputStyle} placeholder="Es. 180" /></div>
+                <div>
+                  <label className={labelStyle}>Nome*</label>
+                  <input {...register('firstName', { required: 'Il nome è obbligatorio' })} className={inputStyle} />
+                  {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Cognome*</label>
+                  <input {...register('lastName', { required: 'Il cognome è obbligatorio' })} className={inputStyle} />
+                  {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Data di Nascita*</label>
+                  <input type="date" {...register('birthDate', { required: 'La data di nascita è obbligatoria' })} className={inputStyle} />
+                  {errors.birthDate && <p className="text-red-500 text-sm mt-1">{errors.birthDate.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Che lavoro fai?*</label>
+                  <input {...register('job', { required: 'Il lavoro è obbligatorio' })} className={inputStyle} placeholder="Es. Impiegato, studente..." />
+                  {errors.job && <p className="text-red-500 text-sm mt-1">{errors.job.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Peso (kg)*</label>
+                  <input type="number" step="0.1" {...register('weight', { required: 'Il peso è obbligatorio', min: { value: 0, message: 'Il peso deve essere positivo' } })} className={inputStyle} placeholder="Es. 75.5" />
+                  {errors.weight && <p className="text-red-500 text-sm mt-1">{errors.weight.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Altezza (cm)*</label>
+                  <input type="number" {...register('height', { required: 'L\'altezza è obbligatoria', min: { value: 0, message: 'L\'altezza deve essere positiva' } })} className={inputStyle} placeholder="Es. 180" />
+                  {errors.height && <p className="text-red-500 text-sm mt-1">{errors.height.message}</p>}
+                </div>
               </div>
             </div>
             <div className={sectionStyle}>
               <h4 className={headingStyle}><Camera size={16} /> Abitudini Alimentari</h4>
               <div className="space-y-4">
-                <div><label className={labelStyle}>Pasti al giorno*</label><select {...register('mealsPerDay', { required: true })} className={inputStyle}><option value="3">3</option><option value="4">4</option><option value="5">5+</option></select></div>
-                <div><label className={labelStyle}>Colazione: Dolce o Salata?*</label><select {...register('breakfastType', { required: true })} className={inputStyle}><option value="dolce">Dolce</option><option value="salato">Salato</option><option value="entrambi">Entrambi/Indifferente</option></select></div>
-                <div><label className={labelStyle}>Alimenti che ti piacciono*</label><textarea {...register('desiredFoods', { required: true })} rows="3" className={inputStyle} placeholder="Elenca qui gli alimenti che vorresti nel piano..." /></div>
-                <div><label className={labelStyle}>Cosa non mangi?*</label><textarea {...register('dislikedFoods', { required: true })} rows="2" className={inputStyle} placeholder="Elenca qui gli alimenti da evitare..." /></div>
-                <div><label className={labelStyle}>Allergie o Intolleranze?*</label><input {...register('intolerances', { required: true })} className={inputStyle} placeholder="Es. Lattosio, nessuna..." /></div>
-                <div><label className={labelStyle}>Problemi di digestione o gonfiore?*</label><input {...register('digestionIssues', { required: true })} className={inputStyle} placeholder="Sì/No, e se sì quali..." /></div>
+                <div>
+                  <label className={labelStyle}>Pasti al giorno*</label>
+                  <select {...register('mealsPerDay', { required: 'Il numero di pasti è obbligatorio' })} className={inputStyle}>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5+</option>
+                  </select>
+                  {errors.mealsPerDay && <p className="text-red-500 text-sm mt-1">{errors.mealsPerDay.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Colazione: Dolce o Salata?*</label>
+                  <select {...register('breakfastType', { required: 'Il tipo di colazione è obbligatorio' })} className={inputStyle}>
+                    <option value="dolce">Dolce</option>
+                    <option value="salato">Salato</option>
+                    <option value="entrambi">Entrambi/Indifferente</option>
+                  </select>
+                  {errors.breakfastType && <p className="text-red-500 text-sm mt-1">{errors.breakfastType.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Alimenti che ti piacciono*</label>
+                  <textarea {...register('desiredFoods', { required: 'Gli alimenti preferiti sono obbligatori' })} rows="3" className={inputStyle} placeholder="Elenca qui gli alimenti che vorresti nel piano..." />
+                  {errors.desiredFoods && <p className="text-red-500 text-sm mt-1">{errors.desiredFoods.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Cosa non mangi?*</label>
+                  <textarea {...register('dislikedFoods', { required: 'Gli alimenti da evitare sono obbligatori' })} rows="2" className={inputStyle} placeholder="Elenca qui gli alimenti da evitare..." />
+                  {errors.dislikedFoods && <p className="text-red-500 text-sm mt-1">{errors.dislikedFoods.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Allergie o Intolleranze?*</label>
+                  <input {...register('intolerances', { required: 'Le allergie/intolleranze sono obbligatorie' })} className={inputStyle} placeholder="Es. Lattosio, nessuna..." />
+                  {errors.intolerances && <p className="text-red-500 text-sm mt-1">{errors.intolerances.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Problemi di digestione o gonfiore?*</label>
+                  <input {...register('digestionIssues', { required: 'I problemi di digestione sono obbligatori' })} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
+                  {errors.digestionIssues && <p className="text-red-500 text-sm mt-1">{errors.digestionIssues.message}</p>}
+                </div>
               </div>
             </div>
             <div className={sectionStyle}>
               <h4 className={headingStyle}><FilePenLine size={16} /> Allenamento</h4>
               <div className="space-y-4">
-                <div><label className={labelStyle}>Allenamenti a settimana*</label><input type="number" {...register('workoutsPerWeek', { required: true })} className={inputStyle} placeholder="Es. 3" /></div>
-                <div><label className={labelStyle}>Dettagli Allenamento*</label><textarea {...register('trainingDetails', { required: true })} rows="3" className={inputStyle} placeholder="Es. Bodybuilding in palestra con macchinari e pesi liberi..." /></div>
-                <div><label className={labelStyle}>Orario e Durata*</label><input {...register('trainingTime', { required: true })} className={inputStyle} placeholder="Es. La sera dalle 18 alle 19:30" /></div>
+                <div>
+                  <label className={labelStyle}>Allenamenti a settimana*</label>
+                  <input type="number" {...register('workoutsPerWeek', { required: 'Gli allenamenti a settimana sono obbligatori', min: { value: 0, message: 'Il numero deve essere positivo' } })} className={inputStyle} placeholder="Es. 3" />
+                  {errors.workoutsPerWeek && <p className="text-red-500 text-sm mt-1">{errors.workoutsPerWeek.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Dettagli Allenamento*</label>
+                  <textarea {...register('trainingDetails', { required: 'I dettagli dell\'allenamento sono obbligatori' })} rows="3" className={inputStyle} placeholder="Es. Bodybuilding in palestra con macchinari e pesi liberi..." />
+                  {errors.trainingDetails && <p className="text-red-500 text-sm mt-1">{errors.trainingDetails.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Orario e Durata*</label>
+                  <input {...register('trainingTime', { required: 'L\'orario e la durata sono obbligatori' })} className={inputStyle} placeholder="Es. La sera dalle 18 alle 19:30" />
+                  {errors.trainingTime && <p className="text-red-500 text-sm mt-1">{errors.trainingTime.message}</p>}
+                </div>
               </div>
             </div>
             <div className={sectionStyle}>
               <h4 className={headingStyle}><Camera size={16} /> Salute e Obiettivi</h4>
               <div className="space-y-4">
-                <div><label className={labelStyle}>Infortuni o problematiche*</label><textarea {...register('injuries', { required: true })} rows="3" className={inputStyle} placeholder="Es. Mal di schiena, ernie, dolori articolari..." /></div>
-                <div><label className={labelStyle}>Prendi farmaci?*</label><input {...register('medications', { required: true })} className={inputStyle} placeholder="Sì/No, e se sì quali..." /></div>
-                <div><label className={labelStyle}>Usi integratori?*</label><input {...register('supplements', { required: true })} className={inputStyle} placeholder="Sì/No, e se sì quali..." /></div>
-                <div><label className={labelStyle}>Obiettivo Principale*</label><textarea {...register('mainGoal', { required: true })} rows="3" className={inputStyle} placeholder="Descrivi in dettaglio cosa vuoi raggiungere..." /></div>
-                <div><label className={labelStyle}>Durata Percorso*</label><input {...register('programDuration', { required: true })} className={inputStyle} placeholder="Es. 3 mesi, 6 mesi..." /></div>
+                <div>
+                  <label className={labelStyle}>Infortuni o problematiche*</label>
+                  <textarea {...register('injuries', { required: 'Gli infortuni sono obbligatori' })} rows="3" className={inputStyle} placeholder="Es. Mal di schiena, ernie, dolori articolari..." />
+                  {errors.injuries && <p className="text-red-500 text-sm mt-1">{errors.injuries.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Prendi farmaci?*</label>
+                  <input {...register('medications', { required: 'I farmaci sono obbligatori' })} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
+                  {errors.medications && <p className="text-red-500 text-sm mt-1">{errors.medications.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Usi integratori?*</label>
+                  <input {...register('supplements', { required: 'Gli integratori sono obbligatori' })} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
+                  {errors.supplements && <p className="text-red-500 text-sm mt-1">{errors.supplements.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Obiettivo Principale*</label>
+                  <textarea {...register('mainGoal', { required: 'L\'obiettivo principale è obbligatorio' })} rows="3" className={inputStyle} placeholder="Descrivi in dettaglio cosa vuoi raggiungere..." />
+                  {errors.mainGoal && <p className="text-red-500 text-sm mt-1">{errors.mainGoal.message}</p>}
+                </div>
+                <div>
+                  <label className={labelStyle}>Durata Percorso*</label>
+                  <input {...register('programDuration', { required: 'La durata del percorso è obbligatoria' })} className={inputStyle} placeholder="Es. 3 mesi, 6 mesi..." />
+                  {errors.programDuration && <p className="text-red-500 text-sm mt-1">{errors.programDuration.message}</p>}
+                </div>
               </div>
             </div>
             <div className={sectionStyle}>
@@ -306,10 +401,30 @@ const ClientAnamnesi = () => {
                 <PhotoUploader type="back" label="Posteriore" />
               </div>
             </div>
-            <div className="flex justify-end pt-4">
-              <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+            <div className="flex justify-end gap-4 pt-4">
+              <motion.button
+                type="submit"
+                disabled={isSubmitting || loading}
+                className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
                 <Save size={16} /> {isSubmitting ? 'Salvataggio in corso...' : 'Salva Anamnesi'}
-              </button>
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={() => {
+                  setIsEditing(false);
+                  setPhotos({ front: null, right: null, left: null, back: null });
+                  setPhotoPreviews(anamnesiData?.photoURLs || { front: null, right: null, left: null, back: null });
+                }}
+                disabled={isSubmitting || loading}
+                className="flex items-center gap-2 px-5 py-2.5 bg-zinc-700 hover:bg-zinc-800 text-white rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <X size={16} /> Annulla
+              </motion.button>
             </div>
           </form>
         ) : (
@@ -360,9 +475,14 @@ const ClientAnamnesi = () => {
                 <ViewPhotos urls={anamnesiData.photoURLs} />
               </div>
               <div className="flex justify-end pt-4">
-                <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-slate-300 rounded-lg transition font-semibold">
+                <motion.button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-slate-300 rounded-lg transition font-semibold"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
                   <FilePenLine size={16} /> Modifica Dati
-                </button>
+                </motion.button>
               </div>
             </div>
           )

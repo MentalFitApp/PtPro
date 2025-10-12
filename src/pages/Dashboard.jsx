@@ -11,7 +11,6 @@ import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, LineElement, PointElement, LinearScale, CategoryScale, Title, Tooltip, Legend, Filler } from "chart.js";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Registra i componenti di Chart.js
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Title, Tooltip, Legend, Filler);
 
 // --- HELPERS ---
@@ -91,6 +90,21 @@ export default function Dashboard() {
   const [chartData, setChartData] = useState([]);
   const [errorMessage, setErrorMessage] = useState(null);
 
+  // --- Check ruolo ---
+  useEffect(() => {
+    const role = sessionStorage.getItem('app_role');
+    if (role !== 'admin' && role !== 'coach') {
+      console.warn('Accesso non autorizzato a Dashboard, redirect');
+      signOut(auth).then(() => {
+        navigate('/login');
+      }).catch(err => {
+        console.error('Errore durante il logout:', err);
+        setErrorMessage('Errore durante il logout');
+      });
+      return;
+    }
+  }, [navigate]);
+
   // --- User name and logout ---
   const [userName, setUserName] = useState('');
   useEffect(() => {
@@ -109,6 +123,7 @@ export default function Dashboard() {
       navigate('/login');
     } catch (error) {
       console.error("Logout error:", error);
+      setErrorMessage(`Errore durante il logout: ${error.message}`);
     }
   };
 
@@ -469,25 +484,14 @@ export default function Dashboard() {
     maintainAspectRatio: false,
     scales: {
       x: {
-        grid: {
-          display: false
-        },
-        ticks: {
-          color: "#e2e8f0",
-          font: {
-            size: 12
-          }
-        }
+        grid: { display: false },
+        ticks: { color: "#e2e8f0", font: { size: 12 } }
       },
       y: {
-        grid: {
-          color: "rgba(255, 255, 255, 0.1)"
-        },
+        grid: { color: "rgba(255, 255, 255, 0.1)" },
         ticks: {
           color: "#e2e8f0",
-          font: {
-            size: 12
-          },
+          font: { size: 12 },
           callback: function(value) {
             return chartDataType === 'revenue' ? `€${value}` : value;
           }
@@ -497,14 +501,7 @@ export default function Dashboard() {
     plugins: {
       legend: {
         position: "top",
-        labels: {
-          font: {
-            size: 12,
-            family: "'Inter', sans-serif",
-            weight: "500"
-          },
-          color: "#e2e8f0"
-        }
+        labels: { font: { size: 12, family: "'Inter', sans-serif", weight: "500" }, color: "#e2e8f0" }
       },
       tooltip: {
         callbacks: {
@@ -532,19 +529,23 @@ export default function Dashboard() {
 
   const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
 
-  if (errorMessage) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-red-900/80 p-6 rounded-lg text-center">
-          <h2 className="text-xl font-bold text-red-300 mb-2">Accesso Negato</h2>
-          <p className="text-red-400">{errorMessage}</p>
-          <button onClick={handleLogout} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">
-            Torna al Login
-          </button>
-        </div>
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+    </div>
+  );
+
+  if (errorMessage) return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="bg-red-900/80 p-6 rounded-lg text-center">
+        <h2 className="text-xl font-bold text-red-300 mb-2">Accesso Negato</h2>
+        <p className="text-red-400">{errorMessage}</p>
+        <button onClick={handleLogout} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">
+          Torna al Login
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <motion.div initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.1 } } }} className="w-full space-y-6">

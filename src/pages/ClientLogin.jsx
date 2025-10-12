@@ -58,110 +58,85 @@ const AnimatedBackground = () => {
   );
 };
 
-const ClientLogin = () => {
+export default function ClientLogin() {
+  const navigate = useNavigate();
+  const auth = getAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const navigate = useNavigate();
-  const auth = getAuth();
 
-  // Controlla se l'utente è già autenticato
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        console.log('Utente autenticato all\'avvio:', user.uid, user.email);
-        const userDocRef = doc(db, "clients", user.uid);
-        try {
-          const userDoc = await getDoc(userDocRef, { source: 'server' });
-          console.log('Dati documento cliente:', userDoc.exists() ? userDoc.data() : 'Documento non trovato');
-          if (userDoc.exists() && userDoc.data().isClient === true) {
-            sessionStorage.setItem('app_role', 'client');
-            const isFirstLogin = userDoc.data().firstLogin === true;
-            navigate(isFirstLogin ? '/client/first-access' : '/client/dashboard', { replace: true });
-          } else {
-            setError("Accesso non autorizzato. Area riservata ai clienti.");
-            await auth.signOut();
-            navigate('/client-login');
+        // Controlla se è un primo accesso
+        const checkFirstLogin = async () => {
+          try {
+            const clientDocRef = doc(db, 'clients', user.uid);
+            const clientDoc = await getDoc(clientDocRef);
+            if (clientDoc.exists() && clientDoc.data().isClient && clientDoc.data().firstLogin) {
+              navigate('/client/first-access');
+            } else {
+              navigate('/client/dashboard');
+            }
+          } catch (err) {
+            console.error('Errore nel controllo firstLogin:', err);
+            setError('Errore durante la verifica del profilo. Riprova.');
+            setIsCheckingAuth(false);
           }
-        } catch (err) {
-          console.error("Errore nel recupero del documento cliente:", err.code, err.message, { uid: user.uid, email: user.email });
-          setError("Errore nel verificare l'account cliente. Verifica i permessi o contatta il supporto.");
-          await auth.signOut();
-          navigate('/client-login');
-        }
+        };
+        checkFirstLogin();
+      } else {
+        setIsCheckingAuth(false);
       }
-      setIsCheckingAuth(false);
     });
+
     return () => unsubscribe();
   }, [navigate]);
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting || isCheckingAuth) {
-      console.log('Submit bloccato: già in corso o autenticazione in corso');
-      return;
-    }
     setError('');
     setIsSubmitting(true);
-    console.log('Tentativo di login con email:', email);
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      const userDocRef = doc(db, "clients", user.uid);
-      const userDoc = await getDoc(userDocRef, { source: 'server' });
 
-      console.log('Dati documento cliente:', userDoc.exists() ? userDoc.data() : 'Documento non trovato');
-      if (userDoc.exists() && userDoc.data().isClient === true) {
-        sessionStorage.setItem('app_role', 'client');
-        const isFirstLogin = userDoc.data().firstLogin === true;
-        navigate(isFirstLogin ? '/client/first-access' : '/client/dashboard', { replace: true });
-      } else {
-        setError("Accesso non autorizzato. Area riservata ai clienti.");
-        await auth.signOut();
-        navigate('/client-login');
-      }
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // Il redirect è gestito da onAuthStateChanged sopra
     } catch (err) {
-      console.error("Errore di login:", err.code, err.message);
-      setError(err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' 
-        ? "Credenziali non valide. Riprova." 
-        : "Errore durante il login: " + err.message);
-    } finally {
+      console.error('Errore login:', err);
+      setError('Email o password non valide. Riprova.');
       setIsSubmitting(false);
     }
   };
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
-        <AnimatedBackground />
-        <div className="flex flex-col justify-center items-center text-slate-200">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-500"></div>
-          <p className="mt-4 text-sm">Verifica autenticazione...</p>
-        </div>
+      <div className="flex flex-col justify-center items-center min-h-screen bg-zinc-950 text-slate-200">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+        <p className="mt-4 text-sm">Verifica autenticazione...</p>
       </div>
     );
   }
 
   const inputContainerStyle = "relative";
-  const inputStyle = "w-full p-3 pl-10 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-slate-200";
+  const inputStyle = "w-full p-3 pl-10 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200";
   const iconStyle = "absolute left-3 top-1/2 -translate-y-1/2 text-slate-400";
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <AnimatedBackground />
-      <motion.div 
+      <motion.div
         className="w-full max-w-md bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-8 space-y-8 shadow-2xl shadow-black/20"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
       >
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-slate-50">Area Clienti</h2>
-          <p className="text-slate-400 mt-2">Accedi con le credenziali fornite dal tuo coach.</p>
+          <h2 className="text-3xl font-bold text-slate-50">Login Cliente</h2>
+          <p className="text-sm text-slate-400 mt-2">Accedi al tuo account per gestire il tuo percorso.</p>
         </div>
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className={inputContainerStyle}>
             <Mail size={18} className={iconStyle} />
             <input
@@ -190,8 +165,8 @@ const ClientLogin = () => {
           </div>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <div>
-            <motion.button 
-              type="submit" 
+            <motion.button
+              type="submit"
               disabled={isSubmitting || isCheckingAuth}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors disabled:bg-cyan-900 disabled:cursor-not-allowed"
               whileHover={{ scale: (isSubmitting || isCheckingAuth) ? 1 : 1.02 }}
@@ -211,6 +186,4 @@ const ClientLogin = () => {
       </motion.div>
     </div>
   );
-};
-
-export default ClientLogin;
+}
