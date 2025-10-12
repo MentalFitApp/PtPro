@@ -103,24 +103,20 @@ export default function CoachDashboard() {
 
   // Verifica coach
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    const unsubscribe = auth.onAuthStateChanged(async user => {
       if (user) {
         try {
           const coachDocRef = doc(db, 'roles', 'coaches');
           const coachDoc = await getDoc(coachDocRef);
           const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(user.uid);
-          
-          console.log('Debug ruolo coach in CoachDashboard:', {
+          console.log('Debug ruolo coach:', {
             uid: user.uid,
-            email: user.email,
             coachDocExists: coachDoc.exists(),
             coachUids: coachDoc.data()?.uids,
             isCoach
           });
-
           if (isCoach) {
             setUserName(user.displayName || user.email || 'Coach');
-            sessionStorage.setItem('app_role', 'coach');
           } else {
             console.warn('Accesso non autorizzato per CoachDashboard:', user.uid);
             sessionStorage.removeItem('app_role');
@@ -130,8 +126,7 @@ export default function CoachDashboard() {
         } catch (err) {
           console.error('Errore verifica ruolo coach:', err);
           setError('Errore nella verifica del ruolo coach.');
-          await signOut(auth);
-          navigate('/login');
+          setLoading(false);
         }
       } else {
         console.warn('Nessun utente autenticato, redirect a /login');
@@ -146,6 +141,7 @@ export default function CoachDashboard() {
     const unsub = onSnapshot(collection(db, 'clients'), (snap) => {
       try {
         const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log('Clienti caricati:', { count: clientList.length });
         setClients(clientList);
         setLoading(false);
       } catch (err) {
@@ -180,22 +176,22 @@ export default function CoachDashboard() {
 
   // Activity feed
   useEffect(() => {
-    if (!lastViewed) return;
+    if (!lastViewed || !auth.currentUser) return;
 
     const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));
     const unsubChecks = onSnapshot(checksQuery, async (snap) => {
       try {
         const newChecks = [];
-        for (const doc of snap.docs) {
-          if (toDate(doc.data().createdAt) > toDate(lastViewed)) {
-            const clientId = doc.ref.parent.parent.id;
+        for (const checkDoc of snap.docs) {
+          if (toDate(checkDoc.data().createdAt) > toDate(lastViewed)) {
+            const clientId = checkDoc.ref.parent.parent.id;
             const clientDoc = await getDoc(doc(db, 'clients', clientId));
             newChecks.push({
               type: 'new_check',
               clientId,
               clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
               description: 'Ha inviato un nuovo check-in',
-              date: doc.data().createdAt
+              date: checkDoc.data().createdAt
             });
           }
         }
@@ -210,16 +206,16 @@ export default function CoachDashboard() {
     const unsubAnamnesi = onSnapshot(anamnesiQuery, async (snap) => {
       try {
         const newAnamnesi = [];
-        for (const doc of snap.docs) {
-          if (toDate(doc.data().submittedAt) > toDate(lastViewed)) {
-            const clientId = doc.ref.parent.parent.id;
+        for (const anamnesiDoc of snap.docs) {
+          if (toDate(anamnesiDoc.data().submittedAt) > toDate(lastViewed)) {
+            const clientId = anamnesiDoc.ref.parent.parent.id;
             const clientDoc = await getDoc(doc(db, 'clients', clientId));
             newAnamnesi.push({
               type: 'new_anamnesi',
               clientId,
               clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
               description: 'Ha compilato l\'anamnesi iniziale',
-              date: doc.data().submittedAt
+              date: anamnesiDoc.data().submittedAt
             });
           }
         }
@@ -230,13 +226,13 @@ export default function CoachDashboard() {
       }
     });
 
-    const chatsQuery = query(collection(db, 'chats'), where('participants', 'array-contains', auth.currentUser?.uid), orderBy('lastUpdate', 'desc'));
+    const chatsQuery = query(collection(db, 'chats'), where('participants', 'array-contains', auth.currentUser.uid), orderBy('lastUpdate', 'desc'));
     const unsubChats = onSnapshot(chatsQuery, async (snap) => {
       try {
         const newMessages = [];
-        for (const doc of snap.docs) {
-          const chatData = doc.data();
-          const clientId = chatData.participants.find(p => p !== auth.currentUser?.uid);
+        for (const chatDoc of snap.docs) {
+          const chatData = chatDoc.data();
+          const clientId = chatData.participants.find(p => p !== auth.currentUser.uid);
           if (chatData.lastUpdate && toDate(chatData.lastUpdate) > toDate(lastViewed)) {
             const clientDoc = await getDoc(doc(db, 'clients', clientId));
             newMessages.push({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signOut } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, setDoc, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
@@ -89,7 +89,7 @@ export default function CoachChat() {
         if (!isCoach) {
           console.warn('Accesso non autorizzato per CoachChat:', user.uid);
           sessionStorage.removeItem('app_role');
-          await auth.signOut();
+          await signOut(auth);
           navigate('/login');
         }
       } catch (err) {
@@ -106,7 +106,7 @@ export default function CoachChat() {
     if (!user) return;
 
     const chatsRef = collection(db, 'chats');
-    const q = query(chatsRef, where('participants', 'array-contains', user.uid), orderBy('lastUpdate', 'desc'));
+    const q = query(chatsRef, where('participants', 'array-contains', user.uid), orderBy('lastUpdate', 'desc'), limit(50));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       try {
         const chatList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -140,7 +140,7 @@ export default function CoachChat() {
 
     setLoading(true);
     const messagesCollectionRef = collection(db, 'chats', selectedChatId, 'messages');
-    const q = query(messagesCollectionRef, orderBy('createdAt'));
+    const q = query(messagesCollectionRef, orderBy('createdAt'), limit(100));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       try {
         const messagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -176,7 +176,8 @@ export default function CoachChat() {
       const q = query(clientsRef, 
         where('name_lowercase', '>=', searchTerm), 
         where('name_lowercase', '<=', searchTerm + '\uf8ff'),
-        limit(10) // Aggiunto limit importato
+        orderBy('name_lowercase'),
+        limit(10)
       );
       try {
         const querySnapshot = await getDocs(q);
@@ -225,7 +226,7 @@ export default function CoachChat() {
       }, { merge: true });
 
       const messagesCollectionRef = collection(db, 'chats', generatedChatId, 'messages');
-      const q = query(messagesCollectionRef, orderBy('createdAt'));
+      const q = query(messagesCollectionRef, orderBy('createdAt'), limit(100));
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
         try {
           const messagesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

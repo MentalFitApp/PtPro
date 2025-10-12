@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmailAndPassword, getAuth } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from '../firebase';
-import { LogIn, Mail, Lock } from 'lucide-react';
+import { LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // AnimatedBackground per tema stellato
@@ -30,7 +30,7 @@ const AnimatedBackground = () => {
       starsContainerRef.current = starsContainer;
     }
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 30; i++) { // Ridotto a 30 stelle
       const star = document.createElement('div');
       star.className = 'star';
       star.style.setProperty('--top-offset', `${Math.random() * 100}vh`);
@@ -66,30 +66,56 @@ export default function ClientLogin() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        // Controlla se è un primo accesso
-        const checkFirstLogin = async () => {
-          try {
-            const clientDocRef = doc(db, 'clients', user.uid);
-            const clientDoc = await getDoc(clientDocRef);
-            if (clientDoc.exists() && clientDoc.data().isClient && clientDoc.data().firstLogin) {
-              navigate('/client/first-access');
-            } else {
-              navigate('/client/dashboard');
-            }
-          } catch (err) {
-            console.error('Errore nel controllo firstLogin:', err);
-            setError('Errore durante la verifica del profilo. Riprova.');
-            setIsCheckingAuth(false);
+        console.log('Utente autenticato all\'avvio:', { uid: user.uid, email: user.email });
+        try {
+          // Verifica ruolo
+          const adminDocRef = doc(db, 'roles', 'admins');
+          const coachDocRef = doc(db, 'roles', 'coaches');
+          const clientDocRef = doc(db, 'clients', user.uid);
+          const [adminDoc, coachDoc, clientDoc] = await Promise.all([
+            getDoc(adminDocRef),
+            getDoc(coachDocRef),
+            getDoc(clientDocRef)
+          ]);
+
+          const isAdmin = adminDoc.exists() && adminDoc.data().uids.includes(user.uid);
+          const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(user.uid);
+          const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
+
+          console.log('Debug ruolo in ClientLogin:', {
+            uid: user.uid,
+            email: user.email,
+            isAdmin,
+            isCoach,
+            isClient
+          });
+
+          if (isAdmin || isCoach) {
+            setError('Accesso non autorizzato per admin/coach. Usa il login admin.');
+            await signOut(auth);
+            navigate('/login');
+          } else if (isClient) {
+            sessionStorage.setItem('app_role', 'client');
+            navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
+          } else {
+            // Utente non è client, coach o admin
+            setError('Accesso non autorizzato. Contatta il tuo coach.');
+            await signOut(auth);
+            navigate('/client-login');
           }
-        };
-        checkFirstLogin();
-      } else {
-        setIsCheckingAuth(false);
+        } catch (err) {
+          console.error('Errore verifica ruolo:', err);
+          setError('Errore durante la verifica del ruolo. Riprova.');
+          await signOut(auth);
+          navigate('/client-login');
+        }
       }
+      setIsCheckingAuth(false);
     });
 
     return () => unsubscribe();
@@ -101,27 +127,32 @@ export default function ClientLogin() {
     setIsSubmitting(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Login riuscito:', { uid: userCredential.user.uid, email: userCredential.user.email });
       // Il redirect è gestito da onAuthStateChanged sopra
     } catch (err) {
       console.error('Errore login:', err);
-      setError('Email o password non valide. Riprova.');
+      setError(
+        err.code === 'auth/wrong-password' ? 'Password errata. Riprova.' :
+        err.code === 'auth/user-not-found' ? 'Utente non trovato. Verifica l\'email.' :
+        'Errore durante il login: ' + err.message
+      );
       setIsSubmitting(false);
     }
   };
 
+  const inputContainerStyle = "relative";
+  const inputStyle = "w-full p-3 pl-10 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200";
+  const iconStyle = "absolute left-3 top-1/2 -translate-y-1/2 text-slate-400";
+
   if (isCheckingAuth) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-zinc-950 text-slate-200">
+      <div className="flex flex-col justify-center items-center min-h-screen bg-zinc-950">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
         <p className="mt-4 text-sm">Verifica autenticazione...</p>
       </div>
     );
   }
-
-  const inputContainerStyle = "relative";
-  const inputStyle = "w-full p-3 pl-10 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200";
-  const iconStyle = "absolute left-3 top-1/2 -translate-y-1/2 text-slate-400";
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -153,15 +184,22 @@ export default function ClientLogin() {
           <div className={inputContainerStyle}>
             <Lock size={18} className={iconStyle} />
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="Password"
-              className={inputStyle}
+              className={`${inputStyle} pr-10`}
               autoComplete="current-password"
               disabled={isSubmitting || isCheckingAuth}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <div>
@@ -181,6 +219,9 @@ export default function ClientLogin() {
         <div className="text-center">
           <Link to="/client/forgot-password" className="text-sm text-slate-400 hover:text-cyan-400 hover:underline transition-colors">
             Password dimenticata?
+          </Link>
+          <Link to="/login" className="text-sm text-slate-400 hover:text-cyan-400 hover:underline transition-colors block mt-2">
+            Sei un coach o admin? Accedi qui
           </Link>
         </div>
       </motion.div>

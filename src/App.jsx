@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
 // Import dinamici
@@ -71,15 +71,15 @@ export default function App() {
           const adminDocRef = doc(db, 'roles', 'admins');
           const coachDocRef = doc(db, 'roles', 'coaches');
           const [adminDoc, coachDoc, clientDoc] = await Promise.all([
-            getDoc(adminDocRef, { source: 'server' }).catch(err => {
+            getDoc(adminDocRef).catch(err => {
               console.error('Errore fetch /roles/admins:', err.message);
               return { exists: () => false, data: () => ({ uids: [] }) };
             }),
-            getDoc(coachDocRef, { source: 'server' }).catch(err => {
+            getDoc(coachDocRef).catch(err => {
               console.error('Errore fetch /roles/coaches:', err.message);
               return { exists: () => false, data: () => ({ uids: [] }) };
             }),
-            getDoc(clientDocRef, { source: 'server' }).catch(err => {
+            getDoc(clientDocRef).catch(err => {
               console.error('Errore fetch /clients:', err.message);
               return { exists: () => false, data: () => ({}) };
             })
@@ -89,16 +89,24 @@ export default function App() {
           const isCurrentUserACoach = coachDoc.exists() && coachDoc.data().uids.includes(currentUser.uid);
           let isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
 
-          console.log('Debug ruolo coach:', {
+          console.log('Debug ruolo:', {
             uid: currentUser.uid,
-            coachDocExists: coachDoc.exists(),
-            coachUids: coachDoc.data()?.uids,
+            email: currentUser.email,
+            isAdmin: isCurrentUserAdmin,
             isCoach: isCurrentUserACoach,
+            isClient: isCurrentUserAClient,
             sessionRole
           });
 
-          // Crea il doc solo se non esiste e non è coach/admin
-          if (!isCurrentUserACoach && !isCurrentUserAdmin && !clientDoc.exists()) {
+          // Prevenzione creazione documento client per admin/coach
+          if (isCurrentUserACoach || isCurrentUserAdmin) {
+            if (clientDoc.exists()) {
+              console.warn('Documento client errato per admin/coach:', currentUser.uid, ' - Eliminazione automatica');
+              await deleteDoc(clientDocRef); // Elimina documento errato
+            }
+            isCurrentUserAClient = false;
+          } else if (!clientDoc.exists() && !isCurrentUserAdmin && !isCurrentUserACoach) {
+            // Crea documento client solo se non esiste e non è admin/coach
             await setDoc(clientDocRef, {
               name: currentUser.displayName || 'Unknown',
               email: currentUser.email,
@@ -119,6 +127,7 @@ export default function App() {
             clientDocData: isCurrentUserAClient ? clientDoc.data() : null
           });
 
+          // Gestione conflitto ruolo
           if (sessionRole && sessionRole !== (isCurrentUserAClient ? 'client' : isCurrentUserACoach ? 'coach' : isCurrentUserAdmin ? 'admin' : null)) {
             console.log('Conflitto ruolo, reset sessionStorage:', sessionRole);
             sessionStorage.removeItem('app_role');
@@ -129,15 +138,9 @@ export default function App() {
           if (isCurrentUserAdmin) {
             role = 'admin';
             targetRoute = '/';
-            if (clientDoc.exists()) {
-              console.warn('Documento client errato per admin:', currentUser.uid, 'Eliminare manualmente da /clients');
-            }
           } else if (isCurrentUserACoach) {
             role = 'coach';
             targetRoute = '/coach';
-            if (clientDoc.exists()) {
-              console.warn('Documento client errato per coach:', currentUser.uid, 'Eliminare manualmente da /clients');
-            }
           } else if (isCurrentUserAClient) {
             role = 'client';
             const clientDocData = clientDoc.exists() ? clientDoc.data() : {};

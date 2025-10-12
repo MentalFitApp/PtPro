@@ -50,7 +50,7 @@
   border-radius: 50%;
   box-shadow: 0 0 4px var(--star-color);
   transform: translate3d(104em, 0, 0);
-  animation: fall var(--fall-duration) var(--fall-delay) linear infinite, twinkle 2s ease-in-out infinite;
+  animation: fall var(--fall-duration) var(--fall-delay) linear infinite, twinkle 3s ease-in-out infinite;
   pointer-events: none;
 }
 
@@ -59,9 +59,9 @@
   position: absolute;
   top: 50%;
   left: calc(var(--star-width) / -2);
-  width: 6em; /* Lunghezza scia */
+  width: 4em; /* Ridotta lunghezza scia */
   height: 1px;
-  background: linear-gradient(to left, rgba(255, 255, 255, 0.8), transparent);
+  background: linear-gradient(to left, rgba(255, 255, 255, 0.6), transparent); /* Ridotta opacità */
   animation: tail-fade var(--fall-duration) var(--fall-delay) ease-out infinite;
   z-index: -7;
 }
@@ -74,12 +74,12 @@
 
 @keyframes tail-fade {
   0%, 50% {
-    width: 6em;
-    opacity: 0.8;
+    width: 4em;
+    opacity: 0.6;
   }
   70% {
-    width: 3em;
-    opacity: 0.4;
+    width: 2em;
+    opacity: 0.3;
   }
   100% {
     width: 0;
@@ -88,8 +88,8 @@
 }
 
 @keyframes twinkle {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
 }
 
 .star:nth-child(3n) { --star-width: 1px; }
@@ -102,6 +102,7 @@
   border: 1px solid transparent;
   background-clip: padding-box;
 }
+
 .gradient-border::before {
   content: '';
   position: absolute;

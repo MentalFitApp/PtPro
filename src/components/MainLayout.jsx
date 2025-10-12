@@ -1,15 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { LayoutGrid, Users, MessageSquare, FileText, Bell, Menu, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { LayoutGrid, Users, MessageSquare, FileText, Bell } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 // AnimatedBackground globale
 const AnimatedBackground = () => {
-  const starsContainerRef = useRef(null);
-  const isInitialized = useRef(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (isInitialized.current) return;
+    if (isInitialized) return;
 
     let starsContainer = document.querySelector('.stars');
     if (!starsContainer) {
@@ -24,83 +23,97 @@ const AnimatedBackground = () => {
       } else {
         starryBackground.appendChild(starsContainer);
       }
-      starsContainerRef.current = starsContainer;
-    } else {
-      starsContainerRef.current = starsContainer;
     }
 
-    // Crea 50 stelle
-    for (let i = 0; i < 50; i++) {
+    // Crea 30 stelle (ridotto da 50)
+    for (let i = 0; i < 30; i++) {
       const star = document.createElement('div');
       star.className = 'star';
       star.style.setProperty('--top-offset', `${Math.random() * 100}vh`);
       star.style.setProperty('--fall-duration', `${8 + Math.random() * 6}s`); // 8-14s
       star.style.setProperty('--fall-delay', `${Math.random() * 5}s`);
       star.style.setProperty('--star-width', `${1 + Math.random() * 2}px`); // 1-3px
-      starsContainerRef.current.appendChild(star);
+      starsContainer.appendChild(star);
     }
 
-    isInitialized.current = true;
-  }, []);
+    setIsInitialized(true);
+  }, [isInitialized]);
 
   return null;
 };
 
 const navLinks = [
-  { to: '/', icon: <LayoutGrid size={18} />, label: 'Dashboard' },
-  { to: '/clients', icon: <Users size={18} />, label: 'Clienti' },
-  { to: '/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
-  { to: '/updates', icon: <Bell size={18} />, label: 'Novità' },
+  { to: '/clients', icon: <Users size={20} />, label: 'Clienti' },
+  { to: '/chat', icon: <MessageSquare size={20} />, label: 'Chat' },
+  { to: '/', icon: <LayoutGrid size={24} />, label: 'Dashboard', isCentral: true },
+  { to: '/updates', icon: <Bell size={20} />, label: 'Novità' },
 ];
 
 const coachNavLinks = [
-  { to: '/coach', icon: <LayoutGrid size={18} />, label: 'Dashboard' },
-  { to: '/coach/clients', icon: <Users size={18} />, label: 'Clienti' },
-  { to: '/coach/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
-  { to: '/coach/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
-  { to: '/coach/updates', icon: <Bell size={18} />, label: 'Aggiornamenti' },
+  { to: '/coach/clients', icon: <Users size={20} />, label: 'Clienti' },
+  { to: '/coach/chat', icon: <MessageSquare size={20} />, label: 'Chat' },
+  { to: '/coach', icon: <LayoutGrid size={24} />, label: 'Dashboard', isCentral: true },
+  { to: '/coach/anamnesi', icon: <FileText size={20} />, label: 'Anamnesi' },
+  { to: '/coach/updates', icon: <Bell size={20} />, label: 'Aggiornamenti' },
 ];
 
-const NavLink = ({ to, icon, label, onClick }) => {
-  const location = useLocation();
-  const isActive = location.pathname === to || location.pathname.startsWith(to + '/');
+const NavLink = ({ to, icon, label, isCentral, isActive }) => {
+  const navigate = useNavigate();
   return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-3 w-full p-2.5 rounded-lg text-sm transition-colors ${
+    <motion.button
+      onClick={() => navigate(to)}
+      className={`flex flex-col items-center justify-center p-2 text-sm transition-colors ${
         isActive 
-          ? 'bg-rose-600/10 text-rose-500 font-semibold'
-          : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
-      }`}
+          ? 'text-rose-500 bg-rose-600/10 rounded-full' 
+          : 'text-slate-400 hover:text-rose-500 hover:bg-white/5 rounded-full'
+      } ${isCentral ? 'scale-125' : ''}`}
+      whileHover={{ scale: isCentral ? 1.3 : 1.1 }}
+      whileTap={{ scale: 0.95 }}
     >
-      {icon}<span>{label}</span>
-    </button>
+      {icon}
+      <span className="text-xs mt-1">{label}</span>
+    </motion.button>
   );
 };
 
-const SidebarContent = ({ onLinkClick, onClose, isCoach }) => {
+const BottomNav = ({ isCoach }) => {
+  const location = useLocation();
+  const links = isCoach ? coachNavLinks : navLinks;
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/90 backdrop-blur-lg border-t border-white/10 z-[100] md:hidden">
+      <div className="flex justify-around items-center py-2 px-4">
+        {links.map(link => (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            icon={link.icon}
+            label={link.label}
+            isCentral={link.isCentral}
+            isActive={location.pathname === link.to || location.pathname.startsWith(link.to + '/')}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const SidebarContent = ({ isCoach }) => {
   const navigate = useNavigate();
   const links = isCoach ? coachNavLinks : navLinks;
   return (
-    <aside className="w-full h-full bg-zinc-950/60 backdrop-blur-xl p-4 flex flex-col gradient-border">
+    <aside className="w-64 h-full bg-zinc-950/60 backdrop-blur-xl p-4 flex flex-col gradient-border">
       <div className="flex justify-between items-center mb-10">
         <h2 className="text-2xl font-bold px-2 text-slate-100">FitFlow Pro</h2>
-        <button onClick={onClose} className="md:hidden text-slate-200 p-2">
-          <X size={24} />
-        </button>
       </div>
       <nav className="flex flex-col gap-2">
         {links.map(link => (
-          <NavLink 
+          <NavLink
             key={link.to}
-            to={link.to} 
-            icon={link.icon} 
+            to={link.to}
+            icon={link.icon}
             label={link.label}
-            onClick={() => {
-              navigate(link.to);
-              if (onLinkClick) onLinkClick();
-              if (onClose) onClose();
-            }}
+            isCentral={false}
+            isActive={location.pathname === link.to || location.pathname.startsWith(link.to + '/')}
           />
         ))}
       </nav>
@@ -109,9 +122,7 @@ const SidebarContent = ({ onLinkClick, onClose, isCoach }) => {
 };
 
 export default function MainLayout() { 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const menuRef = useRef(null);
   const [isCoach, setIsCoach] = useState(false);
 
   useEffect(() => {
@@ -119,75 +130,14 @@ export default function MainLayout() {
     setIsCoach(location.pathname.startsWith('/coach'));
   }, [location.pathname]);
 
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [location.pathname, location.search]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    if (isMobileMenuOpen) {
-      setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside);
-      }, 100);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isMobileMenuOpen]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsMobileMenuOpen(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   return (
     <div className="relative min-h-screen flex flex-col md:flex-row">
       <AnimatedBackground />
       <div className="hidden md:flex md:fixed h-screen z-[50]">
-        <SidebarContent onLinkClick={() => setIsMobileMenuOpen(false)} isCoach={isCoach} />
+        <SidebarContent isCoach={isCoach} />
       </div>
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            ref={menuRef}
-            initial={{ x: '-100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
-            transition={{ type: 'spring', stiffness: 400, damping: 40 }}
-            className="fixed top-0 left-0 h-full w-64 z-[100] md:hidden bg-zinc-950/80 backdrop-blur-lg"
-          >
-            <SidebarContent 
-              onLinkClick={() => setIsMobileMenuOpen(false)} 
-              onClose={() => setIsMobileMenuOpen(false)}
-              isCoach={isCoach}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <div className="flex-1 w-full md:ml-60 z-[10]">
-        <header className="md:hidden sticky top-0 bg-zinc-950/70 backdrop-blur-lg h-16 flex items-center justify-between px-4 border-b border-white/10 z-[60]">
-          <div className="flex items-center gap-4">
-            <button onClick={() => {
-              console.log('Cliccato menu mobile, isMobileMenuOpen:', !isMobileMenuOpen);
-              setIsMobileMenuOpen(!isMobileMenuOpen);
-            }} className="text-slate-200">
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-            <h2 className="text-lg font-bold text-slate-100">FitFlow Pro</h2>
-          </div>
-        </header>
-        <main className="p-4 sm:p-6 lg:p-8 pt-16 md:pt-0 min-h-[calc(100vh-4rem)] z-[10]">
+      <div className="flex-1 w-full md:ml-64">
+        <main className="p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-4rem)] md:min-h-screen z-[10] pb-16 md:pb-0">
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 20 }}
@@ -197,6 +147,7 @@ export default function MainLayout() {
             <Outlet />
           </motion.div>
         </main>
+        <BottomNav isCoach={isCoach} />
       </div>
     </div>
   );
