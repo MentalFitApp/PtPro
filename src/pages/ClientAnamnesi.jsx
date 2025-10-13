@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { getAuth } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -55,7 +55,7 @@ const ClientAnamnesi = () => {
   const auth = getAuth();
   const user = auth.currentUser;
 
-  const { register, handleSubmit, setValue, formState: { isSubmitting, errors } } = useForm();
+  const { register, handleSubmit, setValue, formState: { isSubmitting } } = useForm();
 
   useEffect(() => {
     if (!user) {
@@ -98,7 +98,6 @@ const ClientAnamnesi = () => {
     const file = e.target.files[0];
     console.log(`File selected for ${type}:`, file?.name);
     if (file) {
-      // Validazione file
       if (file.size > 5 * 1024 * 1024) {
         showNotification(`Il file ${file.name} supera il limite di 5MB`, 'error');
         return;
@@ -113,6 +112,7 @@ const ClientAnamnesi = () => {
     } else {
       showNotification(`Nessun file selezionato per ${type}`, 'error');
     }
+    e.target.value = null; // Reset input file
   };
 
   const onSubmit = async (data) => {
@@ -121,35 +121,46 @@ const ClientAnamnesi = () => {
       return;
     }
 
-    if (!anamnesiData && Object.values(photos).every(p => p === null)) {
-      showNotification('Per favore, carica almeno una foto iniziale.', 'error');
+    if (isSubmitting) {
+      console.log('Upload already in progress, skipping...');
       return;
     }
 
     setLoading(true);
     try {
-      let photoURLs = anamnesiData?.photoURLs || {};
+      // Forza il refresh del token di autenticazione
+      await user.getIdToken(true);
+      console.log('Token refreshed for user:', user.uid);
+
+      let photoURLs = anamnesiData?.photoURLs || { front: null, right: null, left: null, back: null };
       const photosToUpload = Object.entries(photos).filter(([, file]) => file !== null);
 
       if (photosToUpload.length > 0) {
         console.log('Uploading photos:', photosToUpload.map(([type]) => type));
-        const uploadedUrls = await Promise.all(
-          photosToUpload.map(async ([type, file]) => {
-            try {
-              const filePath = `clients/${user.uid}/anamnesi_photos/${type}-${uuidv4()}.jpg`;
-              console.log(`Uploading ${type} to ${filePath}`);
-              const url = await uploadPhoto(file, user.uid, 'anamnesi_photos');
-              console.log(`Download URL for ${type}: ${url}`);
-              return { type, url };
-            } catch (uploadError) {
-              console.error(`Error uploading ${type} photo:`, uploadError.code, uploadError.message);
-              throw new Error(`Errore nell'upload della foto ${type}: ${uploadError.message}`);
-            }
-          })
-        );
-        uploadedUrls.forEach(({ type, url }) => {
-          photoURLs[type] = url;
+        const uploadPromises = photosToUpload.map(async ([type, file]) => {
+          try {
+            const filePath = `clients/${user.uid}/anamnesi_photos/${type}-${uuidv4()}.jpg`;
+            console.log(`Uploading ${type} to ${filePath}`);
+            const url = await Promise.race([
+              uploadPhoto(file, user.uid, 'anamnesi_photos'),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout durante l\'upload della foto')), 30000))
+            ]);
+            console.log(`Download URL for ${type}: ${url}`);
+            return { type, url };
+          } catch (uploadError) {
+            console.error(`Error uploading ${type} photo:`, uploadError.code, uploadError.message);
+            throw new Error(`Errore nell'upload della foto ${type}: ${uploadError.message}`);
+          }
         });
+
+        const uploadedUrls = await Promise.all(uploadPromises);
+        photoURLs = {
+          front: photoURLs.front,
+          right: photoURLs.right,
+          left: photoURLs.left,
+          back: photoURLs.back,
+          ...Object.fromEntries(uploadedUrls.map(({ type, url }) => [type, url]))
+        };
       }
 
       const dataToSave = { ...data, photoURLs, submittedAt: serverTimestamp() };
@@ -158,11 +169,20 @@ const ClientAnamnesi = () => {
 
       setAnamnesiData(dataToSave);
       setPhotos({ front: null, right: null, left: null, back: null });
+      setPhotoPreviews({ front: null, right: null, left: null, back: null });
       setIsEditing(false);
       showNotification('Anamnesi salvata con successo!', 'success');
     } catch (error) {
       console.error('Errore nel salvataggio:', error.code, error.message, error);
-      showNotification(`Si è verificato un errore durante il salvataggio: ${error.message}`, 'error');
+      if (error.code === 'storage/unauthorized') {
+        showNotification('Non autorizzato a caricare foto. Verifica le regole di Firebase Storage.', 'error');
+      } else if (error.message.includes('CORS') || error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        showNotification('Errore di rete o CORS durante l\'upload. Verifica la configurazione CORS o usa Firebase Emulator per lo sviluppo.', 'error');
+      } else if (error.message.includes('Timeout')) {
+        showNotification('Timeout durante l\'upload delle foto. Controlla la connessione di rete o prova di nuovo.', 'error');
+      } else {
+        showNotification(`Si è verificato un errore durante il salvataggio: ${error.message}`, 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -176,45 +196,48 @@ const ClientAnamnesi = () => {
   const headingStyle = "font-bold mb-4 text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 flex items-center gap-2";
 
   const PhotoUploader = ({ type, label }) => {
-    const inputRef = React.useRef(null);
+    const inputRef = useRef(null);
 
-    const handleClick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      console.log(`Clicked on photo uploader for ${type}`);
+    const handleClick = () => {
+      console.log(`Triggering file picker for ${type}`);
       if (inputRef.current) {
         inputRef.current.click();
+      } else {
+        console.error(`Input ref for ${type} is not defined`);
       }
     };
 
     return (
-      <div className="text-center">
+      <div className="text-center" key={type}>
         <label className={labelStyle}>{label}</label>
-        <div 
-          className="mt-2 flex justify-center items-center w-full h-48 bg-zinc-900/50 rounded-lg border-2 border-dashed border-zinc-700 hover:border-cyan-500 transition-colors relative group cursor-pointer"
+        <div
+          className="mt-2 flex justify-center items-center w-full h-48 bg-zinc-900/50 rounded-lg border-2 border-dashed border-zinc-700 hover:border-cyan-500 transition-colors cursor-pointer relative isolate"
           onClick={handleClick}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(e); }}
         >
           {photoPreviews[type] ? (
-            <img src={photoPreviews[type]} alt="preview" className="h-full w-full object-contain rounded-lg p-1" />
+            <img
+              src={photoPreviews[type]}
+              alt={`${type} preview`}
+              className="h-full w-full object-contain rounded-lg p-1"
+            />
           ) : (
-            <div className="flex flex-col items-center text-slate-400 transition-colors group-hover:text-cyan-400">
+            <div className="flex flex-col items-center text-slate-400 transition-colors hover:text-cyan-400">
               <UploadCloud size={32} />
               <p className="mt-2 text-sm">Clicca per caricare</p>
             </div>
           )}
-          <input 
+          <input
             ref={inputRef}
-            type="file" 
-            accept="image/*" 
+            type="file"
+            accept="image/*"
             onChange={(e) => {
-              console.log(`File selected for ${type}:`, e.target.files[0]?.name);
+              console.log(`Input file change triggered for ${type}`);
               handleFileChange(e, type);
             }}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer pointer-events-auto z-10"
+            className="absolute inset-0 opacity-0 cursor-pointer z-10"
             disabled={loading || isSubmitting}
+            aria-label={`Carica immagine ${label}`}
+            id={`file-input-${type}`}
           />
         </div>
       </div>
@@ -267,34 +290,28 @@ const ClientAnamnesi = () => {
               <h4 className={headingStyle}><FilePenLine size={16} /> Dati Anagrafici e Misure</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className={labelStyle}>Nome*</label>
-                  <input {...register('firstName', { required: 'Il nome è obbligatorio' })} className={inputStyle} />
-                  {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>}
+                  <label className={labelStyle}>Nome</label>
+                  <input {...register('firstName')} className={inputStyle} />
                 </div>
                 <div>
-                  <label className={labelStyle}>Cognome*</label>
-                  <input {...register('lastName', { required: 'Il cognome è obbligatorio' })} className={inputStyle} />
-                  {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>}
+                  <label className={labelStyle}>Cognome</label>
+                  <input {...register('lastName')} className={inputStyle} />
                 </div>
                 <div>
-                  <label className={labelStyle}>Data di Nascita*</label>
-                  <input type="date" {...register('birthDate', { required: 'La data di nascita è obbligatoria' })} className={inputStyle} />
-                  {errors.birthDate && <p className="text-red-500 text-sm mt-1">{errors.birthDate.message}</p>}
+                  <label className={labelStyle}>Data di Nascita</label>
+                  <input type="date" {...register('birthDate')} className={inputStyle} />
                 </div>
                 <div>
-                  <label className={labelStyle}>Che lavoro fai?*</label>
-                  <input {...register('job', { required: 'Il lavoro è obbligatorio' })} className={inputStyle} placeholder="Es. Impiegato, studente..." />
-                  {errors.job && <p className="text-red-500 text-sm mt-1">{errors.job.message}</p>}
+                  <label className={labelStyle}>Che lavoro fai?</label>
+                  <input {...register('job')} className={inputStyle} placeholder="Es. Impiegato, studente..." />
                 </div>
                 <div>
-                  <label className={labelStyle}>Peso (kg)*</label>
-                  <input type="number" step="0.1" {...register('weight', { required: 'Il peso è obbligatorio', min: { value: 0, message: 'Il peso deve essere positivo' } })} className={inputStyle} placeholder="Es. 75.5" />
-                  {errors.weight && <p className="text-red-500 text-sm mt-1">{errors.weight.message}</p>}
+                  <label className={labelStyle}>Peso (kg)</label>
+                  <input type="number" step="0.1" {...register('weight', { min: 0 })} className={inputStyle} placeholder="Es. 75.5" />
                 </div>
                 <div>
-                  <label className={labelStyle}>Altezza (cm)*</label>
-                  <input type="number" {...register('height', { required: 'L\'altezza è obbligatoria', min: { value: 0, message: 'L\'altezza deve essere positiva' } })} className={inputStyle} placeholder="Es. 180" />
-                  {errors.height && <p className="text-red-500 text-sm mt-1">{errors.height.message}</p>}
+                  <label className={labelStyle}>Altezza (cm)</label>
+                  <input type="number" {...register('height', { min: 0 })} className={inputStyle} placeholder="Es. 180" />
                 </div>
               </div>
             </div>
@@ -302,42 +319,38 @@ const ClientAnamnesi = () => {
               <h4 className={headingStyle}><Camera size={16} /> Abitudini Alimentari</h4>
               <div className="space-y-4">
                 <div>
-                  <label className={labelStyle}>Pasti al giorno*</label>
-                  <select {...register('mealsPerDay', { required: 'Il numero di pasti è obbligatorio' })} className={inputStyle}>
+                  <label className={labelStyle}>Pasti al giorno</label>
+                  <select {...register('mealsPerDay')} className={inputStyle}>
+                    <option value="">Seleziona...</option>
                     <option value="3">3</option>
                     <option value="4">4</option>
                     <option value="5">5+</option>
                   </select>
-                  {errors.mealsPerDay && <p className="text-red-500 text-sm mt-1">{errors.mealsPerDay.message}</p>}
                 </div>
                 <div>
-                  <label className={labelStyle}>Colazione: Dolce o Salata?*</label>
-                  <select {...register('breakfastType', { required: 'Il tipo di colazione è obbligatorio' })} className={inputStyle}>
+                  <label className={labelStyle}>Colazione: Dolce o Salata?</label>
+                  <select {...register('breakfastType')} className={inputStyle}>
+                    <option value="">Seleziona...</option>
                     <option value="dolce">Dolce</option>
                     <option value="salato">Salato</option>
                     <option value="entrambi">Entrambi/Indifferente</option>
                   </select>
-                  {errors.breakfastType && <p className="text-red-500 text-sm mt-1">{errors.breakfastType.message}</p>}
                 </div>
                 <div>
-                  <label className={labelStyle}>Alimenti che ti piacciono*</label>
-                  <textarea {...register('desiredFoods', { required: 'Gli alimenti preferiti sono obbligatori' })} rows="3" className={inputStyle} placeholder="Elenca qui gli alimenti che vorresti nel piano..." />
-                  {errors.desiredFoods && <p className="text-red-500 text-sm mt-1">{errors.desiredFoods.message}</p>}
+                  <label className={labelStyle}>Alimenti che ti piacciono</label>
+                  <textarea {...register('desiredFoods')} rows="3" className={inputStyle} placeholder="Elenca qui gli alimenti che vorresti nel piano..." />
                 </div>
                 <div>
-                  <label className={labelStyle}>Cosa non mangi?*</label>
-                  <textarea {...register('dislikedFoods', { required: 'Gli alimenti da evitare sono obbligatori' })} rows="2" className={inputStyle} placeholder="Elenca qui gli alimenti da evitare..." />
-                  {errors.dislikedFoods && <p className="text-red-500 text-sm mt-1">{errors.dislikedFoods.message}</p>}
+                  <label className={labelStyle}>Cosa non mangi?</label>
+                  <textarea {...register('dislikedFoods')} rows="2" className={inputStyle} placeholder="Elenca qui gli alimenti da evitare..." />
                 </div>
                 <div>
-                  <label className={labelStyle}>Allergie o Intolleranze?*</label>
-                  <input {...register('intolerances', { required: 'Le allergie/intolleranze sono obbligatorie' })} className={inputStyle} placeholder="Es. Lattosio, nessuna..." />
-                  {errors.intolerances && <p className="text-red-500 text-sm mt-1">{errors.intolerances.message}</p>}
+                  <label className={labelStyle}>Allergie o Intolleranze?</label>
+                  <input {...register('intolerances')} className={inputStyle} placeholder="Es. Lattosio, nessuna..." />
                 </div>
                 <div>
-                  <label className={labelStyle}>Problemi di digestione o gonfiore?*</label>
-                  <input {...register('digestionIssues', { required: 'I problemi di digestione sono obbligatori' })} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
-                  {errors.digestionIssues && <p className="text-red-500 text-sm mt-1">{errors.digestionIssues.message}</p>}
+                  <label className={labelStyle}>Problemi di digestione o gonfiore?</label>
+                  <input {...register('digestionIssues')} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
                 </div>
               </div>
             </div>
@@ -345,19 +358,16 @@ const ClientAnamnesi = () => {
               <h4 className={headingStyle}><FilePenLine size={16} /> Allenamento</h4>
               <div className="space-y-4">
                 <div>
-                  <label className={labelStyle}>Allenamenti a settimana*</label>
-                  <input type="number" {...register('workoutsPerWeek', { required: 'Gli allenamenti a settimana sono obbligatori', min: { value: 0, message: 'Il numero deve essere positivo' } })} className={inputStyle} placeholder="Es. 3" />
-                  {errors.workoutsPerWeek && <p className="text-red-500 text-sm mt-1">{errors.workoutsPerWeek.message}</p>}
+                  <label className={labelStyle}>Allenamenti a settimana</label>
+                  <input type="number" {...register('workoutsPerWeek', { min: 0 })} className={inputStyle} placeholder="Es. 3" />
                 </div>
                 <div>
-                  <label className={labelStyle}>Dettagli Allenamento*</label>
-                  <textarea {...register('trainingDetails', { required: 'I dettagli dell\'allenamento sono obbligatori' })} rows="3" className={inputStyle} placeholder="Es. Bodybuilding in palestra con macchinari e pesi liberi..." />
-                  {errors.trainingDetails && <p className="text-red-500 text-sm mt-1">{errors.trainingDetails.message}</p>}
+                  <label className={labelStyle}>Dettagli Allenamento</label>
+                  <textarea {...register('trainingDetails')} rows="3" className={inputStyle} placeholder="Es. Bodybuilding in palestra con macchinari e pesi liberi..." />
                 </div>
                 <div>
-                  <label className={labelStyle}>Orario e Durata*</label>
-                  <input {...register('trainingTime', { required: 'L\'orario e la durata sono obbligatori' })} className={inputStyle} placeholder="Es. La sera dalle 18 alle 19:30" />
-                  {errors.trainingTime && <p className="text-red-500 text-sm mt-1">{errors.trainingTime.message}</p>}
+                  <label className={labelStyle}>Orario e Durata</label>
+                  <input {...register('trainingTime')} className={inputStyle} placeholder="Es. La sera dalle 18 alle 19:30" />
                 </div>
               </div>
             </div>
@@ -365,29 +375,24 @@ const ClientAnamnesi = () => {
               <h4 className={headingStyle}><Camera size={16} /> Salute e Obiettivi</h4>
               <div className="space-y-4">
                 <div>
-                  <label className={labelStyle}>Infortuni o problematiche*</label>
-                  <textarea {...register('injuries', { required: 'Gli infortuni sono obbligatori' })} rows="3" className={inputStyle} placeholder="Es. Mal di schiena, ernie, dolori articolari..." />
-                  {errors.injuries && <p className="text-red-500 text-sm mt-1">{errors.injuries.message}</p>}
+                  <label className={labelStyle}>Infortuni o problematiche</label>
+                  <textarea {...register('injuries')} rows="3" className={inputStyle} placeholder="Es. Mal di schiena, ernie, dolori articolari..." />
                 </div>
                 <div>
-                  <label className={labelStyle}>Prendi farmaci?*</label>
-                  <input {...register('medications', { required: 'I farmaci sono obbligatori' })} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
-                  {errors.medications && <p className="text-red-500 text-sm mt-1">{errors.medications.message}</p>}
+                  <label className={labelStyle}>Prendi farmaci?</label>
+                  <input {...register('medications')} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
                 </div>
                 <div>
-                  <label className={labelStyle}>Usi integratori?*</label>
-                  <input {...register('supplements', { required: 'Gli integratori sono obbligatori' })} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
-                  {errors.supplements && <p className="text-red-500 text-sm mt-1">{errors.supplements.message}</p>}
+                  <label className={labelStyle}>Usi integratori?</label>
+                  <input {...register('supplements')} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
                 </div>
                 <div>
-                  <label className={labelStyle}>Obiettivo Principale*</label>
-                  <textarea {...register('mainGoal', { required: 'L\'obiettivo principale è obbligatorio' })} rows="3" className={inputStyle} placeholder="Descrivi in dettaglio cosa vuoi raggiungere..." />
-                  {errors.mainGoal && <p className="text-red-500 text-sm mt-1">{errors.mainGoal.message}</p>}
+                  <label className={labelStyle}>Obiettivo Principale</label>
+                  <textarea {...register('mainGoal')} rows="3" className={inputStyle} placeholder="Descrivi in dettaglio cosa vuoi raggiungere..." />
                 </div>
                 <div>
-                  <label className={labelStyle}>Durata Percorso*</label>
-                  <input {...register('programDuration', { required: 'La durata del percorso è obbligatoria' })} className={inputStyle} placeholder="Es. 3 mesi, 6 mesi..." />
-                  {errors.programDuration && <p className="text-red-500 text-sm mt-1">{errors.programDuration.message}</p>}
+                  <label className={labelStyle}>Durata Percorso</label>
+                  <input {...register('programDuration')} className={inputStyle} placeholder="Es. 3 mesi, 6 mesi..." />
                 </div>
               </div>
             </div>
@@ -395,10 +400,9 @@ const ClientAnamnesi = () => {
               <h4 className={headingStyle}><Camera size={16} /> Foto Iniziali</h4>
               <p className="text-sm text-slate-400 mb-6">Carica 4 foto per il check iniziale: frontale, laterale destro, laterale sinistro e posteriore. Visibili solo a te e al coach.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <PhotoUploader type="front" label="Frontale" />
-                <PhotoUploader type="right" label="Laterale Destro" />
-                <PhotoUploader type="left" label="Laterale Sinistro" />
-                <PhotoUploader type="back" label="Posteriore" />
+                {['front', 'right', 'left', 'back'].map(type => (
+                  <PhotoUploader key={type} type={type} label={type === 'front' ? 'Frontale' : type === 'back' ? 'Posteriore' : `Laterale ${type === 'left' ? 'Sinistro' : 'Destro'}`} />
+                ))}
               </div>
             </div>
             <div className="flex justify-end gap-4 pt-4">
