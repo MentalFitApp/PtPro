@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { db, auth, toDate, calcolaStatoPercorso, updateStatoPercorso } from "../firebase";
 import { collection, onSnapshot, deleteDoc, doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-import { UserPlus, FilePenLine, Trash2, Search, ChevronDown, ChevronUp, Filter, AlertTriangle, LogOut, Download, FileText } from "lucide-react";
+import { UserPlus, FilePenLine, Trash2, Search, ChevronDown, ChevronUp, Filter, AlertTriangle, LogOut, Download, FileText, X } from "lucide-react"; // Aggiunto X
 import { motion, AnimatePresence } from "framer-motion";
 import Papa from 'papaparse';
 
@@ -22,7 +22,7 @@ const Notification = ({ message, type, onDismiss }) => (
         <AlertTriangle className={type === 'error' ? 'text-red-400' : 'text-emerald-400'} />
         <p>{message}</p>
         <button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/10">
-          <X size={16} />
+          <X size={16} /> {/* Ora X è definito */}
         </button>
       </motion.div>
     )}
@@ -139,7 +139,7 @@ export default function Clients() {
   const [paymentFilter, setPaymentFilter] = useState("");
   const [anamnesiStatus, setAnamnesiStatus] = useState({});
   const [notification, setNotification] = useState({ message: '', type: '' });
-  const [sortKey, setSortKey] = useState("createdAt"); // Assicuriamo che sortKey sia sempre definito
+  const [sortKey, setSortKey] = useState("createdAt");
   const [sortDir, setSortDir] = useState("desc");
 
   const showNotification = (message, type = 'error') => {
@@ -220,6 +220,7 @@ export default function Clients() {
     if (!clientToDelete) return;
     try {
       await deleteDoc(doc(db, 'clients', clientToDelete.id));
+      setClients(clients.filter(client => client.id !== clientToDelete.id)); // Aggiorna la lista localmente
       showNotification('Cliente eliminato con successo!', 'success');
     } catch (error) {
       console.error("Errore nell'eliminazione del cliente:", error);
