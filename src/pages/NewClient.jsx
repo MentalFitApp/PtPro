@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { db, firebaseConfig } from '../firebase.js';
+import { db, firebaseConfig, auth } from '../firebase.js'; // Aggiunto auth all'import
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc, collection } from 'firebase/firestore';
@@ -65,6 +65,12 @@ export default function NewClient() {
   };
 
   const onSubmit = async (data) => {
+    if (!auth.currentUser) {
+      showNotification("Devi essere autenticato come coach o admin per creare un cliente.", 'error');
+      navigate('/login');
+      return;
+    }
+
     const tempPassword = generatePassword();
     const tempApp = initializeApp(firebaseConfig, `user-creation-${Date.now()}`);
     const tempAuth = getAuth(tempApp);
@@ -94,16 +100,10 @@ export default function NewClient() {
         email: data.email,
         name: data.name,
         paymentAmount: data.paymentAmount,
-        userId: getAuth().currentUser?.uid,
-        isCoachOrAdmin: [
-          "QwWST9OVOlTOi5oheyCqfpXLOLg2",
-          "3j0AXIRa4XdHq1ywCl4UBxJNsku2",
-          "AeZKjJYu5zMZ4mvffaGiqCBb0cF2",
-          "l0RI8TzFjbNVoAdmcXNQkP9mWb12"
-        ].includes(getAuth().currentUser?.uid)
+        userId: auth.currentUser.uid
       });
 
-      const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, tempPassword);
+      const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email.trim(), tempPassword);
       const newUserId = userCredential.user.uid;
       console.log('Utente creato con UID:', newUserId);
 
@@ -111,7 +111,7 @@ export default function NewClient() {
       const clientData = {
         name: data.name,
         name_lowercase: data.name.toLowerCase(),
-        email: data.email,
+        email: data.email.trim(),
         phone: data.phone || null,
         status: 'attivo',
         planType: data.planType,
@@ -129,7 +129,7 @@ export default function NewClient() {
         const paymentData = {
           amount: parseFloat(data.paymentAmount),
           duration: useCustomDate ? 'personalizzata' : `${parseInt(data.duration, 10)} mes${parseInt(data.duration, 10) > 1 ? 'i' : 'e'}`,
-          paymentMethod: data.paymentMethod || null,
+          paymentMethod: data.paymentMethod || 'N/A',
           paymentDate: serverTimestamp(),
         };
         console.log('Tentativo creazione pagamento:', { paymentRef: paymentRef.path, paymentData });
@@ -137,14 +137,14 @@ export default function NewClient() {
         console.log('Documento pagamento creato:', paymentRef.path);
       }
 
-      setNewClientCredentials({ name: data.name, email: data.email, password: tempPassword });
+      setNewClientCredentials({ name: data.name, email: data.email.trim(), password: tempPassword });
       setShowSuccessModal(true);
       showNotification('Cliente creato con successo!', 'success');
       reset();
     } catch (error) {
       console.error("Errore nella creazione del cliente:", error.code, error.message, { data });
       if (error.code === 'permission-denied') {
-        showNotification("Permessi insufficienti. Assicurati di avere i privilegi di coach o admin.", 'error');
+        showNotification("Permessi insufficienti. Verifica che il tuo UID sia nei documenti /roles/admins o /roles/coaches.", 'error');
       } else if (error.code === 'auth/email-already-in-use') {
         showNotification('Questa email è già in uso da un altro utente.', 'error');
       } else {
@@ -167,7 +167,7 @@ export default function NewClient() {
   const handleCloseModal = () => {
     setShowSuccessModal(false);
     reset();
-    navigate('/clients');
+    navigate('/clients'); // Torna alla lista clienti admin
   };
 
   const inputStyle = "w-full p-2.5 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";

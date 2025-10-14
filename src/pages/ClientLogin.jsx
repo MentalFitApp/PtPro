@@ -30,7 +30,7 @@ const AnimatedBackground = () => {
       starsContainerRef.current = starsContainer;
     }
 
-    for (let i = 0; i < 30; i++) { // Ridotto a 30 stelle
+    for (let i = 0; i < 30; i++) {
       const star = document.createElement('div');
       star.className = 'star';
       star.style.setProperty('--top-offset', `${Math.random() * 100}vh`);
@@ -73,14 +73,13 @@ export default function ClientLogin() {
       if (user) {
         console.log('Utente autenticato all\'avvio:', { uid: user.uid, email: user.email });
         try {
-          // Verifica ruolo
           const adminDocRef = doc(db, 'roles', 'admins');
           const coachDocRef = doc(db, 'roles', 'coaches');
           const clientDocRef = doc(db, 'clients', user.uid);
           const [adminDoc, coachDoc, clientDoc] = await Promise.all([
-            getDoc(adminDocRef),
-            getDoc(coachDocRef),
-            getDoc(clientDocRef)
+            getDoc(adminDocRef).catch(err => ({ exists: () => false, data: () => ({ uids: [] }) })),
+            getDoc(coachDocRef).catch(err => ({ exists: () => false, data: () => ({ uids: [] }) })),
+            getDoc(clientDocRef).catch(err => ({ exists: () => false, data: () => ({}) }))
           ]);
 
           const isAdmin = adminDoc.exists() && adminDoc.data().uids.includes(user.uid);
@@ -92,27 +91,22 @@ export default function ClientLogin() {
             email: user.email,
             isAdmin,
             isCoach,
-            isClient
+            isClient,
+            clientDocData: clientDoc.exists() ? clientDoc.data() : null
           });
 
           if (isAdmin || isCoach) {
             setError('Accesso non autorizzato per admin/coach. Usa il login admin.');
-            await signOut(auth);
-            navigate('/login');
+            // Non esegue logout, mostra solo errore
           } else if (isClient) {
             sessionStorage.setItem('app_role', 'client');
             navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
           } else {
-            // Utente non è client, coach o admin
             setError('Accesso non autorizzato. Contatta il tuo coach.');
-            await signOut(auth);
-            navigate('/client-login');
           }
         } catch (err) {
           console.error('Errore verifica ruolo:', err);
           setError('Errore durante la verifica del ruolo. Riprova.');
-          await signOut(auth);
-          navigate('/client-login');
         }
       }
       setIsCheckingAuth(false);
@@ -127,14 +121,16 @@ export default function ClientLogin() {
     setIsSubmitting(true);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Tentativo di login:', { email, password });
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password.trim());
       console.log('Login riuscito:', { uid: userCredential.user.uid, email: userCredential.user.email });
       // Il redirect è gestito da onAuthStateChanged sopra
     } catch (err) {
-      console.error('Errore login:', err);
+      console.error('Errore login:', err.code, err.message);
       setError(
-        err.code === 'auth/wrong-password' ? 'Password errata. Riprova.' :
+        err.code === 'auth/invalid-credential' ? 'Credenziali non valide. Verifica email e password.' :
         err.code === 'auth/user-not-found' ? 'Utente non trovato. Verifica l\'email.' :
+        err.code === 'auth/wrong-password' ? 'Password errata. Riprova.' :
         'Errore durante il login: ' + err.message
       );
       setIsSubmitting(false);

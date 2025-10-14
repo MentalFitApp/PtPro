@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Lock, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
@@ -19,7 +19,6 @@ const Login = () => {
       if (user) {
         console.log('Utente autenticato all\'avvio:', { uid: user.uid, email: user.email });
         try {
-          // Verifica ruolo
           const adminDocRef = doc(db, 'roles', 'admins');
           const coachDocRef = doc(db, 'roles', 'coaches');
           const clientDocRef = doc(db, 'clients', user.uid);
@@ -52,7 +51,6 @@ const Login = () => {
             coachUids: coachDoc.data()?.uids
           });
 
-          const sessionRole = sessionStorage.getItem('app_role');
           if (isAdmin) {
             sessionStorage.setItem('app_role', 'admin');
             navigate('/');
@@ -64,16 +62,12 @@ const Login = () => {
             navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
           } else {
             console.warn('Ruolo non riconosciuto per UID:', user.uid);
-            sessionStorage.removeItem('app_role');
-            await signOut(auth);
             setError('Accesso non autorizzato. Usa il login client se sei un cliente.');
-            navigate('/client-login');
+            // Non eseguiamo logout qui, gestito nel submit
           }
         } catch (err) {
           console.error('Errore verifica ruolo:', err);
           setError('Errore durante la verifica del ruolo. Riprova.');
-          await signOut(auth);
-          navigate('/client-login');
         }
       }
       setIsCheckingAuth(false);
@@ -89,7 +83,6 @@ const Login = () => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       console.log('Login riuscito:', { uid: userCredential.user.uid, email: userCredential.user.email });
 
-      // Verifica ruolo
       const adminDocRef = doc(db, 'roles', 'admins');
       const coachDocRef = doc(db, 'roles', 'coaches');
       const clientDocRef = doc(db, 'clients', userCredential.user.uid);
@@ -124,9 +117,9 @@ const Login = () => {
         navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
       } else {
         console.warn('Ruolo non riconosciuto per UID:', userCredential.user.uid);
-        sessionStorage.removeItem('app_role');
-        await signOut(auth);
         setError('Accesso non autorizzato. Usa il login client se sei un cliente.');
+        // Logout solo se necessario
+        await signOut(auth);
         navigate('/client-login');
       }
     } catch (error) {

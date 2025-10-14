@@ -43,23 +43,29 @@ const AnamnesiSection = ({ title, data, variants }) => (
   </motion.div>
 );
 
-const CheckItem = ({ check, variants }) => (
-  <motion.div variants={variants} className="p-3 rounded-lg bg-slate-500/5 hover:bg-slate-500/10 transition-colors">
-    <div className="flex justify-between items-center">
-      <p className="text-sm font-semibold text-slate-200">Check del {toDate(check.createdAt)?.toLocaleDateString('it-IT') || 'N/D'}</p>
-    </div>
-    <div className="text-xs text-slate-400 mt-1 flex items-center gap-4">
-      <span className="flex items-center gap-1">
-        <Calendar size={14} /> Data: {toDate(check.createdAt)?.toLocaleString('it-IT') || 'N/D'}
-      </span>
-      {check.weight && (
+const CheckItem = ({ check, variants }) => {
+  const formattedDate = toDate(check.createdAt);
+  console.log('CheckItem data:', { checkId: check.id, createdAt: check.createdAt, formattedDate });
+  return (
+    <motion.div variants={variants} className="p-3 rounded-lg bg-slate-500/5 hover:bg-slate-500/10 transition-colors">
+      <div className="flex justify-between items-center">
+        <p className="text-sm font-semibold text-slate-200">
+          Check del {formattedDate ? formattedDate.toLocaleDateString('it-IT') : 'Data non disponibile'}
+        </p>
+      </div>
+      <div className="text-xs text-slate-400 mt-1 flex items-center gap-4">
         <span className="flex items-center gap-1">
-          <CheckCircle size={14} /> Peso: {check.weight} kg
+          <Calendar size={14} /> Data: {formattedDate ? formattedDate.toLocaleString('it-IT') : 'N/D'}
         </span>
-      )}
-    </div>
-  </motion.div>
-);
+        {check.weight && (
+          <span className="flex items-center gap-1">
+            <CheckCircle size={14} /> Peso: {check.weight} kg
+          </span>
+        )}
+      </div>
+    </motion.div>
+  );
+};
 
 export default function CoachClientDetail() {
   const { clientId } = useParams();
@@ -123,7 +129,11 @@ export default function CoachClientDetail() {
         const checksQuery = query(collection(db, `clients/${clientId}/checks`), orderBy('createdAt', 'desc'));
         const unsubChecks = onSnapshot(checksQuery, (snap) => {
           try {
-            const checksData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const checksData = snap.docs.map(doc => {
+              const data = doc.data();
+              console.log('Check doc:', { id: doc.id, data });
+              return { id: doc.id, ...data };
+            });
             console.log('Checks caricati:', { count: checksData.length, clientId });
             setChecks(checksData);
           } catch (err) {

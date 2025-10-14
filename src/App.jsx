@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
 // Import dinamici
@@ -87,7 +87,7 @@ export default function App() {
 
           const isCurrentUserAdmin = adminDoc.exists() && adminDoc.data().uids.includes(currentUser.uid);
           const isCurrentUserACoach = coachDoc.exists() && coachDoc.data().uids.includes(currentUser.uid);
-          let isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
+          const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
 
           console.log('Debug ruolo:', {
             uid: currentUser.uid,
@@ -95,42 +95,15 @@ export default function App() {
             isAdmin: isCurrentUserAdmin,
             isCoach: isCurrentUserACoach,
             isClient: isCurrentUserAClient,
-            sessionRole
-          });
-
-          // Prevenzione creazione documento client per admin/coach
-          if (isCurrentUserACoach || isCurrentUserAdmin) {
-            if (clientDoc.exists()) {
-              console.warn('Documento client errato per admin/coach:', currentUser.uid, ' - Eliminazione automatica');
-              await deleteDoc(clientDocRef); // Elimina documento errato
-            }
-            isCurrentUserAClient = false;
-          } else if (!clientDoc.exists() && !isCurrentUserAdmin && !isCurrentUserACoach) {
-            // Crea documento client solo se non esiste e non è admin/coach
-            await setDoc(clientDocRef, {
-              name: currentUser.displayName || 'Unknown',
-              email: currentUser.email,
-              isClient: true,
-              firstLogin: true
-            }, { merge: true });
-            console.log('Client document created for UID:', currentUser.uid);
-            isCurrentUserAClient = true;
-          }
-
-          console.log('Ruolo utente:', {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            isClient: isCurrentUserAClient,
-            isCoach: isCurrentUserACoach,
-            isAdmin: isCurrentUserAdmin,
             sessionRole,
-            clientDocData: isCurrentUserAClient ? clientDoc.data() : null
+            adminUids: adminDoc.data()?.uids,
+            coachUids: coachDoc.data()?.uids
           });
 
-          // Gestione conflitto ruolo
-          if (sessionRole && sessionRole !== (isCurrentUserAClient ? 'client' : isCurrentUserACoach ? 'coach' : isCurrentUserAdmin ? 'admin' : null)) {
-            console.log('Conflitto ruolo, reset sessionStorage:', sessionRole);
-            sessionStorage.removeItem('app_role');
+          // Prevenzione documento client per admin/coach
+          if ((isCurrentUserACoach || isCurrentUserAdmin) && clientDoc.exists()) {
+            console.warn('Documento client errato per admin/coach:', currentUser.uid, ' - Eliminazione automatica');
+            await deleteDoc(clientDocRef).catch(err => console.error('Errore eliminazione documento errato:', err));
           }
 
           let role = null;
@@ -146,25 +119,13 @@ export default function App() {
             const clientDocData = clientDoc.exists() ? clientDoc.data() : {};
             targetRoute = clientDocData.firstLogin ? '/client/first-access' : '/client/dashboard';
           } else {
-            console.warn('Accesso non autorizzato per UID:', currentUser.uid);
-            sessionStorage.removeItem('app_role');
-            setAuthInfo({
-              isLoading: false,
-              user: null,
-              isClient: false,
-              isCoach: false,
-              isAdmin: false,
-              error: 'Accesso non autorizzato'
-            });
-            await signOut(auth);
-            if (lastNavigated !== '/client-login') {
-              setLastNavigated('/client-login');
-              navigate('/client-login');
-            }
-            return;
+            console.warn('Ruolo non riconosciuto per UID:', currentUser.uid);
+            role = null;
+            targetRoute = '/login';
+            // Non eseguiamo logout qui, lasciamo l'utente sulla pagina
           }
 
-          sessionStorage.setItem('app_role', role);
+          sessionStorage.setItem('app_role', role || '');
 
           // Preveni loop di navigazione
           if (lastNavigated !== targetRoute) {
@@ -202,34 +163,17 @@ export default function App() {
           code: error.code,
           message: error.message
         });
-        if (error.code !== 'permission-denied') {
-          sessionStorage.removeItem('app_role');
-          setAuthInfo({
-            isLoading: false,
-            user: null,
-            isClient: false,
-            isCoach: false,
-            isAdmin: false,
-            error: error.message
-          });
-          if (lastNavigated !== '/client-login') {
-            setLastNavigated('/client-login');
-            navigate('/client-login');
-          }
-        } else {
-          console.warn('Permessi insufficienti, ma mantengo autenticazione');
-          setAuthInfo({
-            isLoading: false,
-            user: currentUser,
-            isClient: false,
-            isCoach: false,
-            isAdmin: false,
-            error: 'Permessi insufficienti per accedere ai ruoli. Verifica le regole Firestore.'
-          });
-          if (lastNavigated !== '/login') {
-            setLastNavigated('/login');
-            navigate('/login');
-          }
+        setAuthInfo({
+          isLoading: false,
+          user: currentUser,
+          isClient: false,
+          isCoach: false,
+          isAdmin: false,
+          error: 'Errore durante la verifica del ruolo. Riprova.'
+        });
+        if (lastNavigated !== '/login') {
+          setLastNavigated('/login');
+          navigate('/login');
         }
       }
     });

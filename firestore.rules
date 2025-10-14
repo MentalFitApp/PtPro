@@ -3,73 +3,65 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Funzione per validare i dati di pagamento
     function isValidPayment() {
-      return request.resource.data.keys().hasAll(['amount', 'duration', 'paymentDate', 'paymentMethod']) &&
+      return request.resource.data.keys().hasAll(['amount', 'duration', 'paymentDate']) &&
              request.resource.data.amount is number &&
              request.resource.data.amount > 0 &&
              request.resource.data.duration is string &&
              request.resource.data.paymentDate is timestamp &&
-             request.resource.data.paymentMethod is string;
+             (!request.resource.data.keys().hasAny(['paymentMethod']) || request.resource.data.paymentMethod is string);
     }
+    
     function isOwner() {
       return request.auth != null &&
-             exists(/databases/$(database)/documents/roles/admins) &&
-             request.auth.uid in get(/databases/$(database)/documents/roles/admins).data.uids;
+             (!exists(/databases/$(database)/documents/roles/admins) || request.auth.uid in get(/databases/$(database)/documents/roles/admins).data.uids);
     }
-   
+    
     function isCoach() {
       return isOwner() ||
              (request.auth != null &&
-              exists(/databases/$(database)/documents/roles/coaches) &&
-              request.auth.uid in get(/databases/$(database)/documents/roles/coaches).data.uids);
+              (!exists(/databases/$(database)/documents/roles/coaches) || request.auth.uid in get(/databases/$(database)/documents/roles/coaches).data.uids));
     }
-   
+    
     function isClient(userId) {
       return request.auth != null && request.auth.uid == userId &&
              exists(/databases/$(database)/documents/clients/$(userId)) &&
              get(/databases/$(database)/documents/clients/$(userId)).data.isClient == true;
     }
-   
+    
     match /clients/{userId} {
-      allow create: if (isCoach() || isOwner()) &&
-                       request.resource.data.keys().hasAll(['name', 'email', 'isClient', 'firstLogin']) &&
-                       request.resource.data.isClient == true &&
-                       request.resource.data.name is string &&
-                       request.resource.data.email is string &&
-                       request.resource.data.firstLogin is bool &&
-                       !isCoach() && !isOwner(); // Impedisce creazione da admin/coach
+      allow create: if isCoach() || isOwner();
       allow read: if request.auth != null && (request.auth.uid == userId || isCoach() || isOwner());
       allow list: if isCoach() || isOwner();
       allow update: if isCoach() || isOwner() || isClient(userId);
       allow delete: if isOwner();
-     
+      
       match /anamnesi/{docId} {
         allow read, write: if isCoach() || isOwner() || isClient(userId);
       }
-     
+      
       match /checks/{docId} {
         allow read, write: if isCoach() || isOwner() || isClient(userId);
       }
-     
+      
       match /payments/{docId} {
         allow read: if isCoach() || isOwner() || isClient(userId);
-        allow create: if (isCoach() || isOwner()) && isValidPayment();
-        allow update: if (isCoach() || isOwner()) && isValidPayment();
+        allow create, update: if (isCoach() || isOwner()) && isValidPayment();
         allow delete: if isCoach() || isOwner();
       }
     }
-   
+    
     match /{path=**}/payments/{paymentId} {
       allow read: if isCoach() || isOwner();
     }
-   
+    
     match /{path=**}/checks/{checkId} {
       allow read: if isCoach() || isOwner();
     }
-   
+    
     match /{path=**}/anamnesi/{anamnesiId} {
       allow read: if isCoach() || isOwner();
     }
-   
+    
     match /chats/{chatId} {
       allow get: if request.auth != null && (request.auth.uid in resource.data.participants || isCoach() || isOwner());
       allow list: if request.auth != null && (isCoach() || isOwner() || request.auth.uid in resource.data.participants);
@@ -78,7 +70,7 @@ service cloud.firestore {
                      request.resource.data.participants.size() == 2;
       allow update: if request.auth != null && (request.auth.uid in resource.data.participants || isCoach() || isOwner());
       allow delete: if isCoach() || isOwner();
-     
+      
       match /messages/{messageId} {
         allow read: if request.auth != null &&
                       (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isCoach() || isOwner());
@@ -87,12 +79,12 @@ service cloud.firestore {
         allow update, delete: if isCoach() || isOwner();
       }
     }
-   
+    
     match /roles/{docId} {
       allow read: if request.auth != null;
       allow write: if isOwner();
     }
-   
+    
     match /app-data/{docId} {
       allow read, write: if isCoach() || isOwner();
     }

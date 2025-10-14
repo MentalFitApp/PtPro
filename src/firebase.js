@@ -48,10 +48,29 @@ export const calcolaStatoPercorso = (dataScadenza) => {
 
 // Funzione di utilità per convertire timestamp
 export const toDate = (x) => {
-  if (!x) return null;
-  if (typeof x?.toDate === "function") return x.toDate();
-  const d = new Date(x);
-  return isNaN(d) ? null : d;
+  if (!x) {
+    console.warn('Timestamp non valido o undefined:', x);
+    return null;
+  }
+  if (typeof x?.toDate === 'function') {
+    return x.toDate();
+  }
+  if (x instanceof Date) {
+    return x;
+  }
+  if (typeof x === 'string') {
+    try {
+      const date = new Date(x);
+      if (isNaN(date.getTime())) {
+        console.warn('Stringa timestamp non valida:', x);
+        return null;
+      }
+      return date;
+    } catch (error) {
+      console.warn('Errore nella conversione della stringa timestamp:', x, error);
+      return null;
+    }
+  }
+  console.warn('Formato timestamp non riconosciuto:', x);
+  return null;
 };
-
-export default app;
