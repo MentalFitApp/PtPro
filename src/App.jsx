@@ -1,12 +1,15 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
-// Import dinamici
+// Import dinamici dei layout
 const MainLayout = React.lazy(() => import('./components/MainLayout'));
 const ClientLayout = React.lazy(() => import('./components/ClientLayout'));
+const GuidaLayout = React.lazy(() => import('./components/GuidaLayout'));
+
+// Import dinamici delle pagine
 const Login = React.lazy(() => import('./pages/Login'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Clients = React.lazy(() => import('./pages/Clients'));
@@ -30,6 +33,7 @@ const CoachUpdates = React.lazy(() => import('./pages/CoachUpdates'));
 const CoachClients = React.lazy(() => import('./pages/CoachClients'));
 const CoachChat = React.lazy(() => import('./pages/CoachChat'));
 const CoachClientDetail = React.lazy(() => import('./pages/CoachClientDetail'));
+const GuidaMentalFit = React.lazy(() => import('./pages/GuidaMentalFit'));
 
 // Spinner di caricamento
 const PageSpinner = () => (
@@ -61,48 +65,32 @@ export default function App() {
     let isMounted = true;
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!isMounted) return;
+      
+      // Se l'utente è sulla pagina della guida, non fare nulla per l'autenticazione
+      if (window.location.pathname === '/guida') {
+        setAuthInfo(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+
       console.log('onAuthStateChanged:', currentUser ? `Utente autenticato: ${currentUser.uid} (${currentUser.email})` : 'Nessun utente autenticato');
       try {
         if (currentUser) {
           const sessionRole = sessionStorage.getItem('app_role');
           const clientDocRef = doc(db, 'clients', currentUser.uid);
 
-          // Fetch ruoli da /roles
           const adminDocRef = doc(db, 'roles', 'admins');
           const coachDocRef = doc(db, 'roles', 'coaches');
           const [adminDoc, coachDoc, clientDoc] = await Promise.all([
-            getDoc(adminDocRef).catch(err => {
-              console.error('Errore fetch /roles/admins:', err.message);
-              return { exists: () => false, data: () => ({ uids: [] }) };
-            }),
-            getDoc(coachDocRef).catch(err => {
-              console.error('Errore fetch /roles/coaches:', err.message);
-              return { exists: () => false, data: () => ({ uids: [] }) };
-            }),
-            getDoc(clientDocRef).catch(err => {
-              console.error('Errore fetch /clients:', err.message);
-              return { exists: () => false, data: () => ({}) };
-            })
+            getDoc(adminDocRef).catch(err => ({ exists: () => false, data: () => ({ uids: [] }) })),
+            getDoc(coachDocRef).catch(err => ({ exists: () => false, data: () => ({ uids: [] }) })),
+            getDoc(clientDocRef).catch(err => ({ exists: () => false, data: () => ({}) }))
           ]);
 
           const isCurrentUserAdmin = adminDoc.exists() && adminDoc.data().uids.includes(currentUser.uid);
           const isCurrentUserACoach = coachDoc.exists() && coachDoc.data().uids.includes(currentUser.uid);
           const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
 
-          console.log('Debug ruolo:', {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            isAdmin: isCurrentUserAdmin,
-            isCoach: isCurrentUserACoach,
-            isClient: isCurrentUserAClient,
-            sessionRole,
-            adminUids: adminDoc.data()?.uids,
-            coachUids: coachDoc.data()?.uids
-          });
-
-          // Prevenzione documento client per admin/coach
           if ((isCurrentUserACoach || isCurrentUserAdmin) && clientDoc.exists()) {
-            console.warn('Documento client errato per admin/coach:', currentUser.uid, ' - Eliminazione automatica');
             await deleteDoc(clientDocRef).catch(err => console.error('Errore eliminazione documento errato:', err));
           }
 
@@ -115,19 +103,15 @@ export default function App() {
             role = 'coach';
             targetRoute = '/coach';
           } else if (isCurrentUserAClient) {
-            role = 'client';
             const clientDocData = clientDoc.exists() ? clientDoc.data() : {};
             targetRoute = clientDocData.firstLogin ? '/client/first-access' : '/client/dashboard';
           } else {
-            console.warn('Ruolo non riconosciuto per UID:', currentUser.uid);
             role = null;
             targetRoute = '/login';
-            // Non eseguiamo logout qui, lasciamo l'utente sulla pagina
           }
 
           sessionStorage.setItem('app_role', role || '');
 
-          // Preveni loop di navigazione
           if (lastNavigated !== targetRoute) {
             setLastNavigated(targetRoute);
             navigate(targetRoute);
@@ -157,12 +141,7 @@ export default function App() {
           }
         }
       } catch (error) {
-        console.error('Errore nel recupero del documento cliente:', error.message, {
-          uid: currentUser?.uid,
-          email: currentUser?.email,
-          code: error.code,
-          message: error.message
-        });
+        console.error('Errore nel recupero del documento cliente:', error.message);
         setAuthInfo({
           isLoading: false,
           user: currentUser,
@@ -191,6 +170,9 @@ export default function App() {
     <Suspense fallback={<PageSpinner />}>
       <Routes>
         {/* Rotte pubbliche */}
+        <Route element={<GuidaLayout />}>
+          <Route path="/guida" element={<GuidaMentalFit />} />
+        </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/client-login" element={<ClientLogin />} />
         <Route path="/client/forgot-password" element={<ForgotPassword />} />
@@ -229,3 +211,4 @@ export default function App() {
     </Suspense>
   );
 }
+
