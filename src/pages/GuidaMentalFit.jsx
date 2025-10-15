@@ -53,7 +53,7 @@ const ebookPages = [
     
     // Sezione 7: Conclusione
     { id: 34, type: 'page', title: 'Conclusione – Ora Tocca a Te', content: (<div><p className="mb-6">Sei arrivato fino a qui. Dentro di te c'è già la forza per cambiare. Questa guida non è una formula magica: <strong>è una bussola</strong>. Ma non basta leggere: <strong>serve agire</strong>.</p><blockquote className="text-xl italic border-l-4 border-rose-500 pl-4">"La costanza batte la motivazione, ma il giusto metodo batte entrambe."</blockquote></div>), theme: 'dark' },
-    { id: 35, type: 'page', title: 'Vuoi un Piano Davvero su Misura?', content: (<div><p className="mb-6">Se vuoi un percorso personalizzato al 100% per il tuo fisico, con il supporto diretto del mio team, contattaci.</p><div className="mt-8"><a href="https://www.instagram.com/maurizio_biondo_/" target="_blank" rel="noopener noreferrer" className="bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold py-3 px-6 rounded-lg text-lg animate-pulse">Scrivimi "MENTALFIT" su Instagram</a></div></div>), theme: 'dark' },
+    { id: 35, type: 'page', title: 'Vuoi un Piano Davvero su Misura?', content: (<div><p className="mb-6">Se vuoi un percorso personalizzato al 100% per il tuo fisico, con il supporto diretto del mio team, contattaci.</p><div className="mt-8"><a href="https://www.instagram.com/biondofitnesscoach/#" target="_blank" rel="noopener noreferrer" className="bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold py-3 px-6 rounded-lg text-lg animate-pulse">Scrivimi "MENTALFIT" su Instagram</a></div></div>), theme: 'dark' },
 ];
 
 
