@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom"; // 1. Importa useLocation
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
@@ -35,18 +35,19 @@ const CoachChat = React.lazy(() => import('./pages/CoachChat'));
 const CoachClientDetail = React.lazy(() => import('./pages/CoachClientDetail'));
 const GuidaMentalFit = React.lazy(() => import('./pages/GuidaMentalFit'));
 
+
 // Spinner di caricamento
 const PageSpinner = () => (
-  <div className="flex justify-center items-center h-screen w-full bg-zinc-950">
-    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
-  </div>
+    <div className="flex justify-center items-center h-screen w-full bg-zinc-950">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+    </div>
 );
-
+  
 const AuthSpinner = () => (
-  <div className="flex flex-col justify-center items-center min-h-screen bg-zinc-950 text-slate-200">
-    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
-    <p className="mt-4 text-sm">Verifica autenticazione...</p>
-  </div>
+    <div className="flex flex-col justify-center items-center min-h-screen bg-zinc-950 text-slate-200">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+      <p className="mt-4 text-sm">Verifica autenticazione...</p>
+    </div>
 );
 
 export default function App() {
@@ -60,36 +61,35 @@ export default function App() {
   });
   const [lastNavigated, setLastNavigated] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation(); // 2. Ottieni la posizione corrente
 
   useEffect(() => {
+    // 3. NUOVA CONDIZIONE DI BLOCCO
+    // Se l'utente si trova sulla pagina della guida, interrompiamo la logica di autenticazione.
+    if (location.pathname === '/guida') {
+      setAuthInfo(prev => ({ ...prev, isLoading: false })); // Sblocca solo il rendering
+      return; // Interrompi l'esecuzione dell'hook
+    }
+
     let isMounted = true;
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!isMounted) return;
-      
-      // Se l'utente è sulla pagina della guida, non fare nulla per l'autenticazione
-      if (window.location.pathname === '/guida') {
-        setAuthInfo(prev => ({ ...prev, isLoading: false }));
-        return;
-      }
-
       console.log('onAuthStateChanged:', currentUser ? `Utente autenticato: ${currentUser.uid} (${currentUser.email})` : 'Nessun utente autenticato');
       try {
         if (currentUser) {
-          const sessionRole = sessionStorage.getItem('app_role');
           const clientDocRef = doc(db, 'clients', currentUser.uid);
-
           const adminDocRef = doc(db, 'roles', 'admins');
           const coachDocRef = doc(db, 'roles', 'coaches');
           const [adminDoc, coachDoc, clientDoc] = await Promise.all([
-            getDoc(adminDocRef).catch(err => ({ exists: () => false, data: () => ({ uids: [] }) })),
-            getDoc(coachDocRef).catch(err => ({ exists: () => false, data: () => ({ uids: [] }) })),
-            getDoc(clientDocRef).catch(err => ({ exists: () => false, data: () => ({}) }))
+            getDoc(adminDocRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
+            getDoc(coachDocRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
+            getDoc(clientDocRef).catch(() => ({ exists: () => false, data: () => ({}) }))
           ]);
 
           const isCurrentUserAdmin = adminDoc.exists() && adminDoc.data().uids.includes(currentUser.uid);
           const isCurrentUserACoach = coachDoc.exists() && coachDoc.data().uids.includes(currentUser.uid);
           const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
-
+          
           if ((isCurrentUserACoach || isCurrentUserAdmin) && clientDoc.exists()) {
             await deleteDoc(clientDocRef).catch(err => console.error('Errore eliminazione documento errato:', err));
           }
@@ -103,6 +103,7 @@ export default function App() {
             role = 'coach';
             targetRoute = '/coach';
           } else if (isCurrentUserAClient) {
+            role = 'client';
             const clientDocData = clientDoc.exists() ? clientDoc.data() : {};
             targetRoute = clientDocData.firstLogin ? '/client/first-access' : '/client/dashboard';
           } else {
@@ -112,7 +113,7 @@ export default function App() {
 
           sessionStorage.setItem('app_role', role || '');
 
-          if (lastNavigated !== targetRoute) {
+          if (location.pathname !== targetRoute && lastNavigated !== targetRoute) {
             setLastNavigated(targetRoute);
             navigate(targetRoute);
           }
@@ -135,21 +136,18 @@ export default function App() {
             isAdmin: false,
             error: null
           });
-          if (lastNavigated !== '/login') {
-            setLastNavigated('/login');
-            navigate('/login');
+          // Non reindirizzare se siamo già su una pagina pubblica permessa
+          const publicPaths = ['/login', '/client-login', '/client/forgot-password', '/guida'];
+          if (!publicPaths.includes(location.pathname)) {
+            if (lastNavigated !== '/login') {
+                setLastNavigated('/login');
+                navigate('/login');
+            }
           }
         }
       } catch (error) {
         console.error('Errore nel recupero del documento cliente:', error.message);
-        setAuthInfo({
-          isLoading: false,
-          user: currentUser,
-          isClient: false,
-          isCoach: false,
-          isAdmin: false,
-          error: 'Errore durante la verifica del ruolo. Riprova.'
-        });
+        setAuthInfo({ isLoading: false, user: currentUser, isClient: false, isCoach: false, isAdmin: false, error: 'Errore durante la verifica del ruolo. Riprova.' });
         if (lastNavigated !== '/login') {
           setLastNavigated('/login');
           navigate('/login');
@@ -161,7 +159,7 @@ export default function App() {
       isMounted = false;
       unsubscribe();
     };
-  }, [navigate]);
+  }, [location.pathname, navigate]); // 4. Aggiungi location.pathname alle dipendenze
 
   if (authInfo.isLoading) return <AuthSpinner />;
   if (authInfo.error) return <div className="text-red-500 text-center p-4">{authInfo.error}</div>;
@@ -206,7 +204,7 @@ export default function App() {
         </Route>
 
         {/* Rotta di default */}
-        <Route path="*" element={<Navigate to={authInfo.isClient ? "/client/dashboard" : "/login"} replace />} />
+        <Route path="*" element={<Navigate to={authInfo.user ? (authInfo.isClient ? "/client/dashboard" : "/") : "/login"} replace />} />
       </Routes>
     </Suspense>
   );
