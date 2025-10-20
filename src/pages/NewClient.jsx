@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { db, firebaseConfig, auth } from '../firebase.js'; // Aggiunto auth all'import
+import { db, firebaseConfig, auth } from '../firebase.js';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc, collection } from 'firebase/firestore';
@@ -41,13 +41,14 @@ const generatePassword = () => {
 
 export default function NewClient() {
   const navigate = useNavigate();
-  const { register, handleSubmit, reset, formState: { isSubmitting, errors } } = useForm({
+  const { register, handleSubmit, reset, watch, formState: { isSubmitting, errors } } = useForm({
     defaultValues: {
       name: '',
       email: '',
       phone: '',
       planType: '',
       duration: '',
+      customStartDate: new Date().toISOString().split('T')[0], // Default to today
       customExpiryDate: '',
       paymentAmount: '',
       paymentMethod: ''
@@ -58,6 +59,7 @@ export default function NewClient() {
   const [copied, setCopied] = useState(false);
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [useCustomDate, setUseCustomDate] = useState(false);
+  const customStartDate = watch('customStartDate'); // Watch the custom start date
 
   const showNotification = (message, type = 'error') => {
     setNotification({ message, type });
@@ -76,19 +78,30 @@ export default function NewClient() {
     const tempAuth = getAuth(tempApp);
 
     try {
-      // Validazione della data di scadenza
+      let startDate = new Date(data.customStartDate);
+      startDate.setHours(0, 0, 0, 0);
       let expiryDate;
+      let isOldClient = false;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      if (startDate > today) {
+        showNotification("La data di inizio non può essere futura.", 'error');
+        return;
+      }
+
       if (useCustomDate && data.customExpiryDate) {
         expiryDate = new Date(data.customExpiryDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (expiryDate < today) {
-          showNotification("La data di scadenza non può essere nel passato.", 'error');
+        if (expiryDate < startDate) {
+          showNotification("La data di scadenza deve essere successiva alla data di inizio.", 'error');
           return;
         }
+        isOldClient = startDate < currentMonth;
       } else if (data.duration) {
         const durationNum = parseInt(data.duration, 10);
-        expiryDate = new Date();
+        expiryDate = new Date(startDate);
         expiryDate.setMonth(expiryDate.getMonth() + durationNum);
         expiryDate.setDate(expiryDate.getDate() + 7);
       } else {
@@ -116,10 +129,12 @@ export default function NewClient() {
         status: 'attivo',
         planType: data.planType,
         createdAt: serverTimestamp(),
+        startDate,
         scadenza: expiryDate,
         isClient: true,
         firstLogin: true,
-        tempPassword: tempPassword
+        tempPassword: tempPassword,
+        isOldClient
       };
       await setDoc(newClientRef, clientData);
       console.log('Documento cliente creato:', newClientRef.path);
@@ -131,6 +146,7 @@ export default function NewClient() {
           duration: useCustomDate ? 'personalizzata' : `${parseInt(data.duration, 10)} mes${parseInt(data.duration, 10) > 1 ? 'i' : 'e'}`,
           paymentMethod: data.paymentMethod || 'N/A',
           paymentDate: serverTimestamp(),
+          isPast: isOldClient // Flag per non conteggiare negli incassi se cliente vecchio
         };
         console.log('Tentativo creazione pagamento:', { paymentRef: paymentRef.path, paymentData });
         await setDoc(paymentRef, paymentData);
@@ -167,7 +183,7 @@ export default function NewClient() {
   const handleCloseModal = () => {
     setShowSuccessModal(false);
     reset();
-    navigate('/clients'); // Torna alla lista clienti admin
+    navigate('/clients');
   };
 
   const inputStyle = "w-full p-2.5 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
@@ -271,7 +287,7 @@ export default function NewClient() {
                   <div>
                     <label className={labelStyle}>Durata del Percorso*</label>
                     <select 
-                      {...register('duration', { required: !useCustomDate && 'La durata è obbligatoria' })} 
+                      {...register('duration', { required: 'La durata è obbligatoria quando si usa "Durata in mesi"' })} 
                       className={inputStyle}
                     >
                       <option value="">Seleziona durata</option>
@@ -283,16 +299,31 @@ export default function NewClient() {
                   </div>
                 ) : (
                   <div>
+                    <label className={labelStyle}>Data di Inizio*</label>
+                    <input 
+                      type="date" 
+                      {...register('customStartDate', { 
+                        required: 'La data di inizio è obbligatoria quando si usa "Data personalizzata"',
+                        validate: value => {
+                          const start = new Date(value);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return start <= today || 'La data di inizio non può essere futura';
+                        }
+                      })} 
+                      className={inputStyle} 
+                    />
+                    {errors.customStartDate && <p className={errorStyle}>{errors.customStartDate.message}</p>}
                     <label className={labelStyle}>Data di Scadenza*</label>
                     <input 
                       type="date" 
                       {...register('customExpiryDate', { 
-                        required: useCustomDate && 'La data di scadenza è obbligatoria',
+                        required: 'La data di scadenza è obbligatoria quando si usa "Data personalizzata"',
                         validate: value => {
                           if (!useCustomDate) return true;
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
-                          return new Date(value) >= today || 'La data di scadenza non può essere nel passato';
+                          const start = new Date(customStartDate);
+                          const expiry = new Date(value);
+                          return expiry >= start || 'La data di scadenza deve essere successiva alla data di inizio';
                         }
                       })} 
                       className={inputStyle} 

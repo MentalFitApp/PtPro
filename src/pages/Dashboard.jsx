@@ -328,7 +328,7 @@ export default function Dashboard() {
   useEffect(() => {
     let snapshotCount = 0;
     const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'desc'));
-    const unsubPayments = onSnapshot(paymentsQuery, (snap) => {
+    const unsubPayments = onSnapshot(paymentsQuery, async (snap) => {
       snapshotCount++;
       console.log(`Dashboard: Payments snapshot #${snapshotCount}, documenti:`, snap.docs.length);
       if (snapshotCount > 10) {
@@ -339,12 +339,27 @@ export default function Dashboard() {
       }
       try {
         const now = new Date();
-        const income = snap.docs
-          .filter(doc => {
-            const paymentDate = toDate(doc.data().paymentDate);
-            return paymentDate && paymentDate.getMonth() === now.getMonth() && paymentDate.getFullYear() === now.getFullYear();
-          })
-          .reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        let income = 0;
+
+        for (const doc of snap.docs) {
+          const paymentDate = toDate(doc.data().paymentDate);
+          if (paymentDate && paymentDate.getMonth() === now.getMonth() && paymentDate.getFullYear() === now.getFullYear()) {
+            const clientDocRef = doc.ref.parent.parent;
+            const clientDocSnap = await getDoc(clientDocRef); // Recupera i dati del client asincronamente
+            if (clientDocSnap.exists()) {
+              const clientData = clientDocSnap.data();
+              const isOldClient = clientData.isOldClient || false;
+              const isPast = doc.data().isPast || false;
+              if (!isOldClient || !isPast) {
+                income += doc.data().amount || 0;
+                console.log(`Aggiunto pagamento: ${doc.data().amount}€ per cliente ${clientData.name}, isOldClient: ${isOldClient}, isPast: ${isPast}`);
+              } else {
+                console.log(`Escluso pagamento: ${doc.data().amount}€ per cliente ${clientData.name}, isOldClient: ${isOldClient}, isPast: ${isPast}`);
+              }
+            }
+          }
+        }
         setMonthlyIncome(income);
       } catch (error) {
         console.error("Errore snapshot pagamenti:", error);
@@ -386,7 +401,7 @@ export default function Dashboard() {
     const generateChartData = () => {
       if (chartDataType === 'revenue') {
         const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'asc'));
-        const unsub = onSnapshot(paymentsQuery, (snap) => {
+        const unsub = onSnapshot(paymentsQuery, async (snap) => {
           snapshotCount++;
           console.log(`Dashboard: Chart revenue snapshot #${snapshotCount}, documenti:`, snap.docs.length);
           if (snapshotCount > 10) {
@@ -398,13 +413,18 @@ export default function Dashboard() {
           try {
             let data = [];
             const monthlyData = {};
-            snap.docs.forEach(doc => {
+            for (const doc of snap.docs) {
               const date = toDate(doc.data().paymentDate);
-              if (date) {
-                const key = chartTimeRange === 'monthly' ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : date.getFullYear().toString();
-                monthlyData[key] = (monthlyData[key] || 0) + (doc.data().amount || 0);
+              const clientDocRef = doc.ref.parent.parent;
+              const clientDocSnap = await getDoc(clientDocRef);
+              if (date && clientDocSnap.exists()) {
+                const clientData = clientDocSnap.data();
+                if (!clientData.isOldClient || !doc.data().isPast) {
+                  const key = chartTimeRange === 'monthly' ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : date.getFullYear().toString();
+                  monthlyData[key] = (monthlyData[key] || 0) + (doc.data().amount || 0);
+                }
               }
-            });
+            }
             if (chartTimeRange === 'monthly') {
               const now = new Date();
               for (let i = 11; i >= 0; i--) {
@@ -563,6 +583,7 @@ export default function Dashboard() {
         <div className="flex gap-2">
           <button onClick={() => navigate('/clients')} className="px-4 py-2 bg-zinc-800/80 text-sm font-semibold rounded-lg hover:bg-zinc-700/80 transition-colors flex items-center gap-2"><Users size={16}/> Gestisci</button>
           <button onClick={() => navigate('/new')} className="px-4 py-2 bg-rose-600 text-sm font-semibold rounded-lg hover:bg-rose-700 transition-colors flex items-center gap-2"><Plus size={16}/> Nuovo</button>
+          <button onClick={() => navigate('/business-history')} className="px-4 py-2 bg-cyan-600 text-sm font-semibold rounded-lg hover:bg-cyan-700 transition-colors flex items-center gap-2"><BarChart3 size={16}/> Storico</button>
         </div>
       </motion.div>
 

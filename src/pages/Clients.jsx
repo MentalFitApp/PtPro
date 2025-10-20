@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { db, auth, toDate, calcolaStatoPercorso, updateStatoPercorso } from "../firebase";
 import { collection, onSnapshot, deleteDoc, doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
-import { UserPlus, FilePenLine, Trash2, Search, ChevronDown, ChevronUp, Filter, AlertTriangle, LogOut, Download, FileText, X } from "lucide-react"; // Aggiunto X
+import { UserPlus, FilePenLine, Trash2, Search, ChevronDown, ChevronUp, Filter, AlertTriangle, LogOut, Download, FileText, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Papa from 'papaparse';
 
@@ -22,7 +22,7 @@ const Notification = ({ message, type, onDismiss }) => (
         <AlertTriangle className={type === 'error' ? 'text-red-400' : 'text-emerald-400'} />
         <p>{message}</p>
         <button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/10">
-          <X size={16} /> {/* Ora X è definito */}
+          <X size={16} />
         </button>
       </motion.div>
     )}
@@ -38,6 +38,7 @@ const exportToCSV = (clients) => {
     Scadenza: toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D',
     Stato: client.statoPercorso || calcolaStatoPercorso(client.scadenza),
     Pagamenti: client.payments ? client.payments.reduce((sum, p) => sum + (p.amount || 0), 0) : 0,
+    'Data Inizio': toDate(client.startDate)?.toLocaleDateString('it-IT') || 'N/D',
   }));
 
   const csv = Papa.unparse(data);
@@ -139,7 +140,7 @@ export default function Clients() {
   const [paymentFilter, setPaymentFilter] = useState("");
   const [anamnesiStatus, setAnamnesiStatus] = useState({});
   const [notification, setNotification] = useState({ message: '', type: '' });
-  const [sortKey, setSortKey] = useState("createdAt");
+  const [sortKey, setSortKey] = useState("startDate");
   const [sortDir, setSortDir] = useState("desc");
 
   const showNotification = (message, type = 'error') => {
@@ -176,7 +177,6 @@ export default function Clients() {
         const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         console.log('Clienti recuperati da Firestore:', clientList);
 
-        // Verifica stato anamnesi per ogni cliente
         const anamnesiStatusTemp = {};
         for (const client of clientList) {
           try {
@@ -193,7 +193,6 @@ export default function Clients() {
         }
         setAnamnesiStatus(anamnesiStatusTemp);
 
-        // Aggiorna stato percorso e imposta lista clienti
         clientList.forEach(client => updateStatoPercorso(client.id));
         setClients(clientList);
         setLoading(false);
@@ -220,7 +219,7 @@ export default function Clients() {
     if (!clientToDelete) return;
     try {
       await deleteDoc(doc(db, 'clients', clientToDelete.id));
-      setClients(clients.filter(client => client.id !== clientToDelete.id)); // Aggiorna la lista localmente
+      setClients(clients.filter(client => client.id !== clientToDelete.id));
       showNotification('Cliente eliminato con successo!', 'success');
     } catch (error) {
       console.error("Errore nell'eliminazione del cliente:", error);
@@ -231,7 +230,7 @@ export default function Clients() {
   };
 
   const toggleSort = (key) => {
-    if (!key) return; // Protezione contro key undefined
+    if (!key) return;
     if (sortKey === key) {
       setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
     } else {
@@ -253,7 +252,7 @@ export default function Clients() {
     if (dateFilter) {
       const date = new Date(dateFilter);
       if (!isNaN(date)) {
-        result = result.filter(c => toDate(c.createdAt)?.toDateString() === date.toDateString());
+        result = result.filter(c => toDate(c.startDate)?.toDateString() === date.toDateString());
       } else {
         showNotification('Data non valida.', 'error');
       }
@@ -270,10 +269,10 @@ export default function Clients() {
       }
     }
     return result.sort((a, b) => {
-      if (!sortKey) return 0; // Protezione contro sortKey undefined
+      if (!sortKey) return 0;
       const aVal = a[sortKey] || '';
       const bVal = b[sortKey] || '';
-      if (sortKey === 'scadenza' || sortKey === 'createdAt') {
+      if (sortKey === 'scadenza' || sortKey === 'startDate') {
         const aDate = toDate(aVal) || new Date(0);
         const bDate = toDate(bVal) || new Date(0);
         return sortDir === 'asc' ? aDate - bDate : bDate - aDate;
@@ -385,7 +384,7 @@ export default function Clients() {
                   <th className="p-4 cursor-pointer select-none" onClick={() => toggleSort("name")}>Nome <SortIcon col="name" sortKey={sortKey} sortDir={sortDir} /></th>
                   <th className="p-4">Stato Percorso</th>
                   <th className="p-4 cursor-pointer select-none" onClick={() => toggleSort("scadenza")}>Scadenza <SortIcon col="scadenza" sortKey={sortKey} sortDir={sortDir} /></th>
-                  <th className="p-4 cursor-pointer select-none" onClick={() => toggleSort("createdAt")}>Data Iscrizione <SortIcon col="createdAt" sortKey={sortKey} sortDir={sortDir} /></th>
+                  <th className="p-4 cursor-pointer select-none" onClick={() => toggleSort("startDate")}>Data Inizio <SortIcon col="startDate" sortKey={sortKey} sortDir={sortDir} /></th>
                   <th className="p-4 text-right">Azioni</th>
                 </tr>
               </thead>
@@ -408,7 +407,7 @@ export default function Clients() {
                       <AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} />
                     </td>
                     <td className="p-4">{toDate(c.scadenza)?.toLocaleDateString('it-IT') || "-"}</td>
-                    <td className="p-4">{toDate(c.createdAt)?.toLocaleDateString('it-IT') || "-"}</td>
+                    <td className="p-4">{toDate(c.startDate)?.toLocaleDateString('it-IT') || "-"}</td>
                     <td className="p-4">
                       <div className="flex items-center gap-2 justify-end">
                         <button onClick={() => navigate(`/edit/${c.id}`)} className="p-2 text-slate-400 hover:text-amber-400 hover:bg-white/10 rounded-md" title="Modifica"><FilePenLine size={16}/></button>

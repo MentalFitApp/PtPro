@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom"; // 1. Importa useLocation
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
@@ -34,7 +34,7 @@ const CoachClients = React.lazy(() => import('./pages/CoachClients'));
 const CoachChat = React.lazy(() => import('./pages/CoachChat'));
 const CoachClientDetail = React.lazy(() => import('./pages/CoachClientDetail'));
 const GuidaMentalFit = React.lazy(() => import('./pages/GuidaMentalFit'));
-
+const BusinessHistory = React.lazy(() => import('./pages/BusinessHistory')); // Aggiunta nuova pagina
 
 // Spinner di caricamento
 const PageSpinner = () => (
@@ -61,14 +61,12 @@ export default function App() {
   });
   const [lastNavigated, setLastNavigated] = useState(null);
   const navigate = useNavigate();
-  const location = useLocation(); // 2. Ottieni la posizione corrente
+  const location = useLocation();
 
   useEffect(() => {
-    // 3. NUOVA CONDIZIONE DI BLOCCO
-    // Se l'utente si trova sulla pagina della guida, interrompiamo la logica di autenticazione.
     if (location.pathname === '/guida') {
-      setAuthInfo(prev => ({ ...prev, isLoading: false })); // Sblocca solo il rendering
-      return; // Interrompi l'esecuzione dell'hook
+      setAuthInfo(prev => ({ ...prev, isLoading: false }));
+      return;
     }
 
     let isMounted = true;
@@ -159,7 +157,7 @@ export default function App() {
       isMounted = false;
       unsubscribe();
     };
-  }, [location.pathname, navigate]); // 4. Aggiungi location.pathname alle dipendenze
+  }, [location.pathname, navigate]);
 
   if (authInfo.isLoading) return <AuthSpinner />;
   if (authInfo.error) return <div className="text-red-500 text-center p-4">{authInfo.error}</div>;
@@ -191,6 +189,7 @@ export default function App() {
           <Route path="/coach/anamnesi" element={<CoachAnamnesi />} />
           <Route path="/coach/updates" element={<CoachUpdates />} />
           <Route path="/coach/chat" element={<CoachChat />} />
+          <Route path="/business-history" element={<BusinessHistory />} /> {/* Aggiunta nuova route */}
         </Route>
 
         {/* Rotte per clienti */}
@@ -209,4 +208,3 @@ export default function App() {
     </Suspense>
   );
 }
-
