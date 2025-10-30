@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { LayoutGrid, Users, MessageSquare, FileText, Bell } from 'lucide-react';
+import { LayoutGrid, Users, MessageSquare, FileText, Bell, Users as UsersIcon, Calendar, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // AnimatedBackground globale
@@ -25,14 +25,13 @@ const AnimatedBackground = () => {
       }
     }
 
-    // Crea 30 stelle (ridotto da 50)
     for (let i = 0; i < 30; i++) {
       const star = document.createElement('div');
       star.className = 'star';
       star.style.setProperty('--top-offset', `${Math.random() * 100}vh`);
-      star.style.setProperty('--fall-duration', `${8 + Math.random() * 6}s`); // 8-14s
+      star.style.setProperty('--fall-duration', `${8 + Math.random() * 6}s`);
       star.style.setProperty('--fall-delay', `${Math.random() * 5}s`);
-      star.style.setProperty('--star-width', `${1 + Math.random() * 2}px`); // 1-3px
+      star.style.setProperty('--star-width', `${1 + Math.random() * 2}px`);
       starsContainer.appendChild(star);
     }
 
@@ -43,22 +42,31 @@ const AnimatedBackground = () => {
 };
 
 const navLinks = [
-  { to: '/clients', icon: <Users size={20} />, label: 'Clienti' },
-  { to: '/chat', icon: <MessageSquare size={20} />, label: 'Chat' },
-  { to: '/', icon: <LayoutGrid size={24} />, label: 'Dashboard', isCentral: true },
-  { to: '/updates', icon: <Bell size={20} />, label: 'Novità' },
+  { to: '/clients', icon: <Users size={20} />, label: 'Clienti', roles: ['admin'] },
+  { to: '/chat', icon: <MessageSquare size={20} />, label: 'Chat', roles: ['admin'] },
+  { to: '/', icon: <LayoutGrid size={24} />, label: 'Dashboard', isCentral: true, roles: ['admin'] },
+  { to: '/updates', icon: <Bell size={20} />, label: 'Novità', roles: ['admin'] },
+  { to: '/collaboratori', icon: <UsersIcon size={20} />, label: 'Collaboratori', roles: ['admin'] },
+  { to: '/calendar-report', icon: <Calendar size={20} />, label: 'Calendario', roles: ['admin'] },
+  { to: '/settings', icon: <Settings size={20} />, label: 'Impostazioni', roles: ['admin'] },
 ];
 
 const coachNavLinks = [
-  { to: '/coach/clients', icon: <Users size={20} />, label: 'Clienti' },
-  { to: '/coach/chat', icon: <MessageSquare size={20} />, label: 'Chat' },
-  { to: '/coach', icon: <LayoutGrid size={24} />, label: 'Dashboard', isCentral: true },
-  { to: '/coach/anamnesi', icon: <FileText size={20} />, label: 'Anamnesi' },
-  { to: '/coach/updates', icon: <Bell size={20} />, label: 'Aggiornamenti' },
+  { to: '/coach/clients', icon: <Users size={20} />, label: 'Clienti', roles: ['coach'] },
+  { to: '/coach/chat', icon: <MessageSquare size={20} />, label: 'Chat', roles: ['coach'] },
+  { to: '/coach', icon: <LayoutGrid size={24} />, label: 'Dashboard', isCentral: true, roles: ['coach'] },
+  { to: '/coach/anamnesi', icon: <FileText size={20} />, label: 'Anamnesi', roles: ['coach'] },
+  { to: '/coach/updates', icon: <Bell size={20} />, label: 'Aggiornamenti', roles: ['coach'] },
+  { to: '/coach/settings', icon: <Settings size={20} />, label: 'Impostazioni', roles: ['coach'] },
 ];
 
-const NavLink = ({ to, icon, label, isCentral, isActive }) => {
+const NavLink = ({ to, icon, label, isCentral, isActive, roles }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const role = sessionStorage.getItem('app_role');
+
+  if (roles && !roles.includes(role)) return null;
+
   return (
     <motion.button
       onClick={() => navigate(to)}
@@ -90,6 +98,7 @@ const BottomNav = ({ isCoach }) => {
             label={link.label}
             isCentral={link.isCentral}
             isActive={location.pathname === link.to || location.pathname.startsWith(link.to + '/')}
+            roles={link.roles}
           />
         ))}
       </div>
@@ -99,7 +108,9 @@ const BottomNav = ({ isCoach }) => {
 
 const SidebarContent = ({ isCoach }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const links = isCoach ? coachNavLinks : navLinks;
+
   return (
     <aside className="w-64 h-full bg-zinc-950/60 backdrop-blur-xl p-4 flex flex-col gradient-border">
       <div className="flex justify-between items-center mb-10">
@@ -112,8 +123,9 @@ const SidebarContent = ({ isCoach }) => {
             to={link.to}
             icon={link.icon}
             label={link.label}
-            isCentral={false}
+            isCentral={link.isCentral}
             isActive={location.pathname === link.to || location.pathname.startsWith(link.to + '/')}
+            roles={link.roles}
           />
         ))}
       </nav>
@@ -136,8 +148,8 @@ export default function MainLayout() {
       <div className="hidden md:flex md:fixed h-screen z-[50]">
         <SidebarContent isCoach={isCoach} />
       </div>
-      <div className="flex-1 w-full md:ml-64">
-        <main className="p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-4rem)] md:min-h-screen z-[10] pb-16 md:pb-0">
+      <div className="flex-1 w-full md:ml-64 min-h-screen">
+        <main className="p-4 sm:p-6 lg:p-8 z-[10] pb-16 md:pb-0">
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 20 }}

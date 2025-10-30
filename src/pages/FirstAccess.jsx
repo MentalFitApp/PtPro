@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, updatePassword } from "firebase/auth";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from '../firebase.js';
 import { KeyRound, Lock, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,9 +39,42 @@ const FirstAccess = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userType, setUserType] = useState(''); // 'client' o 'collaboratore'
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
+
+  useEffect(() => {
+    const determineUserType = async () => {
+      if (!user) {
+        navigate('/client-login');
+        return;
+      }
+
+      try {
+        // Controlla se è cliente
+        const clientDoc = await getDoc(doc(db, 'clients', user.uid));
+        if (clientDoc.exists() && clientDoc.data().firstLogin) {
+          setUserType('client');
+          return;
+        }
+
+        // Controlla se è collaboratore
+        const collabDoc = await getDoc(doc(db, 'collaboratori', user.uid));
+        if (collabDoc.exists() && collabDoc.data().firstLogin) {
+          setUserType('collaboratore');
+          return;
+        }
+
+        // Se non è firstLogin, reindirizza
+        navigate(clientDoc.exists() ? '/client/dashboard' : '/collaboratore/dashboard');
+      } catch (err) {
+        setError('Errore verifica account.');
+      }
+    };
+
+    determineUserType();
+  }, [user, navigate]);
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -51,7 +84,7 @@ const FirstAccess = () => {
 
     if (!user) {
       setError("Utente non autenticato. Effettua nuovamente il login.");
-      setTimeout(() => navigate('/client-login'), 3000);
+      setTimeout(() => navigate(userType === 'client' ? '/client-login' : '/collaboratore-login'), 3000);
       setIsSubmitting(false);
       return;
     }
@@ -67,14 +100,22 @@ const FirstAccess = () => {
     }
 
     try {
+      // Aggiorna password
       await updatePassword(user, newPassword);
-      const userDocRef = doc(db, "clients", user.uid);
+
+      // Aggiorna documento corretto
+      const collectionName = userType === 'client' ? 'clients' : 'collaboratori';
+      const userDocRef = doc(db, collectionName, user.uid);
       await updateDoc(userDocRef, { firstLogin: false });
-      console.log('Campo firstLogin aggiornato a false per UID:', user.uid);
+
+      console.log(`Campo firstLogin aggiornato a false per ${userType}:`, user.uid);
+
       setSuccess("Password aggiornata! Sarai reindirizzato alla dashboard.");
-      setTimeout(() => navigate('/client/dashboard'), 3000);
+      setTimeout(() => {
+        navigate(userType === 'client' ? '/client/dashboard' : '/collaboratore/dashboard');
+      }, 3000);
     } catch (err) {
-      console.error("Errore aggiornamento password:", err.code, err.message, { uid: user?.uid });
+      console.error("Errore aggiornamento password:", err.code, err.message, { uid: user?.uid, userType });
       setError("Si è verificato un errore durante l'aggiornamento della password: " + err.message);
       setIsSubmitting(false);
     }
@@ -82,6 +123,14 @@ const FirstAccess = () => {
 
   const inputStyle = "w-full pl-10 pr-3 py-2.5 mt-1 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200 placeholder:text-slate-500";
   const labelStyle = "block text-sm font-medium text-slate-300";
+
+  if (!userType) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>

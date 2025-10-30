@@ -1,497 +1,204 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
-import { getAuth } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase.js';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, FilePenLine, Camera, UploadCloud, X } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
-import { motion, AnimatePresence } from 'framer-motion';
-import { uploadPhoto } from '../storageUtils';
-
-// --- COMPONENTI UI RIUTILIZZABILI ---
-const AnimatedBackground = () => (
-  <div className="absolute inset-0 -z-10 overflow-hidden bg-zinc-950">
-    <div className="aurora-background"></div>
-  </div>
-);
+import { collection, query, onSnapshot, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
+import { db, toDate, auth } from '../firebase';
+import { FileText, Calendar, ArrowRight, ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const LoadingSpinner = () => (
-  <div className="min-h-screen flex justify-center items-center relative">
-    <AnimatedBackground />
-    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
+  <div className="flex justify-center items-center py-8">
+    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-cyan-400"></div>
   </div>
 );
 
-const Notification = ({ message, type, onDismiss }) => (
-  <AnimatePresence>
-    {message && (
-      <motion.div
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -50 }}
-        className={`fixed top-5 right-5 z-50 flex items-center gap-4 p-4 rounded-lg border ${
-          type === 'success' ? 'bg-emerald-900/80 text-emerald-300 border-emerald-500/30' : 'bg-red-900/80 text-red-300 border-red-500/30'
-        } backdrop-blur-md shadow-lg`}
-      >
-        <p>{message}</p>
-        <button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/10">
-          <X size={16} />
-        </button>
-      </motion.div>
-    )}
-  </AnimatePresence>
-);
-
-const ClientAnamnesi = () => {
-  const [anamnesiData, setAnamnesiData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [photos, setPhotos] = useState({ front: null, right: null, left: null, back: null });
-  const [photoPreviews, setPhotoPreviews] = useState({ front: null, right: null, left: null, back: null });
-  const [notification, setNotification] = useState({ message: '', type: '' });
-
+export default function CoachAnamnesi() {
   const navigate = useNavigate();
-  const auth = getAuth();
-  const user = auth.currentUser;
-
-  const { register, handleSubmit, setValue, formState: { isSubmitting } } = useForm();
+  const [recentChecks, setRecentChecks] = useState([]);
+  const [recentAnamnesi, setRecentAnamnesi] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      console.log('No authenticated user, redirecting to /client-login');
-      navigate('/client-login');
+    if (!auth.currentUser) {
+      navigate('/login');
       return;
     }
-    console.log('Authenticated user:', { uid: user.uid, email: user.email });
-    const fetchAnamnesi = async () => {
-      try {
-        const anamnesiRef = doc(db, `clients/${user.uid}/anamnesi`, 'initial');
-        console.log('Fetching anamnesi for:', anamnesiRef.path);
-        const docSnap = await getDoc(anamnesiRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          console.log('Anamnesi data fetched:', data);
-          setAnamnesiData(data);
-          if (data.photoURLs) setPhotoPreviews(data.photoURLs);
-          Object.keys(data).forEach(key => setValue(key, data[key]));
-          setIsEditing(false);
-        } else {
-          console.log('No anamnesi document found, enabling edit mode');
-          setIsEditing(true);
+
+    const coachId = auth.currentUser.uid;
+
+    // --- VERIFICA RUOLO COACH (una sola chiamata) ---
+    const verifyCoach = async () => {
+      const coachDoc = await getDoc(doc(db, 'roles', 'coaches'));
+      if (!coachDoc.exists() || !coachDoc.data().uids.includes(coachId)) {
+        navigate('/login');
+        return;
+      }
+
+      // --- CARICA TUTTO IN BATCH ---
+      const clientsQuery = query(
+        collection(db, 'clients'),
+        where('assignedCoaches', 'array-contains', coachId)
+      );
+
+      const unsub = onSnapshot(clientsQuery, async (snap) => {
+        const clientIds = snap.docs.map(d => d.id);
+        if (clientIds.length === 0) {
+          setRecentChecks([]);
+          setRecentAnamnesi([]);
+          setLoading(false);
+          return;
         }
-      } catch (error) {
-        console.error('Error fetching anamnesi:', error.code, error.message, { uid: user.uid, email: user.email });
-        setNotification({ message: `Errore nel caricamento dei dati: ${error.message}`, type: 'error' });
-      }
-      setLoading(false);
-    };
-    fetchAnamnesi();
-  }, [user, navigate, setValue]);
 
-  const showNotification = (message, type = 'error') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification({ message: '', type: '' }), 5000);
-  };
-
-  const handleFileChange = (e, type) => {
-    const file = e.target.files[0];
-    console.log(`File selected for ${type}:`, file?.name);
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        showNotification(`Il file ${file.name} supera il limite di 5MB`, 'error');
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        showNotification(`Il file ${file.name} non è un'immagine valida`, 'error');
-        return;
-      }
-      setPhotos(prev => ({ ...prev, [type]: file }));
-      setPhotoPreviews(prev => ({ ...prev, [type]: URL.createObjectURL(file) }));
-      showNotification(`Foto ${type} selezionata con successo!`, 'success');
-    } else {
-      showNotification(`Nessun file selezionato per ${type}`, 'error');
-    }
-    e.target.value = null; // Reset input file
-  };
-
-  const onSubmit = async (data) => {
-    if (!user) {
-      showNotification('Utente non autenticato. Effettua il login.', 'error');
-      return;
-    }
-
-    if (isSubmitting) {
-      console.log('Upload already in progress, skipping...');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Forza il refresh del token di autenticazione
-      await user.getIdToken(true);
-      console.log('Token refreshed for user:', user.uid);
-
-      let photoURLs = anamnesiData?.photoURLs || { front: null, right: null, left: null, back: null };
-      const photosToUpload = Object.entries(photos).filter(([, file]) => file !== null);
-
-      if (photosToUpload.length > 0) {
-        console.log('Uploading photos:', photosToUpload.map(([type]) => type));
-        const uploadPromises = photosToUpload.map(async ([type, file]) => {
-          try {
-            const filePath = `clients/${user.uid}/anamnesi_photos/${type}-${uuidv4()}.jpg`;
-            console.log(`Uploading ${type} to ${filePath}`);
-            const url = await Promise.race([
-              uploadPhoto(file, user.uid, 'anamnesi_photos'),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout durante l\'upload della foto')), 30000))
-            ]);
-            console.log(`Download URL for ${type}: ${url}`);
-            return { type, url };
-          } catch (uploadError) {
-            console.error(`Error uploading ${type} photo:`, uploadError.code, uploadError.message);
-            throw new Error(`Errore nell'upload della foto ${type}: ${uploadError.message}`);
-          }
+        // --- BATCH CHECKS ---
+        const checkPromises = clientIds.map(async (clientId) => {
+          const clientName = snap.docs.find(d => d.id === clientId).data().name || 'Cliente';
+          const checksQuery = query(
+            collection(db, 'clients', clientId, 'checks'),
+            orderBy('createdAt', 'desc'),
+            limit(3)
+          );
+          const checksSnap = await getDocs(checksQuery);
+          return checksSnap.docs.map(checkDoc => {
+            const data = checkDoc.data();
+            return {
+              clientId,
+              clientName,
+              date: data.createdAt,
+              weight: data.weight,
+              notes: data.notes
+            };
+          });
         });
 
-        const uploadedUrls = await Promise.all(uploadPromises);
-        photoURLs = {
-          front: photoURLs.front,
-          right: photoURLs.right,
-          left: photoURLs.left,
-          back: photoURLs.back,
-          ...Object.fromEntries(uploadedUrls.map(({ type, url }) => [type, url]))
-        };
-      }
+        // --- BATCH ANAMNESI ---
+        const anamnesiPromises = clientIds.map(async (clientId) => {
+          const clientName = snap.docs.find(d => d.id === clientId).data().name || 'Cliente';
+          const anamnesiRef = doc(db, 'clients', clientId, 'anamnesi', 'initial');
+          const anamnesiSnap = await getDoc(anamnesiRef);
+          if (anamnesiSnap.exists()) {
+            const data = anamnesiSnap.data();
+            return {
+              clientId,
+              clientName,
+              date: data.submittedAt,
+              goal: data.mainGoal
+            };
+          }
+          return null;
+        });
 
-      const dataToSave = { ...data, photoURLs, submittedAt: serverTimestamp() };
-      console.log('Saving to Firestore:', dataToSave);
-      await setDoc(doc(db, `clients/${user.uid}/anamnesi`, 'initial'), dataToSave, { merge: true });
+        try {
+          const [allChecks, allAnamnesi] = await Promise.all([
+            Promise.all(checkPromises),
+            Promise.all(anamnesiPromises)
+          ]);
 
-      setAnamnesiData(dataToSave);
-      setPhotos({ front: null, right: null, left: null, back: null });
-      setPhotoPreviews({ front: null, right: null, left: null, back: null });
-      setIsEditing(false);
-      showNotification('Anamnesi salvata con successo!', 'success');
-    } catch (error) {
-      console.error('Errore nel salvataggio:', error.code, error.message, error);
-      if (error.code === 'storage/unauthorized') {
-        showNotification('Non autorizzato a caricare foto. Verifica le regole di Firebase Storage.', 'error');
-      } else if (error.message.includes('Timeout')) {
-        showNotification('Timeout durante l\'upload delle foto. Controlla la connessione di rete o prova di nuovo.', 'error');
-      } else {
-        showNotification(`Si è verificato un errore durante il salvataggio: ${error.message}`, 'error');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+          const flatChecks = allChecks.flat();
+          const validAnamnesi = allAnamnesi.filter(Boolean);
+
+          flatChecks.sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0));
+          validAnamnesi.sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0));
+
+          setRecentChecks(flatChecks.slice(0, 5));
+          setRecentAnamnesi(validAnamnesi.slice(0, 5));
+          setLoading(false);
+        } catch (err) {
+          console.error('Errore batch:', err);
+          setLoading(false);
+        }
+      }, (err) => {
+        console.error('Errore snapshot:', err);
+        setLoading(false);
+      });
+
+      return () => unsub();
+    };
+
+    verifyCoach();
+  }, [navigate]);
+
+  const formatDate = (ts) => toDate(ts)?.toLocaleDateString('it-IT') || 'N/D';
 
   if (loading) return <LoadingSpinner />;
 
-  const inputStyle = "w-full p-2.5 mt-1 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200 placeholder:text-slate-500";
-  const labelStyle = "block text-sm font-medium text-slate-300";
-  const sectionStyle = "bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6 shadow-lg";
-  const headingStyle = "font-bold mb-4 text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 flex items-center gap-2";
-
-  const PhotoUploader = ({ type, label }) => {
-    const inputRef = useRef(null);
-
-    const handleClick = () => {
-      console.log(`Triggering file picker for ${type}`);
-      if (inputRef.current) {
-        inputRef.current.click();
-      } else {
-        console.error(`Input ref for ${type} is not defined`);
-      }
-    };
-
-    return (
-      <div className="text-center" key={type}>
-        <label className={labelStyle}>{label}</label>
-        <div
-          className="mt-2 flex justify-center items-center w-full h-48 bg-zinc-900/50 rounded-lg border-2 border-dashed border-zinc-700 hover:border-cyan-500 transition-colors cursor-pointer relative isolate"
-          onClick={handleClick}
-        >
-          {photoPreviews[type] ? (
-            <img
-              src={photoPreviews[type]}
-              alt={`${type} preview`}
-              className="h-full w-full object-contain rounded-lg p-1"
-            />
-          ) : (
-            <div className="flex flex-col items-center text-slate-400 transition-colors hover:text-cyan-400">
-              <UploadCloud size={32} />
-              <p className="mt-2 text-sm">Clicca per caricare</p>
-            </div>
-          )}
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              console.log(`Input file change triggered for ${type}`);
-              handleFileChange(e, type);
-            }}
-            className="absolute inset-0 opacity-0 cursor-pointer z-10"
-            disabled={loading || isSubmitting}
-            aria-label={`Carica immagine ${label}`}
-            id={`file-input-${type}`}
-          />
-        </div>
-      </div>
-    );
-  };
-
-  const ViewField = ({ label, value }) => (
-    <div className="mb-4">
-      <h4 className="text-sm font-semibold text-slate-400">{label}</h4>
-      <p className="mt-1 p-3 bg-zinc-900 rounded-lg min-h-[44px] text-slate-200 break-words whitespace-pre-wrap shadow-inner">{value || 'Non specificato'}</p>
-    </div>
-  );
-
-  const ViewPhotos = ({ urls }) => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {['front', 'right', 'left', 'back'].map(type => (
-        <div key={type} className="text-center">
-          <h4 className="text-sm font-semibold text-slate-400 capitalize">{type === 'front' ? 'Frontale' : type === 'back' ? 'Posteriore' : `Laterale ${type === 'left' ? 'Sinistro' : 'Destro'}`}</h4>
-          {urls?.[type] ? (
-            <motion.img
-              src={urls[type]}
-              alt={type}
-              className="mt-2 rounded-lg w-full h-48 object-cover hover:scale-105 transition-transform"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            />
-          ) : (
-            <div className="mt-2 flex justify-center items-center w-full h-48 bg-zinc-900 rounded-lg text-slate-500"><span>Non caricata</span></div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-
   return (
-    <div className="min-h-screen text-slate-200 p-4 sm:p-6 lg:p-8 relative">
-      <AnimatedBackground />
-      <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="p-4 space-y-6"
+    >
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold text-slate-50">Anamnesi & Check</h2>
+        <button
+          onClick={() => navigate('/coach/clients')}
+          className="flex items-center gap-2 text-sm text-slate-400 hover:text-cyan-400"
+        >
+          <ArrowLeft size={16} /> Indietro
+        </button>
+      </div>
 
-      <header className="flex justify-between items-center mb-8 flex-col sm:flex-row gap-4">
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-50">Anamnesi Cliente</h1>
-        <button onClick={() => navigate('/client/dashboard')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-slate-300 text-sm font-semibold rounded-lg transition-colors"><ArrowLeft size={16} /><span>Torna alla mia dashboard</span></button>
-      </header>
-
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        {isEditing ? (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            <div className={sectionStyle}>
-              <h4 className={headingStyle}><FilePenLine size={16} /> Dati Anagrafici e Misure</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelStyle}>Nome</label>
-                  <input {...register('firstName')} className={inputStyle} />
-                </div>
-                <div>
-                  <label className={labelStyle}>Cognome</label>
-                  <input {...register('lastName')} className={inputStyle} />
-                </div>
-                <div>
-                  <label className={labelStyle}>Data di Nascita</label>
-                  <input type="date" {...register('birthDate')} className={inputStyle} />
-                </div>
-                <div>
-                  <label className={labelStyle}>Che lavoro fai?</label>
-                  <input {...register('job')} className={inputStyle} placeholder="Es. Impiegato, studente..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Peso (kg)</label>
-                  <input type="number" step="0.1" {...register('weight', { min: 0 })} className={inputStyle} placeholder="Es. 75.5" />
-                </div>
-                <div>
-                  <label className={labelStyle}>Altezza (cm)</label>
-                  <input type="number" {...register('height', { min: 0 })} className={inputStyle} placeholder="Es. 180" />
-                </div>
-              </div>
-            </div>
-            <div className={sectionStyle}>
-              <h4 className={headingStyle}><Camera size={16} /> Abitudini Alimentari</h4>
-              <div className="space-y-4">
-                <div>
-                  <label className={labelStyle}>Pasti al giorno</label>
-                  <select {...register('mealsPerDay')} className={inputStyle}>
-                    <option value="">Seleziona...</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5+</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelStyle}>Colazione: Dolce o Salata?</label>
-                  <select {...register('breakfastType')} className={inputStyle}>
-                    <option value="">Seleziona...</option>
-                    <option value="dolce">Dolce</option>
-                    <option value="salato">Salato</option>
-                    <option value="entrambi">Entrambi/Indifferente</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelStyle}>Alimenti che ti piacciono</label>
-                  <textarea {...register('desiredFoods')} rows="3" className={inputStyle} placeholder="Elenca qui gli alimenti che vorresti nel piano..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Cosa non mangi?</label>
-                  <textarea {...register('dislikedFoods')} rows="2" className={inputStyle} placeholder="Elenca qui gli alimenti da evitare..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Allergie o Intolleranze?</label>
-                  <input {...register('intolerances')} className={inputStyle} placeholder="Es. Lattosio, nessuna..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Problemi di digestione o gonfiore?</label>
-                  <input {...register('digestionIssues')} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
-                </div>
-              </div>
-            </div>
-            <div className={sectionStyle}>
-              <h4 className={headingStyle}><FilePenLine size={16} /> Allenamento</h4>
-              <div className="space-y-4">
-                <div>
-                  <label className={labelStyle}>Allenamenti a settimana</label>
-                  <input type="number" {...register('workoutsPerWeek', { min: 0 })} className={inputStyle} placeholder="Es. 3" />
-                </div>
-                <div>
-                  <label className={labelStyle}>Dettagli Allenamento</label>
-                  <textarea {...register('trainingDetails')} rows="3" className={inputStyle} placeholder="Es. Bodybuilding in palestra con macchinari e pesi liberi..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Orario e Durata</label>
-                  <input {...register('trainingTime')} className={inputStyle} placeholder="Es. La sera dalle 18 alle 19:30" />
-                </div>
-              </div>
-            </div>
-            <div className={sectionStyle}>
-              <h4 className={headingStyle}><Camera size={16} /> Salute e Obiettivi</h4>
-              <div className="space-y-4">
-                <div>
-                  <label className={labelStyle}>Infortuni o problematiche</label>
-                  <textarea {...register('injuries')} rows="3" className={inputStyle} placeholder="Es. Mal di schiena, ernie, dolori articolari..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Prendi farmaci?</label>
-                  <input {...register('medications')} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Usi integratori?</label>
-                  <input {...register('supplements')} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Obiettivo Principale</label>
-                  <textarea {...register('mainGoal')} rows="3" className={inputStyle} placeholder="Descrivi in dettaglio cosa vuoi raggiungere..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Durata Percorso</label>
-                  <input {...register('programDuration')} className={inputStyle} placeholder="Es. 3 mesi, 6 mesi..." />
-                </div>
-              </div>
-            </div>
-            <div className={sectionStyle}>
-              <h4 className={headingStyle}><Camera size={16} /> Foto Iniziali</h4>
-              <p className="text-sm text-slate-400 mb-6">Carica 4 foto per il check iniziale: frontale, laterale destro, laterale sinistro e posteriore. Visibili solo a te e al coach.</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {['front', 'right', 'left', 'back'].map(type => (
-                  <PhotoUploader key={type} type={type} label={type === 'front' ? 'Frontale' : type === 'back' ? 'Posteriore' : `Laterale ${type === 'left' ? 'Sinistro' : 'Destro'}`} />
-                ))}
-              </div>
-            </div>
-            <div className="flex justify-end gap-4 pt-4">
-              <motion.button
-                type="submit"
-                disabled={isSubmitting || loading}
-                className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+      {/* ULTIMI CHECK */}
+      <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl gradient-border p-4">
+        <h3 className="text-lg font-bold text-cyan-300 flex items-center gap-2 mb-3">
+          <FileText size={18} /> Ultimi Check
+        </h3>
+        {recentChecks.length > 0 ? (
+          <div className="space-y-2">
+            {recentChecks.map((check) => (
+              <motion.div
+                key={`${check.clientId}-${check.date?.toMillis()}`}
+                whileHover={{ scale: 1.02 }}
+                className="p-2 bg-zinc-900/50 rounded-lg border border-white/10 cursor-pointer"
+                onClick={() => navigate(`/coach/client/${check.clientId}`)}
               >
-                <Save size={16} /> {isSubmitting ? 'Salvataggio in corso...' : 'Salva Anamnesi'}
-              </motion.button>
-              <motion.button
-                type="button"
-                onClick={() => {
-                  setIsEditing(false);
-                  setPhotos({ front: null, right: null, left: null, back: null });
-                  setPhotoPreviews(anamnesiData?.photoURLs || { front: null, right: null, left: null, back: null });
-                }}
-                disabled={isSubmitting || loading}
-                className="flex items-center gap-2 px-5 py-2.5 bg-zinc-700 hover:bg-zinc-800 text-white rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <X size={16} /> Annulla
-              </motion.button>
-            </div>
-          </form>
+                <div className="flex justify-between text-xs">
+                  <div>
+                    <p className="font-medium text-white">{check.clientName}</p>
+                    <p className="text-slate-400">{formatDate(check.date)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-emerald-400">{check.weight} kg</p>
+                    {check.notes && <p className="text-xs text-slate-400 line-clamp-1">{check.notes}</p>}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         ) : (
-          anamnesiData && (
-            <div className="space-y-8">
-              <div className={sectionStyle}>
-                <h4 className={headingStyle}><FilePenLine size={16} /> Dati Anagrafici</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <ViewField label="Nome" value={anamnesiData.firstName} />
-                  <ViewField label="Cognome" value={anamnesiData.lastName} />
-                  <ViewField label="Data di Nascita" value={anamnesiData.birthDate} />
-                  <ViewField label="Lavoro" value={anamnesiData.job} />
-                  <ViewField label="Peso (kg)" value={anamnesiData.weight} />
-                  <ViewField label="Altezza (cm)" value={anamnesiData.height} />
-                </div>
-              </div>
-              <div className={sectionStyle}>
-                <h4 className={headingStyle}><Camera size={16} /> Abitudini Alimentari</h4>
-                <div className="space-y-4">
-                  <ViewField label="Pasti al giorno" value={anamnesiData.mealsPerDay} />
-                  <ViewField label="Tipo Colazione" value={anamnesiData.breakfastType} />
-                  <ViewField label="Alimenti preferiti" value={anamnesiData.desiredFoods} />
-                  <ViewField label="Alimenti da evitare" value={anamnesiData.dislikedFoods} />
-                  <ViewField label="Allergie/Intolleranze" value={anamnesiData.intolerances} />
-                  <ViewField label="Problemi di digestione" value={anamnesiData.digestionIssues} />
-                </div>
-              </div>
-              <div className={sectionStyle}>
-                <h4 className={headingStyle}><FilePenLine size={16} /> Allenamento</h4>
-                <div className="space-y-4">
-                  <ViewField label="Allenamenti a settimana" value={anamnesiData.workoutsPerWeek} />
-                  <ViewField label="Dettagli Allenamento" value={anamnesiData.trainingDetails} />
-                  <ViewField label="Orario e Durata" value={anamnesiData.trainingTime} />
-                </div>
-              </div>
-              <div className={sectionStyle}>
-                <h4 className={headingStyle}><Camera size={16} /> Salute e Obiettivi</h4>
-                <div className="space-y-4">
-                  <ViewField label="Infortuni o problematiche" value={anamnesiData.injuries} />
-                  <ViewField label="Farmaci" value={anamnesiData.medications} />
-                  <ViewField label="Integratori" value={anamnesiData.supplements} />
-                  <ViewField label="Obiettivo Principale" value={anamnesiData.mainGoal} />
-                  <ViewField label="Durata Percorso" value={anamnesiData.programDuration} />
-                </div>
-              </div>
-              <div className={sectionStyle}>
-                <h4 className={headingStyle}><Camera size={16} /> Foto Iniziali</h4>
-                <ViewPhotos urls={anamnesiData.photoURLs} />
-              </div>
-              <div className="flex justify-end pt-4">
-                <motion.button
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-slate-300 rounded-lg transition font-semibold"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <FilePenLine size={16} /> Modifica Dati
-                </motion.button>
-              </div>
-            </div>
-          )
+          <p className="text-center text-slate-500 text-xs py-4">Nessun check</p>
         )}
-      </motion.div>
-    </div>
-  );
-};
+      </div>
 
-export default ClientAnamnesi;
+      {/* ULTIME ANAMNESI */}
+      <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl gradient-border p-4">
+        <h3 className="text-lg font-bold text-amber-300 flex items-center gap-2 mb-3">
+          <Calendar size={18} /> Nuove Anamnesi
+        </h3>
+        {recentAnamnesi.length > 0 ? (
+          <div className="space-y-2">
+            {recentAnamnesi.map((anamnesi) => (
+              <motion.div
+                key={anamnesi.clientId}
+                whileHover={{ scale: 1.02 }}
+                className="p-2 bg-zinc-900/50 rounded-lg border border-white/10 cursor-pointer"
+                onClick={() => navigate(`/coach/client/${anamnesi.clientId}`)}
+              >
+                <div className="flex justify-between text-xs">
+                  <div>
+                    <p className="font-medium text-white">{anamnesi.clientName}</p>
+                    <p className="text-slate-400">{formatDate(anamnesi.date)}</p>
+                  </div>
+                  <p className="text-amber-400 text-right line-clamp-1 max-w-[120px]">
+                    {anamnesi.goal || 'Nessun obiettivo'}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-slate-500 text-xs py-4">Nessuna anamnesi</p>
+        )}
+      </div>
+    </motion.div>
+  );
+}

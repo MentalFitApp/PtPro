@@ -3,7 +3,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc, getDocs, collection, onSnapshot, updateDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-// Configurazione Firebase
+// Configurazione Firebase (da .env)
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
   authDomain: import.meta.env.VITE_AUTH_DOMAIN,
@@ -24,53 +24,63 @@ export const storage = getStorage(app);
 
 // Funzione per calcolare e aggiornare lo stato del percorso
 export const updateStatoPercorso = async (userId) => {
-  const clientRef = doc(db, "clients", userId);
-  const clientSnap = await getDoc(clientRef);
-  if (!clientSnap.exists()) return;
+  try {
+    const clientRef = doc(db, "clients", userId);
+    const clientSnap = await getDoc(clientRef);
+    if (!clientSnap.exists()) return;
 
-  const dataScadenza = clientSnap.data().scadenza;
-  const stato = calcolaStatoPercorso(dataScadenza);
+    const dataScadenza = clientSnap.data().scadenza;
+    const stato = calcolaStatoPercorso(dataScadenza);
 
-  await updateDoc(clientRef, { statoPercorso: stato });
+    await updateDoc(clientRef, { statoPercorso: stato });
+  } catch (error) {
+    console.error("Errore in updateStatoPercorso:", error);
+  }
 };
 
 // Funzione di calcolo stato percorso
 export const calcolaStatoPercorso = (dataScadenza) => {
-  if (!dataScadenza) return "na";
-  const oggi = new Date();
+  if (!dataScadenza) return "N/D";
+
   const scadenza = toDate(dataScadenza);
-  if (!scadenza) return "na";
+  if (!scadenza) return "N/D";
+
+  const oggi = new Date();
+  oggi.setHours(0, 0, 0, 0);
+  scadenza.setHours(0, 0, 0, 0);
+
   const diffGiorni = Math.ceil((scadenza - oggi) / (1000 * 60 * 60 * 24));
-  if (diffGiorni < 0) return "non_rinnovato";
-  if (diffGiorni <= 7) return "rinnovato";
-  return "attivo";
+
+  if (diffGiorni < 0) return "Scaduto";
+  if (diffGiorni <= 7) return "In scadenza";
+  return "Attivo";
 };
 
-// Funzione di utilità per convertire timestamp
+// Funzione di utilità per convertire timestamp (ottimizzata e silenziosa)
 export const toDate = (x) => {
-  if (!x) {
-    console.warn('Timestamp non valido o undefined:', x);
-    return null;
-  }
-  if (typeof x?.toDate === 'function') {
-    return x.toDate();
-  }
-  if (x instanceof Date) {
-    return x;
-  }
+  if (!x) return null;
+
+  // Firebase Timestamp
+  if (typeof x?.toDate === 'function') return x.toDate();
+
+  // Date object
+  if (x instanceof Date) return x;
+
+  // Stringa ISO
   if (typeof x === 'string') {
     try {
       const date = new Date(x);
-      if (isNaN(date.getTime())) {
-        console.warn('Stringa timestamp non valida:', x);
-        return null;
-      }
-      return date;
+      return isNaN(date.getTime()) ? null : date;
     } catch (error) {
-      console.warn('Errore nella conversione della stringa timestamp:', x, error);
       return null;
     }
   }
-  console.warn('Formato timestamp non riconosciuto:', x);
+
+  // Numero (timestamp in ms)
+  if (typeof x === 'number') {
+    const date = new Date(x);
+    return isNaN(date.getTime()) ? null : date;
+  }
+
   return null;
 };
