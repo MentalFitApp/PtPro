@@ -22,7 +22,7 @@ const Notification = ({ message, type, onDismiss }) => (
           type === 'error' ? 'bg-red-900/80 text-red-300 border-red-500/30' : 'bg-emerald-900/80 text-emerald-300 border-emerald-500/30'
         } backdrop-blur-md shadow-lg`}
       >
-        <AlertTriangle className={type === 'error' ? 'text-red-400' : 'text-emerald-400'} />
+        <AlertCircle className={type === 'error' ? 'text-red-400' : 'text-emerald-400'} />
         <p>{message}</p>
         <button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/10">
           <X size={16} />
@@ -86,7 +86,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, clientName }) => (
           className="w-full max-w-md bg-zinc-950/80 rounded-2xl gradient-border p-6 text-center shadow-2xl shadow-black/40"
         >
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-900/50 mb-4">
-            <AlertTriangle className="h-6 w-6 text-red-400" />
+            <AlertCircle className="h-6 w-6 text-red-400" />
           </div>
           <h3 className="text-lg font-bold text-slate-50">Conferma Eliminazione</h3>
           <p className="text-sm text-slate-400 mt-2">
@@ -159,7 +159,7 @@ export default function Clients() {
         const clientList = snap.docs.map(doc => {
           const data = doc.data();
           return {
-            id: doc.id,
+            id: doc.id, // GARANTITO
             name: data.name,
             email: data.email,
             phone: data.phone,
@@ -170,7 +170,8 @@ export default function Clients() {
           };
         });
 
-        // --- BATCH ANAMNESI ---
+        console.log('Clienti caricati:', clientList); // DEBUG
+
         const anamnesiPromises = clientList.map(client => 
           getDoc(doc(db, `clients/${client.id}/anamnesi`, 'initial')).catch(() => ({ exists: () => false }))
         );
@@ -330,7 +331,7 @@ export default function Clients() {
           <FilterButton active={filter === 'no-check'} onClick={() => setFilter('no-check')} label="Senza Anamnesi" icon={<XCircle className="text-gray-500" size={14} />} />
         </div>
 
-        {/* Tabella con scroll orizzontale */}
+        {/* Tabella */}
         <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[800px] text-sm text-left text-slate-300">
@@ -359,12 +360,19 @@ export default function Clients() {
                   return (
                     <tr key={c.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
                       <td className="p-4 font-medium min-w-[180px]">
-                        <button
-                          className="hover:underline hover:text-rose-400"
-                          onClick={() => navigate(`/client/${c.id}`)}
-                        >
-                          {c.name || "-"}
-                        </button>
+                        {c.id ? (
+                          <button
+                            onClick={() => {
+                              console.log('Navigazione a cliente:', c.id);
+                              navigate(`/client/${c.id}`);
+                            }}
+                            className="hover:underline hover:text-rose-400"
+                          >
+                            {c.name || "-"}
+                          </button>
+                        ) : (
+                          <span className="text-red-400">ID mancante</span>
+                        )}
                       </td>
                       <td className="p-4 min-w-[140px]">
                         {toDate(c.startDate)?.toLocaleDateString('it-IT') || 'N/D'}

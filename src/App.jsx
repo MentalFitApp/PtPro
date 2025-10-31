@@ -142,7 +142,7 @@ export default function App() {
               location.pathname === '/clients' ||
               location.pathname === '/new' ||
               location.pathname.startsWith('/client/') ||
-              location.pathname === '/edit/' ||
+              location.pathname.startsWith('/edit/') ||
               location.pathname === '/updates' ||
               location.pathname === '/chat' ||
               location.pathname === '/collaboratori' ||
@@ -231,7 +231,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/new" element={<NewClient />} />
-          <Route path="/client/:id" element={<ClientDetail />} />
+          <Route path="/client/:clientId" element={<ClientDetail />} />
           <Route path="/edit/:id" element={<EditClient />} />
           <Route path="/updates" element={<Updates />} />
           <Route path="/chat" element={<AdminChat />} />

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc, collection, setDoc, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, orderBy, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Calendar, CheckCircle, FileText, Save, Phone, TrendingUp, BarChart3, Plus, X, Eye, Check, AlertCircle } from 'lucide-react';
+import { Calendar, CheckCircle, FileText, Save, Phone, TrendingUp, BarChart3, Plus, X, Eye, Check, AlertCircle, Trash2, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CollaboratoreDashboard() {
@@ -11,7 +11,7 @@ export default function CollaboratoreDashboard() {
   const [eodReport, setEodReport] = useState({ focus: '', skills: '', successi: '', difficolta: '', soluzioni: '' });
   const [tracker, setTracker] = useState({
     outreachIG: '', followUpsIG: '', risposteAvute: '', convoFatte: '', callProposte: '',
-    callPrenotate: '', callFissate: '',
+    callPrenotate: '',
     tempoOutreach: '', tempoFollowUps: '', tempoConvo: '', tempoWA: '', tempoFB: '', tempoTT: '', tempoRiordine: '',
     volumeViews24h: '', volumeLeads24h: '',
   });
@@ -26,8 +26,29 @@ export default function CollaboratoreDashboard() {
   const [showTracker, setShowTracker] = useState(false);
   const [showNewLead, setShowNewLead] = useState(false);
   const [showMyLeads, setShowMyLeads] = useState(false);
+  const [showPastReports, setShowPastReports] = useState(false);
   const [myLeads, setMyLeads] = useState([]);
   const [todayReport, setTodayReport] = useState(null);
+  const [leadToDelete, setLeadToDelete] = useState(null);
+  const [timeLeft, setTimeLeft] = useState('');
+
+  // --- TIMER MEZZANOTTE ---
+  useEffect(() => {
+    const updateTimer = () => {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      const diff = midnight - now;
+      const hours = Math.floor(diff / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -47,8 +68,11 @@ export default function CollaboratoreDashboard() {
         const data = collabDoc.data();
         setCollaboratore(data);
 
-        const today = new Date().toISOString().split('T')[0];
-        const todayR = data.dailyReports?.find(r => r.date === today);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().split('T')[0];
+
+        const todayR = data.dailyReports?.find(r => r.date === todayStr);
         setTodayReport(todayR || null);
 
         if (todayR) {
@@ -82,7 +106,7 @@ export default function CollaboratoreDashboard() {
     return () => unsub();
   }, [navigate]);
 
-  // AGGIORNAMENTO IN TEMPO REALE DEL REPORT ODIERNO
+  // AGGIORNAMENTO IN TEMPO REALE
   useEffect(() => {
     if (!auth.currentUser) return;
 
@@ -90,8 +114,10 @@ export default function CollaboratoreDashboard() {
     const unsub = onSnapshot(collabRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const today = new Date().toISOString().split('T')[0];
-        const todayR = data.dailyReports?.find(r => r.date === today);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().split('T')[0];
+        const todayR = data.dailyReports?.find(r => r.date === todayStr);
         setTodayReport(todayR || null);
       }
     });
@@ -99,51 +125,61 @@ export default function CollaboratoreDashboard() {
     return () => unsub();
   }, []);
 
+  // SALVA EOD
   const handleSaveEOD = async () => {
     setError(''); setSuccess('');
     try {
       const collabRef = doc(db, 'collaboratori', auth.currentUser.uid);
-      const today = new Date().toISOString().split('T')[0];
-      const todayReport = todayReport || { date: today, eodReport: {}, tracker: {} };
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split('T')[0];
 
-      await updateDoc(collabRef, {
-        dailyReports: [
-          ...(collaboratore?.dailyReports?.filter(r => r.date !== today) || []),
-          { ...todayReport, eodReport }
-        ]
-      }, { merge: true });
+      const updatedReports = (collaboratore?.dailyReports || []).filter(r => r.date !== todayStr);
+      updatedReports.push({
+        date: todayStr,
+        eodReport,
+        tracker: todayReport?.tracker || {}
+      });
+
+      await setDoc(collabRef, { dailyReports: updatedReports }, { merge: true });
 
       setSuccess('EOD salvato!');
       setTimeout(() => setSuccess(''), 3000);
       setShowEOD(false);
     } catch (err) {
+      console.error('Errore EOD:', err);
       setError('Errore salvataggio EOD.');
     }
   };
 
+  // SALVA TRACKER
   const handleSaveTracker = async () => {
     setError(''); setSuccess('');
     try {
       const collabRef = doc(db, 'collaboratori', auth.currentUser.uid);
-      const today = new Date().toISOString().split('T')[0];
-      const todayReport = todayReport || { date: today, eodReport: {}, tracker: {} };
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split('T')[0];
 
-      await updateDoc(collabRef, {
-        dailyReports: [
-          ...(collaboratore?.dailyReports?.filter(r => r.date !== today) || []),
-          { ...todayReport, tracker }
-        ],
-        [`tracker.${today.split('-')[0]}-${today.split('-')[1]}`]: tracker,
-      }, { merge: true });
+      const updatedReports = (collaboratore?.dailyReports || []).filter(r => r.date !== todayStr);
+      updatedReports.push({
+        date: todayStr,
+        eodReport: todayReport?.eodReport || {},
+        tracker
+      });
+
+      await setDoc(collabRef, { dailyReports: updatedReports }, { merge: true });
 
       setSuccess('Tracker salvato!');
       setTimeout(() => setSuccess(''), 3000);
       setShowTracker(false);
     } catch (err) {
+      console.error('Errore Tracker:', err);
       setError('Errore salvataggio Tracker.');
     }
   };
 
+  // SALVA LEAD
   const handleSaveLead = async () => {
     if (!newLead.name || !newLead.number || !newLead.dataPrenotazione || !newLead.oraPrenotazione) {
       setError('Nome, numero, data e ora prenotazione sono obbligatori.');
@@ -164,8 +200,25 @@ export default function CollaboratoreDashboard() {
       setSuccess('Lead salvato!');
       setTimeout(() => setSuccess(''), 3000);
       setNewLead({ name: '', source: '', number: '', email: '', note: '', followSince: '', dataPrenotazione: '', oraPrenotazione: '' });
+      setShowNewLead(false);
     } catch (err) {
       setError('Errore salvataggio lead.');
+    }
+  };
+
+  // ELIMINA LEAD (RISOLTO)
+  const handleDeleteLead = async () => {
+    if (!leadToDelete) return;
+    try {
+      await deleteDoc(doc(db, 'leads', leadToDelete.id));
+      setMyLeads(prev => prev.filter(l => l.id !== leadToDelete.id));
+      setSuccess('Lead eliminato!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Errore eliminazione:', err);
+      setError('Errore eliminazione lead.');
+    } finally {
+      setLeadToDelete(null);
     }
   };
 
@@ -182,22 +235,16 @@ export default function CollaboratoreDashboard() {
   const trackerSent = todayReport?.tracker && Object.values(todayReport.tracker).some(v => v !== '');
 
   const fonti = [
-    'Info Storie Prima e Dopo',
-    'Info Storie Promo',
-    'Info Reel',
-    'Inizio Reel',
-    'Guida Maniglie',
-    'Guida Tartaruga',
-    'Guida 90',
-    'Altre Guide',
-    'DM Richiesta',
-    'Outreach Nuovi Followers',
-    'Outreach Vecchi Followers',
-    'Follow-Ups',
-    'Facebook',
-    'TikTok',
-    'Referral'
+    'Info Storie Prima e Dopo', 'Info Storie Promo', 'Info Reel', 'Inizio Reel',
+    'Guida Maniglie', 'Guida Tartaruga', 'Guida 90', 'Altre Guide',
+    'DM Richiesta', 'Outreach Nuovi Followers', 'Outreach Vecchi Followers',
+    'Follow-Ups', 'Facebook', 'TikTok', 'Referral'
   ];
+
+  // REPORT PASSATI
+  const pastReports = (collaboratore?.dailyReports || [])
+    .filter(r => r.date !== new Date().toISOString().split('T')[0])
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -211,12 +258,17 @@ export default function CollaboratoreDashboard() {
         <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2">
           <TrendingUp size={28} /> Dashboard {collaboratore?.role}
         </h1>
-        <button 
-          onClick={() => auth.signOut().then(() => navigate('/collaboratore-login'))} 
-          className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg"
-        >
-          Esci
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-slate-400 flex items-center gap-1">
+            <Clock size={16} /> Reset: {timeLeft}
+          </div>
+          <button 
+            onClick={() => auth.signOut().then(() => navigate('/collaboratore-login'))} 
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg"
+          >
+            Esci
+          </button>
+        </div>
       </motion.header>
 
       <motion.div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 space-y-6 border border-white/10">
@@ -272,6 +324,9 @@ export default function CollaboratoreDashboard() {
               <div onClick={() => setShowMyLeads(true)} className="bg-zinc-900/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
                 <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2"><Eye size={20} /> I miei Lead</h3>
               </div>
+              <div onClick={() => setShowPastReports(true)} className="bg-zinc-900/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
+                <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2"><BarChart3 size={20} /> Report Passati</h3>
+              </div>
             </>
           )}
         </div>
@@ -322,7 +377,6 @@ export default function CollaboratoreDashboard() {
                 <input type="number" value={tracker.convoFatte} onChange={e => setTracker({ ...tracker, convoFatte: e.target.value })} placeholder="Convo Fatte" className="p-3 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
                 <input type="number" value={tracker.callProposte} onChange={e => setTracker({ ...tracker, callProposte: e.target.value })} placeholder="Call Proposte" className="p-3 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
                 <input type="number" value={tracker.callPrenotate} onChange={e => setTracker({ ...tracker, callPrenotate: e.target.value })} placeholder="Call Prenotate" className="p-3 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
-                <input type="number" value={tracker.callFissate} onChange={e => setTracker({ ...tracker, callFissate: e.target.value })} placeholder="Call Fissate" className="p-3 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
                 <input type="text" value={tracker.tempoOutreach} onChange={e => setTracker({ ...tracker, tempoOutreach: e.target.value })} placeholder="Tempo Outreach" className="p-3 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
                 <input type="text" value={tracker.tempoFollowUps} onChange={e => setTracker({ ...tracker, tempoFollowUps: e.target.value })} placeholder="Tempo Follow-Ups" className="p-3 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
                 <input type="text" value={tracker.tempoConvo} onChange={e => setTracker({ ...tracker, tempoConvo: e.target.value })} placeholder="Tempo Convo" className="p-3 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
@@ -389,6 +443,7 @@ export default function CollaboratoreDashboard() {
                       <th className="px-4 py-2">Numero</th>
                       <th className="px-4 py-2">Prenotato</th>
                       <th className="px-4 py-2">Show-up</th>
+                      <th className="px-4 py-2">Azioni</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -403,15 +458,92 @@ export default function CollaboratoreDashboard() {
                             {lead.showUp ? 'Sì' : 'No'}
                           </span>
                         </td>
+                        <td className="px-4 py-2">
+                          <button 
+                            onClick={() => setLeadToDelete(lead)} 
+                            className="text-red-400 hover:text-red-300"
+                            title="Elimina"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                     {myLeads.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-slate-400">Nessun lead</td>
+                        <td colSpan={6} className="px-4 py-8 text-center text-slate-400">Nessun lead</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL REPORT PASSATI */}
+      <AnimatePresence>
+        {showPastReports && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-zinc-950/80 rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-white">Report Passati</h3>
+                <button onClick={() => setShowPastReports(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
+              </div>
+              <div className="space-y-4">
+                {pastReports.map((report, i) => (
+                  <div key={i} className="bg-zinc-900/50 rounded-lg p-4 border border-white/10">
+                    <h4 className="font-semibold text-cyan-400">{new Date(report.date).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 text-sm">
+                      <div>
+                        <p className="text-slate-400">Focus: <span className="text-white">{report.eodReport?.focus || 'N/D'}</span></p>
+                        <p className="text-slate-400">Skills: <span className="text-white">{report.eodReport?.skills || 'N/D'}</span></p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400">Call Prenotate: <span className="text-yellow-400">{report.tracker?.callPrenotate || 0}</span></p>
+                        <p className="text-slate-400">Outreach IG: <span className="text-emerald-400">{report.tracker?.outreachIG || 0}</span></p>
+                      </div>
+                    </div>
+                    {report.eodReport?.successi && (
+                      <p className="mt-2 text-xs text-green-400">Successi: {report.eodReport.successi}</p>
+                    )}
+                  </div>
+                ))}
+                {pastReports.length === 0 && (
+                  <p className="text-center text-slate-400 py-8">Nessun report passato</p>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL CONFERMA ELIMINAZIONE LEAD */}
+      <AnimatePresence>
+        {leadToDelete && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-zinc-950/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-white">Elimina Lead</h3>
+                <button onClick={() => setLeadToDelete(null)} className="text-white hover:text-rose-400"><X size={24} /></button>
+              </div>
+              <p className="text-slate-300 mb-4">
+                Sei sicuro di voler eliminare il lead <strong>{leadToDelete.name}</strong>?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button 
+                  onClick={() => setLeadToDelete(null)} 
+                  className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg"
+                >
+                  Annulla
+                </button>
+                <button 
+                  onClick={handleDeleteLead} 
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                >
+                  Elimina
+                </button>
               </div>
             </motion.div>
           </motion.div>

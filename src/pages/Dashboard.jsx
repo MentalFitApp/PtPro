@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, onSnapshot, collectionGroup, doc, setDoc, getDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { 
+  collection, onSnapshot, collectionGroup, doc, getDoc, serverTimestamp, query, orderBy 
+} from "firebase/firestore";
 import { auth, db, toDate } from "../firebase";
 import { signOut } from "firebase/auth";
 import { 
@@ -51,8 +53,14 @@ const ActivityItem = ({ item, navigate }) => {
     expiring: <Clock className="text-yellow-500" size={18}/>,
     new_check: <CheckCircle className="text-green-500" size={18}/>,
     new_anamnesi: <FileText className="text-blue-500" size={18}/>,
+    renewal: <RefreshCw className="text-emerald-500" size={18}/>,
   };
-  const tabMap = { expiring: 'payments', new_check: 'checks', new_anamnesi: 'anamnesi' };
+  const tabMap = { 
+    expiring: 'payments', 
+    new_check: 'check', 
+    new_anamnesi: 'anamnesi',
+    renewal: 'payments'
+  };
 
   return (
     <motion.button
@@ -94,24 +102,21 @@ export default function Dashboard() {
   useEffect(() => {
     const role = sessionStorage.getItem('app_role');
     if (role !== 'admin' && role !== 'coach') {
-      console.warn('Accesso non autorizzato a Dashboard, redirect');
       signOut(auth).then(() => {
         navigate('/login');
       }).catch(err => {
-        console.error('Errore durante il logout:', err);
         setErrorMessage('Errore durante il logout');
       });
       return;
     }
   }, [navigate]);
 
-  // --- User name and logout ---
+  // --- User name ---
   const [userName, setUserName] = useState('');
   useEffect(() => {
-    console.log('Utente autenticato:', auth.currentUser?.uid, 'Email:', auth.currentUser?.email);
     const unsubscribe = auth.onAuthStateChanged(user => {
       if (user) {
-        setUserName(user.displayName || user.email || 'Admin');
+        setUserName(user.displayName || user.email?.split('@')[0] || 'Admin');
       }
     });
     return () => unsubscribe();
@@ -122,12 +127,11 @@ export default function Dashboard() {
       await signOut(auth);
       navigate('/login');
     } catch (error) {
-      console.error("Logout error:", error);
       setErrorMessage(`Errore durante il logout: ${error.message}`);
     }
   };
 
-  // --- Client stats calculation ---
+  // --- Client stats ---
   const clientStats = useMemo(() => {
     const now = new Date();
     const active = clients.filter(c => {
@@ -139,38 +143,25 @@ export default function Dashboard() {
 
   // --- Fetch clients ---
   useEffect(() => {
-    let snapshotCount = 0;
     const unsub = onSnapshot(collection(db, 'clients'), (snap) => {
-      snapshotCount++;
-      console.log(`Dashboard: Client snapshot #${snapshotCount}, documenti:`, snap.docs.length);
-      if (snapshotCount > 10) {
-        console.warn('Dashboard: Excessive client snapshots detected, stopping listener');
-        unsub();
-        setErrorMessage('Errore: troppe richieste al server per i clienti. Contatta l\'assistenza.');
-        return;
-      }
       try {
         const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setClients(clientList);
         setLoading(false);
       } catch (error) {
-        console.error("Errore nel recupero dei clienti:", error);
-        if (error.code === 'permission-denied') {
-          setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
-        }
+        console.error("Errore recupero clienti:", error);
+        setErrorMessage("Errore nel recupero dei clienti.");
         setLoading(false);
       }
     }, (error) => {
       console.error("Errore snapshot clienti:", error);
-      if (error.code === 'permission-denied') {
-        setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
-      }
+      setErrorMessage("Errore connessione.");
       setLoading(false);
     });
     return () => unsub();
   }, []);
 
-  // --- Fetch lastViewed and update on load ---
+  // --- Last viewed ---
   useEffect(() => {
     const lastViewedRef = doc(db, 'app-data', 'lastViewed');
     const fetchLastViewed = async () => {
@@ -180,113 +171,110 @@ export default function Dashboard() {
         setLastViewed(lastViewedTime);
         await setDoc(lastViewedRef, { timestamp: serverTimestamp() }, { merge: true });
       } catch (error) {
-        console.error("Errore nel recupero di lastViewed:", error);
-        if (error.code === 'permission-denied') {
-          setErrorMessage("Permessi insufficienti per accedere ai dati di lastViewed. Contatta l'amministratore.");
-        }
+        console.error("Errore lastViewed:", error);
       }
     };
     fetchLastViewed();
   }, []);
 
-  // --- Activity feed listeners ---
+  // --- Activity feed: RINNOVI, CHECK, ANAMNESI, SCADENZE ---
   useEffect(() => {
     if (!lastViewed) return;
 
-    let checksSnapshotCount = 0;
+    let unsubs = [];
+
+    // --- RINNOVI (PAGAMENTI NEL MESE CORRENTE) ---
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'desc'));
+    const unsubPayments = onSnapshot(paymentsQuery, async (snap) => {
+      try {
+        const newRenewals = [];
+        for (const docSnap of snap.docs) {
+          const paymentData = docSnap.data();
+          const paymentDate = toDate(paymentData.paymentDate);
+          if (paymentDate && paymentDate >= currentMonthStart) {
+            const clientId = docSnap.ref.parent.parent.id;
+            const clientDocSnap = await getDoc(doc(db, 'clients', clientId));
+            if (clientDocSnap.exists()) {
+              const clientData = clientDocSnap.data();
+              if (!clientData.isOldClient && !paymentData.isPast) {
+                newRenewals.push({
+                  type: 'renewal',
+                  clientId,
+                  clientName: clientData.name || 'Cliente',
+                  description: `Rinnovo di ${paymentData.duration} per ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(paymentData.amount || 0)}`,
+                  date: paymentData.paymentDate
+                });
+              }
+            }
+          }
+        }
+        setActivityFeed(prev => [...prev.filter(i => i.type !== 'renewal'), ...newRenewals]);
+      } catch (error) {
+        console.error("Errore snapshot pagamenti:", error);
+      }
+    });
+    unsubs.push(unsubPayments);
+
+    // --- CHECK ---
     const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));
     const unsubChecks = onSnapshot(checksQuery, async (snap) => {
-      checksSnapshotCount++;
-      console.log(`Dashboard: Checks snapshot #${checksSnapshotCount}, documenti:`, snap.docs.length);
-      if (checksSnapshotCount > 10) {
-        console.warn('Dashboard: Excessive checks snapshots detected, stopping listener');
-        unsubChecks();
-        setErrorMessage('Errore: troppe richieste al server per i check. Contatta l\'assistenza.');
-        return;
-      }
       try {
         const newChecks = [];
-        for (const doc of snap.docs) {
-          if (toDate(doc.data().createdAt) > toDate(lastViewed)) {
-            const clientId = doc.ref.parent.parent.id;
-            const clientDoc = await getDoc(doc(db, 'clients', clientId));
+        for (const docSnap of snap.docs) {
+          const createdAt = toDate(docSnap.data().createdAt);
+          if (createdAt > toDate(lastViewed)) {
+            const clientId = docSnap.ref.parent.parent.id;
+            const clientDocSnap = await getDoc(doc(db, 'clients', clientId));
             newChecks.push({
               type: 'new_check',
               clientId,
-              clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
+              clientName: clientDocSnap.exists() ? clientDocSnap.data().name || 'Cliente' : 'Cliente',
               description: 'Ha inviato un nuovo check-in',
-              date: doc.data().createdAt
+              date: docSnap.data().createdAt
             });
           }
         }
-        setActivityFeed(prev => [...prev, ...newChecks].sort((a, b) => toDate(b.date) - toDate(a.date)));
+        setActivityFeed(prev => [...prev.filter(i => i.type !== 'new_check'), ...newChecks]);
       } catch (error) {
         console.error("Errore snapshot checks:", error);
-        if (error.code === 'permission-denied') {
-          setErrorMessage("Permessi insufficienti per accedere ai dati dei check. Contatta l'amministratore.");
-        }
-      }
-    }, (error) => {
-      console.error("Errore snapshot checks:", error);
-      if (error.code === 'permission-denied') {
-        setErrorMessage("Permessi insufficienti per accedere ai dati dei check. Contatta l'amministratore.");
       }
     });
+    unsubs.push(unsubChecks);
 
-    let anamnesiSnapshotCount = 0;
+    // --- ANAMNESI ---
     const anamnesiQuery = query(collectionGroup(db, 'anamnesi'), orderBy('submittedAt', 'desc'));
     const unsubAnamnesi = onSnapshot(anamnesiQuery, async (snap) => {
-      anamnesiSnapshotCount++;
-      console.log(`Dashboard: Anamnesi snapshot #${anamnesiSnapshotCount}, documenti:`, snap.docs.length);
-      if (anamnesiSnapshotCount > 10) {
-        console.warn('Dashboard: Excessive anamnesi snapshots detected, stopping listener');
-        unsubAnamnesi();
-        setErrorMessage('Errore: troppe richieste al server per le anamnesi. Contatta l\'assistenza.');
-        return;
-      }
       try {
         const newAnamnesi = [];
-        for (const doc of snap.docs) {
-          if (toDate(doc.data().submittedAt) > toDate(lastViewed)) {
-            const clientId = doc.ref.parent.parent.id;
-            const clientDoc = await getDoc(doc(db, 'clients', clientId));
+        for (const docSnap of snap.docs) {
+          const submittedAt = toDate(docSnap.data().submittedAt);
+          if (submittedAt > toDate(lastViewed)) {
+            const clientId = docSnap.ref.parent.parent.id;
+            const clientDocSnap = await getDoc(doc(db, 'clients', clientId));
             newAnamnesi.push({
               type: 'new_anamnesi',
               clientId,
-              clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
+              clientName: clientDocSnap.exists() ? clientDocSnap.data().name || 'Cliente' : 'Cliente',
               description: 'Ha compilato l\'anamnesi iniziale',
-              date: doc.data().submittedAt
+              date: docSnap.data().submittedAt
             });
           }
         }
-        setActivityFeed(prev => [...prev, ...newAnamnesi].sort((a, b) => toDate(b.date) - toDate(a.date)));
+        setActivityFeed(prev => [...prev.filter(i => i.type !== 'new_anamnesi'), ...newAnamnesi]);
       } catch (error) {
         console.error("Errore snapshot anamnesi:", error);
-        if (error.code === 'permission-denied') {
-          setErrorMessage("Permessi insufficienti per accedere ai dati delle anamnesi. Contatta l'amministratore.");
-        }
-      }
-    }, (error) => {
-      console.error("Errore snapshot anamnesi:", error);
-      if (error.code === 'permission-denied') {
-        setErrorMessage("Permessi insufficienti per accedere ai dati delle anamnesi. Contatta l'amministratore.");
       }
     });
+    unsubs.push(unsubAnamnesi);
 
-    let clientsSnapshotCount = 0;
+    // --- SCADENZE ---
     const clientsQuery = query(collection(db, 'clients'));
     const unsubClients = onSnapshot(clientsQuery, (snap) => {
-      clientsSnapshotCount++;
-      console.log(`Dashboard: Clients snapshot #${clientsSnapshotCount}, documenti:`, snap.docs.length);
-      if (clientsSnapshotCount > 10) {
-        console.warn('Dashboard: Excessive clients snapshots detected, stopping listener');
-        unsubClients();
-        setErrorMessage('Errore: troppe richieste al server per i clienti. Contatta l\'assistenza.');
-        return;
-      }
       try {
         const expiring = snap.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
           .filter(c => {
             const expiry = toDate(c.scadenza);
             if (!expiry) return false;
@@ -300,62 +288,35 @@ export default function Dashboard() {
             description: `Abbonamento in scadenza tra ${Math.ceil((toDate(c.scadenza) - new Date()) / (1000 * 60 * 60 * 24))} giorni`,
             date: c.scadenza
           }));
-        setActivityFeed(prev => {
-          const nonExpiring = prev.filter(item => item.type !== 'expiring');
-          return [...nonExpiring, ...expiring].sort((a, b) => toDate(b.date) - toDate(a.date));
-        });
+        setActivityFeed(prev => [...prev.filter(i => i.type !== 'expiring'), ...expiring]);
       } catch (error) {
         console.error("Errore snapshot clienti:", error);
-        if (error.code === 'permission-denied') {
-          setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
-        }
-      }
-    }, (error) => {
-      console.error("Errore snapshot clienti:", error);
-      if (error.code === 'permission-denied') {
-        setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
       }
     });
+    unsubs.push(unsubClients);
 
     return () => {
-      unsubChecks();
-      unsubAnamnesi();
-      unsubClients();
+      unsubs.forEach(unsub => unsub());
     };
   }, [lastViewed]);
 
-  // --- Monthly income calculation ---
+  // --- Monthly income ---
   useEffect(() => {
-    let snapshotCount = 0;
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'desc'));
     const unsubPayments = onSnapshot(paymentsQuery, async (snap) => {
-      snapshotCount++;
-      console.log(`Dashboard: Payments snapshot #${snapshotCount}, documenti:`, snap.docs.length);
-      if (snapshotCount > 10) {
-        console.warn('Dashboard: Excessive payments snapshots detected, stopping listener');
-        unsubPayments();
-        setErrorMessage('Errore: troppe richieste al server per i pagamenti. Contatta l\'assistenza.');
-        return;
-      }
       try {
-        const now = new Date();
-        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         let income = 0;
-
-        for (const doc of snap.docs) {
-          const paymentDate = toDate(doc.data().paymentDate);
-          if (paymentDate && paymentDate.getMonth() === now.getMonth() && paymentDate.getFullYear() === now.getFullYear()) {
-            const clientDocRef = doc.ref.parent.parent;
-            const clientDocSnap = await getDoc(clientDocRef); // Recupera i dati del client asincronamente
+        for (const docSnap of snap.docs) {
+          const paymentDate = toDate(docSnap.data().paymentDate);
+          if (paymentDate && paymentDate >= currentMonthStart) {
+            const clientDocRef = docSnap.ref.parent.parent;
+            const clientDocSnap = await getDoc(clientDocRef);
             if (clientDocSnap.exists()) {
               const clientData = clientDocSnap.data();
-              const isOldClient = clientData.isOldClient || false;
-              const isPast = doc.data().isPast || false;
-              if (!isOldClient || !isPast) {
-                income += doc.data().amount || 0;
-                console.log(`Aggiunto pagamento: ${doc.data().amount}€ per cliente ${clientData.name}, isOldClient: ${isOldClient}, isPast: ${isPast}`);
-              } else {
-                console.log(`Escluso pagamento: ${doc.data().amount}€ per cliente ${clientData.name}, isOldClient: ${isOldClient}, isPast: ${isPast}`);
+              if (!clientData.isOldClient && !docSnap.data().isPast) {
+                income += docSnap.data().amount || 0;
               }
             }
           }
@@ -363,20 +324,12 @@ export default function Dashboard() {
         setMonthlyIncome(income);
       } catch (error) {
         console.error("Errore snapshot pagamenti:", error);
-        if (error.code === 'permission-denied') {
-          setErrorMessage("Permessi insufficienti per accedere ai dati dei pagamenti. Contatta l'amministratore.");
-        }
-      }
-    }, (error) => {
-      console.error("Errore snapshot pagamenti:", error);
-      if (error.code === 'permission-denied') {
-        setErrorMessage("Permessi insufficienti per accedere ai dati dei pagamenti. Contatta l'amministratore.");
       }
     });
     return () => unsubPayments();
   }, []);
 
-  // --- Retention rate calculation ---
+  // --- Retention rate ---
   useEffect(() => {
     if (clients.length > 0) {
       const retained = clients.filter(c => {
@@ -387,7 +340,7 @@ export default function Dashboard() {
     }
   }, [clients]);
 
-  // --- Focus client selection ---
+  // --- Focus client ---
   useEffect(() => {
     if (clients.length > 0) {
       const randomClient = clients[Math.floor(Math.random() * clients.length)];
@@ -395,140 +348,131 @@ export default function Dashboard() {
     }
   }, [clients]);
 
-  // --- Chart data calculation ---
+  // --- Chart data ---
   useEffect(() => {
-    let snapshotCount = 0;
-    const generateChartData = () => {
+    let unsub = null;
+    const generateChartData = async () => {
+      const now = new Date();
       if (chartDataType === 'revenue') {
         const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'asc'));
-        const unsub = onSnapshot(paymentsQuery, async (snap) => {
-          snapshotCount++;
-          console.log(`Dashboard: Chart revenue snapshot #${snapshotCount}, documenti:`, snap.docs.length);
-          if (snapshotCount > 10) {
-            console.warn('Dashboard: Excessive chart revenue snapshots detected, stopping listener');
-            unsub();
-            setErrorMessage('Errore: troppe richieste al server per il grafico dei ricavi. Contatta l\'assistenza.');
-            return;
-          }
+        unsub = onSnapshot(paymentsQuery, async (snap) => {
           try {
-            let data = [];
+            const dailyData = {};
             const monthlyData = {};
-            for (const doc of snap.docs) {
-              const date = toDate(doc.data().paymentDate);
-              const clientDocRef = doc.ref.parent.parent;
+            const yearlyData = {};
+
+            for (const docSnap of snap.docs) {
+              const date = toDate(docSnap.data().paymentDate);
+              const clientDocRef = docSnap.ref.parent.parent;
               const clientDocSnap = await getDoc(clientDocRef);
               if (date && clientDocSnap.exists()) {
                 const clientData = clientDocSnap.data();
-                if (!clientData.isOldClient || !doc.data().isPast) {
-                  const key = chartTimeRange === 'monthly' ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : date.getFullYear().toString();
-                  monthlyData[key] = (monthlyData[key] || 0) + (doc.data().amount || 0);
+                if (!clientData.isOldClient && !docSnap.data().isPast) {
+                  const amount = docSnap.data().amount || 0;
+
+                  const dayKey = date.toLocaleDateString('it-IT');
+                  dailyData[dayKey] = (dailyData[dayKey] || 0) + amount;
+
+                  const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                  monthlyData[monthKey] = (monthlyData[monthKey] || 0) + amount;
+
+                  const yearKey = date.getFullYear().toString();
+                  yearlyData[yearKey] = (yearlyData[yearKey] || 0) + amount;
                 }
               }
             }
-            if (chartTimeRange === 'monthly') {
-              const now = new Date();
+
+            let data = [];
+            if (chartTimeRange === 'daily') {
+              for (let i = 29; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+                const key = d.toLocaleDateString('it-IT');
+                data.push({ name: key, value: dailyData[key] || 0 });
+              }
+            } else if (chartTimeRange === 'monthly') {
               for (let i = 11; i >= 0; i--) {
-                const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
                 data.push({ name: key, value: monthlyData[key] || 0 });
               }
             } else {
-              data = Object.entries(monthlyData).sort((a, b) => a[0] - b[0]).map(([name, value]) => ({ name, value }));
+              for (let i = 4; i >= 0; i--) {
+                const year = now.getFullYear() - i;
+                data.push({ name: year.toString(), value: yearlyData[year] || 0 });
+              }
             }
             setChartData(data);
           } catch (error) {
-            console.error("Errore snapshot pagamenti per chart:", error);
-            if (error.code === 'permission-denied') {
-              setErrorMessage("Permessi insufficienti per accedere ai dati dei pagamenti. Contatta l'amministratore.");
-            }
-          }
-        }, (error) => {
-          console.error("Errore snapshot pagamenti per chart:", error);
-          if (error.code === 'permission-denied') {
-            setErrorMessage("Permessi insufficienti per accedere ai dati dei pagamenti. Contatta l'amministratore.");
+            console.error("Errore chart revenue:", error);
           }
         });
-        return unsub;
       } else {
         const clientsQuery = query(collection(db, 'clients'), orderBy('createdAt', 'asc'));
-        const unsub = onSnapshot(clientsQuery, (snap) => {
-          snapshotCount++;
-          console.log(`Dashboard: Chart clients snapshot #${snapshotCount}, documenti:`, snap.docs.length);
-          if (snapshotCount > 10) {
-            console.warn('Dashboard: Excessive chart clients snapshots detected, stopping listener');
-            unsub();
-            setErrorMessage('Errore: troppe richieste al server per il grafico dei clienti. Contatta l\'assistenza.');
-            return;
-          }
+        unsub = onSnapshot(clientsQuery, (snap) => {
           try {
-            let data = [];
+            const dailyData = {};
             const monthlyData = {};
-            snap.docs.forEach(doc => {
-              const date = toDate(doc.data().createdAt);
+            const yearlyData = {};
+
+            snap.docs.forEach(docSnap => {
+              const date = toDate(docSnap.data().createdAt);
               if (date) {
-                const key = chartTimeRange === 'monthly' ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : date.getFullYear().toString();
-                monthlyData[key] = (monthlyData[key] || 0) + 1;
+                const dayKey = date.toLocaleDateString('it-IT');
+                dailyData[dayKey] = (dailyData[dayKey] || 0) + 1;
+
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
+
+                const yearKey = date.getFullYear().toString();
+                yearlyData[yearKey] = (yearlyData[yearKey] || 0) + 1;
               }
             });
-            if (chartTimeRange === 'monthly') {
-              const now = new Date();
+
+            let data = [];
+            if (chartTimeRange === 'daily') {
+              for (let i = 29; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+                const key = d.toLocaleDateString('it-IT');
+                data.push({ name: key, value: dailyData[key] || 0 });
+              }
+            } else if (chartTimeRange === 'monthly') {
               for (let i = 11; i >= 0; i--) {
-                const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
                 data.push({ name: key, value: monthlyData[key] || 0 });
               }
             } else {
-              data = Object.entries(monthlyData).sort((a, b) => a[0] - b[0]).map(([name, value]) => ({ name, value }));
+              for (let i = 4; i >= 0; i--) {
+                const year = now.getFullYear() - i;
+                data.push({ name: year.toString(), value: yearlyData[year] || 0 });
+              }
             }
             setChartData(data);
           } catch (error) {
-            console.error("Errore snapshot clienti per chart:", error);
-            if (error.code === 'permission-denied') {
-              setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
-            }
-          }
-        }, (error) => {
-          console.error("Errore snapshot clienti per chart:", error);
-          if (error.code === 'permission-denied') {
-            setErrorMessage("Permessi insufficienti per accedere ai dati dei clienti. Contatta l'amministratore.");
+            console.error("Errore chart clienti:", error);
           }
         });
-        return unsub;
       }
     };
-    return generateChartData();
+    generateChartData();
+    return () => {
+      if (unsub) unsub();
+    };
   }, [chartDataType, chartTimeRange]);
 
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     scales: {
-      x: {
-        grid: { display: false },
-        ticks: { color: "#e2e8f0", font: { size: 12 } }
-      },
-      y: {
-        grid: { color: "rgba(255, 255, 255, 0.1)" },
-        ticks: {
-          color: "#e2e8f0",
-          font: { size: 12 },
-          callback: function(value) {
-            return chartDataType === 'revenue' ? `€${value}` : value;
-          }
-        }
-      }
+      x: { grid: { display: false }, ticks: { color: "#e2e8f0", font: { size: 11 } } },
+      y: { grid: { color: "rgba(255, 255, 255, 0.1)" }, ticks: { color: "#e2e8f0", font: { size: 11 } } }
     },
     plugins: {
-      legend: {
-        position: "top",
-        labels: { font: { size: 12, family: "'Inter', sans-serif", weight: "500" }, color: "#e2e8f0" }
-      },
-      tooltip: {
-        callbacks: {
-          label: function(tooltipItem) {
-            return `${tooltipItem.dataset.label}: ${chartDataType === 'revenue' ? `€${tooltipItem.raw}` : tooltipItem.raw}`;
-          }
-        }
+      legend: { position: "top", labels: { font: { size: 12 }, color: "#e2e8f0" } },
+      tooltip: { 
+        callbacks: { 
+          label: (item) => `${item.dataset.label}: ${chartDataType === 'revenue' ? `€${item.raw}` : item.raw}` 
+        } 
       }
     }
   };
@@ -547,8 +491,6 @@ export default function Dashboard() {
     }]
   };
 
-  const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
-
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
@@ -558,7 +500,7 @@ export default function Dashboard() {
   if (errorMessage) return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="bg-red-900/80 p-6 rounded-lg text-center">
-        <h2 className="text-xl font-bold text-red-300 mb-2">Accesso Negato</h2>
+        <h2 className="text-xl font-bold text-red-300 mb-2">Errore</h2>
         <p className="text-red-400">{errorMessage}</p>
         <button onClick={handleLogout} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg">
           Torna al Login
@@ -568,8 +510,9 @@ export default function Dashboard() {
   );
 
   return (
-    <motion.div initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: 0.1 } } }} className="w-full space-y-6">
-      <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+    <div className="w-full space-y-6 p-4 sm:p-6">
+      {/* HEADER */}
+      <div className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2"><TrendingUp size={28}/> Dashboard</h1>
           <div className="flex items-center gap-4">
@@ -580,21 +523,23 @@ export default function Dashboard() {
           </div>
         </div>
         <p className="text-slate-400 mb-4">Panoramica delle metriche chiave e progressi in tempo reale.</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => navigate('/clients')} className="px-4 py-2 bg-zinc-800/80 text-sm font-semibold rounded-lg hover:bg-zinc-700/80 transition-colors flex items-center gap-2"><Users size={16}/> Gestisci</button>
           <button onClick={() => navigate('/new')} className="px-4 py-2 bg-rose-600 text-sm font-semibold rounded-lg hover:bg-rose-700 transition-colors flex items-center gap-2"><Plus size={16}/> Nuovo</button>
           <button onClick={() => navigate('/business-history')} className="px-4 py-2 bg-cyan-600 text-sm font-semibold rounded-lg hover:bg-cyan-700 transition-colors flex items-center gap-2"><BarChart3 size={16}/> Storico</button>
         </div>
-      </motion.div>
+      </div>
 
+      {/* CONTENT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <StatCard title="Incasso Mensile" value={monthlyIncome} icon={<DollarSign className="text-green-500"/>} isCurrency={true} />
             <StatCard title="Clienti Attivi" value={clientStats.active} icon={<CheckCircle className="text-blue-500"/>} />
             <StatCard title="Retention Rate" value={retentionRate} icon={<RefreshCw className="text-amber-500"/>} isPercentage={true} />
-          </motion.div>
-          <motion.div className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border h-[450px] flex flex-col" variants={itemVariants}>
+          </div>
+
+          <div className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border h-[450px] flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
               <h2 className="text-lg font-semibold text-slate-200 flex items-center gap-2"><BarChart3 size={20} /> Andamento Business</h2>
               <div className="flex gap-2 bg-zinc-900/70 p-1 rounded-lg border border-white/5">
@@ -607,33 +552,38 @@ export default function Dashboard() {
             </div>
             <div className="flex justify-center mt-4">
               <div className="flex gap-2 bg-zinc-900/70 p-1 rounded-lg border border-white/5">
+                <button onClick={() => setChartTimeRange('daily')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'daily' ? 'bg-zinc-700 text-white' : 'text-slate-400'}`}>Giorno</button>
                 <button onClick={() => setChartTimeRange('monthly')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'monthly' ? 'bg-zinc-700 text-white' : 'text-slate-400'}`}>Mese</button>
                 <button onClick={() => setChartTimeRange('yearly')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'yearly' ? 'bg-zinc-700 text-white' : 'text-slate-400'}`}>Anno</button>
               </div>
             </div>
-          </motion.div>
-          <motion.div className="grid grid-cols-1 md:grid-cols-1 gap-6" variants={itemVariants}>
-            {focusClient && (
-              <div className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border">
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-slate-200"><Target size={18} /> Focus del Giorno</h2>
-                <p className="text-sm font-bold text-rose-500">{focusClient.name}</p>
-                <p className="text-sm text-slate-400 mt-1">Obiettivo: "{focusClient.goal || 'Non specificato'}"</p>
-              </div>
-            )}
-          </motion.div>
+          </div>
+
+          {focusClient && (
+            <div className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border">
+              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-slate-200"><Target size={18} /> Focus del Giorno</h2>
+              <p className="text-sm font-bold text-rose-500">{focusClient.name}</p>
+              <p className="text-sm text-slate-400 mt-1">Obiettivo: "{focusClient.goal || 'Non specificato'}"</p>
+            </div>
+          )}
         </div>
         
-        <motion.div className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border" variants={itemVariants}>
+        <div className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Feed Attività</h2>
           <div className="space-y-3 max-h-[90vh] lg:max-h-[calc(100vh-14rem)] overflow-y-auto pr-2">
             <AnimatePresence>
-              {activityFeed.length > 0 ? activityFeed.map(item => (
-                <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds}`} item={item} navigate={navigate} />
-              )) : <p className="text-sm text-slate-500 p-4 text-center">Nessuna attività recente.</p>}
+              {activityFeed.length > 0 ? activityFeed
+                .sort((a, b) => toDate(b.date) - toDate(a.date))
+                .slice(0, 20)
+                .map(item => (
+                  <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds || item.date}`} item={item} navigate={navigate} />
+                )) 
+                : <p className="text-sm text-slate-500 p-4 text-center">Nessuna attività recente.</p>
+              }
             </AnimatePresence>
           </div>
-        </motion.div>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

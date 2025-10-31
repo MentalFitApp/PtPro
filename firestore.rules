@@ -1,7 +1,6 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
     // ==================== FUNZIONI ====================
     function isValidPayment() {
       return request.resource.data.keys().hasAll(['amount', 'duration', 'paymentDate']) &&
@@ -11,41 +10,35 @@ service cloud.firestore {
              request.resource.data.paymentDate is timestamp &&
              (!request.resource.data.keys().hasAny(['paymentMethod']) || request.resource.data.paymentMethod is string);
     }
-
+    // ADMIN: fallback sicuro se roles/admins non esiste
     function isAdmin() {
       return request.auth != null && (
         !exists(/databases/$(database)/documents/roles/admins) ||
-        (exists(/databases/$(database)/documents/roles/admins) && 
+        (exists(/databases/$(database)/documents/roles/admins) &&
          request.auth.uid in get(/databases/$(database)/documents/roles/admins).data.uids)
       );
     }
-
     function isCoach() {
       return isAdmin() ||
              (request.auth != null &&
               exists(/databases/$(database)/documents/roles/coaches) &&
               request.auth.uid in get(/databases/$(database)/documents/roles/coaches).data.uids);
     }
-
     function isClient(userId) {
       return request.auth != null && request.auth.uid == userId &&
              exists(/databases/$(database)/documents/clients/$(userId)) &&
              get(/databases/$(database)/documents/clients/$(userId)).data.isClient == true;
     }
-
     function isAssignedCoach(userId) {
       return request.auth != null &&
              exists(/databases/$(database)/documents/clients/$(userId)) &&
              (get(/databases/$(database)/documents/clients/$(userId)).data.assignedCoaches || []).hasAny([request.auth.uid]);
     }
-
     function isCollaboratore(userId) {
       return request.auth != null && request.auth.uid == userId &&
              exists(/databases/$(database)/documents/collaboratori/$(userId));
     }
-
     // ==================== REGOLE COLLEZIONI ====================
-
     // --- CLIENTS ---
     match /clients/{userId} {
       allow create: if isCoach() || isAdmin();
@@ -58,36 +51,22 @@ service cloud.firestore {
       allow list: if isCoach() || isAdmin();
       allow update: if isCoach() || isAdmin() || isClient(userId);
       allow delete: if isAdmin();
-
-      // --- ANAMNESI ---
       match /anamnesi/{docId} {
-        allow read: if request.auth != null && (
-                      request.auth.uid == userId ||
-                      isCoach() ||
-                      isAdmin() ||
-                      (get(/../clients/$(userId)).data.isOldClient == true && isAssignedCoach(userId))
-                    );
-        allow write: if request.auth != null && (
-                      request.auth.uid == userId ||
-                      isAssignedCoach(userId)
-                    );
+        allow read, write: if request.auth != null && (
+                              request.auth.uid == userId ||
+                              isCoach() ||
+                              isAdmin() ||
+                              (get(/../clients/$(userId)).data.isOldClient == true && isAssignedCoach(userId))
+                            );
       }
-
-      // --- CHECKS ---
       match /checks/{docId} {
-        allow read: if request.auth != null && (
-                      request.auth.uid == userId ||
-                      isCoach() ||
-                      isAdmin() ||
-                      (get(/../clients/$(userId)).data.isOldClient == true && isAssignedCoach(userId))
-                    );
-        allow write: if request.auth != null && (
-                      request.auth.uid == userId ||
-                      isAssignedCoach(userId)
-                    );
+        allow read, write: if request.auth != null && (
+                              request.auth.uid == userId ||
+                              isCoach() ||
+                              isAdmin() ||
+                              (get(/../clients/$(userId)).data.isOldClient == true && isAssignedCoach(userId))
+                            );
       }
-
-      // --- PAYMENTS ---
       match /payments/{docId} {
         allow read: if request.auth != null && (
                       request.auth.uid == userId ||
@@ -99,8 +78,7 @@ service cloud.firestore {
         allow delete: if isCoach() || isAdmin();
       }
     }
-
-    // --- SUBCOLLEZIONI GENERICHE (fallback sicuro) ---
+    // --- SUBCOLLEZIONI GENERICHE ---
     match /{path=**}/payments/{paymentId} {
       allow read: if isCoach() || isAdmin();
     }
@@ -110,7 +88,6 @@ service cloud.firestore {
     match /{path=**}/anamnesi/{anamnesiId} {
       allow read: if isCoach() || isAdmin();
     }
-
     // --- CHATS ---
     match /chats/{chatId} {
       allow get: if request.auth != null && (request.auth.uid in resource.data.participants || isCoach() || isAdmin());
@@ -120,7 +97,6 @@ service cloud.firestore {
                      request.resource.data.participants.size() == 2;
       allow update: if request.auth != null && (request.auth.uid in resource.data.participants || isCoach() || isAdmin());
       allow delete: if isCoach() || isAdmin();
-
       match /messages/{messageId} {
         allow read: if request.auth != null &&
                       (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isCoach() || isAdmin());
@@ -129,18 +105,15 @@ service cloud.firestore {
         allow update, delete: if isCoach() || isAdmin();
       }
     }
-
     // --- ROLES ---
     match /roles/{docId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
-
     // --- APP-DATA ---
     match /app-data/{docId} {
       allow read, write: if isCoach() || isAdmin();
     }
-
     // --- COLLABORATORI ---
     match /collaboratori/{collabId} {
       allow read, list: if isAdmin() || isCollaboratore(collabId);
@@ -148,17 +121,14 @@ service cloud.firestore {
       allow update: if isCollaboratore(collabId) || isAdmin();
       allow delete: if isAdmin();
     }
-
     // --- MARKETING REPORTS ---
     match /marketingReports/{reportId} {
       allow read, list, create, update, delete: if isAdmin();
     }
-
     // --- SALES REPORTS ---
     match /salesReports/{reportId} {
       allow read, list, create, update, delete: if isAdmin();
     }
-
     // --- LEADS ---
     match /leads/{leadId} {
       allow read, list: if isAdmin() ||
@@ -172,7 +142,11 @@ service cloud.firestore {
         (request.auth != null &&
          exists(/databases/$(database)/documents/collaboratori/$(request.auth.uid)) &&
          resource.data.collaboratoreId == request.auth.uid);
-      allow delete: if isAdmin();
+      // AGGIUNTO: COLLABORATORE PUÒ ELIMINARE I SUOI LEADS
+      allow delete: if isAdmin() ||
+        (request.auth != null &&
+         exists(/databases/$(database)/documents/collaboratori/$(request.auth.uid)) &&
+         resource.data.collaboratoreId == request.auth.uid);
     }
   }
 }
