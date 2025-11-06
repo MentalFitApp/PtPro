@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Users, Settings, FileText, Phone, Calendar, CheckCircle, XCircle, AlertCircle, TrendingUp } from 'lucide-react';
+import { Users, Settings, FileText, Phone, Calendar, CheckCircle, XCircle, AlertCircle, TrendingUp, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function CalendarReport() {
@@ -69,49 +69,53 @@ export default function CalendarReport() {
 
   const todayStr = new Date().toISOString().split('T')[0];
 
+  // --- RECUPERA REPORT PER DATA ---
   const dailyReports = collaboratori
     .map(collab => {
       const report = collab.dailyReports?.find(r => r.date === date);
+      if (!report) return null;
       return { 
         name: collab.name || collab.email.split('@')[0], 
-        role: collab.role, 
+        role: collab.role,
+        photoURL: collab.photoURL || '/default-avatar.png',
+        gender: collab.gender || 'M',
         report 
       };
     })
-    .filter(s => s.report)
+    .filter(Boolean)
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="p-4 sm:p-6"
+      className="p-4 sm:p-6 max-w-7xl mx-auto"
     >
-      <motion.header className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2">
-          <Calendar size={28} /> Report del {formattedDate}
+      <motion.header className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-3">
+          <Calendar size={32} /> Report del {formattedDate}
         </h1>
         <button
           onClick={() => navigate('/collaboratori')}
-          className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors"
+          className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl transition-all font-medium"
         >
-          Torna Indietro
+          ← Torna ai Collaboratori
         </button>
       </motion.header>
 
       <motion.div className="space-y-8">
         {dailyReports.length === 0 ? (
-          <div className="text-center py-16 bg-zinc-950/60 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
-            <AlertCircle size={64} className="mx-auto text-yellow-500 mb-6" />
-            <p className="text-slate-400 text-xl font-medium">
+          <div className="glass-card p-12 text-center">
+            <AlertCircle size={80} className="mx-auto text-yellow-500 mb-6 opacity-80" />
+            <p className="text-slate-300 text-xl font-medium">
               {date < todayStr 
-                ? 'Nessun report inviato per questa data (passata).' 
-                : 'Nessun report inviato per questa data.'
+                ? 'Nessun report inviato per questa data passata.' 
+                : 'Nessun report inviato per oggi.'
               }
             </p>
             {date < todayStr && (
-              <p className="text-red-500 mt-4 text-lg font-semibold">
-                Questo giorno è passato senza report.
+              <p className="text-red-400 text-2xl font-bold mt-4">
+                GIORNATA SENZA REPORT
               </p>
             )}
           </div>
@@ -119,127 +123,110 @@ export default function CalendarReport() {
           dailyReports.map((s, index) => (
             <motion.div
               key={index}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-xl"
+              className="glass-card p-8"
             >
-              <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
-                <h2 className="text-2xl font-bold text-slate-200">
-                  {s.name} <span className="text-lg font-normal text-slate-400">({s.role})</span>
-                </h2>
-                <span className={`px-4 py-2 rounded-full text-sm font-bold ${
+              <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
+                <div className="flex items-center gap-4">
+                  <img 
+                    src={s.photoURL} 
+                    alt={s.name}
+                    className="w-16 h-16 rounded-full border-2 border-rose-500"
+                  />
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-200">
+                      {s.name}
+                    </h2>
+                    <p className="text-slate-400 text-lg">{s.role}</p>
+                  </div>
+                </div>
+                <div className={`px-6 py-3 rounded-full text-lg font-bold ${
                   s.report.eodReport && s.report.tracker 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-yellow-600 text-white'
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white' 
+                    : 'bg-gradient-to-r from-yellow-600 to-orange-600 text-white'
                 }`}>
                   {s.report.eodReport && s.report.tracker ? 'COMPLETO' : 'PARZIALE'}
-                </span>
+                </div>
               </div>
 
-              {/* EOD REPORT - COMPLETO */}
+              {/* EOD REPORT */}
               {s.report.eodReport && (
-                <div className="mb-8 p-6 bg-gradient-to-br from-zinc-900/80 to-zinc-800/80 rounded-xl border border-cyan-500/20">
-                  <h3 className="text-xl font-semibold text-cyan-400 flex items-center gap-3 mb-5">
-                    <Settings size={22} /> EOD Report (Fine Giornata)
+                <div className="mb-10 p-8 bg-gradient-to-br from-zinc-900/90 to-zinc-800/90 rounded-2xl border border-cyan-500/30">
+                  <h3 className="text-2xl font-bold text-cyan-400 flex items-center gap-3 mb-6">
+                    <Settings size={28} /> EOD Report (Fine Giornata)
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                    <div className="space-y-3">
-                      <div className="flex justify-between p-3 bg-zinc-800/50 rounded-lg">
-                        <span className="font-medium text-slate-300">Focus (1-5):</span>
-                        <span className="text-cyan-300 font-bold text-lg">{s.report.eodReport.focus || '—'}</span>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-5">
+                      <div className="p-5 bg-zinc-800/60 rounded-xl border border-cyan-500/20">
+                        <p className="text-cyan-300 font-semibold text-lg">Focus (1-5)</p>
+                        <p className="text-4xl font-bold text-white mt-2">{s.report.eodReport.focus || '—'}</p>
                       </div>
-                      <div className="flex justify-between p-3 bg-zinc-800/50 rounded-lg">
-                        <span className="font-medium text-slate-300">Skills (1-5):</span>
-                        <span className="text-cyan-300 font-bold text-lg">{s.report.eodReport.skills || '—'}</span>
+                      <div className="p-5 bg-zinc-800/60 rounded-xl border border-cyan-500/20">
+                        <p className="text-cyan-300 font-semibold text-lg">Skills (1-5)</p>
+                        <p className="text-4xl font-bold text-white mt-2">{s.report.eodReport.skills || '—'}</p>
                       </div>
                     </div>
-                    <div className="space-y-3">
-                      <div className="p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
-                        <p className="font-medium text-green-400 mb-1">Dove hai fatto bene?</p>
-                        <p className="text-green-300 text-sm">{s.report.eodReport.successi || 'Nessun dato'}</p>
+                    <div className="space-y-5">
+                      <div className="p-5 bg-green-900/30 border border-green-500/40 rounded-xl">
+                        <p className="text-green-400 font-semibold text-lg mb-2">Dove hai fatto bene?</p>
+                        <p className="text-green-200 text-base leading-relaxed">{s.report.eodReport.successi || 'Nessun dato'}</p>
                       </div>
-                      <div className="p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
-                        <p className="font-medium text-yellow-400 mb-1">Difficoltà incontrate</p>
-                        <p className="text-yellow-300 text-sm">{s.report.eodReport.difficolta || 'Nessun dato'}</p>
+                      <div className="p-5 bg-yellow-900/30 border border-yellow-500/40 rounded-xl">
+                        <p className="text-yellow-400 font-semibold text-lg mb-2">Difficoltà incontrate</p>
+                        <p className="text-yellow-200 text-base leading-relaxed">{s.report.eodReport.difficolta || 'Nessun dato'}</p>
                       </div>
-                      <div className="p-3 bg-rose-900/20 border border-rose-500/30 rounded-lg">
-                        <p className="font-medium text-rose-400 mb-1">Soluzioni applicate</p>
-                        <p className="text-rose-300 text-sm">{s.report.eodReport.soluzioni || 'Nessun dato'}</p>
+                      <div className="p-5 bg-rose-900/30 border border-rose-500/40 rounded-xl">
+                        <p className="text-rose-400 font-semibold text-lg mb-2">Soluzioni applicate</p>
+                        <p className="text-rose-200 text-base leading-relaxed">{s.report.eodReport.soluzioni || 'Nessun dato'}</p>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* TRACKER DMS - COMPLETO */}
+              {/* TRACKER DMS */}
               {s.report.tracker && (
-                <div className="p-6 bg-gradient-to-br from-zinc-900/80 to-zinc-800/80 rounded-xl border border-purple-500/20">
-                  <h3 className="text-xl font-semibold text-purple-400 flex items-center gap-3 mb-5">
-                    {s.role === 'Marketing' && <FileText size={22} />}
-                    {s.role === 'Vendita' && <Phone size={22} />}
-                    {s.role === 'Setter' && <TrendingUp size={22} />}
+                <div className="p-8 bg-gradient-to-br from-zinc-900/90 to-zinc-800/90 rounded-2xl border border-purple-500/30">
+                  <h3 className="text-2xl font-bold text-purple-400 flex items-center gap-3 mb-6">
+                    {s.role === 'Marketing' && <FileText size={28} />}
+                    {s.role === 'Vendita' && <Phone size={28} />}
+                    {s.role === 'Setter' && <TrendingUp size={28} />}
                     Tracker DMS ({s.role})
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                     {/* SETTER */}
                     {s.role === 'Setter' && (
                       <>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-cyan-500/20">
-                          <p className="text-cyan-400 font-medium">Outreach IG</p>
-                          <p className="text-2xl font-bold text-cyan-300">{s.report.tracker.outreachIG || 0}</p>
+                        <div className="p-5 bg-zinc-800/60 rounded-xl border border-cyan-500/30 text-center">
+                          <p className="text-cyan-400 font-medium text-sm">Outreach IG</p>
+                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.outreachIG || 0}</p>
                         </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-cyan-500/20">
-                          <p className="text-cyan-400 font-medium">Follow-Ups IG</p>
-                          <p className="text-2xl font-bold text-cyan-300">{s.report.tracker.followUpsIG || 0}</p>
+                        <div className="p-5 bg-zinc-800/60 rounded-xl border border-cyan-500/30 text-center">
+                          <p className="text-cyan-400 font-medium text-sm">Follow-Ups IG</p>
+                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.followUpsIG || 0}</p>
                         </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-green-500/20">
-                          <p className="text-green-400 font-medium">Risposte Avute</p>
-                          <p className="text-2xl font-bold text-green-300">{s.report.tracker.risposteAvute || 0}</p>
+                        <div className="p-5 bg-green-900/30 rounded-xl border border-green-500/40 text-center">
+                          <p className="text-green-400 font-medium text-sm">Risposte</p>
+                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.risposte || 0}</p>
                         </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-green-500/20">
-                          <p className="text-green-400 font-medium">Convo Fatte</p>
-                          <p className="text-2xl font-bold text-green-300">{s.report.tracker.convoFatte || 0}</p>
+                        <div className="p-5 bg-green-900/30 rounded-xl border border-green-500/40 text-center">
+                          <p className="text-green-400 font-medium text-sm">Convo Fatte</p>
+                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.convoFatte || 0}</p>
                         </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-yellow-500/20">
-                          <p className="text-yellow-400 font-medium">Call Proposte</p>
-                          <p className="text-2xl font-bold text-yellow-300">{s.report.tracker.callProposte || 0}</p>
+                        <div className="p-5 bg-yellow-900/30 rounded-xl border border-yellow-500/40 text-center">
+                          <p className="text-yellow-400 font-medium text-sm">Call Proposte</p>
+                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.callProposte || 0}</p>
                         </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-rose-500/20">
-                          <p className="text-rose-400 font-medium">Call Prenotate</p>
-                          <p className="text-2xl font-bold text-rose-300">{s.report.tracker.callPrenotate || 0}</p>
+                        <div className="p-5 bg-rose-900/30 rounded-xl border border-rose-500/40 text-center">
+                          <p className="text-rose-400 font-medium text-sm">Call Prenotate</p>
+                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.callPrenotate || 0}</p>
                         </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-purple-500/20">
-                          <p className="text-purple-400 font-medium">Call Fissate</p>
-                          <p className="text-2xl font-bold text-purple-300">{s.report.tracker.callFissate || 0}</p>
-                        </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-indigo-500/20 col-span-2 md:col-span-1">
-                          <p className="text-indigo-400 font-medium">Tempo Outreach</p>
-                          <p className="text-lg font-bold text-indigo-300">{s.report.tracker.tempoOutreach || '—'}</p>
-                        </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-indigo-500/20 col-span-2 md:col-span-1">
-                          <p className="text-indigo-400 font-medium">Tempo Follow-Ups</p>
-                          <p className="text-lg font-bold text-indigo-300">{s.report.tracker.tempoFollowUps || '—'}</p>
-                        </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-indigo-500/20 col-span-2 md:col-span-1">
-                          <p className="text-indigo-400 font-medium">Tempo Convo</p>
-                          <p className="text-lg font-bold text-indigo-300">{s.report.tracker.tempoConvo || '—'}</p>
-                        </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-indigo-500/20 col-span-2 md:col-span-1">
-                          <p className="text-indigo-400 font-medium">Tempo WA</p>
-                          <p className="text-lg font-bold text-indigo-300">{s.report.tracker.tempoWA || '—'}</p>
-                        </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-indigo-500/20 col-span-2 md:col-span-1">
-                          <p className="text-indigo-400 font-medium">Tempo FB</p>
-                          <p className="text-lg font-bold text-indigo-300">{s.report.tracker.tempoFB || '—'}</p>
-                        </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-indigo-500/20 col-span-2 md:col-span-1">
-                          <p className="text-indigo-400 font-medium">Tempo TT</p>
-                          <p className="text-lg font-bold text-indigo-300">{s.report.tracker.tempoTT || '—'}</p>
-                        </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-indigo-500/20 col-span-2 md:col-span-1">
-                          <p className="text-indigo-400 font-medium">Tempo Riordine</p>
-                          <p className="text-lg font-bold text-indigo-300">{s.report.tracker.tempoRiordine || '—'}</p>
+                        <div className="p-5 bg-purple-900/30 rounded-xl border border-purple-500/40 text-center">
+                          <p className="text-purple-400 font-medium text-sm">Call Fissate</p>
+                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.callFissate || 0}</p>
                         </div>
                       </>
                     )}
@@ -247,13 +234,13 @@ export default function CalendarReport() {
                     {/* MARKETING */}
                     {s.role === 'Marketing' && (
                       <>
-                        <div className="p-4 bg-rose-900/20 border border-rose-500/30 rounded-lg col-span-2">
-                          <p className="text-rose-400 font-medium text-lg">Views 24h</p>
-                          <p className="text-3xl font-bold text-rose-300">{s.report.tracker.volumeViews24h || 0}</p>
+                        <div className="p-6 bg-rose-900/40 rounded-xl border border-rose-500/50 text-center col-span-2">
+                          <p className="text-rose-400 font-semibold text-lg">Views 24h</p>
+                          <p className="text-5xl font-bold text-white mt-3">{s.report.tracker.volumeViews24h || 0}</p>
                         </div>
-                        <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-lg col-span-2">
-                          <p className="text-green-400 font-medium text-lg">Leads 24h</p>
-                          <p className="text-3xl font-bold text-green-300">{s.report.tracker.volumeLeads24h || 0}</p>
+                        <div className="p-6 bg-green-900/40 rounded-xl border border-green-500/50 text-center col-span-2">
+                          <p className="text-green-400 font-semibold text-lg">Leads 24h</p>
+                          <p className="text-5xl font-bold text-white mt-3">{s.report.tracker.volumeLeads24h || 0}</p>
                         </div>
                       </>
                     )}
@@ -261,17 +248,17 @@ export default function CalendarReport() {
                     {/* VENDITA */}
                     {s.role === 'Vendita' && (
                       <>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-cyan-500/20">
-                          <p className="text-cyan-400 font-medium">Chiamate Fatte</p>
-                          <p className="text-2xl font-bold text-cyan-300">{s.report.tracker.callFatte || 0}</p>
+                        <div className="p-5 bg-cyan-900/40 rounded-xl border border-cyan-500/50 text-center">
+                          <p className="text-cyan-400 font-semibold">Chiamate Fatte</p>
+                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.callFatte || 0}</p>
                         </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-green-500/20">
-                          <p className="text-green-400 font-medium">Chiusi</p>
-                          <p className="text-2xl font-bold text-green-300">{s.report.tracker.callChiuse || 0}</p>
+                        <div className="p-5 bg-green-900/40 rounded-xl border border-green-500/50 text-center">
+                          <p className="text-green-400 font-semibold">Chiusi</p>
+                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.callChiuse || 0}</p>
                         </div>
-                        <div className="p-3 bg-zinc-800/50 rounded-lg border border-rose-500/20">
-                          <p className="text-rose-400 font-medium">Fatturato</p>
-                          <p className="text-2xl font-bold text-rose-300">€{s.report.tracker.fatturatoTotale || 0}</p>
+                        <div className="p-5 bg-rose-900/40 rounded-xl border border-rose-500/50 text-center col-span-2">
+                          <p className="text-rose-400 font-semibold text-lg">Fatturato</p>
+                          <p className="text-4xl font-bold text-white mt-2">€{s.report.tracker.fatturatoTotale || 0}</p>
                         </div>
                       </>
                     )}

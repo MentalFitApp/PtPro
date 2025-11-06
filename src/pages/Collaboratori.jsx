@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, getDoc, setDoc, collection, query, orderBy, onSnapshot, updateDoc, deleteDoc } from 'firebase/firestore';
+import { 
+  doc, getDoc, setDoc, collection, query, orderBy, onSnapshot, updateDoc, deleteDoc 
+} from 'firebase/firestore';
 import { db, auth, firebaseConfig } from '../firebase';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { Users, Plus, Copy, TrendingUp, FileText, Phone, Check, AlertCircle, Edit, X, BarChart3, Trash2 } from 'lucide-react';
+import { 
+  Users, Plus, Copy, TrendingUp, FileText, Phone, Check, AlertCircle, Edit, X, 
+  BarChart3, Trash2, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon 
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
@@ -43,44 +48,6 @@ const ReportStatus = ({ collaboratori }) => {
   );
 };
 
-const ReportArchive = ({ reports, type }) => {
-  const filteredReports = reports.filter(r => type === 'collaboratore' ? r.eodReport || r.tracker : r[type]);
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6">
-      <h2 className="text-xl font-semibold text-slate-200 mb-4">Archivio {type === 'collaboratore' ? 'Collaboratore' : type === 'marketing' ? 'Marketing' : 'Vendita'}</h2>
-      <div className="space-y-4">
-        {filteredReports.length === 0 ? (
-          <p className="text-slate-400">Nessun report disponibile.</p>
-        ) : filteredReports.map((report, index) => (
-          <motion.div key={index} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-zinc-900/70 rounded-lg border border-white/10">
-            <p><strong>Data:</strong> {report.date}</p>
-            {type === 'collaboratore' && (
-              <>
-                <p><strong>Focus:</strong> {report.eodReport?.focus || 'N/D'}</p>
-                <p><strong>Chiamate Chiuse:</strong> {report.tracker?.callChiuse || 0}</p>
-              </>
-            )}
-            {type === 'marketing' && (
-              <>
-                <p><strong>Views 24h:</strong> {report.volumeViews24h || 'N/D'}</p>
-                <p><strong>Leads 24h:</strong> {report.volumeLeads24h || 'N/D'}</p>
-              </>
-            )}
-            {type === 'vendita' && (
-              <>
-                <p><strong>Chiamate Effettuate:</strong> {report.callsMade || 'N/D'}</p>
-                <p><strong>Chiusi:</strong> {report.callsClosed || 'N/D'}</p>
-                <p><strong>No Show:</strong> {report.noShow || 'N/D'}</p>
-                <p><strong>Cash Collect:</strong> {report.cashCollect || 'N/D'}</p>
-              </>
-            )}
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  );
-};
-
 export default function Collaboratori() {
   const navigate = useNavigate();
   const [collaboratori, setCollaboratori] = useState([]);
@@ -91,6 +58,7 @@ export default function Collaboratori() {
   const [newRole, setNewRole] = useState('Setter');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [copied, setCopied] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState({
@@ -110,8 +78,23 @@ export default function Collaboratori() {
     noShow: '',
     cashCollect: '',
   });
+
+  // --- STATI PER LEADS ---
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterChiuso, setFilterChiuso] = useState('tutti');
+  const [filterShowUp, setFilterShowUp] = useState('tutti');
+  const [currentPage, setCurrentPage] = useState(1);
   const [editingLead, setEditingLead] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const leadsPerPage = 10;
+
+  const fonti = [
+    'Info Storie Prima e Dopo', 'Info Storie Promo', 'Info Reel', 'Inizio Reel',
+    'Guida Maniglie', 'Guida Tartaruga', 'Guida 90', 'Altre Guide',
+    'Guida Panettone',
+    'DM Richiesta', 'Outreach Nuovi Followers', 'Outreach Vecchi Followers',
+    'Follow-Ups', 'Facebook', 'TikTok', 'Referral'
+  ];
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -143,22 +126,13 @@ export default function Collaboratori() {
 
     checkAdmin();
 
-    // COLLABORATORI
     const collabQuery = query(collection(db, 'collaboratori'), orderBy('name'));
-    const unsubCollab = onSnapshot(
-      collabQuery,
-      (snap) => {
-        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setCollaboratori(data);
-        setLoading(false);
-      },
-      (err) => {
-        setError('Errore lettura collaboratori: ' + err.message);
-        setLoading(false);
-      }
-    );
+    const unsubCollab = onSnapshot(collabQuery, snap => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setCollaboratori(data);
+      setLoading(false);
+    });
 
-    // MARKETING REPORTS
     const marketingQuery = query(collection(db, 'marketingReports'), orderBy('date', 'desc'));
     const unsubMarketing = onSnapshot(marketingQuery, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -166,7 +140,6 @@ export default function Collaboratori() {
       calculateStats(data);
     });
 
-    // LEADS
     const leadsQuery = query(collection(db, 'leads'), orderBy('timestamp', 'desc'));
     const unsubLeads = onSnapshot(leadsQuery, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -250,7 +223,7 @@ export default function Collaboratori() {
         pipeline: [],
       });
 
-      const msg = `Benvenuto!\nEmail: ${newEmail}\nPassword: ${tempPwd}\nLink: https://MentalFitApp.github.io/PtPro/#/collaboratore-login`;
+      const msg = `Benvenuto!\nEmail: ${newEmail}\nPassword: ${tempPwd}\nLink: https://mentalfitapp.github.io/PtPro/#/collaboratore-login`;
       navigator.clipboard.writeText(msg);
       setCopied(true);
       setTimeout(() => setCopied(false), 4000);
@@ -267,6 +240,8 @@ export default function Collaboratori() {
     try {
       await setDoc(doc(collection(db, 'marketingReports')), adminMarketing);
       setAdminMarketing({ date: new Date().toISOString().split('T')[0], volumeViews24h: '', volumeLeads24h: '' });
+      setSuccess('Report Marketing salvato!');
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError('Errore salvataggio report marketing.');
     }
@@ -276,17 +251,26 @@ export default function Collaboratori() {
     try {
       await setDoc(doc(collection(db, 'salesReports')), adminSales);
       setAdminSales({ date: new Date().toISOString().split('T')[0], callsMade: '', callsClosed: '', noShow: '', cashCollect: '' });
+      setSuccess('Report Vendita salvato!');
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError('Errore salvataggio report vendita.');
     }
   };
 
+  // --- MODIFICA LEAD ---
   const handleEditLead = (lead) => {
     setEditingLead(lead.id);
     setEditForm({
+      name: lead.name || '',
+      source: lead.source || '',
+      email: lead.email || '',
+      number: lead.number || '',
+      note: lead.note || '',
+      dataPrenotazione: lead.dataPrenotazione || '',
+      oraPrenotazione: lead.oraPrenotazione || '',
       amount: lead.amount || '',
       mesi: lead.mesi || '',
-      note: lead.note || '',
       chiuso: lead.chiuso || false,
       showUp: lead.showUp || false,
     });
@@ -298,6 +282,8 @@ export default function Collaboratori() {
       await updateDoc(doc(db, 'leads', editingLead), editForm);
       setEditingLead(null);
       setEditForm({});
+      setSuccess('Lead aggiornato!');
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError('Errore aggiornamento lead.');
     }
@@ -306,6 +292,19 @@ export default function Collaboratori() {
   const handleCancelEdit = () => {
     setEditingLead(null);
     setEditForm({});
+  };
+
+  // --- ELIMINA LEAD ---
+  const handleDeleteLead = async (id) => {
+    if (confirm('Eliminare questo lead?')) {
+      try {
+        await deleteDoc(doc(db, 'leads', id));
+        setSuccess('Lead eliminato!');
+        setTimeout(() => setSuccess(''), 3000);
+      } catch (err) {
+        setError('Errore eliminazione lead.');
+      }
+    }
   };
 
   const handleDeleteCollaboratore = async (id) => {
@@ -320,7 +319,7 @@ export default function Collaboratori() {
     navigate('/collaboratore-detail', { state: { collaboratoreId: id } });
   };
 
-  // === ANALISI LEAD PER FONTE ===
+  // --- ANALISI LEAD PER FONTE ---
   const getSourceStats = () => {
     const stats = {};
     leads.forEach(l => {
@@ -344,7 +343,7 @@ export default function Collaboratori() {
 
   const sourceStats = getSourceStats();
 
-  // === GRAFICO: CLIENTI PRENOTATI E PRESENTATI PER SETTER ===
+  // --- GRAFICO SETTER ---
   const getSetterStats = () => {
     return collaboratori
       .filter(c => c.role === 'Setter')
@@ -382,37 +381,43 @@ export default function Collaboratori() {
     ]
   };
 
+  // --- FILTRI E PAGINAZIONE LEADS ---
+  const filteredLeads = leads.filter(lead => {
+    const matchesSearch = lead.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesChiuso = filterChiuso === 'tutti' || (filterChiuso === 'si' ? lead.chiuso : !lead.chiuso);
+    const matchesShowUp = filterShowUp === 'tutti' || (filterShowUp === 'si' ? lead.showUp : !lead.showUp);
+    return matchesSearch && matchesChiuso && matchesShowUp;
+  });
+
+  const totalPages = Math.ceil(filteredLeads.length / leadsPerPage);
+  const paginatedLeads = filteredLeads.slice(
+    (currentPage - 1) * leadsPerPage,
+    currentPage * leadsPerPage
+  );
+
   if (loading) return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div></div>;
   if (error) return <div className="min-h-screen flex flex-col items-center justify-center text-red-500 p-4"><p>{error}</p><button onClick={() => navigate('/')} className="mt-4 px-4 py-2 bg-rose-600 text-white rounded-lg">Torna</button></div>;
   if (!isAdmin) return null;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 sm:p-6">
-      <motion.header className="flex flex-col sm:flex-row justify-between items-center mb-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 sm:p-6 max-w-7xl mx-auto">
+      {/* HEADER + AGGIUNGI */}
+      <motion.header className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2">
           <Users size={28} /> Gestione Collaboratori
         </h1>
+        <motion.button
+          onClick={handleAddCollaboratore}
+          className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg"
+          whileHover={{ scale: 1.05 }}
+        >
+          <Plus size={16} /> Aggiungi
+        </motion.button>
       </motion.header>
-
-      {/* Aggiungi Collaboratore */}
-      <motion.div className="mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="Email nuovo collaboratore" className="w-full sm:w-64 p-2 bg-zinc-900/70 border border-white/10 rounded-lg" />
-          <select value={newRole} onChange={e => setNewRole(e.target.value)} className="w-full sm:w-32 p-2 bg-zinc-900/70 border border-white/10 rounded-lg">
-            <option value="Setter">Setter</option>
-            <option value="Marketing">Marketing</option>
-            <option value="Vendita">Vendita</option>
-          </select>
-          <motion.button onClick={handleAddCollaboratore} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg" whileHover={{ scale: 1.05 }}>
-            <Plus size={16} /> Aggiungi
-          </motion.button>
-          {copied && <div className="ml-2 p-2 bg-green-900/50 border border-green-500 rounded text-green-300 text-sm">Credenziali copiate!</div>}
-        </div>
-      </motion.div>
 
       <ReportStatus collaboratori={collaboratori} />
 
-      {/* STATISTICHE TRACKING */}
+      {/* 3 CASELLE STATISTICHE IN ALTO */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <motion.div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
           <h3 className="text-lg font-semibold text-slate-200 mb-4">Oggi</h3>
@@ -439,49 +444,96 @@ export default function Collaboratori() {
         </motion.div>
       </div>
 
-      <Calendar 
-        reports={collaboratori.flatMap(c => c.dailyReports || [])} 
-        collaboratori={collaboratori} 
-        onDateClick={d => navigate(`/calendar-report/${d.toISOString().split('T')[0]}`)} 
-      />
+      {/* CALENDARIO */}
+      <div className="mb-6">
+        <Calendar 
+          reports={collaboratori.flatMap(c => c.dailyReports || [])} 
+          collaboratori={collaboratori} 
+          onDateClick={d => navigate(`/calendar-report/${d.toISOString().split('T')[0]}`)} 
+        />
+      </div>
 
-      {/* REPORT MARKETING INTEGRATO */}
-      <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 mb-6">
-        <h2 className="text-xl font-semibold text-slate-200 mb-4">Report Marketing</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input type="date" value={adminMarketing.date} onChange={e => setAdminMarketing({ ...adminMarketing, date: e.target.value })} className="p-2 bg-zinc-900/70 border border-white/10 rounded-lg" />
-          <input type="number" value={adminMarketing.volumeViews24h} onChange={e => setAdminMarketing({ ...adminMarketing, volumeViews24h: e.target.value })} placeholder="Views 24h" className="p-2 bg-zinc-900/70 border border-white/10 rounded-lg" />
-          <input type="number" value={adminMarketing.volumeLeads24h} onChange={e => setAdminMarketing({ ...adminMarketing, volumeLeads24h: e.target.value })} placeholder="Leads 24h" className="p-2 bg-zinc-900/70 border border-white/10 rounded-lg" />
-          <motion.button onClick={handleSaveMarketingReport} className="col-span-2 bg-green-600 text-white py-2 rounded-lg" whileHover={{ scale: 1.02 }}>
-            <Check className="inline mr-2" size={16} /> Salva Report Marketing
-          </motion.button>
+      {/* REPORT MARKETING + VENDITA - DUE QUADRATI VICINI */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <h2 className="text-xl font-semibold text-cyan-400 mb-4">Report Marketing</h2>
+          <div className="space-y-3">
+            <input type="date" value={adminMarketing.date} onChange={e => setAdminMarketing({ ...adminMarketing, date: e.target.value })} className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
+            <input type="number" value={adminMarketing.volumeViews24h} onChange={e => setAdminMarketing({ ...adminMarketing, volumeViews24h: e.target.value })} placeholder="Views 24h" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
+            <input type="number" value={adminMarketing.volumeLeads24h} onChange={e => setAdminMarketing({ ...adminMarketing, volumeLeads24h: e.target.value })} placeholder="Leads 24h" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
+            <button onClick={handleSaveMarketingReport} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white py-2 rounded-lg text-sm font-medium">
+              <Check className="inline mr-1" size={14} /> Salva Marketing
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <h2 className="text-xl font-semibold text-rose-400 mb-4">Report Vendita</h2>
+          <div className="space-y-3">
+            <input type="date" value={adminSales.date} onChange={e => setAdminSales({ ...adminSales, date: e.target.value })} className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
+            <input type="number" value={adminSales.callsMade} onChange={e => setAdminSales({ ...adminSales, callsMade: e.target.value })} placeholder="Chiamate" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
+            <input type="number" value={adminSales.callsClosed} onChange={e => setAdminSales({ ...adminSales, callsClosed: e.target.value })} placeholder="Chiuse" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
+            <input type="number" value={adminSales.noShow} onChange={e => setAdminSales({ ...adminSales, noShow: e.target.value })} placeholder="No Show" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
+            <input type="number" value={adminSales.cashCollect} onChange={e => setAdminSales({ ...adminSales, cashCollect: e.target.value })} placeholder="Cash" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
+            <button onClick={handleSaveSalesReport} className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white py-2 rounded-lg text-sm font-medium">
+              <Check className="inline mr-1" size={14} /> Salva Vendita
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* REPORT VENDITA INTEGRATO */}
+      {/* LEADS CON FILTRI, RICERCA E PAGINAZIONE */}
       <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 mb-6">
-        <h2 className="text-xl font-semibold text-slate-200 mb-4">Report Vendita</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input type="date" value={adminSales.date} onChange={e => setAdminSales({ ...adminSales, date: e.target.value })} className="p-2 bg-zinc-900/70 border border-white/10 rounded-lg" />
-          <input type="number" value={adminSales.callsMade} onChange={e => setAdminSales({ ...adminSales, callsMade: e.target.value })} placeholder="Chiamate Effettuate" className="p-2 bg-zinc-900/70 border border-white/10 rounded-lg" />
-          <input type="number" value={adminSales.callsClosed} onChange={e => setAdminSales({ ...adminSales, callsClosed: e.target.value })} placeholder="Chiamate Chiuse" className="p-2 bg-zinc-900/70 border border-white/10 rounded-lg" />
-          <input type="number" value={adminSales.noShow} onChange={e => setAdminSales({ ...adminSales, noShow: e.target.value })} placeholder="No Show" className="p-2 bg-zinc-900/70 border border-white/10 rounded-lg" />
-          <input type="number" value={adminSales.cashCollect} onChange={e => setAdminSales({ ...adminSales, cashCollect: e.target.value })} placeholder="Cash Collect" className="p-2 bg-zinc-900/70 border border-white/10 rounded-lg" />
-          <motion.button onClick={handleSaveSalesReport} className="col-span-2 bg-red-600 text-white py-2 rounded-lg" whileHover={{ scale: 1.02 }}>
-            <Check className="inline mr-2" size={16} /> Salva Report Vendita
-          </motion.button>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+          <h2 className="text-xl font-semibold text-slate-200">Leads ({filteredLeads.length})</h2>
+          <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-2 bg-zinc-900/70 rounded-lg px-3 py-2">
+              <Search size={16} className="text-slate-400" />
+              <input 
+                type="text" 
+                value={searchQuery} 
+                onChange={e => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }} 
+                placeholder="Cerca nome..." 
+                className="bg-transparent outline-none text-sm w-32"
+              />
+            </div>
+            <select 
+              value={filterChiuso} 
+              onChange={e => {
+                setFilterChiuso(e.target.value);
+                setCurrentPage(1);
+              }} 
+              className="bg-zinc-900/70 border border-white/10 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="tutti">Tutti i chiusi</option>
+              <option value="si">Chiusi</option>
+              <option value="no">Non chiusi</option>
+            </select>
+            <select 
+              value={filterShowUp} 
+              onChange={e => {
+                setFilterShowUp(e.target.value);
+                setCurrentPage(1);
+              }} 
+              className="bg-zinc-900/70 border border-white/10 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="tutti">Tutti show-up</option>
+              <option value="si">Presentati</option>
+              <option value="no">No show</option>
+            </select>
+          </div>
         </div>
-      </div>
 
-      {/* SEZIONE LEADS */}
-      <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 mb-6">
-        <h2 className="text-xl font-semibold text-slate-200 mb-4">Leads</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-slate-400">
             <thead className="text-xs uppercase bg-zinc-900/50">
               <tr>
                 <th className="px-4 py-2">Nome</th>
                 <th className="px-4 py-2">Fonte</th>
+                <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Numero</th>
                 <th className="px-4 py-2">Prenotato</th>
                 <th className="px-4 py-2">Setter</th>
@@ -494,10 +546,26 @@ export default function Collaboratori() {
               </tr>
             </thead>
             <tbody>
-              {leads.map(lead => (
+              {paginatedLeads.map(lead => (
                 <tr key={lead.id} className="border-b border-white/10 hover:bg-zinc-900/50">
-                  <td className="px-4 py-2">{lead.name}</td>
-                  <td className="px-4 py-2">{lead.source}</td>
+                  <td className="px-4 py-2">
+                    {editingLead === lead.id ? (
+                      <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded" />
+                    ) : lead.name}
+                  </td>
+                  <td className="px-4 py-2">
+                    {editingLead === lead.id ? (
+                      <select value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded">
+                        <option value="">Seleziona</option>
+                        {fonti.map(f => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                    ) : lead.source || '—'}
+                  </td>
+                  <td className="px-4 py-2">
+                    {editingLead === lead.id ? (
+                      <input value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded" />
+                    ) : lead.email || '—'}
+                  </td>
                   <td className="px-4 py-2">{lead.number}</td>
                   <td className="px-4 py-2">{lead.dataPrenotazione} {lead.oraPrenotazione}</td>
                   <td className="px-4 py-2">{lead.collaboratoreNome}</td>
@@ -514,7 +582,7 @@ export default function Collaboratori() {
                     {editingLead === lead.id ? (
                       <input type="checkbox" checked={editForm.showUp} onChange={e => setEditForm({ ...editForm, showUp: e.target.checked })} />
                     ) : (
-                      <span className={`px-2 py-1 rounded text-xs ${lead.showUp ? 'bg-green-600 text-white' : 'bg-yellow-600 text-white'}`}>
+                      <span className={`px-2 py-1 rounded text-xs ${lead.showUp ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
                         {lead.showUp ? 'Sì' : 'No'}
                       </span>
                     )}
@@ -522,32 +590,29 @@ export default function Collaboratori() {
                   <td className="px-4 py-2">
                     {editingLead === lead.id ? (
                       <input type="number" value={editForm.amount} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} className="w-16 p-1 bg-zinc-800 border border-white/10 rounded" />
-                    ) : (
-                      `€${lead.amount || 0}`
-                    )}
+                    ) : `€${lead.amount || 0}`}
                   </td>
                   <td className="px-4 py-2">
                     {editingLead === lead.id ? (
                       <input type="number" value={editForm.mesi} onChange={e => setEditForm({ ...editForm, mesi: e.target.value })} className="w-16 p-1 bg-zinc-800 border border-white/10 rounded" />
-                    ) : (
-                      lead.mesi || 0
-                    )}
+                    ) : lead.mesi || 0}
                   </td>
                   <td className="px-4 py-2 truncate max-w-xs">
                     {editingLead === lead.id ? (
                       <textarea value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded" rows="2" />
-                    ) : (
-                      lead.note
-                    )}
+                    ) : lead.note || '—'}
                   </td>
                   <td className="px-4 py-2">
                     {editingLead === lead.id ? (
                       <div className="flex gap-1">
-                        <button onClick={handleSaveLeadEdit} className="p-1 text-green-400 hover:text-green-300"><Check size={16} /></button>
-                        <button onClick={handleCancelEdit} className="p-1 text-red-400 hover:text-red-300"><X size={16} /></button>
+                        <button onClick={handleSaveLeadEdit} className="text-green-400 hover:text-green-300"><Check size={16} /></button>
+                        <button onClick={handleCancelEdit} className="text-red-400 hover:text-red-300"><X size={16} /></button>
                       </div>
                     ) : (
-                      <button onClick={() => handleEditLead(lead)} className="p-1 text-cyan-400 hover:text-cyan-300"><Edit size={16} /></button>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleEditLead(lead)} className="text-cyan-400 hover:text-cyan-300"><Edit size={16} /></button>
+                        <button onClick={() => handleDeleteLead(lead.id)} className="text-red-400 hover:text-red-300"><Trash2 size={16} /></button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -555,9 +620,29 @@ export default function Collaboratori() {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-4">
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="p-2 text-cyan-300 hover:bg-cyan-900/30 rounded disabled:opacity-50"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <span className="text-sm text-slate-300">Pagina {currentPage} di {totalPages}</span>
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="p-2 text-cyan-300 hover:bg-cyan-900/30 rounded disabled:opacity-50"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* STATISTICHE LEAD PER FONTE (LISTA NUMERATA) */}
+      {/* STATISTICHE LEAD PER FONTE */}
       <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 mb-6">
         <h2 className="text-xl font-semibold text-slate-200 mb-4">Lead per Fonte</h2>
         <div className="space-y-2">
@@ -581,7 +666,7 @@ export default function Collaboratori() {
         </div>
       </div>
 
-      {/* GRAFICO: CLIENTI PRENOTATI E PRESENTATI PER SETTER */}
+      {/* GRAFICO SETTER */}
       <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 mb-6">
         <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
           <BarChart3 size={20} /> Clienti Prenotati e Presentati per Setter
@@ -657,11 +742,8 @@ export default function Collaboratori() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        <ReportArchive reports={collaboratori.flatMap(c => c.dailyReports || [])} type="collaboratore" />
-        <ReportArchive reports={marketingReports} type="marketing" />
-        <ReportArchive reports={[]} type="vendita" />
-      </div>
+      {success && <p className="text-green-500 text-center mt-4">{success}</p>}
+      {error && <p className="text-red-500 text-center mt-4">{error}</p>}
     </motion.div>
   );
 }
