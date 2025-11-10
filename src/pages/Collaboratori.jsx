@@ -87,7 +87,6 @@ export default function Collaboratori() {
   const [editForm, setEditForm] = useState({});
   const leadsPerPage = 10;
 
-  // Nuovo stato: periodo per le percentuali vendita
   const [salesPeriod, setSalesPeriod] = useState('oggi');
 
   const fonti = [
@@ -280,6 +279,7 @@ export default function Collaboratori() {
       showUp: lead.showUp || false,
       offer: lead.offer || false,
       riprenotato: lead.riprenotato || false,
+      dialed: lead.dialed ?? 0,
     });
   };
 
@@ -385,7 +385,6 @@ export default function Collaboratori() {
     ]
   };
 
-  // NUOVA FUNZIONE: Calcolo percentuali per periodo selezionato
   const calculateSalesRatesByPeriod = () => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
@@ -550,7 +549,7 @@ export default function Collaboratori() {
           </div>
         </div>
 
-        {/* TABELLA LEADS */}
+        {/* TABELLA LEADS - 2 RIGHE PER COLONNA */}
         <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-slate-200">Leads ({filteredLeads.length})</h2>
@@ -579,74 +578,130 @@ export default function Collaboratori() {
           </div>
 
           <div className="overflow-x-auto max-w-full rounded border border-white/10">
-            <div className="min-w-[1200px] w-full">
+            <div className="min-w-[1400px] w-full">
               <table className="w-full text-xs text-left text-slate-400">
                 <thead className="text-xs uppercase bg-zinc-900/50 sticky top-0">
                   <tr>
-                    <th className="px-2 py-2">Nome</th>
-                    <th className="px-2 py-2">Fonte</th>
-                    <th className="px-2 py-2">Email</th>
-                    <th className="px-2 py-2">Num</th>
-                    <th className="px-2 py-2">Data</th>
-                    <th className="px-2 py-2">Setter</th>
-                    <th className="px-2 py-2 text-center">Ch</th>
-                    <th className="px-2 py-2 text-center">Sh</th>
-                    <th className="px-2 py-2 text-center">Of</th>
-                    <th className="px-2 py-2 text-center">Rp</th>
-                    <th className="px-2 py-2 text-center">€</th>
-                    <th className="px-2 py-2 text-center">M</th>
-                    <th className="px-2 py-2">Note</th>
-                    <th className="px-2 py-2 text-center">Az</th>
+                    <th className="px-2 py-1">Nome</th>
+                    <th className="px-2 py-1">Fonte</th>
+                    <th className="px-2 py-1">Email</th>
+                    <th className="px-2 py-1">Num</th>
+                    <th className="px-2 py-1">Data</th>
+                    <th className="px-2 py-1">Setter</th>
+                    <th className="px-2 py-1 text-center">Dialed</th>
+                    <th className="px-2 py-1 text-center">Setting Call</th>
+                    <th className="px-2 py-1 text-center">Show-Up</th>
+                    <th className="px-2 py-1 text-center">Offer</th>
+                    <th className="px-2 py-1 text-center">Closed</th>
+                    <th className="px-2 py-1 text-center">€</th>
+                    <th className="px-2 py-1 text-center">M</th>
+                    <th className="px-2 py-1">Note</th>
+                    <th className="px-2 py-1 text-center">Az</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedLeads.map(lead => (
                     <tr key={lead.id} className="border-b border-white/10 hover:bg-zinc-900/50">
-                      <td className="px-2 py-2">
+                      {/* NOME */}
+                      <td className="px-2 py-1">
                         {editingLead === lead.id ? (
                           <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded text-xs" />
-                        ) : <span className="block max-w-[80px] truncate">{lead.name}</span>}
+                        ) : <div className="max-w-[80px] truncate">{lead.name}</div>}
                       </td>
-                      <td className="px-2 py-2">
+
+                      {/* FONTE */}
+                      <td className="px-2 py-1">
                         {editingLead === lead.id ? (
                           <select value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded text-xs">
                             <option value="">—</option>
                             {fonti.map(f => <option key={f} value={f}>{f}</option>)}
                           </select>
-                        ) : <span className="block max-w-[100px] truncate">{lead.source || '—'}</span>}
+                        ) : <div className="max-w-[100px] truncate">{lead.source || '—'}</div>}
                       </td>
-                      <td className="px-2 py-2 truncate max-w-[100px]">{lead.email || '—'}</td>
-                      <td className="px-2 py-2">{lead.number}</td>
-                      <td className="px-2 py-2">{lead.dataPrenotazione?.slice(5)} {lead.oraPrenotazione}</td>
-                      <td className="px-2 py-2 truncate max-w-[70px]">{lead.collaboratoreNome}</td>
-                      <td className="px-2 py-2 text-center">
+
+                      {/* EMAIL */}
+                      <td className="px-2 py-1 truncate max-w-[100px]">{lead.email || '—'}</td>
+
+                      {/* NUMERO */}
+                      <td className="px-2 py-1">{lead.number}</td>
+
+                      {/* DATA */}
+                      <td className="px-2 py-1">{lead.dataPrenotazione?.slice(5)} {lead.oraPrenotazione}</td>
+
+                      {/* SETTER */}
+                      <td className="px-2 py-1 truncate max-w-[70px]">{lead.collaboratoreNome}</td>
+
+                      {/* DIALED */}
+                      <td className="px-2 py-1 text-center">
+                        <div className="text-[10px] text-slate-500">Dialed</div>
                         {editingLead === lead.id ? (
-                          <input type="checkbox" checked={editForm.chiuso} onChange={e => setEditForm({ ...editForm, chiuso: e.target.checked })} className="w-3 h-3" />
-                        ) : <span className={`px-1.5 py-0.5 rounded text-xs ${lead.chiuso ? 'bg-green-600 text-white' : 'bg-yellow-600 text-black'}`}>{lead.chiuso ? 'Sì' : 'No'}</span>}
+                          <input 
+                            type="number" 
+                            min="0"
+                            value={editForm.dialed ?? 0} 
+                            onChange={e => setEditForm({ ...editForm, dialed: parseInt(e.target.value) || 0 })} 
+                            className="w-12 p-0.5 bg-zinc-800 border border-white/10 rounded text-xs text-center"
+                          />
+                        ) : (
+                          <div className="font-bold">{lead.dialed ?? 0}</div>
+                        )}
                       </td>
-                      <td className="px-2 py-2 text-center">
-                        {editingLead === lead.id ? (
-                          <input type="checkbox" checked={editForm.showUp} onChange={e => setEditForm({ ...editForm, showUp: e.target.checked })} className="w-3 h-3" />
-                        ) : <span className={`px-1.5 py-0.5 rounded text-xs ${lead.showUp ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>{lead.showUp ? 'Sì' : 'No'}</span>}
-                      </td>
-                      <td className="px-2 py-2 text-center">
-                        {editingLead === lead.id ? (
-                          <input type="checkbox" checked={editForm.offer} onChange={e => setEditForm({ ...editForm, offer: e.target.checked })} className="w-3 h-3" />
-                        ) : <span className={`px-1.5 py-0.5 rounded text-xs ${lead.offer ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}`}>{lead.offer ? 'Sì' : 'No'}</span>}
-                      </td>
-                      <td className="px-2 py-2 text-center">
+
+                      {/* SETTING CALL */}
+                      <td className="px-2 py-1 text-center">
+                        <div className="text-[10px] text-slate-500">Setting Call</div>
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.riprenotato} onChange={e => setEditForm({ ...editForm, riprenotato: e.target.checked })} className="w-3 h-3" />
-                        ) : <span className={`px-1.5 py-0.5 rounded text-xs ${lead.riprenotato ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}`}>{lead.riprenotato ? 'Sì' : 'No'}</span>}
+                        ) : <div className={`font-bold ${lead.riprenotato ? 'text-green-400' : 'text-red-400'}`}>{lead.riprenotato ? 'Sì' : 'No'}</div>}
                       </td>
-                      <td className="px-2 py-2 text-center">€{lead.amount || 0}</td>
-                      <td className="px-2 py-2 text-center">{lead.mesi || 0}</td>
-                      <td className="px-2 py-2 max-w-[120px]">
+
+                      {/* SHOW-UP */}
+                      <td className="px-2 py-1 text-center">
+                        <div className="text-[10px] text-slate-500">Show-Up</div>
                         {editingLead === lead.id ? (
-                          <input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded text-xs" />
-                        ) : <span className="block truncate">{lead.note || '—'}</span>}
+                          <input type="checkbox" checked={editForm.showUp} onChange={e => setEditForm({ ...editForm, showUp: e.target.checked })} className="w-3 h-3" />
+                        ) : <div className={`font-bold ${lead.showUp ? 'text-green-400' : 'text-red-400'}`}>{lead.showUp ? 'Sì' : 'No'}</div>}
                       </td>
-                      <td className="px-2 py-2 text-center">
+
+                      {/* OFFER */}
+                      <td className="px-2 py-1 text-center">
+                        <div className="text-[10px] text-slate-500">Offer</div>
+                        {editingLead === lead.id ? (
+                          <input type="checkbox" checked={editForm.offer} onChange={e => setEditForm({ ...editForm, offer: e.target.checked })} className="w-3 h-3" />
+                        ) : <div className={`font-bold ${lead.offer ? 'text-green-400' : 'text-gray-400'}`}>{lead.offer ? 'Sì' : 'No'}</div>}
+                      </td>
+
+                      {/* CLOSED */}
+                      <td className="px-2 py-1 text-center">
+                        <div className="text-[10px] text-slate-500">Closed</div>
+                        {editingLead === lead.id ? (
+                          <input type="checkbox" checked={editForm.chiuso} onChange={e => setEditForm({ ...editForm, chiuso: e.target.checked })} className="w-3 h-3" />
+                        ) : <div className={`font-bold ${lead.chiuso ? 'text-green-400' : 'text-yellow-400'}`}>{lead.chiuso ? 'Sì' : 'No'}</div>}
+                      </td>
+
+                      {/* € */}
+                      <td className="px-2 py-1 text-center">
+                        <div className="text-[10px] text-slate-500">Importo</div>
+                        <div className="font-bold">€{lead.amount || 0}</div>
+                      </td>
+
+                      {/* MESI */}
+                      <td className="px-2 py-1 text-center">
+                        <div className="text-[10px] text-slate-500">Mesi</div>
+                        <div className="font-bold">{lead.mesi || 0}</div>
+                      </td>
+
+                      {/* NOTE */}
+                      <td className="px-2 py-1 max-w-[120px]">
+                        <div className="text-[10px] text-slate-500">Note</div>
+                        {editingLead === lead.id ? (
+                          <input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} className="w-full p-0.5 bg-zinc-800 border border-white/10 rounded text-xs" />
+                        ) : <div className="truncate">{lead.note || '—'}</div>}
+                      </td>
+
+                      {/* AZIONI */}
+                      <td className="px-2 py-1 text-center">
+                        <div className="text-[10px] text-slate-500">Azioni</div>
                         {editingLead === lead.id ? (
                           <div className="flex gap-1 justify-center">
                             <button onClick={handleSaveLeadEdit} className="text-green-400"><Check size={12} /></button>
@@ -675,7 +730,7 @@ export default function Collaboratori() {
           )}
         </div>
 
-        {/* PERCENTUALI VENDITA CON SELETTORE */}
+        {/* PERCENTUALI VENDITA */}
         <div className="bg-gradient-to-br from-rose-900/40 to-purple-900/40 backdrop-blur-xl rounded-xl p-4 mb-4 border border-rose-500/30">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
             <h2 className="text-lg font-bold text-rose-300 flex items-center gap-2">
@@ -712,7 +767,7 @@ export default function Collaboratori() {
           </div>
         </div>
 
-        {/* RESTO */}
+        {/* RESTO (invariato) */}
         <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 mb-4">
           <h2 className="text-sm font-semibold text-slate-200 mb-3">Lead per Fonte</h2>
           <div className="space-y-1 text-xs">
@@ -754,7 +809,7 @@ export default function Collaboratori() {
                 <motion.div
                   key={c.id}
                   className="p-2 bg-zinc-900/70 rounded border border-white/10 flex justify-between items-center"
-                  whileHover={{ scalepub: 1.02 }}
+                  whileHover={{ scale: 1.02 }}
                 >
                   <div 
                     onClick={() => isCurrentUser ? navigate('/dashboard') : handleNavigateToDetail(c.id)}
