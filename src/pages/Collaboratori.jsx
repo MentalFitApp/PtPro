@@ -31,19 +31,19 @@ const ReportStatus = ({ collaboratori }) => {
   }, [collaboratori]);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/10">
-      <h2 className="text-xl font-semibold text-slate-200 mb-4">Stato Report Oggi</h2>
-      <p><strong>Completati:</strong> {collaboratori.length - missingReports.length}</p>
-      <p><strong>Mancanti:</strong> {missingReports.length}</p>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 mb-4 border border-white/10">
+      <h2 className="text-sm font-semibold text-slate-200 mb-3">Stato Report Oggi</h2>
+      <p className="text-xs"><strong>Completati:</strong> {collaboratori.length - missingReports.length}</p>
+      <p className="text-xs"><strong>Mancanti:</strong> {missingReports.length}</p>
       {missingReports.length > 0 && (
-        <div className="mt-2">
-          <p className="text-red-500">Collaboratori con report mancanti:</p>
-          <ul className="list-disc pl-5 text-sm">
+        <div className="mt-1">
+          <p className="text-red-500 text-xs">Mancanti:</p>
+          <ul className="list-disc pl-4 text-xs">
             {missingReports.map(name => <li key={name}>{name}</li>)}
           </ul>
         </div>
       )}
-      <p className="text-sm text-slate-400 mt-2">Nota: I collaboratori devono inviare 2 report al giorno.</p>
+      <p className="text-xs text-slate-400 mt-1">Nota: 2 report/giorno richiesti.</p>
     </motion.div>
   );
 };
@@ -79,7 +79,6 @@ export default function Collaboratori() {
     cashCollect: '',
   });
 
-  // --- STATI PER LEADS ---
   const [searchQuery, setSearchQuery] = useState('');
   const [filterChiuso, setFilterChiuso] = useState('tutti');
   const [filterShowUp, setFilterShowUp] = useState('tutti');
@@ -87,6 +86,9 @@ export default function Collaboratori() {
   const [editingLead, setEditingLead] = useState(null);
   const [editForm, setEditForm] = useState({});
   const leadsPerPage = 10;
+
+  // Nuovo stato: periodo per le percentuali vendita
+  const [salesPeriod, setSalesPeriod] = useState('oggi');
 
   const fonti = [
     'Info Storie Prima e Dopo', 'Info Storie Promo', 'Info Reel', 'Inizio Reel',
@@ -159,6 +161,7 @@ export default function Collaboratori() {
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
     const monthStart = new Date(today.slice(0, 7) + '-01');
+    const yearStart = new Date(today.slice(0, 4) + '-01-01');
 
     let viewsToday = 0, leadsToday = 0;
     let viewsWeek = 0, leadsWeek = 0;
@@ -188,9 +191,12 @@ export default function Collaboratori() {
     const monthLeads = allLeads.filter(l => l.timestamp?.toDate() >= monthStart).length;
 
     setStats({
-      viewsToday, leadsToday: leadsToday + todayLeads,
-      viewsWeek, leadsWeek: leadsWeek + weekLeads,
-      viewsMonth, leadsMonth: leadsMonth + monthLeads,
+      viewsToday,
+      leadsToday: leadsToday + todayLeads,
+      viewsWeek,
+      leadsWeek: leadsWeek + weekLeads,
+      viewsMonth,
+      leadsMonth: leadsMonth + monthLeads,
     });
   };
 
@@ -220,7 +226,7 @@ export default function Collaboratori() {
         assignedAdmin: [auth.currentUser.uid],
         dailyReports: [],
         tracker: {},
-        pipeline: [],
+        personalPipeline: [],
       });
 
       const msg = `Benvenuto!\nEmail: ${newEmail}\nPassword: ${tempPwd}\nLink: https://mentalfitapp.github.io/PtPro/#/collaboratore-login`;
@@ -258,7 +264,6 @@ export default function Collaboratori() {
     }
   };
 
-  // --- MODIFICA LEAD ---
   const handleEditLead = (lead) => {
     setEditingLead(lead.id);
     setEditForm({
@@ -273,6 +278,8 @@ export default function Collaboratori() {
       mesi: lead.mesi || '',
       chiuso: lead.chiuso || false,
       showUp: lead.showUp || false,
+      offer: lead.offer || false,
+      riprenotato: lead.riprenotato || false,
     });
   };
 
@@ -294,7 +301,6 @@ export default function Collaboratori() {
     setEditForm({});
   };
 
-  // --- ELIMINA LEAD ---
   const handleDeleteLead = async (id) => {
     if (confirm('Eliminare questo lead?')) {
       try {
@@ -319,7 +325,6 @@ export default function Collaboratori() {
     navigate('/collaboratore-detail', { state: { collaboratoreId: id } });
   };
 
-  // --- ANALISI LEAD PER FONTE ---
   const getSourceStats = () => {
     const stats = {};
     leads.forEach(l => {
@@ -343,7 +348,6 @@ export default function Collaboratori() {
 
   const sourceStats = getSourceStats();
 
-  // --- GRAFICO SETTER ---
   const getSetterStats = () => {
     return collaboratori
       .filter(c => c.role === 'Setter')
@@ -381,7 +385,60 @@ export default function Collaboratori() {
     ]
   };
 
-  // --- FILTRI E PAGINAZIONE LEADS ---
+  // NUOVA FUNZIONE: Calcolo percentuali per periodo selezionato
+  const calculateSalesRatesByPeriod = () => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const yearStart = new Date(today.getFullYear(), 0, 1);
+
+    let startDate, endDate;
+    if (salesPeriod === 'oggi') {
+      startDate = endDate = todayStr;
+    } else if (salesPeriod === 'settimana') {
+      startDate = weekStart.toISOString().split('T')[0];
+      endDate = todayStr;
+    } else if (salesPeriod === 'mese') {
+      startDate = monthStart.toISOString().split('T')[0];
+      endDate = todayStr;
+    } else if (salesPeriod === 'anno') {
+      startDate = yearStart.toISOString().split('T')[0];
+      endDate = todayStr;
+    }
+
+    let callsFatte = 0;
+    let showUpCount = 0;
+    let offerCount = 0;
+    let closeCount = 0;
+
+    collaboratori.forEach(collab => {
+      if (collab.role !== 'Vendita') return;
+      (collab.dailyReports || []).forEach(report => {
+        if (report.date < startDate || report.date > endDate) return;
+        const calls = parseInt(report.tracker?.callFatte || 0);
+        callsFatte += calls;
+      });
+    });
+
+    leads.forEach(lead => {
+      const leadDate = lead.dataPrenotazione;
+      if (!leadDate || leadDate < startDate || leadDate > endDate) return;
+      if (lead.showUp) showUpCount++;
+      if (lead.offer) offerCount++;
+      if (lead.chiuso) closeCount++;
+    });
+
+    const showUpRate = callsFatte > 0 ? ((showUpCount / callsFatte) * 100).toFixed(1) : '0.0';
+    const offerRate = showUpCount > 0 ? ((offerCount / showUpCount) * 100).toFixed(1) : '0.0';
+    const closeRate = offerCount > 0 ? ((closeCount / offerCount) * 100).toFixed(1) : '0.0';
+
+    return { callsFatte, showUpRate, offerRate, closeRate };
+  };
+
+  const { callsFatte, showUpRate, offerRate, closeRate } = calculateSalesRatesByPeriod();
+
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesChiuso = filterChiuso === 'tutti' || (filterChiuso === 'si' ? lead.chiuso : !lead.chiuso);
@@ -400,350 +457,331 @@ export default function Collaboratori() {
   if (!isAdmin) return null;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 sm:p-6 max-w-7xl mx-auto">
-      {/* HEADER + AGGIUNGI */}
-      <motion.header className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2">
-          <Users size={28} /> Gestione Collaboratori
-        </h1>
-        <motion.button
-          onClick={handleAddCollaboratore}
-          className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg"
-          whileHover={{ scale: 1.05 }}
-        >
-          <Plus size={16} /> Aggiungi
-        </motion.button>
-      </motion.header>
+    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-900 overflow-x-hidden">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
 
-      <ReportStatus collaboratori={collaboratori} />
-
-      {/* 3 CASELLE STATISTICHE IN ALTO */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <motion.div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-          <h3 className="text-lg font-semibold text-slate-200 mb-4">Oggi</h3>
-          <p className="text-3xl font-bold text-rose-500">{stats.viewsToday}</p>
-          <p className="text-sm text-slate-400">Views</p>
-          <p className="text-2xl font-bold text-green-500 mt-2">{stats.leadsToday}</p>
-          <p className="text-sm text-slate-400">Nuovi Leads</p>
-        </motion.div>
-
-        <motion.div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-          <h3 className="text-lg font-semibold text-slate-200 mb-4">Questa Settimana</h3>
-          <p className="text-3xl font-bold text-rose-500">{stats.viewsWeek}</p>
-          <p className="text-sm text-slate-400">Views</p>
-          <p className="text-2xl font-bold text-green-500 mt-2">{stats.leadsWeek}</p>
-          <p className="text-sm text-slate-400">Nuovi Leads</p>
-        </motion.div>
-
-        <motion.div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-          <h3 className="text-lg font-semibold text-slate-200 mb-4">Questo Mese</h3>
-          <p className="text-3xl font-bold text-rose-500">{stats.viewsMonth}</p>
-          <p className="text-sm text-slate-400">Views</p>
-          <p className="text-2xl font-bold text-green-500 mt-2">{stats.leadsMonth}</p>
-          <p className="text-sm text-slate-400">Nuovi Leads</p>
-        </motion.div>
-      </div>
-
-      {/* CALENDARIO */}
-      <div className="mb-6">
-        <Calendar 
-          reports={collaboratori.flatMap(c => c.dailyReports || [])} 
-          collaboratori={collaboratori} 
-          onDateClick={d => navigate(`/calendar-report/${d.toISOString().split('T')[0]}`)} 
-        />
-      </div>
-
-      {/* REPORT MARKETING + VENDITA - DUE QUADRATI VICINI */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-          <h2 className="text-xl font-semibold text-cyan-400 mb-4">Report Marketing</h2>
-          <div className="space-y-3">
-            <input type="date" value={adminMarketing.date} onChange={e => setAdminMarketing({ ...adminMarketing, date: e.target.value })} className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
-            <input type="number" value={adminMarketing.volumeViews24h} onChange={e => setAdminMarketing({ ...adminMarketing, volumeViews24h: e.target.value })} placeholder="Views 24h" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
-            <input type="number" value={adminMarketing.volumeLeads24h} onChange={e => setAdminMarketing({ ...adminMarketing, volumeLeads24h: e.target.value })} placeholder="Leads 24h" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
-            <button onClick={handleSaveMarketingReport} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white py-2 rounded-lg text-sm font-medium">
-              <Check className="inline mr-1" size={14} /> Salva Marketing
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-          <h2 className="text-xl font-semibold text-rose-400 mb-4">Report Vendita</h2>
-          <div className="space-y-3">
-            <input type="date" value={adminSales.date} onChange={e => setAdminSales({ ...adminSales, date: e.target.value })} className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
-            <input type="number" value={adminSales.callsMade} onChange={e => setAdminSales({ ...adminSales, callsMade: e.target.value })} placeholder="Chiamate" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
-            <input type="number" value={adminSales.callsClosed} onChange={e => setAdminSales({ ...adminSales, callsClosed: e.target.value })} placeholder="Chiuse" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
-            <input type="number" value={adminSales.noShow} onChange={e => setAdminSales({ ...adminSales, noShow: e.target.value })} placeholder="No Show" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
-            <input type="number" value={adminSales.cashCollect} onChange={e => setAdminSales({ ...adminSales, cashCollect: e.target.value })} placeholder="Cash" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-sm" />
-            <button onClick={handleSaveSalesReport} className="w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white py-2 rounded-lg text-sm font-medium">
-              <Check className="inline mr-1" size={14} /> Salva Vendita
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* LEADS CON FILTRI, RICERCA E PAGINAZIONE */}
-      <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 mb-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-          <h2 className="text-xl font-semibold text-slate-200">Leads ({filteredLeads.length})</h2>
-          <div className="flex flex-wrap gap-2">
-            <div className="flex items-center gap-2 bg-zinc-900/70 rounded-lg px-3 py-2">
-              <Search size={16} className="text-slate-400" />
-              <input 
-                type="text" 
-                value={searchQuery} 
-                onChange={e => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }} 
-                placeholder="Cerca nome..." 
-                className="bg-transparent outline-none text-sm w-32"
-              />
-            </div>
-            <select 
-              value={filterChiuso} 
-              onChange={e => {
-                setFilterChiuso(e.target.value);
-                setCurrentPage(1);
-              }} 
-              className="bg-zinc-900/70 border border-white/10 rounded-lg px-3 py-2 text-sm"
+        {/* HEADER */}
+        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-2xl font-bold text-slate-50 flex items-center gap-2">
+            <Users size={24} /> Gestione
+          </h1>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <input
+              type="email"
+              value={newEmail}
+              onChange={e => setNewEmail(e.target.value)}
+              placeholder="email@esempio.com"
+              className="px-3 py-1.5 bg-zinc-900/70 border border-white/10 rounded text-xs w-full sm:w-40"
+            />
+            <select
+              value={newRole}
+              onChange={e => setNewRole(e.target.value)}
+              className="px-3 py-1.5 bg-zinc-900/70 border border-white/10 rounded text-xs w-full sm:w-28"
             >
-              <option value="tutti">Tutti i chiusi</option>
-              <option value="si">Chiusi</option>
-              <option value="no">Non chiusi</option>
+              <option>Setter</option>
+              <option>Marketing</option>
+              <option>Vendita</option>
             </select>
-            <select 
-              value={filterShowUp} 
-              onChange={e => {
-                setFilterShowUp(e.target.value);
-                setCurrentPage(1);
-              }} 
-              className="bg-zinc-900/70 border border-white/10 rounded-lg px-3 py-2 text-sm"
+            <motion.button
+              onClick={handleAddCollaboratore}
+              className="flex items-center justify-center gap-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs w-full sm:w-auto"
+              whileHover={{ scale: 1.05 }}
             >
-              <option value="tutti">Tutti show-up</option>
-              <option value="si">Presentati</option>
-              <option value="no">No show</option>
-            </select>
+              <Plus size={14} /> Aggiungi
+            </motion.button>
           </div>
+        </motion.header>
+
+        {copied && <p className="text-green-400 text-center text-xs">Credenziali copiate!</p>}
+
+        <ReportStatus collaboratori={collaboratori} />
+
+        {/* STATISTICHE */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { label: 'Oggi', views: stats.viewsToday, leads: stats.leadsToday },
+            { label: 'Settimana', views: stats.viewsWeek, leads: stats.leadsWeek },
+            { label: 'Mese', views: stats.viewsMonth, leads: stats.leadsMonth },
+          ].map((stat, i) => (
+            <motion.div key={i} className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
+              <h3 className="text-sm font-semibold text-slate-200">{stat.label}</h3>
+              <p className="text-2xl font-bold text-rose-500 mt-1">{stat.views}</p>
+              <p className="text-xs text-slate-400">Views</p>
+              <p className="text-xl font-bold text-green-500 mt-1">{stat.leads}</p>
+              <p className="text-xs text-slate-400">Leads</p>
+            </motion.div>
+          ))}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left text-slate-400">
-            <thead className="text-xs uppercase bg-zinc-900/50">
-              <tr>
-                <th className="px-4 py-2">Nome</th>
-                <th className="px-4 py-2">Fonte</th>
-                <th className="px-4 py-2">Email</th>
-                <th className="px-4 py-2">Numero</th>
-                <th className="px-4 py-2">Prenotato</th>
-                <th className="px-4 py-2">Setter</th>
-                <th className="px-4 py-2">Chiuso</th>
-                <th className="px-4 py-2">Show-up</th>
-                <th className="px-4 py-2">€</th>
-                <th className="px-4 py-2">Mesi</th>
-                <th className="px-4 py-2">Note</th>
-                <th className="px-4 py-2">Azioni</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedLeads.map(lead => (
-                <tr key={lead.id} className="border-b border-white/10 hover:bg-zinc-900/50">
-                  <td className="px-4 py-2">
-                    {editingLead === lead.id ? (
-                      <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded" />
-                    ) : lead.name}
-                  </td>
-                  <td className="px-4 py-2">
-                    {editingLead === lead.id ? (
-                      <select value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded">
-                        <option value="">Seleziona</option>
-                        {fonti.map(f => <option key={f} value={f}>{f}</option>)}
-                      </select>
-                    ) : lead.source || '—'}
-                  </td>
-                  <td className="px-4 py-2">
-                    {editingLead === lead.id ? (
-                      <input value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded" />
-                    ) : lead.email || '—'}
-                  </td>
-                  <td className="px-4 py-2">{lead.number}</td>
-                  <td className="px-4 py-2">{lead.dataPrenotazione} {lead.oraPrenotazione}</td>
-                  <td className="px-4 py-2">{lead.collaboratoreNome}</td>
-                  <td className="px-4 py-2">
-                    {editingLead === lead.id ? (
-                      <input type="checkbox" checked={editForm.chiuso} onChange={e => setEditForm({ ...editForm, chiuso: e.target.checked })} />
-                    ) : (
-                      <span className={`px-2 py-1 rounded text-xs ${lead.chiuso ? 'bg-green-600 text-white' : 'bg-yellow-600 text-white'}`}>
-                        {lead.chiuso ? 'Sì' : 'No'}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2">
-                    {editingLead === lead.id ? (
-                      <input type="checkbox" checked={editForm.showUp} onChange={e => setEditForm({ ...editForm, showUp: e.target.checked })} />
-                    ) : (
-                      <span className={`px-2 py-1 rounded text-xs ${lead.showUp ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-                        {lead.showUp ? 'Sì' : 'No'}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2">
-                    {editingLead === lead.id ? (
-                      <input type="number" value={editForm.amount} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} className="w-16 p-1 bg-zinc-800 border border-white/10 rounded" />
-                    ) : `€${lead.amount || 0}`}
-                  </td>
-                  <td className="px-4 py-2">
-                    {editingLead === lead.id ? (
-                      <input type="number" value={editForm.mesi} onChange={e => setEditForm({ ...editForm, mesi: e.target.value })} className="w-16 p-1 bg-zinc-800 border border-white/10 rounded" />
-                    ) : lead.mesi || 0}
-                  </td>
-                  <td className="px-4 py-2 truncate max-w-xs">
-                    {editingLead === lead.id ? (
-                      <textarea value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded" rows="2" />
-                    ) : lead.note || '—'}
-                  </td>
-                  <td className="px-4 py-2">
-                    {editingLead === lead.id ? (
-                      <div className="flex gap-1">
-                        <button onClick={handleSaveLeadEdit} className="text-green-400 hover:text-green-300"><Check size={16} /></button>
-                        <button onClick={handleCancelEdit} className="text-red-400 hover:text-red-300"><X size={16} /></button>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <button onClick={() => handleEditLead(lead)} className="text-cyan-400 hover:text-cyan-300"><Edit size={16} /></button>
-                        <button onClick={() => handleDeleteLead(lead.id)} className="text-red-400 hover:text-red-300"><Trash2 size={16} /></button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-4">
-            <button 
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="p-2 text-cyan-300 hover:bg-cyan-900/30 rounded disabled:opacity-50"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <span className="text-sm text-slate-300">Pagina {currentPage} di {totalPages}</span>
-            <button 
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="p-2 text-cyan-300 hover:bg-cyan-900/30 rounded disabled:opacity-50"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* STATISTICHE LEAD PER FONTE */}
-      <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 mb-6">
-        <h2 className="text-xl font-semibold text-slate-200 mb-4">Lead per Fonte</h2>
-        <div className="space-y-2">
-          {sourceStats.length === 0 ? (
-            <p className="text-slate-400">Nessun lead</p>
-          ) : (
-            sourceStats.map(s => (
-              <div key={s.source} className="flex justify-between items-center p-3 bg-zinc-900/70 rounded-lg border border-white/10">
-                <div className="flex items-center gap-3">
-                  <span className="text-cyan-400 font-bold">{s.index}.</span>
-                  <span className="font-medium text-slate-200">{s.source}</span>
-                </div>
-                <div className="flex gap-6 text-sm">
-                  <span><strong>{s.total}</strong> lead</span>
-                  <span className="text-green-400"><strong>{s.showUp}%</strong> show-up</span>
-                  <span className="text-rose-400"><strong>{s.chiusura}%</strong> chiusura</span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* GRAFICO SETTER */}
-      <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 mb-6">
-        <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
-          <BarChart3 size={20} /> Clienti Prenotati e Presentati per Setter
-        </h2>
-        <div className="h-64">
-          <Bar
-            data={setterChartConfig}
-            options={{
-              responsive: true,
-              plugins: { 
-                legend: { position: 'top' },
-                tooltip: { mode: 'index', intersect: false }
-              },
-              scales: { y: { beginAtZero: true } }
-            }}
+        <div className="mb-6">
+          <Calendar 
+            reports={collaboratori.flatMap(c => c.dailyReports || [])} 
+            collaboratori={collaboratori} 
+            onDateClick={d => navigate(`/calendar-report/${d.toISOString().split('T')[0]}`)} 
           />
         </div>
-      </div>
 
-      {/* ELENCO COLLABORATORI */}
-      <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6">
-        <h2 className="text-xl font-semibold text-slate-200 mb-4">Elenco Collaboratori</h2>
-        <div className="space-y-4">
-          {[...collaboratori, ...admins].map(c => {
-            const isCurrentUser = c.id === auth.currentUser?.uid;
-            return (
-              <motion.div
-                key={c.id}
-                className="p-4 bg-zinc-900/70 rounded-lg border border-white/10 flex justify-between items-center cursor-pointer"
-                whileHover={{ scale: 1.02 }}
-              >
-                <div 
-                  onClick={() => {
-                    if (isCurrentUser) {
-                      navigate('/dashboard');
-                    } else {
-                      handleNavigateToDetail(c.id);
-                    }
-                  }}
-                  className="flex-1"
-                >
-                  <p className="font-medium text-slate-200">{c.name || c.email.split('@')[0]} ({c.role})</p>
-                  <p className="text-sm text-slate-400">{c.email}</p>
-                </div>
+        {/* REPORT */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
+            <h2 className="text-sm font-semibold text-cyan-400 mb-3">Report Marketing</h2>
+            <div className="space-y-2 text-xs">
+              <input type="date" value={adminMarketing.date} onChange={e => setAdminMarketing({ ...adminMarketing, date: e.target.value })} className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={adminMarketing.volumeViews24h} onChange={e => setAdminMarketing({ ...adminMarketing, volumeViews24h: e.target.value })} placeholder="Views 24h" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={adminMarketing.volumeLeads24h} onChange={e => setAdminMarketing({ ...adminMarketing, volumeLeads24h: e.target.value })} placeholder="Leads 24h" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <button onClick={handleSaveMarketingReport} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-1.5 rounded text-xs">
+                <Check className="inline mr-1" size={12} /> Salva
+              </button>
+            </div>
+          </div>
 
-                {isAdmin && !isCurrentUser && (
-                  <div className="flex gap-2 ml-4">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate('/collaboratore-detail', { state: { collaboratoreId: c.id, editRole: true } });
-                      }}
-                      className="p-2 text-cyan-400 hover:text-cyan-300"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm(`Eliminare ${c.name || c.email}?`)) {
-                          handleDeleteCollaboratore(c.id);
-                        }
-                      }}
-                      className="p-2 text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
+          <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
+            <h2 className="text-sm font-semibold text-rose-400 mb-3">Report Vendita</h2>
+            <div className="space-y-2 text-xs">
+              <input type="date" value={adminSales.date} onChange={e => setAdminSales({ ...adminSales, date: e.target.value })} className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={adminSales.callsMade} onChange={e => setAdminSales({ ...adminSales, callsMade: e.target.value })} placeholder="Chiamate" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={adminSales.callsClosed} onChange={e => setAdminSales({ ...adminSales, callsClosed: e.target.value })} placeholder="Chiuse" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={adminSales.noShow} onChange={e => setAdminSales({ ...adminSales, noShow: e.target.value })} placeholder="No Show" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={adminSales.cashCollect} onChange={e => setAdminSales({ ...adminSales, cashCollect: e.target.value })} placeholder="Cash" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <button onClick={handleSaveSalesReport} className="w-full bg-gradient-to-r from-rose-600 to-red-600 text-white py-1.5 rounded text-xs">
+                <Check className="inline mr-1" size={12} /> Salva
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {success && <p className="text-green-500 text-center mt-4">{success}</p>}
-      {error && <p className="text-red-500 text-center mt-4">{error}</p>}
-    </motion.div>
+        {/* TABELLA LEADS */}
+        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+            <h2 className="text-sm font-semibold text-slate-200">Leads ({filteredLeads.length})</h2>
+            <div className="flex flex-wrap gap-1 text-xs">
+              <div className="flex items-center gap-1 bg-zinc-900/70 rounded px-2 py-1">
+                <Search size={12} className="text-slate-400" />
+                <input 
+                  type="text" 
+                  value={searchQuery} 
+                  onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
+                  placeholder="Cerca..." 
+                  className="bg-transparent outline-none w-24"
+                />
+              </div>
+              <select value={filterChiuso} onChange={e => { setFilterChiuso(e.target.value); setCurrentPage(1); }} className="bg-zinc-900/70 border border-white/10 rounded px-2 py-1">
+                <option value="tutti">Tutti</option>
+                <option value="si">Chiusi</option>
+                <option value="no">No</option>
+              </select>
+              <select value={filterShowUp} onChange={e => { setFilterShowUp(e.target.value); setCurrentPage(1); }} className="bg-zinc-900/70 border border-white/10 rounded px-2 py-1">
+                <option value="tutti">Tutti</option>
+                <option value="si">Sì</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto max-w-full rounded border border-white/10">
+            <div className="min-w-[1200px] w-full">
+              <table className="w-full text-xs text-left text-slate-400">
+                <thead className="text-xs uppercase bg-zinc-900/50 sticky top-0">
+                  <tr>
+                    <th className="px-2 py-2">Nome</th>
+                    <th className="px-2 py-2">Fonte</th>
+                    <th className="px-2 py-2">Email</th>
+                    <th className="px-2 py-2">Num</th>
+                    <th className="px-2 py-2">Data</th>
+                    <th className="px-2 py-2">Setter</th>
+                    <th className="px-2 py-2 text-center">Ch</th>
+                    <th className="px-2 py-2 text-center">Sh</th>
+                    <th className="px-2 py-2 text-center">Of</th>
+                    <th className="px-2 py-2 text-center">Rp</th>
+                    <th className="px-2 py-2 text-center">€</th>
+                    <th className="px-2 py-2 text-center">M</th>
+                    <th className="px-2 py-2">Note</th>
+                    <th className="px-2 py-2 text-center">Az</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedLeads.map(lead => (
+                    <tr key={lead.id} className="border-b border-white/10 hover:bg-zinc-900/50">
+                      <td className="px-2 py-2">
+                        {editingLead === lead.id ? (
+                          <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded text-xs" />
+                        ) : <span className="block max-w-[80px] truncate">{lead.name}</span>}
+                      </td>
+                      <td className="px-2 py-2">
+                        {editingLead === lead.id ? (
+                          <select value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded text-xs">
+                            <option value="">—</option>
+                            {fonti.map(f => <option key={f} value={f}>{f}</option>)}
+                          </select>
+                        ) : <span className="block max-w-[100px] truncate">{lead.source || '—'}</span>}
+                      </td>
+                      <td className="px-2 py-2 truncate max-w-[100px]">{lead.email || '—'}</td>
+                      <td className="px-2 py-2">{lead.number}</td>
+                      <td className="px-2 py-2">{lead.dataPrenotazione?.slice(5)} {lead.oraPrenotazione}</td>
+                      <td className="px-2 py-2 truncate max-w-[70px]">{lead.collaboratoreNome}</td>
+                      <td className="px-2 py-2 text-center">
+                        {editingLead === lead.id ? (
+                          <input type="checkbox" checked={editForm.chiuso} onChange={e => setEditForm({ ...editForm, chiuso: e.target.checked })} className="w-3 h-3" />
+                        ) : <span className={`px-1.5 py-0.5 rounded text-xs ${lead.chiuso ? 'bg-green-600 text-white' : 'bg-yellow-600 text-black'}`}>{lead.chiuso ? 'Sì' : 'No'}</span>}
+                      </td>
+                      <td className="px-2 py-2 text-center">
+                        {editingLead === lead.id ? (
+                          <input type="checkbox" checked={editForm.showUp} onChange={e => setEditForm({ ...editForm, showUp: e.target.checked })} className="w-3 h-3" />
+                        ) : <span className={`px-1.5 py-0.5 rounded text-xs ${lead.showUp ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>{lead.showUp ? 'Sì' : 'No'}</span>}
+                      </td>
+                      <td className="px-2 py-2 text-center">
+                        {editingLead === lead.id ? (
+                          <input type="checkbox" checked={editForm.offer} onChange={e => setEditForm({ ...editForm, offer: e.target.checked })} className="w-3 h-3" />
+                        ) : <span className={`px-1.5 py-0.5 rounded text-xs ${lead.offer ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}`}>{lead.offer ? 'Sì' : 'No'}</span>}
+                      </td>
+                      <td className="px-2 py-2 text-center">
+                        {editingLead === lead.id ? (
+                          <input type="checkbox" checked={editForm.riprenotato} onChange={e => setEditForm({ ...editForm, riprenotato: e.target.checked })} className="w-3 h-3" />
+                        ) : <span className={`px-1.5 py-0.5 rounded text-xs ${lead.riprenotato ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}`}>{lead.riprenotato ? 'Sì' : 'No'}</span>}
+                      </td>
+                      <td className="px-2 py-2 text-center">€{lead.amount || 0}</td>
+                      <td className="px-2 py-2 text-center">{lead.mesi || 0}</td>
+                      <td className="px-2 py-2 max-w-[120px]">
+                        {editingLead === lead.id ? (
+                          <input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded text-xs" />
+                        ) : <span className="block truncate">{lead.note || '—'}</span>}
+                      </td>
+                      <td className="px-2 py-2 text-center">
+                        {editingLead === lead.id ? (
+                          <div className="flex gap-1 justify-center">
+                            <button onClick={handleSaveLeadEdit} className="text-green-400"><Check size={12} /></button>
+                            <button onClick={handleCancelEdit} className="text-red-400"><X size={12} /></button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-1 justify-center">
+                            <button onClick={() => handleEditLead(lead)} className="text-cyan-400"><Edit size={12} /></button>
+                            <button onClick={() => handleDeleteLead(lead.id)} className="text-red-400"><Trash2 size={12} /></button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-3 mt-3 text-xs">
+              <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-1 text-cyan-300 disabled:opacity-50"><ChevronLeft size={14} /></button>
+              <span className="text-slate-300">Pag {currentPage}/{totalPages}</span>
+              <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="p-1 text-cyan-300 disabled:opacity-50"><ChevronRight size={14} /></button>
+            </div>
+          )}
+        </div>
+
+        {/* PERCENTUALI VENDITA CON SELETTORE */}
+        <div className="bg-gradient-to-br from-rose-900/40 to-purple-900/40 backdrop-blur-xl rounded-xl p-4 mb-4 border border-rose-500/30">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <h2 className="text-lg font-bold text-rose-300 flex items-center gap-2">
+              <TrendingUp size={20} /> Percentuali Vendita
+            </h2>
+            <select 
+              value={salesPeriod} 
+              onChange={e => setSalesPeriod(e.target.value)}
+              className="bg-zinc-900/70 border border-white/10 rounded px-3 py-1.5 text-xs"
+            >
+              <option value="oggi">Oggi</option>
+              <option value="settimana">Questa Settimana</option>
+              <option value="mese">Questo Mese</option>
+              <option value="anno">Questo Anno</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div className="text-center">
+              <p className="text-rose-300">Call Fatte</p>
+              <p className="text-2xl font-bold text-white">{callsFatte}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-green-300">Show-Up</p>
+              <p className="text-2xl font-bold text-green-400">{showUpRate}%</p>
+            </div>
+            <div className="text-center">
+              <p className="text-yellow-300">Offer</p>
+              <p className="text-2xl font-bold text-yellow-400">{offerRate}%</p>
+            </div>
+            <div className="text-center">
+              <p className="text-rose-300">Close</p>
+              <p className="text-2xl font-bold text-rose-400">{closeRate}%</p>
+            </div>
+          </div>
+        </div>
+
+        {/* RESTO */}
+        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 mb-4">
+          <h2 className="text-sm font-semibold text-slate-200 mb-3">Lead per Fonte</h2>
+          <div className="space-y-1 text-xs">
+            {sourceStats.length === 0 ? (
+              <p className="text-slate-400">Nessun lead</p>
+            ) : (
+              sourceStats.map(s => (
+                <div key={s.source} className="flex justify-between items-center p-2 bg-zinc-900/70 rounded border border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className="text-cyan-400 font-bold">{s.index}.</span>
+                    <span className="truncate max-w-[120px]">{s.source}</span>
+                  </div>
+                  <div className="flex gap-3">
+                    <span><strong>{s.total}</strong></span>
+                    <span className="text-green-400"><strong>{s.showUp}%</strong></span>
+                    <span className="text-rose-400"><strong>{s.chiusura}%</strong></span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 mb-4">
+          <h2 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-1">
+            <BarChart3 size={16} /> Setter
+          </h2>
+          <div className="h-48">
+            <Bar data={setterChartConfig} options={{ responsive: true, plugins: { legend: { labels: { font: { size: 10 } } } }, scales: { y: { beginAtZero: true, ticks: { font: { size: 9 } } } } }} />
+          </div>
+        </div>
+
+        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4">
+          <h2 className="text-sm font-semibold text-slate-200 mb-3">Collaboratori</h2>
+          <div className="space-y-2 text-xs">
+            {[...collaboratori, ...admins].map(c => {
+              const isCurrentUser = c.id === auth.currentUser?.uid;
+              return (
+                <motion.div
+                  key={c.id}
+                  className="p-2 bg-zinc-900/70 rounded border border-white/10 flex justify-between items-center"
+                  whileHover={{ scalepub: 1.02 }}
+                >
+                  <div 
+                    onClick={() => isCurrentUser ? navigate('/dashboard') : handleNavigateToDetail(c.id)}
+                    className="flex-1 cursor-pointer"
+                  >
+                    <p className="font-medium text-slate-200">{c.name || c.email.split('@')[0]} ({c.role})</p>
+                    <p className="text-slate-400 truncate">{c.email}</p>
+                  </div>
+                  {isAdmin && !isCurrentUser && (
+                    <div className="flex gap-1 ml-2">
+                      <button onClick={(e) => { e.stopPropagation(); navigate('/collaboratore-detail', { state: { collaboratoreId: c.id, editRole: true } }); }} className="p-1 text-cyan-400">
+                        <Edit size={12} />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); if (confirm(`Elimina ${c.name || c.email}?`)) handleDeleteCollaboratore(c.id); }} className="p-1 text-red-400">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {success && <p className="text-green-500 text-center text-xs">{success}</p>}
+        {error && <p className="text-red-500 text-center text-xs">{error}</p>}
+      </div>
+    </div>
   );
 }
