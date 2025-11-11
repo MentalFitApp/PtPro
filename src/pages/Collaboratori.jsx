@@ -283,6 +283,7 @@ export default function Collaboratori() {
       offer: lead.offer || false,
       riprenotato: lead.riprenotato || false,
       dialed: lead.dialed ?? 0,
+      target: lead.target ?? false, // AGGIUNTO
     });
   };
 
@@ -487,10 +488,13 @@ export default function Collaboratori() {
       chiamatePrenotate += parseInt(report.chiamatePrenotate || 0);
     });
 
-    return { followUps, dialedFatti, dialedRisposte, chiamatePrenotate };
+    const risposteRate = dialedFatti > 0 ? ((dialedRisposte / dialedFatti) * 100).toFixed(1) : '0.0';
+    const prenotateRate = followUps > 0 ? ((chiamatePrenotate / followUps) * 100).toFixed(1) : '0.0';
+
+    return { followUps, dialedFatti, risposteRate, prenotateRate };
   };
 
-  const { followUps, dialedFatti, dialedRisposte, chiamatePrenotate } = calculateSettingStatsFromReports();
+  const { followUps, dialedFatti, risposteRate, prenotateRate } = calculateSettingStatsFromReports();
 
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.name?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -514,8 +518,8 @@ export default function Collaboratori() {
       email: pendingClientLead.email || '',
       phone: pendingClientLead.number || '',
       planType: '',
-      duration: pendingClientLead.mesi || '',
-      paymentAmount: pendingClientLead.amount || '',
+      duration: pendingClientLead.mesi ? String(pendingClientLead.mesi) : '',
+      paymentAmount: pendingClientLead.amount ? String(pendingClientLead.amount) : '',
       paymentMethod: '',
       customStartDate: new Date().toISOString().split('T')[0],
     };
@@ -637,7 +641,7 @@ export default function Collaboratori() {
           </div>
         </div>
 
-        {/* TABELLA LEADS */}
+        {/* TABELLA LEADS – AGGIUNTA COLONNA TARGET */}
         <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-slate-200">Leads ({filteredLeads.length})</h2>
@@ -666,7 +670,7 @@ export default function Collaboratori() {
           </div>
 
           <div className="overflow-x-auto max-w-full rounded border border-white/10">
-            <div className="min-w-[1400px] w-full">
+            <div className="min-w-[1500px] w-full">
               <table className="w-full text-xs text-left text-slate-400">
                 <thead className="text-xs uppercase bg-zinc-900/50 sticky top-0">
                   <tr>
@@ -679,6 +683,7 @@ export default function Collaboratori() {
                     <th className="px-2 py-1 text-center">Dialed</th>
                     <th className="px-2 py-1 text-center">Setting Call</th>
                     <th className="px-2 py-1 text-center">Show-Up</th>
+                    <th className="px-2 py-1 text-center">Target</th>
                     <th className="px-2 py-1 text-center">Offer</th>
                     <th className="px-2 py-1 text-center">Closed</th>
                     <th className="px-2 py-1 text-center">€</th>
@@ -724,6 +729,12 @@ export default function Collaboratori() {
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.showUp} onChange={e => setEditForm({ ...editForm, showUp: e.target.checked })} className="w-3 h-3" />
                         ) : <div className={`font-bold ${lead.showUp ? 'text-green-400' : 'text-red-400'}`}>{lead.showUp ? 'Sì' : 'No'}</div>}
+                      </td>
+                      <td className="px-2 py-1 text-center">
+                        <div className="text-[10px] text-slate-500">Target</div>
+                        {editingLead === lead.id ? (
+                          <input type="checkbox" checked={editForm.target} onChange={e => setEditForm({ ...editForm, target: e.target.checked })} className="w-3 h-3" />
+                        ) : <div className={`font-bold ${lead.target ? 'text-emerald-400' : 'text-gray-500'}`}>{lead.target ? 'Sì' : 'No'}</div>}
                       </td>
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Offer</div>
@@ -850,11 +861,11 @@ export default function Collaboratori() {
             </div>
             <div className="text-center">
               <p className="text-green-300">Risposte</p>
-              <p className="text-2xl font-bold text-green-400">{dialedRisposte}</p>
+              <p className="text-2xl font-bold text-green-400">{risposteRate}%</p>
             </div>
             <div className="text-center">
               <p className="text-rose-300">Prenotate</p>
-              <p className="text-2xl font-bold text-rose-400">{chiamatePrenotate}</p>
+              <p className="text-2xl font-bold text-rose-400">{prenotateRate}%</p>
             </div>
           </div>
         </div>

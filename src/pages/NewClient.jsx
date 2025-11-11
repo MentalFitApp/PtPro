@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { db, firebaseConfig, auth } from '../firebase.js';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
@@ -41,6 +41,8 @@ const generatePassword = () => {
 
 export default function NewClient() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { register, handleSubmit, reset, watch, formState: { isSubmitting, errors } } = useForm({
     defaultValues: {
       name: '',
@@ -48,18 +50,43 @@ export default function NewClient() {
       phone: '',
       planType: '',
       duration: '',
-      customStartDate: new Date().toISOString().split('T')[0], // Default to today
+      customStartDate: new Date().toISOString().split('T')[0],
       customExpiryDate: '',
       paymentAmount: '',
       paymentMethod: ''
     }
   });
+
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [newClientCredentials, setNewClientCredentials] = useState(null);
   const [copied, setCopied] = useState(false);
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [useCustomDate, setUseCustomDate] = useState(false);
-  const customStartDate = watch('customStartDate'); // Watch the custom start date
+  const customStartDate = watch('customStartDate');
+
+  // PRECOMPILAZIONE DA COLLABORATORI – AGGIORNATO E CORRETTO
+  useEffect(() => {
+    if (location.state?.prefill) {
+      const prefill = location.state.prefill;
+      console.log('Dati precompilati ricevuti:', prefill);
+
+      reset({
+        name: prefill.name || '',
+        email: prefill.email || '',
+        phone: prefill.phone || '',
+        planType: prefill.planType || '',
+        duration: prefill.duration ? String(prefill.duration) : '',
+        paymentAmount: prefill.paymentAmount ? String(prefill.paymentAmount) : '',
+        paymentMethod: prefill.paymentMethod || '',
+        customStartDate: prefill.customStartDate || new Date().toISOString().split('T')[0],
+      });
+
+      // Se c'è durata, forziamo "Durata in mesi"
+      if (prefill.duration) {
+        setUseCustomDate(false);
+      }
+    }
+  }, [location.state, reset]);
 
   const showNotification = (message, type = 'error') => {
     setNotification({ message, type });
@@ -146,7 +173,7 @@ export default function NewClient() {
           duration: useCustomDate ? 'personalizzata' : `${parseInt(data.duration, 10)} mes${parseInt(data.duration, 10) > 1 ? 'i' : 'e'}`,
           paymentMethod: data.paymentMethod || 'N/A',
           paymentDate: serverTimestamp(),
-          isPast: isOldClient // Flag per non conteggiare negli incassi se cliente vecchio
+          isPast: isOldClient
         };
         console.log('Tentativo creazione pagamento:', { paymentRef: paymentRef.path, paymentData });
         await setDoc(paymentRef, paymentData);
