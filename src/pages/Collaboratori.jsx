@@ -11,11 +11,11 @@ import {
   BarChart3, Trash2, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
+import { Bar, Doughnut } from 'react-chartjs-2';
 import Calendar from './Calendar';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 const ReportStatus = ({ collaboratori }) => {
   const today = new Date().toISOString().split('T')[0];
@@ -53,7 +53,6 @@ export default function Collaboratori() {
   const [collaboratori, setCollaboratori] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [leads, setLeads] = useState([]);
-  const [marketingReports, setMarketingReports] = useState([]);
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState('Setter');
   const [loading, setLoading] = useState(true);
@@ -62,21 +61,26 @@ export default function Collaboratori() {
   const [copied, setCopied] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState({
-    viewsToday: 0, leadsToday: 0,
-    viewsWeek: 0, leadsWeek: 0,
-    viewsMonth: 0, leadsMonth: 0,
+    leadsToday: 0, leadsWeek: 0, leadsMonth: 0,
   });
-  const [adminMarketing, setAdminMarketing] = useState({
+
+  // REPORT SETTING
+  const [reportSetting, setReportSetting] = useState({
     date: new Date().toISOString().split('T')[0],
-    volumeViews24h: '',
-    volumeLeads24h: '',
+    followUpsFatti: '',
+    dialedFatti: '',
+    dialedRisposte: '',
+    chiamatePrenotate: '',
   });
-  const [adminSales, setAdminSales] = useState({
+
+  // REPORT VENDITA
+  const [reportVendita, setReportVendita] = useState({
     date: new Date().toISOString().split('T')[0],
-    callsMade: '',
-    callsClosed: '',
-    noShow: '',
-    cashCollect: '',
+    chiamateFissate: '',
+    chiamateFatte: '',
+    offersFatte: '',
+    chiuse: '',
+    cash: '',
   });
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,6 +92,14 @@ export default function Collaboratori() {
   const leadsPerPage = 10;
 
   const [salesPeriod, setSalesPeriod] = useState('oggi');
+  const [settingPeriod, setSettingPeriod] = useState('oggi');
+
+  // POPUP CLIENTE
+  const [showClientPopup, setShowClientPopup] = useState(false);
+  const [pendingClientLead, setPendingClientLead] = useState(null);
+
+  // DATI SETTING DA FIRESTORE
+  const [settingReports, setSettingReports] = useState([]);
 
   const fonti = [
     'Info Storie Prima e Dopo', 'Info Storie Promo', 'Info Reel', 'Inizio Reel',
@@ -107,19 +119,26 @@ export default function Collaboratori() {
       try {
         const adminDocRef = doc(db, 'roles', 'admins');
         const adminDoc = await getDoc(adminDocRef);
+
         if (!adminDoc.exists()) {
-          await setDoc(adminDocRef, { uids: [auth.currentUser.uid] });
-        }
-        const uids = adminDoc.data()?.uids || [];
-        const adminOk = uids.includes(auth.currentUser.uid);
-        setIsAdmin(adminOk);
-        if (!adminOk) {
-          setError('Non sei admin.');
+          setError('Documento "roles/admins" non trovato. Crealo in Firestore e aggiungi gli UID manualmente.');
           setLoading(false);
           return;
         }
-        setAdmins([{ id: auth.currentUser.uid, email: auth.currentUser.email, role: 'Admin' }]);
+
+        const uids = adminDoc.data().uids || [];
+        const isAdminUser = uids.includes(auth.currentUser.uid);
+
+        if (isAdminUser) {
+          setIsAdmin(true);
+          setAdmins([{ id: auth.currentUser.uid, email: auth.currentUser.email, role: 'Admin' }]);
+        } else {
+          setError('Accesso negato: non sei admin.');
+        }
+
+        setLoading(false);
       } catch (err) {
+        console.error('Errore verifica admin:', err);
         setError('Errore verifica permessi.');
         setLoading(false);
       }
@@ -131,71 +150,42 @@ export default function Collaboratori() {
     const unsubCollab = onSnapshot(collabQuery, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setCollaboratori(data);
-      setLoading(false);
-    });
-
-    const marketingQuery = query(collection(db, 'marketingReports'), orderBy('date', 'desc'));
-    const unsubMarketing = onSnapshot(marketingQuery, snap => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setMarketingReports(data);
-      calculateStats(data);
     });
 
     const leadsQuery = query(collection(db, 'leads'), orderBy('timestamp', 'desc'));
     const unsubLeads = onSnapshot(leadsQuery, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setLeads(data);
-      calculateStats(marketingReports, data);
+      calculateStats(data);
+    });
+
+    const settingQuery = query(collection(db, 'settingReports'), orderBy('date', 'desc'));
+    const unsubSetting = onSnapshot(settingQuery, snap => {
+      const data = snap.docs.map(d => d.data());
+      setSettingReports(data);
     });
 
     return () => {
       unsubCollab();
-      unsubMarketing();
       unsubLeads();
+      unsubSetting();
     };
   }, [navigate]);
 
-  const calculateStats = (mReports = [], allLeads = []) => {
+  const calculateStats = (allLeads = []) => {
     const today = new Date().toISOString().split('T')[0];
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
     const monthStart = new Date(today.slice(0, 7) + '-01');
-    const yearStart = new Date(today.slice(0, 4) + '-01-01');
-
-    let viewsToday = 0, leadsToday = 0;
-    let viewsWeek = 0, leadsWeek = 0;
-    let viewsMonth = 0, leadsMonth = 0;
-
-    mReports.forEach(r => {
-      const views = parseInt(r.volumeViews24h || 0);
-      const leads = parseInt(r.volumeLeads24h || 0);
-      const date = r.date;
-
-      if (date === today) {
-        viewsToday += views;
-        leadsToday += leads;
-      }
-      if (new Date(date) >= weekStart) {
-        viewsWeek += views;
-        leadsWeek += leads;
-      }
-      if (new Date(date) >= monthStart) {
-        viewsMonth += views;
-        leadsMonth += leads;
-      }
-    });
 
     const todayLeads = allLeads.filter(l => l.timestamp?.toDate().toISOString().split('T')[0] === today).length;
     const weekLeads = allLeads.filter(l => l.timestamp?.toDate() >= weekStart).length;
     const monthLeads = allLeads.filter(l => l.timestamp?.toDate() >= monthStart).length;
 
     setStats({
-      viewsToday,
-      leadsToday: leadsToday + todayLeads,
-      viewsWeek,
-      leadsWeek: leadsWeek + weekLeads,
-      viewsMonth,
-      leadsMonth: leadsMonth + monthLeads,
+      leadsToday: todayLeads,
+      leadsWeek: weekLeads,
+      leadsMonth: monthLeads,
     });
   };
 
@@ -241,21 +231,34 @@ export default function Collaboratori() {
     }
   };
 
-  const handleSaveMarketingReport = async () => {
+  const handleSaveReportSetting = async () => {
     try {
-      await setDoc(doc(collection(db, 'marketingReports')), adminMarketing);
-      setAdminMarketing({ date: new Date().toISOString().split('T')[0], volumeViews24h: '', volumeLeads24h: '' });
-      setSuccess('Report Marketing salvato!');
+      await setDoc(doc(collection(db, 'settingReports')), reportSetting);
+      setReportSetting({ 
+        date: new Date().toISOString().split('T')[0], 
+        followUpsFatti: '', 
+        dialedFatti: '', 
+        dialedRisposte: '', 
+        chiamatePrenotate: '' 
+      });
+      setSuccess('Report Setting salvato!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Errore salvataggio report marketing.');
+      setError('Errore salvataggio report setting.');
     }
   };
 
-  const handleSaveSalesReport = async () => {
+  const handleSaveReportVendita = async () => {
     try {
-      await setDoc(doc(collection(db, 'salesReports')), adminSales);
-      setAdminSales({ date: new Date().toISOString().split('T')[0], callsMade: '', callsClosed: '', noShow: '', cashCollect: '' });
+      await setDoc(doc(collection(db, 'salesReports')), reportVendita);
+      setReportVendita({ 
+        date: new Date().toISOString().split('T')[0], 
+        chiamateFissate: '', 
+        chiamateFatte: '', 
+        offersFatte: '', 
+        chiuse: '', 
+        cash: '' 
+      });
       setSuccess('Report Vendita salvato!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -285,11 +288,22 @@ export default function Collaboratori() {
 
   const handleSaveLeadEdit = async () => {
     if (!editingLead) return;
+
+    const wasClosed = leads.find(l => l.id === editingLead)?.chiuso;
+    const willBeClosed = editForm.chiuso;
+
     try {
       await updateDoc(doc(db, 'leads', editingLead), editForm);
       setEditingLead(null);
       setEditForm({});
       setSuccess('Lead aggiornato!');
+
+      if (!wasClosed && willBeClosed) {
+        const lead = leads.find(l => l.id === editingLead);
+        setPendingClientLead(lead);
+        setShowClientPopup(true);
+      }
+
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError('Errore aggiornamento lead.');
@@ -438,6 +452,46 @@ export default function Collaboratori() {
 
   const { callsFatte, showUpRate, offerRate, closeRate } = calculateSalesRatesByPeriod();
 
+  const calculateSettingStatsFromReports = () => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const yearStart = new Date(today.getFullYear(), 0, 1);
+
+    let startDate, endDate;
+    if (settingPeriod === 'oggi') {
+      startDate = endDate = todayStr;
+    } else if (settingPeriod === 'settimana') {
+      startDate = weekStart.toISOString().split('T')[0];
+      endDate = todayStr;
+    } else if (settingPeriod === 'mese') {
+      startDate = monthStart.toISOString().split('T')[0];
+      endDate = todayStr;
+    } else if (settingPeriod === 'anno') {
+      startDate = yearStart.toISOString().split('T')[0];
+      endDate = todayStr;
+    }
+
+    let followUps = 0;
+    let dialedFatti = 0;
+    let dialedRisposte = 0;
+    let chiamatePrenotate = 0;
+
+    settingReports.forEach(report => {
+      if (report.date < startDate || report.date > endDate) return;
+      followUps += parseInt(report.followUpsFatti || 0);
+      dialedFatti += parseInt(report.dialedFatti || 0);
+      dialedRisposte += parseInt(report.dialedRisposte || 0);
+      chiamatePrenotate += parseInt(report.chiamatePrenotate || 0);
+    });
+
+    return { followUps, dialedFatti, dialedRisposte, chiamatePrenotate };
+  };
+
+  const { followUps, dialedFatti, dialedRisposte, chiamatePrenotate } = calculateSettingStatsFromReports();
+
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesChiuso = filterChiuso === 'tutti' || (filterChiuso === 'si' ? lead.chiuso : !lead.chiuso);
@@ -450,6 +504,37 @@ export default function Collaboratori() {
     (currentPage - 1) * leadsPerPage,
     currentPage * leadsPerPage
   );
+
+  // === FUNZIONE AGGIORNATA: VA A NEW-CLIENT CON DATI PRECOMPILATI ===
+  const handleAddToClients = () => {
+    if (!pendingClientLead) return;
+
+    const clientData = {
+      name: pendingClientLead.name || '',
+      email: pendingClientLead.email || '',
+      phone: pendingClientLead.number || '',
+      planType: '',
+      duration: pendingClientLead.mesi || '',
+      paymentAmount: pendingClientLead.amount || '',
+      paymentMethod: '',
+      customStartDate: new Date().toISOString().split('T')[0],
+    };
+
+    // Chiudi popup
+    setShowClientPopup(false);
+    setPendingClientLead(null);
+
+    // Reindirizza con dati (replace: true evita back al popup)
+    navigate('/new-client', { 
+      state: { prefill: clientData },
+      replace: true 
+    });
+  };
+
+  const handleSkipClient = () => {
+    setShowClientPopup(false);
+    setPendingClientLead(null);
+  };
 
   if (loading) return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div></div>;
   if (error) return <div className="min-h-screen flex flex-col items-center justify-center text-red-500 p-4"><p>{error}</p><button onClick={() => navigate('/')} className="mt-4 px-4 py-2 bg-rose-600 text-white rounded-lg">Torna</button></div>;
@@ -495,18 +580,16 @@ export default function Collaboratori() {
 
         <ReportStatus collaboratori={collaboratori} />
 
-        {/* STATISTICHE */}
+        {/* STATISTICHE - SOLO LEADS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { label: 'Oggi', views: stats.viewsToday, leads: stats.leadsToday },
-            { label: 'Settimana', views: stats.viewsWeek, leads: stats.leadsWeek },
-            { label: 'Mese', views: stats.viewsMonth, leads: stats.leadsMonth },
+            { label: 'Oggi', leads: stats.leadsToday },
+            { label: 'Settimana', leads: stats.leadsWeek },
+            { label: 'Mese', leads: stats.leadsMonth },
           ].map((stat, i) => (
             <motion.div key={i} className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
               <h3 className="text-sm font-semibold text-slate-200">{stat.label}</h3>
-              <p className="text-2xl font-bold text-rose-500 mt-1">{stat.views}</p>
-              <p className="text-xs text-slate-400">Views</p>
-              <p className="text-xl font-bold text-green-500 mt-1">{stat.leads}</p>
+              <p className="text-3xl font-bold text-green-500 mt-1">{stat.leads}</p>
               <p className="text-xs text-slate-400">Leads</p>
             </motion.div>
           ))}
@@ -520,36 +603,41 @@ export default function Collaboratori() {
           />
         </div>
 
-        {/* REPORT */}
+        {/* REPORT SETTING & VENDITA */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* REPORT SETTING */}
           <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
-            <h2 className="text-sm font-semibold text-cyan-400 mb-3">Report Marketing</h2>
+            <h2 className="text-sm font-semibold text-cyan-400 mb-3">Report Setting</h2>
             <div className="space-y-2 text-xs">
-              <input type="date" value={adminMarketing.date} onChange={e => setAdminMarketing({ ...adminMarketing, date: e.target.value })} className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={adminMarketing.volumeViews24h} onChange={e => setAdminMarketing({ ...adminMarketing, volumeViews24h: e.target.value })} placeholder="Views 24h" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={adminMarketing.volumeLeads24h} onChange={e => setAdminMarketing({ ...adminMarketing, volumeLeads24h: e.target.value })} placeholder="Leads 24h" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <button onClick={handleSaveMarketingReport} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-1.5 rounded text-xs">
+              <input type="date" value={reportSetting.date} onChange={e => setReportSetting({ ...reportSetting, date: e.target.value })} className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={reportSetting.followUpsFatti} onChange={e => setReportSetting({ ...reportSetting, followUpsFatti: e.target.value })} placeholder="Follow-ups fatti" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={reportSetting.dialedFatti} onChange={e => setReportSetting({ ...reportSetting, dialedFatti: e.target.value })} placeholder="Dialed fatti" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={reportSetting.dialedRisposte} onChange={e => setReportSetting({ ...reportSetting, dialedRisposte: e.target.value })} placeholder="Dialed risposte" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={reportSetting.chiamatePrenotate} onChange={e => setReportSetting({ ...reportSetting, chiamatePrenotate: e.target.value })} placeholder="Chiamate prenotate" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <button onClick={handleSaveReportSetting} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-1.5 rounded text-xs">
                 <Check className="inline mr-1" size={12} /> Salva
               </button>
             </div>
           </div>
 
+          {/* REPORT VENDITA */}
           <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
             <h2 className="text-sm font-semibold text-rose-400 mb-3">Report Vendita</h2>
             <div className="space-y-2 text-xs">
-              <input type="date" value={adminSales.date} onChange={e => setAdminSales({ ...adminSales, date: e.target.value })} className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={adminSales.callsMade} onChange={e => setAdminSales({ ...adminSales, callsMade: e.target.value })} placeholder="Chiamate" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={adminSales.callsClosed} onChange={e => setAdminSales({ ...adminSales, callsClosed: e.target.value })} placeholder="Chiuse" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={adminSales.noShow} onChange={e => setAdminSales({ ...adminSales, noShow: e.target.value })} placeholder="No Show" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={adminSales.cashCollect} onChange={e => setAdminSales({ ...adminSales, cashCollect: e.target.value })} placeholder="Cash" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <button onClick={handleSaveSalesReport} className="w-full bg-gradient-to-r from-rose-600 to-red-600 text-white py-1.5 rounded text-xs">
+              <input type="date" value={reportVendita.date} onChange={e => setReportVendita({ ...reportVendita, date: e.target.value })} className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={reportVendita.chiamateFissate} onChange={e => setReportVendita({ ...reportVendita, chiamateFissate: e.target.value })} placeholder="Chiamate fissate" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={reportVendita.chiamateFatte} onChange={e => setReportVendita({ ...reportVendita, chiamateFatte: e.target.value })} placeholder="Chiamate fatte" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={reportVendita.offersFatte} onChange={e => setReportVendita({ ...reportVendita, offersFatte: e.target.value })} placeholder="Offers fatte" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={reportVendita.chiuse} onChange={e => setReportVendita({ ...reportVendita, chiuse: e.target.value })} placeholder="Chiuse" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="number" value={reportVendita.cash} onChange={e => setReportVendita({ ...reportVendita, cash: e.target.value })} placeholder="Cash" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <button onClick={handleSaveReportVendita} className="w-full bg-gradient-to-r from-rose-600 to-red-600 text-white py-1.5 rounded text-xs">
                 <Check className="inline mr-1" size={12} /> Salva
               </button>
             </div>
           </div>
         </div>
 
-        {/* TABELLA LEADS - 2 RIGHE PER COLONNA */}
+        {/* TABELLA LEADS */}
         <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-slate-200">Leads ({filteredLeads.length})</h2>
@@ -602,14 +690,11 @@ export default function Collaboratori() {
                 <tbody>
                   {paginatedLeads.map(lead => (
                     <tr key={lead.id} className="border-b border-white/10 hover:bg-zinc-900/50">
-                      {/* NOME */}
                       <td className="px-2 py-1">
                         {editingLead === lead.id ? (
                           <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded text-xs" />
                         ) : <div className="max-w-[80px] truncate">{lead.name}</div>}
                       </td>
-
-                      {/* FONTE */}
                       <td className="px-2 py-1">
                         {editingLead === lead.id ? (
                           <select value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded text-xs">
@@ -618,88 +703,58 @@ export default function Collaboratori() {
                           </select>
                         ) : <div className="max-w-[100px] truncate">{lead.source || '—'}</div>}
                       </td>
-
-                      {/* EMAIL */}
                       <td className="px-2 py-1 truncate max-w-[100px]">{lead.email || '—'}</td>
-
-                      {/* NUMERO */}
                       <td className="px-2 py-1">{lead.number}</td>
-
-                      {/* DATA */}
                       <td className="px-2 py-1">{lead.dataPrenotazione?.slice(5)} {lead.oraPrenotazione}</td>
-
-                      {/* SETTER */}
                       <td className="px-2 py-1 truncate max-w-[70px]">{lead.collaboratoreNome}</td>
-
-                      {/* DIALED */}
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Dialed</div>
                         {editingLead === lead.id ? (
-                          <input 
-                            type="number" 
-                            min="0"
-                            value={editForm.dialed ?? 0} 
-                            onChange={e => setEditForm({ ...editForm, dialed: parseInt(e.target.value) || 0 })} 
-                            className="w-12 p-0.5 bg-zinc-800 border border-white/10 rounded text-xs text-center"
-                          />
-                        ) : (
-                          <div className="font-bold">{lead.dialed ?? 0}</div>
-                        )}
+                          <input type="number" min="0" value={editForm.dialed ?? 0} onChange={e => setEditForm({ ...editForm, dialed: parseInt(e.target.value) || 0 })} className="w-12 p-0.5 bg-zinc-800 border border-white/10 rounded text-xs text-center" />
+                        ) : <div className="font-bold">{lead.dialed ?? 0}</div>}
                       </td>
-
-                      {/* SETTING CALL */}
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Setting Call</div>
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.riprenotato} onChange={e => setEditForm({ ...editForm, riprenotato: e.target.checked })} className="w-3 h-3" />
                         ) : <div className={`font-bold ${lead.riprenotato ? 'text-green-400' : 'text-red-400'}`}>{lead.riprenotato ? 'Sì' : 'No'}</div>}
                       </td>
-
-                      {/* SHOW-UP */}
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Show-Up</div>
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.showUp} onChange={e => setEditForm({ ...editForm, showUp: e.target.checked })} className="w-3 h-3" />
                         ) : <div className={`font-bold ${lead.showUp ? 'text-green-400' : 'text-red-400'}`}>{lead.showUp ? 'Sì' : 'No'}</div>}
                       </td>
-
-                      {/* OFFER */}
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Offer</div>
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.offer} onChange={e => setEditForm({ ...editForm, offer: e.target.checked })} className="w-3 h-3" />
                         ) : <div className={`font-bold ${lead.offer ? 'text-green-400' : 'text-gray-400'}`}>{lead.offer ? 'Sì' : 'No'}</div>}
                       </td>
-
-                      {/* CLOSED */}
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Closed</div>
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.chiuso} onChange={e => setEditForm({ ...editForm, chiuso: e.target.checked })} className="w-3 h-3" />
                         ) : <div className={`font-bold ${lead.chiuso ? 'text-green-400' : 'text-yellow-400'}`}>{lead.chiuso ? 'Sì' : 'No'}</div>}
                       </td>
-
-                      {/* € */}
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Importo</div>
-                        <div className="font-bold">€{lead.amount || 0}</div>
+                        {editingLead === lead.id ? (
+                          <input type="number" min="0" step="0.01" value={editForm.amount || ''} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} className="w-16 p-0.5 bg-zinc-800 border border-white/10 rounded text-xs text-center" />
+                        ) : <div className="font-bold">€{lead.amount || 0}</div>}
                       </td>
-
-                      {/* MESI */}
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Mesi</div>
-                        <div className="font-bold">{lead.mesi || 0}</div>
+                        {editingLead === lead.id ? (
+                          <input type="number" min="0" value={editForm.mesi || ''} onChange={e => setEditForm({ ...editForm, mesi: e.target.value })} className="w-12 p-0.5 bg-zinc-800 border border-white/10 rounded text-xs text-center" />
+                        ) : <div className="font-bold">{lead.mesi || 0}</div>}
                       </td>
-
-                      {/* NOTE */}
                       <td className="px-2 py-1 max-w-[120px]">
                         <div className="text-[10px] text-slate-500">Note</div>
                         {editingLead === lead.id ? (
                           <input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} className="w-full p-0.5 bg-zinc-800 border border-white/10 rounded text-xs" />
                         ) : <div className="truncate">{lead.note || '—'}</div>}
                       </td>
-
-                      {/* AZIONI */}
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Azioni</div>
                         {editingLead === lead.id ? (
@@ -767,7 +822,44 @@ export default function Collaboratori() {
           </div>
         </div>
 
-        {/* RESTO (invariato) */}
+        {/* STATISTICHE SETTING */}
+        <div className="bg-gradient-to-br from-cyan-900/40 to-blue-900/40 backdrop-blur-xl rounded-xl p-4 mb-4 border border-cyan-500/30">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <h2 className="text-lg font-bold text-cyan-300 flex items-center gap-2">
+              <TrendingUp size={20} /> Statistiche Setting
+            </h2>
+            <select 
+              value={settingPeriod} 
+              onChange={e => setSettingPeriod(e.target.value)}
+              className="bg-zinc-900/70 border border-white/10 rounded px-3 py-1.5 text-xs"
+            >
+              <option value="oggi">Oggi</option>
+              <option value="settimana">Questa Settimana</option>
+              <option value="mese">Questo Mese</option>
+              <option value="anno">Questo Anno</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div className="text-center">
+              <p className="text-cyan-300">Follow-ups</p>
+              <p className="text-2xl font-bold text-white">{followUps}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-blue-300">Dialed</p>
+              <p className="text-2xl font-bold text-blue-400">{dialedFatti}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-green-300">Risposte</p>
+              <p className="text-2xl font-bold text-green-400">{dialedRisposte}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-rose-300">Prenotate</p>
+              <p className="text-2xl font-bold text-rose-400">{chiamatePrenotate}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* LEAD PER FONTE, SETTER, COLLABORATORI */}
         <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 mb-4">
           <h2 className="text-sm font-semibold text-slate-200 mb-3">Lead per Fonte</h2>
           <div className="space-y-1 text-xs">
@@ -836,6 +928,36 @@ export default function Collaboratori() {
 
         {success && <p className="text-green-500 text-center text-xs">{success}</p>}
         {error && <p className="text-red-500 text-center text-xs">{error}</p>}
+
+        {/* POPUP AGGIUNGI CLIENTE */}
+        {showClientPopup && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-zinc-950/90 rounded-xl p-6 max-w-sm w-full border border-white/10"
+            >
+              <h3 className="text-lg font-bold text-slate-100 mb-3">Lead Chiuso!</h3>
+              <p className="text-sm text-slate-300 mb-4">
+                Vuoi aggiungere <strong>{pendingClientLead?.name}</strong> alla lista clienti?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleAddToClients}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-medium"
+                >
+                  Sì, Aggiungi
+                </button>
+                <button
+                  onClick={handleSkipClient}
+                  className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-slate-300 py-2 rounded-lg text-sm font-medium"
+                >
+                  No, Salta
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </div>
     </div>
   );

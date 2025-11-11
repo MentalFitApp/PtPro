@@ -230,7 +230,7 @@ export default function App() {
         <Route element={authInfo.isCoach || authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />} />
-          <Route path="/new" element={<NewClient />} />
+          <Route path="/new-client" element={<NewClient />} />
           <Route path="/client/:clientId" element={<ClientDetail />} />
           <Route path="/edit/:id" element={<EditClient />} />
           <Route path="/updates" element={<Updates />} />

@@ -309,7 +309,7 @@ export default function Clients() {
                 placeholder="Cerca per nome o email..."
               />
             </div>
-            <button onClick={() => navigate("/new")} className="flex items-center justify-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg transition-colors">
+            <button onClick={() => navigate("/new-client")} className="flex items-center justify-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg transition-colors">
               <UserPlus size={16} /> Nuovo
             </button>
             <button onClick={() => exportToCSV(clients)} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg transition-colors">
