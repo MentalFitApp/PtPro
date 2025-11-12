@@ -38,14 +38,12 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId &&
              exists(/databases/$(database)/documents/collaboratori/$(userId));
     }
-
     // --- AGGIUNTO: è un Setter? ---
     function isSetter() {
       return request.auth != null &&
              exists(/databases/$(database)/documents/collaboratori/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/collaboratori/$(request.auth.uid)).data.role == 'Setter';
     }
-
     // ==================== REGOLE COLLEZIONI ====================
     // --- CLIENTS ---
     match /clients/{userId} {
@@ -135,6 +133,10 @@ service cloud.firestore {
     }
     // --- SALES REPORTS ---
     match /salesReports/{reportId} {
+      allow read, list, create, update, delete: if isAdmin();
+    }
+    // --- SETTING REPORTS --- AGGIUNTO
+    match /settingReports/{reportId} {
       allow read, list, create, update, delete: if isAdmin();
     }
     // --- LEADS ---

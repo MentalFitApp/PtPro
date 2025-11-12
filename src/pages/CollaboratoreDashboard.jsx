@@ -359,19 +359,7 @@ export default function CollaboratoreDashboard() {
     };
   }).sort((a, b) => b.calls - a.calls);
 
-  // --- FRASE MOTIVAZIONALE PER POSIZIONE ---
-  const getMotivationalPhrase = (position, name, calls, gender) => {
-    const adj = gender === 'F' ? 'a' : 'o';
-    const phrases = {
-      1: `${name}, sei il primo${adj} assoluto! ${calls} chiamate, leader!`,
-      2: `${name}, grande secondo${adj}! Domani sei primo${adj}!`,
-      3: `${name}, ottimo terzo${adj}! Ti voglio in fuoco domani!`,
-      default: `${name}, puoi fare di meglio! Forza, domani si vola!`
-    };
-    return phrases[position] || phrases.default;
-  };
-
-  // --- GRAFICO SETTIMANA ---
+  // --- GRAFICO SETTIMANA MIGLIORATO ---
   const getWeekData = () => {
     const start = new Date();
     start.setDate(start.getDate() - start.getDay() + 1 + (weekOffset * 7));
@@ -381,13 +369,13 @@ export default function CollaboratoreDashboard() {
     const days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date(start);
       date.setDate(date.getDate() + i);
-      return date.toLocaleDateString('it-IT', { weekday: 'short' });
+      return date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric' });
     });
 
-    const datasets = allCollaboratori.map(c => {
-      const weekCalls = days.map((_, i) => {
+    const datasets = allCollaboratori.map((c, i) => {
+      const weekCalls = days.map((_, j) => {
         const date = new Date(start);
-        date.setDate(date.getDate() + i);
+        date.setDate(date.getDate() + j);
         const dateStr = date.toISOString().split('T')[0];
         const report = c.dailyReports?.find(r => r.date === dateStr);
         return report?.tracker?.callPrenotate || 0;
@@ -395,7 +383,9 @@ export default function CollaboratoreDashboard() {
       return { 
         label: c.name, 
         data: weekCalls, 
-        backgroundColor: `hsl(${allCollaboratori.indexOf(c) * 60}, 70%, 50%)` 
+        backgroundColor: `hsl(${i * 60}, 70%, 55%)`,
+        borderColor: `hsl(${i * 60}, 70%, 45%)`,
+        borderWidth: 1,
       };
     });
 
@@ -462,7 +452,7 @@ export default function CollaboratoreDashboard() {
       </motion.header>
 
       <motion.div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 space-y-6 border border-white/10">
-        {/* CHIAMATE GIORNALIERE + FRASE PERSONALE */}
+        {/* CHIAMATE GIORNALIERE - SENZA FRASE MOTIVAZIONALE */}
         <div>
           <h3 className="text-sm font-semibold text-slate-400 mb-2">Chiamate giornaliere</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -479,36 +469,67 @@ export default function CollaboratoreDashboard() {
                 />
                 <p className="text-xs text-slate-300 truncate">{s.name}</p>
                 <p className="text-lg font-bold text-white">{s.calls}</p>
-                <p className="text-xs text-emerald-400">Mese: {s.monthTotal}</p>
-                <p className="text-xs text-yellow-300 mt-1 italic">
-                  {getMotivationalPhrase(i + 1, s.name, s.calls, s.gender)}
-                </p>
+                <p className="text-xs text-emerald-400">Mese: {s.monthTotal} chiamate</p>
               </motion.div>
             ))}
           </div>
         </div>
 
-        {/* GRAFICO SETTIMANA */}
+        {/* GRAFICO SETTIMANA MIGLIORATO */}
         <div className="bg-zinc-900/70 p-4 rounded-lg">
-          <div className="flex justify-between items-center mb-2">
+          <div className="flex justify-between items-center mb-3">
             <h3 className="text-lg font-semibold text-cyan-300">Chiamate prenotate</h3>
             <div className="flex items-center gap-2">
               <button onClick={() => setWeekOffset(prev => prev - 1)} className="p-1 text-cyan-300 hover:bg-cyan-900/30 rounded">
                 <ChevronLeft size={18} />
               </button>
-              <span className="text-sm text-slate-300">{period}</span>
+              <span className="text-sm text-slate-300 font-medium">{period}</span>
               <button onClick={() => setWeekOffset(prev => prev + 1)} className="p-1 text-cyan-300 hover:bg-cyan-900/30 rounded">
                 <ChevronRight size={18} />
               </button>
             </div>
           </div>
-          <div className="h-32">
+          <div className="h-48">
             <Bar 
               data={{ labels, datasets }} 
               options={{ 
                 responsive: true, 
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } } 
+                animation: { duration: 800 },
+                plugins: { 
+                  legend: { 
+                    position: 'bottom',
+                    labels: { 
+                      font: { size: 10 },
+                      color: '#e2e8f0',
+                      padding: 12
+                    }
+                  },
+                  tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleColor: '#60a5fa',
+                    bodyColor: '#e2e8f0',
+                    cornerRadius: 6,
+                    displayColors: true
+                  }
+                },
+                scales: {
+                  y: { 
+                    beginAtZero: true,
+                    ticks: { 
+                      font: { size: 10 },
+                      color: '#94a3b8'
+                    },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                  },
+                  x: {
+                    ticks: { 
+                      font: { size: 10 },
+                      color: '#94a3b8'
+                    },
+                    grid: { display: false }
+                  }
+                }
               }} 
             />
           </div>

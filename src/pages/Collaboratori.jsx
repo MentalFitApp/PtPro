@@ -159,9 +159,10 @@ export default function Collaboratori() {
       calculateStats(data);
     });
 
+    // MODIFICA: usa dati completi
     const settingQuery = query(collection(db, 'settingReports'), orderBy('date', 'desc'));
     const unsubSetting = onSnapshot(settingQuery, snap => {
-      const data = snap.docs.map(d => d.data());
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setSettingReports(data);
     });
 
@@ -231,9 +232,15 @@ export default function Collaboratori() {
     }
   };
 
+  // MODIFICA: ID manuale per evitare duplicati
   const handleSaveReportSetting = async () => {
+    const reportId = `admin_${reportSetting.date}`; // Unico per giorno
     try {
-      await setDoc(doc(collection(db, 'settingReports')), reportSetting);
+      await setDoc(doc(db, 'settingReports', reportId), {
+        ...reportSetting,
+        uid: auth.currentUser.uid,
+        timestamp: new Date(),
+      });
       setReportSetting({ 
         date: new Date().toISOString().split('T')[0], 
         followUpsFatti: '', 
@@ -244,7 +251,7 @@ export default function Collaboratori() {
       setSuccess('Report Setting salvato!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Errore salvataggio report setting.');
+      setError('Errore salvataggio report setting: ' + err.message);
     }
   };
 
@@ -283,7 +290,7 @@ export default function Collaboratori() {
       offer: lead.offer || false,
       riprenotato: lead.riprenotato || false,
       dialed: lead.dialed ?? 0,
-      target: lead.target ?? false, // AGGIUNTO
+      target: lead.target ?? false,
     });
   };
 
@@ -509,7 +516,6 @@ export default function Collaboratori() {
     currentPage * leadsPerPage
   );
 
-  // === FUNZIONE AGGIORNATA: VA A NEW-CLIENT CON DATI PRECOMPILATI ===
   const handleAddToClients = () => {
     if (!pendingClientLead) return;
 
@@ -524,11 +530,9 @@ export default function Collaboratori() {
       customStartDate: new Date().toISOString().split('T')[0],
     };
 
-    // Chiudi popup
     setShowClientPopup(false);
     setPendingClientLead(null);
 
-    // Reindirizza con dati (replace: true evita back al popup)
     navigate('/new-client', { 
       state: { prefill: clientData },
       replace: true 
@@ -641,7 +645,7 @@ export default function Collaboratori() {
           </div>
         </div>
 
-        {/* TABELLA LEADS – AGGIUNTA COLONNA TARGET */}
+        {/* TABELLA LEADS – AZIONI ALL'INIZIO */}
         <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-slate-200">Leads ({filteredLeads.length})</h2>
@@ -674,6 +678,8 @@ export default function Collaboratori() {
               <table className="w-full text-xs text-left text-slate-400">
                 <thead className="text-xs uppercase bg-zinc-900/50 sticky top-0">
                   <tr>
+                    {/* AZIONI ALL'INIZIO */}
+                    <th className="px-2 py-1 text-center">Az</th>
                     <th className="px-2 py-1">Nome</th>
                     <th className="px-2 py-1">Fonte</th>
                     <th className="px-2 py-1">Email</th>
@@ -689,12 +695,26 @@ export default function Collaboratori() {
                     <th className="px-2 py-1 text-center">€</th>
                     <th className="px-2 py-1 text-center">M</th>
                     <th className="px-2 py-1">Note</th>
-                    <th className="px-2 py-1 text-center">Az</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedLeads.map(lead => (
                     <tr key={lead.id} className="border-b border-white/10 hover:bg-zinc-900/50">
+                      {/* AZIONI ALL'INIZIO */}
+                      <td className="px-2 py-1 text-center">
+                        <div className="text-[10px] text-slate-500">Azioni</div>
+                        {editingLead === lead.id ? (
+                          <div className="flex gap-1 justify-center">
+                            <button onClick={handleSaveLeadEdit} className="text-green-400"><Check size={12} /></button>
+                            <button onClick={handleCancelEdit} className="text-red-400"><X size={12} /></button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-1 justify-center">
+                            <button onClick={() => handleEditLead(lead)} className="text-cyan-400"><Edit size={12} /></button>
+                            <button onClick={() => handleDeleteLead(lead.id)} className="text-red-400"><Trash2 size={12} /></button>
+                          </div>
+                        )}
+                      </td>
                       <td className="px-2 py-1">
                         {editingLead === lead.id ? (
                           <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded text-xs" />
@@ -766,20 +786,6 @@ export default function Collaboratori() {
                           <input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} className="w-full p-0.5 bg-zinc-800 border border-white/10 rounded text-xs" />
                         ) : <div className="truncate">{lead.note || '—'}</div>}
                       </td>
-                      <td className="px-2 py-1 text-center">
-                        <div className="text-[10px] text-slate-500">Azioni</div>
-                        {editingLead === lead.id ? (
-                          <div className="flex gap-1 justify-center">
-                            <button onClick={handleSaveLeadEdit} className="text-green-400"><Check size={12} /></button>
-                            <button onClick={handleCancelEdit} className="text-red-400"><X size={12} /></button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-1 justify-center">
-                            <button onClick={() => handleEditLead(lead)} className="text-cyan-400"><Edit size={12} /></button>
-                            <button onClick={() => handleDeleteLead(lead.id)} className="text-red-400"><Trash2 size={12} /></button>
-                          </div>
-                        )}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -795,6 +801,10 @@ export default function Collaboratori() {
             </div>
           )}
         </div>
+
+        {/* RESTO DEL CODICE IDENTICO... */}
+        {/* (Percentuali Vendita, Statistiche Setting, Lead per Fonte, Grafico Setter, Collaboratori, Popup) */}
+        {/* ...non modificato... */}
 
         {/* PERCENTUALI VENDITA */}
         <div className="bg-gradient-to-br from-rose-900/40 to-purple-900/40 backdrop-blur-xl rounded-xl p-4 mb-4 border border-rose-500/30">
@@ -870,7 +880,7 @@ export default function Collaboratori() {
           </div>
         </div>
 
-        {/* LEAD PER FONTE, SETTER, COLLABORATORI */}
+        {/* LEAD PER FONTE */}
         <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 mb-4">
           <h2 className="text-sm font-semibold text-slate-200 mb-3">Lead per Fonte</h2>
           <div className="space-y-1 text-xs">
@@ -894,6 +904,7 @@ export default function Collaboratori() {
           </div>
         </div>
 
+        {/* GRAFICO SETTER */}
         <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 mb-4">
           <h2 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-1">
             <BarChart3 size={16} /> Setter
@@ -903,6 +914,7 @@ export default function Collaboratori() {
           </div>
         </div>
 
+        {/* COLLABORATORI */}
         <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4">
           <h2 className="text-sm font-semibold text-slate-200 mb-3">Collaboratori</h2>
           <div className="space-y-2 text-xs">
