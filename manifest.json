@@ -2,7 +2,7 @@
   "name": "Fit Flow Pro",
   "short_name": "Fit Flow Pro",
   "description": "Area personale Coaching Online",
-  "start_url": "/",
+  "start_url": "/PtPro/#/client-login",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#06b6d4",
