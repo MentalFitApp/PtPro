@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { LayoutGrid, Users, MessageSquare, FileText, Bell, Users as UsersIcon, Calendar, Settings } from 'lucide-react';
+import { LayoutGrid, Users, MessageSquare, FileText, Bell, Users as UsersIcon, Calendar, Settings, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // AnimatedBackground globale
@@ -41,13 +41,15 @@ const AnimatedBackground = () => {
   return null;
 };
 
+// NAVLINKS ADMIN: AGGIUNTO "Pagamenti"
 const navLinks = [
   { to: '/clients', icon: <Users size={20} />, label: 'Clienti', roles: ['admin'] },
   { to: '/chat', icon: <MessageSquare size={20} />, label: 'Chat', roles: ['admin'] },
   { to: '/', icon: <LayoutGrid size={24} />, label: 'Dashboard', isCentral: true, roles: ['admin'] },
   { to: '/updates', icon: <Bell size={20} />, label: 'Novità', roles: ['admin'] },
   { to: '/collaboratori', icon: <UsersIcon size={20} />, label: 'Collaboratori', roles: ['admin'] },
-  { to: '/guide-manager', icon: <FileText size={20} />, label: 'Guide & Lead', roles: ['admin'] }, // NUOVA
+  { to: '/guide-manager', icon: <FileText size={20} />, label: 'Guide & Lead', roles: ['admin'] },
+  { to: '/pagamenti', icon: <DollarSign size={20} />, label: 'Pagamenti', roles: ['admin'] }, // AGGIUNTO
   { to: '/calendar-report', icon: <Calendar size={20} />, label: 'Calendario', roles: ['admin'] },
   { to: '/settings', icon: <Settings size={20} />, label: 'Impostazioni', roles: ['admin'] },
 ];
@@ -119,15 +121,20 @@ const SidebarContent = ({ isCoach }) => {
       </div>
       <nav className="flex flex-col gap-2">
         {links.map(link => (
-          <NavLink
+          <motion.button
             key={link.to}
-            to={link.to}
-            icon={link.icon}
-            label={link.label}
-            isCentral={link.isCentral}
-            isActive={location.pathname === link.to || location.pathname.startsWith(link.to + '/')}
-            roles={link.roles}
-          />
+            onClick={() => navigate(link.to)}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              location.pathname === link.to || location.pathname.startsWith(link.to + '/')
+                ? 'bg-rose-600/20 text-rose-400 border border-rose-600/30'
+                : 'text-slate-300 hover:bg-white/5 hover:text-rose-400'
+            }`}
+            whileHover={{ x: 4 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {link.icon}
+            <span>{link.label}</span>
+          </motion.button>
         ))}
       </nav>
     </aside>
@@ -139,7 +146,6 @@ export default function MainLayout() {
   const [isCoach, setIsCoach] = useState(false);
 
   useEffect(() => {
-    console.log('MainLayout: pathname corrente:', location.pathname);
     setIsCoach(location.pathname.startsWith('/coach'));
   }, [location.pathname]);
 

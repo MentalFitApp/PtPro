@@ -5,10 +5,10 @@ import {
 } from 'firebase/firestore';
 import { db, auth, firebaseConfig } from '../firebase';
 import { initializeApp, deleteApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { 
   Users, Plus, Copy, TrendingUp, FileText, Phone, Check, AlertCircle, Edit, X, 
-  BarChart3, Trash2, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Eye 
+  BarChart3, Trash2, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Eye, Key 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
@@ -26,8 +26,8 @@ const ReportStatus = ({ collaboratori }) => {
       const reports = c.dailyReports || [];
       const todayReport = reports.find(r => r.date === today);
       return !todayReport || !todayReport.eodReport || !todayReport.tracker;
-    }).map(c => c.name || c.email.split('@')[0]);
-    setMissingReports(m => missing);
+    }).map(c => c.nome || c.email?.split('@')[0] || 'Sconosciuto');
+    setMissingReports(missing);
   }, [collaboratori]);
 
   return (
@@ -151,7 +151,7 @@ export default function Collaboratori() {
 
     checkAdmin();
 
-    const collabQuery = query(collection(db, 'collaboratori'), orderBy('name'));
+    const collabQuery = query(collection(db, 'collaboratori'), orderBy('nome'));
     const unsubCollab = onSnapshot(collabQuery, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setCollaboratori(data);
@@ -203,6 +203,7 @@ export default function Collaboratori() {
 
   const generateTempPassword = () => Math.random().toString(36).slice(-8) + '!';
 
+  // NUOVA FUNZIONE: CREA UTENTE E INVIA EMAIL DI VERIFICA + RESET
   const handleAddCollaboratore = async () => {
     if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
       setError('Email non valida.');
@@ -214,32 +215,64 @@ export default function Collaboratori() {
     const tempAuth = getAuth(tempApp);
 
     try {
-      const cred = await createUserWithEmailAndPassword(tempAuth, newEmail, tempPwd);
-      const uid = cred.user.uid;
+      let uid;
+      let isNewUser = false;
+
+      try {
+        const cred = await createUserWithEmailAndPassword(tempAuth, newEmail, tempPwd);
+        uid = cred.user.uid;
+        isNewUser = true;
+      } catch (err) {
+        if (err.code === 'auth/email-already-in-use') {
+          setError('Utente già esistente. Usa "Rigenera" per inviare email di reset.');
+          await deleteApp(tempApp);
+          return;
+        } else {
+          throw err;
+        }
+      }
 
       await setDoc(doc(db, 'collaboratori', uid), {
         uid,
         email: newEmail,
-        name: newEmail.split('@')[0],
-        role: newRole,
+        nome: newEmail.split('@')[0],
+        ruolo: newRole,
         firstLogin: true,
-        tempPassword: tempPwd,
         assignedAdmin: [auth.currentUser.uid],
         dailyReports: [],
         tracker: {},
         personalPipeline: [],
-      });
+      }, { merge: true });
 
-      const msg = `Benvenuto!\nEmail: ${newEmail}\nPassword: ${tempPwd}\nLink: https://mentalfitapp.github.io/PtPro/#/collaboratore-login`;
+      // INVIA EMAIL DI RESET (utente imposta password)
+      await sendPasswordResetEmail(tempAuth, newEmail);
+
+      const msg = `Benvenuto!\nEmail: ${newEmail}\nClicca sul link ricevuto via email per impostare la password.\nLink login: https://mentalfitapp.github.io/PtPro/#/collaboratore-login`;
       navigator.clipboard.writeText(msg);
       setCopied(true);
       setTimeout(() => setCopied(false), 4000);
       setNewEmail('');
       setError('');
+      setSuccess('Collaboratore creato! Email di reset inviata.');
     } catch (err) {
-      setError(err.code === 'auth/email-already-in-use' ? 'Email già in uso.' : 'Errore: ' + err.message);
+      setError('Errore: ' + err.message);
     } finally {
       await deleteApp(tempApp);
+    }
+  };
+
+  // RIGENERA PASSWORD: INVIA EMAIL DI RESET
+  const rigeneraPassword = async (email) => {
+    if (!confirm(`Inviare email di reset password a ${email}?`)) return;
+
+    const auth = getAuth();
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSuccess(`Email di reset inviata a ${email}`);
+      setTimeout(() => setSuccess(''), 5000);
+    } catch (err) {
+      setError('Errore: ' + err.message);
     }
   };
 
@@ -408,13 +441,13 @@ export default function Collaboratori() {
 
   const getSetterStats = () => {
     return collaboratori
-      .filter(c => c.role === 'Setter')
+      .filter(c => c.ruolo === 'Setter')
       .map(c => {
         const setterLeads = leads.filter(l => l.collaboratoreId === c.id);
         const prenotati = setterLeads.length;
         const presentati = setterLeads.filter(l => l.showUp).length;
         return {
-          name: c.name || c.email.split('@')[0],
+          name: c.nome || c.email?.split('@')[0] || 'Sconosciuto',
           prenotati,
           presentati,
         };
@@ -605,7 +638,9 @@ export default function Collaboratori() {
           </div>
         </motion.header>
 
-        {copied && <p className="text-green-400 text-center text-xs">Credenziali copiate!</p>}
+        {copied && <p className="text-green-400 text-center text-xs">Istruzioni copiate!</p>}
+        {success && <p className="text-green-500 text-center text-xs">{success}</p>}
+        {error && <p className="text-red-500 text-center text-xs">{error}</p>}
 
         <ReportStatus collaboratori={collaboratori} />
 
@@ -832,7 +867,7 @@ export default function Collaboratori() {
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Warm</div>
                         {editingLead === lead.id ? (
-                          <input type="checkbox" checked={editForm.offer} onChange={e => setEditForm({ ...editForm, offer: e.target.checked })} className="w-3 h3" />
+                          <input type="checkbox" checked={editForm.offer} onChange={e => setEditForm({ ...editForm, offer: e.target.checked })} className="w-3 h-3" />
                         ) : <div className={`font-bold ${lead.offer ? 'text-green-400' : 'text-gray-400'}`}>{lead.offer ? 'Sì' : 'No'}</div>}
                       </td>
                       <td className="px-2 py-1 text-center">
@@ -983,12 +1018,13 @@ export default function Collaboratori() {
           </div>
         </div>
 
-        {/* COLLABORATORI */}
+        {/* COLLABORATORI CON PULSANTE RIGENERA */}
         <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10">
           <h2 className="text-sm font-semibold text-slate-200 mb-3">Collaboratori</h2>
           <div className="space-y-2 text-xs">
             {[...collaboratori, ...admins].map(c => {
               const isCurrentUser = c.id === auth.currentUser?.uid;
+              const displayName = c.nome || c.email?.split('@')[0] || 'Sconosciuto';
               return (
                 <motion.div
                   key={c.id}
@@ -999,15 +1035,22 @@ export default function Collaboratori() {
                     onClick={() => isCurrentUser ? navigate('/dashboard') : handleNavigateToDetail(c.id)}
                     className="flex-1 cursor-pointer"
                   >
-                    <p className="font-medium text-slate-200">{c.name || c.email.split('@')[0]} ({c.role})</p>
-                    <p className="text-slate-400 truncate">{c.email}</p>
+                    <p className="font-medium text-slate-200">{displayName} ({c.ruolo || c.role})</p>
+                    <p className="text-slate-400 truncate">{c.email || '—'}</p>
                   </div>
                   {isAdmin && !isCurrentUser && (
                     <div className="flex gap-1 ml-2">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); rigeneraPassword(c.email); }} 
+                        className="p-1 text-yellow-400"
+                        title="Invia email di reset password"
+                      >
+                        <Key size={12} />
+                      </button>
                       <button onClick={(e) => { e.stopPropagation(); navigate('/collaboratore-detail', { state: { collaboratoreId: c.id, editRole: true } }); }} className="p-1 text-cyan-400">
                         <Edit size={12} />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); if (confirm(`Elimina ${c.name || c.email}?`)) handleDeleteCollaboratore(c.id); }} className="p-1 text-red-400">
+                      <button onClick={(e) => { e.stopPropagation(); if (confirm(`Elimina ${displayName}?`)) handleDeleteCollaboratore(c.id); }} className="p-1 text-red-400">
                         <Trash2 size={12} />
                       </button>
                     </div>
@@ -1017,9 +1060,6 @@ export default function Collaboratori() {
             })}
           </div>
         </div>
-
-        {success && <p className="text-green-500 text-center text-xs">{success}</p>}
-        {error && <p className="text-red-500 text-center text-xs">{error}</p>}
 
         {/* POPUP AGGIUNGI CLIENTE */}
         {showClientPopup && (

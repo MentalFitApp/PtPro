@@ -10,7 +10,6 @@ service cloud.firestore {
              request.resource.data.paymentDate is timestamp &&
              (!request.resource.data.keys().hasAny(['paymentMethod']) || request.resource.data.paymentMethod is string);
     }
-    // ADMIN: fallback sicuro se roles/admins non esiste
     function isAdmin() {
       return request.auth != null && (
         !exists(/databases/$(database)/documents/roles/admins) ||
@@ -38,13 +37,14 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId &&
              exists(/databases/$(database)/documents/collaboratori/$(userId));
     }
-    // --- AGGIUNTO: è un Setter? ---
     function isSetter() {
       return request.auth != null &&
              exists(/databases/$(database)/documents/collaboratori/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/collaboratori/$(request.auth.uid)).data.role == 'Setter';
     }
+
     // ==================== REGOLE COLLEZIONI ====================
+
     // --- CLIENTS ---
     match /clients/{userId} {
       allow create: if isCoach() || isAdmin();
@@ -57,6 +57,7 @@ service cloud.firestore {
       allow list: if isCoach() || isAdmin();
       allow update: if isCoach() || isAdmin() || isClient(userId);
       allow delete: if isAdmin();
+
       match /anamnesi/{docId} {
         allow read, write: if request.auth != null && (
                               request.auth.uid == userId ||
@@ -84,6 +85,7 @@ service cloud.firestore {
         allow delete: if isCoach() || isAdmin();
       }
     }
+
     // --- SUBCOLLEZIONI GENERICHE ---
     match /{path=**}/payments/{paymentId} {
       allow read: if isCoach() || isAdmin();
@@ -94,6 +96,7 @@ service cloud.firestore {
     match /{path=**}/anamnesi/{anamnesiId} {
       allow read: if isCoach() || isAdmin();
     }
+
     // --- CHATS ---
     match /chats/{chatId} {
       allow get: if request.auth != null && (request.auth.uid in resource.data.participants || isCoach() || isAdmin());
@@ -103,6 +106,7 @@ service cloud.firestore {
                      request.resource.data.participants.size() == 2;
       allow update: if request.auth != null && (request.auth.uid in resource.data.participants || isCoach() || isAdmin());
       allow delete: if isCoach() || isAdmin();
+
       match /messages/{messageId} {
         allow read: if request.auth != null &&
                       (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isCoach() || isAdmin());
@@ -111,15 +115,18 @@ service cloud.firestore {
         allow update, delete: if isCoach() || isAdmin();
       }
     }
+
     // --- ROLES ---
     match /roles/{docId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
+
     // --- APP-DATA ---
     match /app-data/{docId} {
       allow read, write: if isCoach() || isAdmin();
     }
+
     // --- COLLABORATORI ---
     match /collaboratori/{collabId} {
       allow read, list: if isAdmin() || isCollaboratore(collabId) || isSetter();
@@ -127,18 +134,27 @@ service cloud.firestore {
       allow update: if isCollaboratore(collabId) || isAdmin();
       allow delete: if isAdmin();
     }
+
+    // --- PAGAMENTI (NUOVA COLLEZIONE) ---
+    match /pagamenti/{paymentId} {
+      allow read, write: if isAdmin();
+    }
+
     // --- MARKETING REPORTS ---
     match /marketingReports/{reportId} {
       allow read, list, create, update, delete: if isAdmin();
     }
+
     // --- SALES REPORTS ---
     match /salesReports/{reportId} {
       allow read, list, create, update, delete: if isAdmin();
     }
-    // --- SETTING REPORTS --- AGGIUNTO
+
+    // --- SETTING REPORTS ---
     match /settingReports/{reportId} {
       allow read, list, create, update, delete: if isAdmin();
     }
+
     // --- LEADS ---
     match /leads/{leadId} {
       allow read, list: if isAdmin() ||
@@ -152,27 +168,22 @@ service cloud.firestore {
         (request.auth != null &&
          exists(/databases/$(database)/documents/collaboratori/$(request.auth.uid)) &&
          resource.data.collaboratoreId == request.auth.uid);
-      // AGGIUNTO: COLLABORATORE PUÒ ELIMINARE I SUOI LEADS
       allow delete: if isAdmin() ||
         (request.auth != null &&
          exists(/databases/$(database)/documents/collaboratori/$(request.auth.uid)) &&
          resource.data.collaboratoreId == request.auth.uid);
     }
 
-    // ==================== NUOVE REGOLE: GUIDE & LEAD (AGGIUNTE IN FONDO) ====================
-
-    // --- GUIDES: Admin crea/modifica, tutti leggono se active: true ---
+    // --- GUIDES & LEAD ---
     match /guides/{guideId} {
       allow read: if request.auth != null || (resource != null && resource.data.active == true);
       allow list: if true;
       allow create, update, delete: if isAdmin();
     }
 
-    // --- GUIDE LEADS: Chiunque crea (pubblico), solo admin legge/modifica ---
     match /guideLeads/{leadId} {
       allow create: if true;
       allow read, list, update, delete: if isAdmin();
     }
-
   }
 }
