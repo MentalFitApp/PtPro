@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { db, toDate, auth } from '../firebase';
-import { Users, ArrowLeft, Calendar, X } from 'lucide-react';
+import { Users, ArrowLeft, Calendar, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Error Boundary
@@ -52,7 +52,7 @@ const ImageModal = ({ src, onClose }) => (
   </AnimatePresence>
 );
 
-// Sezione Anamnesi
+// Sezione Anamnesi (nessuna modifica per le foto, solo per check sotto)
 const AnamnesiSection = ({ title, data, photoURLs, onImageClick, variants }) => {
   const [loadedPhotos, setLoadedPhotos] = useState({});
   const storage = getStorage();
@@ -111,9 +111,10 @@ const AnamnesiSection = ({ title, data, photoURLs, onImageClick, variants }) => 
   );
 };
 
-// Componente CheckItem
+// Componente CheckItem aggiornato: foto grandi (h-80), freccia per mostra/nascondi foto!
 const CheckItem = ({ check, onImageClick, variants }) => {
   const [loadedPhotos, setLoadedPhotos] = useState({});
+  const [showPhotos, setShowPhotos] = useState(true);
   const storage = getStorage();
 
   useEffect(() => {
@@ -156,26 +157,38 @@ const CheckItem = ({ check, onImageClick, variants }) => {
         </p>
       )}
       {check.photoURLs && (
-        <div className="mt-4">
-          <p className="text-xs text-slate-400 mb-2">Foto:</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {['front', 'back', 'left', 'right'].map(type => (
-              loadedPhotos[type] ? (
-                <motion.img
-                  key={type}
-                  src={loadedPhotos[type]}
-                  alt={type}
-                  className="w-full h-32 object-cover rounded-lg cursor-pointer"
-                  onClick={() => onImageClick(loadedPhotos[type])}
-                  whileHover={{ scale: 1.05 }}
-                />
-              ) : (
-                <div key={type} className="w-full h-32 bg-zinc-800 rounded-lg flex items-center justify-center text-xs text-slate-500">
-                  Nessuna foto
-                </div>
-              )
-            ))}
+        <div className="mt-5">
+          <div className="flex items-center gap-2 mb-2">
+            <button
+              onClick={() => setShowPhotos(v => !v)}
+              className="bg-zinc-700 text-white px-2 py-1 rounded hover:bg-zinc-600 transition"
+              title={showPhotos ? "Restringi sezione foto" : "Espandi sezione foto"}
+            >
+              {showPhotos ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </button>
+            <span className="text-xs text-slate-400">{showPhotos ? "Nascondi foto" : "Mostra foto check"}</span>
           </div>
+          {showPhotos && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {['front', 'back', 'left', 'right'].map(type => (
+                loadedPhotos[type] ? (
+                  <motion.img
+                    key={type}
+                    src={loadedPhotos[type]}
+                    alt={type}
+                    className="w-full h-80 object-cover rounded-xl cursor-pointer"
+                    style={{ maxHeight: 'calc(92vh - 220px)' }}
+                    onClick={() => onImageClick(loadedPhotos[type])}
+                    whileHover={{ scale: 1.03 }}
+                  />
+                ) : (
+                  <div key={type} className="w-full h-80 bg-zinc-800 rounded-xl flex items-center justify-center text-xs text-slate-500">
+                    Nessuna foto
+                  </div>
+                )
+              ))}
+            </div>
+          )}
         </div>
       )}
     </motion.div>
@@ -235,14 +248,12 @@ export default function CoachClientDetail() {
           setChecks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
           setLoading(false);
         }, (err) => {
-          console.error('Errore checks:', err);
           setError('Errore caricamento check');
           setLoading(false);
         });
 
         return () => unsub();
       } catch (err) {
-        console.error('Errore:', err);
         setError('Errore caricamento dati');
         setLoading(false);
       }

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, onSnapshot, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, toDate, auth } from '../firebase';
-import { FileText, Calendar, ArrowRight, ArrowLeft } from 'lucide-react';
+import { FileText, Calendar, ArrowLeft, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const LoadingSpinner = () => (
@@ -16,6 +15,7 @@ export default function CoachAnamnesi() {
   const navigate = useNavigate();
   const [recentChecks, setRecentChecks] = useState([]);
   const [recentAnamnesi, setRecentAnamnesi] = useState([]);
+  const [notification, setNotification] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,100 +24,92 @@ export default function CoachAnamnesi() {
       return;
     }
 
-    const coachId = auth.currentUser.uid;
+    // Carica TUTTI i clienti — niente filtro su assignedCoaches!
+    const q = query(collection(db, 'clients'));
 
-    // --- VERIFICA RUOLO COACH (una sola chiamata) ---
-    const verifyCoach = async () => {
-      const coachDoc = await getDoc(doc(db, 'roles', 'coaches'));
-      if (!coachDoc.exists() || !coachDoc.data().uids.includes(coachId)) {
-        navigate('/login');
+    const unsub = onSnapshot(q, async (snap) => {
+      const clientIds = snap.docs.map(d => d.id);
+      if (clientIds.length === 0) {
+        setRecentChecks([]);
+        setRecentAnamnesi([]);
+        setLoading(false);
         return;
       }
 
-      // --- CARICA TUTTO IN BATCH ---
-      const clientsQuery = query(
-        collection(db, 'clients'),
-        where('assignedCoaches', 'array-contains', coachId)
-      );
-
-      const unsub = onSnapshot(clientsQuery, async (snap) => {
-        const clientIds = snap.docs.map(d => d.id);
-        if (clientIds.length === 0) {
-          setRecentChecks([]);
-          setRecentAnamnesi([]);
-          setLoading(false);
-          return;
-        }
-
-        // --- BATCH CHECKS ---
-        const checkPromises = clientIds.map(async (clientId) => {
-          const clientName = snap.docs.find(d => d.id === clientId).data().name || 'Cliente';
-          const checksQuery = query(
-            collection(db, 'clients', clientId, 'checks'),
-            orderBy('createdAt', 'desc'),
-            limit(3)
-          );
-          const checksSnap = await getDocs(checksQuery);
-          return checksSnap.docs.map(checkDoc => {
-            const data = checkDoc.data();
-            return {
-              clientId,
-              clientName,
-              date: data.createdAt,
-              weight: data.weight,
-              notes: data.notes
-            };
-          });
+      // --- BATCH CHECKS ---
+      const checkPromises = clientIds.map(async (clientId) => {
+        const clientName = snap.docs.find(d => d.id === clientId).data().name || 'Cliente';
+        const checksQuery = query(
+          collection(db, 'clients', clientId, 'checks'),
+          orderBy('createdAt', 'desc'),
+          limit(3)
+        );
+        const checksSnap = await getDocs(checksQuery);
+        return checksSnap.docs.map(checkDoc => {
+          const data = checkDoc.data();
+          return {
+            clientId,
+            clientName,
+            date: data.createdAt,
+            weight: data.weight,
+            notes: data.notes
+          };
         });
-
-        // --- BATCH ANAMNESI ---
-        const anamnesiPromises = clientIds.map(async (clientId) => {
-          const clientName = snap.docs.find(d => d.id === clientId).data().name || 'Cliente';
-          const anamnesiRef = doc(db, 'clients', clientId, 'anamnesi', 'initial');
-          const anamnesiSnap = await getDoc(anamnesiRef);
-          if (anamnesiSnap.exists()) {
-            const data = anamnesiSnap.data();
-            return {
-              clientId,
-              clientName,
-              date: data.submittedAt,
-              goal: data.mainGoal
-            };
-          }
-          return null;
-        });
-
-        try {
-          const [allChecks, allAnamnesi] = await Promise.all([
-            Promise.all(checkPromises),
-            Promise.all(anamnesiPromises)
-          ]);
-
-          const flatChecks = allChecks.flat();
-          const validAnamnesi = allAnamnesi.filter(Boolean);
-
-          flatChecks.sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0));
-          validAnamnesi.sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0));
-
-          setRecentChecks(flatChecks.slice(0, 5));
-          setRecentAnamnesi(validAnamnesi.slice(0, 5));
-          setLoading(false);
-        } catch (err) {
-          console.error('Errore batch:', err);
-          setLoading(false);
-        }
-      }, (err) => {
-        console.error('Errore snapshot:', err);
-        setLoading(false);
       });
 
-      return () => unsub();
-    };
+      // --- BATCH ANAMNESI ---
+      const anamnesiPromises = clientIds.map(async (clientId) => {
+        const clientName = snap.docs.find(d => d.id === clientId).data().name || 'Cliente';
+        const anamnesiRef = doc(db, 'clients', clientId, 'anamnesi', 'initial');
+        const anamnesiSnap = await getDoc(anamnesiRef);
+        if (anamnesiSnap.exists()) {
+          const data = anamnesiSnap.data();
+          return {
+            clientId,
+            clientName,
+            date: data.submittedAt,
+            goal: data.mainGoal
+          };
+        }
+        return null;
+      });
 
-    verifyCoach();
+      try {
+        const [allChecks, allAnamnesi] = await Promise.all([
+          Promise.all(checkPromises),
+          Promise.all(anamnesiPromises)
+        ]);
+
+        const flatChecks = allChecks.flat();
+        const validAnamnesi = allAnamnesi.filter(Boolean);
+
+        flatChecks.sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0));
+        validAnamnesi.sort((a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0));
+
+        setRecentChecks(flatChecks.slice(0, 5));
+        setRecentAnamnesi(validAnamnesi.slice(0, 5));
+        setLoading(false);
+      } catch (err) {
+        console.error('Errore batch:', err);
+        setLoading(false);
+      }
+    }, (err) => {
+      console.error('Errore snapshot:', err);
+      setLoading(false);
+    });
+
+    return () => unsub();
   }, [navigate]);
 
   const formatDate = (ts) => toDate(ts)?.toLocaleDateString('it-IT') || 'N/D';
+
+  // Pulsante svuota notifiche
+  const handleClearNotifications = () => {
+    setRecentChecks([]);
+    setRecentAnamnesi([]);
+    setNotification('Notifiche svuotate!');
+    setTimeout(() => setNotification(''), 3000);
+  };
 
   if (loading) return <LoadingSpinner />;
 
@@ -129,13 +121,25 @@ export default function CoachAnamnesi() {
     >
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-slate-50">Anamnesi & Check</h2>
-        <button
-          onClick={() => navigate('/coach/clients')}
-          className="flex items-center gap-2 text-sm text-slate-400 hover:text-cyan-400"
-        >
-          <ArrowLeft size={16} /> Indietro
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/coach/clients')}
+            className="flex items-center gap-2 text-sm text-slate-400 hover:text-cyan-400"
+          >
+            <ArrowLeft size={16} /> Indietro
+          </button>
+          <button
+            onClick={handleClearNotifications}
+            className="flex items-center gap-2 text-sm text-slate-400 hover:text-rose-400"
+            title="Svuota notifiche"
+          >
+            <Trash2 size={16} /> Svuota notifiche
+          </button>
+        </div>
       </div>
+      {notification && (
+        <div className="mb-3 text-center text-sm font-medium text-rose-400">{notification}</div>
+      )}
 
       {/* ULTIMI CHECK */}
       <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl gradient-border p-4">

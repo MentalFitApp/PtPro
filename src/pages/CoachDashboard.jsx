@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, collectionGroup, doc, getDoc, setDoc, serverTimestamp, query, orderBy, where } from 'firebase/firestore';
+import { collection, collectionGroup, doc, getDoc, query, onSnapshot, orderBy, where } from 'firebase/firestore';
 import { auth, db, toDate, calcolaStatoPercorso } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, PlusCircle, ChevronRight } from 'lucide-react';
@@ -28,7 +28,6 @@ const timeAgo = (date) => {
   }
 };
 
-// Componente StatCard
 const StatCard = ({ title, value, icon, isPercentage = false, variants }) => (
   <motion.div variants={variants} className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border h-full">
     <div className="flex items-center gap-3 text-slate-400">
@@ -41,7 +40,6 @@ const StatCard = ({ title, value, icon, isPercentage = false, variants }) => (
   </motion.div>
 );
 
-// Componente QuickAction
 const QuickAction = ({ to, title, icon, variants }) => (
   <motion.div variants={variants}>
     <button
@@ -59,7 +57,6 @@ const QuickAction = ({ to, title, icon, variants }) => (
   </motion.div>
 );
 
-// Componente ActivityItem
 const ActivityItem = ({ item, navigate, variants }) => {
   const icons = {
     expiring: <Clock className="text-yellow-500" size={18}/>,
@@ -96,12 +93,11 @@ export default function CoachDashboard() {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [activityFeed, setActivityFeed] = useState([]);
-  const [lastViewed, setLastViewed] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Verifica coach
+  // Verifica coach (sola autentificazione e nome)
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async user => {
       if (user) {
@@ -109,148 +105,130 @@ export default function CoachDashboard() {
           const coachDocRef = doc(db, 'roles', 'coaches');
           const coachDoc = await getDoc(coachDocRef);
           const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(user.uid);
-          console.log('Debug ruolo coach:', {
-            uid: user.uid,
-            coachDocExists: coachDoc.exists(),
-            coachUids: coachDoc.data()?.uids,
-            isCoach
-          });
           if (isCoach) {
             setUserName(user.displayName || user.email || 'Coach');
           } else {
-            console.warn('Accesso non autorizzato per CoachDashboard:', user.uid);
             sessionStorage.removeItem('app_role');
             await signOut(auth);
             navigate('/login');
           }
         } catch (err) {
-          console.error('Errore verifica ruolo coach:', err);
           setError('Errore nella verifica del ruolo coach.');
           setLoading(false);
         }
       } else {
-        console.warn('Nessun utente autenticato, redirect a /login');
         navigate('/login');
       }
     });
     return () => unsubscribe();
   }, [navigate]);
 
-  // Fetch clients
+  // Clienti
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'clients'), (snap) => {
       try {
         const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        console.log('Clienti caricati:', { count: clientList.length });
         setClients(clientList);
         setLoading(false);
       } catch (err) {
-        console.error("Errore nel fetch clients:", err);
         setError("Errore nel caricamento dei clienti.");
         setLoading(false);
       }
     }, (err) => {
-      console.error("Errore snapshot clients:", err);
       setError("Errore nel caricamento dei clienti.");
       setLoading(false);
     });
     return () => unsub();
   }, []);
 
-  // Fetch lastViewed
+  // Feed attività in tempo reale e completo
   useEffect(() => {
-    const lastViewedRef = doc(db, 'app-data', 'lastViewed');
-    const fetchLastViewed = async () => {
-      try {
-        const docSnap = await getDoc(lastViewedRef);
-        const lastViewedTime = docSnap.exists() ? docSnap.data().timestamp : null;
-        setLastViewed(lastViewedTime);
-        await setDoc(lastViewedRef, { timestamp: serverTimestamp() }, { merge: true });
-      } catch (err) {
-        console.error("Errore fetchLastViewed:", err);
-        setError("Errore nel caricamento di lastViewed.");
-      }
-    };
-    fetchLastViewed();
-  }, []);
+    if (!auth.currentUser) return;
 
-  // Activity feed
-  useEffect(() => {
-    if (!lastViewed || !auth.currentUser) return;
-
+    // Check-in
     const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));
     const unsubChecks = onSnapshot(checksQuery, async (snap) => {
       try {
-        const newChecks = [];
+        const items = [];
         for (const checkDoc of snap.docs) {
-          if (toDate(checkDoc.data().createdAt) > toDate(lastViewed)) {
-            const clientId = checkDoc.ref.parent.parent.id;
-            const clientDoc = await getDoc(doc(db, 'clients', clientId));
-            newChecks.push({
-              type: 'new_check',
-              clientId,
-              clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
-              description: 'Ha inviato un nuovo check-in',
-              date: checkDoc.data().createdAt
-            });
-          }
+          const clientId = checkDoc.ref.parent.parent.id;
+          const clientDoc = await getDoc(doc(db, 'clients', clientId));
+          items.push({
+            type: 'new_check',
+            clientId,
+            clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
+            description: 'Ha inviato un nuovo check-in',
+            date: checkDoc.data().createdAt
+          });
         }
-        setActivityFeed(prev => [...prev, ...newChecks].sort((a, b) => toDate(b.date) - toDate(a.date)));
+        setActivityFeed(prev => {
+          // rimuovi check-in duplicati (clientId e data uguale)
+          const all = [...items, ...prev.filter(it => it.type !== 'new_check')];
+          return all.sort((a, b) => toDate(b.date) - toDate(a.date)).slice(0, 30);
+        });
       } catch (err) {
-        console.error("Errore snapshot checks:", err);
         setError("Errore nel caricamento dei check.");
       }
     });
 
+    // Anamnesi
     const anamnesiQuery = query(collectionGroup(db, 'anamnesi'), orderBy('submittedAt', 'desc'));
     const unsubAnamnesi = onSnapshot(anamnesiQuery, async (snap) => {
       try {
-        const newAnamnesi = [];
+        const items = [];
         for (const anamnesiDoc of snap.docs) {
-          if (toDate(anamnesiDoc.data().submittedAt) > toDate(lastViewed)) {
-            const clientId = anamnesiDoc.ref.parent.parent.id;
-            const clientDoc = await getDoc(doc(db, 'clients', clientId));
-            newAnamnesi.push({
-              type: 'new_anamnesi',
-              clientId,
-              clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
-              description: 'Ha compilato l\'anamnesi iniziale',
-              date: anamnesiDoc.data().submittedAt
-            });
-          }
+          const clientId = anamnesiDoc.ref.parent.parent.id;
+          const clientDoc = await getDoc(doc(db, 'clients', clientId));
+          items.push({
+            type: 'new_anamnesi',
+            clientId,
+            clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
+            description: 'Ha compilato l\'anamnesi iniziale',
+            date: anamnesiDoc.data().submittedAt
+          });
         }
-        setActivityFeed(prev => [...prev, ...newAnamnesi].sort((a, b) => toDate(b.date) - toDate(a.date)));
+        setActivityFeed(prev => {
+          const all = [...items, ...prev.filter(it => it.type !== 'new_anamnesi')];
+          return all.sort((a, b) => toDate(b.date) - toDate(a.date)).slice(0, 30);
+        });
       } catch (err) {
-        console.error("Errore snapshot anamnesi:", err);
         setError("Errore nel caricamento delle anamnesi.");
       }
     });
 
-    const chatsQuery = query(collection(db, 'chats'), where('participants', 'array-contains', auth.currentUser.uid), orderBy('lastUpdate', 'desc'));
+    // Chat (messaggi)
+    const chatsQuery = query(
+      collection(db, 'chats'),
+      where('participants', 'array-contains', auth.currentUser.uid),
+      orderBy('lastUpdate', 'desc')
+    );
     const unsubChats = onSnapshot(chatsQuery, async (snap) => {
       try {
-        const newMessages = [];
+        const items = [];
         for (const chatDoc of snap.docs) {
           const chatData = chatDoc.data();
           const clientId = chatData.participants.find(p => p !== auth.currentUser.uid);
-          if (chatData.lastUpdate && toDate(chatData.lastUpdate) > toDate(lastViewed)) {
+          if (chatData.lastUpdate) {
             const clientDoc = await getDoc(doc(db, 'clients', clientId));
-            newMessages.push({
+            items.push({
               type: 'new_message',
               clientId,
               clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
-              description: `Nuovo messaggio: ${chatData.lastMessage.slice(0, 30)}...`,
+              description: `Nuovo messaggio: ${chatData.lastMessage?.slice?.(0, 30)}...`,
               date: chatData.lastUpdate
             });
           }
         }
-        setActivityFeed(prev => [...prev, ...newMessages].sort((a, b) => toDate(b.date) - toDate(a.date)));
+        setActivityFeed(prev => {
+          const all = [...items, ...prev.filter(it => it.type !== 'new_message')];
+          return all.sort((a, b) => toDate(b.date) - toDate(a.date)).slice(0, 30);
+        });
       } catch (err) {
-        console.error("Errore snapshot chats:", err);
         setError("Errore nel caricamento dei messaggi.");
       }
     });
 
+    // Clienti in scadenza
     const clientsQuery = query(collection(db, 'clients'));
     const unsubClients = onSnapshot(clientsQuery, (snap) => {
       try {
@@ -271,10 +249,10 @@ export default function CoachDashboard() {
           }));
         setActivityFeed(prev => {
           const nonExpiring = prev.filter(item => item.type !== 'expiring');
-          return [...nonExpiring, ...expiring].sort((a, b) => toDate(b.date) - toDate(a.date));
+          const all = [...nonExpiring, ...expiring];
+          return all.sort((a, b) => toDate(b.date) - toDate(a.date)).slice(0, 30);
         });
       } catch (err) {
-        console.error("Errore snapshot clients:", err);
         setError("Errore nel caricamento delle scadenze.");
       }
     });
@@ -285,9 +263,9 @@ export default function CoachDashboard() {
       unsubChats();
       unsubClients();
     };
-  }, [lastViewed]);
+  }, []);
 
-  // Statistiche clienti
+  // Statistiche
   const clientStats = React.useMemo(() => {
     try {
       const now = new Date();
@@ -301,7 +279,6 @@ export default function CoachDashboard() {
       }).length;
       return { active, expiring };
     } catch (err) {
-      console.error("Errore in clientStats:", err);
       return { active: 0, expiring: 0 };
     }
   }, [clients]);
@@ -312,7 +289,6 @@ export default function CoachDashboard() {
       await signOut(auth);
       navigate('/login');
     } catch (error) {
-      console.error("Errore logout:", error);
       setError("Errore durante il logout.");
     }
   };
@@ -321,7 +297,6 @@ export default function CoachDashboard() {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
   };
-
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
     visible: { y: 0, opacity: 1 },
@@ -375,7 +350,7 @@ export default function CoachDashboard() {
               <AnimatePresence>
                 {activityFeed.length > 0 ? (
                   activityFeed.map(item => (
-                    <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds}`} item={item} navigate={navigate} variants={itemVariants} />
+                    <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds || item.date}`} item={item} navigate={navigate} variants={itemVariants} />
                   ))
                 ) : (
                   <p className="text-slate-400 text-center p-4">Nessun aggiornamento recente.</p>

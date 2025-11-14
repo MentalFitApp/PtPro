@@ -1,12 +1,25 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, onSnapshot, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs, limit } from 'firebase/firestore';
 import { db, toDate, auth } from '../firebase';
 import { 
   Users, Search, LogOut, CheckCircle, XCircle, 
   Calendar, Clock, AlertCircle, ArrowUp, ArrowDown 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+const FilterButton = ({ active, onClick, label, icon }) => (
+  <button
+    onClick={onClick}
+    className={`px-3 py-1 text-sm rounded-md flex items-center gap-1 transition-colors ${
+      active 
+        ? 'bg-rose-600 text-white' 
+        : 'text-slate-400 hover:bg-white/10'
+    }`}
+  >
+    {icon} {label}
+  </button>
+);
 
 export default function CoachClients() {
   const navigate = useNavigate();
@@ -23,35 +36,26 @@ export default function CoachClients() {
       return;
     }
 
-    const coachId = auth.currentUser.uid;
+    // RIMOSSO il filtro per assignedCoaches: ora carica tutti i clienti
+    const q = query(collection(db, 'clients'));
 
-    const clientsQuery = query(
-      collection(db, 'clients'),
-      where('assignedCoaches', 'array-contains', coachId)
-    );
+    const unsub = onSnapshot(q, async (snap) => {
+      const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    const unsub = onSnapshot(clientsQuery, async (snap) => {
-      try {
-        const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        const checkPromises = clientList.map(async (client) => {
-          const checksQuery = query(
-            collection(db, 'clients', client.id, 'checks'),
-            orderBy('createdAt', 'desc'),
-            limit(1)
-          );
-          const checkSnap = await getDocs(checksQuery);
-          const lastCheck = checkSnap.docs[0]?.data()?.createdAt || null;
-          return { ...client, lastCheckDate: lastCheck };
-        });
-
-        const enrichedClients = await Promise.all(checkPromises);
-        setClients(enrichedClients);
-        setLoading(false);
-      } catch (err) {
-        console.error('Errore recupero clienti:', err);
-        setLoading(false);
-      }
+      // recupere ultimo check per ciascun cliente (in parallelo)
+      const checkPromises = clientList.map(async (client) => {
+        const checksQuery = query(
+          collection(db, 'clients', client.id, 'checks'),
+          orderBy('createdAt', 'desc'),
+          limit(1)
+        );
+        const checkSnap = await getDocs(checksQuery);
+        const lastCheck = checkSnap.docs[0]?.data()?.createdAt || null;
+        return { ...client, lastCheckDate: lastCheck };
+      });
+      const enriched = await Promise.all(checkPromises);
+      setClients(enriched);
+      setLoading(false);
     }, (err) => {
       console.error('Errore snapshot:', err);
       setLoading(false);
@@ -62,12 +66,11 @@ export default function CoachClients() {
 
   const filteredAndSortedClients = useMemo(() => {
     let filtered = clients.filter(client => {
-      const matchesSearch = 
+      const matchesSearch =
         (client.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (client.email || '').toLowerCase().includes(searchQuery.toLowerCase());
 
       if (!matchesSearch) return false;
-
       const now = new Date();
       const expiry = toDate(client.scadenza);
       const daysToExpiry = expiry ? Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)) : null;
@@ -90,7 +93,6 @@ export default function CoachClients() {
 
     filtered.sort((a, b) => {
       let aVal, bVal;
-
       switch (sortField) {
         case 'name':
           aVal = a.name || '';
@@ -111,7 +113,6 @@ export default function CoachClients() {
         default:
           aVal = 0; bVal = 0;
       }
-
       if (aVal < bVal) return sortDirection === 'desc' ? 1 : -1;
       if (aVal > bVal) return sortDirection === 'desc' ? -1 : 1;
       return 0;
@@ -205,7 +206,6 @@ export default function CoachClients() {
                 const start = toDate(client.startDate);
                 const expiry = toDate(client.scadenza);
                 const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
-
                 return (
                   <tr key={client.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
                     <td className="p-4 font-medium min-w-[180px]">
@@ -262,17 +262,3 @@ export default function CoachClients() {
     </motion.div>
   );
 }
-
-// Componente filtro
-const FilterButton = ({ active, onClick, label, icon }) => (
-  <button
-    onClick={onClick}
-    className={`px-3 py-1 text-sm rounded-md flex items-center gap-1 transition-colors ${
-      active 
-        ? 'bg-rose-600 text-white' 
-        : 'text-slate-400 hover:bg-white/10'
-    }`}
-  >
-    {icon} {label}
-  </button>
-);
