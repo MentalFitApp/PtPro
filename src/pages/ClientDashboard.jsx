@@ -3,7 +3,7 @@ import { getAuth, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle } from 'lucide-react';
+import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const LoadingSpinner = () => (
@@ -43,6 +43,9 @@ const ClientDashboard = () => {
   const [lastCheckDate, setLastCheckDate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showPWAInstall, setShowPWAInstall] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
@@ -56,10 +59,22 @@ const ClientDashboard = () => {
 
     console.log('ClientDashboard: Caricamento dati per UID:', user.uid, user.email);
 
+    // RILEVA DISPOSITIVO
+    const ua = navigator.userAgent;
+    const ios = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    const android = /Android/.test(ua);
+    setIsIOS(ios);
+    setIsAndroid(android);
+
+    // Mostra pulsante solo su mobile
+    if ((ios || android) && !window.matchMedia('(display-mode: standalone)').matches) {
+      setShowPWAInstall(true);
+    }
+
     // Carica dati cliente
     const fetchClientData = async () => {
       try {
-        const clientDocRef = doc(db, 'clients', user.uid); // Correzione della stringa
+        const clientDocRef = doc(db, 'clients', user.uid);
         const docSnap = await getDoc(clientDocRef);
         if (docSnap.exists()) {
           setClientData(docSnap.data());
@@ -80,7 +95,7 @@ const ClientDashboard = () => {
     const fetchLastCheck = () => {
       const checksCollectionRef = collection(db, `clients/${user.uid}/checks`);
       const q = query(checksCollectionRef, orderBy('createdAt', 'desc'));
-      let snapshotCount = 0; // Contatore per debug
+      let snapshotCount = 0;
       const unsubscribe = onSnapshot(q, (snapshot) => {
         snapshotCount++;
         console.log(`ClientDashboard: Snapshot #${snapshotCount}, documenti:`, snapshot.docs.length);
@@ -175,6 +190,37 @@ const ClientDashboard = () => {
             <LogOut size={16} /><span>Logout</span>
           </button>
         </motion.header>
+
+        {/* PULSANTI PWA - SOLO SU MOBILE */}
+        {showPWAInstall && (
+          <motion.div variants={itemVariants} className="mb-6 space-y-3">
+            {isAndroid && (
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-4 rounded-xl flex items-center justify-between shadow-lg">
+                <div className="flex items-center gap-3">
+                  <Smartphone size={20} />
+                  <div>
+                    <p className="font-semibold">Aggiungi alla Schermata Home</p>
+                    <p className="text-xs opacity-90">Tocca <strong>⋮ Menu → Aggiungi alla schermata home</strong></p>
+                  </div>
+                </div>
+                <Download size={18} />
+              </div>
+            )}
+
+            {isIOS && (
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-xl flex items-center justify-between shadow-lg">
+                <div className="flex items-center gap-3">
+                  <Smartphone size={20} />
+                  <div>
+                    <p className="font-semibold">Aggiungi alla Schermata Home</p>
+                    <p className="text-xs opacity-90">Tocca <strong>Condividi → Aggiungi alla schermata Home</strong></p>
+                  </div>
+                </div>
+                <Download size={18} />
+              </div>
+            )}
+          </motion.div>
+        )}
 
         <main>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">

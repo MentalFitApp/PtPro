@@ -8,11 +8,11 @@ import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { 
   Users, Plus, Copy, TrendingUp, FileText, Phone, Check, AlertCircle, Edit, X, 
-  BarChart3, Trash2, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon 
+  BarChart3, Trash2, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Eye 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import Calendar from './Calendar';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
@@ -27,11 +27,11 @@ const ReportStatus = ({ collaboratori }) => {
       const todayReport = reports.find(r => r.date === today);
       return !todayReport || !todayReport.eodReport || !todayReport.tracker;
     }).map(c => c.name || c.email.split('@')[0]);
-    setMissingReports(missing);
+    setMissingReports(m => missing);
   }, [collaboratori]);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 mb-4 border border-white/10">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 mb-4 border border-white/10">
       <h2 className="text-sm font-semibold text-slate-200 mb-3">Stato Report Oggi</h2>
       <p className="text-xs"><strong>Completati:</strong> {collaboratori.length - missingReports.length}</p>
       <p className="text-xs"><strong>Mancanti:</strong> {missingReports.length}</p>
@@ -98,8 +98,13 @@ export default function Collaboratori() {
   const [showClientPopup, setShowClientPopup] = useState(false);
   const [pendingClientLead, setPendingClientLead] = useState(null);
 
-  // DATI SETTING DA FIRESTORE
+  // DATI REPORT DA FIRESTORE
   const [settingReports, setSettingReports] = useState([]);
+  const [salesReports, setSalesReports] = useState([]);
+
+  // VISUALIZZAZIONE REPORT PASSATI
+  const [showPastSetting, setShowPastSetting] = useState(false);
+  const [showPastSales, setShowPastSales] = useState(false);
 
   const fonti = [
     'Info Storie Prima e Dopo', 'Info Storie Promo', 'Info Reel', 'Inizio Reel',
@@ -159,17 +164,23 @@ export default function Collaboratori() {
       calculateStats(data);
     });
 
-    // MODIFICA: usa dati completi
     const settingQuery = query(collection(db, 'settingReports'), orderBy('date', 'desc'));
     const unsubSetting = onSnapshot(settingQuery, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setSettingReports(data);
     });
 
+    const salesQuery = query(collection(db, 'salesReports'), orderBy('date', 'desc'));
+    const unsubSales = onSnapshot(salesQuery, snap => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setSalesReports(data);
+    });
+
     return () => {
       unsubCollab();
       unsubLeads();
       unsubSetting();
+      unsubSales();
     };
   }, [navigate]);
 
@@ -232,9 +243,8 @@ export default function Collaboratori() {
     }
   };
 
-  // MODIFICA: ID manuale per evitare duplicati
   const handleSaveReportSetting = async () => {
-    const reportId = `admin_${reportSetting.date}`; // Unico per giorno
+    const reportId = `admin_${reportSetting.date}`;
     try {
       await setDoc(doc(db, 'settingReports', reportId), {
         ...reportSetting,
@@ -256,8 +266,13 @@ export default function Collaboratori() {
   };
 
   const handleSaveReportVendita = async () => {
+    const reportId = `admin_${reportVendita.date}`;
     try {
-      await setDoc(doc(collection(db, 'salesReports')), reportVendita);
+      await setDoc(doc(db, 'salesReports', reportId), {
+        ...reportVendita,
+        uid: auth.currentUser.uid,
+        timestamp: new Date(),
+      });
       setReportVendita({ 
         date: new Date().toISOString().split('T')[0], 
         chiamateFissate: '', 
@@ -269,8 +284,31 @@ export default function Collaboratori() {
       setSuccess('Report Vendita salvato!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError('Errore salvataggio report vendita.');
+      setError('Errore salvataggio report vendita: ' + err.message);
     }
+  };
+
+  const loadPastSettingReport = (report) => {
+    setReportSetting({
+      date: report.date,
+      followUpsFatti: report.followUpsFatti || '',
+      dialedFatti: report.dialedFatti || '',
+      dialedRisposte: report.dialedRisposte || '',
+      chiamatePrenotate: report.chiamatePrenotate || '',
+    });
+    setShowPastSetting(false);
+  };
+
+  const loadPastSalesReport = (report) => {
+    setReportVendita({
+      date: report.date,
+      chiamateFissate: report.chiamateFissate || '',
+      chiamateFatte: report.chiamateFatte || '',
+      offersFatte: report.offersFatte || '',
+      chiuse: report.chiuse || '',
+      cash: report.cash || '',
+    });
+    setShowPastSales(false);
   };
 
   const handleEditLead = (lead) => {
@@ -351,9 +389,7 @@ export default function Collaboratori() {
     const stats = {};
     leads.forEach(l => {
       const src = l.source || 'Sconosciuta';
-      if (!stats[src]) {
-        stats[src] = { total: 0, showUp: 0, chiuso: 0 };
-      }
+      if (!stats[src]) stats[src] = { total: 0, showUp: 0, chiuso: 0 };
       stats[src].total++;
       if (l.showUp) stats[src].showUp++;
       if (l.chiuso) stats[src].chiuso++;
@@ -429,36 +465,24 @@ export default function Collaboratori() {
       endDate = todayStr;
     }
 
-    let callsFatte = 0;
-    let showUpCount = 0;
-    let offerCount = 0;
-    let closeCount = 0;
+    let chiamateFissate = 0, chiamateFatte = 0, offersFatte = 0, chiuse = 0;
 
-    collaboratori.forEach(collab => {
-      if (collab.role !== 'Vendita') return;
-      (collab.dailyReports || []).forEach(report => {
-        if (report.date < startDate || report.date > endDate) return;
-        const calls = parseInt(report.tracker?.callFatte || 0);
-        callsFatte += calls;
-      });
+    salesReports.forEach(report => {
+      if (report.date < startDate || report.date > endDate) return;
+      chiamateFissate += parseInt(report.chiamateFissate || 0);
+      chiamateFatte += parseInt(report.chiamateFatte || 0);
+      offersFatte += parseInt(report.offersFatte || 0);
+      chiuse += parseInt(report.chiuse || 0);
     });
 
-    leads.forEach(lead => {
-      const leadDate = lead.dataPrenotazione;
-      if (!leadDate || leadDate < startDate || leadDate > endDate) return;
-      if (lead.showUp) showUpCount++;
-      if (lead.offer) offerCount++;
-      if (lead.chiuso) closeCount++;
-    });
+    const showUpRate = chiamateFissate > 0 ? ((chiamateFatte / chiamateFissate) * 100).toFixed(1) : '0.0';
+    const warmRate = chiamateFatte > 0 ? ((offersFatte / chiamateFatte) * 100).toFixed(1) : '0.0';
+    const closeRate = chiamateFatte > 0 ? ((chiuse / chiamateFatte) * 100).toFixed(1) : '0.0';
 
-    const showUpRate = callsFatte > 0 ? ((showUpCount / callsFatte) * 100).toFixed(1) : '0.0';
-    const offerRate = showUpCount > 0 ? ((offerCount / showUpCount) * 100).toFixed(1) : '0.0';
-    const closeRate = offerCount > 0 ? ((closeCount / offerCount) * 100).toFixed(1) : '0.0';
-
-    return { callsFatte, showUpRate, offerRate, closeRate };
+    return { chiamateFatte, showUpRate, warmRate, closeRate };
   };
 
-  const { callsFatte, showUpRate, offerRate, closeRate } = calculateSalesRatesByPeriod();
+  const { chiamateFatte, showUpRate, warmRate, closeRate } = calculateSalesRatesByPeriod();
 
   const calculateSettingStatsFromReports = () => {
     const today = new Date();
@@ -482,10 +506,7 @@ export default function Collaboratori() {
       endDate = todayStr;
     }
 
-    let followUps = 0;
-    let dialedFatti = 0;
-    let dialedRisposte = 0;
-    let chiamatePrenotate = 0;
+    let followUps = 0, dialedFatti = 0, dialedRisposte = 0, chiamatePrenotate = 0;
 
     settingReports.forEach(report => {
       if (report.date < startDate || report.date > endDate) return;
@@ -496,7 +517,7 @@ export default function Collaboratori() {
     });
 
     const risposteRate = dialedFatti > 0 ? ((dialedRisposte / dialedFatti) * 100).toFixed(1) : '0.0';
-    const prenotateRate = followUps > 0 ? ((chiamatePrenotate / followUps) * 100).toFixed(1) : '0.0';
+    const prenotateRate = dialedRisposte > 0 ? ((chiamatePrenotate / dialedRisposte) * 100).toFixed(1) : '0.0';
 
     return { followUps, dialedFatti, risposteRate, prenotateRate };
   };
@@ -549,7 +570,7 @@ export default function Collaboratori() {
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-black to-zinc-900 overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden">
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
 
         {/* HEADER */}
@@ -563,12 +584,12 @@ export default function Collaboratori() {
               value={newEmail}
               onChange={e => setNewEmail(e.target.value)}
               placeholder="email@esempio.com"
-              className="px-3 py-1.5 bg-zinc-900/70 border border-white/10 rounded text-xs w-full sm:w-40"
+              className="px-3 py-1.5 bg-zinc-950/40 border border-white/10 rounded text-xs w-full sm:w-40"
             />
             <select
               value={newRole}
               onChange={e => setNewRole(e.target.value)}
-              className="px-3 py-1.5 bg-zinc-900/70 border border-white/10 rounded text-xs w-full sm:w-28"
+              className="px-3 py-1.5 bg-zinc-950/40 border border-white/10 rounded text-xs w-full sm:w-28"
             >
               <option>Setter</option>
               <option>Marketing</option>
@@ -588,14 +609,14 @@ export default function Collaboratori() {
 
         <ReportStatus collaboratori={collaboratori} />
 
-        {/* STATISTICHE - SOLO LEADS */}
+        {/* STATISTICHE */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { label: 'Oggi', leads: stats.leadsToday },
             { label: 'Settimana', leads: stats.leadsWeek },
             { label: 'Mese', leads: stats.leadsMonth },
           ].map((stat, i) => (
-            <motion.div key={i} className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
+            <motion.div key={i} className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10">
               <h3 className="text-sm font-semibold text-slate-200">{stat.label}</h3>
               <p className="text-3xl font-bold text-green-500 mt-1">{stat.leads}</p>
               <p className="text-xs text-slate-400">Leads</p>
@@ -614,14 +635,41 @@ export default function Collaboratori() {
         {/* REPORT SETTING & VENDITA */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* REPORT SETTING */}
-          <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
-            <h2 className="text-sm font-semibold text-cyan-400 mb-3">Report Setting</h2>
+          <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-sm font-semibold text-cyan-400">Report Setting</h2>
+              <button
+                onClick={() => setShowPastSetting(!showPastSetting)}
+                className="text-xs flex items-center gap-1 text-cyan-300 hover:text-cyan-100"
+              >
+                <Eye size={12} /> Visualizza Report Passati
+              </button>
+            </div>
+
+            {showPastSetting && (
+              <div className="mb-3 p-2 bg-zinc-900/50 border border-cyan-800/30 rounded max-h-32 overflow-y-auto text-xs">
+                {settingReports.length === 0 ? (
+                  <p className="text-slate-400">Nessun report</p>
+                ) : (
+                  settingReports.map(r => (
+                    <button
+                      key={r.id}
+                      onClick={() => loadPastSettingReport(r)}
+                      className="block w-full text-left p-1 hover:bg-cyan-900/30 rounded"
+                    >
+                      {r.date} → {r.chiamatePrenotate} prenotate
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+
             <div className="space-y-2 text-xs">
-              <input type="date" value={reportSetting.date} onChange={e => setReportSetting({ ...reportSetting, date: e.target.value })} className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={reportSetting.followUpsFatti} onChange={e => setReportSetting({ ...reportSetting, followUpsFatti: e.target.value })} placeholder="Follow-ups fatti" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={reportSetting.dialedFatti} onChange={e => setReportSetting({ ...reportSetting, dialedFatti: e.target.value })} placeholder="Dialed fatti" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={reportSetting.dialedRisposte} onChange={e => setReportSetting({ ...reportSetting, dialedRisposte: e.target.value })} placeholder="Dialed risposte" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={reportSetting.chiamatePrenotate} onChange={e => setReportSetting({ ...reportSetting, chiamatePrenotate: e.target.value })} placeholder="Chiamate prenotate" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="date" value={reportSetting.date} onChange={e => setReportSetting({ ...reportSetting, date: e.target.value })} className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
+              <input type="number" value={reportSetting.followUpsFatti} onChange={e => setReportSetting({ ...reportSetting, followUpsFatti: e.target.value })} placeholder="Follow-ups fatti" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
+              <input type="number" value={reportSetting.dialedFatti} onChange={e => setReportSetting({ ...reportSetting, dialedFatti: e.target.value })} placeholder="Dialed fatti" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
+              <input type="number" value={reportSetting.dialedRisposte} onChange={e => setReportSetting({ ...reportSetting, dialedRisposte: e.target.value })} placeholder="Dialed risposte" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
+              <input type="number" value={reportSetting.chiamatePrenotate} onChange={e => setReportSetting({ ...reportSetting, chiamatePrenotate: e.target.value })} placeholder="Chiamate prenotate" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
               <button onClick={handleSaveReportSetting} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-1.5 rounded text-xs">
                 <Check className="inline mr-1" size={12} /> Salva
               </button>
@@ -629,15 +677,42 @@ export default function Collaboratori() {
           </div>
 
           {/* REPORT VENDITA */}
-          <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
-            <h2 className="text-sm font-semibold text-rose-400 mb-3">Report Vendita</h2>
+          <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-sm font-semibold text-rose-400">Report Vendita</h2>
+              <button
+                onClick={() => setShowPastSales(!showPastSales)}
+                className="text-xs flex items-center gap-1 text-rose-300 hover:text-rose-100"
+              >
+                <Eye size={12} /> Visualizza Report Passati
+              </button>
+            </div>
+
+            {showPastSales && (
+              <div className="mb-3 p-2 bg-zinc-900/50 border border-rose-800/30 rounded max-h-32 overflow-y-auto text-xs">
+                {salesReports.length === 0 ? (
+                  <p className="text-slate-400">Nessun report</p>
+                ) : (
+                  salesReports.map(r => (
+                    <button
+                      key={r.id}
+                      onClick={() => loadPastSalesReport(r)}
+                      className="block w-full text-left p-1 hover:bg-rose-900/30 rounded"
+                    >
+                      {r.date} → {r.chiuse} chiuse ({r.cash}€)
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+
             <div className="space-y-2 text-xs">
-              <input type="date" value={reportVendita.date} onChange={e => setReportVendita({ ...reportVendita, date: e.target.value })} className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={reportVendita.chiamateFissate} onChange={e => setReportVendita({ ...reportVendita, chiamateFissate: e.target.value })} placeholder="Chiamate fissate" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={reportVendita.chiamateFatte} onChange={e => setReportVendita({ ...reportVendita, chiamateFatte: e.target.value })} placeholder="Chiamate fatte" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={reportVendita.offersFatte} onChange={e => setReportVendita({ ...reportVendita, offersFatte: e.target.value })} placeholder="Offers fatte" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={reportVendita.chiuse} onChange={e => setReportVendita({ ...reportVendita, chiuse: e.target.value })} placeholder="Chiuse" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
-              <input type="number" value={reportVendita.cash} onChange={e => setReportVendita({ ...reportVendita, cash: e.target.value })} placeholder="Cash" className="w-full p-1.5 bg-zinc-900/70 border border-white/10 rounded" />
+              <input type="date" value={reportVendita.date} onChange={e => setReportVendita({ ...reportVendita, date: e.target.value })} className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
+              <input type="number" value={reportVendita.chiamateFissate} onChange={e => setReportVendita({ ...reportVendita, chiamateFissate: e.target.value })} placeholder="Chiamate fissate" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
+              <input type="number" value={reportVendita.chiamateFatte} onChange={e => setReportVendita({ ...reportVendita, chiamateFatte: e.target.value })} placeholder="Chiamate fatte" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
+              <input type="number" value={reportVendita.offersFatte} onChange={e => setReportVendita({ ...reportVendita, offersFatte: e.target.value })} placeholder="Offers fatte" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
+              <input type="number" value={reportVendita.chiuse} onChange={e => setReportVendita({ ...reportVendita, chiuse: e.target.value })} placeholder="Chiuse" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
+              <input type="number" value={reportVendita.cash} onChange={e => setReportVendita({ ...reportVendita, cash: e.target.value })} placeholder="Cash" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
               <button onClick={handleSaveReportVendita} className="w-full bg-gradient-to-r from-rose-600 to-red-600 text-white py-1.5 rounded text-xs">
                 <Check className="inline mr-1" size={12} /> Salva
               </button>
@@ -645,12 +720,12 @@ export default function Collaboratori() {
           </div>
         </div>
 
-        {/* TABELLA LEADS – AZIONI ALL'INIZIO */}
-        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
+        {/* TABELLA LEADS */}
+        <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-slate-200">Leads ({filteredLeads.length})</h2>
             <div className="flex flex-wrap gap-1 text-xs">
-              <div className="flex items-center gap-1 bg-zinc-900/70 rounded px-2 py-1">
+              <div className="flex items-center gap-1 bg-zinc-950/40 rounded px-2 py-1">
                 <Search size={12} className="text-slate-400" />
                 <input 
                   type="text" 
@@ -660,12 +735,12 @@ export default function Collaboratori() {
                   className="bg-transparent outline-none w-24"
                 />
               </div>
-              <select value={filterChiuso} onChange={e => { setFilterChiuso(e.target.value); setCurrentPage(1); }} className="bg-zinc-900/70 border border-white/10 rounded px-2 py-1">
+              <select value={filterChiuso} onChange={e => { setFilterChiuso(e.target.value); setCurrentPage(1); }} className="bg-zinc-950/40 border border-white/10 rounded px-2 py-1">
                 <option value="tutti">Tutti</option>
                 <option value="si">Chiusi</option>
                 <option value="no">No</option>
               </select>
-              <select value={filterShowUp} onChange={e => { setFilterShowUp(e.target.value); setCurrentPage(1); }} className="bg-zinc-900/70 border border-white/10 rounded px-2 py-1">
+              <select value={filterShowUp} onChange={e => { setFilterShowUp(e.target.value); setCurrentPage(1); }} className="bg-zinc-950/40 border border-white/10 rounded px-2 py-1">
                 <option value="tutti">Tutti</option>
                 <option value="si">Sì</option>
                 <option value="no">No</option>
@@ -676,9 +751,8 @@ export default function Collaboratori() {
           <div className="overflow-x-auto max-w-full rounded border border-white/10">
             <div className="min-w-[1500px] w-full">
               <table className="w-full text-xs text-left text-slate-400">
-                <thead className="text-xs uppercase bg-zinc-900/50 sticky top-0">
+                <thead className="text-xs uppercase bg-zinc-950/40 sticky top-0">
                   <tr>
-                    {/* AZIONI ALL'INIZIO */}
                     <th className="px-2 py-1 text-center">Az</th>
                     <th className="px-2 py-1">Nome</th>
                     <th className="px-2 py-1">Fonte</th>
@@ -690,7 +764,7 @@ export default function Collaboratori() {
                     <th className="px-2 py-1 text-center">Setting Call</th>
                     <th className="px-2 py-1 text-center">Show-Up</th>
                     <th className="px-2 py-1 text-center">Target</th>
-                    <th className="px-2 py-1 text-center">Offer</th>
+                    <th className="px-2 py-1 text-center">Warm</th>
                     <th className="px-2 py-1 text-center">Closed</th>
                     <th className="px-2 py-1 text-center">€</th>
                     <th className="px-2 py-1 text-center">M</th>
@@ -699,8 +773,7 @@ export default function Collaboratori() {
                 </thead>
                 <tbody>
                   {paginatedLeads.map(lead => (
-                    <tr key={lead.id} className="border-b border-white/10 hover:bg-zinc-900/50">
-                      {/* AZIONI ALL'INIZIO */}
+                    <tr key={lead.id} className="border-b border-white/10 hover:bg-zinc-950/20">
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Azioni</div>
                         {editingLead === lead.id ? (
@@ -717,12 +790,12 @@ export default function Collaboratori() {
                       </td>
                       <td className="px-2 py-1">
                         {editingLead === lead.id ? (
-                          <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded text-xs" />
+                          <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-1 bg-zinc-950/40 border border-white/10 rounded text-xs" />
                         ) : <div className="max-w-[80px] truncate">{lead.name}</div>}
                       </td>
                       <td className="px-2 py-1">
                         {editingLead === lead.id ? (
-                          <select value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} className="w-full p-1 bg-zinc-800 border border-white/10 rounded text-xs">
+                          <select value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} className="w-full p-1 bg-zinc-950/40 border border-white/10 rounded text-xs">
                             <option value="">—</option>
                             {fonti.map(f => <option key={f} value={f}>{f}</option>)}
                           </select>
@@ -735,7 +808,7 @@ export default function Collaboratori() {
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Dialed</div>
                         {editingLead === lead.id ? (
-                          <input type="number" min="0" value={editForm.dialed ?? 0} onChange={e => setEditForm({ ...editForm, dialed: parseInt(e.target.value) || 0 })} className="w-12 p-0.5 bg-zinc-800 border border-white/10 rounded text-xs text-center" />
+                          <input type="number" min="0" value={editForm.dialed ?? 0} onChange={e => setEditForm({ ...editForm, dialed: parseInt(e.target.value) || 0 })} className="w-12 p-0.5 bg-zinc-950/40 border border-white/10 rounded text-xs text-center" />
                         ) : <div className="font-bold">{lead.dialed ?? 0}</div>}
                       </td>
                       <td className="px-2 py-1 text-center">
@@ -757,9 +830,9 @@ export default function Collaboratori() {
                         ) : <div className={`font-bold ${lead.target ? 'text-emerald-400' : 'text-gray-500'}`}>{lead.target ? 'Sì' : 'No'}</div>}
                       </td>
                       <td className="px-2 py-1 text-center">
-                        <div className="text-[10px] text-slate-500">Offer</div>
+                        <div className="text-[10px] text-slate-500">Warm</div>
                         {editingLead === lead.id ? (
-                          <input type="checkbox" checked={editForm.offer} onChange={e => setEditForm({ ...editForm, offer: e.target.checked })} className="w-3 h-3" />
+                          <input type="checkbox" checked={editForm.offer} onChange={e => setEditForm({ ...editForm, offer: e.target.checked })} className="w-3 h3" />
                         ) : <div className={`font-bold ${lead.offer ? 'text-green-400' : 'text-gray-400'}`}>{lead.offer ? 'Sì' : 'No'}</div>}
                       </td>
                       <td className="px-2 py-1 text-center">
@@ -771,19 +844,19 @@ export default function Collaboratori() {
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Importo</div>
                         {editingLead === lead.id ? (
-                          <input type="number" min="0" step="0.01" value={editForm.amount || ''} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} className="w-16 p-0.5 bg-zinc-800 border border-white/10 rounded text-xs text-center" />
+                          <input type="number" min="0" step="0.01" value={editForm.amount || ''} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} className="w-16 p-0.5 bg-zinc-950/40 border border-white/10 rounded text-xs text-center" />
                         ) : <div className="font-bold">€{lead.amount || 0}</div>}
                       </td>
                       <td className="px-2 py-1 text-center">
                         <div className="text-[10px] text-slate-500">Mesi</div>
                         {editingLead === lead.id ? (
-                          <input type="number" min="0" value={editForm.mesi || ''} onChange={e => setEditForm({ ...editForm, mesi: e.target.value })} className="w-12 p-0.5 bg-zinc-800 border border-white/10 rounded text-xs text-center" />
+                          <input type="number" min="0" value={editForm.mesi || ''} onChange={e => setEditForm({ ...editForm, mesi: e.target.value })} className="w-12 p-0.5 bg-zinc-950/40 border border-white/10 rounded text-xs text-center" />
                         ) : <div className="font-bold">{lead.mesi || 0}</div>}
                       </td>
                       <td className="px-2 py-1 max-w-[120px]">
                         <div className="text-[10px] text-slate-500">Note</div>
                         {editingLead === lead.id ? (
-                          <input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} className="w-full p-0.5 bg-zinc-800 border border-white/10 rounded text-xs" />
+                          <input value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} className="w-full p-0.5 bg-zinc-950/40 border border-white/10 rounded text-xs" />
                         ) : <div className="truncate">{lead.note || '—'}</div>}
                       </td>
                     </tr>
@@ -802,10 +875,6 @@ export default function Collaboratori() {
           )}
         </div>
 
-        {/* RESTO DEL CODICE IDENTICO... */}
-        {/* (Percentuali Vendita, Statistiche Setting, Lead per Fonte, Grafico Setter, Collaboratori, Popup) */}
-        {/* ...non modificato... */}
-
         {/* PERCENTUALI VENDITA */}
         <div className="bg-gradient-to-br from-rose-900/40 to-purple-900/40 backdrop-blur-xl rounded-xl p-4 mb-4 border border-rose-500/30">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
@@ -815,7 +884,7 @@ export default function Collaboratori() {
             <select 
               value={salesPeriod} 
               onChange={e => setSalesPeriod(e.target.value)}
-              className="bg-zinc-900/70 border border-white/10 rounded px-3 py-1.5 text-xs"
+              className="bg-zinc-950/40 border border-white/10 rounded px-3 py-1.5 text-xs"
             >
               <option value="oggi">Oggi</option>
               <option value="settimana">Questa Settimana</option>
@@ -826,15 +895,15 @@ export default function Collaboratori() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div className="text-center">
               <p className="text-rose-300">Call Fatte</p>
-              <p className="text-2xl font-bold text-white">{callsFatte}</p>
+              <p className="text-2xl font-bold text-white">{chiamateFatte}</p>
             </div>
             <div className="text-center">
               <p className="text-green-300">Show-Up</p>
               <p className="text-2xl font-bold text-green-400">{showUpRate}%</p>
             </div>
             <div className="text-center">
-              <p className="text-yellow-300">Offer</p>
-              <p className="text-2xl font-bold text-yellow-400">{offerRate}%</p>
+              <p className="text-yellow-300">Warm</p>
+              <p className="text-2xl font-bold text-yellow-400">{warmRate}%</p>
             </div>
             <div className="text-center">
               <p className="text-rose-300">Close</p>
@@ -852,7 +921,7 @@ export default function Collaboratori() {
             <select 
               value={settingPeriod} 
               onChange={e => setSettingPeriod(e.target.value)}
-              className="bg-zinc-900/70 border border-white/10 rounded px-3 py-1.5 text-xs"
+              className="bg-zinc-950/40 border border-white/10 rounded px-3 py-1.5 text-xs"
             >
               <option value="oggi">Oggi</option>
               <option value="settimana">Questa Settimana</option>
@@ -881,14 +950,14 @@ export default function Collaboratori() {
         </div>
 
         {/* LEAD PER FONTE */}
-        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 mb-4">
+        <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 mb-4 border border-white/10">
           <h2 className="text-sm font-semibold text-slate-200 mb-3">Lead per Fonte</h2>
           <div className="space-y-1 text-xs">
             {sourceStats.length === 0 ? (
               <p className="text-slate-400">Nessun lead</p>
             ) : (
               sourceStats.map(s => (
-                <div key={s.source} className="flex justify-between items-center p-2 bg-zinc-900/70 rounded border border-white/10">
+                <div key={s.source} className="flex justify-between items-center p-2 bg-zinc-950/40 rounded border border-white/10">
                   <div className="flex items-center gap-2">
                     <span className="text-cyan-400 font-bold">{s.index}.</span>
                     <span className="truncate max-w-[120px]">{s.source}</span>
@@ -905,7 +974,7 @@ export default function Collaboratori() {
         </div>
 
         {/* GRAFICO SETTER */}
-        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4 mb-4">
+        <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 mb-4 border border-white/10">
           <h2 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-1">
             <BarChart3 size={16} /> Setter
           </h2>
@@ -915,7 +984,7 @@ export default function Collaboratori() {
         </div>
 
         {/* COLLABORATORI */}
-        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl p-4">
+        <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10">
           <h2 className="text-sm font-semibold text-slate-200 mb-3">Collaboratori</h2>
           <div className="space-y-2 text-xs">
             {[...collaboratori, ...admins].map(c => {
@@ -923,7 +992,7 @@ export default function Collaboratori() {
               return (
                 <motion.div
                   key={c.id}
-                  className="p-2 bg-zinc-900/70 rounded border border-white/10 flex justify-between items-center"
+                  className="p-2 bg-zinc-950/40 rounded border border-white/10 flex justify-between items-center"
                   whileHover={{ scale: 1.02 }}
                 >
                   <div 
