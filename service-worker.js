@@ -1,11 +1,11 @@
 const CACHE_NAME = 'pt-manager-pro-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/vite.svg',
-  '/logo192.png',
-  '/logo512.png'
+  '/PtPro/',
+  '/PtPro/index.html',
+  '/PtPro/manifest.json',
+  '/PtPro/vite.svg',
+  '/PtPro/logo192.png',
+  '/PtPro/logo512.png'
 ];
 
 self.addEventListener('install', event => {

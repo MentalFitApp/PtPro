@@ -1,7 +1,7 @@
 {
-  "name": "Fit Flow Pro",
-  "short_name": "Fit Flow Pro",
-  "description": "Area personale Coaching Online",
+  "name": "MentalFit",
+  "short_name": "MF",
+  "description": "Area Personale coaching",
   "start_url": "/PtPro/#/client-login",
   "display": "standalone",
   "background_color": "#0f172a",
@@ -9,13 +9,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/logo192.png",
+      "src": "/PtPro/logo192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/logo512.png",
+      "src": "/PtPro/logo512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable any"

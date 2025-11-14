@@ -4,32 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- TITOLO -->
     <title>PT Manager Pro</title>
+    <link rel="icon" type="image/svg+xml" href="/PtPro/vite.svg" />
 
-    <!-- ICONA VITE (default) -->
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <!-- PWA -->
+    <link rel="manifest" href="/PtPro/manifest.json" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/PtPro/logo192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/PtPro/logo512.png" />
+    <link rel="apple-touch-icon" href="/PtPro/logo192.png" />
 
-    <!-- PWA: MANIFEST -->
-    <link rel="manifest" href="/manifest.json" />
-
-    <!-- PWA: ICONE (useremo logo192.png e logo512.png) -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/logo192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/logo512.png" />
-    <link rel="apple-touch-icon" href="/logo192.png" />
-
-    <!-- PWA: TEMA -->
     <meta name="theme-color" content="#0f172a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="PT Manager Pro" />
 
-    <!-- GOOGLE FONTS: Inter -->
+    <!-- FONT -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- STILE GLOBALE -->
     <style>
       *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
       html, body { height: 100%; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
@@ -37,14 +30,14 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/PtPro/src/main.jsx"></script>
 
-    <!-- PWA: SERVICE WORKER -->
+    <!-- SERVICE WORKER -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js')
-            .then(reg => console.log('Service Worker registrato:', reg.scope))
+          navigator.serviceWorker.register('/PtPro/service-worker.js')
+            .then(reg => console.log('SW registrato:', reg.scope))
             .catch(err => console.log('Errore SW:', err));
         });
       }
