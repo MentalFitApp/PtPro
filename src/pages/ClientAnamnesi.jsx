@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { getAuth } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -7,21 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, FilePenLine, Camera, UploadCloud, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
-import { uploadPhoto } from '../storageUtils';
-
-// --- COMPONENTI UI RIUTILIZZABILI ---
-const AnimatedBackground = () => (
-  <div className="absolute inset-0 -z-10 overflow-hidden bg-zinc-950">
-    <div className="aurora-background"></div>
-  </div>
-);
-
-const LoadingSpinner = () => (
-  <div className="min-h-screen flex justify-center items-center relative">
-    <AnimatedBackground />
-    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
-  </div>
-);
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const Notification = ({ message, type, onDismiss }) => (
   <AnimatePresence>
@@ -43,6 +29,54 @@ const Notification = ({ message, type, onDismiss }) => (
   </AnimatePresence>
 );
 
+// === UPLOADER FOTO – COMPONENTE ISOLATO CON STATO LOCALE ===
+const PhotoUploader = ({ type, label, onFileSelect, previewUrl, disabled }) => {
+  const [localPreview, setLocalPreview] = useState(previewUrl);
+
+  const handleChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`File troppo grande: ${file.name}`);
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      alert(`File non valido: ${file.name}`);
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setLocalPreview(url);
+    onFileSelect(type, file);
+  };
+
+  return (
+    <div className="text-center">
+      <label className="block text-sm font-medium text-slate-300">{label}</label>
+      <div className="mt-2 relative group">
+        <div className="flex justify-center items-center w-full h-48 bg-white/5 backdrop-blur-md rounded-lg border-2 border-dashed border-white/20 group-hover:border-cyan-500 transition-colors cursor-pointer">
+          {localPreview ? (
+            <img src={localPreview} alt={label} className="h-full w-full object-contain rounded-lg p-1" />
+          ) : (
+            <div className="flex flex-col items-center text-slate-400 group-hover:text-cyan-400">
+              <UploadCloud size={32} />
+              <p className="mt-2 text-sm">Clicca per caricare</p>
+            </div>
+          )}
+        </div>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleChange}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          disabled={disabled}
+        />
+      </div>
+    </div>
+  );
+};
+
 const ClientAnamnesi = () => {
   const [anamnesiData, setAnamnesiData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -54,200 +88,103 @@ const ClientAnamnesi = () => {
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
+  const storage = getStorage();
 
   const { register, handleSubmit, setValue, formState: { isSubmitting } } = useForm();
 
   useEffect(() => {
     if (!user) {
-      console.log('No authenticated user, redirecting to /client-login');
       navigate('/client-login');
       return;
     }
-    console.log('Authenticated user:', { uid: user.uid, email: user.email });
     const fetchAnamnesi = async () => {
       try {
         const anamnesiRef = doc(db, `clients/${user.uid}/anamnesi`, 'initial');
-        console.log('Fetching anamnesi for:', anamnesiRef.path);
         const docSnap = await getDoc(anamnesiRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          console.log('Anamnesi data fetched:', data);
           setAnamnesiData(data);
           if (data.photoURLs) setPhotoPreviews(data.photoURLs);
           Object.keys(data).forEach(key => setValue(key, data[key]));
           setIsEditing(false);
         } else {
-          console.log('No anamnesi document found, enabling edit mode');
           setIsEditing(true);
         }
       } catch (error) {
-        console.error('Error fetching anamnesi:', error.code, error.message, { uid: user.uid, email: user.email });
-        setNotification({ message: `Errore nel caricamento dei dati: ${error.message}`, type: 'error' });
+        setNotification({ message: `Errore: ${error.message}`, type: 'error' });
       }
       setLoading(false);
     };
     fetchAnamnesi();
   }, [user, navigate, setValue]);
 
-  const showNotification = (message, type = 'error') => {
+  const showNotification = useCallback((message, type = 'error') => {
     setNotification({ message, type });
     setTimeout(() => setNotification({ message: '', type: '' }), 5000);
-  };
+  }, []);
 
-  const handleFileChange = (e, type) => {
-    const file = e.target.files[0];
-    console.log(`File selected for ${type}:`, file?.name);
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        showNotification(`Il file ${file.name} supera il limite di 5MB`, 'error');
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        showNotification(`Il file ${file.name} non è un'immagine valida`, 'error');
-        return;
-      }
-      setPhotos(prev => ({ ...prev, [type]: file }));
-      setPhotoPreviews(prev => ({ ...prev, [type]: URL.createObjectURL(file) }));
-      showNotification(`Foto ${type} selezionata con successo!`, 'success');
-    } else {
-      showNotification(`Nessun file selezionato per ${type}`, 'error');
-    }
-    e.target.value = null; // Reset input file
-  };
+  // === UPLOAD FOTO – OGNI COMPONENTE HA IL SUO STATO ===
+  const handleFileSelect = useCallback((type, file) => {
+    setPhotos(prev => ({ ...prev, [type]: file }));
+    showNotification(`Foto ${type} caricata!`, 'success');
+  }, [showNotification]);
 
   const onSubmit = async (data) => {
-    if (!user) {
-      showNotification('Utente non autenticato. Effettua il login.', 'error');
-      return;
-    }
-
-    if (isSubmitting) {
-      console.log('Upload already in progress, skipping...');
-      return;
-    }
-
+    if (!user || isSubmitting) return;
     setLoading(true);
     try {
-      // Forza il refresh del token di autenticazione
       await user.getIdToken(true);
-      console.log('Token refreshed for user:', user.uid);
-
       let photoURLs = anamnesiData?.photoURLs || { front: null, right: null, left: null, back: null };
       const photosToUpload = Object.entries(photos).filter(([, file]) => file !== null);
 
       if (photosToUpload.length > 0) {
-        console.log('Uploading photos:', photosToUpload.map(([type]) => type));
         const uploadPromises = photosToUpload.map(async ([type, file]) => {
-          try {
-            const filePath = `clients/${user.uid}/anamnesi_photos/${type}-${uuidv4()}.jpg`;
-            console.log(`Uploading ${type} to ${filePath}`);
-            const url = await Promise.race([
-              uploadPhoto(file, user.uid, 'anamnesi_photos'),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout durante l\'upload della foto')), 30000))
-            ]);
-            console.log(`Download URL for ${type}: ${url}`);
-            return { type, url };
-          } catch (uploadError) {
-            console.error(`Error uploading ${type} photo:`, uploadError.code, uploadError.message);
-            throw new Error(`Errore nell'upload della foto ${type}: ${uploadError.message}`);
-          }
+          const filePath = `clients/${user.uid}/anamnesi_photos/${type}-${uuidv4()}.jpg`;
+          const fileRef = ref(storage, filePath);
+          await uploadBytes(fileRef, file);
+          const url = await getDownloadURL(fileRef);
+          return { type, url };
         });
-
         const uploadedUrls = await Promise.all(uploadPromises);
-        photoURLs = {
-          front: photoURLs.front,
-          right: photoURLs.right,
-          left: photoURLs.left,
-          back: photoURLs.back,
-          ...Object.fromEntries(uploadedUrls.map(({ type, url }) => [type, url]))
-        };
+        photoURLs = { ...photoURLs, ...Object.fromEntries(uploadedUrls.map(({ type, url }) => [type, url])) };
       }
 
       const dataToSave = { ...data, photoURLs, submittedAt: serverTimestamp() };
-      console.log('Saving to Firestore:', dataToSave);
       await setDoc(doc(db, `clients/${user.uid}/anamnesi`, 'initial'), dataToSave, { merge: true });
 
       setAnamnesiData(dataToSave);
       setPhotos({ front: null, right: null, left: null, back: null });
-      setPhotoPreviews({ front: null, right: null, left: null, back: null });
+      setPhotoPreviews(photoURLs);
       setIsEditing(false);
-      showNotification('Anamnesi salvata con successo!', 'success');
+      showNotification('Anamnesi salvata!', 'success');
     } catch (error) {
-      console.error('Errore nel salvataggio:', error.code, error.message, error);
-      if (error.code === 'storage/unauthorized') {
-        showNotification('Non autorizzato a caricare foto. Verifica le regole di Firebase Storage.', 'error');
-      } else if (error.message.includes('CORS') || error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        showNotification('Errore di rete o CORS durante l\'upload. Verifica la configurazione CORS o usa Firebase Emulator per lo sviluppo.', 'error');
-      } else if (error.message.includes('Timeout')) {
-        showNotification('Timeout durante l\'upload delle foto. Controlla la connessione di rete o prova di nuovo.', 'error');
-      } else {
-        showNotification(`Si è verificato un errore durante il salvataggio: ${error.message}`, 'error');
-      }
+      showNotification(`Errore: ${error.message}`, 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  const handleCancel = useCallback(() => {
+    setPhotos({ front: null, right: null, left: null, back: null });
+    setPhotoPreviews(anamnesiData?.photoURLs || { front: null, right: null, left: null, back: null });
+    setIsEditing(false);
+  }, [anamnesiData]);
 
-  const inputStyle = "w-full p-2.5 mt-1 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200 placeholder:text-slate-500";
+  if (loading) return (
+    <div className="min-h-screen flex justify-center items-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
+    </div>
+  );
+
+  const inputStyle = "w-full p-2.5 mt-1 bg-white/5 backdrop-blur-md border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-white placeholder:text-slate-400";
   const labelStyle = "block text-sm font-medium text-slate-300";
-  const sectionStyle = "bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6 shadow-lg";
+  const sectionStyle = "bg-white/5 backdrop-blur-xl rounded-2xl gradient-border p-6 shadow-lg border border-white/10";
   const headingStyle = "font-bold mb-4 text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 flex items-center gap-2";
-
-  const PhotoUploader = ({ type, label }) => {
-    const inputRef = useRef(null);
-
-    const handleClick = () => {
-      console.log(`Triggering file picker for ${type}`);
-      if (inputRef.current) {
-        inputRef.current.click();
-      } else {
-        console.error(`Input ref for ${type} is not defined`);
-      }
-    };
-
-    return (
-      <div className="text-center" key={type}>
-        <label className={labelStyle}>{label}</label>
-        <div
-          className="mt-2 flex justify-center items-center w-full h-48 bg-zinc-900/50 rounded-lg border-2 border-dashed border-zinc-700 hover:border-cyan-500 transition-colors cursor-pointer relative isolate"
-          onClick={handleClick}
-        >
-          {photoPreviews[type] ? (
-            <img
-              src={photoPreviews[type]}
-              alt={`${type} preview`}
-              className="h-full w-full object-contain rounded-lg p-1"
-            />
-          ) : (
-            <div className="flex flex-col items-center text-slate-400 transition-colors hover:text-cyan-400">
-              <UploadCloud size={32} />
-              <p className="mt-2 text-sm">Clicca per caricare</p>
-            </div>
-          )}
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              console.log(`Input file change triggered for ${type}`);
-              handleFileChange(e, type);
-            }}
-            className="absolute inset-0 opacity-0 cursor-pointer z-10"
-            disabled={loading || isSubmitting}
-            aria-label={`Carica immagine ${label}`}
-            id={`file-input-${type}`}
-          />
-        </div>
-      </div>
-    );
-  };
 
   const ViewField = ({ label, value }) => (
     <div className="mb-4">
       <h4 className="text-sm font-semibold text-slate-400">{label}</h4>
-      <p className="mt-1 p-3 bg-zinc-900 rounded-lg min-h-[44px] text-slate-200 break-words whitespace-pre-wrap shadow-inner">{value || 'Non specificato'}</p>
+      <p className="mt-1 p-3 bg-white/5 backdrop-blur-md rounded-lg min-h-[44px] text-white break-words whitespace-pre-wrap shadow-inner">{value || 'Non specificato'}</p>
     </div>
   );
 
@@ -255,7 +192,9 @@ const ClientAnamnesi = () => {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {['front', 'right', 'left', 'back'].map(type => (
         <div key={type} className="text-center">
-          <h4 className="text-sm font-semibold text-slate-400 capitalize">{type === 'front' ? 'Frontale' : type === 'back' ? 'Posteriore' : `Laterale ${type === 'left' ? 'Sinistro' : 'Destro'}`}</h4>
+          <h4 className="text-sm font-semibold text-slate-400 capitalize">
+            {type === 'front' ? 'Frontale' : type === 'back' ? 'Posteriore' : `Laterale ${type === 'left' ? 'Sinistro' : 'Destro'}`}
+          </h4>
           {urls?.[type] ? (
             <motion.img
               src={urls[type]}
@@ -266,7 +205,9 @@ const ClientAnamnesi = () => {
               transition={{ duration: 0.3 }}
             />
           ) : (
-            <div className="mt-2 flex justify-center items-center w-full h-48 bg-zinc-900 rounded-lg text-slate-500"><span>Non caricata</span></div>
+            <div className="mt-2 flex justify-center items-center w-full h-48 bg-white/5 backdrop-blur-md rounded-lg text-slate-500">
+              <span>Non caricata</span>
+            </div>
           )}
         </div>
       ))}
@@ -274,47 +215,34 @@ const ClientAnamnesi = () => {
   );
 
   return (
-    <div className="min-h-screen text-slate-200 p-4 sm:p-6 lg:p-8 relative">
-      <AnimatedBackground />
+    <div className="p-4 sm:p-6 lg:p-8">
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
 
       <header className="flex justify-between items-center mb-8 flex-col sm:flex-row gap-4">
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-50">Anamnesi Cliente</h1>
-        <button onClick={() => navigate('/client/dashboard')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-slate-300 text-sm font-semibold rounded-lg transition-colors"><ArrowLeft size={16} /><span>Torna alla mia dashboard</span></button>
+        <h1 className="text-3xl sm:text-4xl font-bold text-white">Anamnesi Cliente</h1>
+        <button onClick={() => navigate('/client/dashboard')} className="flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-md hover:bg-white/10 text-slate-300 text-sm font-semibold rounded-lg transition-colors border border-white/10">
+          <ArrowLeft size={16} /> Torna alla dashboard
+        </button>
       </header>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         {isEditing ? (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+
+            {/* === DATI ANAGRAFICI E MISURE === */}
             <div className={sectionStyle}>
               <h4 className={headingStyle}><FilePenLine size={16} /> Dati Anagrafici e Misure</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelStyle}>Nome</label>
-                  <input {...register('firstName')} className={inputStyle} />
-                </div>
-                <div>
-                  <label className={labelStyle}>Cognome</label>
-                  <input {...register('lastName')} className={inputStyle} />
-                </div>
-                <div>
-                  <label className={labelStyle}>Data di Nascita</label>
-                  <input type="date" {...register('birthDate')} className={inputStyle} />
-                </div>
-                <div>
-                  <label className={labelStyle}>Che lavoro fai?</label>
-                  <input {...register('job')} className={inputStyle} placeholder="Es. Impiegato, studente..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Peso (kg)</label>
-                  <input type="number" step="0.1" {...register('weight', { min: 0 })} className={inputStyle} placeholder="Es. 75.5" />
-                </div>
-                <div>
-                  <label className={labelStyle}>Altezza (cm)</label>
-                  <input type="number" {...register('height', { min: 0 })} className={inputStyle} placeholder="Es. 180" />
-                </div>
+                <div><label className={labelStyle}>Nome</label><input {...register('firstName')} className={inputStyle} /></div>
+                <div><label className={labelStyle}>Cognome</label><input {...register('lastName')} className={inputStyle} /></div>
+                <div><label className={labelStyle}>Data di Nascita</label><input type="date" {...register('birthDate')} className={inputStyle} /></div>
+                <div><label className={labelStyle}>Che lavoro fai?</label><input {...register('job')} className={inputStyle} placeholder="Es. Impiegato, studente..." /></div>
+                <div><label className={labelStyle}>Peso (kg)</label><input type="number" step="0.1" {...register('weight')} className={inputStyle} placeholder="Es. 75.5" /></div>
+                <div><label className={labelStyle}>Altezza (cm)</label><input type="number" {...register('height')} className={inputStyle} placeholder="Es. 180" /></div>
               </div>
             </div>
+
+            {/* === ABITUDINI ALIMENTARI === */}
             <div className={sectionStyle}>
               <h4 className={headingStyle}><Camera size={16} /> Abitudini Alimentari</h4>
               <div className="space-y-4">
@@ -336,94 +264,62 @@ const ClientAnamnesi = () => {
                     <option value="entrambi">Entrambi/Indifferente</option>
                   </select>
                 </div>
-                <div>
-                  <label className={labelStyle}>Alimenti che ti piacciono</label>
-                  <textarea {...register('desiredFoods')} rows="3" className={inputStyle} placeholder="Elenca qui gli alimenti che vorresti nel piano..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Cosa non mangi?</label>
-                  <textarea {...register('dislikedFoods')} rows="2" className={inputStyle} placeholder="Elenca qui gli alimenti da evitare..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Allergie o Intolleranze?</label>
-                  <input {...register('intolerances')} className={inputStyle} placeholder="Es. Lattosio, nessuna..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Problemi di digestione o gonfiore?</label>
-                  <input {...register('digestionIssues')} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
-                </div>
+                <div><label className={labelStyle}>Alimenti che ti piacciono</label><textarea {...register('desiredFoods')} rows="3" className={inputStyle} placeholder="Elenca qui gli alimenti che vorresti nel piano..." /></div>
+                <div><label className={labelStyle}>Cosa non mangi?</label><textarea {...register('dislikedFoods')} rows="2" className={inputStyle} placeholder="Elenca qui gli alimenti da evitare..." /></div>
+                <div><label className={labelStyle}>Allergie o Intolleranze?</label><input {...register('intolerances')} className={inputStyle} placeholder="Es. Lattosio, nessuna..." /></div>
+                <div><label className={labelStyle}>Problemi di digestione o gonfiore?</label><input {...register('digestionIssues')} className={inputStyle} placeholder="Sì/No, e se sì quali..." /></div>
               </div>
             </div>
+
+            {/* === ALLENAMENTO === */}
             <div className={sectionStyle}>
               <h4 className={headingStyle}><FilePenLine size={16} /> Allenamento</h4>
               <div className="space-y-4">
-                <div>
-                  <label className={labelStyle}>Allenamenti a settimana</label>
-                  <input type="number" {...register('workoutsPerWeek', { min: 0 })} className={inputStyle} placeholder="Es. 3" />
-                </div>
-                <div>
-                  <label className={labelStyle}>Dettagli Allenamento</label>
-                  <textarea {...register('trainingDetails')} rows="3" className={inputStyle} placeholder="Es. Bodybuilding in palestra con macchinari e pesi liberi..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Orario e Durata</label>
-                  <input {...register('trainingTime')} className={inputStyle} placeholder="Es. La sera dalle 18 alle 19:30" />
-                </div>
+                <div><label className={labelStyle}>Allenamenti a settimana</label><input type="number" {...register('workoutsPerWeek')} className={inputStyle} placeholder="Es. 3" /></div>
+                <div><label className={labelStyle}>Dettagli Allenamento</label><textarea {...register('trainingDetails')} rows="3" className={inputStyle} placeholder="Es. Bodybuilding in palestra con macchinari e pesi liberi..." /></div>
+                <div><label className={labelStyle}>Orario e Durata</label><input {...register('trainingTime')} className={inputStyle} placeholder="Es. La sera dalle 18 alle 19:30" /></div>
               </div>
             </div>
+
+            {/* === SALUTE E OBIETTIVI === */}
             <div className={sectionStyle}>
               <h4 className={headingStyle}><Camera size={16} /> Salute e Obiettivi</h4>
               <div className="space-y-4">
-                <div>
-                  <label className={labelStyle}>Infortuni o problematiche</label>
-                  <textarea {...register('injuries')} rows="3" className={inputStyle} placeholder="Es. Mal di schiena, ernie, dolori articolari..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Prendi farmaci?</label>
-                  <input {...register('medications')} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Usi integratori?</label>
-                  <input {...register('supplements')} className={inputStyle} placeholder="Sì/No, e se sì quali..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Obiettivo Principale</label>
-                  <textarea {...register('mainGoal')} rows="3" className={inputStyle} placeholder="Descrivi in dettaglio cosa vuoi raggiungere..." />
-                </div>
-                <div>
-                  <label className={labelStyle}>Durata Percorso</label>
-                  <input {...register('programDuration')} className={inputStyle} placeholder="Es. 3 mesi, 6 mesi..." />
-                </div>
+                <div><label className={labelStyle}>Infortuni o problematiche</label><textarea {...register('injuries')} rows="3" className={inputStyle} placeholder="Es. Mal di schiena, ernie, dolori articolari..." /></div>
+                <div><label className={labelStyle}>Prendi farmaci?</label><input {...register('medications')} className={inputStyle} placeholder="Sì/No, e se sì quali..." /></div>
+                <div><label className={labelStyle}>Usi integratori?</label><input {...register('supplements')} className={inputStyle} placeholder="Sì/No, e se sì quali..." /></div>
+                <div><label className={labelStyle}>Obiettivo Principale</label><textarea {...register('mainGoal')} rows="3" className={inputStyle} placeholder="Descrivi in dettaglio cosa vuoi raggiungere..." /></div>
+                <div><label className={labelStyle}>Durata Percorso</label><input {...register('programDuration')} className={inputStyle} placeholder="Es. 3 mesi, 6 mesi..." /></div>
               </div>
             </div>
+
+            {/* === FOTO INIZIALI – OGNI UPLOADER È ISOLATO === */}
             <div className={sectionStyle}>
               <h4 className={headingStyle}><Camera size={16} /> Foto Iniziali</h4>
               <p className="text-sm text-slate-400 mb-6">Carica 4 foto per il check iniziale: frontale, laterale destro, laterale sinistro e posteriore. Visibili solo a te e al coach.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {['front', 'right', 'left', 'back'].map(type => (
-                  <PhotoUploader key={type} type={type} label={type === 'front' ? 'Frontale' : type === 'back' ? 'Posteriore' : `Laterale ${type === 'left' ? 'Sinistro' : 'Destro'}`} />
-                ))}
+                <PhotoUploader type="front" label="Frontale" onFileSelect={handleFileSelect} previewUrl={photoPreviews.front} disabled={loading || isSubmitting} />
+                <PhotoUploader type="right" label="Laterale Destro" onFileSelect={handleFileSelect} previewUrl={photoPreviews.right} disabled={loading || isSubmitting} />
+                <PhotoUploader type="left" label="Laterale Sinistro" onFileSelect={handleFileSelect} previewUrl={photoPreviews.left} disabled={loading || isSubmitting} />
+                <PhotoUploader type="back" label="Posteriore" onFileSelect={handleFileSelect} previewUrl={photoPreviews.back} disabled={loading || isSubmitting} />
               </div>
             </div>
+
             <div className="flex justify-end gap-4 pt-4">
               <motion.button
                 type="submit"
                 disabled={isSubmitting || loading}
-                className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-semibold disabled:opacity-50"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Save size={16} /> {isSubmitting ? 'Salvataggio in corso...' : 'Salva Anamnesi'}
+                <Save size={16} /> {isSubmitting ? 'Salvataggio...' : 'Salva Anamnesi'}
               </motion.button>
               <motion.button
                 type="button"
-                onClick={() => {
-                  setIsEditing(false);
-                  setPhotos({ front: null, right: null, left: null, back: null });
-                  setPhotoPreviews(anamnesiData?.photoURLs || { front: null, right: null, left: null, back: null });
-                }}
+                onClick={handleCancel}
                 disabled={isSubmitting || loading}
-                className="flex items-center gap-2 px-5 py-2.5 bg-zinc-700 hover:bg-zinc-800 text-white rounded-lg transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-lg font-semibold border border-white/10"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -434,6 +330,7 @@ const ClientAnamnesi = () => {
         ) : (
           anamnesiData && (
             <div className="space-y-8">
+              {/* === VISUALIZZAZIONE COMPLETA === */}
               <div className={sectionStyle}>
                 <h4 className={headingStyle}><FilePenLine size={16} /> Dati Anagrafici</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -445,6 +342,7 @@ const ClientAnamnesi = () => {
                   <ViewField label="Altezza (cm)" value={anamnesiData.height} />
                 </div>
               </div>
+
               <div className={sectionStyle}>
                 <h4 className={headingStyle}><Camera size={16} /> Abitudini Alimentari</h4>
                 <div className="space-y-4">
@@ -456,6 +354,7 @@ const ClientAnamnesi = () => {
                   <ViewField label="Problemi di digestione" value={anamnesiData.digestionIssues} />
                 </div>
               </div>
+
               <div className={sectionStyle}>
                 <h4 className={headingStyle}><FilePenLine size={16} /> Allenamento</h4>
                 <div className="space-y-4">
@@ -464,6 +363,7 @@ const ClientAnamnesi = () => {
                   <ViewField label="Orario e Durata" value={anamnesiData.trainingTime} />
                 </div>
               </div>
+
               <div className={sectionStyle}>
                 <h4 className={headingStyle}><Camera size={16} /> Salute e Obiettivi</h4>
                 <div className="space-y-4">
@@ -474,14 +374,16 @@ const ClientAnamnesi = () => {
                   <ViewField label="Durata Percorso" value={anamnesiData.programDuration} />
                 </div>
               </div>
+
               <div className={sectionStyle}>
                 <h4 className={headingStyle}><Camera size={16} /> Foto Iniziali</h4>
                 <ViewPhotos urls={anamnesiData.photoURLs} />
               </div>
+
               <div className="flex justify-end pt-4">
                 <motion.button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-slate-300 rounded-lg transition font-semibold"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg font-semibold border border-white/10"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >

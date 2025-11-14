@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } from 'firebase/firestore';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { db, storage, toDate, calcolaStatoPercorso, updateStatoPercorso } from '../firebase';
-import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check, AlertCircle, X, Plus, ZoomIn } from 'lucide-react';
+import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check, X, Plus, ZoomIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Error Boundary
@@ -74,7 +74,6 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
 
   const handleSave = async () => {
     try {
-      // Usa la scadenza attuale del cliente
       const currentExpiry = toDate(client.scadenza) || new Date();
       const expiry = manualExpiry ? new Date(manualExpiry) : new Date(currentExpiry);
       
@@ -91,10 +90,10 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
       };
 
       const clientRef = doc(db, 'clients', client.id);
-      await setDoc(clientRef, {
+      await updateDoc(clientRef, {
         scadenza: expiry,
         payments: [...(client.payments || []), payment]
-      }, { merge: true });
+      });
 
       updateStatoPercorso(client.id);
       onSave();
@@ -205,6 +204,16 @@ const EditClientModal = ({ isOpen, onClose, client, onSave }) => {
   );
 };
 
+// COMPONENTE RIUTILIZZABILE: Campo Anamnesi
+const AnamnesiField = ({ label, value }) => (
+  <div className="mb-4">
+    <h4 className="text-sm font-semibold text-slate-400">{label}</h4>
+    <p className="mt-1 p-3 bg-white/5 backdrop-blur-md rounded-lg min-h-[44px] text-white break-words whitespace-pre-wrap shadow-inner">
+      {value || 'Non specificato'}
+    </p>
+  </div>
+);
+
 export default function ClientDetail() {
   const { clientId } = useParams();
   const navigate = useNavigate();
@@ -244,46 +253,61 @@ export default function ClientDetail() {
       setLoading(false);
     });
 
+    // === ANAMNESI COMPLETA CON FOTO RISOLTE ===
     const anamnesiRef = doc(db, 'clients', clientId, 'anamnesi', 'initial');
     const unsubAnamnesi = onSnapshot(anamnesiRef, async (docSnap) => {
       if (docSnap.exists()) {
-        const data = docSnap.data();
+        let data = docSnap.data();
+
+        // RISOLVI FOTO
         if (data.photoURLs) {
           const resolved = {};
           for (const [key, path] of Object.entries(data.photoURLs)) {
-            if (path && typeof path === 'string' && !path.startsWith('http')) {
-              try {
-                resolved[key] = await getDownloadURL(ref(storage, path));
-              } catch (e) {
-                resolved[key] = null;
+            if (path && typeof path === 'string') {
+              if (path.startsWith('http')) {
+                resolved[key] = path;
+              } else {
+                try {
+                  resolved[key] = await getDownloadURL(ref(storage, path));
+                } catch (e) {
+                  console.error(`Errore foto ${key}:`, e);
+                  resolved[key] = null;
+                }
               }
             } else {
-              resolved[key] = path;
+              resolved[key] = null;
             }
           }
           data.photoURLs = resolved;
         }
+
         setAnamnesi(data);
       } else {
         setAnamnesi(null);
       }
     });
 
+    // === CHECKS CON FOTO RISOLTE ===
     const checksQuery = query(collection(db, 'clients', clientId, 'checks'), orderBy('createdAt', 'desc'));
     const unsubChecks = onSnapshot(checksQuery, async (snap) => {
       const checksData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
       const resolvedChecks = await Promise.all(checksData.map(async (check) => {
         if (check.photoURLs) {
           const resolved = {};
           for (const [key, path] of Object.entries(check.photoURLs)) {
-            if (path && typeof path === 'string' && !path.startsWith('http')) {
-              try {
-                resolved[key] = await getDownloadURL(ref(storage, path));
-              } catch (e) {
-                resolved[key] = null;
+            if (path && typeof path === 'string') {
+              if (path.startsWith('http')) {
+                resolved[key] = path;
+              } else {
+                try {
+                  resolved[key] = await getDownloadURL(ref(storage, path));
+                } catch (e) {
+                  resolved[key] = null;
+                }
               }
             } else {
-              resolved[key] = path;
+              resolved[key] = null;
             }
           }
           check.photoURLs = resolved;
@@ -293,13 +317,17 @@ export default function ClientDetail() {
       setChecks(resolvedChecks);
     });
 
+    // === PAGAMENTI ===
     const paymentsQuery = query(collection(db, 'clients', clientId, 'payments'), orderBy('paymentDate', 'desc'));
     const unsubPayments = onSnapshot(paymentsQuery, (snap) => {
       setPayments(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
     return () => {
-      unsubClient(); unsubAnamnesi(); unsubChecks(); unsubPayments();
+      unsubClient(); 
+      unsubAnamnesi(); 
+      unsubChecks(); 
+      unsubPayments();
     };
   }, [clientId, navigate]);
 
@@ -339,6 +367,9 @@ export default function ClientDetail() {
   if (error) return <div className="text-center text-red-400 p-8">{error}</div>;
   if (!client) return null;
 
+  const sectionStyle = "bg-white/5 backdrop-blur-xl rounded-2xl gradient-border p-6 shadow-lg border border-white/10";
+  const headingStyle = "font-bold mb-4 text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 flex items-center gap-2";
+
   return (
     <ErrorBoundary>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-5xl mx-auto p-4 sm:p-6">
@@ -350,22 +381,13 @@ export default function ClientDetail() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <h1 className="text-3xl font-bold text-slate-50">{client.name}</h1>
             <div className="flex gap-3">
-              <button
-                onClick={() => setShowEdit(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg"
-              >
+              <button onClick={() => setShowEdit(true)} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg">
                 <Edit size={16} /> Modifica
               </button>
-              <button
-                onClick={() => setShowRenewal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg"
-              >
+              <button onClick={() => setShowRenewal(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg">
                 <Plus size={16} /> Rinnovo
               </button>
-              <button
-                onClick={handleDelete}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg"
-              >
+              <button onClick={handleDelete} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg">
                 <Trash2 size={16} /> Elimina
               </button>
             </div>
@@ -384,7 +406,7 @@ export default function ClientDetail() {
             ))}
           </div>
 
-          {/* Contenuto */}
+          {/* === INFO === */}
           {activeTab === 'info' && (
             <div className="space-y-4">
               <div className="flex items-center gap-3"><User className="text-slate-400" size={18} /><p>Nome: <span className="font-semibold">{client.name}</span></p></div>
@@ -403,6 +425,7 @@ export default function ClientDetail() {
             </div>
           )}
 
+          {/* === CHECK === */}
           {activeTab === 'check' && (
             <div className="space-y-6">
               {checks.length > 0 ? checks.map(check => (
@@ -413,7 +436,7 @@ export default function ClientDetail() {
                   </div>
                   {check.notes && <p className="text-sm text-slate-400 mb-4 italic">"{check.notes}"</p>}
                   
-                  {check.photoURLs && Object.keys(check.photoURLs).length > 0 && (
+                  {check.photoURLs && Object.values(check.photoURLs).some(Boolean) && (
                     <div>
                       <p className="text-xs text-slate-400 mb-3">Foto:</p>
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -423,11 +446,7 @@ export default function ClientDetail() {
                             onClick={() => setZoomPhoto({ open: true, url, alt: type })}
                             className="relative group overflow-hidden rounded-xl"
                           >
-                            <img 
-                              src={url} 
-                              alt={type} 
-                              className="w-full h-40 sm:h-48 object-cover transition-transform duration-300 group-hover:scale-110" 
-                            />
+                            <img src={url} alt={type} className="w-full h-40 sm:h-48 object-cover transition-transform duration-300 group-hover:scale-110" />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
                               <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={28} />
                             </div>
@@ -444,10 +463,11 @@ export default function ClientDetail() {
             </div>
           )}
 
+          {/* === PAGAMENTI === */}
           {activeTab === 'payments' && (
             <div className="space-y-4">
               {payments.length > 0 ? payments.map(p => (
-                <div key={p.id} className="p-4 bg-zinc-900/70 rounded-lg border border-white/10">
+                <div key={p.id} className="p-4 bg-zinc-900/70 rounded-lg border border-white-white/10">
                   <p className="text-sm text-slate-400">Data: {toDate(p.paymentDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
                   <p className="text-sm text-slate-200">Importo: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(p.amount || 0)}</p>
                   <p className="text-sm text-slate-200">Durata: {p.duration}</p>
@@ -457,60 +477,110 @@ export default function ClientDetail() {
             </div>
           )}
 
+          {/* === ANAMNESI COMPLETA === */}
           {activeTab === 'anamnesi' && (
-            <div className="space-y-4">
+            <div className="space-y-8">
               {anamnesi ? (
-                <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-5">
-                  <h4 className="font-bold text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 mb-4">Anamnesi</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-6">
-                    <div><span className="text-slate-400">Nome:</span> <span className="text-slate-200">{anamnesi.firstName}</span></div>
-                    <div><span className="text-slate-400">Cognome:</span> <span className="text-slate-200">{anamnesi.lastName}</span></div>
-                    <div><span className="text-slate-400">Peso:</span> <span className="text-slate-200">{anamnesi.weight} kg</span></div>
-                    <div><span className="text-slate-400">Obiettivo:</span> <span className="text-slate-200">{anamnesi.mainGoal}</span></div>
-                  </div>
-                  
-                  {anamnesi.photoURLs && Object.keys(anamnesi.photoURLs).length > 0 && (
-                    <div>
-                      <p className="text-xs text-slate-400 mb-3">Foto:</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {Object.entries(anamnesi.photoURLs).map(([type, url]) => url ? (
-                          <button
-                            key={type}
-                            onClick={() => setZoomPhoto({ open: true, url, alt: type })}
-                            className="relative group overflow-hidden rounded-xl"
-                          >
-                            <img 
-                              src={url} 
-                              alt={type} 
-                              className="w-full h-40 sm:h-48 object-cover transition-transform duration-300 group-hover:scale-110" 
-                            />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                              <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={28} />
-                            </div>
-                            <span className="absolute bottom-1 left-1 text-xs bg-black/70 text-white px-2 py-0.5 rounded">
-                              {type}
-                            </span>
-                          </button>
-                        ) : null)}
-                      </div>
+                <>
+                  {/* DATI ANAGRAFICI */}
+                  <div className={sectionStyle}>
+                    <h4 className={headingStyle}><FileText size={16} /> Dati Anagrafici</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <AnamnesiField label="Nome" value={anamnesi.firstName} />
+                      <AnamnesiField label="Cognome" value={anamnesi.lastName} />
+                      <AnamnesiField label="Data di Nascita" value={anamnesi.birthDate} />
+                      <AnamnesiField label="Lavoro" value={anamnesi.job} />
+                      <AnamnesiField label="Peso (kg)" value={anamnesi.weight} />
+                      <AnamnesiField label="Altezza (cm)" value={anamnesi.height} />
                     </div>
-                  )}
-                </div>
-              ) : <p className="text-center text-slate-400">Nessuna anamnesi.</p>}
+                  </div>
+
+                  {/* ABITUDINI ALIMENTARI */}
+                  <div className={sectionStyle}>
+                    <h4 className={headingStyle}><FileText size={16} /> Abitudini Alimentari</h4>
+                    <div className="space-y-4">
+                      <AnamnesiField label="Pasti al giorno" value={anamnesi.mealsPerDay} />
+                      <AnamnesiField label="Tipo Colazione" value={anamnesi.breakfastType} />
+                      <AnamnesiField label="Alimenti preferiti" value={anamnesi.desiredFoods} />
+                      <AnamnesiField label="Alimenti da evitare" value={anamnesi.dislikedFoods} />
+                      <AnamnesiField label="Allergie/Intolleranze" value={anamnesi.intolerances} />
+                      <AnamnesiField label="Problemi di digestione" value={anamnesi.digestionIssues} />
+                    </div>
+                  </div>
+
+                  {/* ALLENAMENTO */}
+                  <div className={sectionStyle}>
+                    <h4 className={headingStyle}><FileText size={16} /> Allenamento</h4>
+                    <div className="space-y-4">
+                      <AnamnesiField label="Allenamenti a settimana" value={anamnesi.workoutsPerWeek} />
+                      <AnamnesiField label="Dettagli Allenamento" value={anamnesi.trainingDetails} />
+                      <AnamnesiField label="Orario e Durata" value={anamnesi.trainingTime} />
+                    </div>
+                  </div>
+
+                  {/* SALUTE E OBIETTIVI */}
+                  <div className={sectionStyle}>
+                    <h4 className={headingStyle}><FileText size={16} /> Salute e Obiettivi</h4>
+                    <div className="space-y-4">
+                      <AnamnesiField label="Infortuni o problematiche" value={anamnesi.injuries} />
+                      <AnamnesiField label="Farmaci" value={anamnesi.medications} />
+                      <AnamnesiField label="Integratori" value={anamnesi.supplements} />
+                      <AnamnesiField label="Obiettivo Principale" value={anamnesi.mainGoal} />
+                      <AnamnesiField label="Durata Percorso" value={anamnesi.programDuration} />
+                    </div>
+                  </div>
+
+                 866                  {/* FOTO INIZIALI */}
+                  <div className={sectionStyle}>
+                    <h4 className={headingStyle}><FileText size={16} /> Foto Iniziali</h4>
+                    <p className="text-sm text-slate-400 mb-6">Caricate dal cliente al momento dell'iscrizione.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                      {['front', 'right', 'left', 'back'].map(type => (
+                        <div key={type} className="text-center">
+                          <h4 className="text-sm font-semibold text-slate-400 capitalize mb-2">
+                            {type === 'front' ? 'Frontale' : type === 'back' ? 'Posteriore' : `Laterale ${type === 'left' ? 'Sinistro' : 'Destro'}`}
+                          </h4>
+                          {anamnesi.photoURLs?.[type] ? (
+                            <button
+                              onClick={() => setZoomPhoto({ open: true, url: anamnesi.photoURLs[type], alt: type })}
+                              className="relative group overflow-hidden rounded-xl w-full h-48"
+                            >
+                              <img 
+                                src={anamnesi.photoURLs[type]} 
+                                alt={type} 
+                                className="w-full h-full object-cover transition-transform group-hover:scale-110" 
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
+                                <ZoomIn className="text-white opacity-0 group-hover:opacity-100" size={32} />
+                              </div>
+                            </button>
+                          ) : (
+                            <div className="flex justify-center items-center w-full h-48 bg-white/5 backdrop-blur-md rounded-lg text-slate-500">
+                              <span>Non caricata</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="text-center text-slate-400 py-8">Nessuna anamnesi compilata.</p>
+              )}
             </div>
           )}
         </div>
-      </motion.div>
 
-      {/* MODALI */}
-      <RenewalModal isOpen={showRenewal} onClose={() => setShowRenewal(false)} client={client} onSave={handleRenewalSaved} />
-      <EditClientModal isOpen={showEdit} onClose={() => setShowEdit(false)} client={client} onSave={handleEditSaved} />
-      <PhotoZoomModal 
-        isOpen={zoomPhoto.open} 
-        onClose={() => setZoomPhoto({ open: false, url: '', alt: '' })} 
-        imageUrl={zoomPhoto.url} 
-        alt={zoomPhoto.alt} 
-      />
+        {/* MODALI */}
+        <RenewalModal isOpen={showRenewal} onClose={() => setShowRenewal(false)} client={client} onSave={handleRenewalSaved} />
+        <EditClientModal isOpen={showEdit} onClose={() => setShowEdit(false)} client={client} onSave={handleEditSaved} />
+        <PhotoZoomModal 
+          isOpen={zoomPhoto.open} 
+          onClose={() => setZoomPhoto({ open: false, url: '', alt: '' })} 
+          imageUrl={zoomPhoto.url} 
+          alt={zoomPhoto.alt} 
+        />
+      </motion.div>
     </ErrorBoundary>
   );
 }

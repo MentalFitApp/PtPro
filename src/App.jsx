@@ -41,6 +41,10 @@ const CollaboratoreDetail = React.lazy(() => import('./pages/CollaboratoreDetail
 const CalendarReport = React.lazy(() => import('./pages/CalendarReport'));
 const NewClient = React.lazy(() => import('./pages/NewClient'));
 
+// NUOVI IMPORT
+const GuideCapture = React.lazy(() => import('./pages/GuideCapture'));
+const GuideManager = React.lazy(() => import('./pages/GuideManager'));
+
 // Spinner di caricamento
 const PageSpinner = () => (
   <div className="flex justify-center items-center h-screen w-full bg-zinc-950">
@@ -70,7 +74,7 @@ export default function App() {
   const location = useLocation();
 
   useEffect(() => {
-    if (location.pathname === '/guida') {
+    if (location.pathname === '/guida' || location.pathname.startsWith('/guida/')) {
       setAuthInfo(prev => ({ ...prev, isLoading: false }));
       return;
     }
@@ -125,7 +129,7 @@ export default function App() {
             role = 'client';
             const clientDocData = clientDoc.data();
             targetRoute = clientDocData.firstLogin ? '/client/first-access' : '/client/dashboard';
-          } else if (isCurrentUserACollaboratore) {
+          } else if ( isCurrentUserACollaboratore) {
             role = 'collaboratore';
             const collabDocData = collabDoc.data();
             targetRoute = collabDocData.firstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard';
@@ -148,7 +152,8 @@ export default function App() {
               location.pathname === '/collaboratori' ||
               location.pathname.startsWith('/collaboratore/') ||
               location.pathname.startsWith('/calendar-report/') ||
-              location.pathname === '/business-history'
+              location.pathname === '/business-history' ||
+              location.pathname === '/guide-manager'  // AGGIUNTA
             )) ||
             (isCurrentUserACoach && (
               location.pathname === '/coach' ||
@@ -187,8 +192,8 @@ export default function App() {
             error: null
           });
 
-          const publicPaths = ['/login', '/client-login', '/collaboratore-login', '/client/forgot-password', '/guida'];
-          if (!publicPaths.includes(location.pathname)) {
+          const publicPaths = ['/login', '/client-login', '/collaboratore-login', '/client/forgot-password', '/guida', '/guida/:guideId'];
+          if (!publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/'))) {
             if (lastNavigated !== '/login') {
               setLastNavigated('/login');
               navigate('/login', { replace: true });
@@ -220,6 +225,7 @@ export default function App() {
         {/* === ROTTE PUBBLICHE === */}
         <Route element={<GuidaLayout />}>
           <Route path="/guida" element={<GuidaMentalFit />} />
+          <Route path="/guida/:guideId" element={<GuideCapture />} /> {/* NUOVA */}
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/client-login" element={<ClientLogin />} />
@@ -240,6 +246,7 @@ export default function App() {
           <Route path="/collaboratore-detail" element={<CollaboratoreDetail />} />
           <Route path="/calendar-report/:date" element={<CalendarReport />} />
           <Route path="/business-history" element={<BusinessHistory />} />
+          <Route path="/guide-manager" element={<GuideManager />} /> {/* NUOVA */}
 
           {/* === COACH === */}
           <Route path="/coach" element={<CoachDashboard />} />

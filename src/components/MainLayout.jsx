@@ -47,6 +47,7 @@ const navLinks = [
   { to: '/', icon: <LayoutGrid size={24} />, label: 'Dashboard', isCentral: true, roles: ['admin'] },
   { to: '/updates', icon: <Bell size={20} />, label: 'Novità', roles: ['admin'] },
   { to: '/collaboratori', icon: <UsersIcon size={20} />, label: 'Collaboratori', roles: ['admin'] },
+  { to: '/guide-manager', icon: <FileText size={20} />, label: 'Guide & Lead', roles: ['admin'] }, // NUOVA
   { to: '/calendar-report', icon: <Calendar size={20} />, label: 'Calendario', roles: ['admin'] },
   { to: '/settings', icon: <Settings size={20} />, label: 'Impostazioni', roles: ['admin'] },
 ];
