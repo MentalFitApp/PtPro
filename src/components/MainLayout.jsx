@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { 
   LayoutGrid, Users, MessageSquare, FileText, Bell, 
-  Calendar, Settings, DollarSign, Home, ChevronLeft, ChevronRight 
+  Calendar, Settings, DollarSign, Home, ChevronLeft, ChevronRight, BarChart3 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -50,6 +50,7 @@ const adminNavLinks = [
   { to: '/guide-manager', icon: <FileText size={18} />, label: 'Guide & Lead' },
   { to: '/admin/dipendenti', icon: <Users size={18} />, label: 'Dipendenti' },
   { to: '/calendar-report', icon: <Calendar size={18} />, label: 'Calendario' },
+  { to: '/statistiche', icon: <BarChart3 size={18} />, label: 'Statistiche' },
 ];
 
 const coachNavLinks = [

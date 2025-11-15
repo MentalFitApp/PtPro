@@ -1,12 +1,34 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  
-  // L'UNICA RIGA DA AGGIUNGERE/MODIFICARE È QUESTA:
-  base: '/PtPro/', 
+
+  // CORRETTO: Base path per GitHub Codespaces
+  base: '/PtPro/',
+
+  // CORS per dev in Codespaces
+  server: {
+    port: 5173,
+    strictPort: true,
+    cors: {
+      origin: true, // Permette richieste da github.dev
+      credentials: true,
+    },
+    // Proxy per manifest.json e altri asset
+    proxy: {
+      '/manifest.json': {
+        target: 'http://localhost:5173',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/favicon.ico': {
+        target: 'http://localhost:5173',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 
   build: {
     chunkSizeWarningLimit: 1500,
