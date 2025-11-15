@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   doc, getDoc, setDoc, collection, query, where, orderBy,
@@ -394,7 +394,8 @@ export default function CollaboratoreDashboard() {
     return { labels: days, datasets, period };
   };
 
-  const { labels, datasets, period } = getWeekData();
+  const weekData = useMemo(() => getWeekData(), [allCollaboratori, weekOffset]);
+  const { labels, datasets, period } = weekData;
 
   const fonti = [
     'Info Storie Prima e Dopo', 'Info Storie Promo', 'Info Reel', 'Inizio Reel',

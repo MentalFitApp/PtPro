@@ -1,11 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import { 
-  doc, getDoc, setDoc, collection, query, orderBy, onSnapshot, updateDoc, deleteDoc 
+  doc, getDoc, setDoc, collection, query, orderBy, onSnapshot, updateDoc, deleteDoc,
+  where, getDocs
 } from 'firebase/firestore';
+
 import { db, auth, firebaseConfig } from '../firebase';
+
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
 import { initializeApp, deleteApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  sendPasswordResetEmail
+} from 'firebase/auth';
+
 import { 
   Users, Plus, Copy, TrendingUp, FileText, Phone, Check, AlertCircle, Edit, X, 
   BarChart3, Trash2, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Eye, Key 
@@ -54,6 +66,7 @@ export default function Collaboratori() {
   const [admins, setAdmins] = useState([]);
   const [leads, setLeads] = useState([]);
   const [newEmail, setNewEmail] = useState('');
+  const [newUid, setNewUid] = useState('');
   const [newRole, setNewRole] = useState('Setter');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -63,6 +76,10 @@ export default function Collaboratori() {
   const [stats, setStats] = useState({
     leadsToday: 0, leadsWeek: 0, leadsMonth: 0,
   });
+
+  // EDIT EMAIL DOPO AGGIUNTA
+  const [editingCollab, setEditingCollab] = useState(null);
+  const [editEmail, setEditEmail] = useState('');
 
   // REPORT SETTING
   const [reportSetting, setReportSetting] = useState({
@@ -203,78 +220,173 @@ export default function Collaboratori() {
 
   const generateTempPassword = () => Math.random().toString(36).slice(-8) + '!';
 
-  // NUOVA FUNZIONE: CREA UTENTE E INVIA EMAIL DI VERIFICA + RESET
+  // === AGGIUNGI CON EMAIL (vecchia) ===
   const handleAddCollaboratore = async () => {
     if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
       setError('Email non valida.');
       return;
     }
 
-    const tempPwd = generateTempPassword();
-    const tempApp = initializeApp(firebaseConfig, `collab-creation-${Date.now()}`);
+    const tempApp = initializeApp(firebaseConfig, `temp-${Date.now()}`);
     const tempAuth = getAuth(tempApp);
+    const functions = getFunctions();
 
     try {
       let uid;
       let isNewUser = false;
 
-      try {
-        const cred = await createUserWithEmailAndPassword(tempAuth, newEmail, tempPwd);
-        uid = cred.user.uid;
-        isNewUser = true;
-      } catch (err) {
-        if (err.code === 'auth/email-already-in-use') {
-          setError('Utente già esistente. Usa "Rigenera" per inviare email di reset.');
+      const collabQuery = query(collection(db, 'collaboratori'), where('email', '==', newEmail));
+      const collabSnap = await getDocs(collabQuery);
+
+      if (!collabSnap.empty) {
+        uid = collabSnap.docs[0].id;
+        const confirm = window.confirm(`Collaboratore già presente. Aggiornare?`);
+        if (!confirm) {
           await deleteApp(tempApp);
           return;
+        }
+      } else {
+        const getUidByEmail = httpsCallable(functions, 'getUidByEmail');
+        const result = await getUidByEmail({ email: newEmail.trim().toLowerCase() });
+
+        if (result.data.uid) {
+          uid = result.data.uid;
+          isNewUser = false;
         } else {
-          throw err;
+          const cred = await createUserWithEmailAndPassword(tempAuth, newEmail, generateTempPassword());
+          uid = cred.user.uid;
+          isNewUser = true;
         }
       }
 
-      await setDoc(doc(db, 'collaboratori', uid), {
+      const collabData = {
         uid,
         email: newEmail,
         nome: newEmail.split('@')[0],
         ruolo: newRole,
-        firstLogin: true,
+        firstLogin: isNewUser,
         assignedAdmin: [auth.currentUser.uid],
         dailyReports: [],
         tracker: {},
         personalPipeline: [],
-      }, { merge: true });
+      };
 
-      // INVIA EMAIL DI RESET (utente imposta password)
+      await setDoc(doc(db, 'collaboratori', uid), collabData, { merge: true });
       await sendPasswordResetEmail(tempAuth, newEmail);
 
-      const msg = `Benvenuto!\nEmail: ${newEmail}\nClicca sul link ricevuto via email per impostare la password.\nLink login: https://mentalfitapp.github.io/PtPro/#/collaboratore-login`;
-      navigator.clipboard.writeText(msg);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 4000);
+      setSuccess(isNewUser ? `Nuovo collaboratore creato!` : `Collaboratore RIAGGIUNTO! Dati vecchi recuperati!`);
       setNewEmail('');
-      setError('');
-      setSuccess('Collaboratore creato! Email di reset inviata.');
     } catch (err) {
-      setError('Errore: ' + err.message);
+      console.error('Errore:', err);
+      setError('Errore: ' + (err.message || 'Operazione fallita'));
     } finally {
       await deleteApp(tempApp);
     }
   };
 
-  // RIGENERA PASSWORD: INVIA EMAIL DI RESET
-  const rigeneraPassword = async (email) => {
-    if (!confirm(`Inviare email di reset password a ${email}?`)) return;
+  // === AGGIUNGI CON UID DIRETTO (recupera se esiste in Auth) ===
+  const handleAddByUid = async () => {
+  if (!newUid || newUid.length < 20) {
+    setError('Inserisci un UID valido (min 20 caratteri)');
+    return;
+  }
 
-    const auth = getAuth();
+  try {
+    const collabDoc = doc(db, 'collaboratori', newUid);
+    const collabSnap = await getDoc(collabDoc);
+
+    if (collabSnap.exists()) {
+      const data = collabSnap.data();
+      setEditingCollab(newUid);
+      setEditEmail(data.email || '');
+      setSuccess('Modifica email per inviare nuove credenziali');
+      return;
+    }
+
+    // === PROVA A LEGGERE DA FIREBASE AUTH (SENZA ADMIN SDK) ===
+    let realEmail = null;
+    let isNewUser = false;
 
     try {
-      await sendPasswordResetEmail(auth, email);
-      setSuccess(`Email di reset inviata a ${email}`);
-      setTimeout(() => setSuccess(''), 5000);
-    } catch (err) {
-      setError('Errore: ' + err.message);
+      // Usa API pubblica per verificare email (solo se esiste)
+      const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseConfig.apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: await auth.currentUser.getIdToken() })
+      });
+      const data = await response.json();
+      const user = data.users?.[0];
+      if (user?.uid === newUid) {
+        realEmail = user.email;
+      }
+    } catch (authErr) {
+      // Ignora errore: UID non trovato o non accessibile
     }
-  };
+
+    // === SE NON TROVATO → USA EMAIL TEMPORANEA ===
+    if (!realEmail) {
+      realEmail = `uid_${newUid.slice(0, 8)}@recupero.com`;
+      isNewUser = true;
+    }
+
+    // === AGGIUNGI IN FIRESTORE ===
+    const collabData = {
+      uid: newUid,
+      email: realEmail,
+      nome: realEmail.split('@')[0],
+      ruolo: newRole,
+      firstLogin: isNewUser,
+      assignedAdmin: [auth.currentUser.uid],
+      dailyReports: [],
+      tracker: {},
+      personalPipeline: [],
+    };
+
+    await setDoc(collabDoc, collabData, { merge: true });
+
+    setSuccess(
+      isNewUser 
+        ? `Aggiunto con email temporanea: ${realEmail}` 
+        : `Trovato! Email: ${realEmail}`
+    );
+    setNewUid('');
+
+  } catch (err) {
+    console.error(err);
+    setError('Errore: ' + err.message);
+  }
+};
+
+  // === MODIFICA EMAIL (SOLO FIRESTORE + RESET PASSWORD) ===
+const handleUpdateEmailAndSendReset = async () => {
+  if (!editingCollab || !editEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail)) {
+    setError('Email non valida');
+    return;
+  }
+
+  try {
+    // 1. Aggiorna solo in Firestore
+    await updateDoc(doc(db, 'collaboratori', editingCollab), {
+      email: editEmail,
+      nome: editEmail.split('@')[0]
+    });
+
+    // 2. Invia reset password alla nuova email
+    const tempApp = initializeApp(firebaseConfig, `reset-${Date.now()}`);
+    const tempAuth = getAuth(tempApp);
+    await sendPasswordResetEmail(tempAuth, editEmail);
+
+    setSuccess(`Credenziali inviate a ${editEmail}!`);
+    setEditingCollab(null);
+    setEditEmail('');
+    setTimeout(() => setSuccess(''), 4000);
+
+    await deleteApp(tempApp);
+  } catch (err) {
+    console.error(err);
+    setError('Errore: ' + err.message);
+  }
+};
 
   const handleSaveReportSetting = async () => {
     const reportId = `admin_${reportSetting.date}`;
@@ -641,6 +753,71 @@ export default function Collaboratori() {
         {copied && <p className="text-green-400 text-center text-xs">Istruzioni copiate!</p>}
         {success && <p className="text-green-500 text-center text-xs">{success}</p>}
         {error && <p className="text-red-500 text-center text-xs">{error}</p>}
+
+        {/* === RIAGGIUNGI CON UID + MODIFICA EMAIL === */}
+        <div className="mt-4 p-3 bg-gradient-to-r from-amber-900/20 to-orange-900/20 rounded-lg border border-amber-500/30">
+          <p className="text-xs font-bold text-amber-300 mb-2 text-center">
+            RIAGGIUNGI CON UID + CAMBIA EMAIL
+          </p>
+
+          {!editingCollab ? (
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={newUid}
+                onChange={(e) => setNewUid(e.target.value.trim())}
+                placeholder="Inserisci UID (es. BavYpIH58cRT...)"
+                className="flex-1 px-3 py-1.5 bg-zinc-950/40 border border-white/10 rounded text-xs font-mono focus:outline-none focus:ring-1 focus:ring-amber-500"
+              />
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                className="px-3 py-1.5 bg-zinc-950/40 border border-white/10 rounded text-xs"
+              >
+                <option>Setter</option>
+                <option>Marketing</option>
+                <option>Vendita</option>
+              </select>
+              <motion.button
+                onClick={handleAddByUid}
+                className="flex items-center justify-center gap-1 px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded text-xs font-bold"
+                whileHover={{ scale: 1.05 }}
+              >
+                <Key size={14} /> Cerca UID
+              </motion.button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs text-amber-200">Modifica email per <strong>{editingCollab.slice(0, 12)}...</strong></p>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="nuova@email.it"
+                  className="flex-1 px-3 py-1.5 bg-zinc-950/40 border border-amber-500/50 rounded text-xs focus:ring-1 focus:ring-amber-500"
+                />
+                <motion.button
+                  onClick={handleUpdateEmailAndSendReset}
+                  className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-bold"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  Invia Credenziali
+                </motion.button>
+                <motion.button
+                  onClick={() => {
+                    setEditingCollab(null);
+                    setEditEmail('');
+                  }}
+                  className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white rounded text-xs"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  Annulla
+                </motion.button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <ReportStatus collaboratori={collaboratori} />
 
@@ -1018,7 +1195,7 @@ export default function Collaboratori() {
           </div>
         </div>
 
-        {/* COLLABORATORI CON PULSANTE RIGENERA */}
+        {/* COLLABORATORI CON PULSANTE MODIFICA EMAIL */}
         <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10">
           <h2 className="text-sm font-semibold text-slate-200 mb-3">Collaboratori</h2>
           <div className="space-y-2 text-xs">
@@ -1041,9 +1218,13 @@ export default function Collaboratori() {
                   {isAdmin && !isCurrentUser && (
                     <div className="flex gap-1 ml-2">
                       <button 
-                        onClick={(e) => { e.stopPropagation(); rigeneraPassword(c.email); }} 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setEditingCollab(c.id);
+                          setEditEmail(c.email || '');
+                        }} 
                         className="p-1 text-yellow-400"
-                        title="Invia email di reset password"
+                        title="Modifica email e invia credenziali"
                       >
                         <Key size={12} />
                       </button>
@@ -1060,6 +1241,46 @@ export default function Collaboratori() {
             })}
           </div>
         </div>
+
+        {/* POPUP MODIFICA EMAIL */}
+        {editingCollab && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-zinc-950/90 rounded-xl p-6 max-w-sm w-full border border-white/10"
+            >
+              <h3 className="text-lg font-bold text-slate-100 mb-3">Modifica Email</h3>
+              <p className="text-sm text-slate-300 mb-4">
+                Nuova email per <strong>{collaboratori.find(c => c.id === editingCollab)?.nome || 'utente'}</strong>
+              </p>
+              <input
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="nuova@email.it"
+                className="w-full px-3 py-2 bg-zinc-950/40 border border-white/10 rounded text-sm mb-4 focus:ring-1 focus:ring-yellow-500"
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={handleUpdateEmailAndSendReset}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-medium"
+                >
+                  Aggiorna e Invia
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingCollab(null);
+                    setEditEmail('');
+                  }}
+                  className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-slate-300 py-2 rounded-lg text-sm font-medium"
+                >
+                  Annulla
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
 
         {/* POPUP AGGIUNGI CLIENTE */}
         {showClientPopup && (
