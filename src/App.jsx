@@ -40,6 +40,7 @@ const CollaboratoreDashboard = React.lazy(() => import('./pages/CollaboratoreDas
 const CollaboratoreDetail = React.lazy(() => import('./pages/CollaboratoreDetail'));
 const CalendarReport = React.lazy(() => import('./pages/CalendarReport'));
 const NewClient = React.lazy(() => import('./pages/NewClient'));
+const Dipendenti = React.lazy(() => import('./pages/Dipendenti')); // AGGIUNTO
 
 // NUOVI IMPORT
 const GuideCapture = React.lazy(() => import('./pages/GuideCapture'));
@@ -247,7 +248,7 @@ export default function App() {
           <Route path="/calendar-report/:date" element={<CalendarReport />} />
           <Route path="/business-history" element={<BusinessHistory />} />
           <Route path="/guide-manager" element={<GuideManager />} /> {/* NUOVA */}
-
+          <Route path="/admin/dipendenti" element={<Dipendenti />} /> {/* AGGIUNTA */}
           {/* === COACH === */}
           <Route path="/coach" element={<CoachDashboard />} />
           <Route path="/coach/clients" element={<CoachClients />} />

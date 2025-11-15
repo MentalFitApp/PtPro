@@ -1,6 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     // ==================== FUNZIONI ====================
     function isValidPayment() {
       return request.resource.data.keys().hasAll(['amount', 'duration', 'paymentDate']) &&
@@ -10,6 +11,7 @@ service cloud.firestore {
              request.resource.data.paymentDate is timestamp &&
              (!request.resource.data.keys().hasAny(['paymentMethod']) || request.resource.data.paymentMethod is string);
     }
+
     function isAdmin() {
       return request.auth != null && (
         !exists(/databases/$(database)/documents/roles/admins) ||
@@ -17,26 +19,31 @@ service cloud.firestore {
          request.auth.uid in get(/databases/$(database)/documents/roles/admins).data.uids)
       );
     }
+
     function isCoach() {
       return isAdmin() ||
              (request.auth != null &&
               exists(/databases/$(database)/documents/roles/coaches) &&
               request.auth.uid in get(/databases/$(database)/documents/roles/coaches).data.uids);
     }
+
     function isClient(userId) {
       return request.auth != null && request.auth.uid == userId &&
              exists(/databases/$(database)/documents/clients/$(userId)) &&
              get(/databases/$(database)/documents/clients/$(userId)).data.isClient == true;
     }
+
     function isAssignedCoach(userId) {
       return request.auth != null &&
              exists(/databases/$(database)/documents/clients/$(userId)) &&
              (get(/databases/$(database)/documents/clients/$(userId)).data.assignedCoaches || []).hasAny([request.auth.uid]);
     }
+
     function isCollaboratore(userId) {
       return request.auth != null && request.auth.uid == userId &&
              exists(/databases/$(database)/documents/collaboratori/$(userId));
     }
+
     function isSetter() {
       return request.auth != null &&
              exists(/databases/$(database)/documents/collaboratori/$(request.auth.uid)) &&
@@ -66,6 +73,7 @@ service cloud.firestore {
                               (get(/../clients/$(userId)).data.isOldClient == true && isAssignedCoach(userId))
                             );
       }
+
       match /checks/{docId} {
         allow read, write: if request.auth != null && (
                               request.auth.uid == userId ||
@@ -74,6 +82,7 @@ service cloud.firestore {
                               (get(/../clients/$(userId)).data.isOldClient == true && isAssignedCoach(userId))
                             );
       }
+
       match /payments/{docId} {
         allow read: if request.auth != null && (
                       request.auth.uid == userId ||
@@ -135,7 +144,7 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // --- PAGAMENTI (NUOVA COLLEZIONE) ---
+    // --- PAGAMENTI (VECCHIA COLLEZIONE) ---
     match /pagamenti/{paymentId} {
       allow read, write: if isAdmin();
     }
@@ -185,5 +194,18 @@ service cloud.firestore {
       allow create: if true;
       allow read, list, update, delete: if isAdmin();
     }
+
+    // ==================== NUOVE COLLEZIONI DIPENDENTI ====================
+
+    // --- DIPENDENTI PROVVIGIONI (solo admin) ---
+    match /dipendenti_provvigioni/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // --- PAGAMENTI DIPENDENTI (solo admin) ---
+    match /pagamenti_dipendenti/{docId} {
+      allow read, write: if isAdmin();
+    }
+
   }
 }

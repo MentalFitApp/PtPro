@@ -10,15 +10,11 @@
   }
 }
 
-/* --- EFFETTO SFONDO STELLATO ANIMATO --- */
+/* --- SFONDO STELLATO --- */
 .starry-background {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100vw; height: 100vh;
   overflow: hidden;
   z-index: -10;
   background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
@@ -26,18 +22,18 @@
 
 .stars {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 120%;
+  top: 0; left: 0;
+  width: 100%; height: 120%;
   transform: rotate(-45deg);
   z-index: -9;
+  will-change: transform;
 }
 
+/* --- STELLE --- */
 .star {
   --star-color: #ffffff;
   --star-width: var(--star-width, 2px);
-  --fall-duration: var(--fall-duration, 9s);
+  --fall-duration: var(--fall-duration, 10s);
   --fall-delay: var(--fall-delay, 0s);
   --top-offset: var(--top-offset, 50vh);
 
@@ -48,55 +44,52 @@
   height: var(--star-width);
   background: var(--star-color);
   border-radius: 50%;
-  box-shadow: 0 0 4px var(--star-color);
+  box-shadow: 0 0 6px var(--star-color);
   transform: translate3d(104em, 0, 0);
-  animation: fall var(--fall-duration) var(--fall-delay) linear infinite, twinkle 3s ease-in-out infinite;
+  animation: fall var(--fall-duration) var(--fall-delay) linear infinite,
+             twinkle 4s ease-in-out infinite;
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 .star::after {
   content: '';
   position: absolute;
-  top: 50%;
-  left: calc(var(--star-width) / -2);
-  width: 4em; /* Ridotta lunghezza scia */
-  height: 1px;
-  background: linear-gradient(to left, rgba(255, 255, 255, 0.6), transparent); /* Ridotta opacità */
+  top: 50%; left: calc(var(--star-width) / -2);
+  width: 3.5em; height: 1px;
+  background: linear-gradient(to left, rgba(255, 255, 255, 0.5), transparent);
   animation: tail-fade var(--fall-duration) var(--fall-delay) ease-out infinite;
-  z-index: -7;
+  z-index: -1;
+  will-change: width, opacity;
 }
 
+/* --- STELLE DORATE --- */
+.star.gold {
+  --star-color: #fbbf24;
+  filter: drop-shadow(0 0 8px #fbbf24);
+}
+
+.star.gold::after {
+  background: linear-gradient(to left, rgba(251, 191, 36, 0.7), transparent);
+}
+
+/* --- ANIMAZIONI --- */
 @keyframes fall {
-  to {
-    transform: translate3d(-30em, 0, 0);
-  }
+  to { transform: translate3d(-35em, 0, 0); }
 }
 
 @keyframes tail-fade {
-  0%, 50% {
-    width: 4em;
-    opacity: 0.6;
-  }
-  70% {
-    width: 2em;
-    opacity: 0.3;
-  }
-  100% {
-    width: 0;
-    opacity: 0;
-  }
+  0%, 40% { width: 3.5em; opacity: 0.5; }
+  70% { width: 1.5em; opacity: 0.2; }
+  100% { width: 0; opacity: 0; }
 }
 
 @keyframes twinkle {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.8; }
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.9; }
 }
 
-.star:nth-child(3n) { --star-width: 1px; }
-.star:nth-child(2n) { --star-width: 2px; }
-.star:nth-child(1n) { --star-width: 3px; }
-
-/* --- BORDO SFUMATO PER LE SCHEDE --- */
+/* --- BORDO SFUMATO --- */
 .gradient-border {
   position: relative;
   border: 1px solid transparent;
@@ -111,4 +104,5 @@
   margin: -1px;
   border-radius: inherit;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  pointer-events: none;
 }
