@@ -15,8 +15,9 @@ export default function GuideCapture() {
   const [loading, setLoading] = useState(false);
   const [showPromo, setShowPromo] = useState(false);
   const [contactMethod, setContactMethod] = useState(null); // 'instagram', 'whatsapp', 'no'
-  const [currentLeadId, setCurrentLeadId] = useState(null);
+  const [currentLeadId, setCurrentLeadId] = useState(null); // ID del lead appena creato
 
+  // === CARICA GUIDA ===
   useEffect(() => {
     const fetchGuide = async () => {
       try {
@@ -35,6 +36,7 @@ export default function GuideCapture() {
     fetchGuide();
   }, [guideId, navigate]);
 
+  // === INVIO FORM ===
   const handleSubmit = async () => {
     if (!form.nome || !form.telefono || !form.email) {
       return alert('Compila Nome, Telefono ed Email');
@@ -42,6 +44,7 @@ export default function GuideCapture() {
 
     setLoading(true);
     try {
+      // 1. Crea il lead
       const leadRef = await addDoc(collection(db, 'guideLeads'), {
         guideId,
         nome: form.nome.trim(),
@@ -57,9 +60,11 @@ export default function GuideCapture() {
         importo: 0
       });
 
-      setCurrentLeadId(leadRef.id);
+      // 2. ASPETTA E PRENDI L'ID
+      const leadId = leadRef.id;
+      setCurrentLeadId(leadId);
 
-      // Mostra promo SOLO se c'è postMessage o countdown
+      // 3. Mostra promo o redirect
       const hasOffer = guide.postMessage || guide.countdownDate;
       if (hasOffer) {
         setShowPromo(true);
@@ -74,6 +79,7 @@ export default function GuideCapture() {
     }
   };
 
+  // === REDIRECT ALLA GUIDA ===
   const redirectToGuide = () => {
     const url = guide?.redirectUrl;
     if (url && /^https?:\/\//.test(url)) {
@@ -83,22 +89,31 @@ export default function GuideCapture() {
     }
   };
 
+  // === CONFERMA SCELTA PROMO ===
   const handleConfirm = async () => {
     if (contactMethod === null) return alert('Scegli un\'opzione');
+
+    // SICUREZZA: se ID mancante, vai avanti
+    if (!currentLeadId) {
+      console.warn("Lead ID mancante, procedo senza aggiornare");
+      redirectToGuide();
+      return;
+    }
 
     try {
       await updateDoc(doc(db, 'guideLeads', currentLeadId), {
         wantsPromo: contactMethod !== 'no',
         contactMethod
       });
-      redirectToGuide();
     } catch (err) {
-      console.error("Errore updateDoc:", err);
-      alert('Errore salvataggio scelta. Procedo comunque...');
+      console.error("Errore updateDoc (non bloccante):", err);
+      // NON BLOCCARE L'UTENTE
+    } finally {
       redirectToGuide();
     }
   };
 
+  // === COUNTDOWN TIMER ===
   const CountdownTimer = ({ targetDate }) => {
     const [timeLeft, setTimeLeft] = useState('');
     useEffect(() => {
@@ -125,6 +140,7 @@ export default function GuideCapture() {
     );
   };
 
+  // === CARICAMENTO ===
   if (!guide) {
     return (
       <FormLayout>

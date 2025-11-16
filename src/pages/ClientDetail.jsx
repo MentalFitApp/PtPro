@@ -1,9 +1,10 @@
+// src/pages/ClientDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } from 'firebase/firestore';
 import { ref, getDownloadURL } from 'firebase/storage';
 import { db, storage, toDate, calcolaStatoPercorso, updateStatoPercorso } from '../firebase';
-import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check, X, Plus, ZoomIn } from 'lucide-react';
+import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check, X, Plus, ZoomIn, CalendarDays } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Error Boundary
@@ -204,6 +205,84 @@ const EditClientModal = ({ isOpen, onClose, client, onSave }) => {
   );
 };
 
+// NUOVO MODALE: PROLUNGA SCADENZA
+const ExtendExpiryModal = ({ isOpen, onClose, client, onSave }) => {
+  const [days, setDays] = useState(7);
+  const [manualDate, setManualDate] = useState('');
+  const [useManual, setUseManual] = useState(false);
+
+  const handleSave = async () => {
+    try {
+      const current = toDate(client.scadenza) || new Date();
+      const newExpiry = useManual && manualDate ? new Date(manualDate) : new Date(current);
+      if (!useManual) {
+        newExpiry.setDate(newExpiry.getDate() + days);
+      }
+
+      const clientRef = doc(db, 'clients', client.id);
+      await updateDoc(clientRef, { scadenza: newExpiry });
+
+      updateStatoPercorso(client.id);
+      onSave();
+      onClose();
+    } catch (err) {
+      console.error('Errore prolungamento:', err);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-zinc-950/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-white">Prolunga Scadenza</h3>
+          <button onClick={onClose} className="text-white hover:text-rose-400">
+            <X size={24} />
+          </button>
+        </div>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <input type="checkbox" checked={useManual} onChange={e => setUseManual(e.target.checked)} className="w-4 h-4 text-cyan-500" />
+            <label className="text-sm text-slate-300">Scegli data manuale</label>
+          </div>
+
+          {useManual ? (
+            <div>
+              <label className="block text-sm text-slate-300 mb-1">Nuova data scadenza</label>
+              <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)} className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm text-slate-300 mb-1">Aggiungi giorni</label>
+              <select value={days} onChange={e => setDays(parseInt(e.target.value))} className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-white">
+                <option value={1}>+1 giorno</option>
+                <option value={3}>+3 giorni</option>
+                <option value={7}>+7 giorni</option>
+                <option value={15}>+15 giorni</option>
+                <option value={30}>+30 giorni</option>
+                <option value={60}>+60 giorni</option>
+              </select>
+            </div>
+          )}
+
+          <div className="text-xs text-slate-400 p-3 bg-zinc-800/50 rounded-lg">
+            <p>Scadenza attuale: <strong>{toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}</strong></p>
+            <p>Nuova scadenza: <strong>{
+              useManual && manualDate ? new Date(manualDate).toLocaleDateString('it-IT') :
+              toDate(client.scadenza) ? new Date(toDate(client.scadenza).getTime() + days * 86400000).toLocaleDateString('it-IT') : 'N/D'
+            }</strong></p>
+          </div>
+
+          <button onClick={handleSave} className="w-full py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2">
+            <CalendarDays size={18} /> Prolunga Scadenza
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 // COMPONENTE RIUTILIZZABILE: Campo Anamnesi
 const AnamnesiField = ({ label, value }) => (
   <div className="mb-4">
@@ -227,6 +306,7 @@ export default function ClientDetail() {
   const [copied, setCopied] = useState(false);
   const [showRenewal, setShowRenewal] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showExtend, setShowExtend] = useState(false); // NUOVO
   const [zoomPhoto, setZoomPhoto] = useState({ open: false, url: '', alt: '' });
 
   useEffect(() => {
@@ -363,6 +443,13 @@ export default function ClientDetail() {
     });
   };
 
+  const handleExtendSaved = () => {
+    const clientRef = doc(db, 'clients', clientId);
+    onSnapshot(clientRef, (snap) => {
+      if (snap.exists()) setClient({ id: snap.id, ...snap.data() });
+    });
+  };
+
   if (loading) return <div className="text-center text-slate-400 p-8">Caricamento...</div>;
   if (error) return <div className="text-center text-red-400 p-8">{error}</div>;
   if (!client) return null;
@@ -380,12 +467,15 @@ export default function ClientDetail() {
         <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <h1 className="text-3xl font-bold text-slate-50">{client.name}</h1>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2">
               <button onClick={() => setShowEdit(true)} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg">
                 <Edit size={16} /> Modifica
               </button>
               <button onClick={() => setShowRenewal(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg">
                 <Plus size={16} /> Rinnovo
+              </button>
+              <button onClick={() => setShowExtend(true)} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-lg">
+                <CalendarDays size={16} /> Prolunga
               </button>
               <button onClick={handleDelete} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg">
                 <Trash2 size={16} /> Elimina
@@ -467,7 +557,7 @@ export default function ClientDetail() {
           {activeTab === 'payments' && (
             <div className="space-y-4">
               {payments.length > 0 ? payments.map(p => (
-                <div key={p.id} className="p-4 bg-zinc-900/70 rounded-lg border border-white-white/10">
+                <div key={p.id} className="p-4 bg-zinc-900/70 rounded-lg border border-white/10">
                   <p className="text-sm text-slate-400">Data: {toDate(p.paymentDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
                   <p className="text-sm text-slate-200">Importo: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(p.amount || 0)}</p>
                   <p className="text-sm text-slate-200">Durata: {p.duration}</p>
@@ -530,7 +620,7 @@ export default function ClientDetail() {
                     </div>
                   </div>
 
-                 866                  {/* FOTO INIZIALI */}
+                  {/* FOTO INIZIALI */}
                   <div className={sectionStyle}>
                     <h4 className={headingStyle}><FileText size={16} /> Foto Iniziali</h4>
                     <p className="text-sm text-slate-400 mb-6">Caricate dal cliente al momento dell'iscrizione.</p>
@@ -574,6 +664,7 @@ export default function ClientDetail() {
         {/* MODALI */}
         <RenewalModal isOpen={showRenewal} onClose={() => setShowRenewal(false)} client={client} onSave={handleRenewalSaved} />
         <EditClientModal isOpen={showEdit} onClose={() => setShowEdit(false)} client={client} onSave={handleEditSaved} />
+        <ExtendExpiryModal isOpen={showExtend} onClose={() => setShowExtend(false)} client={client} onSave={handleExtendSaved} />
         <PhotoZoomModal 
           isOpen={zoomPhoto.open} 
           onClose={() => setZoomPhoto({ open: false, url: '', alt: '' })} 

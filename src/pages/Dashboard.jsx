@@ -1,8 +1,9 @@
+// src/pages/Dashboard.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  collection, onSnapshot, collectionGroup, doc, getDoc, serverTimestamp, query, orderBy 
-} from "firebase/firestore";
+  collection, onSnapshot, collectionGroup, doc, getDoc, setDoc, serverTimestamp, query, orderBy 
+} from "firebase/firestore"; // ← AGGIUNTO setDoc
 import { auth, db, toDate } from "../firebase";
 import { signOut } from "firebase/auth";
 import { 
@@ -161,7 +162,7 @@ export default function Dashboard() {
     return () => unsub();
   }, []);
 
-  // --- Last viewed ---
+  // --- Last viewed (CORRETTO CON setDoc) ---
   useEffect(() => {
     const lastViewedRef = doc(db, 'app-data', 'lastViewed');
     const fetchLastViewed = async () => {
@@ -169,6 +170,8 @@ export default function Dashboard() {
         const docSnap = await getDoc(lastViewedRef);
         const lastViewedTime = docSnap.exists() ? docSnap.data().timestamp : null;
         setLastViewed(lastViewedTime);
+
+        // AGGIORNA SEMPRE (anche se esiste)
         await setDoc(lastViewedRef, { timestamp: serverTimestamp() }, { merge: true });
       } catch (error) {
         console.error("Errore lastViewed:", error);
@@ -300,7 +303,7 @@ export default function Dashboard() {
     };
   }, [lastViewed]);
 
-  // --- Monthly income ---
+  // --- Monthly income (CORRETTO) ---
   useEffect(() => {
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
