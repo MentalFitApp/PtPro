@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
 // Import dinamici dei layout
@@ -104,10 +104,15 @@ export default function App() {
             getDoc(collabDocRef).catch(() => ({ exists: () => false, data: () => ({}) }))
           ]);
 
-          // CREA ADMIN SE NON ESISTE (SOLO LA PRIMA VOLTA)
+          // === CORREZIONE: NON SOVRASCRIVERE ADMIN ESISTENTI ===
           if (!adminDoc.exists()) {
-            await setDoc(adminDocRef, { uids: [currentUser.uid] }, { merge: true });
-            console.log("Admin creato automaticamente:", currentUser.uid);
+            await setDoc(adminDocRef, { uids: [currentUser.uid] });
+            console.log("Primo admin creato:", currentUser.uid);
+          } else if (!adminDoc.data().uids.includes(currentUser.uid)) {
+            await updateDoc(adminDocRef, {
+              uids: arrayUnion(currentUser.uid)
+            });
+            console.log("Admin aggiunto senza sovrascrivere:", currentUser.uid);
           }
 
           const isCurrentUserAdmin = adminDoc.exists() && adminDoc.data().uids.includes(currentUser.uid);
@@ -222,7 +227,7 @@ export default function App() {
       isMounted = false;
       unsubscribe();
     };
-  }, [location.pathname, navigate, lastNavigated]); // AGGIUNTO lastNavigated
+  }, [location.pathname, navigate, lastNavigated]);
 
   if (authInfo.isLoading) return <AuthSpinner />;
   if (authInfo.error) return <div className="text-red-500 text-center p-4">{authInfo.error}</div>;
