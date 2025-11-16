@@ -104,8 +104,10 @@ export default function App() {
             getDoc(collabDocRef).catch(() => ({ exists: () => false, data: () => ({}) }))
           ]);
 
+          // CREA ADMIN SE NON ESISTE (SOLO LA PRIMA VOLTA)
           if (!adminDoc.exists()) {
-            await setDoc(adminDocRef, { uids: [currentUser.uid] });
+            await setDoc(adminDocRef, { uids: [currentUser.uid] }, { merge: true });
+            console.log("Admin creato automaticamente:", currentUser.uid);
           }
 
           const isCurrentUserAdmin = adminDoc.exists() && adminDoc.data().uids.includes(currentUser.uid);
@@ -113,6 +115,7 @@ export default function App() {
           const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
           const isCurrentUserACollaboratore = collabDoc.exists() && collabDoc.data().firstLogin !== undefined;
 
+          // PULIZIA RUOLI DOPPI
           if ((isCurrentUserACoach || isCurrentUserAdmin) && (isCurrentUserAClient || isCurrentUserACollaboratore)) {
             await deleteDoc(clientDocRef).catch(() => {});
             await deleteDoc(collabDocRef).catch(() => {});
@@ -219,7 +222,7 @@ export default function App() {
       isMounted = false;
       unsubscribe();
     };
-  }, [location.pathname, navigate]);
+  }, [location.pathname, navigate, lastNavigated]); // AGGIUNTO lastNavigated
 
   if (authInfo.isLoading) return <AuthSpinner />;
   if (authInfo.error) return <div className="text-red-500 text-center p-4">{authInfo.error}</div>;

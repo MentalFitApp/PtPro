@@ -2,19 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ========================================
+   BASE STYLES
+   ======================================== */
 @layer base {
   body {
     @apply bg-zinc-950 text-slate-200 font-sans;
     margin: 0;
+    padding: 0;
     overflow-x: hidden;
+    min-height: 100vh;
   }
 }
 
-/* --- SFONDO STELLATO --- */
+/* ========================================
+   SFONDO STELLATO
+   ======================================== */
 .starry-background {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 100vw; height: 100vh;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
   z-index: -10;
   background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
@@ -22,14 +30,14 @@
 
 .stars {
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 120%;
+  inset: 0;
+  width: 100%;
+  height: 120%;
   transform: rotate(-45deg);
   z-index: -9;
   will-change: transform;
 }
 
-/* --- STELLE --- */
 .star {
   --star-color: #ffffff;
   --star-width: var(--star-width, 2px);
@@ -46,8 +54,9 @@
   border-radius: 50%;
   box-shadow: 0 0 6px var(--star-color);
   transform: translate3d(104em, 0, 0);
-  animation: fall var(--fall-duration) var(--fall-delay) linear infinite,
-             twinkle 4s ease-in-out infinite;
+  animation: 
+    fall var(--fall-duration) var(--fall-delay) linear infinite,
+    twinkle 4s ease-in-out infinite;
   pointer-events: none;
   will-change: transform, opacity;
 }
@@ -55,15 +64,15 @@
 .star::after {
   content: '';
   position: absolute;
-  top: 50%; left: calc(var(--star-width) / -2);
-  width: 3.5em; height: 1px;
+  top: 50%;
+  left: calc(var(--star-width) / -2);
+  width: 3.5em;
+  height: 1px;
   background: linear-gradient(to left, rgba(255, 255, 255, 0.5), transparent);
   animation: tail-fade var(--fall-duration) var(--fall-delay) ease-out infinite;
   z-index: -1;
-  will-change: width, opacity;
 }
 
-/* --- STELLE DORATE --- */
 .star.gold {
   --star-color: #fbbf24;
   filter: drop-shadow(0 0 8px #fbbf24);
@@ -73,36 +82,95 @@
   background: linear-gradient(to left, rgba(251, 191, 36, 0.7), transparent);
 }
 
-/* --- ANIMAZIONI --- */
+/* ========================================
+   ANIMAZIONI STELLE
+   ======================================== */
 @keyframes fall {
   to { transform: translate3d(-35em, 0, 0); }
 }
 
 @keyframes tail-fade {
-  0%, 40% { width: 3.5em; opacity: 0.5; }
-  70% { width: 1.5em; opacity: 0.2; }
-  100% { width: 0; opacity: 0; }
+  0%, 40%   { width: 3.5em; opacity: 0.5; }
+  70%       { width: 1.5em; opacity: 0.2; }
+  100%      { width: 0; opacity: 0; }
 }
 
 @keyframes twinkle {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.9; }
+  0%, 100%  { opacity: 0.4; }
+  50%       { opacity: 0.9; }
 }
 
-/* --- BORDO SFUMATO --- */
-.gradient-border {
-  position: relative;
-  border: 1px solid transparent;
-  background-clip: padding-box;
+/* ========================================
+   2 LINEE DORATE FISSE + SFUMATURA ROTANTE
+   - Linea fissa (non si muove)
+   - Sfumatura luminosa che gira
+   - 2 linee, una in senso orario, una antiorario
+   ======================================== */
+
+/* LINEA 1 – ORARIO */
+@keyframes glow-line-1 {
+  0% {
+    background-position: 0% 50%;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.7);
+  }
+  100% {
+    background-position: 100% 50%;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
+  }
 }
 
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  top: 0; right: 0; bottom: 0; left: 0;
-  z-index: -1;
-  margin: -1px;
+.animate-glow-line-1 {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #fbbf24 48%,
+    #fbbf24 52%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: glow-line-1 6s linear infinite;
   border-radius: inherit;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-  pointer-events: none;
+  mask: 
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: destination-out;
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.4));
+}
+
+/* LINEA 2 – ANTIORARIO */
+@keyframes glow-line-2 {
+  0% {
+    background-position: 100% 50%;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.7);
+  }
+  100% {
+    background-position: 0% 50%;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
+  }
+}
+
+.animate-glow-line-2 {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #fbbf24 48%,
+    #fbbf24 52%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: glow-line-2 6s linear infinite reverse;
+  border-radius: inherit;
+  mask: 
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: destination-out;
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.4));
 }

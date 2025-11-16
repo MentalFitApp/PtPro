@@ -2,7 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ==================== FUNZIONI ====================
+    // ==================== FUNZIONI DI SUPPORTO ====================
     function isValidPayment() {
       return request.resource.data.keys().hasAll(['amount', 'duration', 'paymentDate']) &&
              request.resource.data.amount is number &&
@@ -28,7 +28,8 @@ service cloud.firestore {
     }
 
     function isClient(userId) {
-      return request.auth != null && request.auth.uid == userId &&
+      return request.auth != null &&
+             request.auth.uid == userId &&
              exists(/databases/$(database)/documents/clients/$(userId)) &&
              get(/databases/$(database)/documents/clients/$(userId)).data.isClient == true;
     }
@@ -40,7 +41,8 @@ service cloud.firestore {
     }
 
     function isCollaboratore(userId) {
-      return request.auth != null && request.auth.uid == userId &&
+      return request.auth != null &&
+             request.auth.uid == userId &&
              exists(/databases/$(database)/documents/collaboratori/$(userId));
     }
 
@@ -50,9 +52,7 @@ service cloud.firestore {
              get(/databases/$(database)/documents/collaboratori/$(request.auth.uid)).data.role == 'Setter';
     }
 
-    // ==================== REGOLE COLLEZIONI ====================
-
-    // --- CLIENTS ---
+    // ==================== CLIENTS & SUBCOLLEZIONI ====================
     match /clients/{userId} {
       allow create: if isCoach() || isAdmin();
       allow read: if request.auth != null && (
@@ -95,10 +95,12 @@ service cloud.firestore {
       }
     }
 
-    // --- SUBCOLLEZIONI GENERICHE ---
+    // --- COLLECTION GROUP: PAGAMENTI (per incasso lordo) ---
     match /{path=**}/payments/{paymentId} {
-      allow read: if isCoach() || isAdmin();
+      allow read: if isAdmin();
     }
+
+    // --- COLLECTION GROUP: CHECKS & ANAMNESI ---
     match /{path=**}/checks/{checkId} {
       allow read: if isCoach() || isAdmin();
     }
@@ -106,7 +108,7 @@ service cloud.firestore {
       allow read: if isCoach() || isAdmin();
     }
 
-    // --- CHATS ---
+    // ==================== CHAT ====================
     match /chats/{chatId} {
       allow get: if request.auth != null && (request.auth.uid in resource.data.participants || isCoach() || isAdmin());
       allow list: if request.auth != null && (isCoach() || isAdmin() || request.auth.uid in resource.data.participants);
@@ -125,18 +127,17 @@ service cloud.firestore {
       }
     }
 
-    // --- ROLES ---
+    // ==================== RUOLI & DATI APP ====================
     match /roles/{docId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
 
-    // --- APP-DATA ---
     match /app-data/{docId} {
       allow read, write: if isCoach() || isAdmin();
     }
 
-    // --- COLLABORATORI ---
+    // ==================== COLLABORATORI ====================
     match /collaboratori/{collabId} {
       allow read, list: if isAdmin() || isCollaboratore(collabId) || isSetter();
       allow create: if isAdmin();
@@ -144,27 +145,23 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // --- PAGAMENTI (VECCHIA COLLEZIONE) ---
+    // ==================== PAGAMENTI VECCHI ====================
     match /pagamenti/{paymentId} {
       allow read, write: if isAdmin();
     }
 
-    // --- MARKETING REPORTS ---
+    // ==================== REPORTS ====================
     match /marketingReports/{reportId} {
       allow read, list, create, update, delete: if isAdmin();
     }
-
-    // --- SALES REPORTS ---
     match /salesReports/{reportId} {
       allow read, list, create, update, delete: if isAdmin();
     }
-
-    // --- SETTING REPORTS ---
     match /settingReports/{reportId} {
       allow read, list, create, update, delete: if isAdmin();
     }
 
-    // --- LEADS ---
+    // ==================== LEADS ====================
     match /leads/{leadId} {
       allow read, list: if isAdmin() ||
         (request.auth != null &&
@@ -183,29 +180,35 @@ service cloud.firestore {
          resource.data.collaboratoreId == request.auth.uid);
     }
 
-    // --- GUIDES & LEAD ---
+    // ==================== GUIDE & LEAD FORM ====================
     match /guides/{guideId} {
-      allow read: if request.auth != null || (resource != null && resource.data.active == true);
-      allow list: if true;
-      allow create, update, delete: if isAdmin();
+    // TUTTI POSSONO LEGGERE LE GUIDE ATTIVE (senza auth)
+     allow read: if resource != null && resource.data.active == true;
+     allow list: if true;
+     allow create, update, delete: if isAdmin();
     }
 
-    match /guideLeads/{leadId} {
-      allow create: if true;
-      allow read, list, update, delete: if isAdmin();
-    }
+   match /guideLeads/{leadId} {
+   // Chiunque può creare un lead (form pubblico)
+    allow create: if true;
 
-    // ==================== NUOVE COLLEZIONI DIPENDENTI ====================
+   // Solo Admin, Coach, Setter possono leggere/modificare
+    allow read, list: if isAdmin() || isCoach() || isSetter();
+    allow update, delete: if isAdmin();
+   }
 
-    // --- DIPENDENTI PROVVIGIONI (solo admin) ---
+    // ==================== DIPENDENTI & PROVVIGIONI ====================
     match /dipendenti_provvigioni/{docId} {
-      allow read, write: if isAdmin();
+      allow read, list, create, update, delete: if isAdmin();
     }
 
-    // --- PAGAMENTI DIPENDENTI (solo admin) ---
     match /pagamenti_dipendenti/{docId} {
-      allow read, write: if isAdmin();
+      allow read, list, create, update, delete: if isAdmin();
     }
 
+    // ==================== BLOCCA TUTTO IL RESTO ====================
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }

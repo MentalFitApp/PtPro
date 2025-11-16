@@ -1,3 +1,4 @@
+// src/pages/dipendenti.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { db } from "../firebase";
 import {
@@ -10,9 +11,12 @@ import {
   collectionGroup,
   orderBy,
   getDoc,
+  deleteDoc,
 } from "firebase/firestore";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths } from "date-fns";
 import { formatCurrency } from "../utils/formatters";
+import { Edit2, Trash2, Calendar, TrendingUp, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const RUOLI_DISPONIBILI = ["Setter", "Coach", "Admin", "Manager", "Altro"];
 
@@ -23,20 +27,10 @@ const Dipendenti = () => {
   const [incassoMensile, setIncassoMensile] = useState(0);
   const [showArchived, setShowArchived] = useState(false);
   const [meseCalendario, setMeseCalendario] = useState(new Date());
-  const [giornoSelezionato, setGiornoSelezionato] = useState(null);
 
   // Form
-  const [formDip, setFormDip] = useState({
-    nome: "",
-    nominativo: "",
-    iban: "",
-    tipo: "percentuale",
-    percentuale: "",
-    fissi: [],
-    ruolo: "Setter",
-  });
+  const [formDip, setFormDip] = useState({ nome: "", nominativo: "", iban: "", tipo: "percentuale", percentuale: "", fissi: [], ruolo: "Setter" });
   const [editingDip, setEditingDip] = useState(null);
-  const [selectedDip, setSelectedDip] = useState(null);
 
   // Pagamento
   const [formPagamento, setFormPagamento] = useState({
@@ -47,16 +41,15 @@ const Dipendenti = () => {
     data: format(new Date(), "yyyy-MM-dd"),
     note: "",
   });
+  const [editingPagamento, setEditingPagamento] = useState(null);
 
   // Filtro
   const [meseFiltro, setMeseFiltro] = useState(format(new Date(), "yyyy-MM"));
 
   // === INCASSO MENSILE ===
   useEffect(() => {
-    const now = new Date();
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthStart = startOfMonth(new Date());
     const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'desc'));
-
     const unsub = onSnapshot(paymentsQuery, async (snap) => {
       let income = 0;
       for (const docSnap of snap.docs) {
@@ -74,9 +67,8 @@ const Dipendenti = () => {
       }
       setIncassoMensile(income);
     });
-
     return () => unsub();
-  }, [meseFiltro]);
+  }, []);
 
   // === DIPENDENTI & PAGAMENTI ===
   useEffect(() => {
@@ -103,21 +95,18 @@ const Dipendenti = () => {
       setPagamenti(list);
     });
 
-    return () => {
-      unsubDip();
-      unsubPag();
-    };
+    return () => { unsubDip(); unsubPag(); };
   }, []);
 
-  // === MAPPA PER LOOKUP RAPIDO DIPENDENTE ===
+  // === MAPPA DIPENDENTI ===
   const dipendentiMap = useMemo(() => {
     const map = new Map();
     dipendenti.forEach(dip => map.set(dip.id, dip));
     return map;
   }, [dipendenti]);
 
-  // === PROVVIGIONI TOTALI ===
-  const { provvigioniTotali, pagatiTotali, daPagareTotali } = useMemo(() => {
+  // === PROVVIGIONI TOTALI + UTILE NETTO ===
+  const { provvigioniTotali, pagatiTotali, daPagareTotali, utileNetto } = useMemo(() => {
     let provv = 0;
     let pagati = 0;
 
@@ -136,42 +125,29 @@ const Dipendenti = () => {
         .reduce((s, p) => s + p.importo, 0);
     });
 
-    return { provvigioniTotali: provv, pagatiTotali: pagati, daPagareTotali: provv - pagati };
+    const utile = incassoMensile - pagati;
+    return { provvigioniTotali: provv, pagatiTotali: pagati, daPagareTotali: provv - pagati, utileNetto: utile };
   }, [dipendenti, incassoMensile, pagamenti, meseFiltro]);
 
   // === CALENDARIO ===
-  const start = startOfMonth(meseCalendario);
-  const end = endOfMonth(meseCalendario);
-  const days = eachDayOfInterval({ start, end });
+  const giorniMese = eachDayOfInterval({
+    start: startOfMonth(meseCalendario),
+    end: endOfMonth(meseCalendario),
+  });
 
-  const pagamentiDelMese = useMemo(() => {
-    return pagamenti.filter(p => 
-      format(p.data, "yyyy-MM") === format(meseCalendario, "yyyy-MM")
-    );
-  }, [pagamenti, meseCalendario]);
-
-  const pagamentiDelGiorno = useMemo(() => {
-    return giornoSelezionato
-      ? pagamentiDelMese.filter(p => isSameDay(p.data, giornoSelezionato))
-      : [];
-  }, [giornoSelezionato, pagamentiDelMese]);
+  const pagamentiDelGiorno = (giorno) => {
+    return pagamenti.filter(p => isSameDay(p.data, giorno));
+  };
 
   // === FUNZIONI ===
   const resetFormDip = () => {
-    setFormDip({
-      nome: "", nominativo: "", iban: "", tipo: "percentuale",
-      percentuale: "", fissi: [], ruolo: "Setter",
-    });
+    setFormDip({ nome: "", nominativo: "", iban: "", tipo: "percentuale", percentuale: "", fissi: [], ruolo: "Setter" });
     setEditingDip(null);
   };
 
   const salvaDipendente = async () => {
     if (!formDip.nome.trim()) return;
-
-    const ref = editingDip
-      ? doc(db, "dipendenti_provvigioni", editingDip.id)
-      : doc(collection(db, "dipendenti_provvigioni"));
-
+    const ref = editingDip ? doc(db, "dipendenti_provvigioni", editingDip.id) : doc(collection(db, "dipendenti_provvigioni"));
     const data = {
       nome: formDip.nome.trim(),
       nominativo: formDip.nominativo.trim(),
@@ -179,14 +155,11 @@ const Dipendenti = () => {
       tipo: formDip.tipo,
       percentuale: formDip.tipo === "percentuale" ? parseFloat(formDip.percentuale) || 0 : 0,
       fissi: formDip.tipo === "fisso"
-        ? formDip.fissi
-            .map((f) => ({ importo: parseFloat(f.importo) || 0, data: f.data }))
-            .filter((f) => f.importo > 0 && f.data)
+        ? formDip.fissi.map((f) => ({ importo: parseFloat(f.importo) || 0, data: f.data })).filter((f) => f.importo > 0 && f.data)
         : [],
       ruolo: formDip.ruolo,
       updatedAt: serverTimestamp(),
     };
-
     if (!editingDip) data.createdAt = serverTimestamp();
     await setDoc(ref, data, { merge: true });
     resetFormDip();
@@ -199,10 +172,8 @@ const Dipendenti = () => {
 
   const salvaPagamento = async () => {
     if (!formPagamento.dipId || !formPagamento.importoBase || !formPagamento.data) return;
-
     const importoTotale = parseFloat(formPagamento.importoBase) + (parseFloat(formPagamento.bonus) || 0);
-
-    const ref = doc(collection(db, "pagamenti_dipendenti"));
+    const ref = editingPagamento ? doc(db, "pagamenti_dipendenti", editingPagamento.id) : doc(collection(db, "pagamenti_dipendenti"));
     await setDoc(ref, {
       dipId: formPagamento.dipId,
       importo: importoTotale,
@@ -211,10 +182,27 @@ const Dipendenti = () => {
       bonus: parseFloat(formPagamento.bonus) || 0,
       data: new Date(formPagamento.data),
       note: formPagamento.note.trim(),
-      createdAt: serverTimestamp(),
-    });
-
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
     setFormPagamento({ ...formPagamento, importoBase: "", percentualeDaPagare: 100, bonus: "", note: "" });
+    setEditingPagamento(null);
+  };
+
+  const eliminaPagamento = async (id) => {
+    if (!confirm("Eliminare pagamento?")) return;
+    await deleteDoc(doc(db, "pagamenti_dipendenti", id));
+  };
+
+  const modificaPagamento = (pagamento) => {
+    setEditingPagamento(pagamento);
+    setFormPagamento({
+      dipId: pagamento.dipId,
+      importoBase: pagamento.importoBase.toString(),
+      percentualeDaPagare: pagamento.percentualePagata,
+      bonus: pagamento.bonus.toString(),
+      data: format(pagamento.data, "yyyy-MM-dd"),
+      note: pagamento.note || "",
+    });
   };
 
   const aggiungiFisso = () => {
@@ -236,11 +224,11 @@ const Dipendenti = () => {
   const dipendentiFiltrati = dipendenti.filter(d => showArchived ? d.archived : !d.archived);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">Dipendenti & Provvigioni</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <input
             type="month"
             value={meseFiltro}
@@ -249,114 +237,121 @@ const Dipendenti = () => {
           />
           <button
             onClick={() => setShowArchived(!showArchived)}
-            className={`px-3 py-1.5 text-xs rounded-lg transition ${showArchived ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-300'}`}
+            className={`px-4 py-2 text-sm rounded-lg transition ${showArchived ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-300'}`}
           >
             {showArchived ? 'Attivi' : 'Archiviati'}
           </button>
         </div>
       </div>
 
-      {/* STATISTICHE + CALENDARIO */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-5 rounded-xl text-white">
-            <p className="text-sm opacity-90">Incasso Mese</p>
-            <p className="text-2xl font-bold">{formatCurrency(incassoMensile)}</p>
-          </div>
-          <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 p-5 rounded-xl text-white">
-            <p className="text-sm opacity-90">Provvigioni Totali</p>
-            <p className="text-2xl font-bold">{formatCurrency(provvigioniTotali)}</p>
-          </div>
-          <div className="bg-gradient-to-br from-amber-600 to-amber-800 p-5 rounded-xl text-white">
-            <p className="text-sm opacity-90">Pagati</p>
-            <p className="text-2xl font-bold">{formatCurrency(pagatiTotali)}</p>
-          </div>
-          <div className={`p-5 rounded-xl text-white ${daPagareTotali > 0 ? 'bg-gradient-to-br from-rose-600 to-rose-800' : 'bg-gradient-to-br from-green-600 to-green-800'}`}>
-            <p className="text-sm opacity-90">Da Pagare</p>
-            <p className="text-2xl font-bold">{formatCurrency(daPagareTotali)}</p>
-          </div>
+      {/* STATISTICHE + UTILE NETTO */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-xl text-white shadow-lg">
+          <p className="text-sm opacity-90 flex items-center gap-1"><DollarSign size={16} /> Incasso Mese</p>
+          <p className="text-2xl font-bold mt-1">{formatCurrency(incassoMensile)}</p>
+        </div>
+        <div className="bg-gradient-to-br from-purple-600 to-purple-800 p-6 rounded-xl text-white shadow-lg">
+          <p className="text-sm opacity-90 flex items-center gap-1"><TrendingUp size={16} /> Utile Netto</p>
+          <p className="text-2xl font-bold mt-1">{formatCurrency(utileNetto)}</p>
+        </div>
+        <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 p-6 rounded-xl text-white shadow-lg">
+          <p className="text-sm opacity-90">Provvigioni</p>
+          <p className="text-2xl font-bold mt-1">{formatCurrency(provvigioniTotali)}</p>
+        </div>
+        <div className="bg-gradient-to-br from-amber-600 to-amber-800 p-6 rounded-xl text-white shadow-lg">
+          <p className="text-sm opacity-90">Pagati</p>
+          <p className="text-2xl font-bold mt-1">{formatCurrency(pagatiTotali)}</p>
+        </div>
+        <div className={`p-6 rounded-xl text-white shadow-lg ${daPagareTotali > 0 ? 'bg-gradient-to-br from-rose-600 to-rose-800' : 'bg-gradient-to-br from-green-600 to-green-800'}`}>
+          <p className="text-sm opacity-90">Da Pagare</p>
+          <p className="text-2xl font-bold mt-1">{formatCurrency(daPagareTotali)}</p>
+        </div>
+      </div>
+
+      {/* CALENDARIO PAGAMENTI */}
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700 shadow-xl">
+        <div className="flex justify-between items-center mb-4">
+          <button onClick={() => setMeseCalendario(addMonths(meseCalendario, -1))} className="p-2 hover:bg-slate-700 rounded-lg transition">
+            <ChevronLeft size={20} className="text-slate-400" />
+          </button>
+          <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+            <Calendar size={20} /> {format(meseCalendario, "MMMM yyyy")}
+          </h3>
+          <button onClick={() => setMeseCalendario(addMonths(meseCalendario, 1))} className="p-2 hover:bg-slate-700 rounded-lg transition">
+            <ChevronRight size={20} className="text-slate-400" />
+          </button>
         </div>
 
-        {/* MINI CALENDARIO */}
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700">
-          <div className="flex justify-between items-center mb-3">
-            <button onClick={() => setMeseCalendario(new Date(meseCalendario.getFullYear(), meseCalendario.getMonth() - 1))} className="text-slate-400 hover:text-slate-200">←</button>
-            <h3 className="text-sm font-semibold text-slate-200">{format(meseCalendario, "MMMM yyyy")}</h3>
-            <button onClick={() => setMeseCalendario(new Date(meseCalendario.getFullYear(), meseCalendario.getMonth() + 1))} className="text-slate-400 hover:text-slate-200">→</button>
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 text-center text-xs">
-            {['D', 'L', 'M', 'M', 'G', 'V', 'S'].map(d => <div key={d} className="text-slate-500 font-medium">{d}</div>)}
-            {Array.from({ length: start.getDay() }, (_, i) => <div key={`empty-${i}`} />)}
-            {days.map(day => {
-              const hasPayment = pagamentiDelMese.some(p => isSameDay(p.data, day));
-              const isSelected = giornoSelezionato && isSameDay(giornoSelezionato, day);
-              const isToday = isSameDay(day, new Date());
-
-              return (
-                <button
-                  key={day.toISOString()}
-                  onClick={() => setGiornoSelezionato(day)}
-                  className={`p-2 rounded-lg transition text-xs font-medium ${
-                    hasPayment
-                      ? 'bg-emerald-600 text-white'
-                      : isSelected
-                      ? 'bg-rose-600 text-white'
-                      : isToday
-                      ? 'bg-slate-700 text-rose-400'
-                      : 'hover:bg-slate-700 text-slate-300'
+        <div className="grid grid-cols-7 gap-3 text-center text-sm">
+          {['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'].map(d => (
+            <div key={d} className="font-bold text-slate-400 py-2">{d}</div>
+          ))}
+          {Array.from({ length: startOfMonth(meseCalendario).getDay() }, (_, i) => (
+            <div key={`empty-${i}`} />
+          ))}
+          {giorniMese.map(giorno => {
+            const pagamentiGiorno = pagamentiDelGiorno(giorno);
+            return (
+              <div
+                key={giorno.toISOString()}
+                className={`min-h-28 p-3 rounded-xl border-2 transition-all cursor-pointer
+                  ${pagamentiGiorno.length > 0 
+                    ? 'bg-emerald-900/40 border-emerald-600 hover:bg-emerald-900/60' 
+                    : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/70'
                   }`}
-                >
-                  {format(day, "d")}
-                </button>
-              );
-            })}
-          </div>
-
-          {giornoSelezionato && (
-            <div className="mt-3 pt-3 border-t border-slate-700">
-              <p className="text-xs text-slate-400 mb-2">{format(giornoSelezionato, "d MMMM yyyy")}</p>
-              {pagamentiDelGiorno.length > 0 ? (
-                <div className="space-y-1">
-                  {pagamentiDelGiorno.map(p => {
+              >
+                <p className="text-sm font-bold text-slate-300 mb-1">{format(giorno, "d")}</p>
+                <div className="space-y-1.5 max-h-20 overflow-y-auto">
+                  {pagamentiGiorno.map(p => {
                     const dip = dipendentiMap.get(p.dipId);
                     return (
-                      <div key={p.id} className="text-xs bg-slate-700/50 p-2 rounded">
-                        <p className="font-medium text-emerald-400">
-                          {dip?.nome}: {formatCurrency(p.importo)}
-                        </p>
-                        {p.note && <p className="text-slate-400 italic">{p.note}</p>}
-                      </div>
+                      <motion.div
+                        key={p.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-gradient-to-r from-rose-600/30 to-purple-600/30 p-2 rounded-lg text-xs flex justify-between items-center"
+                      >
+                        <div>
+                          <p className="font-semibold text-rose-300">{dip?.nome}</p>
+                          <p className="text-cyan-300">{formatCurrency(p.importo)}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); modificaPagamento(p); }}
+                            className="text-cyan-400 hover:text-cyan-300"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); eliminaPagamento(p.id); }}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </motion.div>
                     );
                   })}
                 </div>
-              ) : (
-                <p className="text-xs text-slate-500 italic">Nessun pagamento</p>
-              )}
-            </div>
-          )}
+                {pagamentiGiorno.length === 0 && (
+                  <p className="text-xs text-slate-500 italic mt-2">Nessun pagamento</p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* ELENCO DIPENDENTI */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {dipendentiFiltrati.map((dip) => {
-          const pagati = pagamenti
-            .filter((p) => p.dipId === dip.id && format(p.data, "yyyy-MM") === meseFiltro)
-            .reduce((sum, p) => sum + p.importo, 0);
-
+          const pagati = pagamenti.filter(p => p.dipId === dip.id && format(p.data, "yyyy-MM") === meseFiltro).reduce((sum, p) => sum + p.importo, 0);
           const provvigionePercentuale = dip.tipo === "percentuale" ? (incassoMensile * dip.percentuale) / 100 : 0;
-          const totaleFissi = dip.tipo === "fisso"
-            ? dip.fissi.filter((f) => format(new Date(f.data), "yyyy-MM") === meseFiltro)
-                .reduce((sum, f) => sum + f.importo, 0)
-            : 0;
+          const totaleFissi = dip.tipo === "fisso" ? dip.fissi.filter(f => format(new Date(f.data), "yyyy-MM") === meseFiltro).reduce((sum, f) => sum + f.importo, 0) : 0;
           const daPagare = (dip.tipo === "percentuale" ? provvigionePercentuale : totaleFissi) - pagati;
 
           return (
-            <div
-              key={dip.id}
-              className={`bg-slate-800/60 backdrop-blur-sm rounded-xl p-5 border ${dip.archived ? 'border-slate-600 opacity-60' : 'border-slate-700 hover:border-slate-600'} transition-all`}
-            >
+            <div key={dip.id} className={`bg-slate-800/60 backdrop-blur-sm rounded-xl p-5 border ${dip.archived ? 'border-slate-600 opacity-60' : 'border-slate-700 hover:border-slate-600'} transition-all`}>
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-100">{dip.nome}</h3>
@@ -364,43 +359,20 @@ const Dipendenti = () => {
                   <p className="text-xs text-slate-500">{dip.ruolo}</p>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => setSelectedDip(dip)} className="text-xs text-blue-400 hover:text-blue-300">Storico</button>
-                  <button
-                    onClick={() => {
-                      setEditingDip(dip);
-                      setFormDip({
-                        nome: dip.nome,
-                        nominativo: dip.nominativo || "",
-                        iban: dip.iban || "",
-                        tipo: dip.tipo,
-                        percentuale: dip.percentuale?.toString() || "",
-                        fissi: dip.fissi || [],
-                        ruolo: dip.ruolo,
-                      });
-                    }}
-                    className="text-xs text-amber-400 hover:text-amber-300"
-                  >
-                    Modifica
-                  </button>
-                  {!dip.archived && (
-                    <button onClick={() => archiviaDipendente(dip)} className="text-xs text-red-400 hover:text-red-300">Archivia</button>
-                  )}
+                  <button onClick={() => { setEditingDip(dip); setFormDip({ nome: dip.nome, nominativo: dip.nominativo || "", iban: dip.iban || "", tipo: dip.tipo, percentuale: dip.percentuale?.toString() || "", fissi: dip.fissi || [], ruolo: dip.ruolo }); }} className="text-xs text-amber-400 hover:text-amber-300">Modifica</button>
+                  {!dip.archived && <button onClick={() => archiviaDipendente(dip)} className="text-xs text-red-400 hover:text-red-300">Archivia</button>}
                 </div>
               </div>
 
               <div className="space-y-2 text-sm">
-                <p className="text-slate-400">
-                  {dip.tipo === "percentuale" ? `${dip.percentuale}% su incasso` : "Fisso mensile"}
-                </p>
+                <p className="text-slate-400">{dip.tipo === "percentuale" ? `${dip.percentuale}% su incasso` : "Fisso mensile"}</p>
                 {dip.iban && <p className="text-xs text-slate-500">IBAN: {dip.iban}</p>}
               </div>
 
               <div className="mt-4 pt-3 border-t border-slate-700">
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-slate-400">Provvigione</span>
-                  <span className="font-medium text-emerald-400">
-                    {formatCurrency(dip.tipo === "percentuale" ? provvigionePercentuale : totaleFissi)}
-                  </span>
+                  <span className="font-medium text-emerald-400">{formatCurrency(dip.tipo === "percentuale" ? provvigionePercentuale : totaleFissi)}</span>
                 </div>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-slate-400">Pagato</span>
@@ -408,9 +380,7 @@ const Dipendenti = () => {
                 </div>
                 <div className="flex justify-between text-sm font-bold">
                   <span className="text-slate-300">Da pagare</span>
-                  <span className={daPagare > 0 ? "text-rose-400" : "text-green-400"}>
-                    {formatCurrency(daPagare)}
-                  </span>
+                  <span className={daPagare > 0 ? "text-rose-400" : "text-green-400"}>{formatCurrency(daPagare)}</span>
                 </div>
               </div>
 
@@ -441,42 +411,15 @@ const Dipendenti = () => {
                   </div>
 
                   <div className="flex gap-2">
-                    <input
-                      type="number"
-                      placeholder="Importo"
-                      value={formPagamento.importoBase || ""}
-                      readOnly
-                      className="flex-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Bonus"
-                      className="w-20 px-2 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500"
-                      onChange={(e) => setFormPagamento({ ...formPagamento, bonus: e.target.value })}
-                    />
+                    <input type="number" placeholder="Importo" value={formPagamento.importoBase || ""} readOnly className="flex-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600" />
+                    <input type="number" placeholder="Bonus" className="w-20 px-2 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500" onChange={(e) => setFormPagamento({ ...formPagamento, bonus: e.target.value })} />
                   </div>
 
-                  <input
-                    type="text"
-                    placeholder="Note (es. Bonifico, Contanti)"
-                    value={formPagamento.note}
-                    onChange={(e) => setFormPagamento({ ...formPagamento, note: e.target.value })}
-                    className="w-full px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500"
-                  />
+                  <input type="text" placeholder="Note" value={formPagamento.note} onChange={(e) => setFormPagamento({ ...formPagamento, note: e.target.value })} className="w-full px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500" />
 
                   <div className="flex gap-2">
-                    <input
-                      type="date"
-                      value={formPagamento.data}
-                      onChange={(e) => setFormPagamento({ ...formPagamento, data: e.target.value })}
-                      className="flex-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500"
-                    />
-                    <button
-                      onClick={salvaPagamento}
-                      className="px-3 py-1.5 text-xs bg-rose-600 text-white rounded hover:bg-rose-700 transition font-medium"
-                    >
-                      Paga
-                    </button>
+                    <input type="date" value={formPagamento.data} onChange={(e) => setFormPagamento({ ...formPagamento, data: e.target.value })} className="flex-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500" />
+                    <button onClick={salvaPagamento} className="px-3 py-1.5 text-xs bg-rose-600 text-white rounded hover:bg-rose-700 transition font-medium">Paga</button>
                   </div>
                 </div>
               )}
@@ -489,12 +432,10 @@ const Dipendenti = () => {
       {(formDip.nome || editingDip) && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-slate-800 rounded-xl p-6 max-w-md w-full max-h-screen overflow-y-auto">
-            <h2 className="text-xl font-bold text-slate-100 mb-4">
-              {editingDip ? "Modifica" : "Nuovo"} Dipendente
-            </h2>
+            <h2 className="text-xl font-bold text-slate-100 mb-4">{editingDip ? "Modifica" : "Nuovo"} Dipendente</h2>
             <div className="space-y-4">
               <input type="text" placeholder="Nome" value={formDip.nome} onChange={(e) => setFormDip({ ...formDip, nome: e.target.value })} className="w-full px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-rose-500" />
-              <input type="text" placeholder="Nominativo (es. Luca - Setter)" value={formDip.nominativo} onChange={(e) => setFormDip({ ...formDip, nominativo: e.target.value })} className="w-full px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-rose-500" />
+              <input type="text" placeholder="Nominativo" value={formDip.nominativo} onChange={(e) => setFormDip({ ...formDip, nominativo: e.target.value })} className="w-full px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-rose-500" />
               <input type="text" placeholder="IBAN" value={formDip.iban} onChange={(e) => setFormDip({ ...formDip, iban: e.target.value })} className="w-full px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-rose-500" />
               <select value={formDip.ruolo} onChange={(e) => setFormDip({ ...formDip, ruolo: e.target.value })} className="w-full px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-rose-500">
                 {RUOLI_DISPONIBILI.map((r) => <option key={r} value={r}>{r}</option>)}
