@@ -105,9 +105,12 @@ export default function CollaboratoreDashboard() {
         });
         setIsAdmin(data.role === 'Admin');
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayStr = today.toISOString().split('T')[0];
+        // Usa data locale per il confronto
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
 
         const todayR = data.dailyReports?.find(r => r.date === todayStr);
         setTodayReport(todayR || null);
@@ -165,11 +168,24 @@ export default function CollaboratoreDashboard() {
     const unsub = onSnapshot(collabRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayStr = today.toISOString().split('T')[0];
+        // Usa data locale per il confronto
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
         const todayR = data.dailyReports?.find(r => r.date === todayStr);
         setTodayReport(todayR || null);
+        
+        // Aggiorna anche i valori del tracker se esistono
+        if (todayR && todayR.tracker) {
+          setTracker({
+            outreachTotale: todayR.tracker.outreachTotale || '',
+            followUpsTotali: todayR.tracker.followUpsTotali || '',
+            risposte: todayR.tracker.risposte || '',
+            callPrenotate: todayR.tracker.callPrenotate || '',
+          });
+        }
       }
     });
 

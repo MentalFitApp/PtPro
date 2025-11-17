@@ -254,58 +254,15 @@ export default function CalendarReport() {
                   </div>
                 </div>
                 <div className={`px-6 py-3 rounded-full text-lg font-bold ${
-                  s.report.eodReport && s.report.tracker
+                  s.report.tracker
                     ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
                     : 'bg-gradient-to-r from-yellow-600 to-orange-600 text-white'
                 }`}>
-                  {s.report.eodReport && s.report.tracker ? 'COMPLETO' : 'PARZIALE'}
+                  {s.report.tracker ? 'COMPLETO' : 'PARZIALE'}
                 </div>
               </div>
 
-              {/* EOD REPORT */}
-              {s.report.eodReport && (
-                <div className="mb-10 p-8 bg-gradient-to-br from-zinc-900/90 to-zinc-800/90 rounded-2xl border border-cyan-500/30">
-                  <h3 className="text-2xl font-bold text-cyan-400 flex items-center gap-3 mb-6">
-                    <Settings size={28} /> EOD Report (Fine Giornata)
-                  </h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="space-y-5">
-                      <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/20">
-                        <p className="text-cyan-300 font-semibold text-lg">Focus (1-5)</p>
-                        <p className="text-4xl font-bold text-white mt-2">
-                          {s.report.eodReport.focus || '—'}
-                        </p>
-                      </div>
-                      <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/20">
-                        <p className="text-cyan-300 font-semibold text-lg">Skills (1-5)</p>
-                        <p className="text-4xl font-bold text-white mt-2">
-                          {s.report.eodReport.skills || '—'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="space-y-5">
-                      <div className="p-5 bg-green-900/30 border border-green-500/40 rounded-xl">
-                        <p className="text-green-400 font-semibold text-lg mb-2">Dove hai fatto bene?</p>
-                        <p className="text-green-200 text-base leading-relaxed">
-                          {s.report.eodReport.successi || 'Nessun dato'}
-                        </p>
-                      </div>
-                      <div className="p-5 bg-yellow-900/30 border border-yellow-500/40 rounded-xl">
-                        <p className="text-yellow-400 font-semibold text-lg mb-2">Difficoltà incontrate</p>
-                        <p className="text-yellow-200 text-base leading-relaxed">
-                          {s.report.eodReport.difficolta || 'Nessun dato'}
-                        </p>
-                      </div>
-                      <div className="p-5 bg-rose-900/30 border border-rose-500/40 rounded-xl">
-                        <p className="text-rose-400 font-semibold text-lg mb-2">Soluzioni applicate</p>
-                        <p className="text-rose-200 text-base leading-relaxed">
-                          {s.report.eodReport.soluzioni || 'Nessun dato'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+
 
               {/* TRACKER DMS */}
               {s.report.tracker && (
@@ -317,36 +274,20 @@ export default function CalendarReport() {
                     Tracker DMS ({s.role})
                   </h3>
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                     {s.role === 'Setter' && (
                       <>
                         <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/30 text-center">
-                          <p className="text-cyan-400 font-medium text-sm">Outreach IG</p>
-                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.outreachIG || 0}</p>
+                          <p className="text-cyan-400 font-medium text-sm">Outreach Totale</p>
+                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.outreachTotale || 0}</p>
                         </div>
                         <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/30 text-center">
-                          <p className="text-cyan-400 font-medium text-sm">Outreach FB/TT</p>
-                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.outreachFBTT || 0}</p>
-                        </div>
-                        <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/30 text-center">
-                          <p className="text-cyan-400 font-medium text-sm">Follow-Ups IG</p>
-                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.followUpsIG || 0}</p>
-                        </div>
-                        <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/30 text-center">
-                          <p className="text-cyan-400 font-medium text-sm">Follow-Ups FB/TT</p>
-                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.followUpsFBTT || 0}</p>
+                          <p className="text-cyan-400 font-medium text-sm">Follow-Ups Totali</p>
+                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.followUpsTotali || 0}</p>
                         </div>
                         <div className="p-5 bg-green-900/30 rounded-xl border border-green-500/40 text-center">
                           <p className="text-green-400 font-medium text-sm">Risposte</p>
                           <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.risposte || 0}</p>
-                        </div>
-                        <div className="p-5 bg-green-900/30 rounded-xl border border-green-500/40 text-center">
-                          <p className="text-green-400 font-medium text-sm">Convo Fatte</p>
-                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.convoFatte || 0}</p>
-                        </div>
-                        <div className="p-5 bg-yellow-900/30 rounded-xl border border-yellow-500/40 text-center">
-                          <p className="text-yellow-400 font-medium text-sm">Call Proposte</p>
-                          <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.callProposte || 0}</p>
                         </div>
                         <div className="p-5 bg-rose-900/30 rounded-xl border border-rose-500/40 text-center">
                           <p className="text-rose-400 font-medium text-sm">Call Prenotate</p>
