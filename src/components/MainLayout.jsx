@@ -40,7 +40,7 @@ const AnimatedStars = () => {
 
 // === LINKS NAVIGAZIONE ===
 const adminNavLinks = [
-  { to: '/admin', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
+  { to: '/', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
   { to: '/clients', icon: <Users size={18} />, label: 'Clienti' },
   { to: '/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/updates', icon: <Bell size={18} />, label: 'Novità' },
@@ -66,6 +66,7 @@ const AUTH_PAGES = ['/login', '/client-login', '/register', '/reset-password'];
 // === BOTTOM NAV MOBILE ===
 const BottomNav = ({ isCoach }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const links = isCoach ? coachNavLinks : adminNavLinks;
 
   return (
@@ -75,7 +76,7 @@ const BottomNav = ({ isCoach }) => {
           {links.map(link => (
             <motion.button
               key={link.to}
-              onClick={() => window.location.href = link.to}
+              onClick={() => navigate(link.to)}
               className={`flex flex-col items-center justify-center min-w-[60px] h-14 px-3 rounded-xl transition-all text-xs snap-center ${
                 location.pathname === link.to || location.pathname.startsWith(link.to + '/')
                   ? 'text-rose-500 bg-rose-600/10'
