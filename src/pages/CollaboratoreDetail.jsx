@@ -301,31 +301,31 @@ export default function CollaboratoreDetail() {
       {role === 'Setter' && (
         <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-6 border border-white/10">
           <h2 className="text-xl font-semibold text-slate-200 mb-4">Lead Prenotati</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-slate-300">
-              <thead className="text-xs uppercase bg-slate-800/50">
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <table className="w-full text-xs sm:text-sm text-left text-slate-300">
+              <thead className="text-[10px] sm:text-xs uppercase bg-slate-800/50">
                 <tr>
-                  <th className="px-4 py-2">Nome</th>
-                  <th className="px-4 py-2">Numero</th>
-                  <th className="px-4 py-2">Prenotato</th>
-                  <th className="px-4 py-2">Stato</th>
+                  <th className="px-3 sm:px-4 py-2">Nome</th>
+                  <th className="px-3 sm:px-4 py-2">Numero</th>
+                  <th className="px-3 sm:px-4 py-2">Prenotato</th>
+                  <th className="px-3 sm:px-4 py-2 text-center">Stato</th>
                 </tr>
               </thead>
               <tbody>
                 {leads.length > 0 ? leads.map(lead => (
                   <tr key={lead.id} className="border-b border-white/10">
-                    <td className="px-4 py-2">{lead.name}</td>
-                    <td className="px-4 py-2">{lead.number}</td>
-                    <td className="px-4 py-2">{lead.dataPrenotazione} {lead.oraPrenotazione}</td>
-                    <td className="px-4 py-2">
-                      <span className={`px-2 py-1 rounded text-xs ${lead.chiuso ? 'bg-green-600 text-white' : 'bg-yellow-600 text-white'}`}>
+                    <td className="px-3 sm:px-4 py-2 font-medium text-slate-100">{lead.name}</td>
+                    <td className="px-3 sm:px-4 py-2">{lead.number}</td>
+                    <td className="px-3 sm:px-4 py-2 whitespace-nowrap">{lead.dataPrenotazione} {lead.oraPrenotazione}</td>
+                    <td className="px-3 sm:px-4 py-2 text-center">
+                      <span className={`px-2 py-0.5 rounded text-[10px] sm:text-xs ${lead.chiuso ? 'bg-green-600 text-white' : 'bg-yellow-600 text-white'}`}>
                         {lead.chiuso ? 'Chiuso' : 'In attesa'}
                       </span>
                     </td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-slate-400">Nessun lead</td>
+                    <td colSpan={4} className="px-3 sm:px-4 py-8 text-center text-slate-400">Nessun lead</td>
                   </tr>
                 )}
               </tbody>

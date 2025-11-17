@@ -1,6 +1,6 @@
 {
   "name": "MentalFit",
-  "short_name": "MF",
+  "short_name": "MentalFit",
   "description": "Area Personale Coaching",
   "start_url": "/PtPro/#/client-login",
   "display": "standalone",

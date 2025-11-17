@@ -218,26 +218,26 @@ export default function GuideManager() {
       </div>
 
       {/* TABELLA LEAD */}
-      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700 overflow-x-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-cyan-300">Lead dalle Guide ({filteredLeads.length})</h2>
-          <div className="flex gap-2 text-xs">
-            <div className="flex items-center gap-1 bg-slate-700/50 rounded px-2 py-1">
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-6 border border-slate-700 overflow-x-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 sm:mb-4">
+          <h2 className="text-base sm:text-xl font-semibold text-cyan-300">Lead dalle Guide ({filteredLeads.length})</h2>
+          <div className="flex gap-1.5 sm:gap-2 text-[10px] sm:text-xs w-full sm:w-auto">
+            <div className="flex items-center gap-1 bg-slate-700/50 rounded px-2 py-1 flex-1 sm:flex-none">
               <Search size={12} className="text-slate-400" />
               <input 
                 type="text" 
                 value={searchQuery} 
                 onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
                 placeholder="Cerca..." 
-                className="bg-transparent outline-none w-24 text-white"
+                className="bg-transparent outline-none w-full sm:w-24 text-white"
               />
             </div>
-            <select value={filterChiuso} onChange={e => { setFilterChiuso(e.target.value); setCurrentPage(1); }} className="bg-slate-700/50 border border-slate-600 rounded px-2 py-1 text-white">
+            <select value={filterChiuso} onChange={e => { setFilterChiuso(e.target.value); setCurrentPage(1); }} className="bg-slate-700/50 border border-slate-600 rounded px-2 py-1 text-white flex-1 sm:flex-none">
               <option value="tutti">Tutti</option>
               <option value="si">Chiusi</option>
               <option value="no">No</option>
             </select>
-            <select value={filterShowUp} onChange={e => { setFilterShowUp(e.target.value); setCurrentPage(1); }} className="bg-slate-700/50 border border-slate-600 rounded px-2 py-1 text-white">
+            <select value={filterShowUp} onChange={e => { setFilterShowUp(e.target.value); setCurrentPage(1); }} className="bg-slate-700/50 border border-slate-600 rounded px-2 py-1 text-white flex-1 sm:flex-none">
               <option value="tutti">Tutti</option>
               <option value="si">Sì</option>
               <option value="no">No</option>
@@ -245,54 +245,54 @@ export default function GuideManager() {
           </div>
         </div>
 
-        <table className="w-full text-sm text-left text-slate-300">
-          <thead className="text-xs uppercase bg-slate-900/50">
+        <table className="w-full text-[10px] sm:text-sm text-left text-slate-300">
+          <thead className="text-[10px] sm:text-xs uppercase bg-slate-900/50">
             <tr>
-              <th className="px-4 py-3 text-center">Az</th>
-              <th className="px-4 py-3">Data</th>
-              <th className="px-4 py-3">Guida</th>
-              <th className="px-4 py-3">Nome</th>
-              <th className="px-4 py-3">Tel</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">IG</th>
-              <th className="px-4 py-3 text-center">Promo</th>
-              <th className="px-4 py-3 text-center">Dialed</th>
-              <th className="px-4 py-3 text-center">Show</th>
-              <th className="px-4 py-3 text-center">Chiuso</th>
-              <th className="px-4 py-3 text-center">€</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-center">Az</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3">Data</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 hidden md:table-cell">Guida</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3">Nome</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3">Tel</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 hidden lg:table-cell">Email</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 hidden lg:table-cell">IG</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-center hidden md:table-cell">Promo</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-center hidden lg:table-cell">Dialed</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-center">Show</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-center">Chiuso</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-center">€</th>
             </tr>
           </thead>
           <tbody>
             {paginatedLeads.map(l => (
               <tr key={l.id} className="border-b border-white/10">
-                <td className="px-4 py-2 text-center">
+                <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-center">
                   {editingLead === l.id ? (
-                    <div className="flex gap-1 justify-center">
-                      <button onClick={handleSaveLeadEdit} className="text-green-400"><Check size={16} /></button>
-                      <button onClick={handleCancelEdit} className="text-red-400"><X size={16} /></button>
+                    <div className="flex gap-0.5 sm:gap-1 justify-center">
+                      <button onClick={handleSaveLeadEdit} className="text-green-400"><Check size={12} className="sm:hidden" /><Check size={16} className="hidden sm:block" /></button>
+                      <button onClick={handleCancelEdit} className="text-red-400"><X size={12} className="sm:hidden" /><X size={16} className="hidden sm:block" /></button>
                     </div>
                   ) : (
-                    <div className="flex gap-1 justify-center">
-                      <button onClick={() => handleEditLead(l)} className="text-cyan-400"><Edit size={16} /></button>
-                      <button onClick={() => handleDeleteLead(l.id)} className="text-red-400"><Trash2 size={16} /></button>
+                    <div className="flex gap-0.5 sm:gap-1 justify-center">
+                      <button onClick={() => handleEditLead(l)} className="text-cyan-400"><Edit size={12} className="sm:hidden" /><Edit size={16} className="hidden sm:block" /></button>
+                      <button onClick={() => handleDeleteLead(l.id)} className="text-red-400"><Trash2 size={12} className="sm:hidden" /><Trash2 size={16} className="hidden sm:block" /></button>
                     </div>
                   )}
                 </td>
-                <td className="px-4 py-2">{new Date(l.timestamp?.toDate()).toLocaleDateString()}</td>
-                <td className="px-4 py-2">{guides.find(g => g.id === l.guideId)?.name}</td>
-                <td className="px-4 py-2">
+                <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs">{new Date(l.timestamp?.toDate()).toLocaleDateString()}</td>
+                <td className="px-2 sm:px-4 py-1.5 sm:py-2 hidden md:table-cell">{guides.find(g => g.id === l.guideId)?.name}</td>
+                <td className="px-2 sm:px-4 py-1.5 sm:py-2">
                   {editingLead === l.id ? (
                     <input value={editForm.nome} onChange={e => setEditForm({ ...editForm, nome: e.target.value })} className="w-full p-1 bg-slate-700/50 border border-slate-600 rounded text-xs" />
                   ) : l.nome}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-2 sm:px-4 py-1.5 sm:py-2">
                   {editingLead === l.id ? (
                     <input value={editForm.telefono} onChange={e => setEditForm({ ...editForm, telefono: e.target.value })} className="w-full p-1 bg-slate-700/50 border border-slate-600 rounded text-xs" />
                   ) : l.telefono}
                 </td>
-                <td className="px-4 py-2">{l.email}</td>
-                <td className="px-4 py-2">{l.instagram || '—'}</td>
-                <td className="px-4 py-2 text-center">
+                <td className="px-2 sm:px-4 py-1.5 sm:py-2 hidden lg:table-cell">{l.email}</td>
+                <td className="px-2 sm:px-4 py-1.5 sm:py-2 hidden lg:table-cell">{l.instagram || '—'}</td>
+                <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-center hidden md:table-cell">
                   {editingLead === l.id ? (
                     <input type="checkbox" checked={editForm.wantsPromo} onChange={e => setEditForm({ ...editForm, wantsPromo: e.target.checked })} className="w-4 h-4" />
                   ) : l.wantsPromo ? (
@@ -301,22 +301,22 @@ export default function GuideManager() {
                     <span className="text-rose-400 text-xl">X</span>
                   )}
                 </td>
-                <td className="px-4 py-2 text-center">
+                <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-center hidden lg:table-cell">
                   {editingLead === l.id ? (
                     <input type="checkbox" checked={editForm.dialed} onChange={e => setEditForm({ ...editForm, dialed: e.target.checked })} className="w-4 h-4" />
                   ) : <span className={l.dialed ? 'text-green-400' : 'text-yellow-400'}>{l.dialed ? 'Sì' : 'No'}</span>}
                 </td>
-                <td className="px-4 py-2 text-center">
+                <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-center">
                   {editingLead === l.id ? (
                     <input type="checkbox" checked={editForm.showUp} onChange={e => setEditForm({ ...editForm, showUp: e.target.checked })} className="w-4 h-4" />
                   ) : <span className={l.showUp ? 'text-green-400' : 'text-yellow-400'}>{l.showUp ? 'Sì' : 'No'}</span>}
                 </td>
-                <td className="px-4 py-2 text-center">
+                <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-center">
                   {editingLead === l.id ? (
                     <input type="checkbox" checked={editForm.chiuso} onChange={e => setEditForm({ ...editForm, chiuso: e.target.checked })} className="w-4 h-4" />
                   ) : <button onClick={() => setShowAddClient(l)} className={l.chiuso ? 'text-green-400' : 'text-green-400'}>{l.chiuso ? `€${l.importo}` : 'Chiudi'}</button>}
                 </td>
-                <td className="px-4 py-2 text-center">
+                <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-center">
                   {editingLead === l.id ? (
                     <input type="number" value={editForm.importo || ''} onChange={e => setEditForm({ ...editForm, importo: parseFloat(e.target.value) || 0 })} className="w-16 p-1 bg-slate-700/50 border border-slate-600 rounded text-xs text-center" />
                   ) : <span>€{l.importo || 0}</span>}
@@ -327,10 +327,10 @@ export default function GuideManager() {
         </table>
 
         {totalPages > 1 && (
-          <div className="flex justify-center gap-3 mt-4 text-xs">
-            <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-1 text-cyan-300 disabled:opacity-50"><ChevronLeft size={16} /></button>
+          <div className="flex justify-center gap-3 mt-3 sm:mt-4 text-[10px] sm:text-xs">
+            <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-1 text-cyan-300 disabled:opacity-50"><ChevronLeft size={14} className="sm:hidden" /><ChevronLeft size={16} className="hidden sm:block" /></button>
             <span className="text-slate-300">Pag {currentPage}/{totalPages}</span>
-            <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="p-1 text-cyan-300 disabled:opacity-50"><ChevronRight size={16} /></button>
+            <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="p-1 text-cyan-300 disabled:opacity-50"><ChevronRight size={14} className="sm:hidden" /><ChevronRight size={16} className="hidden sm:block" /></button>
           </div>
         )}
       </div>

@@ -658,11 +658,11 @@ export default function Collaboratori() {
                     <th className="px-1 sm:px-2 py-1">Nome</th>
                     <th className="px-1 sm:px-2 py-1 hidden md:table-cell">Fonte</th>
                     <th className="px-1 sm:px-2 py-1 hidden lg:table-cell">Email</th>
-                    <th className="px-1 sm:px-2 py-1 hidden md:table-cell">Num</th>
+                    <th className="px-1 sm:px-2 py-1">Num</th>
                     <th className="px-1 sm:px-2 py-1">Data</th>
-                    <th className="px-1 sm:px-2 py-1 hidden sm:table-cell">Setter</th>
+                    <th className="px-1 sm:px-2 py-1">Setter</th>
                     <th className="px-1 sm:px-2 py-1 text-center hidden lg:table-cell">Dialed</th>
-                    <th className="px-1 sm:px-2 py-1 text-center hidden lg:table-cell">Setting Call</th>
+                    <th className="px-1 sm:px-2 py-1 text-center">Setting Call</th>
                     <th className="px-1 sm:px-2 py-1 text-center">Show-Up</th>
                     <th className="px-1 sm:px-2 py-1 text-center hidden md:table-cell">Target</th>
                     <th className="px-1 sm:px-2 py-1 text-center">Warm</th>
@@ -705,9 +705,9 @@ export default function Collaboratori() {
                       </td>
 
                       <td className="px-1 sm:px-2 py-1 truncate max-w-[100px] hidden lg:table-cell">{lead.email || '—'}</td>
-                      <td className="px-1 sm:px-2 py-1 hidden md:table-cell">{lead.number || '—'}</td>
+                      <td className="px-1 sm:px-2 py-1">{lead.number || '—'}</td>
                       <td className="px-1 sm:px-2 py-1 text-[9px] sm:text-[10px]">{lead.dataPrenotazione ? `${lead.dataPrenotazione.slice(5)} ${lead.oraPrenotazione || ''}` : '—'}</td>
-                      <td className="px-1 sm:px-2 py-1 truncate max-w-[50px] sm:max-w-[70px] hidden sm:table-cell">{lead.collaboratoreNome || '—'}</td>
+                      <td className="px-1 sm:px-2 py-1 truncate max-w-[60px] sm:max-w-[70px]">{lead.collaboratoreNome || '—'}</td>
 
                       <td className="px-1 sm:px-2 py-1 text-center hidden lg:table-cell">
                         {editingLead === lead.id ? (
@@ -715,7 +715,7 @@ export default function Collaboratori() {
                         ) : <span className="font-bold text-cyan-400">{lead.dialed ?? 0}</span>}
                       </td>
 
-                      <td className="px-1 sm:px-2 py-1 text-center hidden lg:table-cell">
+                      <td className="px-1 sm:px-2 py-1 text-center">
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.settingCall || false} onChange={e => setEditForm({ ...editForm, settingCall: e.target.checked })} className="w-3 h-3" />
                         ) : <div className={`font-bold text-[10px] ${lead.settingCall ? 'text-green-400' : 'text-red-400'}`}>{lead.settingCall ? 'Sì' : 'No'}</div>}
