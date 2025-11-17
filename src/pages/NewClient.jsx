@@ -386,15 +386,15 @@ export default function NewClient() {
               </div>
             </div>
           </div>
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-center md:justify-end pt-4 pb-20 md:pb-4">
             <motion.button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition disabled:opacity-50 font-semibold disabled:cursor-not-allowed"
+              className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition disabled:opacity-50 font-semibold disabled:cursor-not-allowed"
               whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
               whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
             >
-              <Save size={16} /> {isSubmitting ? 'Creazione in corso...' : 'Crea Cliente e Genera Password'}
+              <Save size={18} /> {isSubmitting ? 'Creazione in corso...' : 'Crea Cliente'}
             </motion.button>
           </div>
         </form>
