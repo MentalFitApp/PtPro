@@ -60,14 +60,18 @@ const coachNavLinks = [
   { to: '/coach/settings', icon: <Settings size={18} />, label: 'Impostazioni' },
 ];
 
+const collaboratoreNavLinks = [
+  { to: '/collaboratore/dashboard', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
+];
+
 // === PAGINE AUTH (NASCONDI SIDEBAR E NAV) ===
 const AUTH_PAGES = ['/login', '/client-login', '/register', '/reset-password'];
 
 // === BOTTOM NAV MOBILE ===
-const BottomNav = ({ isCoach }) => {
+const BottomNav = ({ isCoach, isCollaboratore }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const links = isCoach ? coachNavLinks : adminNavLinks;
+  const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : adminNavLinks);
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-2xl border-t border-white/10 z-50 md:hidden">
@@ -96,10 +100,10 @@ const BottomNav = ({ isCoach }) => {
 };
 
 // === SIDEBAR COLLASSABILE ===
-const Sidebar = ({ isCoach, isCollapsed, setIsCollapsed }) => {
+const Sidebar = ({ isCoach, isCollaboratore, isCollapsed, setIsCollapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const links = isCoach ? coachNavLinks : adminNavLinks;
+  const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : adminNavLinks);
 
   return (
     <motion.aside
@@ -165,6 +169,7 @@ const Sidebar = ({ isCoach, isCollapsed, setIsCollapsed }) => {
 export default function MainLayout() {
   const location = useLocation();
   const [isCoach, setIsCoach] = useState(false);
+  const [isCollaboratore, setIsCollaboratore] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -175,6 +180,7 @@ export default function MainLayout() {
 
   useEffect(() => {
     setIsCoach(location.pathname.startsWith('/coach'));
+    setIsCollaboratore(location.pathname.startsWith('/collaboratore'));
   }, [location.pathname]);
 
   // Rileva mobile
@@ -195,7 +201,8 @@ export default function MainLayout() {
         {/* SIDEBAR: SOLO SU PAGINE PROTETTE */}
         {showSidebar && (
           <Sidebar 
-            isCoach={isCoach} 
+            isCoach={isCoach}
+            isCollaboratore={isCollaboratore}
             isCollapsed={isSidebarCollapsed} 
             setIsCollapsed={setIsSidebarCollapsed} 
           />
@@ -222,7 +229,7 @@ export default function MainLayout() {
           </main>
 
           {/* BOTTOM NAV: SOLO SU MOBILE */}
-          {showBottomNav && <BottomNav isCoach={isCoach} />}
+          {showBottomNav && <BottomNav isCoach={isCoach} isCollaboratore={isCollaboratore} />}
         </div>
       </div>
 

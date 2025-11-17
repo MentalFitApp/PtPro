@@ -97,33 +97,42 @@ export default function App() {
           const coachDocRef = doc(db, 'roles', 'coaches');
           const collabDocRef = doc(db, 'collaboratori', currentUser.uid);
 
-          const [adminDoc, coachDoc, clientDoc, collabDoc] = await Promise.all([
-            getDoc(adminDocRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
-            getDoc(coachDocRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
-            getDoc(clientDocRef).catch(() => ({ exists: () => false, data: () => ({}) })),
-            getDoc(collabDocRef).catch(() => ({ exists: () => false, data: () => ({}) }))
-          ]);
+          // Prima controlla se è collaboratore (non richiede permessi su roles)
+          const collabDoc = await getDoc(collabDocRef).catch(() => ({ exists: () => false, data: () => ({}) }));
+          const isCurrentUserACollaboratore = collabDoc.exists();
 
-          // === CORREZIONE: NON SOVRASCRIVERE ADMIN ESISTENTI ===
-          if (!adminDoc.exists()) {
-            await setDoc(adminDocRef, { uids: [currentUser.uid] });
-            console.log("Primo admin creato:", currentUser.uid);
-          } else if (!adminDoc.data().uids.includes(currentUser.uid)) {
-            await updateDoc(adminDocRef, {
-              uids: arrayUnion(currentUser.uid)
-            });
-            console.log("Admin aggiunto senza sovrascrivere:", currentUser.uid);
+          // Se è collaboratore, salta controlli admin/coach/client
+          let isCurrentUserAdmin = false;
+          let isCurrentUserACoach = false;
+          let isCurrentUserAClient = false;
+          let adminDoc, coachDoc, clientDoc;
+
+          if (!isCurrentUserACollaboratore) {
+            [adminDoc, coachDoc, clientDoc] = await Promise.all([
+              getDoc(adminDocRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
+              getDoc(coachDocRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
+              getDoc(clientDocRef).catch(() => ({ exists: () => false, data: () => ({}) }))
+            ]);
+
+            // === CORREZIONE: NON SOVRASCRIVERE ADMIN ESISTENTI ===
+            if (!adminDoc.exists()) {
+              await setDoc(adminDocRef, { uids: [currentUser.uid] });
+              console.log("Primo admin creato:", currentUser.uid);
+            } else if (!adminDoc.data().uids.includes(currentUser.uid)) {
+              await updateDoc(adminDocRef, {
+                uids: arrayUnion(currentUser.uid)
+              });
+              console.log("Admin aggiunto senza sovrascrivere:", currentUser.uid);
+            }
+
+            isCurrentUserAdmin = adminDoc.exists() && adminDoc.data().uids.includes(currentUser.uid);
+            isCurrentUserACoach = coachDoc.exists() && coachDoc.data().uids.includes(currentUser.uid);
+            isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
           }
 
-          const isCurrentUserAdmin = adminDoc.exists() && adminDoc.data().uids.includes(currentUser.uid);
-          const isCurrentUserACoach = coachDoc.exists() && coachDoc.data().uids.includes(currentUser.uid);
-          const isCurrentUserAClient = clientDoc.exists() && clientDoc.data().isClient === true;
-          const isCurrentUserACollaboratore = collabDoc.exists() && collabDoc.data().firstLogin !== undefined;
-
-          // PULIZIA RUOLI DOPPI
-          if ((isCurrentUserACoach || isCurrentUserAdmin) && (isCurrentUserAClient || isCurrentUserACollaboratore)) {
+          // PULIZIA RUOLI DOPPI (solo se non è collaboratore)
+          if (!isCurrentUserACollaboratore && (isCurrentUserACoach || isCurrentUserAdmin) && isCurrentUserAClient) {
             await deleteDoc(clientDocRef).catch(() => {});
-            await deleteDoc(collabDocRef).catch(() => {});
           }
 
           let role = null;
@@ -286,9 +295,10 @@ export default function App() {
         </Route>
 
         {/* === ROTTE COLLABORATORI === */}
-        <Route element={authInfo.isCollaboratore ? <ClientLayout /> : <Navigate to="/collaboratore-login" replace />}>
+        <Route element={authInfo.isCollaboratore ? <MainLayout /> : <Navigate to="/collaboratore-login" replace />}>
           <Route path="/collaboratore/first-access" element={<FirstAccess />} />
           <Route path="/collaboratore/dashboard" element={<CollaboratoreDashboard />} />
+          {/* Aggiungi altre rotte future qui se vuoi */}
         </Route>
 
         {/* === DEFAULT === */}
