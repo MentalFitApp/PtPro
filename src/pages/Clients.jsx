@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, auth, toDate, calcolaStatoPercorso, updateStatoPercorso } from "../firebase";
-import { collection, onSnapshot, deleteDoc, doc, getDoc } from "firebase/firestore";
+import { collection, onSnapshot, deleteDoc, doc, getDoc, getDocs } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { 
   UserPlus, FilePenLine, Trash2, Search, ArrowUp, ArrowDown, 
-  CheckCircle, XCircle, Calendar, Clock, AlertCircle, LogOut, Download, FileText, X 
+  CheckCircle, XCircle, Calendar, Clock, AlertCircle, LogOut, Download, FileText, X, Menu, Filter, LayoutGrid, List, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Papa from 'papaparse';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths } from "date-fns";
 
 // --- COMPONENTI UI ---
 const Notification = ({ message, type, onDismiss }) => (
@@ -51,19 +52,12 @@ const exportToCSV = (clients) => {
   link.click();
 };
 
-const PathStatusBadge = ({ status }) => {
-  const styles = {
-    attivo: "bg-emerald-900/80 text-emerald-300 border border-emerald-500/30",
-    rinnovato: "bg-amber-900/80 text-amber-300 border border-amber-500/30",
-    non_rinnovato: "bg-red-900/80 text-red-400 border border-red-500/30",
-    na: "bg-zinc-700/80 text-zinc-300 border border-zinc-500/30",
-  };
-  const labels = { attivo: 'Attivo', rinnovato: 'In Scadenza', non_rinnovato: 'Scaduto', na: 'N/D' };
-  return <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${styles[status] || styles.na}`}>{labels[status] || 'N/D'}</span>;
-};
-
 const AnamnesiBadge = ({ hasAnamnesi }) => (
-  <span className={`px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${hasAnamnesi ? 'bg-green-900/80 text-green-300 border border-green-500/30' : 'bg-gray-700/80 text-gray-300 border border-gray-500/30'}`}>
+  <span className={`px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1 border transition-all ${
+    hasAnamnesi 
+      ? 'bg-emerald-900/40 text-emerald-300 border-emerald-600/50 hover:bg-emerald-900/60' 
+      : 'bg-slate-800/50 text-slate-400 border-slate-700 hover:bg-slate-700/70'
+  }`}>
     <FileText size={12} /> {hasAnamnesi ? 'Inviata' : 'Non Inviata'}
   </span>
 );
@@ -83,20 +77,20 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, clientName }) => (
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md bg-zinc-950/80 rounded-2xl gradient-border p-6 text-center shadow-2xl shadow-black/40"
+          className="w-full max-w-md bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6 text-center shadow-xl"
         >
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-900/50 mb-4">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-900/40 mb-4">
             <AlertCircle className="h-6 w-6 text-red-400" />
           </div>
-          <h3 className="text-lg font-bold text-slate-50">Conferma Eliminazione</h3>
+          <h3 className="text-lg font-bold text-slate-100">Conferma Eliminazione</h3>
           <p className="text-sm text-slate-400 mt-2">
-            Sei sicuro di voler eliminare il cliente <strong className="text-red-400">{clientName}</strong>? L'operazione è irreversibile.
+            Sei sicuro di voler eliminare il cliente <strong className="text-rose-400">{clientName}</strong>? L'operazione è irreversibile.
           </p>
           <div className="mt-6 flex justify-center gap-4">
-            <button onClick={onClose} className="px-6 py-2 text-sm font-semibold text-slate-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors">
+            <button onClick={onClose} className="px-6 py-2 text-sm font-semibold text-slate-300 bg-zinc-900/40 hover:bg-zinc-800/60 rounded-lg transition-colors border border-white/10">
               Annulla
             </button>
-            <button onClick={onConfirm} className="px-6 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+            <button onClick={onConfirm} className="px-6 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors">
               Elimina
             </button>
           </div>
@@ -106,18 +100,98 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, clientName }) => (
   </AnimatePresence>
 );
 
-const FilterButton = ({ active, onClick, label, icon }) => (
-  <button
-    onClick={onClick}
-    className={`px-3 py-1 text-sm rounded-md flex items-center gap-1 transition-colors ${
-      active 
-        ? 'bg-rose-600 text-white' 
-        : 'text-slate-400 hover:bg-white/10'
-    }`}
-  >
-    {icon} {label}
-  </button>
-);
+// --- MAIN LAYOUT (STILE DIPENDENTI) ---
+const MainLayout = ({ children, title, actions, filters, sortButtons, viewToggle, calendarToggle }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#1b2735] to-[#090a0f]">
+      {/* HEADER */}
+      <header className="sticky top-0 z-40 bg-zinc-900/30 backdrop-blur-xl border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden p-2 rounded-md text-slate-400 hover:text-slate-200 hover:bg-white/10"
+              >
+                <Menu size={20} />
+              </button>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-100">{title}</h1>
+            </div>
+
+            <div className="hidden lg:flex items-center gap-3">
+              {actions}
+            </div>
+
+            <div className="lg:hidden flex items-center gap-2">
+              <button
+                onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+                className="p-2 rounded-md text-slate-400 hover:text-slate-200 hover:bg-white/10"
+              >
+                <Filter size={18} />
+              </button>
+              {actions}
+            </div>
+          </div>
+        </div>
+
+        {/* MENU MOBILE */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: 'auto' }}
+              exit={{ height: 0 }}
+              className="lg:hidden border-t border-white/10 bg-zinc-900/30 backdrop-blur-xl"
+            >
+              <div className="px-4 py-3 space-y-2">
+                {actions}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* FILTRO MOBILE */}
+        <AnimatePresence>
+          {mobileFiltersOpen && (
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: 'auto' }}
+              exit={{ height: 0 }}
+              className="lg:hidden border-t border-white/10 bg-zinc-900/30 backdrop-blur-xl"
+            >
+              <div className="px-4 py-3 space-y-3">
+                <div className="flex flex-wrap gap-2">{filters}</div>
+                <div className="flex flex-wrap gap-2">{sortButtons}</div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
+
+      {/* FILTRO + TOGGLE CALENDARIO DESKTOP */}
+      <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <div className="bg-zinc-900/30 backdrop-blur-xl border border-white/10 rounded-2xl p-3 mb-4">
+          <div className="flex flex-wrap gap-2 items-center">
+            {filters}
+            <div className="ml-auto flex gap-2">
+              {calendarToggle}
+              {viewToggle}
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 mb-6">{sortButtons}</div>
+      </div>
+
+      {/* CONTENUTO */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {children}
+      </main>
+    </div>
+  );
+};
 
 export default function Clients() {
   const navigate = useNavigate();
@@ -129,7 +203,38 @@ export default function Clients() {
   const [sortField, setSortField] = useState('startDate');
   const [sortDirection, setSortDirection] = useState('desc');
   const [anamnesiStatus, setAnamnesiStatus] = useState({});
+  const [viewMode, setViewMode] = useState('list'); // 'list' o 'card'
   const [notification, setNotification] = useState({ message: '', type: '' });
+  const [meseCalendario, setMeseCalendario] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(true); // NUOVO
+  const [paymentsTotals, setPaymentsTotals] = useState({});
+  const [dayModalOpen, setDayModalOpen] = useState(false);
+  const [dayModalDate, setDayModalDate] = useState(null);
+  const [dayModalClients, setDayModalClients] = useState([]);
+
+  const openDayModal = (giorno) => {
+    const clientsAdded = clients.filter(c => {
+      const created = toDate(c.createdAt);
+      const start = toDate(c.startDate);
+      const referenceDate = created || start;
+      return referenceDate && isSameDay(referenceDate, giorno);
+    });
+    setDayModalDate(giorno);
+    setDayModalClients(clientsAdded);
+    setDayModalOpen(true);
+  };
+
+  // --- TOGGLE CALENDARIO ---
+  const calendarToggle = (
+    <button
+      onClick={() => setShowCalendar(prev => !prev)}
+      className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+        showCalendar ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-300'
+      }`}
+    >
+      <Calendar size={14} /> Calendario
+    </button>
+  );
 
   const showNotification = (message, type = 'error') => {
     setNotification({ message, type });
@@ -145,7 +250,7 @@ export default function Clients() {
     }
   };
 
-  // --- CARICA CLIENTI + ANAMNESI ---
+  // --- CARICA CLIENTI ---
   useEffect(() => {
     const role = sessionStorage.getItem('app_role');
     if (role !== 'admin') {
@@ -159,18 +264,17 @@ export default function Clients() {
         const clientList = snap.docs.map(doc => {
           const data = doc.data();
           return {
-            id: doc.id, // GARANTITO
+            id: doc.id,
             name: data.name,
             email: data.email,
             phone: data.phone,
             scadenza: data.scadenza,
             startDate: data.startDate,
+            createdAt: data.createdAt,
             statoPercorso: data.statoPercorso || calcolaStatoPercorso(data.scadenza),
             payments: data.payments || []
           };
         });
-
-        console.log('Clienti caricati:', clientList); // DEBUG
 
         const anamnesiPromises = clientList.map(client => 
           getDoc(doc(db, `clients/${client.id}/anamnesi`, 'initial')).catch(() => ({ exists: () => false }))
@@ -181,6 +285,21 @@ export default function Clients() {
           anamnesiStatusTemp[client.id] = anamnesiResults[i].exists();
         });
         setAnamnesiStatus(anamnesiStatusTemp);
+
+        // Calcolo totale pagamenti per cliente dalla subcollection `payments`
+        const paymentsPromises = clientList.map(async (client) => {
+          try {
+            const snapPayments = await getDocs(collection(db, 'clients', client.id, 'payments'));
+            const sum = snapPayments.docs.reduce((acc, d) => acc + (d.data().amount || 0), 0);
+            return { id: client.id, sum };
+          } catch (e) {
+            return { id: client.id, sum: 0 };
+          }
+        });
+        const paymentsResults = await Promise.all(paymentsPromises);
+        const paymentsTotalsTemp = {};
+        paymentsResults.forEach(({ id, sum }) => { paymentsTotalsTemp[id] = sum; });
+        setPaymentsTotals(paymentsTotalsTemp);
 
         clientList.forEach(client => updateStatoPercorso(client.id));
         setClients(clientList);
@@ -238,45 +357,26 @@ export default function Clients() {
       const daysToExpiry = expiry ? Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)) : null;
 
       switch (filter) {
-        case 'active':
-          return expiry && expiry > now;
-        case 'expiring':
-          return expiry && daysToExpiry <= 15 && daysToExpiry > 0;
-        case 'expired':
-          return expiry && expiry < now;
-        case 'no-check':
-          return !anamnesiStatus[client.id];
-        case 'has-check':
-          return anamnesiStatus[client.id];
-        default:
-          return true;
+        case 'active': return expiry && expiry > now;
+        case 'expiring': return expiry && daysToExpiry <= 15 && daysToExpiry > 0;
+        case 'expired': return expiry && expiry < now;
+        case 'no-check': return !anamnesiStatus[client.id];
+        case 'has-check': return anamnesiStatus[client.id];
+        case 'recent': return true;
+        default: return true;
       }
     });
 
     filtered.sort((a, b) => {
       let aVal, bVal;
-
       switch (sortField) {
-        case 'name':
-          aVal = a.name || '';
-          bVal = b.name || '';
-          break;
-        case 'startDate':
-          aVal = toDate(a.startDate) || new Date(0);
-          bVal = toDate(b.startDate) || new Date(0);
-          break;
-        case 'expiry':
-          aVal = toDate(a.scadenza) || new Date(0);
-          bVal = toDate(b.scadenza) || new Date(0);
-          break;
-        case 'lastCheck':
-          aVal = anamnesiStatus[a.id] ? 1 : 0;
-          bVal = anamnesiStatus[b.id] ? 1 : 0;
-          break;
-        default:
-          aVal = 0; bVal = 0;
+        case 'name': aVal = a.name || ''; bVal = b.name || ''; break;
+        case 'startDate': aVal = toDate(a.startDate) || new Date(0); bVal = toDate(b.startDate) || new Date(0); break;
+        case 'expiry': aVal = toDate(a.scadenza) || new Date(0); bVal = toDate(b.scadenza) || new Date(0); break;
+        case 'lastCheck': aVal = anamnesiStatus[a.id] ? 1 : 0; bVal = anamnesiStatus[b.id] ? 1 : 0; break;
+        case 'recent': aVal = toDate(a.startDate) || new Date(0); bVal = toDate(b.startDate) || new Date(0); break;
+        default: aVal = 0; bVal = 0;
       }
-
       if (aVal < bVal) return sortDirection === 'desc' ? 1 : -1;
       if (aVal > bVal) return sortDirection === 'desc' ? -1 : 1;
       return 0;
@@ -285,8 +385,104 @@ export default function Clients() {
     return filtered;
   }, [clients, searchQuery, filter, sortField, sortDirection, anamnesiStatus]);
 
+  // --- CALENDARIO ISCRIZIONI (CLIENTI AGGIUNTI) ---
+  const giorniMese = eachDayOfInterval({
+    start: startOfMonth(meseCalendario),
+    end: endOfMonth(meseCalendario),
+  });
+
+  const clientiDelGiorno = (giorno) => {
+    return filteredAndSortedClients.filter(c => {
+      const created = toDate(c.createdAt);
+      const start = toDate(c.startDate);
+      const refDate = created || start;
+      return refDate && isSameDay(refDate, giorno);
+    });
+  };
+
+  // --- TOGGLE VISTA ---
+  const viewToggle = (
+    <div className="flex items-center gap-1 bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-lg p-1">
+      <button
+        onClick={() => setViewMode('list')}
+        className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+        title="Lista"
+      >
+        <List size={16} />
+      </button>
+      <button
+        onClick={() => setViewMode('card')}
+        className={`p-2 rounded-md transition-colors ${viewMode === 'card' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+        title="Schede"
+      >
+        <LayoutGrid size={16} />
+      </button>
+    </div>
+  );
+
+  // --- AZIONI HEADER ---
+  const actions = (
+    <>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
+        <input
+          value={searchQuery} 
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-lg px-3 py-2 pl-10 w-full min-w-48 outline-none focus:ring-2 focus:ring-rose-500 text-sm text-slate-200 placeholder:text-slate-500"
+          placeholder="Cerca..."
+        />
+      </div>
+      <button onClick={() => navigate("/new-client")} className="flex items-center gap-2 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors">
+        <UserPlus size={16} /> Nuovo
+      </button>
+      <button onClick={() => exportToCSV(clients)} className="flex items-center gap-2 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors">
+        <Download size={16} /> CSV
+      </button>
+      <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors">
+        <LogOut size={16} /> Logout
+      </button>
+      <div className="flex gap-2 ml-2">
+        {calendarToggle}
+        {viewToggle}
+      </div>
+    </>
+  );
+
+  // --- FILTRO BARRA ---
+  const filters = (
+    <>
+      <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${filter === 'all' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Tutti</button>
+      <button onClick={() => setFilter('active')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'active' ? 'bg-emerald-600 text-white' : 'text-emerald-400 hover:bg-emerald-900/30'}`}><CheckCircle size={14} /> Attivi</button>
+      <button onClick={() => setFilter('expiring')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'expiring' ? 'bg-amber-600 text-white' : 'text-amber-400 hover:bg-amber-900/30'}`}><Clock size={14} /> In Scadenza</button>
+      <button onClick={() => setFilter('expired')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'expired' ? 'bg-red-600 text-white' : 'text-red-400 hover:bg-red-900/30'}`}><AlertCircle size={14} /> Scaduti</button>
+      <button onClick={() => setFilter('has-check')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'has-check' ? 'bg-cyan-600 text-white' : 'text-cyan-400 hover:bg-cyan-900/30'}`}><CheckCircle size={14} /> Con Anamnesi</button>
+      <button onClick={() => setFilter('no-check')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'no-check' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:bg-gray-900/30'}`}><XCircle size={14} /> Senza Anamnesi</button>
+      <button onClick={() => { setFilter('recent'); setSortField('recent'); setSortDirection('desc'); }} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'recent' ? 'bg-purple-600 text-white' : 'text-purple-400 hover:bg-purple-900/30'}`}><Calendar size={14} /> Più Recenti</button>
+    </>
+  );
+
+  // --- PULSANTI ORDINAMENTO ---
+  const sortButtons = (
+    <>
+      <button onClick={() => toggleSort('name')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${sortField === 'name' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>
+        Nome {getSortIcon('name')}
+      </button>
+      <button onClick={() => toggleSort('startDate')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${sortField === 'startDate' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>
+        Inizio {getSortIcon('startDate')}
+      </button>
+      <button onClick={() => toggleSort('expiry')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${sortField === 'expiry' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>
+        Scadenza {getSortIcon('expiry')}
+      </button>
+      <button onClick={() => toggleSort('lastCheck')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${sortField === 'lastCheck' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>
+        Anamnesi {getSortIcon('lastCheck')}
+      </button>
+    </>
+  );
+
+  
+
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#1b2735] to-[#090a0f]">
       <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
     </div>
   );
@@ -296,127 +492,302 @@ export default function Clients() {
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
       <ConfirmationModal isOpen={!!clientToDelete} onClose={() => setClientToDelete(null)} onConfirm={handleDelete} clientName={clientToDelete?.name} />
 
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <h1 className="text-3xl font-bold text-slate-50">Gestione Clienti</h1>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative w-full md:w-auto">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
-              <input
-                value={searchQuery} 
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-zinc-900/70 border border-white/10 rounded-lg px-3 py-2 pl-10 w-full md:w-64 outline-none focus:ring-2 focus:ring-rose-500"
-                placeholder="Cerca per nome o email..."
-              />
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
+        {/* HEADER + FILTRI + ORDINAMENTO */}
+        <div className="bg-zinc-900/30 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-5">
+          {/* HEADER */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">Gestione Clienti</h1>
+            <div className="flex flex-wrap gap-3">
+              {actions}
             </div>
-            <button onClick={() => navigate("/new-client")} className="flex items-center justify-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg transition-colors">
-              <UserPlus size={16} /> Nuovo
-            </button>
-            <button onClick={() => exportToCSV(clients)} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg transition-colors">
-              <Download size={16} /> Esporta CSV
-            </button>
-            <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg transition-colors">
-              <LogOut size={16} /> Logout
-            </button>
+          </div>
+
+          {/* SEPARATORE */}
+          <div className="border-t border-white/10"></div>
+
+          {/* FILTRI */}
+          <div>
+            <h3 className="text-xs font-semibold text-slate-400 uppercase mb-3">Filtri</h3>
+            <div className="flex flex-wrap gap-2">
+              {filters}
+            </div>
+          </div>
+
+          {/* SEPARATORE */}
+          <div className="border-t border-white/10"></div>
+
+          {/* ORDINAMENTO */}
+          <div>
+            <h3 className="text-xs font-semibold text-slate-400 uppercase mb-3">Ordinamento</h3>
+            <div className="flex flex-wrap gap-2">
+              {sortButtons}
+            </div>
           </div>
         </div>
 
-        {/* Filtri */}
-        <div className="flex flex-wrap gap-2 p-2 bg-zinc-900/70 border border-white/10 rounded-lg">
-          <FilterButton active={filter === 'all'} onClick={() => setFilter('all')} label="Tutti" />
-          <FilterButton active={filter === 'active'} onClick={() => setFilter('active')} label="Attivi" icon={<CheckCircle className="text-emerald-500" size={14} />} />
-          <FilterButton active={filter === 'expiring'} onClick={() => setFilter('expiring')} label="In Scadenza" icon={<Clock className="text-amber-500" size={14} />} />
-          <FilterButton active={filter === 'expired'} onClick={() => setFilter('expired')} label="Scaduti" icon={<AlertCircle className="text-red-500" size={14} />} />
-          <FilterButton active={filter === 'has-check'} onClick={() => setFilter('has-check')} label="Con Anamnesi" icon={<CheckCircle className="text-cyan-500" size={14} />} />
-          <FilterButton active={filter === 'no-check'} onClick={() => setFilter('no-check')} label="Senza Anamnesi" icon={<XCircle className="text-gray-500" size={14} />} />
-        </div>
+        {/* CALENDARIO SCADENZE */}
+        {showCalendar && (
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700 shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <button onClick={() => setMeseCalendario(addMonths(meseCalendario, -1))} className="p-2 hover:bg-slate-700 rounded-lg transition">
+                <ChevronLeft size={20} className="text-slate-400" />
+              </button>
+              <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                <Calendar size={20} /> {format(meseCalendario, "MMMM yyyy")}
+              </h3>
+              <button onClick={() => setMeseCalendario(addMonths(meseCalendario, 1))} className="p-2 hover:bg-slate-700 rounded-lg transition">
+                <ChevronRight size={20} className="text-slate-400" />
+              </button>
+            </div>
 
-        {/* Tabella */}
-        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] text-sm text-left text-slate-300">
-              <thead className="bg-white/5 text-slate-400 uppercase text-xs sticky top-0 z-10">
-                <tr>
-                  <th className="p-4 cursor-pointer hover:text-rose-400 flex items-center gap-1 min-w-[180px]" onClick={() => toggleSort('name')}>
-                    Nome {getSortIcon('name')}
-                  </th>
-                  <th className="p-4 cursor-pointer hover:text-rose-400 flex items-center gap-1 min-w-[140px]" onClick={() => toggleSort('startDate')}>
-                    Inizio {getSortIcon('startDate')}
-                  </th>
-                  <th className="p-4 cursor-pointer hover:text-rose-400 flex items-center gap-1 min-w-[160px]" onClick={() => toggleSort('expiry')}>
-                    Scadenza {getSortIcon('expiry')}
-                  </th>
-                  <th className="p-4 cursor-pointer hover:text-rose-400 flex items-center gap-1 min-w-[160px]" onClick={() => toggleSort('lastCheck')}>
-                    Anamnesi {getSortIcon('lastCheck')}
-                  </th>
-                  <th className="p-4 text-right min-w-[120px]">Azioni</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAndSortedClients.map((c) => {
-                  const expiry = toDate(c.scadenza);
-                  const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
-
-                  return (
-                    <tr key={c.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
-                      <td className="p-4 font-medium min-w-[180px]">
-                        {c.id ? (
-                          <button
-                            onClick={() => {
-                              console.log('Navigazione a cliente:', c.id);
-                              navigate(`/client/${c.id}`);
-                            }}
-                            className="hover:underline hover:text-rose-400"
-                          >
-                            {c.name || "-"}
-                          </button>
-                        ) : (
-                          <span className="text-red-400">ID mancante</span>
-                        )}
-                      </td>
-                      <td className="p-4 min-w-[140px]">
-                        {toDate(c.startDate)?.toLocaleDateString('it-IT') || 'N/D'}
-                      </td>
-                      <td className="p-4 min-w-[160px]">
-                        {expiry ? (
-                          <div className="flex items-center gap-2">
-                            <span>{expiry.toLocaleDateString('it-IT')}</span>
-                            {daysToExpiry !== null && (
-                              <span className={`text-xs px-2 py-1 rounded-full ${
-                                daysToExpiry < 0 ? 'bg-red-900/80 text-red-300' :
-                                daysToExpiry <= 7 ? 'bg-amber-900/80 text-amber-300' :
-                                'bg-emerald-900/80 text-emerald-300'
-                              }`}>
-                                {daysToExpiry < 0 ? 'Scaduto' : `${daysToExpiry} gg`}
-                              </span>
-                            )}
-                          </div>
-                        ) : 'N/D'}
-                      </td>
-                      <td className="p-4 min-w-[160px]">
-                        <AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} />
-                      </td>
-                      <td className="p-4 text-right min-w-[120px]">
-                        <div className="flex items-center gap-2 justify-end">
-                          <button onClick={() => navigate(`/edit/${c.id}`)} className="p-2 text-slate-400 hover:text-amber-400 hover:bg-white/10 rounded-md" title="Modifica"><FilePenLine size={16}/></button>
-                          <button onClick={() => setClientToDelete(c)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-white/10 rounded-md" title="Elimina"><Trash2 size={16}/></button>
+            <div className="grid grid-cols-7 gap-3 text-center text-sm">
+              {['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'].map(d => (
+                <div key={d} className="font-bold text-slate-400 py-2">{d}</div>
+              ))}
+              {Array.from({ length: startOfMonth(meseCalendario).getDay() }, (_, i) => (
+                <div key={`empty-${i}`} />
+              ))}
+              {giorniMese.map(giorno => {
+                const clientiGiorno = clientiDelGiorno(giorno);
+                return (
+                  <div
+                    onClick={() => openDayModal(giorno)}
+                    key={giorno.toISOString()}
+                    className={`min-h-28 p-3 rounded-xl border-2 transition-all cursor-pointer
+                      ${clientiGiorno.length > 0 
+                        ? 'bg-rose-900/40 border-rose-600 hover:bg-rose-900/60' 
+                        : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/70'
+                      }`}
+                  >
+                    <p className="text-sm font-bold text-slate-300 mb-1">{format(giorno, "d")}</p>
+                    <div className="space-y-1.5 max-h-20 overflow-y-auto">
+                      {clientiGiorno.map(c => (
+                      <motion.div
+                        key={c.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-gradient-to-r from-rose-600/30 to-purple-600/30 p-2 rounded-lg text-xs flex justify-between items-center"
+                      >
+                        <div>
+                          <p className="font-semibold text-rose-300">{c.name}</p>
+                          <p className="text-cyan-300">{toDate(c.scadenza)?.toLocaleDateString('it-IT')}</p>
                         </div>
+                        <div className="flex gap-1">
+                          <button onClick={(e) => { e.stopPropagation(); navigate(`/edit/${c.id}`); }} className="text-cyan-400 hover:text-cyan-300">
+                            <FilePenLine size={14} />
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); setClientToDelete(c); }} className="text-red-400 hover:text-red-300">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                  {clientiGiorno.length === 0 && (
+                    <p className="text-xs text-slate-500 italic mt-2">Nessuna scadenza</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        )}
+
+        {/* VISTA LISTA */}
+        {viewMode === 'list' && (
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700 shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[800px] text-sm text-left text-slate-300">
+                <thead className="text-slate-400 uppercase text-xs">
+                  <tr>
+                    <th className="p-4 min-w-[180px] font-bold"><span className="hidden sm:inline">Nome</span><span className="sm:hidden">Cliente</span></th>
+                    <th className="p-4 min-w-[140px] font-bold">Inizio</th>
+                    <th className="p-4 min-w-[160px] font-bold">Scadenza</th>
+                    <th className="p-4 min-w-[160px] font-bold">Anamnesi</th>
+                    <th className="p-4 text-right min-w-[120px] font-bold">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAndSortedClients.map((c) => {
+                    const expiry = toDate(c.scadenza);
+                    const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                    const totalPayments = paymentsTotals[c.id] ?? 0;
+
+                    return (
+                      <tr key={c.id} className="border-t border-white/10 hover:bg-white/10 transition-all">
+                        <td className="p-4 font-medium min-w-[180px]">
+                          <div className="flex items-center justify-between gap-3">
+                            <button onClick={() => navigate(`/client/${c.id}`)} className="text-left hover:text-rose-400 transition-colors">
+                              {c.name || "-"}
+                            </button>
+                            <span className="text-xs px-2 py-1 rounded-full bg-cyan-900/40 text-cyan-300 border border-cyan-600/50">
+                              €{totalPayments.toFixed(2)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4 min-w-[140px]">{toDate(c.startDate)?.toLocaleDateString('it-IT') || 'N/D'}</td>
+                        <td className="p-4 min-w-[160px]">
+                          {expiry ? (
+                            <div className="flex items-center gap-2">
+                              <span>{expiry.toLocaleDateString('it-IT')}</span>
+                              {daysToExpiry !== null && (
+                                <span className={`text-xs px-2 py-1 rounded-full font-medium transition-all ${
+                                  daysToExpiry < 0 ? 'bg-red-900/40 text-red-300 border border-red-600/50 hover:bg-red-900/60' 
+                                  : daysToExpiry <= 7 ? 'bg-amber-900/40 text-amber-300 border border-amber-600/50 hover:bg-amber-900/60'
+                                  : 'bg-emerald-900/40 text-emerald-300 border border-emerald-600/50 hover:bg-emerald-900/60'
+                                }`}>
+                                  {daysToExpiry < 0 ? 'Scaduto' : `${daysToExpiry} gg`}
+                                </span>
+                              )}
+                            </div>
+                          ) : 'N/D'}
+                        </td>
+                        <td className="p-4 min-w-[160px]"><AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} /></td>
+                        <td className="p-4 text-right min-w-[120px]">
+                          <div className="flex items-center gap-1 justify-end">
+                            <button onClick={() => navigate(`/edit/${c.id}`)} className="p-2 text-slate-400 hover:text-amber-400 hover:bg-white/10 rounded-lg transition-all" title="Modifica">
+                              <FilePenLine size={16}/>
+                            </button>
+                            <button onClick={() => setClientToDelete(c)} className="p-2 text-slate-400 hover:text-red-400 hover:bg-white/10 rounded-lg transition-all" title="Elimina">
+                              <Trash2 size={16}/>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filteredAndSortedClients.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="text-center p-8 text-slate-500 italic">
+                        Nessun cliente trovato con i filtri selezionati.
                       </td>
                     </tr>
-                  );
-                })}
-                {filteredAndSortedClients.length === 0 && (
-                  <tr>
-                    <td colSpan="5" className="text-center p-8 text-slate-400">
-                      Nessun cliente trovato con i filtri selezionati.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* VISTA CARD */}
+        {viewMode === 'card' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredAndSortedClients.map((c) => {
+              const expiry = toDate(c.scadenza);
+              const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
+              const totalPayments = paymentsTotals[c.id] ?? 0;
+
+              return (
+                <div key={c.id} className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-5 border border-slate-700 hover:border-slate-600 transition-all">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-100">{c.name}</h3>
+                      <p className="text-xs text-rose-400">{c.email}</p>
+                      <p className="text-xs text-slate-500">{c.phone || 'N/D'}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => navigate(`/client/${c.id}`)} className="text-xs text-cyan-400 hover:text-cyan-300">Dettagli</button>
+                      <button onClick={() => setClientToDelete(c)} className="text-xs text-red-400 hover:text-red-300">Elimina</button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-400">Inizio</span><span className="text-slate-300">{toDate(c.startDate)?.toLocaleDateString('it-IT') || 'N/D'}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Scadenza</span><span className={`font-medium ${daysToExpiry < 0 ? 'text-red-400' : daysToExpiry <= 7 ? 'text-amber-400' : 'text-emerald-400'}`}>{expiry?.toLocaleDateString('it-IT') || 'N/D'}</span></div>
+                    {daysToExpiry !== null && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Giorni</span>
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          daysToExpiry < 0 ? 'bg-red-900/40 text-red-300 border border-red-600/50' :
+                          daysToExpiry <= 7 ? 'bg-amber-900/40 text-amber-300 border border-amber-600/50' :
+                          'bg-emerald-900/40 text-emerald-300 border border-emerald-600/50'
+                        }`}>
+                          {daysToExpiry < 0 ? 'Scaduto' : `${daysToExpiry} gg`}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between"><span className="text-slate-400">Pagamenti</span><span className="font-medium text-cyan-400">€{totalPayments.toFixed(2)}</span></div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-white/10"><AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} /></div>
+
+                  <div className="mt-4 flex gap-2">
+                    <button onClick={() => navigate(`/edit/${c.id}`)} className="flex-1 py-2 bg-rose-600 text-white text-xs rounded-lg hover:bg-rose-700 transition font-medium">
+                      Modifica
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* MODAL: CLIENTI AGGIUNTI NEL GIORNO */}
+      <AnimatePresence>
+        {dayModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setDayModalOpen(false)}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6 shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-slate-100">
+                  Clienti aggiunti il {dayModalDate ? new Date(dayModalDate).toLocaleDateString('it-IT') : ''}
+                </h3>
+                <button onClick={() => setDayModalOpen(false)} className="p-1.5 rounded-full hover:bg-white/10">
+                  <X size={18} className="text-slate-300" />
+                </button>
+              </div>
+
+              {dayModalClients.length > 0 ? (
+                <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                  {dayModalClients.map(c => (
+                    <div key={c.id} className="bg-slate-800/60 border border-slate-700 rounded-xl p-4 flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="text-slate-100 font-semibold">{c.name}</p>
+                        <p className="text-xs text-rose-300">{c.email}</p>
+                        <div className="flex gap-3 text-xs text-slate-400">
+                          <span>Inizio: {toDate(c.startDate)?.toLocaleDateString('it-IT') || 'N/D'}</span>
+                          <span>Scadenza: {toDate(c.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs px-2 py-1 rounded-full bg-cyan-900/40 text-cyan-300 border border-cyan-600/50">
+                          €{(paymentsTotals[c.id] ?? 0).toFixed(2)}
+                        </span>
+                        <button onClick={() => navigate(`/client/${c.id}`)} className="px-3 py-1.5 text-xs rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition-colors">
+                          Dettagli
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-400 text-sm">Nessun cliente aggiunto in questa data.</p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* PULSANTE NUOVO CLIENTE */}
+      <button
+        onClick={() => navigate("/new-client")}
+        className="fixed bottom-6 right-6 w-14 h-14 bg-rose-600 text-white rounded-full shadow-lg hover:bg-rose-700 transition flex items-center justify-center text-3xl font-bold"
+      >
+        +
+      </button>
     </>
   );
 }

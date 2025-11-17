@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { 
-  LayoutGrid, Users, MessageSquare, FileText, Bell, 
-  Calendar, Settings, DollarSign, Home, ChevronLeft, ChevronRight, BarChart3 
+  Home, Users, MessageSquare, FileText, Bell, 
+  Calendar, Settings, ChevronLeft, ChevronRight, BarChart3 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// === STELLE OTTIMIZZATE (25 TOTALI, 5 DORATE, NO LAG) ===
+// === STELLE DI SFONDO (25, 5 DORATE) ===
 const AnimatedStars = () => {
   const [initialized, setInitialized] = useState(false);
 
@@ -17,7 +17,6 @@ const AnimatedStars = () => {
     container.className = 'stars';
     document.body.appendChild(container);
 
-    // SOLO 25 STELLE
     for (let i = 0; i < 25; i++) {
       const star = document.createElement('div');
       star.className = 'star';
@@ -28,7 +27,6 @@ const AnimatedStars = () => {
       star.style.setProperty('--fall-duration', `${10 + Math.random() * 10}s`);
       star.style.setProperty('--fall-delay', `${Math.random() * 8}s`);
 
-      // OGNI 5a STELLA = DORATA
       if (i % 5 === 0) star.classList.add('gold');
 
       container.appendChild(star);
@@ -40,7 +38,7 @@ const AnimatedStars = () => {
   return null;
 };
 
-// === LINKS ===
+// === LINKS NAVIGAZIONE ===
 const adminNavLinks = [
   { to: '/admin', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
   { to: '/clients', icon: <Users size={18} />, label: 'Clienti' },
@@ -62,40 +60,35 @@ const coachNavLinks = [
   { to: '/coach/settings', icon: <Settings size={18} />, label: 'Impostazioni' },
 ];
 
-// === MOBILE NAV ===
-const MobileNavLink = ({ to, icon, label, isActive }) => {
-  const navigate = useNavigate();
-  return (
-    <motion.button
-      onClick={() => navigate(to)}
-      className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl transition-all text-xs ${
-        isActive ? 'text-rose-500 bg-rose-600/10' : 'text-slate-400 hover:text-rose-400'
-      }`}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.95 }}
-    >
-      {icon}
-      <span className="text-[10px] mt-1">{label}</span>
-    </motion.button>
-  );
-};
+// === PAGINE AUTH (NASCONDI SIDEBAR E NAV) ===
+const AUTH_PAGES = ['/login', '/client-login', '/register', '/reset-password'];
 
+// === BOTTOM NAV MOBILE ===
 const BottomNav = ({ isCoach }) => {
   const location = useLocation();
   const links = isCoach ? coachNavLinks : adminNavLinks;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-2xl border-t border-white/10 z-50 md:hidden">
-      <div className="flex justify-around items-center py-2 px-1">
-        {links.map(link => (
-          <MobileNavLink
-            key={link.to}
-            to={link.to}
-            icon={link.icon}
-            label={link.label}
-            isActive={location.pathname === link.to || location.pathname.startsWith(link.to + '/')}
-          />
-        ))}
+      <div className="px-2 py-2">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hidden snap-x snap-mandatory">
+          {links.map(link => (
+            <motion.button
+              key={link.to}
+              onClick={() => window.location.href = link.to}
+              className={`flex flex-col items-center justify-center min-w-[60px] h-14 px-3 rounded-xl transition-all text-xs snap-center ${
+                location.pathname === link.to || location.pathname.startsWith(link.to + '/')
+                  ? 'text-rose-500 bg-rose-600/10'
+                  : 'text-slate-400 hover:text-rose-400'
+              }`}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {link.icon}
+              <span className="text-[10px] mt-1 truncate w-full">{link.label}</span>
+            </motion.button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -167,44 +160,81 @@ const Sidebar = ({ isCoach, isCollapsed, setIsCollapsed }) => {
   );
 };
 
-// === MAIN LAYOUT ===
+// === MAIN LAYOUT INTELLIGENTE ===
 export default function MainLayout() {
   const location = useLocation();
   const [isCoach, setIsCoach] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Determina se è pagina auth
+  const isAuthPage = AUTH_PAGES.includes(location.pathname);
+  const showSidebar = !isAuthPage;
+  const showBottomNav = !isAuthPage && isMobile;
 
   useEffect(() => {
     setIsCoach(location.pathname.startsWith('/coach'));
   }, [location.pathname]);
 
+  // Rileva mobile
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
     <>
-      {/* SFONDO STELLATO */}
+      {/* SFONDO STELLATO GLOBALE */}
       <div className="starry-background"></div>
-      <AnimatedStars /> {/* TUTTO QUI, NESSUN FILE EXTRA */}
+      <AnimatedStars />
 
       <div className="relative min-h-screen flex">
-        <Sidebar 
-          isCoach={isCoach} 
-          isCollapsed={isSidebarCollapsed} 
-          setIsCollapsed={setIsSidebarCollapsed} 
-        />
+        {/* SIDEBAR: SOLO SU PAGINE PROTETTE */}
+        {showSidebar && (
+          <Sidebar 
+            isCoach={isCoach} 
+            isCollapsed={isSidebarCollapsed} 
+            setIsCollapsed={setIsSidebarCollapsed} 
+          />
+        )}
 
-        <div className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'md:ml-16' : 'md:ml-60'} ml-0`}>
-          <main className="min-h-screen p-4 sm:p-5 lg:p-6 xl:p-8 pb-20 md:pb-8">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="w-full max-w-none mx-auto"
-            >
-              <Outlet />
-            </motion.div>
+        {/* CONTENUTO PRINCIPALE - LARGHEZZA MASSIMA DESKTOP */}
+        <div className={`flex-1 transition-all duration-300 ${
+          showSidebar 
+            ? (isSidebarCollapsed ? 'md:ml-16' : 'md:ml-60') 
+            : 'ml-0'
+        }`}>
+          <main className="min-h-screen p-4 sm:p-6 lg:p-8">
+            <div className="max-w-7xl mx-auto w-full">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="w-full"
+              >
+                <Outlet />
+              </motion.div>
+            </div>
           </main>
-          <BottomNav isCoach={isCoach} />
+
+          {/* BOTTOM NAV: SOLO SU MOBILE */}
+          {showBottomNav && <BottomNav isCoach={isCoach} />}
         </div>
       </div>
+
+      {/* SCROLLBAR NASCOSTA */}
+      <style>{`
+        .scrollbar-hidden {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hidden::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </>
   );
 }

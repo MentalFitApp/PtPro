@@ -283,12 +283,11 @@ const AdminChat = () => {
   const dismissNotification = () => setNotification({ message: '', type: '' });
 
   return (
-    <div className="min-h-screen relative">
-      <AnimatedBackground />
+    <div className="min-h-screen -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8">
       <Notification message={notification.message} type={notification.type} onDismiss={dismissNotification} />
-      <div className="flex h-[calc(100vh-120px)] bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border overflow-hidden m-4 sm:m-6">
-        <div className="w-full sm:w-1/3 border-r border-white/10 flex flex-col">
-          <div className="p-4 border-b border-white/10">
+      <div className="flex h-[calc(100vh-120px)] bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
+        <div className="w-full sm:w-1/3 border-r border-slate-700 flex flex-col bg-slate-800/40">
+          <div className="p-4 border-b border-slate-700">
             <div className="relative">
               <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" size={18}/>
               <input
@@ -296,7 +295,7 @@ const AdminChat = () => {
                 placeholder="Cerca o avvia una chat..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-zinc-900/70 p-2 pl-10 rounded-lg border border-white/10 outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base"
+                className="w-full bg-zinc-900/40 backdrop-blur-xl border border-white/10 p-2 pl-10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base"
               />
             </div>
           </div>
@@ -335,14 +334,14 @@ const AdminChat = () => {
           )}
         </div>
         
-        <div className="w-full sm:w-2/3 flex flex-col bg-zinc-900/50">
+        <div className="w-full sm:w-2/3 flex flex-col bg-slate-900/40">
           {selectedChatId ? (
             <>
-              <div className="p-4 border-b border-white/10 flex justify-between items-center">
-                <h3 className="font-bold text-lg text-slate-50">{getSelectedChatName()}</h3>
+              <div className="p-4 border-b border-slate-700 flex justify-between items-center">
+                <h3 className="font-bold text-lg text-slate-100">{getSelectedChatName()}</h3>
                 <button
                   onClick={handleDeleteChat}
-                  className="p-2 text-red-400 hover:bg-red-900/30 rounded-md transition-colors"
+                  className="p-2 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
                   title="Elimina Chat"
                 >
                   <Trash2 size={18} />
@@ -354,7 +353,7 @@ const AdminChat = () => {
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`max-w-[70%] sm:max-w-md p-3 rounded-2xl shadow-md ${adminUIDs.includes(msg.senderId) ? 'bg-rose-600 rounded-br-none' : 'bg-zinc-800 rounded-bl-none'}`}
+                      className={`max-w-[70%] sm:max-w-md p-3 rounded-2xl shadow-md ${adminUIDs.includes(msg.senderId) ? 'bg-rose-600 rounded-br-none' : 'bg-slate-700/80 rounded-bl-none'}`}
                     >
                       <p className="text-white break-words text-sm sm:text-base">{msg.text}</p>
                       <p className="text-xs text-slate-300/70 mt-1.5 text-right">
@@ -365,14 +364,14 @@ const AdminChat = () => {
                 ))}
                 <div ref={messagesEndRef} />
               </div>
-              <div className="p-4 sm:p-6 border-t border-white/10">
+              <div className="p-4 sm:p-6 border-t border-slate-700">
                 <form onSubmit={handleSendMessage} className="flex items-center gap-3">
                   <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Scrivi una risposta..."
-                    className="flex-1 p-3 bg-zinc-800 border border-white/10 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-white text-sm sm:text-base"
+                    className="flex-1 p-3 bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-white text-sm sm:text-base"
                   />
                   <button
                     type="submit"
@@ -385,7 +384,7 @@ const AdminChat = () => {
               </div>
             </>
           ) : (
-            <div className="flex flex-col justify-center items-center h-full text-slate-500">
+            <div className="flex flex-col justify-center items-center h-full text-slate-400">
               <MessageSquare size={48} />
               <p className="mt-4">Seleziona una conversazione o cercane una nuova.</p>
             </div>

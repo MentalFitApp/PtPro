@@ -14,7 +14,7 @@ import {
 } from 'firebase/auth';
 import { 
   Users, Plus, Key, Trash2, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Eye, 
-  Edit, X, Check, FileText
+  Edit, X, Check, File, DollarSign, CheckCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Calendar from './Calendar';
@@ -114,6 +114,10 @@ export default function Collaboratori() {
   // STORICO REPORT
   const [showPastSetting, setShowPastSetting] = useState(false);
   const [showPastSales, setShowPastSales] = useState(false);
+
+  // NUOVO: POPUP CONVERSIONE LEAD → CLIENTE
+  const [showConvertPopup, setShowConvertPopup] = useState(false);
+  const [leadToConvert, setLeadToConvert] = useState(null);
 
   const fonti = [
     'Info Storie Prima e Dopo', 'Info Storie Promo', 'Info Reel', 'Inizio Reel',
@@ -373,11 +377,22 @@ export default function Collaboratori() {
     if (!editingLead) return;
 
     try {
+      const wasClosed = leads.find(l => l.id === editingLead)?.chiuso;
+      const willBeClosed = editForm.chiuso;
+
       await updateDoc(doc(db, 'leads', editingLead), editForm);
+
+      if (willBeClosed && !wasClosed) {
+        const lead = { ...leads.find(l => l.id === editingLead), ...editForm };
+        setLeadToConvert(lead);
+        setShowConvertPopup(true);
+      } else {
+        setSuccess('Lead aggiornato!');
+        setTimeout(() => setSuccess(''), 3000);
+      }
+
       setEditingLead(null);
       setEditForm({});
-      setSuccess('Lead aggiornato!');
-      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError('Errore aggiornamento lead.');
     }
@@ -432,7 +447,6 @@ export default function Collaboratori() {
 
   const sourceStats = getSourceStats();
 
-  // FILTRI + COLLABORATORE
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesChiuso = filters.chiuso === 'tutti' || (filters.chiuso === 'si' ? lead.chiuso : !lead.chiuso);
@@ -451,7 +465,7 @@ export default function Collaboratori() {
 
   return (
     <div className="min-h-screen overflow-x-hidden">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 py-6">
 
         {/* HEADER */}
         <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -832,6 +846,60 @@ export default function Collaboratori() {
                 <button onClick={() => setShowNotePopup(false)} className="text-slate-400 hover:text-white"><X size={18} /></button>
               </div>
               <p className="text-sm text-slate-300 whitespace-pre-wrap">{currentNote}</p>
+            </motion.div>
+          </div>
+        )}
+
+        {/* POPUP CONVERTI IN CLIENTE */}
+        {showConvertPopup && leadToConvert && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-zinc-950/90 rounded-xl p-6 max-w-md w-full border border-white/10"
+            >
+              <h3 className="text-xl font-bold text-emerald-400 mb-3 flex items-center gap-2">
+                <CheckCircle size={24} /> Lead Chiuso!
+              </h3>
+              <p className="text-sm text-slate-300 mb-4">
+                Vuoi aggiungere <strong>{leadToConvert.name}</strong> come nuovo cliente?
+              </p>
+              <div className="bg-zinc-900/50 p-3 rounded-lg mb-4 text-xs space-y-1">
+                <p><strong>Importo:</strong> €{leadToConvert.amount || 0}</p>
+                <p><strong>Durata:</strong> {leadToConvert.mesi || 0} mesi</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowConvertPopup(false);
+                    setLeadToConvert(null);
+                    setSuccess('Lead chiuso senza conversione.');
+                    setTimeout(() => setSuccess(''), 3000);
+                  }}
+                  className="flex-1 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm transition-colors"
+                >
+                  Solo Chiudi
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/new-client', {
+                      state: {
+                        prefill: {
+                          name: leadToConvert.name || '',
+                          email: leadToConvert.email || '',
+                          phone: leadToConvert.number || '',
+                          paymentAmount: leadToConvert.amount ? String(leadToConvert.amount) : '',
+                          duration: leadToConvert.mesi ? String(leadToConvert.mesi) : '',
+                          planType: 'completo',
+                        }
+                      }
+                    });
+                  }}
+                  className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  Crea Cliente
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

@@ -15,6 +15,5 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [], // ← VUOTO – NESSUN PLUGIN NECESSARIO
 }
-

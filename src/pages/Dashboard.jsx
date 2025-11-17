@@ -35,12 +35,12 @@ const timeAgo = (date) => {
 
 // --- COMPONENTI UI ---
 const StatCard = ({ title, value, icon, isCurrency = false, isPercentage = false }) => (
-  <div className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border h-full">
+  <div className="bg-slate-800/60 backdrop-blur-sm p-5 rounded-xl border border-slate-700 shadow-xl h-full">
     <div className="flex items-center gap-3 text-slate-400">
       {icon}
-      <p className="text-sm">{title}</p>
+      <p className="text-sm font-medium">{title}</p>
     </div>
-    <p className="text-3xl font-bold text-slate-50 mt-2">
+    <p className="text-3xl font-bold text-slate-100 mt-3">
       {isCurrency 
         ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value) 
         : isPercentage ? `${value}%` : value
@@ -513,25 +513,39 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="w-full space-y-6 p-4 sm:p-6">
-      {/* HEADER */}
-      <div className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2"><TrendingUp size={28}/> Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-slate-300 font-semibold">{userName}</span>
-            <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg transition-colors">
-              <LogOut size={16} /> Logout
-            </button>
+    <div className="min-h-screen -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* HEADER */}
+        <div className="bg-zinc-900/30 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-5">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 flex items-center gap-2">
+              <TrendingUp size={28}/> Dashboard
+            </h1>
+            <div className="flex items-center gap-3">
+              <span className="text-slate-300 font-semibold">{userName}</span>
+              <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors">
+                <LogOut size={16} /> Logout
+              </button>
+            </div>
+          </div>
+
+          <div className="border-t border-white/10"></div>
+
+          <div>
+            <p className="text-slate-400 text-sm mb-3">Panoramica delle metriche chiave e progressi in tempo reale.</p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => navigate('/clients')} className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+                <Users size={16}/> Gestisci
+              </button>
+              <button onClick={() => navigate('/new-client')} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+                <Plus size={16}/> Nuovo
+              </button>
+              <button onClick={() => navigate('/business-history')} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+                <BarChart3 size={16}/> Storico
+              </button>
+            </div>
           </div>
         </div>
-        <p className="text-slate-400 mb-4">Panoramica delle metriche chiave e progressi in tempo reale.</p>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={() => navigate('/clients')} className="px-4 py-2 bg-zinc-800/80 text-sm font-semibold rounded-lg hover:bg-zinc-700/80 transition-colors flex items-center gap-2"><Users size={16}/> Gestisci</button>
-          <button onClick={() => navigate('/new-client')} className="px-4 py-2 bg-rose-600 text-sm font-semibold rounded-lg hover:bg-rose-700 transition-colors flex items-center gap-2"><Plus size={16}/> Nuovo</button>
-          <button onClick={() => navigate('/business-history')} className="px-4 py-2 bg-cyan-600 text-sm font-semibold rounded-lg hover:bg-cyan-700 transition-colors flex items-center gap-2"><BarChart3 size={16}/> Storico</button>
-        </div>
-      </div>
 
       {/* CONTENT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -542,37 +556,37 @@ export default function Dashboard() {
             <StatCard title="Retention Rate" value={retentionRate} icon={<RefreshCw className="text-amber-500"/>} isPercentage={true} />
           </div>
 
-          <div className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border h-[450px] flex flex-col">
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700 shadow-xl h-[450px] flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-slate-200 flex items-center gap-2"><BarChart3 size={20} /> Andamento Business</h2>
-              <div className="flex gap-2 bg-zinc-900/70 p-1 rounded-lg border border-white/5">
-                <button onClick={() => setChartDataType('revenue')} className={`px-3 py-1 text-sm rounded-md transition ${chartDataType === 'revenue' ? 'bg-zinc-700 text-white' : 'text-slate-400'}`}>Fatturato</button>
-                <button onClick={() => setChartDataType('clients')} className={`px-3 py-1 text-sm rounded-md transition ${chartDataType === 'clients' ? 'bg-zinc-700 text-white' : 'text-slate-400'}`}>Clienti</button>
+              <h2 className="text-lg font-semibold text-slate-100 flex items-center gap-2"><BarChart3 size={20} /> Andamento Business</h2>
+              <div className="flex gap-2 bg-zinc-900/40 backdrop-blur-xl border border-white/10 p-1 rounded-lg">
+                <button onClick={() => setChartDataType('revenue')} className={`px-3 py-1 text-sm rounded-md transition ${chartDataType === 'revenue' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Fatturato</button>
+                <button onClick={() => setChartDataType('clients')} className={`px-3 py-1 text-sm rounded-md transition ${chartDataType === 'clients' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Clienti</button>
               </div>
             </div>
             <div className="flex-1">
               <Line data={chartDataConfig} options={chartOptions} />
             </div>
             <div className="flex justify-center mt-4">
-              <div className="flex gap-2 bg-zinc-900/70 p-1 rounded-lg border border-white/5">
-                <button onClick={() => setChartTimeRange('daily')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'daily' ? 'bg-zinc-700 text-white' : 'text-slate-400'}`}>Giorno</button>
-                <button onClick={() => setChartTimeRange('monthly')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'monthly' ? 'bg-zinc-700 text-white' : 'text-slate-400'}`}>Mese</button>
-                <button onClick={() => setChartTimeRange('yearly')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'yearly' ? 'bg-zinc-700 text-white' : 'text-slate-400'}`}>Anno</button>
+              <div className="flex gap-2 bg-zinc-900/40 backdrop-blur-xl border border-white/10 p-1 rounded-lg">
+                <button onClick={() => setChartTimeRange('daily')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'daily' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Giorno</button>
+                <button onClick={() => setChartTimeRange('monthly')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'monthly' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Mese</button>
+                <button onClick={() => setChartTimeRange('yearly')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'yearly' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Anno</button>
               </div>
             </div>
           </div>
 
           {focusClient && (
-            <div className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border">
-              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-slate-200"><Target size={18} /> Focus del Giorno</h2>
-              <p className="text-sm font-bold text-rose-500">{focusClient.name}</p>
+            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700 shadow-xl">
+              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-slate-100"><Target size={18} /> Focus del Giorno</h2>
+              <p className="text-sm font-bold text-rose-400">{focusClient.name}</p>
               <p className="text-sm text-slate-400 mt-1">Obiettivo: "{focusClient.goal || 'Non specificato'}"</p>
             </div>
           )}
         </div>
         
-        <div className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Feed Attività</h2>
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-slate-700 shadow-xl">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-100"><Bell size={20} /> Feed Attività</h2>
           <div className="space-y-3 max-h-[90vh] lg:max-h-[calc(100vh-14rem)] overflow-y-auto pr-2">
             <AnimatePresence>
               {activityFeed.length > 0 ? activityFeed
@@ -586,6 +600,7 @@ export default function Dashboard() {
             </AnimatePresence>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
