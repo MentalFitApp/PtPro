@@ -21,7 +21,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm }) => (
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md bg-zinc-950/80 rounded-2xl gradient-border p-6 text-center shadow-2xl shadow-black/40"
+          className="w-full max-w-md bg-slate-900/80 rounded-2xl border border-slate-700 p-6 text-center shadow-2xl shadow-black/40"
         >
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-900/50 mb-4">
             <AlertTriangle className="h-6 w-6 text-red-400" />
@@ -29,7 +29,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm }) => (
           <h3 className="text-lg font-bold text-slate-50">Conferma Eliminazione</h3>
           <p className="text-sm text-slate-400 mt-2">Sei sicuro di voler eliminare questo pagamento? L'operazione non è reversibile.</p>
           <div className="mt-6 flex justify-center gap-4">
-            <button onClick={onClose} className="px-6 py-2 text-sm font-semibold text-slate-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors">Annulla</button>
+            <button onClick={onClose} className="px-6 py-2 text-sm font-semibold text-slate-300 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg transition-colors">Annulla</button>
             <button onClick={onConfirm} className="px-6 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">Elimina</button>
           </div>
         </motion.div>
@@ -206,7 +206,7 @@ export default function PaymentManager({ clientId }) {
     }
   };
 
-  const inputStyle = "w-full p-2.5 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
+  const inputStyle = "w-full p-2.5 bg-slate-800/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
   const labelStyle = "block mb-1 text-sm font-medium text-slate-300";
   const errorStyle = "text-red-500 text-sm mt-1";
 
@@ -315,7 +315,7 @@ export default function PaymentManager({ clientId }) {
                     setShowForm(false);
                     reset();
                   }} 
-                  className="px-4 py-2 bg-zinc-700 text-white rounded-lg font-semibold transition z-[100]"
+                  className="px-4 py-2 bg-slate-700/70 hover:bg-slate-700/90 border border-slate-600 text-white rounded-lg font-semibold transition z-[100]"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -329,7 +329,7 @@ export default function PaymentManager({ clientId }) {
         <h4 className="font-semibold text-slate-200 mb-3 mt-4">Cronologia Rinnovi</h4>
         <div className="space-y-2">
           {payments.length > 0 ? payments.map(p => (
-            <div key={p.id} className="flex justify-between items-center p-3 bg-zinc-900/70 rounded-md border border-white/10">
+            <div key={p.id} className="flex justify-between items-center p-3 bg-slate-800/70 rounded-md border border-white/10">
               <div className="flex items-center gap-3">
                 <Calendar className="text-slate-400"/>
                 <div>

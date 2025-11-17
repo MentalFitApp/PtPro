@@ -69,11 +69,11 @@ export default function CheckForm({ clientId, onSuccess }) {
   };
 
   // --- 2. STILI AGGIORNATI ---
-  const inputStyle = "w-full p-2.5 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
+  const inputStyle = "w-full p-2.5 bg-slate-800/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
   const labelStyle = "block mb-1 text-sm font-medium text-slate-300";
 
   return (
-    <div className="bg-zinc-950/80 backdrop-blur-xl rounded-2xl gradient-border p-6">
+    <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-700 p-6">
       <h3 className="text-xl font-semibold mb-4 text-rose-300 flex items-center gap-2">
         <UploadCloud size={20} /> Nuovo Check
       </h3>
@@ -108,7 +108,7 @@ export default function CheckForm({ clientId, onSuccess }) {
         </div>
 
         {isUploading && (
-          <div className="w-full bg-zinc-800 rounded-full h-2.5">
+          <div className="w-full bg-slate-700 rounded-full h-2.5">
             <motion.div 
               className="bg-rose-500 h-2.5 rounded-full" 
               initial={{ width: 0 }}

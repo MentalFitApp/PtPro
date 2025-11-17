@@ -27,9 +27,9 @@ export default function AnamnesiForm({ clientId, onSave }) {
   };
 
   // --- 2. STILI AGGIORNATI ---
-  const inputStyle = "w-full p-2.5 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
+  const inputStyle = "w-full p-2.5 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
   const labelStyle = "block mb-1 text-sm font-medium text-slate-300";
-  const sectionStyle = "bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6";
+  const sectionStyle = "bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6";
   const headingStyle = "font-bold mb-4 text-lg text-rose-300 border-b border-rose-400/20 pb-2";
 
   return (

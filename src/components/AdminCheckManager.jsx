@@ -109,17 +109,17 @@ const AdminCheckManager = ({ clientId }) => {
             <style>{calendarStyles}</style>
             <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
-                <div className="lg:col-span-1 bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-4">
+                <div className="lg:col-span-1 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-4">
                      <Calendar onChange={handleDateChange} value={selectedDate} tileClassName={tileClassName} />
                 </div>
 
                 <div className="lg:col-span-2 space-y-6">
                     {selectedCheck ? (
-                        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6">
+                        <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6">
                             <h3 className="text-xl font-semibold text-rose-300">Dettagli Check del {selectedCheck.createdAt.toDate().toLocaleDateString('it-IT')}</h3>
                              <div className="mt-4 space-y-4">
                                 <div><h4 className="font-semibold text-slate-400">Peso Registrato:</h4><p className="text-slate-50 text-xl font-bold">{selectedCheck.weight} kg</p></div>
-                                <div><h4 className="font-semibold text-slate-400">Note del Cliente:</h4><p className="text-slate-300 p-3 bg-zinc-900 rounded-lg whitespace-pre-wrap">{selectedCheck.notes || 'Nessuna nota.'}</p></div>
+                                <div><h4 className="font-semibold text-slate-400">Note del Cliente:</h4><p className="text-slate-300 p-3 bg-slate-800 rounded-lg whitespace-pre-wrap">{selectedCheck.notes || 'Nessuna nota.'}</p></div>
                                 <div><h4 className="font-semibold text-slate-400">Foto Caricate:</h4><div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">{selectedCheck.photoURLs && Object.values(selectedCheck.photoURLs).map((url, i) => <a href={url} target="_blank" rel="noopener noreferrer"><img key={i} src={url} alt={`foto ${i}`} className="rounded-lg w-full h-auto"/></a>)}</div></div>
                             </div>
                             <div className="mt-6 pt-4 border-t border-white/10">
@@ -128,7 +128,7 @@ const AdminCheckManager = ({ clientId }) => {
                                     value={feedbackText}
                                     onChange={(e) => setFeedbackText(e.target.value)}
                                     rows="4"
-                                    className="w-full mt-2 p-2.5 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200"
+                                    className="w-full mt-2 p-2.5 bg-slate-800/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200"
                                     placeholder="Scrivi qui le tue note, che saranno visibili al cliente..."
                                 ></textarea>
                                 <div className="flex justify-end mt-2">
@@ -139,7 +139,7 @@ const AdminCheckManager = ({ clientId }) => {
                             </div>
                         </div>
                     ) : (
-                        <div className="flex items-center justify-center h-full bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6 text-slate-500">
+                        <div className="flex items-center justify-center h-full bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6 text-slate-500">
                             <p>Seleziona un giorno dal calendario per vedere i dettagli del check.</p>
                         </div>
                     )}

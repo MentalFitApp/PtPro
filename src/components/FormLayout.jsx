@@ -56,7 +56,7 @@ export default function FormLayout({ children }) {
           </div>
 
           {/* BOX TRASPARENTE – STELLE VISIBILI DIETRO */}
-          <div className="relative bg-zinc-950/45 backdrop-blur-xl border border-white/10 rounded-xl p-8 shadow-2xl">
+          <div className="relative bg-slate-900/45 backdrop-blur-xl border border-white/10 rounded-xl p-8 shadow-2xl">
             {children}
           </div>
         </div>

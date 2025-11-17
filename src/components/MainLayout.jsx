@@ -74,7 +74,7 @@ const BottomNav = ({ isCoach, isCollaboratore }) => {
   const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : adminNavLinks);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-zinc-950/95 backdrop-blur-2xl border-t border-white/10 z-50 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-2xl border-t border-white/10 z-50 md:hidden">
       <div className="px-2 py-2">
         <div className="flex gap-2 overflow-x-auto scrollbar-hidden snap-x snap-mandatory">
           {links.map(link => (
@@ -109,7 +109,7 @@ const Sidebar = ({ isCoach, isCollaboratore, isCollapsed, setIsCollapsed }) => {
     <motion.aside
       initial={false}
       animate={{ width: isCollapsed ? 64 : 240 }}
-      className="hidden md:flex fixed left-0 top-0 h-screen bg-zinc-950/90 backdrop-blur-xl border-r border-white/10 z-40 flex-col transition-all duration-300"
+      className="hidden md:flex fixed left-0 top-0 h-screen bg-slate-900/90 backdrop-blur-xl border-r border-white/10 z-40 flex-col transition-all duration-300"
     >
       <div className="p-4 flex items-center justify-between border-b border-white/5">
         <AnimatePresence>
