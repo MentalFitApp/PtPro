@@ -193,13 +193,20 @@ export default function CollaboratoreDashboard() {
   };
 
   // --- SALVA TRACKER ---
+  // --- EOD REPORT STATE ---
+  // (EOD report rimosso, rimane solo tracker)
+
+  // --- SALVA TRACKER + EOD ---
   const handleSaveTracker = async () => {
     setError(''); setSuccess('');
     try {
       const collabRef = doc(db, 'collaboratori', auth.currentUser.uid);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayStr = today.toISOString().split('T')[0];
+      // Usa la data locale corrente, non UTC
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
 
       const updatedReports = (collaboratore?.dailyReports || []).filter(r => r.date !== todayStr);
       updatedReports.push({
