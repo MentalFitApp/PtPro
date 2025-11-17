@@ -516,7 +516,7 @@ export default function Dashboard() {
     <div className="min-h-screen -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* HEADER */}
-        <div className="bg-zinc-900/30 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-5">
+        <div className="bg-slate-800/30 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-5">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 flex items-center gap-2">
               <TrendingUp size={28}/> Dashboard
@@ -559,7 +559,7 @@ export default function Dashboard() {
           <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700 shadow-xl h-[450px] flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
               <h2 className="text-lg font-semibold text-slate-100 flex items-center gap-2"><BarChart3 size={20} /> Andamento Business</h2>
-              <div className="flex gap-2 bg-zinc-900/40 backdrop-blur-xl border border-white/10 p-1 rounded-lg">
+              <div className="flex gap-2 bg-slate-800/40 backdrop-blur-xl border border-white/10 p-1 rounded-lg">
                 <button onClick={() => setChartDataType('revenue')} className={`px-3 py-1 text-sm rounded-md transition ${chartDataType === 'revenue' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Fatturato</button>
                 <button onClick={() => setChartDataType('clients')} className={`px-3 py-1 text-sm rounded-md transition ${chartDataType === 'clients' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Clienti</button>
               </div>
@@ -568,7 +568,7 @@ export default function Dashboard() {
               <Line data={chartDataConfig} options={chartOptions} />
             </div>
             <div className="flex justify-center mt-4">
-              <div className="flex gap-2 bg-zinc-900/40 backdrop-blur-xl border border-white/10 p-1 rounded-lg">
+              <div className="flex gap-2 bg-slate-800/40 backdrop-blur-xl border border-white/10 p-1 rounded-lg">
                 <button onClick={() => setChartTimeRange('daily')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'daily' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Giorno</button>
                 <button onClick={() => setChartTimeRange('monthly')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'monthly' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Mese</button>
                 <button onClick={() => setChartTimeRange('yearly')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'yearly' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Anno</button>

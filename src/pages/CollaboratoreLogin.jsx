@@ -51,7 +51,7 @@ export default function CollaboratoreLogin() {
 
   if (isCheckingAuth) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-zinc-950">
+      <div className="flex flex-col justify-center items-center min-h-screen bg-slate-900">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
         <p className="mt-4 text-sm">Verifica autenticazione...</p>
       </div>
@@ -61,7 +61,7 @@ export default function CollaboratoreLogin() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-zinc-950 to-zinc-900">
       <motion.div
-        className="w-full max-w-md bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-8 space-y-8 border border-white/10"
+        className="w-full max-w-md bg-slate-800/60 backdrop-blur-sm rounded-2xl p-8 space-y-8 border border-white/10"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
@@ -79,7 +79,7 @@ export default function CollaboratoreLogin() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="Email"
-              className="w-full p-3 pl-10 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200"
+              className="w-full p-3 pl-10 bg-slate-800/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200"
               disabled={isSubmitting}
             />
           </div>
@@ -91,7 +91,7 @@ export default function CollaboratoreLogin() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="Password"
-              className="w-full p-3 pl-10 pr-10 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200"
+              className="w-full p-3 pl-10 pr-10 bg-slate-800/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200"
               disabled={isSubmitting}
             />
             <button

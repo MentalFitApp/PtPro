@@ -70,20 +70,22 @@ export default function ClientLogin() {
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        console.log('Utente autenticato all\'avvio:', { uid: user.uid, email: user.email });
-        try {
+      try {
+        if (user) {
+          console.log('Utente autenticato all\'avvio:', { uid: user.uid, email: user.email });
+          
           const adminDocRef = doc(db, 'roles', 'admins');
           const coachDocRef = doc(db, 'roles', 'coaches');
           const clientDocRef = doc(db, 'clients', user.uid);
+          
           const [adminDoc, coachDoc, clientDoc] = await Promise.all([
-            getDoc(adminDocRef).catch(err => ({ exists: () => false, data: () => ({ uids: [] }) })),
-            getDoc(coachDocRef).catch(err => ({ exists: () => false, data: () => ({ uids: [] }) })),
-            getDoc(clientDocRef).catch(err => ({ exists: () => false, data: () => ({}) }))
+            getDoc(adminDocRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
+            getDoc(coachDocRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
+            getDoc(clientDocRef).catch(() => ({ exists: () => false, data: () => ({}) }))
           ]);
 
-          const isAdmin = adminDoc.exists() && adminDoc.data().uids.includes(user.uid);
-          const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(user.uid);
+          const isAdmin = adminDoc.exists() && adminDoc.data().uids?.includes(user.uid);
+          const isCoach = coachDoc.exists() && coachDoc.data().uids?.includes(user.uid);
           const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
 
           console.log('Debug ruolo in ClientLogin:', {
@@ -97,23 +99,29 @@ export default function ClientLogin() {
 
           if (isAdmin || isCoach) {
             setError('Accesso non autorizzato per admin/coach. Usa il login admin.');
-            // Non esegue logout, mostra solo errore
-          } else if (isClient) {
+            await auth.signOut();
+            setIsCheckingAuth(false);
+            return;
+          }
+          
+          if (isClient) {
             sessionStorage.setItem('app_role', 'client');
             navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
           } else {
             setError('Accesso non autorizzato. Contatta il tuo coach.');
+            await auth.signOut();
           }
-        } catch (err) {
-          console.error('Errore verifica ruolo:', err);
-          setError('Errore durante la verifica del ruolo. Riprova.');
         }
+      } catch (err) {
+        console.error('Errore verifica ruolo:', err);
+        setError('Errore durante la verifica del ruolo. Riprova.');
+      } finally {
+        setIsCheckingAuth(false);
       }
-      setIsCheckingAuth(false);
     });
 
     return () => unsubscribe();
-  }, [navigate]);
+  }, [navigate, auth]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -121,8 +129,17 @@ export default function ClientLogin() {
     setIsSubmitting(true);
 
     try {
-      console.log('Tentativo di login:', { email, password });
-      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password.trim());
+      const trimmedEmail = email.trim().toLowerCase();
+      const trimmedPassword = password.trim();
+      
+      if (!trimmedEmail || !trimmedPassword) {
+        setError('Email e password sono obbligatori.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('Tentativo di login:', { email: trimmedEmail });
+      const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
       console.log('Login riuscito:', { uid: userCredential.user.uid, email: userCredential.user.email });
       // Il redirect è gestito da onAuthStateChanged sopra
     } catch (err) {
@@ -131,6 +148,8 @@ export default function ClientLogin() {
         err.code === 'auth/invalid-credential' ? 'Credenziali non valide. Verifica email e password.' :
         err.code === 'auth/user-not-found' ? 'Utente non trovato. Verifica l\'email.' :
         err.code === 'auth/wrong-password' ? 'Password errata. Riprova.' :
+        err.code === 'auth/too-many-requests' ? 'Troppi tentativi. Riprova tra qualche minuto.' :
+        err.code === 'auth/network-request-failed' ? 'Errore di connessione. Verifica la tua rete.' :
         'Errore durante il login: ' + err.message
       );
       setIsSubmitting(false);
@@ -138,12 +157,12 @@ export default function ClientLogin() {
   };
 
   const inputContainerStyle = "relative";
-  const inputStyle = "w-full p-3 pl-10 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200";
+  const inputStyle = "w-full p-3 pl-10 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200";
   const iconStyle = "absolute left-3 top-1/2 -translate-y-1/2 text-slate-400";
 
   if (isCheckingAuth) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-zinc-950">
+      <div className="flex flex-col justify-center items-center min-h-screen bg-slate-900">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
         <p className="mt-4 text-sm">Verifica autenticazione...</p>
       </div>
@@ -154,7 +173,7 @@ export default function ClientLogin() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <AnimatedBackground />
       <motion.div
-        className="w-full max-w-md bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-8 space-y-8 shadow-2xl shadow-black/20"
+        className="w-full max-w-md bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-8 space-y-8 shadow-2xl shadow-black/20"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}

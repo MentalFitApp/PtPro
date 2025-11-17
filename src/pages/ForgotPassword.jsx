@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 
 // Componente per lo sfondo animato
 const AnimatedBackground = () => (
-  <div className="absolute inset-0 -z-10 overflow-hidden bg-zinc-950">
+  <div className="absolute inset-0 -z-10 overflow-hidden bg-slate-900">
     <div className="aurora-background"></div>
   </div>
 );
@@ -38,14 +38,14 @@ const ForgotPassword = () => {
 
     // --- 2. NUOVI STILI PER IL FORM ---
     const inputContainerStyle = "relative";
-    const inputStyle = "w-full p-3 pl-10 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-slate-200";
+    const inputStyle = "w-full p-3 pl-10 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-slate-200";
     const iconStyle = "absolute left-3 top-1/2 -translate-y-1/2 text-slate-400";
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
             <AnimatedBackground />
             <motion.div 
-                className="w-full max-w-md bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-8 space-y-8 shadow-2xl shadow-black/20"
+                className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-8 space-y-8 shadow-2xl shadow-black/20"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}

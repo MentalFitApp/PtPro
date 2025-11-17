@@ -4,13 +4,15 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
 
-  // CORRETTO: Base path per GitHub Codespaces
-  base: '/PtPro/',
+  // Base path: usa '/' in sviluppo, '/PtPro/' solo in produzione
+  base: process.env.NODE_ENV === 'production' ? '/PtPro/' : '/',
 
   // CORS per dev in Codespaces
   server: {
+    host: '0.0.0.0', // Ascolta su tutte le interfacce di rete
     port: 5173,
     strictPort: true,
+    allowedHosts: ['sale-commentary-priority-inns.trycloudflare.com', '.trycloudflare.com'], // Permette tunnel Cloudflare
     cors: {
       origin: true, // Permette richieste da github.dev
       credentials: true,

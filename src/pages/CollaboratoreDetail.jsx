@@ -257,7 +257,7 @@ export default function CollaboratoreDetail() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {role === 'Setter' && (
           <>
-            <div className="bg-zinc-900/70 backdrop-blur-xl rounded-xl p-5 border border-white/10">
+            <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-5 border border-white/10">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-slate-400 text-sm">Oggi</p>
@@ -266,7 +266,7 @@ export default function CollaboratoreDetail() {
                 <Phone className="text-rose-500" size={28} />
               </div>
             </div>
-            <div className="bg-zinc-900/70 backdrop-blur-xl rounded-xl p-5 border border-white/10">
+            <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-5 border border-white/10">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-slate-400 text-sm">Settimana</p>
@@ -275,7 +275,7 @@ export default function CollaboratoreDetail() {
                 <TrendingUp className="text-green-500" size={28} />
               </div>
             </div>
-            <div className="bg-zinc-900/70 backdrop-blur-xl rounded-xl p-5 border border-white/10">
+            <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-5 border border-white/10">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-slate-400 text-sm">Conversione</p>
@@ -284,7 +284,7 @@ export default function CollaboratoreDetail() {
                 <Target className="text-cyan-500" size={28} />
               </div>
             </div>
-            <div className="bg-zinc-900/70 backdrop-blur-xl rounded-xl p-5 border border-white/10">
+            <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-5 border border-white/10">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-slate-400 text-sm">Prenotate</p>
@@ -299,11 +299,11 @@ export default function CollaboratoreDetail() {
 
       {/* LEAD PRENOTATI */}
       {role === 'Setter' && (
-        <div className="bg-zinc-900/70 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+        <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-6 border border-white/10">
           <h2 className="text-xl font-semibold text-slate-200 mb-4">Lead Prenotati</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-slate-300">
-              <thead className="text-xs uppercase bg-zinc-900/50">
+              <thead className="text-xs uppercase bg-slate-800/50">
                 <tr>
                   <th className="px-4 py-2">Nome</th>
                   <th className="px-4 py-2">Numero</th>
@@ -335,7 +335,7 @@ export default function CollaboratoreDetail() {
       )}
 
       {/* GRAFICO PERFORMANCE */}
-      <div className="bg-zinc-900/70 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+      <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-6 border border-white/10">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-slate-200">Performance</h2>
           <div className="flex gap-2">
@@ -346,7 +346,7 @@ export default function CollaboratoreDetail() {
                 className={`px-3 py-1 rounded text-sm transition-colors ${
                   chartFilter === f 
                     ? 'bg-rose-600 text-white' 
-                    : 'bg-zinc-800 text-slate-400 hover:bg-zinc-700'
+                    : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700/70'
                 }`}
               >
                 {f === 'daily' ? 'Giorno' : f === 'weekly' ? 'Settimana' : 'Mese'}
@@ -364,7 +364,7 @@ export default function CollaboratoreDetail() {
       </div>
 
       {/* MODIFICA RUOLO */}
-      <div className="bg-zinc-900/70 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+      <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-6 border border-white/10">
         <h2 className="text-xl font-semibold text-slate-200 mb-4">Ruolo</h2>
         <div className="flex gap-3 items-center">
           {editingRole ? (
@@ -372,7 +372,7 @@ export default function CollaboratoreDetail() {
               <select
                 value={role}
                 onChange={e => setRole(e.target.value)}
-                className="p-2 bg-zinc-800 border border-white/10 rounded-lg text-slate-200 focus:outline-none focus:border-rose-500"
+                className="p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:border-rose-500"
               >
                 <option value="Setter">Setter</option>
                 <option value="Marketing">Marketing</option>
@@ -410,7 +410,7 @@ export default function CollaboratoreDetail() {
       </div>
 
       {/* REPORT GIORNALIERI */}
-      <div className="bg-zinc-900/70 backdrop-blur-xl rounded-xl p-6 border border-white/10">
+      <div className="bg-slate-700/50 backdrop-blur-sm rounded-xl p-6 border border-white/10">
         <h2 className="text-xl font-semibold text-slate-200 mb-4">Report Giornalieri</h2>
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {dailyReports.length > 0 ? (
@@ -419,7 +419,7 @@ export default function CollaboratoreDetail() {
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-zinc-800/50 rounded-lg p-4 border border-white/5"
+                className="bg-slate-700/50 rounded-lg p-4 border border-slate-600"
               >
                 <p className="font-medium text-slate-300 flex items-center gap-2">
                   <Calendar size={16} /> {r.date}

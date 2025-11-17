@@ -216,7 +216,7 @@ export default function CoachUpdates() {
     visible: { y: 0, opacity: 1 },
   };
 
-  if (error) return <div className="min-h-screen bg-zinc-950 text-red-400 flex justify-center items-center">{error}</div>;
+  if (error) return <div className="min-h-screen bg-slate-900 text-red-400 flex justify-center items-center">{error}</div>;
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -228,12 +228,12 @@ export default function CoachUpdates() {
           </h1>
           <button
             onClick={() => navigate('/coach-dashboard')}
-            className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-slate-300 text-sm font-semibold rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-slate-300 text-sm font-semibold rounded-lg transition-colors"
           >
             <ArrowLeft size={16} /><span>Torna alla Dashboard</span>
           </button>
         </motion.header>
-        <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+        <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Ultimi Aggiornamenti</h2>
           <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
             <AnimatePresence>

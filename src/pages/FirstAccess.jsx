@@ -28,7 +28,7 @@ class ErrorBoundary extends React.Component {
 
 // --- 2. COMPONENTI UI RIUTILIZZABILI ---
 const AnimatedBackground = () => (
-  <div className="absolute inset-0 -z-10 overflow-hidden bg-zinc-950">
+  <div className="absolute inset-0 -z-10 overflow-hidden bg-slate-900">
     <div className="aurora-background"></div>
   </div>
 );
@@ -121,7 +121,7 @@ const FirstAccess = () => {
     }
   };
 
-  const inputStyle = "w-full pl-10 pr-3 py-2.5 mt-1 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200 placeholder:text-slate-500";
+  const inputStyle = "w-full pl-10 pr-3 py-2.5 mt-1 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200 placeholder:text-slate-500";
   const labelStyle = "block text-sm font-medium text-slate-300";
 
   if (!userType) {
@@ -139,7 +139,7 @@ const FirstAccess = () => {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-8 space-y-8"
+          className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-8 space-y-8"
         >
           <div className="text-center">
             <h2 className="text-3xl font-bold text-slate-50">Imposta la tua Password</h2>

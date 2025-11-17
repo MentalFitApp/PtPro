@@ -56,13 +56,13 @@ const ClientPayments = () => {
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-50">Storico Pagamenti</h1>
           <button
             onClick={() => navigate('/client/dashboard')}
-            className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-slate-300 text-sm font-semibold rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-slate-300 text-sm font-semibold rounded-lg transition-colors"
           >
             <ArrowLeft size={16} /><span>Dashboard</span>
           </button>
         </header>
 
-        <main className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6">
+        <main className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="border-b border-white/10">

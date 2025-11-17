@@ -13,7 +13,7 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-zinc-950 text-red-400 flex justify-center items-center p-4">
+        <div className="min-h-screen bg-slate-900 text-red-400 flex justify-center items-center p-4">
           <p>Errore: {this.state.error.message}</p>
         </div>
       );
@@ -43,7 +43,7 @@ const ImageModal = ({ src, onClose }) => (
         />
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-white bg-zinc-800/70 rounded-full p-2 hover:bg-zinc-700"
+          className="absolute top-4 right-4 text-white bg-slate-700/70 rounded-full p-2 hover:bg-slate-700"
         >
           <X size={24} />
         </button>
@@ -99,7 +99,7 @@ const AnamnesiSection = ({ title, data, photoURLs, onImageClick, variants }) => 
                   whileHover={{ scale: 1.05 }}
                 />
               ) : (
-                <div key={type} className="w-full h-40 bg-zinc-900 rounded-lg flex items-center justify-center text-xs text-slate-500">
+                <div key={type} className="w-full h-40 bg-slate-800 rounded-lg flex items-center justify-center text-xs text-slate-500">
                   Nessuna foto
                 </div>
               )
@@ -135,7 +135,7 @@ const CheckItem = ({ check, onImageClick, variants }) => {
 
   const date = toDate(check.createdAt);
   return (
-    <motion.div variants={variants} className="p-4 rounded-lg bg-zinc-900/50 border border-white/10">
+    <motion.div variants={variants} className="p-4 rounded-lg bg-slate-700/50 border border-slate-600">
       <p className="text-sm font-semibold text-cyan-300 mb-2">
         Check del {date ? date.toLocaleDateString('it-IT') : 'N/D'}
       </p>
@@ -161,7 +161,7 @@ const CheckItem = ({ check, onImageClick, variants }) => {
           <div className="flex items-center gap-2 mb-2">
             <button
               onClick={() => setShowPhotos(v => !v)}
-              className="bg-zinc-700 text-white px-2 py-1 rounded hover:bg-zinc-600 transition"
+              className="bg-slate-700 text-white px-2 py-1 rounded hover:bg-slate-700 transition"
               title={showPhotos ? "Restringi sezione foto" : "Espandi sezione foto"}
             >
               {showPhotos ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -182,7 +182,7 @@ const CheckItem = ({ check, onImageClick, variants }) => {
                     whileHover={{ scale: 1.03 }}
                   />
                 ) : (
-                  <div key={type} className="w-full h-80 bg-zinc-800 rounded-xl flex items-center justify-center text-xs text-slate-500">
+                  <div key={type} className="w-full h-80 bg-slate-700 rounded-xl flex items-center justify-center text-xs text-slate-500">
                     Nessuna foto
                   </div>
                 )
@@ -267,7 +267,7 @@ export default function CoachClientDetail() {
 
   if (error) return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-zinc-950 text-red-400 flex justify-center items-center p-4">
+      <div className="min-h-screen bg-slate-900 text-red-400 flex justify-center items-center p-4">
         <p>{error}</p>
       </div>
     </ErrorBoundary>
@@ -296,14 +296,14 @@ export default function CoachClientDetail() {
           </h1>
           <button
             onClick={() => navigate('/coach/clients')}
-            className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-slate-300 rounded-lg"
+            className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-700 text-slate-300 rounded-lg"
           >
             <ArrowLeft size={16} /> Indietro
           </button>
         </motion.header>
 
-        <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6">
-          <div className="flex flex-wrap gap-2 mb-6 bg-zinc-900/70 p-1 rounded-lg border border-white/10">
+        <motion.div variants={itemVariants} className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6">
+          <div className="flex flex-wrap gap-2 mb-6 bg-slate-800/70 p-1 rounded-lg border border-white/10">
             <button
               onClick={() => setActiveTab('info')}
               className={`px-4 py-2 text-sm rounded-md ${activeTab === 'info' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}

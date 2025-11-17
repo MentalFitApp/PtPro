@@ -387,17 +387,17 @@ export default function Statistiche() {
         </div>
 
         {/* TABELLA COMPLETA DMS */}
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-          <h3 className="text-lg font-semibold text-slate-200 mb-4">Tabella Completa DMS</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs uppercase bg-slate-900/50">
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-6 border border-slate-700">
+          <h3 className="text-sm sm:text-lg font-semibold text-slate-200 mb-3 sm:mb-4">Tabella Completa DMS</h3>
+          <div className="overflow-x-auto -mx-3 sm:mx-0">
+            <table className="w-full text-xs sm:text-sm text-left">
+              <thead className="text-[10px] sm:text-xs uppercase bg-slate-900/50">
                 <tr>
-                  <th className="px-4 py-3">Setter</th>
-                  <th className="px-4 py-3 text-center">Outreach</th>
-                  <th className="px-4 py-3 text-center">Follow-Up</th>
-                  <th className="px-4 py-3 text-center">Risposte</th>
-                  <th className="px-4 py-3 text-center">Call</th>
+                  <th className="px-2 sm:px-4 py-2 sm:py-3">Setter</th>
+                  <th className="px-2 sm:px-4 py-2 sm:py-3 text-center">Out</th>
+                  <th className="px-2 sm:px-4 py-2 sm:py-3 text-center hidden sm:table-cell">Follow-Up</th>
+                  <th className="px-2 sm:px-4 py-2 sm:py-3 text-center">Risp</th>
+                  <th className="px-2 sm:px-4 py-2 sm:py-3 text-center">Call</th>
                 </tr>
               </thead>
               <tbody>
@@ -406,16 +406,16 @@ export default function Statistiche() {
                 ) : (
                   aggregatedBySetter.map((s, i) => (
                     <tr key={i} className="border-t border-slate-700 hover:bg-slate-700/30">
-                      <td className="px-4 py-3 flex items-center gap-2">
-                        <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-xs font-bold text-slate-300">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 flex items-center gap-1 sm:gap-2">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-slate-600 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-slate-300">
                           {s.name.charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-medium text-slate-100">{s.name}</span>
+                        <span className="font-medium text-slate-100 text-xs sm:text-sm truncate">{s.name}</span>
                       </td>
-                      <td className="px-4 py-3 text-center text-amber-300 font-bold">{s.outreachTotale}</td>
-                      <td className="px-4 py-3 text-center text-green-300 font-bold">{s.followUpsTotali}</td>
-                      <td className="px-4 py-3 text-center text-cyan-300 font-bold">{s.risposte}</td>
-                      <td className="px-4 py-3 text-center text-rose-300 font-bold">{s.callPrenotate}</td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-center text-amber-300 font-bold text-xs sm:text-sm">{s.outreachTotale}</td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-center text-green-300 font-bold text-xs sm:text-sm hidden sm:table-cell">{s.followUpsTotali}</td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-center text-cyan-300 font-bold text-xs sm:text-sm">{s.risposte}</td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-center text-rose-300 font-bold text-xs sm:text-sm">{s.callPrenotate}</td>
                     </tr>
                   ))
                 )}

@@ -79,7 +79,7 @@ export default function BusinessHistory() {
         {months.map(month => (
           <motion.div
             key={month}
-            className="bg-zinc-900 p-4 rounded-lg cursor-pointer hover:bg-zinc-800"
+            className="bg-slate-800/60 backdrop-blur-sm p-4 rounded-lg cursor-pointer hover:bg-slate-700/70 border border-slate-700"
             onClick={() => fetchMonthStats(month)}
             whileHover={{ scale: 1.02 }}
           >

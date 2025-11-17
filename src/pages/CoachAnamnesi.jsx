@@ -142,7 +142,7 @@ export default function CoachAnamnesi() {
       )}
 
       {/* ULTIMI CHECK */}
-      <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl gradient-border p-4">
+      <div className="bg-slate-900/60 backdrop-blur-xl rounded-xl border border-slate-700 p-4">
         <h3 className="text-lg font-bold text-cyan-300 flex items-center gap-2 mb-3">
           <FileText size={18} /> Ultimi Check
         </h3>
@@ -152,7 +152,7 @@ export default function CoachAnamnesi() {
               <motion.div
                 key={`${check.clientId}-${check.date?.toMillis()}`}
                 whileHover={{ scale: 1.02 }}
-                className="p-2 bg-zinc-900/50 rounded-lg border border-white/10 cursor-pointer"
+                className="p-2 bg-slate-800/50 rounded-lg border border-white/10 cursor-pointer"
                 onClick={() => navigate(`/coach/client/${check.clientId}`)}
               >
                 <div className="flex justify-between text-xs">
@@ -174,7 +174,7 @@ export default function CoachAnamnesi() {
       </div>
 
       {/* ULTIME ANAMNESI */}
-      <div className="bg-zinc-950/60 backdrop-blur-xl rounded-xl gradient-border p-4">
+      <div className="bg-slate-900/60 backdrop-blur-xl rounded-xl border border-slate-700 p-4">
         <h3 className="text-lg font-bold text-amber-300 flex items-center gap-2 mb-3">
           <Calendar size={18} /> Nuove Anamnesi
         </h3>
@@ -184,7 +184,7 @@ export default function CoachAnamnesi() {
               <motion.div
                 key={anamnesi.clientId}
                 whileHover={{ scale: 1.02 }}
-                className="p-2 bg-zinc-900/50 rounded-lg border border-white/10 cursor-pointer"
+                className="p-2 bg-slate-800/50 rounded-lg border border-white/10 cursor-pointer"
                 onClick={() => navigate(`/coach/client/${anamnesi.clientId}`)}
               >
                 <div className="flex justify-between text-xs">

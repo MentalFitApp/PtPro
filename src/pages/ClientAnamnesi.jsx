@@ -55,7 +55,7 @@ const PhotoUploader = ({ type, label, onFileSelect, previewUrl, disabled }) => {
     <div className="text-center">
       <label className="block text-sm font-medium text-slate-300">{label}</label>
       <div className="mt-2 relative group">
-        <div className="flex justify-center items-center w-full h-48 bg-white/5 backdrop-blur-md rounded-lg border-2 border-dashed border-white/20 group-hover:border-cyan-500 transition-colors cursor-pointer">
+        <div className="flex justify-center items-center w-full h-48 bg-slate-700/30 rounded-lg border-2 border-dashed border-slate-600 group-hover:border-cyan-500 transition-colors cursor-pointer">
           {localPreview ? (
             <img src={localPreview} alt={label} className="h-full w-full object-contain rounded-lg p-1" />
           ) : (
@@ -176,15 +176,15 @@ const ClientAnamnesi = () => {
     </div>
   );
 
-  const inputStyle = "w-full p-2.5 mt-1 bg-white/5 backdrop-blur-md border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-white placeholder:text-slate-400";
+  const inputStyle = "w-full p-2.5 mt-1 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-white placeholder:text-slate-400";
   const labelStyle = "block text-sm font-medium text-slate-300";
-  const sectionStyle = "bg-white/5 backdrop-blur-xl rounded-2xl gradient-border p-6 shadow-lg border border-white/10";
+  const sectionStyle = "bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 shadow-lg";
   const headingStyle = "font-bold mb-4 text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 flex items-center gap-2";
 
   const ViewField = ({ label, value }) => (
     <div className="mb-4">
       <h4 className="text-sm font-semibold text-slate-400">{label}</h4>
-      <p className="mt-1 p-3 bg-white/5 backdrop-blur-md rounded-lg min-h-[44px] text-white break-words whitespace-pre-wrap shadow-inner">{value || 'Non specificato'}</p>
+      <p className="mt-1 p-3 bg-slate-700/50 rounded-lg min-h-[44px] text-white break-words whitespace-pre-wrap shadow-inner">{value || 'Non specificato'}</p>
     </div>
   );
 
@@ -205,7 +205,7 @@ const ClientAnamnesi = () => {
               transition={{ duration: 0.3 }}
             />
           ) : (
-            <div className="mt-2 flex justify-center items-center w-full h-48 bg-white/5 backdrop-blur-md rounded-lg text-slate-500">
+            <div className="mt-2 flex justify-center items-center w-full h-48 bg-slate-700/50 rounded-lg text-slate-500">
               <span>Non caricata</span>
             </div>
           )}
@@ -220,7 +220,7 @@ const ClientAnamnesi = () => {
 
       <header className="flex justify-between items-center mb-8 flex-col sm:flex-row gap-4">
         <h1 className="text-3xl sm:text-4xl font-bold text-white">Anamnesi Cliente</h1>
-        <button onClick={() => navigate('/client/dashboard')} className="flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-md hover:bg-white/10 text-slate-300 text-sm font-semibold rounded-lg transition-colors border border-white/10">
+        <button onClick={() => navigate('/client/dashboard')} className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-sm font-semibold rounded-lg transition-colors border border-slate-600">
           <ArrowLeft size={16} /> Torna alla dashboard
         </button>
       </header>
@@ -319,7 +319,7 @@ const ClientAnamnesi = () => {
                 type="button"
                 onClick={handleCancel}
                 disabled={isSubmitting || loading}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-lg font-semibold border border-white/10"
+                className="flex items-center gap-2 px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 text-white rounded-lg font-semibold border border-slate-600"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -383,7 +383,7 @@ const ClientAnamnesi = () => {
               <div className="flex justify-end pt-4">
                 <motion.button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg font-semibold border border-white/10"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 rounded-lg font-semibold border border-slate-600"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >

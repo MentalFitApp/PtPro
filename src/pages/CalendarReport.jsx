@@ -78,9 +78,9 @@ export default function CalendarReport() {
     </div>
   );
 
-  // SOLUZIONE FUSO ORARIO: FORZA MEZZOGIORNO UTC = MEZZANOTTE LOCALE CET
+  // Crea data locale senza problemi di fuso orario
   const [year, month, day] = date.split('-').map(Number);
-  const reportDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0)); // 12:00 UTC = 13:00 CET
+  const reportDate = new Date(year, month - 1, day);
   const formattedDate = new Intl.DateTimeFormat('it-IT', {
     weekday: 'long',
     year: 'numeric',
@@ -156,11 +156,11 @@ export default function CalendarReport() {
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-5 text-center">
-              <div className="p-5 bg-zinc-800/60 rounded-xl border border-cyan-500/30">
+              <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/30">
                 <p className="text-cyan-400 font-medium text-sm">Follow-ups</p>
                 <p className="text-3xl font-bold text-white mt-2">{settingReportForDate.followUpsFatti || 0}</p>
               </div>
-              <div className="p-5 bg-zinc-800/60 rounded-xl border border-cyan-500/30">
+              <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/30">
                 <p className="text-cyan-400 font-medium text-sm">Dialed</p>
                 <p className="text-3xl font-bold text-white mt-2">{settingReportForDate.dialedFatti || 0}</p>
               </div>
@@ -192,11 +192,11 @@ export default function CalendarReport() {
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-5 text-center">
-              <div className="p-5 bg-zinc-800/60 rounded-xl border border-rose-500/30">
+              <div className="p-5 bg-slate-800/60 rounded-xl border border-rose-500/30">
                 <p className="text-rose-400 font-medium text-sm">Call Fissate</p>
                 <p className="text-3xl font-bold text-white mt-2">{salesReportForDate.chiamateFissate || 0}</p>
               </div>
-              <div className="p-5 bg-zinc-800/60 rounded-xl border border-rose-500/30">
+              <div className="p-5 bg-slate-800/60 rounded-xl border border-rose-500/30">
                 <p className="text-rose-400 font-medium text-sm">Call Fatte</p>
                 <p className="text-3xl font-bold text-white mt-2">{salesReportForDate.chiamateFatte || 0}</p>
               </div>
@@ -270,13 +270,13 @@ export default function CalendarReport() {
                   </h3>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="space-y-5">
-                      <div className="p-5 bg-zinc-800/60 rounded-xl border border-cyan-500/20">
+                      <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/20">
                         <p className="text-cyan-300 font-semibold text-lg">Focus (1-5)</p>
                         <p className="text-4xl font-bold text-white mt-2">
                           {s.report.eodReport.focus || '—'}
                         </p>
                       </div>
-                      <div className="p-5 bg-zinc-800/60 rounded-xl border border-cyan-500/20">
+                      <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/20">
                         <p className="text-cyan-300 font-semibold text-lg">Skills (1-5)</p>
                         <p className="text-4xl font-bold text-white mt-2">
                           {s.report.eodReport.skills || '—'}
@@ -320,19 +320,19 @@ export default function CalendarReport() {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                     {s.role === 'Setter' && (
                       <>
-                        <div className="p-5 bg-zinc-800/60 rounded-xl border border-cyan-500/30 text-center">
+                        <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/30 text-center">
                           <p className="text-cyan-400 font-medium text-sm">Outreach IG</p>
                           <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.outreachIG || 0}</p>
                         </div>
-                        <div className="p-5 bg-zinc-800/60 rounded-xl border border-cyan-500/30 text-center">
+                        <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/30 text-center">
                           <p className="text-cyan-400 font-medium text-sm">Outreach FB/TT</p>
                           <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.outreachFBTT || 0}</p>
                         </div>
-                        <div className="p-5 bg-zinc-800/60 rounded-xl border border-cyan-500/30 text-center">
+                        <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/30 text-center">
                           <p className="text-cyan-400 font-medium text-sm">Follow-Ups IG</p>
                           <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.followUpsIG || 0}</p>
                         </div>
-                        <div className="p-5 bg-zinc-800/60 rounded-xl border border-cyan-500/30 text-center">
+                        <div className="p-5 bg-slate-800/60 rounded-xl border border-cyan-500/30 text-center">
                           <p className="text-cyan-400 font-medium text-sm">Follow-Ups FB/TT</p>
                           <p className="text-3xl font-bold text-white mt-2">{s.report.tracker.followUpsFBTT || 0}</p>
                         </div>

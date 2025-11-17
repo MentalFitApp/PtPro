@@ -33,7 +33,7 @@ const ReportStatus = ({ collaboratori }) => {
   }, [collaboratori]);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 mb-4 border border-white/10">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700">
       <h2 className="text-sm font-semibold text-slate-200 mb-3">Stato Report Oggi</h2>
       <p className="text-xs"><strong>Completati:</strong> {collaboratori.length - missingReports.length}</p>
       <p className="text-xs"><strong>Mancanti:</strong> {missingReports.length}</p>
@@ -464,8 +464,7 @@ export default function Collaboratori() {
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6 py-6">
+    <div className="space-y-4 sm:space-y-6">
 
         {/* HEADER */}
         <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -473,8 +472,8 @@ export default function Collaboratori() {
             <Users size={24} /> Gestione
           </h1>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@esempio.com" className="px-3 py-1.5 bg-zinc-950/40 border border-white/10 rounded text-xs w-full sm:w-40" />
-            <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-3 py-1.5 bg-zinc-950/40 border border-white/10 rounded text-xs w-full sm:w-28">
+            <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@esempio.com" className="px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-xs w-full sm:w-40" />
+            <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-xs w-full sm:w-28">
               <option>Setter</option>
               <option>Marketing</option>
               <option>Vendita</option>
@@ -489,27 +488,27 @@ export default function Collaboratori() {
         {error && <p className="text-red-500 text-center text-xs">{error}</p>}
 
         {/* RIAGGIUNGI CON UID */}
-        <div className="mt-4 p-3 bg-gradient-to-r from-amber-900/20 to-orange-900/20 rounded-lg border border-amber-500/30">
-          <p className="text-xs font-bold text-amber-300 mb-2 text-center">RIAGGIUNGI CON UID + CAMBIA EMAIL</p>
+        <div className="p-2 sm:p-3 bg-gradient-to-r from-amber-900/20 to-orange-900/20 rounded-lg border border-amber-500/30">
+          <p className="text-[10px] sm:text-xs font-bold text-amber-300 mb-2 text-center">RIAGGIUNGI CON UID + CAMBIA EMAIL</p>
           {!editingCollab ? (
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input type="text" value={newUid} onChange={e => setNewUid(e.target.value.trim())} placeholder="Inserisci UID" className="flex-1 px-3 py-1.5 bg-zinc-950/40 border border-white/10 rounded text-xs font-mono" />
-              <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-3 py-1.5 bg-zinc-950/40 border border-white/10 rounded text-xs">
+            <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
+              <input type="text" value={newUid} onChange={e => setNewUid(e.target.value.trim())} placeholder="Inserisci UID" className="flex-1 px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs font-mono" />
+              <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs">
                 <option>Setter</option>
                 <option>Marketing</option>
                 <option>Vendita</option>
               </select>
-              <motion.button onClick={handleAddByUid} className="flex items-center justify-center gap-1 px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded text-xs font-bold" whileHover={{ scale: 1.05 }}>
-                <Key size={14} /> Cerca UID
+              <motion.button onClick={handleAddByUid} className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded text-[10px] sm:text-xs font-bold" whileHover={{ scale: 1.05 }}>
+                <Key size={12} className="sm:hidden" /><Key size={14} className="hidden sm:block" /> Cerca UID
               </motion.button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
-              <p className="text-xs text-amber-200">Modifica email per <strong>{editingCollab.slice(0, 12)}...</strong></p>
-              <div className="flex gap-2">
-                <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="nuova@email.it" className="flex-1 px-3 py-1.5 bg-zinc-950/40 border border-amber-500/50 rounded text-xs" />
-                <motion.button onClick={handleUpdateEmailAndSendReset} className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-bold" whileHover={{ scale: 1.05 }}>Invia</motion.button>
-                <motion.button onClick={() => { setEditingCollab(null); setEditEmail(''); }} className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white rounded text-xs" whileHover={{ scale: 1.05 }}>Annulla</motion.button>
+            <div className="flex flex-col gap-1.5 sm:gap-2">
+              <p className="text-[10px] sm:text-xs text-amber-200">Modifica email per <strong className="break-all">{editingCollab.slice(0, 12)}...</strong></p>
+              <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
+                <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="nuova@email.it" className="flex-1 px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-amber-500/50 rounded text-[10px] sm:text-xs" />
+                <motion.button onClick={handleUpdateEmailAndSendReset} className="px-2 sm:px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-[10px] sm:text-xs font-bold" whileHover={{ scale: 1.05 }}>Invia</motion.button>
+                <motion.button onClick={() => { setEditingCollab(null); setEditEmail(''); }} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white rounded text-[10px] sm:text-xs" whileHover={{ scale: 1.05 }}>Annulla</motion.button>
               </div>
             </div>
           )}
@@ -518,16 +517,16 @@ export default function Collaboratori() {
         <ReportStatus collaboratori={collaboratori} />
 
         {/* 3 TABS LEADS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
           {[
             { label: 'Oggi', leads: stats.leadsToday },
             { label: 'Settimana', leads: stats.leadsWeek },
             { label: 'Mese', leads: stats.leadsMonth },
           ].map((stat, i) => (
-            <motion.div key={i} className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10">
-              <h3 className="text-sm font-semibold text-slate-200">{stat.label}</h3>
-              <p className="text-3xl font-bold text-green-500 mt-1">{stat.leads}</p>
-              <p className="text-xs text-slate-400">Leads</p>
+            <motion.div key={i} className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
+              <h3 className="text-[10px] sm:text-sm font-semibold text-slate-200">{stat.label}</h3>
+              <p className="text-xl sm:text-3xl font-bold text-green-500 mt-0.5 sm:mt-1">{stat.leads}</p>
+              <p className="text-[9px] sm:text-xs text-slate-400">Leads</p>
             </motion.div>
           ))}
         </div>
@@ -536,20 +535,25 @@ export default function Collaboratori() {
           <Calendar 
             reports={collaboratori.flatMap(c => c.dailyReports || [])} 
             collaboratori={collaboratori} 
-            onDateClick={d => navigate(`/calendar-report/${d.toISOString().split('T')[0]}`)} 
+            onDateClick={d => {
+              const year = d.getFullYear();
+              const month = String(d.getMonth() + 1).padStart(2, '0');
+              const day = String(d.getDate()).padStart(2, '0');
+              navigate(`/calendar-report/${year}-${month}-${day}`);
+            }} 
           />
         </div>
 
         {/* REPORT SETTING & VENDITA */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
           {/* SETTING */}
-          <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10">
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
             <div className="flex justify-between items-center mb-2">
-              <h2 className="text-sm font-semibold text-cyan-400">Report Setting</h2>
-              <button onClick={() => setShowPastSetting(!showPastSetting)} className="text-xs flex items-center gap-1 text-cyan-300 hover:text-cyan-100"><Eye size={12} /> Storico</button>
+              <h2 className="text-xs sm:text-sm font-semibold text-cyan-400">Report Setting</h2>
+              <button onClick={() => setShowPastSetting(!showPastSetting)} className="text-[10px] sm:text-xs flex items-center gap-0.5 sm:gap-1 text-cyan-300 hover:text-cyan-100"><Eye size={10} className="sm:hidden" /><Eye size={12} className="hidden sm:block" /> Storico</button>
             </div>
             {showPastSetting && (
-              <div className="mb-3 p-2 bg-zinc-900/50 border border-cyan-800/30 rounded max-h-32 overflow-y-auto text-xs">
+              <div className="mb-2 sm:mb-3 p-1.5 sm:p-2 bg-slate-900/50 border border-cyan-800/30 rounded max-h-24 sm:max-h-32 overflow-y-auto text-[10px] sm:text-xs">
                 {settingReports.length === 0 ? <p className="text-slate-400">Nessun report</p> : settingReports.map(r => (
                   <button key={r.id} onClick={() => loadPastSettingReport(r)} className="block w-full text-left p-1 hover:bg-cyan-900/30 rounded">
                     {r.date} → {r.chiamatePrenotate} prenotate
@@ -557,24 +561,24 @@ export default function Collaboratori() {
                 ))}
               </div>
             )}
-            <div className="space-y-2 text-xs">
-              <input type="date" value={reportSetting.date} onChange={e => setReportSetting({ ...reportSetting, date: e.target.value })} className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
-              <input type="number" value={reportSetting.followUpsFatti} onChange={e => setReportSetting({ ...reportSetting, followUpsFatti: e.target.value })} placeholder="Follow-ups" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
-              <input type="number" value={reportSetting.dialedFatti} onChange={e => setReportSetting({ ...reportSetting, dialedFatti: e.target.value })} placeholder="Dialed" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
-              <input type="number" value={reportSetting.dialedRisposte} onChange={e => setReportSetting({ ...reportSetting, dialedRisposte: e.target.value })} placeholder="Risposte" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
-              <input type="number" value={reportSetting.chiamatePrenotate} onChange={e => setReportSetting({ ...reportSetting, chiamatePrenotate: e.target.value })} placeholder="Prenotate" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
-              <button onClick={handleSaveReportSetting} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-1.5 rounded text-xs"><Check className="inline mr-1" size={12} /> Salva</button>
+            <div className="space-y-1.5 sm:space-y-2 text-[10px] sm:text-xs">
+              <input type="date" value={reportSetting.date} onChange={e => setReportSetting({ ...reportSetting, date: e.target.value })} className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
+              <input type="number" value={reportSetting.followUpsFatti} onChange={e => setReportSetting({ ...reportSetting, followUpsFatti: e.target.value })} placeholder="Follow-ups" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
+              <input type="number" value={reportSetting.dialedFatti} onChange={e => setReportSetting({ ...reportSetting, dialedFatti: e.target.value })} placeholder="Dialed" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
+              <input type="number" value={reportSetting.dialedRisposte} onChange={e => setReportSetting({ ...reportSetting, dialedRisposte: e.target.value })} placeholder="Risposte" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
+              <input type="number" value={reportSetting.chiamatePrenotate} onChange={e => setReportSetting({ ...reportSetting, chiamatePrenotate: e.target.value })} placeholder="Prenotate" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
+              <button onClick={handleSaveReportSetting} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-1.5 rounded text-[10px] sm:text-xs"><Check className="inline mr-1" size={10} /><Check className="inline mr-1 hidden sm:inline" size={12} /> Salva</button>
             </div>
           </div>
 
           {/* VENDITA */}
-          <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10">
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
             <div className="flex justify-between items-center mb-2">
-              <h2 className="text-sm font-semibold text-rose-400">Report Vendita</h2>
-              <button onClick={() => setShowPastSales(!showPastSales)} className="text-xs flex items-center gap-1 text-rose-300 hover:text-rose-100"><Eye size={12} /> Storico</button>
+              <h2 className="text-xs sm:text-sm font-semibold text-rose-400">Report Vendita</h2>
+              <button onClick={() => setShowPastSales(!showPastSales)} className="text-[10px] sm:text-xs flex items-center gap-0.5 sm:gap-1 text-rose-300 hover:text-rose-100"><Eye size={10} className="sm:hidden" /><Eye size={12} className="hidden sm:block" /> Storico</button>
             </div>
             {showPastSales && (
-              <div className="mb-3 p-2 bg-zinc-900/50 border border-rose-800/30 rounded max-h-32 overflow-y-auto text-xs">
+              <div className="mb-2 sm:mb-3 p-1.5 sm:p-2 bg-slate-900/50 border border-rose-800/30 rounded max-h-24 sm:max-h-32 overflow-y-auto text-[10px] sm:text-xs">
                 {salesReports.length === 0 ? <p className="text-slate-400">Nessun report</p> : salesReports.map(r => (
                   <button key={r.id} onClick={() => loadPastSalesReport(r)} className="block w-full text-left p-1 hover:bg-rose-900/30 rounded">
                     {r.date} → {r.chiuse} chiuse
@@ -582,38 +586,38 @@ export default function Collaboratori() {
                 ))}
               </div>
             )}
-            <div className="space-y-2 text-xs">
-              <input type="date" value={reportVendita.date} onChange={e => setReportVendita({ ...reportVendita, date: e.target.value })} className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
-              <input type="number" value={reportVendita.chiamateFissate} onChange={e => setReportVendita({ ...reportVendita, chiamateFissate: e.target.value })} placeholder="Fissate" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
-              <input type="number" value={reportVendita.chiamateFatte} onChange={e => setReportVendita({ ...reportVendita, chiamateFatte: e.target.value })} placeholder="Fatte" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
-              <input type="number" value={reportVendita.offersFatte} onChange={e => setReportVendita({ ...reportVendita, offersFatte: e.target.value })} placeholder="Offers" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
-              <input type="number" value={reportVendita.chiuse} onChange={e => setReportVendita({ ...reportVendita, chiuse: e.target.value })} placeholder="Chiuse" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
-              <input type="number" value={reportVendita.cash} onChange={e => setReportVendita({ ...reportVendita, cash: e.target.value })} placeholder="Cash" className="w-full p-1.5 bg-zinc-950/40 border border-white/10 rounded" />
-              <button onClick={handleSaveReportVendita} className="w-full bg-gradient-to-r from-rose-600 to-red-600 text-white py-1.5 rounded text-xs"><Check className="inline mr-1" size={12} /> Salva</button>
+            <div className="space-y-1.5 sm:space-y-2 text-[10px] sm:text-xs">
+              <input type="date" value={reportVendita.date} onChange={e => setReportVendita({ ...reportVendita, date: e.target.value })} className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
+              <input type="number" value={reportVendita.chiamateFissate} onChange={e => setReportVendita({ ...reportVendita, chiamateFissate: e.target.value })} placeholder="Fissate" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
+              <input type="number" value={reportVendita.chiamateFatte} onChange={e => setReportVendita({ ...reportVendita, chiamateFatte: e.target.value })} placeholder="Fatte" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
+              <input type="number" value={reportVendita.offersFatte} onChange={e => setReportVendita({ ...reportVendita, offersFatte: e.target.value })} placeholder="Warm" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
+              <input type="number" value={reportVendita.chiuse} onChange={e => setReportVendita({ ...reportVendita, chiuse: e.target.value })} placeholder="Chiuse" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
+              <input type="number" value={reportVendita.cash} onChange={e => setReportVendita({ ...reportVendita, cash: e.target.value })} placeholder="Cash" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
+              <button onClick={handleSaveReportVendita} className="w-full bg-gradient-to-r from-rose-600 to-red-600 text-white py-1.5 rounded text-[10px] sm:text-xs"><Check className="inline mr-1" size={10} /><Check className="inline mr-1 hidden sm:inline" size={12} /> Salva</button>
             </div>
           </div>
         </div>
 
         {/* FILTRI UNIFICATI + TABELLA */}
-        <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10 mb-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <h2 className="text-sm font-semibold text-slate-200">Leads ({filteredLeads.length})</h2>
-            <div className="flex flex-wrap gap-2 text-xs">
-              <div className="flex items-center gap-1 bg-zinc-950/40 rounded px-2 py-1">
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+            <h2 className="text-xs sm:text-sm font-semibold text-slate-200">Leads ({filteredLeads.length})</h2>
+            <div className="flex flex-wrap gap-1.5 text-xs w-full sm:w-auto">
+              <div className="flex items-center gap-1 bg-slate-700/50 rounded px-2 py-1 flex-1 sm:flex-none">
                 <Search size={12} className="text-slate-400" />
                 <input 
                   type="text" 
                   value={searchQuery} 
                   onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
                   placeholder="Cerca..." 
-                  className="bg-transparent outline-none w-24" 
+                  className="bg-transparent outline-none w-full sm:w-24" 
                 />
               </div>
 
               <select 
                 value={filters.chiuso} 
                 onChange={e => { setFilters({ ...filters, chiuso: e.target.value }); setCurrentPage(1); }} 
-                className="bg-zinc-950/40 border border-white/10 rounded px-2 py-1"
+                className="bg-slate-700/50 border border-slate-600 rounded px-1.5 py-1 text-[10px] sm:text-xs flex-1 sm:flex-none"
               >
                 <option value="tutti">Chiuso: Tutti</option>
                 <option value="si">Chiuso: Sì</option>
@@ -623,7 +627,7 @@ export default function Collaboratori() {
               <select 
                 value={filters.showUp} 
                 onChange={e => { setFilters({ ...filters, showUp: e.target.value }); setCurrentPage(1); }} 
-                className="bg-zinc-950/40 border border-white/10 rounded px-2 py-1"
+                className="bg-slate-700/50 border border-slate-600 rounded px-1.5 py-1 text-[10px] sm:text-xs flex-1 sm:flex-none"
               >
                 <option value="tutti">Show-Up: Tutti</option>
                 <option value="si">Show-Up: Sì</option>
@@ -633,7 +637,7 @@ export default function Collaboratori() {
               <select 
                 value={filters.offer} 
                 onChange={e => { setFilters({ ...filters, offer: e.target.value }); setCurrentPage(1); }} 
-                className="bg-zinc-950/40 border border-white/10 rounded px-2 py-1"
+                className="bg-slate-700/50 border border-slate-600 rounded px-1.5 py-1 text-[10px] sm:text-xs flex-1 sm:flex-none"
               >
                 <option value="tutti">Warm: Tutti</option>
                 <option value="si">Warm: Sì</option>
@@ -644,119 +648,119 @@ export default function Collaboratori() {
         </div>
 
         {/* TABELLA LEADS */}
-        <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10">
-          <div className="overflow-x-auto max-w-full rounded border border-white/10">
-            <div className="min-w-[1800px] w-full">
-              <table className="w-full text-xs text-left text-slate-400">
-                <thead className="text-xs uppercase bg-zinc-950/40 sticky top-0">
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <div className="inline-block min-w-full align-middle">
+              <table className="w-full text-[10px] sm:text-xs text-left text-slate-400">
+                <thead className="text-[10px] sm:text-xs uppercase bg-slate-900/50 sticky top-0">
                   <tr>
-                    <th className="px-2 py-1 text-center">Az</th>
-                    <th className="px-2 py-1">Nome</th>
-                    <th className="px-2 py-1">Fonte</th>
-                    <th className="px-2 py-1">Email</th>
-                    <th className="px-2 py-1">Num</th>
-                    <th className="px-2 py-1">Data</th>
-                    <th className="px-2 py-1">Setter</th>
-                    <th className="px-2 py-1 text-center">Dialed</th>
-                    <th className="px-2 py-1 text-center">Setting Call</th>
-                    <th className="px-2 py-1 text-center">Show-Up</th>
-                    <th className="px-2 py-1 text-center">Target</th>
-                    <th className="px-2 py-1 text-center">Warm</th>
-                    <th className="px-2 py-1 text-center">Closed</th>
-                    <th className="px-2 py-1 text-center">€</th>
-                    <th className="px-2 py-1 text-center">M</th>
-                    <th className="px-2 py-1">Note</th>
+                    <th className="px-1 sm:px-2 py-1 text-center">Az</th>
+                    <th className="px-1 sm:px-2 py-1">Nome</th>
+                    <th className="px-1 sm:px-2 py-1 hidden md:table-cell">Fonte</th>
+                    <th className="px-1 sm:px-2 py-1 hidden lg:table-cell">Email</th>
+                    <th className="px-1 sm:px-2 py-1 hidden md:table-cell">Num</th>
+                    <th className="px-1 sm:px-2 py-1">Data</th>
+                    <th className="px-1 sm:px-2 py-1 hidden sm:table-cell">Setter</th>
+                    <th className="px-1 sm:px-2 py-1 text-center hidden lg:table-cell">Dialed</th>
+                    <th className="px-1 sm:px-2 py-1 text-center hidden lg:table-cell">Setting Call</th>
+                    <th className="px-1 sm:px-2 py-1 text-center">Show-Up</th>
+                    <th className="px-1 sm:px-2 py-1 text-center hidden md:table-cell">Target</th>
+                    <th className="px-1 sm:px-2 py-1 text-center">Warm</th>
+                    <th className="px-1 sm:px-2 py-1 text-center">Closed</th>
+                    <th className="px-1 sm:px-2 py-1 text-center">€</th>
+                    <th className="px-1 sm:px-2 py-1 text-center hidden sm:table-cell">M</th>
+                    <th className="px-1 sm:px-2 py-1 hidden lg:table-cell">Note</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedLeads.map(lead => (
-                    <tr key={lead.id} className="border-b border-white/10 hover:bg-zinc-950/20">
-                      <td className="px-2 py-1 text-center">
+                    <tr key={lead.id} className="border-b border-white/10 hover:bg-slate-700/30">
+                      <td className="px-1 sm:px-2 py-1 text-center">
                         {editingLead === lead.id ? (
-                          <div className="flex gap-1 justify-center">
-                            <button onClick={handleSaveLeadEdit} className="text-green-400"><Check size={12} /></button>
-                            <button onClick={handleCancelEdit} className="text-red-400"><X size={12} /></button>
+                          <div className="flex gap-0.5 sm:gap-1 justify-center">
+                            <button onClick={handleSaveLeadEdit} className="text-green-400"><Check size={10} className="sm:hidden" /><Check size={12} className="hidden sm:block" /></button>
+                            <button onClick={handleCancelEdit} className="text-red-400"><X size={10} className="sm:hidden" /><X size={12} className="hidden sm:block" /></button>
                           </div>
                         ) : (
-                          <div className="flex gap-1 justify-center">
-                            <button onClick={() => handleEditLead(lead)} className="text-cyan-400"><Edit size={12} /></button>
-                            <button onClick={() => handleDeleteLead(lead.id)} className="text-red-400"><Trash2 size={12} /></button>
+                          <div className="flex gap-0.5 sm:gap-1 justify-center">
+                            <button onClick={() => handleEditLead(lead)} className="text-cyan-400"><Edit size={10} className="sm:hidden" /><Edit size={12} className="hidden sm:block" /></button>
+                            <button onClick={() => handleDeleteLead(lead.id)} className="text-red-400"><Trash2 size={10} className="sm:hidden" /><Trash2 size={12} className="hidden sm:block" /></button>
                           </div>
                         )}
                       </td>
 
-                      <td className="px-2 py-1">
+                      <td className="px-1 sm:px-2 py-1">
                         {editingLead === lead.id ? (
-                          <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-1 bg-zinc-950/40 border border-white/10 rounded text-xs" />
-                        ) : <div className="max-w-[80px] truncate font-medium">{lead.name || '—'}</div>}
+                          <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-0.5 sm:p-1 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs" />
+                        ) : <div className="max-w-[60px] sm:max-w-[80px] truncate font-medium">{lead.name || '—'}</div>}
                       </td>
 
-                      <td className="px-2 py-1">
+                      <td className="px-1 sm:px-2 py-1 hidden md:table-cell">
                         {editingLead === lead.id ? (
-                          <select value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} className="w-full p-1 bg-zinc-950/40 border border-white/10 rounded text-xs">
+                          <select value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} className="w-full p-1 bg-slate-700/50 border border-slate-600 rounded text-xs">
                             <option value="">—</option>
                             {fonti.map(f => <option key={f} value={f}>{f}</option>)}
                           </select>
                         ) : <div className="max-w-[100px] truncate">{lead.source || '—'}</div>}
                       </td>
 
-                      <td className="px-2 py-1 truncate max-w-[100px]">{lead.email || '—'}</td>
-                      <td className="px-2 py-1">{lead.number || '—'}</td>
-                      <td className="px-2 py-1">{lead.dataPrenotazione ? `${lead.dataPrenotazione.slice(5)} ${lead.oraPrenotazione || ''}` : '—'}</td>
-                      <td className="px-2 py-1 truncate max-w-[70px]">{lead.collaboratoreNome || '—'}</td>
+                      <td className="px-1 sm:px-2 py-1 truncate max-w-[100px] hidden lg:table-cell">{lead.email || '—'}</td>
+                      <td className="px-1 sm:px-2 py-1 hidden md:table-cell">{lead.number || '—'}</td>
+                      <td className="px-1 sm:px-2 py-1 text-[9px] sm:text-[10px]">{lead.dataPrenotazione ? `${lead.dataPrenotazione.slice(5)} ${lead.oraPrenotazione || ''}` : '—'}</td>
+                      <td className="px-1 sm:px-2 py-1 truncate max-w-[50px] sm:max-w-[70px] hidden sm:table-cell">{lead.collaboratoreNome || '—'}</td>
 
-                      <td className="px-2 py-1 text-center">
+                      <td className="px-1 sm:px-2 py-1 text-center hidden lg:table-cell">
                         {editingLead === lead.id ? (
-                          <input type="number" min="0" value={editForm.dialed || 0} onChange={e => setEditForm({ ...editForm, dialed: parseInt(e.target.value) || 0 })} className="w-12 p-0.5 bg-zinc-950/40 border border-white/10 rounded text-xs text-center" />
+                          <input type="number" min="0" value={editForm.dialed || 0} onChange={e => setEditForm({ ...editForm, dialed: parseInt(e.target.value) || 0 })} className="w-12 p-0.5 bg-slate-700/50 border border-slate-600 rounded text-xs text-center" />
                         ) : <span className="font-bold text-cyan-400">{lead.dialed ?? 0}</span>}
                       </td>
 
-                      <td className="px-2 py-1 text-center">
+                      <td className="px-1 sm:px-2 py-1 text-center hidden lg:table-cell">
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.settingCall || false} onChange={e => setEditForm({ ...editForm, settingCall: e.target.checked })} className="w-3 h-3" />
-                        ) : <div className={`font-bold ${lead.settingCall ? 'text-green-400' : 'text-red-400'}`}>{lead.settingCall ? 'Sì' : 'No'}</div>}
+                        ) : <div className={`font-bold text-[10px] ${lead.settingCall ? 'text-green-400' : 'text-red-400'}`}>{lead.settingCall ? 'Sì' : 'No'}</div>}
                       </td>
 
-                      <td className="px-2 py-1 text-center">
+                      <td className="px-1 sm:px-2 py-1 text-center">
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.showUp} onChange={e => setEditForm({ ...editForm, showUp: e.target.checked })} className="w-3 h-3" />
-                        ) : <div className={`font-bold ${lead.showUp ? 'text-green-400' : 'text-red-400'}`}>{lead.showUp ? 'Sì' : 'No'}</div>}
+                        ) : <div className={`font-bold text-[10px] ${lead.showUp ? 'text-green-400' : 'text-red-400'}`}>{lead.showUp ? 'Sì' : 'No'}</div>}
                       </td>
 
-                      <td className="px-2 py-1 text-center">
+                      <td className="px-1 sm:px-2 py-1 text-center hidden md:table-cell">
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.target || false} onChange={e => setEditForm({ ...editForm, target: e.target.checked })} className="w-3 h-3" />
-                        ) : <div className={`font-bold ${lead.target ? 'text-yellow-400' : 'text-gray-500'}`}>{lead.target ? 'Sì' : 'No'}</div>}
+                        ) : <div className={`font-bold text-[10px] ${lead.target ? 'text-yellow-400' : 'text-gray-500'}`}>{lead.target ? 'Sì' : 'No'}</div>}
                       </td>
 
-                      <td className="px-2 py-1 text-center">
+                      <td className="px-1 sm:px-2 py-1 text-center">
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.offer} onChange={e => setEditForm({ ...editForm, offer: e.target.checked })} className="w-3 h-3" />
-                        ) : <div className={`font-bold ${lead.offer ? 'text-yellow-400' : 'text-gray-500'}`}>{lead.offer ? 'Sì' : 'No'}</div>}
+                        ) : <div className={`font-bold text-[10px] ${lead.offer ? 'text-yellow-400' : 'text-gray-500'}`}>{lead.offer ? 'Sì' : 'No'}</div>}
                       </td>
 
-                      <td className="px-2 py-1 text-center">
+                      <td className="px-1 sm:px-2 py-1 text-center">
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.chiuso} onChange={e => setEditForm({ ...editForm, chiuso: e.target.checked })} className="w-3 h-3" />
-                        ) : <div className={`font-bold ${lead.chiuso ? 'text-green-400' : 'text-yellow-400'}`}>{lead.chiuso ? 'Sì' : 'No'}</div>}
+                        ) : <div className={`font-bold text-[10px] ${lead.chiuso ? 'text-green-400' : 'text-yellow-400'}`}>{lead.chiuso ? 'Sì' : 'No'}</div>}
                       </td>
 
-                      <td className="px-2 py-1 text-center">
+                      <td className="px-1 sm:px-2 py-1 text-center">
                         {editingLead === lead.id ? (
-                          <input type="number" min="0" step="0.01" value={editForm.amount || ''} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} className="w-16 p-0.5 bg-zinc-950/40 border border-white/10 rounded text-xs text-center" />
-                        ) : <div className="font-bold text-green-400">€{lead.amount || 0}</div>}
+                          <input type="number" min="0" step="0.01" value={editForm.amount || ''} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} className="w-12 sm:w-16 p-0.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs text-center" />
+                        ) : <div className="font-bold text-green-400 text-[10px] sm:text-xs">€{lead.amount || 0}</div>}
                       </td>
 
-                      <td className="px-2 py-1 text-center">
+                      <td className="px-1 sm:px-2 py-1 text-center hidden sm:table-cell">
                         {editingLead === lead.id ? (
-                          <input type="number" min="0" value={editForm.mesi || ''} onChange={e => setEditForm({ ...editForm, mesi: e.target.value })} className="w-12 p-0.5 bg-zinc-950/40 border border-white/10 rounded text-xs text-center" />
+                          <input type="number" min="0" value={editForm.mesi || ''} onChange={e => setEditForm({ ...editForm, mesi: e.target.value })} className="w-10 sm:w-12 p-0.5 bg-slate-700/50 border border-slate-600 rounded text-xs text-center" />
                         ) : <div className="font-bold">{lead.mesi || 0}</div>}
                       </td>
 
-                      <td className="px-2 py-1 max-w-[120px] truncate">
+                      <td className="px-1 sm:px-2 py-1 max-w-[120px] truncate hidden lg:table-cell">
                         <button 
                           onClick={() => { setCurrentNote(lead.note || 'Nessuna nota'); setShowNotePopup(true); }} 
-                          className="text-cyan-400 hover:underline text-xs"
+                          className="text-cyan-400 hover:underline text-[10px] sm:text-xs"
                         >
                           {lead.note ? 'Vedi' : '—'}
                         </button>
@@ -778,19 +782,19 @@ export default function Collaboratori() {
         </div>
 
         {/* LEAD PER FONTE */}
-        <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 mb-4 border border-white/10">
-          <h2 className="text-sm font-semibold text-slate-200 mb-3">Lead per Fonte</h2>
-          <div className="space-y-1 text-xs">
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
+          <h2 className="text-xs sm:text-sm font-semibold text-slate-200 mb-2 sm:mb-3">Lead per Fonte</h2>
+          <div className="space-y-1 text-[10px] sm:text-xs">
             {sourceStats.length === 0 ? (
               <p className="text-slate-400">Nessun lead</p>
             ) : (
               sourceStats.map(s => (
-                <div key={s.source} className="flex justify-between items-center p-2 bg-zinc-950/40 rounded border border-white/10">
-                  <div className="flex items-center gap-2">
-                    <span className="text-cyan-400 font-bold">{s.index}.</span>
-                    <span className="truncate max-w-[120px]">{s.source}</span>
+                <div key={s.source} className="flex justify-between items-center p-1.5 sm:p-2 bg-slate-700/50 rounded border border-slate-600">
+                  <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+                    <span className="text-cyan-400 font-bold flex-shrink-0">{s.index}.</span>
+                    <span className="truncate max-w-[100px] sm:max-w-[120px]">{s.source}</span>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 sm:gap-3 flex-shrink-0">
                     <span><strong>{s.total}</strong></span>
                     <span className="text-green-400"><strong>{s.showUp}%</strong></span>
                     <span className="text-rose-400"><strong>{s.chiusura}%</strong></span>
@@ -802,9 +806,9 @@ export default function Collaboratori() {
         </div>
 
         {/* COLLABORATORI */}
-        <div className="bg-zinc-950/40 backdrop-blur-xl rounded-xl p-4 border border-white/10">
-          <h2 className="text-sm font-semibold text-slate-200 mb-3">Collaboratori</h2>
-          <div className="space-y-2 text-xs">
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
+          <h2 className="text-xs sm:text-sm font-semibold text-slate-200 mb-2 sm:mb-3">Collaboratori</h2>
+          <div className="space-y-1.5 sm:space-y-2 text-[10px] sm:text-xs">
             {[...collaboratori, ...admins].map(c => {
               const isCurrentUser = c.id === auth.currentUser?.uid;
               const displayName = c.nome || c.email?.split('@')[0] || 'Sconosciuto';
@@ -812,18 +816,18 @@ export default function Collaboratori() {
               return (
                 <motion.div 
                   key={c.id} 
-                  className={`p-2 bg-zinc-950/40 rounded border ${isSelected ? 'border-cyan-500' : 'border-white/10'} flex justify-between items-center cursor-pointer`}
+                  className={`p-1.5 sm:p-2 bg-slate-700/50 rounded border ${isSelected ? 'border-cyan-500' : 'border-slate-600'} flex justify-between items-center cursor-pointer`}
                   whileHover={{ scale: 1.02 }}
                   onClick={() => setSelectedCollaboratore(isSelected ? null : c.id)}
                 >
-                  <div className="flex-1">
-                    <p className="font-medium text-slate-200">{displayName} ({c.ruolo || c.role})</p>
-                    <p className="text-slate-400 truncate">{c.email || '—'}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-slate-200 truncate">{displayName} ({c.ruolo || c.role})</p>
+                    <p className="text-slate-400 truncate text-[9px] sm:text-[10px]">{c.email || '—'}</p>
                   </div>
                   {isAdmin && !isCurrentUser && (
-                    <div className="flex gap-1 ml-2">
-                      <button onClick={(e) => { e.stopPropagation(); setEditingCollab(c.id); setEditEmail(c.email || ''); }} className="p-1 text-yellow-400"><Key size={12} /></button>
-                      <button onClick={(e) => { e.stopPropagation(); if (confirm(`Elimina ${displayName}?`)) handleDeleteCollaboratore(c.id); }} className="p-1 text-red-400"><Trash2 size={12} /></button>
+                    <div className="flex gap-0.5 sm:gap-1 ml-1 sm:ml-2 flex-shrink-0">
+                      <button onClick={(e) => { e.stopPropagation(); setEditingCollab(c.id); setEditEmail(c.email || ''); }} className="p-0.5 sm:p-1 text-yellow-400"><Key size={10} className="sm:hidden" /><Key size={12} className="hidden sm:block" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); if (confirm(`Elimina ${displayName}?`)) handleDeleteCollaboratore(c.id); }} className="p-0.5 sm:p-1 text-red-400"><Trash2 size={10} className="sm:hidden" /><Trash2 size={12} className="hidden sm:block" /></button>
                     </div>
                   )}
                 </motion.div>
@@ -831,7 +835,7 @@ export default function Collaboratori() {
             })}
           </div>
           {selectedCollaboratore && (
-            <button onClick={() => setSelectedCollaboratore(null)} className="mt-2 text-xs text-cyan-400 hover:underline">
+            <button onClick={() => setSelectedCollaboratore(null)} className="mt-2 text-[10px] sm:text-xs text-cyan-400 hover:underline">
               ← Mostra tutti i leads
             </button>
           )}
@@ -840,7 +844,7 @@ export default function Collaboratori() {
         {/* POPUP NOTE */}
         {showNotePopup && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-zinc-950/90 rounded-xl p-6 max-w-lg w-full border border-white/10">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-lg w-full border border-slate-700">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-lg font-bold text-slate-100">Nota Completa</h3>
                 <button onClick={() => setShowNotePopup(false)} className="text-slate-400 hover:text-white"><X size={18} /></button>
@@ -856,7 +860,7 @@ export default function Collaboratori() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-zinc-950/90 rounded-xl p-6 max-w-md w-full border border-white/10"
+              className="bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-md w-full border border-slate-700"
             >
               <h3 className="text-xl font-bold text-emerald-400 mb-3 flex items-center gap-2">
                 <CheckCircle size={24} /> Lead Chiuso!
@@ -864,7 +868,7 @@ export default function Collaboratori() {
               <p className="text-sm text-slate-300 mb-4">
                 Vuoi aggiungere <strong>{leadToConvert.name}</strong> come nuovo cliente?
               </p>
-              <div className="bg-zinc-900/50 p-3 rounded-lg mb-4 text-xs space-y-1">
+              <div className="bg-slate-900/50 p-3 rounded-lg mb-4 text-xs space-y-1">
                 <p><strong>Importo:</strong> €{leadToConvert.amount || 0}</p>
                 <p><strong>Durata:</strong> {leadToConvert.mesi || 0} mesi</p>
               </div>
@@ -876,7 +880,7 @@ export default function Collaboratori() {
                     setSuccess('Lead chiuso senza conversione.');
                     setTimeout(() => setSuccess(''), 3000);
                   }}
-                  className="flex-1 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm transition-colors"
+                  className="flex-1 px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white rounded-lg text-sm transition-colors"
                 >
                   Solo Chiudi
                 </button>
@@ -907,24 +911,23 @@ export default function Collaboratori() {
         {/* POPUP MODIFICA EMAIL */}
         {editingCollab && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-zinc-950/90 rounded-xl p-6 max-w-sm w-full border border-white/10">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-sm w-full border border-slate-700">
               <h3 className="text-lg font-bold text-slate-100 mb-3">Modifica Email</h3>
               <p className="text-sm text-slate-300 mb-4">
                 Nuova email per <strong>{collaboratori.find(c => c.id === editingCollab)?.nome || 'utente'}</strong>
               </p>
-              <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="nuova@email.it" className="w-full px-3 py-2 bg-zinc-950/40 border border-white/10 rounded text-sm mb-4 focus:ring-1 focus:ring-yellow-500" />
+              <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="nuova@email.it" className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded text-sm mb-4 focus:ring-1 focus:ring-yellow-500" />
               <div className="flex gap-3">
                 <button onClick={handleUpdateEmailAndSendReset} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-medium">
                   Aggiorna e Invia
                 </button>
-                <button onClick={() => { setEditingCollab(null); setEditEmail(''); }} className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-slate-300 py-2 rounded-lg text-sm font-medium">
+                <button onClick={() => { setEditingCollab(null); setEditEmail(''); }} className="flex-1 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-slate-300 py-2 rounded-lg text-sm font-medium">
                   Annulla
                 </button>
               </div>
             </motion.div>
           </div>
         )}
-      </div>
     </div>
   );
 }

@@ -17,7 +17,7 @@ function toDate(x) {
 const UpdateColumn = ({ title, icon, items, navigate, tab, onDismiss }) => (
   <motion.div 
     variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } }}
-    className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-4 flex-1 min-w-[280px]"
+    className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-4 flex-1 min-w-[280px]"
   >
     <h3 className="font-bold mb-4 flex items-center gap-2 text-slate-200">
       {icon} {title}

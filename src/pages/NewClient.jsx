@@ -213,9 +213,9 @@ export default function NewClient() {
     navigate('/clients');
   };
 
-  const inputStyle = "w-full p-2.5 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
+  const inputStyle = "w-full p-2.5 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
   const labelStyle = "block mb-1 text-sm font-medium text-slate-300";
-  const sectionStyle = "bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6";
+  const sectionStyle = "bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6";
   const headingStyle = "font-bold mb-4 text-lg text-rose-300 border-b border-rose-400/20 pb-2 flex items-center gap-2";
   const errorStyle = "text-red-500 text-sm mt-1";
 
@@ -225,7 +225,7 @@ export default function NewClient() {
       <motion.div className="w-full max-w-2xl mx-auto" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-slate-50">Onboarding Nuovo Cliente</h1>
-          <button onClick={() => navigate('/clients')} className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-slate-300 text-sm rounded-lg transition-colors"><ArrowLeft size={16}/> Torna Indietro</button>
+          <button onClick={() => navigate('/clients')} className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-slate-300 text-sm rounded-lg transition-colors"><ArrowLeft size={16}/> Torna Indietro</button>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className={sectionStyle}>
@@ -408,7 +408,7 @@ export default function NewClient() {
             className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4"
           >
             <motion.div
-              className="bg-zinc-950/80 rounded-2xl gradient-border p-6 text-center w-full max-w-md shadow-2xl shadow-black/40"
+              className="bg-slate-800/95 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 text-center w-full max-w-md shadow-2xl shadow-black/40"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -416,11 +416,11 @@ export default function NewClient() {
               <h2 className="text-xl font-bold text-slate-50">Cliente Creato!</h2>
               <p className="text-slate-400 text-sm mt-2">Copia e invia le credenziali al cliente.</p>
               <div className="my-6 space-y-3 text-left">
-                <div className="bg-zinc-900 p-3 rounded-lg border border-white/10">
+                <div className="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
                   <p className="text-xs text-slate-400">Email (Username)</p>
                   <p className="font-mono text-slate-200">{newClientCredentials.email}</p>
                 </div>
-                <div className="bg-zinc-900 p-3 rounded-lg border border-white/10">
+                <div className="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
                   <p className="text-xs text-slate-400">Password Temporanea</p>
                   <p className="font-mono text-slate-200">{newClientCredentials.password}</p>
                 </div>

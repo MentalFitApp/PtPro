@@ -49,13 +49,13 @@ const Statistiche = React.lazy(() => import('./pages/Statistiche'));
 
 // Spinner
 const PageSpinner = () => (
-  <div className="flex justify-center items-center h-screen w-full bg-zinc-950">
+  <div className="flex justify-center items-center h-screen w-full bg-slate-900">
     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
   </div>
 );
 
 const AuthSpinner = () => (
-  <div className="flex flex-col justify-center items-center min-h-screen bg-zinc-950 text-slate-200">
+  <div className="flex flex-col justify-center items-center min-h-screen bg-slate-900 text-slate-200">
     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
     <p className="mt-4 text-sm">Verifica autenticazione...</p>
   </div>
@@ -114,16 +114,8 @@ export default function App() {
               getDoc(clientDocRef).catch(() => ({ exists: () => false, data: () => ({}) }))
             ]);
 
-            // === CORREZIONE: NON SOVRASCRIVERE ADMIN ESISTENTI ===
-            if (!adminDoc.exists()) {
-              await setDoc(adminDocRef, { uids: [currentUser.uid] });
-              console.log("Primo admin creato:", currentUser.uid);
-            } else if (!adminDoc.data().uids.includes(currentUser.uid)) {
-              await updateDoc(adminDocRef, {
-                uids: arrayUnion(currentUser.uid)
-              });
-              console.log("Admin aggiunto senza sovrascrivere:", currentUser.uid);
-            }
+            // RIMOSSO: logica auto-admin per evitare sovrascritture accidentali
+            // Gli admin devono essere gestiti manualmente su Firestore o tramite script
 
             isCurrentUserAdmin = adminDoc.exists() && adminDoc.data().uids.includes(currentUser.uid);
             isCurrentUserACoach = coachDoc.exists() && coachDoc.data().uids.includes(currentUser.uid);

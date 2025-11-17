@@ -13,7 +13,7 @@ const LoadingSpinner = () => (
 );
 
 const DashboardCard = ({ title, value, subtext, icon, variants }) => (
-  <motion.div variants={variants} className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6">
+  <motion.div variants={variants} className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6">
     <div className="flex items-center justify-between">
       <h3 className="text-lg font-semibold text-slate-300">{title}</h3>
       <div className="text-cyan-300">{icon}</div>
@@ -25,8 +25,8 @@ const DashboardCard = ({ title, value, subtext, icon, variants }) => (
 
 const ActionLink = ({ to, title, description, icon, variants }) => (
   <motion.div variants={variants}>
-    <Link to={to} className="group bg-zinc-900/70 hover:bg-zinc-800/90 border border-white/10 rounded-lg p-4 flex items-center gap-4 transition-all duration-300">
-      <div className="bg-zinc-800 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-white p-3 rounded-lg transition-colors duration-300">
+    <Link to={to} className="group bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg p-4 flex items-center gap-4 transition-all duration-300">
+      <div className="bg-slate-700 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-white p-3 rounded-lg transition-colors duration-300">
         {icon}
       </div>
       <div className="flex-1">
@@ -247,7 +247,7 @@ const ClientDashboard = () => {
             />
           </div>
           
-          <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6">
+          <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6">
             <h3 className="text-2xl font-bold mb-4 text-white">Cosa vuoi fare?</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ActionLink to="/client/anamnesi" title="La mia Anamnesi" description="Visualizza o aggiorna i tuoi dati" icon={<User size={22} />} variants={itemVariants}/>

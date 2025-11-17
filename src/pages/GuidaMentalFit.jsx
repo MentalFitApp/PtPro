@@ -58,7 +58,7 @@ const ebookPages = [
 
 
 const PageContainer = ({ pageData, isVisible, isRenderingPdf }) => {
-    const themeClasses = pageData.theme === 'dark' ? 'bg-zinc-900 text-slate-200' : 'bg-slate-50 text-slate-800';
+    const themeClasses = pageData.theme === 'dark' ? 'bg-slate-900 text-slate-200' : 'bg-slate-50 text-slate-800';
     const visibilityClass = isVisible ? 'opacity-100' : 'opacity-0 absolute';
     const renderClass = isRenderingPdf ? '' : 'transition-opacity duration-500';
 
@@ -157,14 +157,14 @@ const GuidaMentalFit = () => {
     if (!leadCaptured) {
         return (
             <div className="flex items-center justify-center p-4 min-h-screen">
-                <div className="bg-zinc-950/80 backdrop-blur-lg p-8 rounded-lg shadow-lg max-w-sm w-full text-center border border-white/10 text-slate-200">
+                <div className="bg-slate-800/95 backdrop-blur-sm p-8 rounded-lg shadow-lg max-w-sm w-full text-center border border-white/10 text-slate-200">
                     <h2 className="text-2xl font-bold mb-4 text-white">Accedi alla Guida Gratuita</h2>
                     <p className="mb-6 text-slate-400">Lascia i tuoi dati per sbloccare la Guida Completa MentalFit.</p>
                     <form onSubmit={handleLeadSubmit}>
-                        <input type="text" placeholder="Il tuo nome *" value={nome} onChange={(e) => setNome(e.target.value)} className="w-full p-3 mb-4 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:ring-rose-500 focus:border-rose-500" required />
-                        <input type="tel" placeholder="Numero di telefono *" value={telefono} onChange={(e) => setTelefono(e.target.value)} className="w-full p-3 mb-4 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:ring-rose-500 focus:border-rose-500" required />
-                        <input type="text" placeholder="Nome su Instagram (opzionale)" value={instagram} onChange={(e) => setInstagram(e.target.value)} className="w-full p-3 mb-4 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:ring-rose-500 focus:border-rose-500" />
-                        <button type="submit" disabled={isSubmitting} className="w-full bg-rose-600 text-white p-3 rounded-lg font-bold hover:bg-rose-700 transition-colors disabled:bg-zinc-600">
+                        <input type="text" placeholder="Il tuo nome *" value={nome} onChange={(e) => setNome(e.target.value)} className="w-full p-3 mb-4 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-rose-500 focus:border-rose-500" required />
+                        <input type="tel" placeholder="Numero di telefono *" value={telefono} onChange={(e) => setTelefono(e.target.value)} className="w-full p-3 mb-4 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-rose-500 focus:border-rose-500" required />
+                        <input type="text" placeholder="Nome su Instagram (opzionale)" value={instagram} onChange={(e) => setInstagram(e.target.value)} className="w-full p-3 mb-4 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:ring-rose-500 focus:border-rose-500" />
+                        <button type="submit" disabled={isSubmitting} className="w-full bg-rose-600 text-white p-3 rounded-lg font-bold hover:bg-rose-700 transition-colors disabled:bg-slate-600">
                             {isSubmitting ? 'Invio in corso...' : 'VISUALIZZA ORA'}
                         </button>
                     </form>
@@ -181,7 +181,7 @@ const GuidaMentalFit = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
                 </div>
             )}
-            <div id="ebook-viewer" className="relative w-full max-w-md aspect-[9/16] bg-zinc-800 rounded-lg overflow-hidden shadow-2xl border-4 border-zinc-700">
+            <div id="ebook-viewer" className="relative w-full max-w-md aspect-[9/16] bg-slate-800 rounded-lg overflow-hidden shadow-2xl border-4 border-slate-700">
                 {ebookPages.map((page, index) => (
                     <PageContainer key={page.id} pageData={page} isVisible={index === currentPage} isRenderingPdf={false} />
                 ))}
@@ -197,11 +197,11 @@ const GuidaMentalFit = () => {
             </div>
 
             <div className="flex justify-between items-center w-full max-w-md mt-4">
-                <button onClick={goToPrevPage} disabled={currentPage === 0} className="bg-zinc-700 text-white py-2 px-4 rounded-lg disabled:opacity-50">Indietro</button>
+                <button onClick={goToPrevPage} disabled={currentPage === 0} className="bg-slate-700/70 text-white border border-slate-600 py-2 px-4 rounded-lg disabled:opacity-50">Indietro</button>
                 <span className="text-slate-300">{currentPage + 1} / {totalPages}</span>
-                <button onClick={goToNextPage} disabled={currentPage === totalPages - 1} className="bg-zinc-700 text-white py-2 px-4 rounded-lg disabled:opacity-50">Avanti</button>
+                <button onClick={goToNextPage} disabled={currentPage === totalPages - 1} className="bg-slate-700/70 text-white border border-slate-600 py-2 px-4 rounded-lg disabled:opacity-50">Avanti</button>
             </div>
-            <button onClick={handleDownloadPDF} disabled={isRenderingPdf} className="mt-4 bg-rose-600 text-white py-2 px-6 rounded-lg font-bold hover:bg-rose-700 transition-colors disabled:bg-zinc-600">
+            <button onClick={handleDownloadPDF} disabled={isRenderingPdf} className="mt-4 bg-rose-600 text-white py-2 px-6 rounded-lg font-bold hover:bg-rose-700 transition-colors disabled:bg-slate-600">
                 {isRenderingPdf ? 'Creando...' : 'Scarica PDF'}
             </button>
         </div>

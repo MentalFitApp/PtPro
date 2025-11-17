@@ -167,14 +167,14 @@ export default function GuideManager() {
       </div>
 
       {/* GUIDE ATTIVE */}
-      <div className="bg-zinc-900/70 rounded-xl p-6">
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
         <h2 className="text-xl font-semibold text-cyan-300 mb-4">Guide Attive</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {guides.filter(g => g.active).map(g => (
             <motion.div
               key={g.id}
               whileHover={{ scale: 1.02 }}
-              className="bg-zinc-800 p-4 rounded-lg border border-white/10 relative group"
+              className="bg-slate-700/50 p-4 rounded-lg border border-slate-600 relative group"
             >
               <button
                 onClick={() => {
@@ -218,11 +218,11 @@ export default function GuideManager() {
       </div>
 
       {/* TABELLA LEAD */}
-      <div className="bg-zinc-900/70 rounded-xl p-6 overflow-x-auto">
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700 overflow-x-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-cyan-300">Lead dalle Guide ({filteredLeads.length})</h2>
           <div className="flex gap-2 text-xs">
-            <div className="flex items-center gap-1 bg-zinc-800/70 rounded px-2 py-1">
+            <div className="flex items-center gap-1 bg-slate-700/50 rounded px-2 py-1">
               <Search size={12} className="text-slate-400" />
               <input 
                 type="text" 
@@ -232,12 +232,12 @@ export default function GuideManager() {
                 className="bg-transparent outline-none w-24 text-white"
               />
             </div>
-            <select value={filterChiuso} onChange={e => { setFilterChiuso(e.target.value); setCurrentPage(1); }} className="bg-zinc-800/70 border border-white/10 rounded px-2 py-1 text-white">
+            <select value={filterChiuso} onChange={e => { setFilterChiuso(e.target.value); setCurrentPage(1); }} className="bg-slate-700/50 border border-slate-600 rounded px-2 py-1 text-white">
               <option value="tutti">Tutti</option>
               <option value="si">Chiusi</option>
               <option value="no">No</option>
             </select>
-            <select value={filterShowUp} onChange={e => { setFilterShowUp(e.target.value); setCurrentPage(1); }} className="bg-zinc-800/70 border border-white/10 rounded px-2 py-1 text-white">
+            <select value={filterShowUp} onChange={e => { setFilterShowUp(e.target.value); setCurrentPage(1); }} className="bg-slate-700/50 border border-slate-600 rounded px-2 py-1 text-white">
               <option value="tutti">Tutti</option>
               <option value="si">Sì</option>
               <option value="no">No</option>
@@ -246,7 +246,7 @@ export default function GuideManager() {
         </div>
 
         <table className="w-full text-sm text-left text-slate-300">
-          <thead className="text-xs uppercase bg-zinc-800">
+          <thead className="text-xs uppercase bg-slate-900/50">
             <tr>
               <th className="px-4 py-3 text-center">Az</th>
               <th className="px-4 py-3">Data</th>
@@ -282,12 +282,12 @@ export default function GuideManager() {
                 <td className="px-4 py-2">{guides.find(g => g.id === l.guideId)?.name}</td>
                 <td className="px-4 py-2">
                   {editingLead === l.id ? (
-                    <input value={editForm.nome} onChange={e => setEditForm({ ...editForm, nome: e.target.value })} className="w-full p-1 bg-zinc-700 border border-white/20 rounded text-xs" />
+                    <input value={editForm.nome} onChange={e => setEditForm({ ...editForm, nome: e.target.value })} className="w-full p-1 bg-slate-700/50 border border-slate-600 rounded text-xs" />
                   ) : l.nome}
                 </td>
                 <td className="px-4 py-2">
                   {editingLead === l.id ? (
-                    <input value={editForm.telefono} onChange={e => setEditForm({ ...editForm, telefono: e.target.value })} className="w-full p-1 bg-zinc-700 border border-white/20 rounded text-xs" />
+                    <input value={editForm.telefono} onChange={e => setEditForm({ ...editForm, telefono: e.target.value })} className="w-full p-1 bg-slate-700/50 border border-slate-600 rounded text-xs" />
                   ) : l.telefono}
                 </td>
                 <td className="px-4 py-2">{l.email}</td>
@@ -318,7 +318,7 @@ export default function GuideManager() {
                 </td>
                 <td className="px-4 py-2 text-center">
                   {editingLead === l.id ? (
-                    <input type="number" value={editForm.importo || ''} onChange={e => setEditForm({ ...editForm, importo: parseFloat(e.target.value) || 0 })} className="w-16 p-1 bg-zinc-700 border border-white/20 rounded text-xs text-center" />
+                    <input type="number" value={editForm.importo || ''} onChange={e => setEditForm({ ...editForm, importo: parseFloat(e.target.value) || 0 })} className="w-16 p-1 bg-slate-700/50 border border-slate-600 rounded text-xs text-center" />
                   ) : <span>€{l.importo || 0}</span>}
                 </td>
               </tr>
@@ -338,14 +338,14 @@ export default function GuideManager() {
       {/* MODAL AGGIUNGI GUIDA */}
       {showAddGuide && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 rounded-xl p-6 w-full max-w-md">
+          <div className="bg-slate-800/95 backdrop-blur-sm rounded-xl p-6 w-full max-w-md">
             <h3 className="text-xl font-bold text-white mb-4">Nuova Guida</h3>
-            <input placeholder="ID unico (es: maniglie)" value={newGuide.id} onChange={e => setNewGuide({...newGuide, id: e.target.value.toLowerCase().replace(/\s/g, '')})} className="w-full p-3 bg-zinc-800 border border-white/20 rounded-lg text-white mb-3" />
-            <input placeholder="Nome guida" value={newGuide.name} onChange={e => setNewGuide({...newGuide, name: e.target.value})} className="w-full p-3 bg-zinc-800 border border-white/20 rounded-lg text-white mb-3" />
-            <input placeholder="Link guida" value={newGuide.redirectUrl} onChange={e => setNewGuide({...newGuide, redirectUrl: e.target.value})} className="w-full p-3 bg-zinc-800 border border-white/20 rounded-lg text-white mb-4" />
+            <input placeholder="ID unico (es: maniglie)" value={newGuide.id} onChange={e => setNewGuide({...newGuide, id: e.target.value.toLowerCase().replace(/\s/g, '')})} className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white mb-3" />
+            <input placeholder="Nome guida" value={newGuide.name} onChange={e => setNewGuide({...newGuide, name: e.target.value})} className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white mb-3" />
+            <input placeholder="Link guida" value={newGuide.redirectUrl} onChange={e => setNewGuide({...newGuide, redirectUrl: e.target.value})} className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white mb-4" />
             <div className="flex gap-3">
               <button onClick={handleAddGuide} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">Aggiungi</button>
-              <button onClick={() => setShowAddGuide(false)} className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-lg">Annulla</button>
+              <button onClick={() => setShowAddGuide(false)} className="flex-1 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white py-2 rounded-lg">Annulla</button>
             </div>
           </div>
         </div>
@@ -354,7 +354,7 @@ export default function GuideManager() {
       {/* MODAL MODIFICA GUIDA */}
       {editingGuide && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 rounded-xl p-6 w-full max-w-lg">
+          <div className="bg-slate-800/95 backdrop-blur-sm rounded-xl p-6 w-full max-w-lg">
             <h3 className="text-xl font-bold text-white mb-4">Modifica: {editingGuide.name}</h3>
 
             <div className="space-y-4">
@@ -364,7 +364,7 @@ export default function GuideManager() {
                   placeholder="Es: Complimenti! Hai sbloccato 1 mese omaggio..."
                   value={postMessage}
                   onChange={e => setPostMessage(e.target.value)}
-                  className="w-full p-3 bg-zinc-800 border border-white/20 rounded-lg text-white h-24 resize-none"
+                  className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white h-24 resize-none"
                 />
               </div>
 
@@ -375,7 +375,7 @@ export default function GuideManager() {
                   placeholder="Es: Offerta valida solo 48 ore!"
                   value={urgencyText}
                   onChange={e => setUrgencyText(e.target.value)}
-                  className="w-full p-3 bg-zinc-800 border border-white/20 rounded-lg text-white"
+                  className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white"
                 />
               </div>
 
@@ -385,14 +385,14 @@ export default function GuideManager() {
                   type="datetime-local"
                   value={countdownDate}
                   onChange={e => setCountdownDate(e.target.value)}
-                  className="w-full p-3 bg-zinc-800 border border-white/20 rounded-lg text-white"
+                  className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white"
                 />
               </div>
             </div>
 
             <div className="flex gap-3 mt-6">
               <button onClick={handleSaveGuideEdit} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">Salva</button>
-              <button onClick={() => setEditingGuide(null)} className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-lg">Annulla</button>
+              <button onClick={() => setEditingGuide(null)} className="flex-1 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white py-2 rounded-lg">Annulla</button>
             </div>
           </div>
         </div>
@@ -401,12 +401,12 @@ export default function GuideManager() {
       {/* MODAL CHIUDI VENDITA */}
       {showAddClient && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 rounded-xl p-6 w-full max-w-md">
+          <div className="bg-slate-800/95 backdrop-blur-sm rounded-xl p-6 w-full max-w-md">
             <h3 className="text-xl font-bold text-white mb-4">Chiudi vendita</h3>
-            <input type="number" placeholder="Importo (€)" value={importo} onChange={e => setImporto(e.target.value)} className="w-full p-3 bg-zinc-800 border border-white/20 rounded-lg text-white mb-4" />
+            <input type="number" placeholder="Importo (€)" value={importo} onChange={e => setImporto(e.target.value)} className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white mb-4" />
             <div className="flex gap-3">
               <button onClick={addToClients} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">Conferma</button>
-              <button onClick={() => { setShowAddClient(null); setImporto(''); }} className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-lg">Annulla</button>
+              <button onClick={() => { setShowAddClient(null); setImporto(''); }} className="flex-1 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white py-2 rounded-lg">Annulla</button>
             </div>
           </div>
         </div>

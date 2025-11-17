@@ -157,7 +157,7 @@ export default function CoachClients() {
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-zinc-900/70 border border-white/10 rounded-lg px-3 py-2 pl-10 w-full outline-none focus:ring-2 focus:ring-rose-500"
+              className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 pl-10 w-full outline-none focus:ring-2 focus:ring-rose-500"
               placeholder="Cerca nome o email..."
             />
           </div>
@@ -171,7 +171,7 @@ export default function CoachClients() {
       </header>
 
       {/* Filtri */}
-      <div className="mb-6 flex flex-wrap gap-2 p-2 bg-zinc-900/70 border border-white/10 rounded-lg">
+      <div className="mb-6 flex flex-wrap gap-2 p-2 bg-slate-700/50 border border-slate-600 rounded-lg">
         <FilterButton active={filter === 'all'} onClick={() => setFilter('all')} label="Tutti" />
         <FilterButton active={filter === 'active'} onClick={() => setFilter('active')} label="Attivi" icon={<CheckCircle className="text-emerald-500" size={14} />} />
         <FilterButton active={filter === 'expiring'} onClick={() => setFilter('expiring')} label="In Scadenza" icon={<Clock className="text-amber-500" size={14} />} />
@@ -181,21 +181,21 @@ export default function CoachClients() {
       </div>
 
       {/* Tabella con scroll orizzontale */}
-      <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-sm text-left text-slate-300">
-            <thead className="bg-white/5 text-slate-400 uppercase text-xs sticky top-0 z-10">
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 overflow-hidden">
+        <div className="overflow-x-auto -mx-3 sm:mx-0">
+          <table className="w-full min-w-[800px] text-xs sm:text-sm text-left text-slate-300">
+            <thead className="bg-white/5 text-slate-400 uppercase text-[10px] sm:text-xs sticky top-0 z-10">
               <tr>
-                <th className="p-4 cursor-pointer hover:text-rose-400 flex items-center gap-1 min-w-[180px]" onClick={() => toggleSort('name')}>
+                <th className="p-2 sm:p-4 cursor-pointer hover:text-rose-400 flex items-center gap-1 min-w-[150px] sm:min-w-[180px]" onClick={() => toggleSort('name')}>
                   Nome {getSortIcon('name')}
                 </th>
-                <th className="p-4 cursor-pointer hover:text-rose-400 flex items-center gap-1 min-w-[140px]" onClick={() => toggleSort('startDate')}>
+                <th className="p-2 sm:p-4 cursor-pointer hover:text-rose-400 flex items-center gap-1 min-w-[100px] sm:min-w-[140px]" onClick={() => toggleSort('startDate')}>
                   Inizio {getSortIcon('startDate')}
                 </th>
-                <th className="p-4 cursor-pointer hover:text-rose-400 flex items-center gap-1 min-w-[160px]" onClick={() => toggleSort('expiry')}>
+                <th className="p-2 sm:p-4 cursor-pointer hover:text-rose-400 flex items-center gap-1 min-w-[120px] sm:min-w-[160px]" onClick={() => toggleSort('expiry')}>
                   Scadenza {getSortIcon('expiry')}
                 </th>
-                <th className="p-4 cursor-pointer hover:text-rose-400 flex items-center gap-1 min-w-[160px]" onClick={() => toggleSort('lastCheck')}>
+                <th className="p-2 sm:p-4 cursor-pointer hover:text-rose-400 flex items-center gap-1 min-w-[120px] sm:min-w-[160px]" onClick={() => toggleSort('lastCheck')}>
                   Ultimo Check {getSortIcon('lastCheck')}
                 </th>
               </tr>
@@ -208,23 +208,23 @@ export default function CoachClients() {
                 const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
                 return (
                   <tr key={client.id} className="border-t border-white/10 hover:bg-white/5 transition-colors">
-                    <td className="p-4 font-medium min-w-[180px]">
+                    <td className="p-2 sm:p-4 font-medium min-w-[150px] sm:min-w-[180px]">
                       <button
                         onClick={() => navigate(`/coach/client/${client.id}`)}
-                        className="hover:underline hover:text-rose-400"
+                        className="hover:underline hover:text-rose-400 truncate block max-w-full"
                       >
                         {client.name || '-'}
                       </button>
                     </td>
-                    <td className="p-4 min-w-[140px]">
+                    <td className="p-2 sm:p-4 min-w-[100px] sm:min-w-[140px] text-[10px] sm:text-xs">
                       {start ? start.toLocaleDateString('it-IT') : 'N/D'}
                     </td>
-                    <td className="p-4 min-w-[160px]">
+                    <td className="p-2 sm:p-4 min-w-[120px] sm:min-w-[160px]">
                       {expiry ? (
-                        <div className="flex items-center gap-2">
-                          <span>{expiry.toLocaleDateString('it-IT')}</span>
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <span className="text-[10px] sm:text-xs">{expiry.toLocaleDateString('it-IT')}</span>
                           {daysToExpiry !== null && (
-                            <span className={`text-xs px-2 py-1 rounded-full ${
+                            <span className={`text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full whitespace-nowrap ${
                               daysToExpiry < 0 ? 'bg-red-900/80 text-red-300' :
                               daysToExpiry <= 7 ? 'bg-amber-900/80 text-amber-300' :
                               'bg-emerald-900/80 text-emerald-300'
@@ -235,14 +235,15 @@ export default function CoachClients() {
                         </div>
                       ) : 'N/D'}
                     </td>
-                    <td className="p-4 min-w-[160px]">
+                    <td className="p-2 sm:p-4 min-w-[120px] sm:min-w-[160px]">
                       {lastCheck ? (
-                        <span className="flex items-center gap-1">
-                          <CheckCircle className="text-emerald-500" size={16} />
-                          {lastCheck.toLocaleDateString('it-IT')}
+                        <span className="flex items-center gap-1 text-[10px] sm:text-xs">
+                          <CheckCircle className="text-emerald-500" size={14} />
+                          <span className="hidden sm:inline">{lastCheck.toLocaleDateString('it-IT')}</span>
+                          <span className="sm:hidden">{lastCheck.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}</span>
                         </span>
                       ) : (
-                        <XCircle className="text-gray-500" size={16} />
+                        <XCircle className="text-gray-500" size={14} />
                       )}
                     </td>
                   </tr>

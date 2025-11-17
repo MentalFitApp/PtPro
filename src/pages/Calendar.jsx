@@ -48,7 +48,7 @@ const Calendar = ({ reports = [], collaboratori = [], onDateClick }) => {
 
   return (
     <motion.div 
-      className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/10"
+      className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-white/10"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >

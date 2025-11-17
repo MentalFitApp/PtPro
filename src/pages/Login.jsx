@@ -6,90 +6,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Lock, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-// === STELLE CADENTI VERTICALI (CODA SEGUE LA PUNTA) ===
-const AnimatedStars = () => {
-  const [stars, setStars] = useState([]);
-
-  // === INIETTA STILE ANIMAZIONE CODA (DENTRO IL COMPONENTE) ===
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes tail {
-        from { height: 60px; opacity: 0.6; }
-        to { height: 0; opacity: 0; }
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      if (document.head.contains(style)) {
-        document.head.removeChild(style);
-      }
-    };
-  }, []);
-
-  // === GENERA STELLE ===
-  useEffect(() => {
-    const starArray = [];
-    for (let i = 0; i < 40; i++) {
-      const size = i % 5 === 0 ? 1.6 : i % 3 === 0 ? 2.4 : 1.9;
-      const isGold = i % 5 === 0;
-      starArray.push({
-        id: i,
-        size,
-        left: Math.random() * 100,
-        duration: 7 + Math.random() * 10,
-        delay: Math.random() * 8,
-        isGold,
-        opacity: isGold ? 0.9 : 0.7
-      });
-    }
-    setStars(starArray);
-  }, []);
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
-      {stars.map(star => (
-        <motion.div
-          key={star.id}
-          className="absolute"
-          initial={{ y: -80 }}
-          animate={{ y: '110vh' }}
-          transition={{
-            duration: star.duration,
-            delay: star.delay,
-            repeat: Infinity,
-            ease: 'linear'
-          }}
-          style={{
-            left: `${star.left}vw`,
-            width: `${star.size}px`,
-            height: `${star.size}px`,
-            background: star.isGold ? '#fbbf24' : '#ffffff',
-            borderRadius: '50%',
-            boxShadow: star.isGold 
-              ? `0 0 ${star.size * 4}px #fbbf24` 
-              : `0 0 ${star.size * 3}px #ffffff`,
-            opacity: star.opacity
-          }}
-        >
-          {/* CODA: SEGUE LA PUNTA (IN ALTO) */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2 w-0.5 origin-bottom"
-            style={{
-              top: `${star.size}px`,
-              height: '60px',
-              background: star.isGold 
-                ? 'linear-gradient(to top, rgba(251,191,36,0.8), transparent)' 
-                : 'linear-gradient(to top, rgba(255,255,255,0.6), transparent)',
-              animation: `tail ${star.duration}s ${star.delay}s linear infinite`
-            }}
-          />
-        </motion.div>
-      ))}
-    </div>
-  );
-};
-
 // === LOGIN COMPONENTE COMPLETO ===
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -196,8 +112,8 @@ const Login = () => {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#fbbf24]"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#ef4444]"></div>
       </div>
     );
   }
@@ -206,9 +122,6 @@ const Login = () => {
     <>
       {/* SFONDO STELLATO */}
       <div className="fixed inset-0 bg-gradient-to-b from-[#1b2735] to-[#090a0f] -z-10" />
-
-      {/* STELLE CADENTI */}
-      <AnimatedStars />
 
       {/* BOX LOGIN – TRASPARENTE */}
       <div className="relative min-h-screen flex items-center justify-center p-4">
@@ -230,7 +143,7 @@ const Login = () => {
                 <h1 className="text-4xl font-bold text-slate-100 relative">
                   <span className="relative z-10">MentalFit</span>
                   <motion.span
-                    className="absolute inset-x-0 -bottom-1 h-1 bg-[#fbbf24] rounded-full"
+                    className="absolute inset-x-0 -bottom-1 h-1 bg-[#ef4444] rounded-full"
                     initial={{ scaleX: 0, opacity: 0 }}
                     animate={{ scaleX: 1, opacity: [0.6, 1, 0.6] }}
                     transition={{
@@ -240,7 +153,7 @@ const Login = () => {
                     style={{ filter: 'blur(4px)' }}
                   />
                   <motion.span
-                    className="absolute inset-x-0 -bottom-2 h-2 bg-[#fbbf24] rounded-full"
+                    className="absolute inset-x-0 -bottom-2 h-2 bg-[#ef4444] rounded-full"
                     animate={{ opacity: [0.3, 0.7, 0.3] }}
                     transition={{ duration: 2, repeat: Infinity }}
                     style={{ filter: 'blur(8px)' }}
@@ -250,7 +163,7 @@ const Login = () => {
 
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl font-medium text-slate-300">Login Coach/Admin</h2>
-                <Link to="/client-login" className="flex items-center gap-2 text-sm text-slate-400 hover:text-[#fbbf24] transition-colors">
+                <Link to="/client-login" className="flex items-center gap-2 text-sm text-slate-400 hover:text-[#ef4444] transition-colors">
                   <ArrowLeft size={16} /> Login Cliente
                 </Link>
               </div>
@@ -264,7 +177,7 @@ const Login = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fbbf24]/50 focus:border-[#fbbf24]/30 transition-all"
+                      className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ef4444]/50 focus:border-[#ef4444]/30 transition-all"
                       placeholder="tuo@email.com"
                       required
                     />
@@ -279,14 +192,14 @@ const Login = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-12 pr-14 py-3.5 bg-white/5 border border-white/10 rounded-xl text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fbbf24]/50 focus:border-[#fbbf24]/30 transition-all"
+                      className="w-full pl-12 pr-14 py-3.5 bg-white/5 border border-white/10 rounded-xl text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ef4444]/50 focus:border-[#ef4444]/30 transition-all"
                       placeholder="••••••••"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#fbbf24] transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#ef4444] transition-colors"
                     >
                       {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
@@ -294,7 +207,7 @@ const Login = () => {
                 </div>
 
                 {error && (
-                  <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-[#fbbf24] text-sm text-center font-medium">
+                  <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-[#ef4444] text-sm text-center font-medium">
                     {error}
                   </motion.p>
                 )}
@@ -303,13 +216,13 @@ const Login = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   type="submit"
-                  className="w-full py-4 bg-[#fbbf24] hover:bg-[#f59e0b] text-zinc-900 font-bold rounded-xl shadow-lg hover:shadow-[#fbbf24]/50 transition-all duration-300"
+                  className="w-full py-4 bg-[#ef4444] hover:bg-[#dc2626] text-white font-bold rounded-xl shadow-lg hover:shadow-[#ef4444]/50 transition-all duration-300"
                 >
                   Accedi a MentalFit
                 </motion.button>
               </form>
 
-              <button onClick={handleResetPassword} className="mt-6 text-sm text-slate-400 hover:text-[#fbbf24] w-full text-center transition-colors">
+              <button onClick={handleResetPassword} className="mt-6 text-sm text-slate-400 hover:text-[#ef4444] w-full text-center transition-colors">
                 Password dimenticata?
               </button>
             </div>

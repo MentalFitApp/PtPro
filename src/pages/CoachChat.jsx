@@ -7,7 +7,7 @@ import { ArrowLeft, Send, AlertCircle, Search, MessageSquare, X } from 'lucide-r
 import { motion, AnimatePresence } from 'framer-motion';
 
 const LoadingSpinner = () => (
-  <div className="min-h-screen bg-zinc-950 text-slate-200 flex flex-col justify-center items-center">
+  <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col justify-center items-center">
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
     <p className="mt-4 text-slate-400">Caricamento chat...</p>
   </div>
@@ -320,14 +320,14 @@ export default function CoachChat() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-slate-200 font-sans flex flex-col h-screen relative">
+    <div className="min-h-screen bg-slate-900 text-slate-200 font-sans flex flex-col h-screen relative">
       <Notification message={error} onDismiss={dismissError} />
       {/* Header */}
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-zinc-950/70 backdrop-blur-lg border-b border-white/10 sticky top-0 z-[10]">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-slate-900/70 backdrop-blur-lg border-b border-white/10 sticky top-0 z-[10]">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/coach')}
-            className="flex items-center gap-2 px-3 py-2 bg-zinc-800/80 hover:bg-zinc-700/80 text-slate-200 text-sm font-semibold rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-slate-200 text-sm font-semibold rounded-lg transition-colors"
           >
             <ArrowLeft size={16} /><span>Dashboard</span>
           </button>
@@ -345,7 +345,7 @@ export default function CoachChat() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cerca cliente..."
-                className="w-full bg-zinc-900/70 p-2 pl-10 rounded-lg border border-white/10 outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base"
+                className="w-full bg-slate-700/50 p-2 pl-10 rounded-lg border border-white/10 outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base"
               />
             </div>
             {searchQuery.length > 1 && (
@@ -377,7 +377,7 @@ export default function CoachChat() {
             )}
           </div>
         </div>
-        <div className="w-full lg:w-2/3 flex flex-col bg-zinc-900/50">
+        <div className="w-full lg:w-2/3 flex flex-col bg-slate-800/50">
           {selectedChatId ? (
             <>
               <div className="p-4 border-b border-white/10">
@@ -412,14 +412,14 @@ export default function CoachChat() {
                 )}
                 <div ref={messagesEndRef} />
               </div>
-              <footer className="p-4 sm:p-6 bg-zinc-950/70 backdrop-blur-lg border-t border-white/10 sticky bottom-0">
+              <footer className="p-4 sm:p-6 bg-slate-900/70 backdrop-blur-lg border-t border-white/10 sticky bottom-0">
                 <form onSubmit={handleSendMessage} className="flex items-center gap-3 max-w-3xl mx-auto">
                   <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Scrivi un messaggio..."
-                    className="flex-1 p-3 bg-zinc-900 border border-zinc-700 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base transition-all placeholder:text-slate-500 shadow-sm"
+                    className="flex-1 p-3 bg-slate-700/50 border border-slate-600 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base transition-all placeholder:text-slate-500 shadow-sm"
                   />
                   <button
                     type="submit"

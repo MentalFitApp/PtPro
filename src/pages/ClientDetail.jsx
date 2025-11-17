@@ -25,7 +25,7 @@ const PathStatusBadge = ({ status }) => {
     attivo: "bg-emerald-900/80 text-emerald-300 border border-emerald-500/30",
     rinnovato: "bg-amber-900/80 text-amber-300 border border-amber-500/30",
     non_rinnovato: "bg-red-900/80 text-red-400 border border-red-500/30",
-    na: "bg-zinc-700/80 text-zinc-300 border border-zinc-500/30",
+    na: "bg-slate-700/80 text-slate-300 border border-slate-500/30",
   };
   const labels = { attivo: 'Attivo', rinnovato: 'In Scadenza', non_rinnovato: 'Scaduto', na: 'N/D' };
   return <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${styles[status] || styles.na}`}>{labels[status] || 'N/D'}</span>;
@@ -108,7 +108,7 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-zinc-950/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
+      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-800/95 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-white">Rinnovo {client.name}</h3>
           <button onClick={onClose} className="text-white hover:text-rose-400">
@@ -118,7 +118,7 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-slate-300 mb-1">Mesi di rinnovo</label>
-            <select value={months} onChange={e => setMonths(parseInt(e.target.value))} className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-white">
+            <select value={months} onChange={e => setMonths(parseInt(e.target.value))} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white">
               <option value={1}>1 mese</option>
               <option value={3}>3 mesi</option>
               <option value={6}>6 mesi</option>
@@ -127,15 +127,15 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
           </div>
           <div>
             <label className="block text-sm text-slate-300 mb-1">Oppure data scadenza manuale</label>
-            <input type="date" value={manualExpiry} onChange={e => setManualExpiry(e.target.value)} className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
+            <input type="date" value={manualExpiry} onChange={e => setManualExpiry(e.target.value)} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" />
           </div>
           <div>
             <label className="block text-sm text-slate-300 mb-1">Importo</label>
-            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="es. 150" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
+            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="es. 150" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" />
           </div>
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Metodo pagamento</label>
-            <select value={method} onChange={e => setMethod(e.target.value)} className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-white">
+            <label className="block text-sm text-slate-300 mb-1">Metodo</label>
+            <select value={method} onChange={e => setMethod(e.target.value)} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white">
               <option value="bonifico">Bonifico</option>
               <option value="klarna">Klarna 3 rate</option>
               <option value="paypal">PayPal</option>
@@ -149,7 +149,7 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
                 value={customMethod} 
                 onChange={e => setCustomMethod(e.target.value)} 
                 placeholder="Specifica metodo" 
-                className="w-full mt-2 p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-white" 
+                className="w-full mt-2 p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" 
               />
             )}
           </div>
@@ -185,7 +185,7 @@ const EditClientModal = ({ isOpen, onClose, client, onSave }) => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-zinc-950/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
+      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-800/95 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-white">Modifica {client.name}</h3>
           <button onClick={onClose} className="text-white hover:text-rose-400">
@@ -193,9 +193,9 @@ const EditClientModal = ({ isOpen, onClose, client, onSave }) => {
           </button>
         </div>
         <div className="space-y-4">
-          <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nome" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
-          <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
-          <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Telefono" className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
+          <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nome" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" />
+          <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" />
+          <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Telefono" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" />
           <button onClick={handleSave} className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-semibold">
             Salva Modifiche
           </button>
@@ -234,7 +234,7 @@ const ExtendExpiryModal = ({ isOpen, onClose, client, onSave }) => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-zinc-950/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
+      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-800/95 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-white">Prolunga Scadenza</h3>
           <button onClick={onClose} className="text-white hover:text-rose-400">
@@ -250,12 +250,12 @@ const ExtendExpiryModal = ({ isOpen, onClose, client, onSave }) => {
           {useManual ? (
             <div>
               <label className="block text-sm text-slate-300 mb-1">Nuova data scadenza</label>
-              <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)} className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-white" />
+              <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" />
             </div>
           ) : (
             <div>
               <label className="block text-sm text-slate-300 mb-1">Aggiungi giorni</label>
-              <select value={days} onChange={e => setDays(parseInt(e.target.value))} className="w-full p-2 bg-zinc-900/70 border border-white/10 rounded-lg text-white">
+              <select value={days} onChange={e => setDays(parseInt(e.target.value))} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white">
                 <option value={1}>+1 giorno</option>
                 <option value={3}>+3 giorni</option>
                 <option value={7}>+7 giorni</option>
@@ -266,7 +266,7 @@ const ExtendExpiryModal = ({ isOpen, onClose, client, onSave }) => {
             </div>
           )}
 
-          <div className="text-xs text-slate-400 p-3 bg-zinc-800/50 rounded-lg">
+          <div className="text-xs text-slate-400 p-3 bg-slate-700/30 rounded-lg">
             <p>Scadenza attuale: <strong>{toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}</strong></p>
             <p>Nuova scadenza: <strong>{
               useManual && manualDate ? new Date(manualDate).toLocaleDateString('it-IT') :
@@ -383,6 +383,7 @@ export default function ClientDetail() {
                 try {
                   resolved[key] = await getDownloadURL(ref(storage, path));
                 } catch (e) {
+                  console.error(`Errore caricamento foto ${key}:`, e);
                   resolved[key] = null;
                 }
               }
@@ -395,6 +396,8 @@ export default function ClientDetail() {
         return check;
       }));
       setChecks(resolvedChecks);
+    }, (error) => {
+      console.error('Errore caricamento checks:', error);
     });
 
     // === PAGAMENTI ===
@@ -454,7 +457,7 @@ export default function ClientDetail() {
   if (error) return <div className="text-center text-red-400 p-8">{error}</div>;
   if (!client) return null;
 
-  const sectionStyle = "bg-white/5 backdrop-blur-xl rounded-2xl gradient-border p-6 shadow-lg border border-white/10";
+  const sectionStyle = "bg-white/5 backdrop-blur-xl rounded-2xl border border-slate-700 p-6 shadow-lg border border-white/10";
   const headingStyle = "font-bold mb-4 text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 flex items-center gap-2";
 
   return (
@@ -464,7 +467,7 @@ export default function ClientDetail() {
           <ArrowLeft size={18} /> Torna ai Clienti
         </button>
 
-        <div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6">
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <h1 className="text-3xl font-bold text-slate-50">{client.name}</h1>
             <div className="flex flex-wrap gap-2">
@@ -484,7 +487,7 @@ export default function ClientDetail() {
           </div>
 
           {/* Tabs */}
-          <div className="flex flex-wrap gap-2 mb-6 bg-zinc-900/70 p-1 rounded-lg border border-white/10">
+          <div className="flex flex-wrap gap-2 mb-6 bg-slate-900/50 p-1 rounded-lg border border-slate-700">
             {['info', 'check', 'payments', 'anamnesi'].map(tab => (
               <button
                 key={tab}
@@ -519,7 +522,7 @@ export default function ClientDetail() {
           {activeTab === 'check' && (
             <div className="space-y-6">
               {checks.length > 0 ? checks.map(check => (
-                <div key={check.id} className="p-5 bg-zinc-900/70 rounded-xl border border-white/10">
+                <div key={check.id} className="p-5 bg-slate-700/50 rounded-xl border border-slate-600">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
                     <p className="text-sm font-medium text-slate-300">Data: {toDate(check.createdAt)?.toLocaleDateString('it-IT') || 'N/D'}</p>
                     <p className="text-sm text-slate-300">Peso: <span className="font-semibold">{check.weight || 'N/D'} kg</span></p>
@@ -557,7 +560,7 @@ export default function ClientDetail() {
           {activeTab === 'payments' && (
             <div className="space-y-4">
               {payments.length > 0 ? payments.map(p => (
-                <div key={p.id} className="p-4 bg-zinc-900/70 rounded-lg border border-white/10">
+                <div key={p.id} className="p-4 bg-slate-700/50 rounded-lg border border-slate-600">
                   <p className="text-sm text-slate-400">Data: {toDate(p.paymentDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
                   <p className="text-sm text-slate-200">Importo: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(p.amount || 0)}</p>
                   <p className="text-sm text-slate-200">Durata: {p.duration}</p>

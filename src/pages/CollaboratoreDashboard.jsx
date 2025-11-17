@@ -425,7 +425,7 @@ export default function CollaboratoreDashboard() {
         </div>
       </motion.header>
 
-      <motion.div className="bg-zinc-950/60 backdrop-blur-xl rounded-2xl p-6 space-y-6 border border-white/10">
+      <motion.div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 space-y-6 border border-white/10">
         {/* CHIAMATE GIORNALIERE */}
         <div>
           <h3 className="text-sm font-semibold text-slate-400 mb-2">Chiamate giornaliere</h3>
@@ -433,7 +433,7 @@ export default function CollaboratoreDashboard() {
             {todayCalls.map((s, i) => (
               <motion.div 
                 key={i} 
-                className="bg-zinc-900/70 p-3 rounded-lg border border-white/10 text-center"
+                className="bg-slate-800/70 p-3 rounded-lg border border-white/10 text-center"
                 whileHover={{ scale: 1.05 }}
               >
                 <img 
@@ -450,7 +450,7 @@ export default function CollaboratoreDashboard() {
         </div>
 
         {/* GRAFICO SETTIMANA */}
-        <div className="bg-zinc-900/70 p-4 rounded-lg">
+        <div className="bg-slate-800/70 p-4 rounded-lg">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-lg font-semibold text-cyan-300">Chiamate prenotate</h3>
             <div className="flex items-center gap-2">
@@ -503,7 +503,7 @@ export default function CollaboratoreDashboard() {
 
         {/* AZIONI RAPIDE */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div onClick={() => setShowTracker(true)} className="bg-zinc-900/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500">
+          <div onClick={() => setShowTracker(true)} className="bg-slate-800/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
                 <FileText size={20} /> Tracker DMS
@@ -515,13 +515,13 @@ export default function CollaboratoreDashboard() {
           </div>
           {isSetter && (
             <>
-              <div onClick={() => setShowNewLead(true)} className="bg-zinc-900/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
+              <div onClick={() => setShowNewLead(true)} className="bg-slate-800/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
                 <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2"><Phone size={20} /> Nuovo Lead</h3>
               </div>
-              <div onClick={() => setShowMyLeads(true)} className="bg-zinc-900/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
+              <div onClick={() => setShowMyLeads(true)} className="bg-slate-800/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
                 <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2"><Eye size={20} /> I miei Lead</h3>
               </div>
-              <div onClick={() => setShowPastReports(true)} className="bg-zinc-900/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
+              <div onClick={() => setShowPastReports(true)} className="bg-slate-800/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
                 <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2"><BarChart3 size={20} /> Report Passati</h3>
               </div>
             </>
@@ -537,7 +537,7 @@ export default function CollaboratoreDashboard() {
       <AnimatePresence>
         {showProfile && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-zinc-950/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Profilo</h3>
                 <button onClick={() => setShowProfile(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
@@ -547,7 +547,7 @@ export default function CollaboratoreDashboard() {
                   <img src={profile.photoURL || '/default-avatar.png'} alt="Profile" className="w-24 h-24 rounded-full mb-2" />
                   <input type="file" onChange={handleUploadPhoto} accept="image/*" className="text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100" disabled={uploading} />
                 </div>
-                <input type="text" value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} placeholder="Nome" className="p-3 bg-zinc-900/70 border border-white/10 rounded-lg text-white w-full" />
+                <input type="text" value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} placeholder="Nome" className="p-3 bg-slate-800/70 border border-white/10 rounded-lg text-white w-full" />
                 <div className="flex gap-4 justify-center">
                   <label className="flex items-center gap-2 text-white">
                     <input type="radio" name="gender" value="M" checked={profile.gender === 'M'} onChange={e => setProfile({ ...profile, gender: e.target.value })} className="accent-rose-500" />
@@ -563,9 +563,9 @@ export default function CollaboratoreDashboard() {
                 </button>
                 <div className="border-t border-white/10 pt-4">
                   <h4 className="text-sm font-semibold mb-2">Reimposta Password</h4>
-                  <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Password Attuale" className="p-2 bg-zinc-900/70 border border-white/10 rounded w-full mb-2 text-white" />
-                  <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nuova Password" className="p-2 bg-zinc-900/70 border border-white/10 rounded w-full mb-2 text-white" />
-                  <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Conferma Password" className="p-2 bg-zinc-900/70 border border-white/10 rounded w-full mb-2 text-white" />
+                  <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Password Attuale" className="p-2 bg-slate-800/70 border border-white/10 rounded w-full mb-2 text-white" />
+                  <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nuova Password" className="p-2 bg-slate-800/70 border border-white/10 rounded w-full mb-2 text-white" />
+                  <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Conferma Password" className="p-2 bg-slate-800/70 border border-white/10 rounded w-full mb-2 text-white" />
                   <button onClick={handleResetPassword} className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg flex items-center justify-center gap-2">
                     <Key size={16} /> Reimposta
                   </button>
@@ -580,16 +580,16 @@ export default function CollaboratoreDashboard() {
       <AnimatePresence>
         {showTracker && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-zinc-950/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Tracker DMS</h3>
                 <button onClick={() => setShowTracker(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
               </div>
               <div className="space-y-4">
-                <input type="number" value={tracker.outreachTotale} onChange={e => setTracker({ ...tracker, outreachTotale: e.target.value })} placeholder="Outreach Totale" className="p-3 bg-zinc-900/70 border border-white/10 rounded-lg text-white w-full" />
-                <input type="number" value={tracker.followUpsTotali} onChange={e => setTracker({ ...tracker, followUpsTotali: e.target.value })} placeholder="Follow-Ups Totali" className="p-3 bg-zinc-900/70 border border-white/10 rounded-lg text-white w-full" />
-                <input type="number" value={tracker.risposte} onChange={e => setTracker({ ...tracker, risposte: e.target.value })} placeholder="Risposte" className="p-3 bg-zinc-900/70 border border-white/10 rounded-lg text-white w-full" />
-                <input type="number" value={tracker.callPrenotate} onChange={e => setTracker({ ...tracker, callPrenotate: e.target.value })} placeholder="Call Prenotate" className="p-3 bg-zinc-900/70 border border-white/10 rounded-lg text-white w-full" />
+                <input type="number" value={tracker.outreachTotale} onChange={e => setTracker({ ...tracker, outreachTotale: e.target.value })} placeholder="Outreach Totale" className="p-3 bg-slate-800/70 border border-white/10 rounded-lg text-white w-full" />
+                <input type="number" value={tracker.followUpsTotali} onChange={e => setTracker({ ...tracker, followUpsTotali: e.target.value })} placeholder="Follow-Ups Totali" className="p-3 bg-slate-800/70 border border-white/10 rounded-lg text-white w-full" />
+                <input type="number" value={tracker.risposte} onChange={e => setTracker({ ...tracker, risposte: e.target.value })} placeholder="Risposte" className="p-3 bg-slate-800/70 border border-white/10 rounded-lg text-white w-full" />
+                <input type="number" value={tracker.callPrenotate} onChange={e => setTracker({ ...tracker, callPrenotate: e.target.value })} placeholder="Call Prenotate" className="p-3 bg-slate-800/70 border border-white/10 rounded-lg text-white w-full" />
               </div>
               <div className="flex justify-end mt-4">
                 <motion.button onClick={handleSaveTracker} className="flex items-center gap-2 px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -608,22 +608,22 @@ export default function CollaboratoreDashboard() {
       <AnimatePresence>
         {showNewLead && isSetter && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-zinc-950/80 rounded-2xl border border-white/10 p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Nuovo Lead</h3>
                 <button onClick={() => setShowNewLead(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" value={newLead.name} onChange={e => setNewLead({ ...newLead, name: e.target.value })} placeholder="Nome Lead" className="p-3 bg-zinc-800/70 border border-white/10 rounded-lg text-white" />
-                <select value={newLead.source} onChange={e => setNewLead({ ...newLead, source: e.target.value })} className="p-3 bg-zinc-800/70 border border-white/10 rounded-lg text-white">
+                <input type="text" value={newLead.name} onChange={e => setNewLead({ ...newLead, name: e.target.value })} placeholder="Nome Lead" className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white" />
+                <select value={newLead.source} onChange={e => setNewLead({ ...newLead, source: e.target.value })} className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white">
                   <option value="">Seleziona Fonte</option>
                   {fonti.map(f => <option key={f} value={f}>{f}</option>)}
                 </select>
-                <input type="text" value={newLead.number} onChange={e => setNewLead({ ...newLead, number: e.target.value })} placeholder="Numero" className="p-3 bg-zinc-800/70 border border-white/10 rounded-lg text-white" />
-                <input type="text" value={newLead.email} onChange={e => setNewLead({ ...newLead, email: e.target.value })} placeholder="Email" className="p-3 bg-zinc-800/70 border border-white/10 rounded-lg text-white" />
-                <input type="date" value={newLead.dataPrenotazione} onChange={e => setNewLead({ ...newLead, dataPrenotazione: e.target.value })} className="p-3 bg-zinc-800/70 border border-white/10 rounded-lg text-white" />
-                <input type="time" value={newLead.oraPrenotazione} onChange={e => setNewLead({ ...newLead, oraPrenotazione: e.target.value })} className="p-3 bg-zinc-800/70 border border-white/10 rounded-lg text-white" />
-                <textarea value={newLead.note} onChange={e => setNewLead({ ...newLead, note: e.target.value })} placeholder="Note" className="p-3 bg-zinc-800/70 border border-white/10 rounded-lg text-white col-span-2" rows="2" />
+                <input type="text" value={newLead.number} onChange={e => setNewLead({ ...newLead, number: e.target.value })} placeholder="Numero" className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white" />
+                <input type="text" value={newLead.email} onChange={e => setNewLead({ ...newLead, email: e.target.value })} placeholder="Email" className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white" />
+                <input type="date" value={newLead.dataPrenotazione} onChange={e => setNewLead({ ...newLead, dataPrenotazione: e.target.value })} className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white" />
+                <input type="time" value={newLead.oraPrenotazione} onChange={e => setNewLead({ ...newLead, oraPrenotazione: e.target.value })} className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white" />
+                <textarea value={newLead.note} onChange={e => setNewLead({ ...newLead, note: e.target.value })} placeholder="Note" className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white col-span-2" rows="2" />
                 <motion.button onClick={handleSaveLead} className="col-span-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg flex items-center justify-center gap-2" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Save size={20} /> Salva Lead
                 </motion.button>
@@ -637,14 +637,14 @@ export default function CollaboratoreDashboard() {
       <AnimatePresence>
         {showMyLeads && isSetter && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-zinc-950/80 rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">I miei Lead</h3>
                 <button onClick={() => setShowMyLeads(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left text-slate-300">
-                  <thead className="text-xs uppercase bg-zinc-900/50">
+                  <thead className="text-xs uppercase bg-slate-800/50">
                     <tr>
                       <th className="px-4 py-2">Nome</th>
                       <th className="px-4 py-2">Fonte</th>
@@ -688,14 +688,14 @@ export default function CollaboratoreDashboard() {
       <AnimatePresence>
         {showPastReports && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-zinc-950/80 rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Report Passati</h3>
                 <button onClick={() => setShowPastReports(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
               </div>
               <div className="space-y-4">
                 {pastReports.map((report, i) => (
-                  <div key={i} className="bg-zinc-900/50 rounded-lg p-4 border border-white/10">
+                  <div key={i} className="bg-slate-800/50 rounded-lg p-4 border border-white/10">
                     <h4 className="font-semibold text-cyan-400">{new Date(report.date).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</h4>
                     <div className="grid grid-cols-2 gap-3 mt-2 text-sm">
                       <p className="text-slate-400">Outreach: <span className="text-emerald-400">{report.tracker?.outreachTotale || 0}</span></p>
@@ -718,7 +718,7 @@ export default function CollaboratoreDashboard() {
       <AnimatePresence>
         {leadToDelete && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-zinc-950/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Elimina Lead</h3>
                 <button onClick={() => setLeadToDelete(null)} className="text-white hover:text-rose-400"><X size={24} /></button>
@@ -727,7 +727,7 @@ export default function CollaboratoreDashboard() {
                 Sei sicuro di voler eliminare il lead <strong>{leadToDelete.name}</strong>?
               </p>
               <div className="flex justify-end gap-3">
-                <button onClick={() => setLeadToDelete(null)} className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg">
+                <button onClick={() => setLeadToDelete(null)} className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white rounded-lg">
                   Annulla
                 </button>
                 <button onClick={handleDeleteLead} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">

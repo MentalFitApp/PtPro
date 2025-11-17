@@ -295,7 +295,7 @@ const AdminChat = () => {
                 placeholder="Cerca o avvia una chat..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-zinc-900/40 backdrop-blur-xl border border-white/10 p-2 pl-10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base"
+                className="w-full bg-slate-700/50 border border-slate-600 p-2 pl-10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base"
               />
             </div>
           </div>
@@ -304,7 +304,7 @@ const AdminChat = () => {
               {isSearching && <p className="p-4 text-slate-400 text-sm">Ricerca in corso...</p>}
               {!isSearching && searchResults.length === 0 && <p className="p-4 text-slate-400 text-sm">Nessun cliente trovato.</p>}
               {!isSearching && searchResults.map(client => (
-                <div key={client.id} onClick={() => handleSelectClient(client)} className="p-4 cursor-pointer hover:bg-white/5 transition-colors">
+                <div key={client.id} onClick={() => handleSelectClient(client)} className="p-4 cursor-pointer hover:bg-slate-700/30 transition-colors">
                   <p className="font-semibold text-slate-100">{client.name}</p>
                   <p className="text-sm text-slate-400">{client.email}</p>
                 </div>
@@ -321,7 +321,7 @@ const AdminChat = () => {
                       <div
                         key={chat.id}
                         onClick={() => setSelectedChatId(chat.id)}
-                        className={`p-4 cursor-pointer border-l-4 transition-colors ${selectedChatId === chat.id ? 'bg-rose-600/20 border-rose-500' : 'border-transparent hover:bg-white/5'}`}
+                        className={`p-4 cursor-pointer border-l-4 transition-colors ${selectedChatId === chat.id ? 'bg-rose-600/20 border-rose-500' : 'border-transparent hover:bg-slate-700/30'}`}
                       >
                         <p className="font-semibold text-slate-100">{clientName}</p>
                         <p className="text-sm text-slate-400">{chat.lastMessage || 'Nessun messaggio'}</p>
@@ -371,7 +371,7 @@ const AdminChat = () => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Scrivi una risposta..."
-                    className="flex-1 p-3 bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-white text-sm sm:text-base"
+                    className="flex-1 p-3 bg-slate-700/50 border border-slate-600 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-white text-sm sm:text-base"
                   />
                   <button
                     type="submit"

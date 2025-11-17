@@ -58,7 +58,7 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
   const PhotoUploader = ({ type, label, preview }) => (
     <div className="text-center">
       <label className="block text-sm font-medium text-slate-300">{label}</label>
-      <div className="mt-2 flex justify-center items-center w-full h-48 bg-zinc-900/50 rounded-lg border-2 border-dashed border-zinc-700 hover:border-cyan-500 transition-colors relative group">
+      <div className="mt-2 flex justify-center items-center w-full h-48 bg-slate-700/30 rounded-lg border-2 border-dashed border-slate-600 hover:border-cyan-500 transition-colors relative group">
         {preview ? (
           <img src={preview} alt="preview" className="h-full w-full object-contain rounded-lg p-1" />
         ) : (
@@ -94,7 +94,7 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
             value={formState.weight}
             onChange={(e) => setFormState(prev => ({ ...prev, weight: e.target.value }))}
             required
-            className="w-full p-2.5 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200"
+            className="w-full p-2.5 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200"
             placeholder="Es. 75.5"
           />
         </div>
@@ -104,7 +104,7 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
             value={formState.notes}
             onChange={(e) => setFormState(prev => ({ ...prev, notes: e.target.value }))}
             rows="4"
-            className="w-full p-2.5 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200"
+            className="w-full p-2.5 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-slate-200"
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -157,7 +157,7 @@ const CheckDetails = ({ check, handleEditClick }) => {
         {isEditable && (
           <button
             onClick={() => handleEditClick(check)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-slate-300 text-sm font-semibold rounded-lg"
+            className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-sm font-semibold rounded-lg"
           >
             <FilePenLine size={14} /> Modifica
           </button>
@@ -170,7 +170,7 @@ const CheckDetails = ({ check, handleEditClick }) => {
         </div>
         <div>
           <h4 className="font-semibold text-slate-300">Note:</h4>
-          <p className="text-slate-400 p-3 bg-zinc-900/50 rounded-lg whitespace-pre-wrap">{check.notes || 'Nessuna nota.'}</p>
+          <p className="text-slate-400 p-3 bg-slate-700/50 rounded-lg whitespace-pre-wrap">{check.notes || 'Nessuna nota.'}</p>
         </div>
         <div>
           <h4 className="font-semibold text-slate-300">Foto:</h4>
@@ -194,7 +194,7 @@ const CheckDetails = ({ check, handleEditClick }) => {
                     />
                   </a>
                 ) : (
-                  <div className="w-full h-48 bg-zinc-900 rounded-lg text-slate-500 flex items-center justify-center">Foto non disponibile</div>
+                  <div className="w-full h-48 bg-slate-700/50 rounded-lg text-slate-500 flex items-center justify-center">Foto non disponibile</div>
                 )}
               </div>
             ))}
@@ -401,7 +401,7 @@ export default function ClientChecks() {
     }
   };
 
-  if (error) return <div className="min-h-screen bg-zinc-950 text-red-400 flex justify-center items-center">{error}</div>;
+  if (error) return <div className="min-h-screen text-red-400 flex justify-center items-center p-4">{error}</div>;
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -413,16 +413,16 @@ export default function ClientChecks() {
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-50">I miei Check</h1>
           <button
             onClick={() => navigate('/client/dashboard')}
-            className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-slate-300 text-sm font-semibold rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-sm font-semibold rounded-lg transition-colors"
           >
             <ArrowLeft size={16} /><span>Dashboard</span>
           </button>
         </header>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-4">
+          <div className="lg:col-span-1 bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-4">
             <Calendar onChange={setSelectedDate} value={selectedDate} tileClassName={tileClassName} />
           </div>
-          <div className="lg:col-span-2 bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6 min-h-[400px]">
+          <div className="lg:col-span-2 bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 min-h-[400px]">
             {renderContentForDate()}
           </div>
         </motion.div>

@@ -269,22 +269,25 @@ const Dipendenti = () => {
       </div>
 
       {/* CALENDARIO PAGAMENTI */}
-      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700 shadow-xl">
-        <div className="flex justify-between items-center mb-4">
-          <button onClick={() => setMeseCalendario(addMonths(meseCalendario, -1))} className="p-2 hover:bg-slate-700 rounded-lg transition">
-            <ChevronLeft size={20} className="text-slate-400" />
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-6 border border-slate-700 shadow-xl">
+        <div className="flex justify-between items-center mb-3 sm:mb-4">
+          <button onClick={() => setMeseCalendario(addMonths(meseCalendario, -1))} className="p-1.5 sm:p-2 hover:bg-slate-700 rounded-lg transition">
+            <ChevronLeft size={16} className="text-slate-400 sm:hidden" /><ChevronLeft size={20} className="text-slate-400 hidden sm:block" />
           </button>
-          <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-            <Calendar size={20} /> {format(meseCalendario, "MMMM yyyy")}
+          <h3 className="text-sm sm:text-lg font-bold text-slate-100 flex items-center gap-1 sm:gap-2">
+            <Calendar size={16} className="sm:hidden" /><Calendar size={20} className="hidden sm:block" /> {format(meseCalendario, "MMMM yyyy")}
           </h3>
-          <button onClick={() => setMeseCalendario(addMonths(meseCalendario, 1))} className="p-2 hover:bg-slate-700 rounded-lg transition">
-            <ChevronRight size={20} className="text-slate-400" />
+          <button onClick={() => setMeseCalendario(addMonths(meseCalendario, 1))} className="p-1.5 sm:p-2 hover:bg-slate-700 rounded-lg transition">
+            <ChevronRight size={16} className="text-slate-400 sm:hidden" /><ChevronRight size={20} className="text-slate-400 hidden sm:block" />
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-3 text-center text-sm">
-          {['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'].map(d => (
-            <div key={d} className="font-bold text-slate-400 py-2">{d}</div>
+        <div className="grid grid-cols-7 gap-1 sm:gap-3 text-center text-[10px] sm:text-sm">
+          {['D', 'L', 'M', 'M', 'G', 'V', 'S'].map((d, i) => (
+            <div key={d} className="font-bold text-slate-400 py-1 sm:py-2">
+              <span className="sm:hidden">{d}</span>
+              <span className="hidden sm:inline">{['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][i]}</span>
+            </div>
           ))}
           {Array.from({ length: startOfMonth(meseCalendario).getDay() }, (_, i) => (
             <div key={`empty-${i}`} />
@@ -294,14 +297,14 @@ const Dipendenti = () => {
             return (
               <div
                 key={giorno.toISOString()}
-                className={`min-h-28 p-3 rounded-xl border-2 transition-all cursor-pointer
+                className={`min-h-16 sm:min-h-28 p-1.5 sm:p-3 rounded-lg sm:rounded-xl border sm:border-2 transition-all cursor-pointer
                   ${pagamentiGiorno.length > 0 
                     ? 'bg-emerald-900/40 border-emerald-600 hover:bg-emerald-900/60' 
                     : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/70'
                   }`}
               >
-                <p className="text-sm font-bold text-slate-300 mb-1">{format(giorno, "d")}</p>
-                <div className="space-y-1.5 max-h-20 overflow-y-auto">
+                <p className="text-xs sm:text-sm font-bold text-slate-300 mb-0.5 sm:mb-1">{format(giorno, "d")}</p>
+                <div className="space-y-1 sm:space-y-1.5 max-h-12 sm:max-h-20 overflow-y-auto">
                   {pagamentiGiorno.map(p => {
                     const dip = dipendentiMap.get(p.dipId);
                     return (
@@ -309,24 +312,24 @@ const Dipendenti = () => {
                         key={p.id}
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-gradient-to-r from-rose-600/30 to-purple-600/30 p-2 rounded-lg text-xs flex justify-between items-center"
+                        className="bg-gradient-to-r from-rose-600/30 to-purple-600/30 p-1 sm:p-2 rounded-md sm:rounded-lg text-[9px] sm:text-xs flex justify-between items-center"
                       >
-                        <div>
-                          <p className="font-semibold text-rose-300">{dip?.nome}</p>
-                          <p className="text-cyan-300">{formatCurrency(p.importo)}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-rose-300 truncate">{dip?.nome}</p>
+                          <p className="text-cyan-300 hidden sm:block">{formatCurrency(p.importo)}</p>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-0.5 sm:gap-1 flex-shrink-0 ml-1">
                           <button
                             onClick={(e) => { e.stopPropagation(); modificaPagamento(p); }}
-                            className="text-cyan-400 hover:text-cyan-300"
+                            className="text-cyan-400 hover:text-cyan-300 p-0.5"
                           >
-                            <Edit2 size={14} />
+                            <Edit2 size={10} className="sm:hidden" /><Edit2 size={14} className="hidden sm:block" />
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); eliminaPagamento(p.id); }}
-                            className="text-red-400 hover:text-red-300"
+                            className="text-red-400 hover:text-red-300 p-0.5"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={10} className="sm:hidden" /><Trash2 size={14} className="hidden sm:block" />
                           </button>
                         </div>
                       </motion.div>
@@ -334,7 +337,7 @@ const Dipendenti = () => {
                   })}
                 </div>
                 {pagamentiGiorno.length === 0 && (
-                  <p className="text-xs text-slate-500 italic mt-2">Nessun pagamento</p>
+                  <p className="hidden sm:block text-xs text-slate-500 italic mt-2">Nessun pagamento</p>
                 )}
               </div>
             );

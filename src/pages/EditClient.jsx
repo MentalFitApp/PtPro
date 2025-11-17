@@ -126,7 +126,7 @@ export default function EditClient() {
     navigate(`/client/${clientId}`);
   };
 
-  const inputStyle = "w-full p-2.5 bg-zinc-900/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 transition-all text-slate-200";
+  const inputStyle = "w-full p-2.5 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 transition-all text-slate-200";
   const labelStyle = "block mb-1.5 text-sm font-medium text-slate-400";
   const errorStyle = "text-red-500 text-sm mt-1";
 
@@ -136,7 +136,7 @@ export default function EditClient() {
     <>
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
       <motion.div 
-        className="w-full max-w-2xl mx-auto bg-zinc-950/60 backdrop-blur-xl rounded-xl gradient-border p-6 sm:p-8"
+        className="w-full max-w-2xl mx-auto bg-slate-900/60 backdrop-blur-xl rounded-xl border border-slate-700 p-6 sm:p-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -147,7 +147,7 @@ export default function EditClient() {
           </div>
           <button 
             onClick={handleCancel}
-            className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800/80 hover:bg-zinc-700/80 rounded-lg text-sm text-slate-300 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg text-sm text-slate-300 transition-colors"
           >
             <X size={16} /> Annulla
           </button>
@@ -237,7 +237,7 @@ export default function EditClient() {
             <motion.button
               type="button"
               onClick={handleCancel}
-              className="flex items-center gap-2 px-6 py-2.5 bg-zinc-700 hover:bg-zinc-800 text-white font-semibold rounded-lg transition-colors"
+              className="flex items-center gap-2 px-6 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white font-semibold rounded-lg transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >

@@ -29,7 +29,7 @@ const timeAgo = (date) => {
 };
 
 const StatCard = ({ title, value, icon, isPercentage = false, variants }) => (
-  <motion.div variants={variants} className="bg-zinc-950/60 backdrop-blur-xl p-4 rounded-xl gradient-border h-full">
+  <motion.div variants={variants} className="bg-slate-800/60 backdrop-blur-sm p-4 rounded-xl border border-slate-700 h-full">
     <div className="flex items-center gap-3 text-slate-400">
       {icon}
       <p className="text-sm">{title}</p>
@@ -44,9 +44,9 @@ const QuickAction = ({ to, title, icon, variants }) => (
   <motion.div variants={variants}>
     <button
       onClick={to}
-      className="group bg-zinc-900/70 hover:bg-zinc-800/90 border border-white/10 rounded-lg p-4 flex items-center gap-4 transition-all duration-300 w-full"
+      className="group bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg p-4 flex items-center gap-4 transition-all duration-300 w-full"
     >
-      <div className="bg-zinc-800 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-white p-3 rounded-lg transition-colors duration-300">
+      <div className="bg-slate-700/70 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-white p-3 rounded-lg transition-colors duration-300">
         {icon}
       </div>
       <div className="flex-1">
@@ -302,7 +302,7 @@ export default function CoachDashboard() {
     visible: { y: 0, opacity: 1 },
   };
 
-  if (error) return <div className="min-h-screen bg-zinc-950 text-red-400 flex justify-center items-center">{error}</div>;
+  if (error) return <div className="min-h-screen bg-slate-900 text-red-400 flex justify-center items-center">{error}</div>;
   if (loading) return <div className="min-h-screen flex justify-center items-center relative">
     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
   </div>;
@@ -310,7 +310,7 @@ export default function CoachDashboard() {
   return (
     <div className="min-h-screen text-slate-200 p-4 sm:p-8 relative">
       <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-        <motion.header variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+        <motion.header variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2"><Users size={28}/> Coach Dashboard</h1>
             <div className="flex items-center gap-4">
@@ -344,7 +344,7 @@ export default function CoachDashboard() {
               variants={itemVariants}
             />
           </div>
-          <motion.div variants={itemVariants} className="bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+          <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Aggiornamenti Recenti</h2>
             <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
               <AnimatePresence>
@@ -358,7 +358,7 @@ export default function CoachDashboard() {
               </AnimatePresence>
             </div>
           </motion.div>
-          <motion.div variants={itemVariants} className="mt-8 bg-zinc-950/60 backdrop-blur-xl p-4 sm:p-6 rounded-xl gradient-border">
+          <motion.div variants={itemVariants} className="mt-8 bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700">
             <h2 className="text-lg font-semibold mb-4 text-slate-200">Funzioni Utili</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <QuickAction to={() => navigate('/coach/clients')} title="Gestisci Clienti" icon={<Users size={22} />} variants={itemVariants} />

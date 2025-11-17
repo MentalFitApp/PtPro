@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // --- COMPONENTI UI RIUTILIZZABILI ---
 const AnimatedBackground = () => (
-  <div className="absolute inset-0 -z-10 overflow-hidden bg-zinc-950">
+  <div className="absolute inset-0 -z-10 overflow-hidden bg-slate-900">
     <div className="aurora-background"></div>
   </div>
 );
@@ -15,7 +15,7 @@ const AnimatedBackground = () => (
 const ViewField = ({ label, value }) => (
   <div className="mb-4">
     <h4 className="text-sm font-semibold text-slate-400">{label}</h4>
-    <p className="mt-1 p-3 bg-zinc-900 rounded-lg min-h-[44px] text-slate-200 break-words whitespace-pre-wrap shadow-inner">{value || 'Non specificato'}</p>
+    <p className="mt-1 p-3 bg-slate-800 rounded-lg min-h-[44px] text-slate-200 break-words whitespace-pre-wrap shadow-inner">{value || 'Non specificato'}</p>
   </div>
 );
 
@@ -34,7 +34,7 @@ const ViewPhotos = ({ urls }) => (
             transition={{ duration: 0.3 }}
           />
         ) : (
-          <div className="mt-2 flex justify-center items-center w-full h-48 sm:h-40 bg-zinc-900 rounded-lg text-slate-500"><span>Non caricata</span></div>
+          <div className="mt-2 flex justify-center items-center w-full h-48 sm:h-40 bg-slate-800 rounded-lg text-slate-500"><span>Non caricata</span></div>
         )}
       </div>
     ))}
@@ -81,7 +81,7 @@ const AdminAnamnesi = () => {
     );
   }
 
-  const sectionStyle = "bg-zinc-950/60 backdrop-blur-xl rounded-2xl gradient-border p-6 shadow-lg";
+  const sectionStyle = "bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6 shadow-lg";
   const headingStyle = "font-bold mb-4 text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 flex items-center gap-2";
 
   return (
@@ -89,7 +89,7 @@ const AdminAnamnesi = () => {
       <AnimatedBackground />
       <header className="flex justify-between items-center mb-8 flex-col sm:flex-row gap-4">
         <h1 className="text-3xl sm:text-4xl font-bold text-slate-50">Anamnesi - {anamnesiData.firstName} {anamnesiData.lastName}</h1>
-        <button onClick={() => navigate('/clients')} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-slate-300 text-sm font-semibold rounded-lg transition-colors"><ArrowLeft size={16} /><span>Torna ai Clienti</span></button>
+        <button onClick={() => navigate('/clients')} className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-slate-300 text-sm font-semibold rounded-lg transition-colors"><ArrowLeft size={16} /><span>Torna ai Clienti</span></button>
       </header>
       
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
