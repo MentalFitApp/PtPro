@@ -47,9 +47,17 @@ const ClientDashboard = () => {
   const [showPWAInstall, setShowPWAInstall] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
+
+  // Forza rendering immediato
+  useEffect(() => {
+    console.log('ClientDashboard: Componente montato');
+    setMounted(true);
+    return () => console.log('ClientDashboard: Componente smontato');
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -64,6 +72,7 @@ const ClientDashboard = () => {
     const ua = navigator.userAgent;
     const ios = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
     const android = /Android/.test(ua);
+    console.log('ClientDashboard: Dispositivo rilevato - iOS:', ios, 'Android:', android, 'UA:', ua);
     setIsIOS(ios);
     setIsAndroid(android);
 
@@ -207,20 +216,35 @@ const ClientDashboard = () => {
     visible: { opacity: 1, transition: { duration: 0.2 } },
   };
 
+  // Logging pre-render
+  console.log('ClientDashboard: Rendering - mounted:', mounted, 'loading:', loading, 'clientData:', !!clientData, 'isIOS:', isIOS);
+
+  // Fallback visibile per debugging
+  if (!mounted) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: '#0f172a', color: '#22d3ee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+        Inizializzazione...
+      </div>
+    );
+  }
+
   return (
     <div 
-      className={isIOS ? "min-h-screen bg-slate-900 text-slate-200 w-full" : "min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-200 w-full"}
-      style={{ 
-        WebkitOverflowScrolling: 'touch',
+      style={{
+        minHeight: '100vh',
+        width: '100%',
+        backgroundColor: '#0f172a',
+        color: '#e2e8f0',
         position: 'relative',
-        willChange: 'transform',
-        backfaceVisibility: 'hidden',
-        WebkitBackfaceVisibility: 'hidden',
-        perspective: 1000,
-        WebkitPerspective: 1000
+        zIndex: 1,
+        opacity: 1,
+        display: 'block',
+        WebkitOverflowScrolling: 'touch',
+        transform: 'translateZ(0)',
+        WebkitTransform: 'translateZ(0)'
       }}
     >
-      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
+      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6" style={{ position: 'relative', zIndex: 2 }}>
         <motion.header variants={itemVariants} className="flex flex-col gap-4 mb-6 sm:mb-8">
           <div className="flex items-center justify-between w-full">
             <NotificationPanel userType="client" />
