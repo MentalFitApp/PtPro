@@ -206,6 +206,45 @@ service cloud.firestore {
       allow read, list, create, update, delete: if isAdmin();
     }
 
+    // ==================== CALENDARIO EVENTI ====================
+    match /calendarEvents/{eventId} {
+      // Leggi: admin o qualunque collaboratore (visibilità generale del calendario)
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/collaboratori/$(request.auth.uid))
+      );
+
+      // Lista: admin e tutti i collaboratori
+      allow list: if request.auth != null && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/collaboratori/$(request.auth.uid))
+      );
+
+      // Crea: admin o qualunque collaboratore
+      allow create: if request.auth != null && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/collaboratori/$(request.auth.uid))
+      );
+
+      // Modifica: admin o qualunque collaboratore
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/collaboratori/$(request.auth.uid))
+      );
+
+      // Elimina: admin o creatore dell'evento
+      allow delete: if request.auth != null && (
+        isAdmin() ||
+        resource.data.createdBy == request.auth.uid
+      );
+    }
+
+    // ==================== FCM TOKENS (per notifiche) ====================
+    match /fcmTokens/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isAdmin();
+    }
+
     // ==================== BLOCCA TUTTO IL RESTO ====================
     match /{document=**} {
       allow read, write: if false;

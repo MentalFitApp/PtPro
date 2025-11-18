@@ -427,6 +427,74 @@ export default function Collaboratori() {
     }
   };
 
+  const handleSyncLeadsToCalendar = async () => {
+    if (!confirm('Sincronizzare tutti i lead con il calendario? Verranno creati eventi per i lead che non ne hanno ancora uno.')) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      let created = 0;
+      let skipped = 0;
+
+      for (const lead of leads) {
+        // Verifica che abbia i dati necessari
+        if (!lead.name || !lead.dataPrenotazione || !lead.oraPrenotazione || !lead.collaboratoreId) {
+          skipped++;
+          continue;
+        }
+
+        try {
+          // Usa l'ID del lead come parte dell'ID dell'evento per evitare duplicati
+          // setDoc con merge non sovrascrive se esiste già
+          const eventDocRef = doc(db, 'calendarEvents', `lead_${lead.id}`);
+          const eventDoc = await getDoc(eventDocRef);
+          
+          if (eventDoc.exists()) {
+            skipped++;
+            continue;
+          }
+
+          // Crea evento calendario
+          await setDoc(eventDocRef, {
+            title: `📞 ${lead.name}`,
+            date: lead.dataPrenotazione,
+            time: lead.oraPrenotazione,
+            type: 'lead',
+            durationMinutes: 30,
+            leadId: lead.id,
+            leadData: {
+              name: lead.name,
+              number: lead.number || '',
+              email: lead.email || '',
+              source: lead.source || '',
+              note: lead.note || ''
+            },
+            createdBy: lead.collaboratoreId,
+            participants: [lead.collaboratoreId],
+            timestamp: new Date()
+          });
+
+          created++;
+        } catch (err) {
+          console.error(`Errore su lead ${lead.name}:`, err);
+          skipped++;
+        }
+      }
+
+      setSuccess(`✅ Sincronizzazione completata! Creati: ${created}, Già esistenti: ${skipped}`);
+      setTimeout(() => setSuccess(''), 5000);
+    } catch (err) {
+      console.error('Errore sincronizzazione:', err);
+      setError('Errore durante la sincronizzazione.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getSourceStats = () => {
     const stats = {};
     leads.forEach(l => {
@@ -472,6 +540,14 @@ export default function Collaboratori() {
             <Users size={24} /> Gestione
           </h1>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <motion.button 
+              onClick={handleSyncLeadsToCalendar} 
+              className="flex items-center justify-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs w-full sm:w-auto" 
+              whileHover={{ scale: 1.05 }}
+              title="Sincronizza lead esistenti con il calendario"
+            >
+              <CalendarIcon size={14} /> Sync Calendario
+            </motion.button>
             <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@esempio.com" className="px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-xs w-full sm:w-40" />
             <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-xs w-full sm:w-28">
               <option>Setter</option>

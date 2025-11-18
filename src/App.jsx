@@ -46,6 +46,7 @@ const GuideManager = React.lazy(() => import('./pages/GuideManager'));
 
 // AGGIUNTO
 const Statistiche = React.lazy(() => import('./pages/Statistiche'));
+const CalendarPage = React.lazy(() => import('./pages/CalendarPage'));
 
 // Spinner
 const PageSpinner = () => (
@@ -74,6 +75,13 @@ export default function App() {
   const [lastNavigated, setLastNavigated] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Salva sempre l'ultima path navigata (HashRouter fornisce pathname già dopo #)
+  useEffect(() => {
+    try {
+      localStorage.setItem('last_path', location.pathname || '/');
+    } catch {}
+  }, [location.pathname]);
 
   useEffect(() => {
     if (location.pathname === '/guida' || location.pathname.startsWith('/guida/')) {
@@ -207,10 +215,24 @@ export default function App() {
           });
 
           const publicPaths = ['/login', '/client-login', '/collaboratore-login', '/client/forgot-password', '/guida', '/guida/:guideId'];
-          if (!publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/'))) {
-            if (lastNavigated !== '/login') {
-              setLastNavigated('/login');
-              navigate('/login', { replace: true });
+          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/'));
+          if (!isPublic) {
+            // Se installata come PWA, indirizza alla login coerente con l'ultima sezione visitata
+            const isStandalone = (typeof window !== 'undefined') && (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone);
+            let target = '/login';
+            if (isStandalone) {
+              try {
+                const lastPath = localStorage.getItem('last_path') || '';
+                if (lastPath.startsWith('/collaboratore')) target = '/collaboratore-login';
+                else if (lastPath.startsWith('/client')) target = '/client-login';
+                else target = '/login';
+              } catch {
+                target = '/login';
+              }
+            }
+            if (lastNavigated !== target) {
+              setLastNavigated(target);
+              navigate(target, { replace: true });
             }
           }
         }
@@ -258,6 +280,7 @@ export default function App() {
           <Route path="/client/:id/anamnesi" element={<AdminAnamnesi />} />
           <Route path="/collaboratori" element={<Collaboratori />} />
           <Route path="/collaboratore-detail" element={<CollaboratoreDetail />} />
+          <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/calendar-report/:date" element={<CalendarReport />} />
           <Route path="/business-history" element={<BusinessHistory />} />
           <Route path="/guide-manager" element={<GuideManager />} />
@@ -290,6 +313,7 @@ export default function App() {
         <Route element={authInfo.isCollaboratore ? <MainLayout /> : <Navigate to="/collaboratore-login" replace />}>
           <Route path="/collaboratore/first-access" element={<FirstAccess />} />
           <Route path="/collaboratore/dashboard" element={<CollaboratoreDashboard />} />
+          <Route path="/collaboratore/calendar" element={<CalendarPage />} />
           {/* Aggiungi altre rotte future qui se vuoi */}
         </Route>
 

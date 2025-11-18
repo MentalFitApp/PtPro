@@ -2,20 +2,21 @@
   "name": "MentalFit",
   "short_name": "MentalFit",
   "description": "Area Personale Coaching",
-  "start_url": "/PtPro/#/client-login",
+  "start_url": "./#/",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#06b6d4",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/PtPro/logo192.png",
+      "src": "logo192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/PtPro/logo512.png",
+      "src": "logo512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable any"

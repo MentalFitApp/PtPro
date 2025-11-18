@@ -2,15 +2,32 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/PtPro/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PT Manager Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- Google Fonts: Importiamo il font 'Inter' per un look moderno -->
+    <title>PT Manager Pro</title>
+    <link rel="icon" type="image/svg+xml" href="vite.svg" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/PtPro/assets/manifest-D42ZRuD6.json" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/PtPro/assets/logo192-BXqxlm75.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="logo512.png" />
+    <link rel="apple-touch-icon" href="/PtPro/assets/logo192-BXqxlm75.png" />
+
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="PT Manager Pro" />
+
+    <!-- FONT -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/PtPro/assets/index-BTa8Gkbe.js"></script>
+
+    <style>
+      *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { height: 100%; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+    </style>
+    <script type="module" crossorigin src="/PtPro/assets/index-BHKKfjAh.js"></script>
     <link rel="modulepreload" crossorigin href="/PtPro/assets/core-js-ChGsxLo2.js">
     <link rel="modulepreload" crossorigin href="/PtPro/assets/react-CrXOBDSJ.js">
     <link rel="modulepreload" crossorigin href="/PtPro/assets/scheduler-DYLXRpC5.js">
@@ -18,19 +35,30 @@
     <link rel="modulepreload" crossorigin href="/PtPro/assets/@remix-run-CjG9tKj3.js">
     <link rel="modulepreload" crossorigin href="/PtPro/assets/react-router-BxpCmtJ-.js">
     <link rel="modulepreload" crossorigin href="/PtPro/assets/react-router-dom-9rcY47vU.js">
-    <link rel="modulepreload" crossorigin href="/PtPro/assets/@babel-Dehwj3G0.js">
+    <link rel="modulepreload" crossorigin href="/PtPro/assets/@babel-Cvov1XSu.js">
     <link rel="modulepreload" crossorigin href="/PtPro/assets/fflate-XZmX483V.js">
     <link rel="modulepreload" crossorigin href="/PtPro/assets/iobuffer-DZ1zOcUT.js">
     <link rel="modulepreload" crossorigin href="/PtPro/assets/pako-B9FS3IR_.js">
     <link rel="modulepreload" crossorigin href="/PtPro/assets/fast-png-CUrN0NP5.js">
-    <link rel="modulepreload" crossorigin href="/PtPro/assets/jspdf-VT4U6yMA.js">
-    <link rel="modulepreload" crossorigin href="/PtPro/assets/idb-BXWtuYvb.js">
-    <link rel="modulepreload" crossorigin href="/PtPro/assets/@firebase-AhK6AZaW.js">
+    <link rel="modulepreload" crossorigin href="/PtPro/assets/jspdf-7Jyqi_bl.js">
+    <link rel="modulepreload" crossorigin href="/PtPro/assets/idb-Bn1DMRyg.js">
+    <link rel="modulepreload" crossorigin href="/PtPro/assets/@firebase-Dy5qmm0I.js">
     <link rel="modulepreload" crossorigin href="/PtPro/assets/tslib-BGVaTf34.js">
-    <link rel="modulepreload" crossorigin href="/PtPro/assets/firebase-AhL6zXYR.js">
-    <link rel="stylesheet" crossorigin href="/PtPro/assets/index-o508ERr8.css">
+    <link rel="modulepreload" crossorigin href="/PtPro/assets/firebase-BzWCke7W.js">
+    <link rel="stylesheet" crossorigin href="/PtPro/assets/index-mYMrwH5R.css">
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- SERVICE WORKER -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('service-worker.js')
+            .then(reg => console.log('SW registrato:', reg.scope))
+            .catch(err => console.log('Errore SW:', err));
+        });
+      }
+    </script>
   </body>
 </html>

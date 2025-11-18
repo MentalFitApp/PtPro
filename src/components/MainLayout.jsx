@@ -47,7 +47,7 @@ const adminNavLinks = [
   { to: '/collaboratori', icon: <Users size={18} />, label: 'Collaboratori' },
   { to: '/guide-manager', icon: <FileText size={18} />, label: 'Guide & Lead' },
   { to: '/admin/dipendenti', icon: <Users size={18} />, label: 'Dipendenti' },
-  { to: '/calendar-report', icon: <Calendar size={18} />, label: 'Calendario' },
+  { to: '/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
   { to: '/statistiche', icon: <BarChart3 size={18} />, label: 'Statistiche' },
 ];
 
@@ -62,6 +62,7 @@ const coachNavLinks = [
 
 const collaboratoreNavLinks = [
   { to: '/collaboratore/dashboard', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
+  { to: '/collaboratore/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
 ];
 
 // === PAGINE AUTH (NASCONDI SIDEBAR E NAV) ===

@@ -250,6 +250,8 @@ export default function CollaboratoreDashboard() {
 
     try {
       const leadRef = doc(collection(db, 'leads'));
+      const leadId = leadRef.id;
+      
       await setDoc(leadRef, {
         ...newLead,
         collaboratoreId: auth.currentUser.uid,
@@ -259,11 +261,32 @@ export default function CollaboratoreDashboard() {
         timestamp: new Date(),
       });
 
-      setSuccess('Lead salvato!');
+      // Crea automaticamente evento calendario
+      await setDoc(doc(collection(db, 'calendarEvents')), {
+        title: `📞 ${newLead.name}`,
+        date: newLead.dataPrenotazione,
+        time: newLead.oraPrenotazione,
+        type: 'lead',
+        durationMinutes: 30,
+        leadId: leadId,
+        leadData: {
+          name: newLead.name,
+          number: newLead.number,
+          email: newLead.email || '',
+          source: newLead.source || '',
+          note: newLead.note || ''
+        },
+        createdBy: auth.currentUser.uid,
+        participants: [auth.currentUser.uid],
+        timestamp: new Date()
+      });
+
+      setSuccess('Lead salvato e aggiunto al calendario!');
       setTimeout(() => setSuccess(''), 3000);
       setNewLead({ name: '', source: '', number: '', email: '', note: '', dataPrenotazione: '', oraPrenotazione: '' });
       setShowNewLead(false);
     } catch (err) {
+      console.error('Errore salvataggio lead:', err);
       setError('Errore salvataggio lead.');
     }
   };
