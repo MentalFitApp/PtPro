@@ -207,33 +207,72 @@ export default function Clients() {
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [meseCalendario, setMeseCalendario] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(true); // NUOVO
+  const [calendarType, setCalendarType] = useState('iscrizioni'); // 'iscrizioni' o 'scadenze'
   const [paymentsTotals, setPaymentsTotals] = useState({});
   const [dayModalOpen, setDayModalOpen] = useState(false);
   const [dayModalDate, setDayModalDate] = useState(null);
   const [dayModalClients, setDayModalClients] = useState([]);
+  const [stats, setStats] = useState({ total: 0, expiring: 0, expired: 0 });
 
   const openDayModal = (giorno) => {
-    const clientsAdded = clients.filter(c => {
-      const created = toDate(c.createdAt);
-      const start = toDate(c.startDate);
-      const referenceDate = created || start;
-      return referenceDate && isSameDay(referenceDate, giorno);
-    });
+    let clientsForDay;
+    
+    // Quando il filtro è attivo, mostra solo le scadenze
+    if (filter === 'expiring' || filter === 'expired') {
+      clientsForDay = filteredAndSortedClients.filter(c => {
+        const expiry = toDate(c.scadenza);
+        return expiry && isSameDay(expiry, giorno);
+      });
+    } else if (calendarType === 'scadenze') {
+      clientsForDay = filteredAndSortedClients.filter(c => {
+        const expiry = toDate(c.scadenza);
+        return expiry && isSameDay(expiry, giorno);
+      });
+    } else {
+      clientsForDay = filteredAndSortedClients.filter(c => {
+        const created = toDate(c.createdAt);
+        const start = toDate(c.startDate);
+        const referenceDate = created || start;
+        return referenceDate && isSameDay(referenceDate, giorno);
+      });
+    }
     setDayModalDate(giorno);
-    setDayModalClients(clientsAdded);
+    setDayModalClients(clientsForDay);
     setDayModalOpen(true);
   };
 
   // --- TOGGLE CALENDARIO ---
   const calendarToggle = (
-    <button
-      onClick={() => setShowCalendar(prev => !prev)}
-      className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-        showCalendar ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-300'
-      }`}
-    >
-      <Calendar size={14} /> Calendario
-    </button>
+    <div className="flex gap-2">
+      <button
+        onClick={() => setShowCalendar(prev => !prev)}
+        className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+          showCalendar ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-300'
+        }`}
+      >
+        <Calendar size={14} /> Calendario
+      </button>
+      {showCalendar && (
+        <div className="flex gap-1 bg-slate-700/50 rounded-lg p-0.5">
+          <button
+            onClick={() => setCalendarType('iscrizioni')}
+            className={`px-2 py-1 text-xs rounded transition-colors ${
+              calendarType === 'iscrizioni' ? 'bg-rose-600 text-white' : 'text-slate-300'
+            }`}
+          >
+            Iscrizioni
+          </button>
+          <button
+            onClick={() => setCalendarType('scadenze')}
+            className={`px-2 py-1 text-xs rounded transition-colors ${
+              calendarType === 'scadenze' ? 'bg-amber-600 text-white' : 'text-slate-300'
+            }`}
+          >
+            Scadenze
+          </button>
+        </div>
+      )}
+    </div>
   );
 
   const showNotification = (message, type = 'error') => {
@@ -272,7 +311,8 @@ export default function Clients() {
             startDate: data.startDate,
             createdAt: data.createdAt,
             statoPercorso: data.statoPercorso || calcolaStatoPercorso(data.scadenza),
-            payments: data.payments || []
+            payments: data.payments || [],
+            rate: data.rate || []
           };
         });
 
@@ -286,21 +326,24 @@ export default function Clients() {
         });
         setAnamnesiStatus(anamnesiStatusTemp);
 
-        // Calcolo totale incasso dalle rate pagate (campo rate)
-        const ratePromises = clientList.map(async (client) => {
-          try {
-            const docSnap = await getDoc(doc(db, 'clients', client.id));
-            const data = docSnap.data();
-            const rateArr = Array.isArray(data?.rate) ? data.rate : [];
-            const sum = rateArr.filter(r => r.paid).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
-            return { id: client.id, sum };
-          } catch (e) {
-            return { id: client.id, sum: 0 };
-          }
-        });
-        const rateResults = await Promise.all(ratePromises);
+        // Calcolo totale incasso dalle rate pagate + payments collection in tempo reale
         const paymentsTotalsTemp = {};
-        rateResults.forEach(({ id, sum }) => { paymentsTotalsTemp[id] = sum; });
+        const paymentsPromises = clientList.map(async client => {
+          // Totale dalle rate pagate
+          const rateArr = Array.isArray(client.rate) ? client.rate : [];
+          const rateSum = rateArr.filter(r => r.paid).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+          
+          // Totale dalla collection payments
+          const paymentsSnap = await getDocs(collection(db, 'clients', client.id, 'payments'));
+          const paymentsSum = paymentsSnap.docs.reduce((acc, doc) => {
+            const data = doc.data();
+            return acc + (Number(data.amount) || 0);
+          }, 0);
+          
+          paymentsTotalsTemp[client.id] = rateSum + paymentsSum;
+        });
+        
+        await Promise.all(paymentsPromises);
         setPaymentsTotals(paymentsTotalsTemp);
 
         clientList.forEach(client => updateStatoPercorso(client.id));
@@ -344,6 +387,28 @@ export default function Clients() {
     if (sortField !== field) return null;
     return sortDirection === 'desc' ? <ArrowDown size={14} /> : <ArrowUp size={14} />;
   };
+
+  // --- CALCOLA STATISTICHE IN TEMPO REALE ---
+  useEffect(() => {
+    const now = new Date();
+    const total = clients.length;
+    let expiring = 0;
+    let expired = 0;
+
+    clients.forEach(client => {
+      const expiry = toDate(client.scadenza);
+      if (expiry) {
+        const daysToExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+        if (daysToExpiry < 0) {
+          expired++;
+        } else if (daysToExpiry <= 15) {
+          expiring++;
+        }
+      }
+    });
+
+    setStats({ total, expiring, expired });
+  }, [clients]);
 
   // --- Filtri e ordinamento ---
   const filteredAndSortedClients = useMemo(() => {
@@ -394,12 +459,41 @@ export default function Clients() {
   });
 
   const clientiDelGiorno = (giorno) => {
-    return filteredAndSortedClients.filter(c => {
-      const created = toDate(c.createdAt);
-      const start = toDate(c.startDate);
-      const refDate = created || start;
-      return refDate && isSameDay(refDate, giorno);
-    });
+    // Quando il filtro "In Scadenza" o "Scaduti" è attivo, forza visualizzazione scadenze
+    if (filter === 'expiring' || filter === 'expired') {
+      // Usa TUTTI i clienti (non solo filteredAndSortedClients) per mostrare tutte le date di scadenza nel calendario
+      return clients.filter(c => {
+        const expiry = toDate(c.scadenza);
+        if (!expiry || !isSameDay(expiry, giorno)) return false;
+        
+        // Applica la logica del filtro alla data
+        const now = new Date();
+        const daysToExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+        
+        if (filter === 'expiring') {
+          return daysToExpiry <= 15 && daysToExpiry > 0;
+        } else if (filter === 'expired') {
+          return daysToExpiry < 0;
+        }
+        return false;
+      });
+    }
+    
+    // Altrimenti rispetta il toggle calendario
+    if (calendarType === 'scadenze') {
+      // Mostra TUTTE le scadenze nel calendario, non solo quelle filtrate
+      return clients.filter(c => {
+        const expiry = toDate(c.scadenza);
+        return expiry && isSameDay(expiry, giorno);
+      });
+    } else {
+      return filteredAndSortedClients.filter(c => {
+        const created = toDate(c.createdAt);
+        const start = toDate(c.startDate);
+        const refDate = created || start;
+        return refDate && isSameDay(refDate, giorno);
+      });
+    }
   };
 
   // --- TOGGLE VISTA ---
@@ -497,7 +591,23 @@ export default function Clients() {
       <div className="mobile-container py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 md:pb-8">
         {/* HEADER MOBILE */}
         <div className="md:hidden bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-4 mx-3">
-          <h1 className="text-2xl font-bold text-slate-100 mb-4">Clienti</h1>
+          <h1 className="text-2xl font-bold text-slate-100 mb-2">Clienti</h1>
+          
+          {/* STATISTICHE MOBILE */}
+          <div className="flex gap-3 mb-4 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
+              <span className="text-slate-300">Tot: <strong className="text-white">{stats.total}</strong></span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+              <span className="text-slate-300">Scad: <strong className="text-amber-400">{stats.expiring}</strong></span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
+              <span className="text-slate-300">Scad: <strong className="text-red-400">{stats.expired}</strong></span>
+            </div>
+          </div>
           
           {/* Search Bar Mobile */}
           <div className="relative mb-3">
@@ -533,7 +643,24 @@ export default function Clients() {
         <div className="hidden md:block bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-5 space-y-5 mx-3 sm:mx-6">
           {/* HEADER */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">Gestione Clienti</h1>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 mb-3">Gestione Clienti</h1>
+              {/* STATISTICHE */}
+              <div className="flex gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                  <span className="text-slate-300">Totale: <strong className="text-white">{stats.total}</strong></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+                  <span className="text-slate-300">In Scadenza: <strong className="text-amber-400">{stats.expiring}</strong></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-red-400"></div>
+                  <span className="text-slate-300">Scaduti: <strong className="text-red-400">{stats.expired}</strong></span>
+                </div>
+              </div>
+            </div>
             <div className="flex flex-wrap gap-3">
               {actions}
             </div>
@@ -601,26 +728,38 @@ export default function Clients() {
               ))}
               {giorniMese.map(giorno => {
                 const clientiGiorno = clientiDelGiorno(giorno);
+                
+                // Determina se stiamo mostrando scadenze (o per filtro o per toggle)
+                const showingExpiries = (filter === 'expiring' || filter === 'expired' || calendarType === 'scadenze');
+                
+                const bgColor = showingExpiries
+                  ? (clientiGiorno.length > 0 ? 'bg-amber-900/40 border-amber-600 hover:bg-amber-900/60' : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/70')
+                  : (clientiGiorno.length > 0 ? 'bg-rose-900/40 border-rose-600 hover:bg-rose-900/60' : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/70');
+                const cardBg = showingExpiries ? 'from-amber-600/30 to-orange-600/30' : 'from-rose-600/30 to-purple-600/30';
+                const textColor = showingExpiries ? 'text-amber-300' : 'text-rose-300';
+                const dotColor = showingExpiries ? 'bg-amber-500' : 'bg-rose-500';
+                
                 return (
                   <div
                     onClick={() => openDayModal(giorno)}
                     key={giorno.toISOString()}
-                    className={`min-h-16 md:min-h-28 p-1 md:p-3 rounded-lg md:rounded-xl border transition-all cursor-pointer
-                      ${clientiGiorno.length > 0 
-                        ? 'bg-rose-900/40 border-rose-600 hover:bg-rose-900/60' 
-                        : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/70'
-                      }`}
+                    className={`min-h-16 md:min-h-28 p-1 md:p-3 rounded-lg md:rounded-xl border transition-all cursor-pointer ${bgColor}`}
                   >
                     <p className="text-xs md:text-sm font-bold text-slate-300 mb-0.5 md:mb-1">{format(giorno, "d")}</p>
                     <div className="space-y-1 md:space-y-1.5 max-h-12 md:max-h-20 overflow-y-auto">
                       {clientiGiorno.slice(0, 2).map(c => (
                         <div
                           key={c.id}
-                          className="hidden md:flex bg-gradient-to-r from-rose-600/30 to-purple-600/30 p-2 rounded-lg text-xs justify-between items-center"
+                          className={`hidden md:flex bg-gradient-to-r ${cardBg} p-2 rounded-lg text-xs justify-between items-center`}
                         >
                           <div>
-                            <p className="font-semibold text-rose-300">{c.name}</p>
-                            <p className="text-cyan-300">{toDate(c.scadenza)?.toLocaleDateString('it-IT')}</p>
+                            <p className={`font-semibold ${textColor}`}>{c.name}</p>
+                            <p className="text-cyan-300">
+                              {calendarType === 'scadenze' 
+                                ? toDate(c.scadenza)?.toLocaleDateString('it-IT')
+                                : (toDate(c.startDate) || toDate(c.createdAt))?.toLocaleDateString('it-IT')
+                              }
+                            </p>
                           </div>
                           <div className="flex gap-1">
                             <button onClick={(e) => { e.stopPropagation(); navigate(`/edit/${c.id}`); }} className="text-cyan-400 hover:text-cyan-300">
@@ -633,11 +772,13 @@ export default function Clients() {
                         </div>
                       ))}
                       {clientiGiorno.length > 0 && (
-                        <div className="md:hidden w-2 h-2 bg-rose-500 rounded-full mx-auto"></div>
+                        <div className={`md:hidden w-2 h-2 ${dotColor} rounded-full mx-auto`}></div>
                       )}
                     </div>
                     {clientiGiorno.length === 0 && (
-                      <p className="hidden md:block text-xs text-slate-500 italic mt-2">Nessuna scadenza</p>
+                      <p className="hidden md:block text-xs text-slate-500 italic mt-2">
+                        {showingExpiries ? 'Nessuna scadenza' : 'Nessuna iscrizione'}
+                      </p>
                     )}
                 </div>
               );
@@ -891,7 +1032,7 @@ export default function Clients() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-slate-100">
-                  Clienti aggiunti il {dayModalDate ? new Date(dayModalDate).toLocaleDateString('it-IT') : ''}
+                  {(filter === 'expiring' || filter === 'expired' || calendarType === 'scadenze') ? 'Scadenze del' : 'Clienti aggiunti il'} {dayModalDate ? new Date(dayModalDate).toLocaleDateString('it-IT') : ''}
                 </h3>
                 <button onClick={() => setDayModalOpen(false)} className="p-1.5 rounded-full hover:bg-white/10">
                   <X size={18} className="text-slate-300" />
