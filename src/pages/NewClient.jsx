@@ -199,7 +199,7 @@ export default function NewClient() {
   };
 
   const copyToClipboard = () => {
-    const loginLink = "https://MentalFitApp.github.io/PtPro/#/client-login";
+    const loginLink = "https://MentalFitApp.github.io/PtPro/#/login";
     const text = `Ciao ${newClientCredentials.name},\n\nBenvenuto in PT Manager, la tua area personale per monitorare i progressi e comunicare con il tuo coach!\n\nEcco le credenziali per il tuo primo accesso:\n\nLink: ${loginLink}\nEmail: ${newClientCredentials.email}\nPassword Temporanea: ${newClientCredentials.password}\n\nAl primo accesso ti verrà chiesto di impostare una password personale.\nA presto!`;
     
     navigator.clipboard.writeText(text);

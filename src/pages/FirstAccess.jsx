@@ -47,7 +47,7 @@ const FirstAccess = () => {
   useEffect(() => {
     const determineUserType = async () => {
       if (!user) {
-        navigate('/client-login');
+        navigate('/login');
         return;
       }
 
@@ -84,7 +84,7 @@ const FirstAccess = () => {
 
     if (!user) {
       setError("Utente non autenticato. Effettua nuovamente il login.");
-      setTimeout(() => navigate(userType === 'client' ? '/client-login' : '/collaboratore-login'), 3000);
+      setTimeout(() => navigate('/login'), 3000);
       setIsSubmitting(false);
       return;
     }

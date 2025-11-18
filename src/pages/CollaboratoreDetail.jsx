@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import { Users, Check, TrendingUp, Phone, Calendar, Target, Award, AlertCircle, Edit, Save, X, Copy } from 'lucide-react';
 import { motion } from 'framer-motion';
+import QuickNotifyButton from '../components/QuickNotifyButton';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
 
@@ -232,11 +233,16 @@ export default function CollaboratoreDetail() {
             {collaboratore.name || collaboratore.email.split('@')[0]}
             <span className="text-lg font-normal text-slate-400">({collaboratore.role})</span>
           </h1>
+          <QuickNotifyButton 
+            userId={collaboratore.uid} 
+            userName={collaboratore.name || collaboratore.email.split('@')[0]} 
+            userType="collaboratore" 
+          />
 
           {collaboratore.firstLogin && (
             <motion.button
               onClick={() => {
-                const msg = `Email: ${collaboratore.email}\nPassword: ${collaboratore.tempPassword || 'generata al login'}\nLink: https://MentalFitApp.github.io/PtPro/#/collaboratore-login`;
+                const msg = `Email: ${collaboratore.email}\nPassword: ${collaboratore.tempPassword || 'generata al login'}\nLink: https://MentalFitApp.github.io/PtPro/#/login`;
                 navigator.clipboard.writeText(msg);
                 alert('Credenziali copiate!');
               }}

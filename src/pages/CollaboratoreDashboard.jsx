@@ -14,6 +14,7 @@ import {
   Plus, X, Eye, Check, AlertCircle, Trash2, Clock, User, 
   Edit, Camera, Key, Trophy, ChevronLeft, ChevronRight 
 } from 'lucide-react';
+import NotificationPanel from '../components/NotificationPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Chart as ChartJS,
@@ -83,7 +84,7 @@ export default function CollaboratoreDashboard() {
   // --- CARICA UTENTE LOGGATO ---
   useEffect(() => {
     if (!auth.currentUser) {
-      navigate('/collaboratore-login');
+      navigate('/login');
       return;
     }
 
@@ -453,6 +454,7 @@ export default function CollaboratoreDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <NotificationPanel userType="collaboratore" />
           <div className="text-sm text-slate-400 flex items-center gap-1">
             <Clock size={16} /> Reset: {timeLeft}
           </div>
@@ -463,7 +465,7 @@ export default function CollaboratoreDashboard() {
             <User size={16} /> Profilo
           </button>
           <button 
-            onClick={() => auth.signOut().then(() => navigate('/collaboratore-login'))} 
+            onClick={() => auth.signOut().then(() => navigate('/login'))} 
             className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg"
           >
             Esci

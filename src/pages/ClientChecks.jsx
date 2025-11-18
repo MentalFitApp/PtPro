@@ -222,7 +222,7 @@ export default function ClientChecks() {
 
   useEffect(() => {
     if (!user) {
-      navigate('/client-login');
+      navigate('/login');
       return;
     }
     const fetchInitialData = async () => {

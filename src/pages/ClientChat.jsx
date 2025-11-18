@@ -98,7 +98,7 @@ export default function ClientChat() {
   // Carica chat quando cambia destinatario
   useEffect(() => {
     if (!user) {
-      navigate('/client-login');
+      navigate('/login');
       return;
     }
 

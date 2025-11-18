@@ -5,6 +5,7 @@ import { db } from '../firebase.js';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone } from 'lucide-react';
 import { motion } from 'framer-motion';
+import NotificationPanel from '../components/NotificationPanel';
 
 const LoadingSpinner = () => (
   <div className="min-h-screen flex justify-center items-center relative">
@@ -52,8 +53,8 @@ const ClientDashboard = () => {
 
   useEffect(() => {
     if (!user) {
-      console.log('ClientDashboard: Nessun utente autenticato, reindirizzamento a /client-login');
-      navigate('/client-login');
+      console.log('ClientDashboard: Nessun utente autenticato, reindirizzamento a /login');
+      navigate('/login');
       return;
     }
 
@@ -82,12 +83,12 @@ const ClientDashboard = () => {
         } else {
           setError('Documento cliente non trovato.');
           console.log('ClientDashboard: Documento cliente non trovato per UID:', user.uid);
-          navigate('/client-login');
+          navigate('/login');
         }
       } catch (err) {
         console.error('ClientDashboard: Errore nel recupero del documento cliente:', err.code, err.message, { uid: user.uid, email: user.email });
         setError('Errore nel caricamento dei dati cliente: ' + err.message);
-        navigate('/client-login');
+        navigate('/login');
       }
     };
 
@@ -125,7 +126,7 @@ const ClientDashboard = () => {
     signOut(auth).then(() => {
       sessionStorage.removeItem('app_role');
       console.log('ClientDashboard: Logout eseguito per UID:', user.uid);
-      navigate('/client-login');
+      navigate('/login');
     }).catch(err => {
       console.error('ClientDashboard: Errore durante il logout:', err.code, err.message);
       setError('Errore durante il logout: ' + err.message);
@@ -182,6 +183,9 @@ const ClientDashboard = () => {
     <div className="min-h-screen text-slate-200 p-4 sm:p-8 relative">
       <motion.div initial="hidden" animate="visible" variants={containerVariants}>
         <motion.header variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <NotificationPanel userType="client" />
+          </div>
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-50">Ciao, {clientData.name}!</h1>
             <p className="text-slate-300">Benvenuto nella tua area personale.</p>

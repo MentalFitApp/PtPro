@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { 
   Home, Users, MessageSquare, FileText, Bell, 
-  Calendar, Settings, ChevronLeft, ChevronRight, BarChart3 
+  Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -49,6 +49,7 @@ const adminNavLinks = [
   { to: '/admin/dipendenti', icon: <Users size={18} />, label: 'Dipendenti' },
   { to: '/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
   { to: '/statistiche', icon: <BarChart3 size={18} />, label: 'Statistiche' },
+  { to: '/notifications', icon: <BellRing size={18} />, label: 'Notifiche' },
 ];
 
 const coachNavLinks = [
@@ -66,7 +67,7 @@ const collaboratoreNavLinks = [
 ];
 
 // === PAGINE AUTH (NASCONDI SIDEBAR E NAV) ===
-const AUTH_PAGES = ['/login', '/client-login', '/register', '/reset-password'];
+const AUTH_PAGES = ['/login', '/register', '/reset-password'];
 
 // === BOTTOM NAV MOBILE ===
 const BottomNav = ({ isCoach, isCollaboratore }) => {

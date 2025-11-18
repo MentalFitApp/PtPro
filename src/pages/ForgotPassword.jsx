@@ -92,7 +92,7 @@ const ForgotPassword = () => {
                 )}
                 
                 <div className="text-center">
-                    <Link to="/client-login" className="text-sm text-slate-400 hover:text-cyan-400 hover:underline transition-colors flex items-center justify-center gap-2">
+                    <Link to="/login" className="text-sm text-slate-400 hover:text-cyan-400 hover:underline transition-colors flex items-center justify-center gap-2">
                         <ArrowLeft size={16} /> Torna al Login
                     </Link>
                 </div>

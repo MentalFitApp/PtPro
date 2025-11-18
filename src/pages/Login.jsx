@@ -22,15 +22,18 @@ const Login = () => {
           const adminDocRef = doc(db, 'roles', 'admins');
           const coachDocRef = doc(db, 'roles', 'coaches');
           const clientDocRef = doc(db, 'clients', user.uid);
-          const [adminDoc, coachDoc, clientDoc] = await Promise.all([
+          const collabDocRef = doc(db, 'collaboratori', user.uid);
+          const [adminDoc, coachDoc, clientDoc, collabDoc] = await Promise.all([
             getDoc(adminDocRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
             getDoc(coachDocRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
-            getDoc(clientDocRef).catch(() => ({ exists: () => false, data: () => ({}) }))
+            getDoc(clientDocRef).catch(() => ({ exists: () => false, data: () => ({}) })),
+            getDoc(collabDocRef).catch(() => ({ exists: () => false, data: () => ({}) }))
           ]);
 
           const isAdmin = adminDoc.exists() && adminDoc.data().uids.includes(user.uid);
           const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(user.uid);
           const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
+          const isCollaboratore = collabDoc.exists();
 
           if (isAdmin) {
             sessionStorage.setItem('app_role', 'admin');
@@ -38,11 +41,15 @@ const Login = () => {
           } else if (isCoach) {
             sessionStorage.setItem('app_role', 'coach');
             navigate('/coach');
+          } else if (isCollaboratore) {
+            sessionStorage.setItem('app_role', 'collaboratore');
+            navigate(collabDoc.data().firstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard');
           } else if (isClient) {
             sessionStorage.setItem('app_role', 'client');
             navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
           } else {
-            setError('Accesso non autorizzato. Usa il login client se sei un cliente.');
+            setError('Accesso non autorizzato. Contatta l\'amministratore.');
+            await signOut(auth);
           }
         } catch (err) {
           setError('Errore verifica ruolo. Riprova.');
@@ -62,15 +69,18 @@ const Login = () => {
       const adminDocRef = doc(db, 'roles', 'admins');
       const coachDocRef = doc(db, 'roles', 'coaches');
       const clientDocRef = doc(db, 'clients', userCredential.user.uid);
-      const [adminDoc, coachDoc, clientDoc] = await Promise.all([
+      const collabDocRef = doc(db, 'collaboratori', userCredential.user.uid);
+      const [adminDoc, coachDoc, clientDoc, collabDoc] = await Promise.all([
         getDoc(adminDocRef),
         getDoc(coachDocRef),
-        getDoc(clientDocRef)
+        getDoc(clientDocRef),
+        getDoc(collabDocRef)
       ]);
 
       const isAdmin = adminDoc.exists() && adminDoc.data().uids.includes(userCredential.user.uid);
       const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(userCredential.user.uid);
       const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
+      const isCollaboratore = collabDoc.exists();
 
       if (isAdmin) {
         sessionStorage.setItem('app_role', 'admin');
@@ -78,19 +88,23 @@ const Login = () => {
       } else if (isCoach) {
         sessionStorage.setItem('app_role', 'coach');
         navigate('/coach');
+      } else if (isCollaboratore) {
+        sessionStorage.setItem('app_role', 'collaboratore');
+        navigate(collabDoc.data().firstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard');
       } else if (isClient) {
         sessionStorage.setItem('app_role', 'client');
         navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
       } else {
-        setError('Accesso non autorizzato. Usa il login client se sei un cliente.');
+        setError('Accesso non autorizzato. Contatta l\'amministratore.');
         await signOut(auth);
-        navigate('/client-login');
       }
     } catch (error) {
       if (error.code === 'auth/wrong-password') {
         setError('Password errata. Riprova o reimposta la password.');
       } else if (error.code === 'auth/user-not-found') {
-        setError('Utente non trovato. Verifica l\'email o usa il login client.');
+        setError('Utente non trovato. Verifica l\'email.');
+      } else if (error.code === 'auth/invalid-credential') {
+        setError('Credenziali non valide. Verifica email e password.');
       } else {
         setError('Errore login: ' + error.message);
       }
@@ -161,11 +175,8 @@ const Login = () => {
                 </h1>
               </motion.div>
 
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xl font-medium text-slate-300">Login Coach/Admin</h2>
-                <Link to="/client-login" className="flex items-center gap-2 text-sm text-slate-400 hover:text-[#ef4444] transition-colors">
-                  <ArrowLeft size={16} /> Login Cliente
-                </Link>
+              <div className="flex items-center justify-center mb-8">
+                <h2 className="text-xl font-medium text-slate-300">Accedi al tuo account</h2>
               </div>
 
               <form onSubmit={handleLogin} className="space-y-6">
@@ -222,9 +233,11 @@ const Login = () => {
                 </motion.button>
               </form>
 
-              <button onClick={handleResetPassword} className="mt-6 text-sm text-slate-400 hover:text-[#ef4444] w-full text-center transition-colors">
-                Password dimenticata?
-              </button>
+              <div className="mt-6 text-center">
+                <button onClick={handleResetPassword} className="text-sm text-slate-400 hover:text-[#ef4444] transition-colors">
+                  Password dimenticata?
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>

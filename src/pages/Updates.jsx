@@ -98,6 +98,9 @@ export default function Updates() {
                 return { id: doc.id, clientId, clientName: clientNameMap[clientId], date: doc.data().createdAt };
             }).filter(item => item.clientName);
             setState(items.slice(0, 10));
+        }, (error) => {
+            console.error(`Errore collectionGroup ${collectionName}:`, error);
+            console.error('Se vedi "index", crea l\'indice composito su Firebase Console');
         });
     };
 

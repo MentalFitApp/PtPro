@@ -6,6 +6,7 @@ import { ref, getDownloadURL } from 'firebase/storage';
 import { db, storage, toDate, calcolaStatoPercorso, updateStatoPercorso } from '../firebase';
 import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check, X, Plus, ZoomIn, CalendarDays } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import QuickNotifyButton from '../components/QuickNotifyButton';
 
 // Error Boundary
 class ErrorBoundary extends React.Component {
@@ -426,7 +427,7 @@ export default function ClientDetail() {
   };
 
   const copyCredentialsToClipboard = () => {
-    const text = `Ciao ${client.name},\n\nLink: https://MentalFitApp.github.io/PtPro/#/client-login\nEmail: ${client.email}\nPassword: ${client.tempPassword || 'Contatta admin'}`;
+    const text = `Ciao ${client.name},\n\nLink: https://MentalFitApp.github.io/PtPro/#/login\nEmail: ${client.email}\nPassword: ${client.tempPassword || 'Contatta admin'}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -471,6 +472,7 @@ export default function ClientDetail() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <h1 className="text-3xl font-bold text-slate-50">{client.name}</h1>
             <div className="flex flex-wrap gap-2">
+              <QuickNotifyButton userId={clientId} userName={client.name} userType="client" />
               <button onClick={() => setShowEdit(true)} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg">
                 <Edit size={16} /> Modifica
               </button>

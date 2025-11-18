@@ -94,7 +94,7 @@ const ClientAnamnesi = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/client-login');
+      navigate('/login');
       return;
     }
     const fetchAnamnesi = async () => {
@@ -149,7 +149,7 @@ const ClientAnamnesi = () => {
         photoURLs = { ...photoURLs, ...Object.fromEntries(uploadedUrls.map(({ type, url }) => [type, url])) };
       }
 
-      const dataToSave = { ...data, photoURLs, submittedAt: serverTimestamp() };
+      const dataToSave = { ...data, photoURLs, submittedAt: serverTimestamp(), createdAt: serverTimestamp() };
       await setDoc(doc(db, `clients/${user.uid}/anamnesi`, 'initial'), dataToSave, { merge: true });
 
       setAnamnesiData(dataToSave);

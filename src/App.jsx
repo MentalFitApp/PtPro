@@ -17,7 +17,6 @@ const ClientDetail = React.lazy(() => import('./pages/ClientDetail'));
 const EditClient = React.lazy(() => import('./pages/EditClient'));
 const Updates = React.lazy(() => import('./pages/Updates'));
 const AdminChat = React.lazy(() => import('./pages/AdminChat'));
-const ClientLogin = React.lazy(() => import('./pages/ClientLogin'));
 const FirstAccess = React.lazy(() => import('./pages/FirstAccess'));
 const ClientDashboard = React.lazy(() => import('./pages/ClientDashboard'));
 const ClientAnamnesi = React.lazy(() => import('./pages/ClientAnamnesi'));
@@ -35,7 +34,6 @@ const CoachClientDetail = React.lazy(() => import('./pages/CoachClientDetail'));
 const GuidaMentalFit = React.lazy(() => import('./pages/GuidaMentalFit'));
 const BusinessHistory = React.lazy(() => import('./pages/BusinessHistory'));
 const Collaboratori = React.lazy(() => import('./pages/Collaboratori'));
-const CollaboratoreLogin = React.lazy(() => import('./pages/CollaboratoreLogin'));
 const CollaboratoreDashboard = React.lazy(() => import('./pages/CollaboratoreDashboard'));
 const CollaboratoreDetail = React.lazy(() => import('./pages/CollaboratoreDetail'));
 const CalendarReport = React.lazy(() => import('./pages/CalendarReport'));
@@ -47,6 +45,7 @@ const GuideManager = React.lazy(() => import('./pages/GuideManager'));
 // AGGIUNTO
 const Statistiche = React.lazy(() => import('./pages/Statistiche'));
 const CalendarPage = React.lazy(() => import('./pages/CalendarPage'));
+const Notifications = React.lazy(() => import('./pages/Notifications'));
 
 // Spinner
 const PageSpinner = () => (
@@ -174,7 +173,8 @@ export default function App() {
               location.pathname === '/business-history' ||
               location.pathname === '/guide-manager' ||
               location.pathname === '/admin/dipendenti' ||
-              location.pathname === '/statistiche'
+              location.pathname === '/statistiche' ||
+              location.pathname === '/notifications'
             )) ||
             (isCurrentUserACoach && (
               location.pathname === '/coach' ||
@@ -214,22 +214,10 @@ export default function App() {
             error: null
           });
 
-          const publicPaths = ['/login', '/client-login', '/collaboratore-login', '/client/forgot-password', '/guida', '/guida/:guideId'];
+          const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId'];
           const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/'));
           if (!isPublic) {
-            // Se installata come PWA, indirizza alla login coerente con l'ultima sezione visitata
-            const isStandalone = (typeof window !== 'undefined') && (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone);
-            let target = '/login';
-            if (isStandalone) {
-              try {
-                const lastPath = localStorage.getItem('last_path') || '';
-                if (lastPath.startsWith('/collaboratore')) target = '/collaboratore-login';
-                else if (lastPath.startsWith('/client')) target = '/client-login';
-                else target = '/login';
-              } catch {
-                target = '/login';
-              }
-            }
+            const target = '/login';
             if (lastNavigated !== target) {
               setLastNavigated(target);
               navigate(target, { replace: true });
@@ -264,8 +252,6 @@ export default function App() {
           <Route path="/guida/:guideId" element={<GuideCapture />} />
         </Route>
         <Route path="/login" element={<Login />} />
-        <Route path="/client-login" element={<ClientLogin />} />
-        <Route path="/collaboratore-login" element={<CollaboratoreLogin />} />
         <Route path="/client/forgot-password" element={<ForgotPassword />} />
 
         {/* === ROTTE ADMIN (SOLO ADMIN) === */}
@@ -286,6 +272,7 @@ export default function App() {
           <Route path="/guide-manager" element={<GuideManager />} />
           <Route path="/admin/dipendenti" element={<Dipendenti />} />
           <Route path="/statistiche" element={<Statistiche />} />
+          <Route path="/notifications" element={<Notifications />} />
         </Route>
 
         {/* === ROTTE COACH (SOLO COACH) === */}
@@ -300,7 +287,7 @@ export default function App() {
         </Route>
 
         {/* === ROTTE CLIENTI === */}
-        <Route element={authInfo.isClient ? <ClientLayout /> : <Navigate to="/client-login" replace />}>
+        <Route element={authInfo.isClient ? <ClientLayout /> : <Navigate to="/login" replace />}>
           <Route path="/client/first-access" element={<FirstAccess />} />
           <Route path="/client/dashboard" element={<ClientDashboard />} />
           <Route path="/client/anamnesi" element={<ClientAnamnesi />} />
@@ -310,7 +297,7 @@ export default function App() {
         </Route>
 
         {/* === ROTTE COLLABORATORI === */}
-        <Route element={authInfo.isCollaboratore ? <MainLayout /> : <Navigate to="/collaboratore-login" replace />}>
+        <Route element={authInfo.isCollaboratore ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route path="/collaboratore/first-access" element={<FirstAccess />} />
           <Route path="/collaboratore/dashboard" element={<CollaboratoreDashboard />} />
           <Route path="/collaboratore/calendar" element={<CalendarPage />} />

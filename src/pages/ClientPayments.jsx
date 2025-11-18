@@ -31,7 +31,7 @@ const ClientPayments = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/client-login');
+      navigate('/login');
       return;
     }
     const paymentsCollectionRef = collection(db, `clients/${user.uid}/payments`);

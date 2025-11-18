@@ -1,0 +1,189 @@
+import React, { useState, useEffect } from 'react';
+import { db, auth } from '../firebase';
+import { collection, query, where, orderBy, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { getMessaging, getToken } from 'firebase/messaging';
+import { Bell, BellOff, X, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+export default function NotificationPanel({ userType = 'client' }) {
+  const [notifications, setNotifications] = useState([]);
+  const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    // Verifica se le notifiche sono attive
+    const permission = Notification.permission;
+    setIsNotificationsEnabled(permission === 'granted');
+
+    // Ascolta le notifiche dell'utente
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', auth.currentUser.uid),
+      where('userType', '==', userType),
+      orderBy('sentAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const notifs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setNotifications(notifs);
+      setUnreadCount(notifs.filter(n => !n.read).length);
+    });
+
+    return () => unsubscribe();
+  }, [userType]);
+
+  const enableNotifications = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        setIsNotificationsEnabled(true);
+        
+        // Salva il token FCM su Firestore
+        const messaging = getMessaging();
+        const token = await getToken(messaging, {
+          vapidKey: 'BLp0b5Z5uqZ3yFHYQcEY6Q7K4FZ5YHT9OHQ7Y5Z5O5Z5'
+        });
+        
+        if (token) {
+          await updateDoc(doc(db, 'fcmTokens', auth.currentUser.uid), {
+            token,
+            updatedAt: new Date()
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Errore attivazione notifiche:', error);
+    }
+  };
+
+  const markAsRead = async (notificationId) => {
+    try {
+      await updateDoc(doc(db, 'notifications', notificationId), { read: true });
+    } catch (error) {
+      console.error('Errore marcatura notifica letta:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const unreadNotifs = notifications.filter(n => !n.read);
+      await Promise.all(
+        unreadNotifs.map(n => updateDoc(doc(db, 'notifications', n.id), { read: true }))
+      );
+    } catch (error) {
+      console.error('Errore marcatura tutte lette:', error);
+    }
+  };
+
+  return (
+    <div className="relative">
+      {/* Pulsante Attiva Notifiche */}
+      {!isNotificationsEnabled && (
+        <motion.button
+          onClick={enableNotifications}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-medium transition-colors"
+        >
+          <BellOff size={18} />
+          Attiva Notifiche
+        </motion.button>
+      )}
+
+      {/* Campanella con Badge */}
+      {isNotificationsEnabled && (
+        <button
+          onClick={() => setShowPanel(!showPanel)}
+          className="relative p-2 hover:bg-white/10 rounded-lg transition-colors"
+        >
+          <Bell size={24} className="text-slate-300" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
+        </button>
+      )}
+
+      {/* Panel Notifiche */}
+      <AnimatePresence>
+        {showPanel && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute right-0 top-14 w-96 max-h-[500px] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <h3 className="font-bold text-slate-200">Notifiche</h3>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="text-xs text-rose-400 hover:text-rose-300 transition-colors"
+                  >
+                    Segna tutte lette
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowPanel(false)}
+                  className="p-1 hover:bg-white/10 rounded transition-colors"
+                >
+                  <X size={18} className="text-slate-400" />
+                </button>
+              </div>
+            </div>
+
+            {/* Lista Notifiche */}
+            <div className="overflow-y-auto max-h-[420px]">
+              {notifications.length === 0 ? (
+                <div className="p-8 text-center text-slate-400">
+                  <Bell size={48} className="mx-auto mb-3 opacity-30" />
+                  <p>Nessuna notifica</p>
+                </div>
+              ) : (
+                notifications.map(notif => (
+                  <motion.div
+                    key={notif.id}
+                    layout
+                    className={`p-4 border-b border-slate-700 hover:bg-white/5 transition-colors cursor-pointer ${
+                      !notif.read ? 'bg-rose-900/10' : ''
+                    }`}
+                    onClick={() => !notif.read && markAsRead(notif.id)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-slate-200 text-sm">{notif.title}</h4>
+                          {!notif.read && (
+                            <span className="w-2 h-2 bg-rose-500 rounded-full"></span>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-400">{notif.body}</p>
+                        <p className="text-xs text-slate-500 mt-2">
+                          {notif.sentAt?.toDate().toLocaleDateString('it-IT', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                      {notif.read && (
+                        <Check size={16} className="text-emerald-500 flex-shrink-0" />
+                      )}
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

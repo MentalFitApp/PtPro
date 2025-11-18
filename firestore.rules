@@ -245,6 +245,24 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
 
+    // ==================== NOTIFICATIONS ====================
+    match /notifications/{notificationId} {
+      // Admin può leggere tutte e creare
+      allow list, create: if isAdmin();
+      
+      // Utenti possono leggere solo le proprie notifiche
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+      
+      // Utenti possono aggiornare (marcare come lette) solo le proprie
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Solo admin può cancellare
+      allow delete: if isAdmin();
+    }
+
     // ==================== BLOCCA TUTTO IL RESTO ====================
     match /{document=**} {
       allow read, write: if false;
