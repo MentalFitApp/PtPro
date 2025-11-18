@@ -492,9 +492,9 @@ export default function Clients() {
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
       <ConfirmationModal isOpen={!!clientToDelete} onClose={() => setClientToDelete(null)} onConfirm={handleDelete} clientName={clientToDelete?.name} />
 
-      <div className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 md:pb-8">
+      <div className="w-full py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 md:pb-8">
         {/* HEADER MOBILE */}
-        <div className="md:hidden bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-4">
+        <div className="md:hidden bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-4 mx-3">
           <h1 className="text-2xl font-bold text-slate-100 mb-4">Clienti</h1>
           
           {/* Search Bar Mobile */}
@@ -528,7 +528,7 @@ export default function Clients() {
         </div>
 
         {/* HEADER DESKTOP */}
-        <div className="hidden md:block bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-5 space-y-5">
+        <div className="hidden md:block bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-5 space-y-5 mx-3 sm:mx-6">
           {/* HEADER */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">Gestione Clienti</h1>
@@ -574,7 +574,7 @@ export default function Clients() {
 
         {/* CALENDARIO SCADENZE */}
         {showCalendar && (
-          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-slate-700 shadow-xl">
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-slate-700 shadow-xl mx-3 sm:mx-6">
             <div className="flex justify-between items-center mb-4">
               <button onClick={() => setMeseCalendario(addMonths(meseCalendario, -1))} className="p-2 hover:bg-slate-700 rounded-lg transition">
                 <ChevronLeft size={18} className="text-slate-400" />
@@ -648,7 +648,7 @@ export default function Clients() {
         {viewMode === 'list' && (
           <>
             {/* MOBILE: Cards */}
-            <div className="md:hidden space-y-3">
+            <div className="md:hidden space-y-3 mx-3">
               {filteredAndSortedClients.map((c) => {
                 const expiry = toDate(c.scadenza);
                 const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
@@ -735,7 +735,7 @@ export default function Clients() {
             </div>
 
             {/* DESKTOP: Table */}
-            <div className="hidden md:block bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 md:p-6 border border-slate-700 shadow-xl">
+            <div className="hidden md:block bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 md:p-6 border border-slate-700 shadow-xl mx-3 sm:mx-6">
               <div className="overflow-x-auto -mx-3 md:mx-0">
                 <table className="w-full min-w-[800px] text-xs md:text-sm text-left text-slate-300">
                 <thead className="text-slate-400 uppercase text-[10px] md:text-xs">
@@ -812,7 +812,7 @@ export default function Clients() {
 
         {/* VISTA CARD */}
         {viewMode === 'card' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mx-3 sm:mx-6">
             {filteredAndSortedClients.map((c) => {
               const expiry = toDate(c.scadenza);
               const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;

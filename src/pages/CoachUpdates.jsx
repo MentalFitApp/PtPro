@@ -221,8 +221,8 @@ export default function CoachUpdates() {
 
   return (
     <div className="min-h-screen text-slate-200 relative overflow-x-hidden w-full">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <motion.header variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full py-4 sm:py-6">
+        <motion.header variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 mx-3 sm:mx-6">
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-50 flex items-center gap-2">
             <Bell size={28} /> Aggiornamenti Utili
           </h1>
@@ -233,7 +233,7 @@ export default function CoachUpdates() {
             <ArrowLeft size={16} /><span>Torna alla Dashboard</span>
           </button>
         </motion.header>
-        <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700">
+        <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700 mx-3 sm:mx-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Ultimi Aggiornamenti</h2>
           <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
             <AnimatePresence>

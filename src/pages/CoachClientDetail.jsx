@@ -290,8 +290,8 @@ export default function CoachClientDetail() {
   return (
     <ErrorBoundary>
       <div className="overflow-x-hidden w-full min-h-screen">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <motion.header variants={itemVariants} className="flex justify-between items-center mb-8">
+      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full py-4 sm:py-6">
+        <motion.header variants={itemVariants} className="flex justify-between items-center mb-8 mx-3 sm:mx-6">
           <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2">
             <Users size={28} /> {client.name || 'Cliente'}
           </h1>
@@ -303,7 +303,7 @@ export default function CoachClientDetail() {
           </button>
         </motion.header>
 
-        <motion.div variants={itemVariants} className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6">
+        <motion.div variants={itemVariants} className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6 mx-3 sm:mx-6">
           <div className="flex flex-wrap gap-2 mb-6 bg-slate-800/70 p-1 rounded-lg border border-white/10">
             <button
               onClick={() => setActiveTab('info')}

@@ -70,12 +70,12 @@ export default function BusinessHistory() {
   if (loading) return <div className="flex justify-center items-center h-screen">Caricamento...</div>;
 
   return (
-    <div className="overflow-x-hidden w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-      <button onClick={() => navigate('/')} className="flex items-center gap-2 mb-6 text-slate-400 hover:text-rose-500">
+    <div className="overflow-x-hidden w-full py-4 sm:py-6">
+      <button onClick={() => navigate('/')} className="flex items-center gap-2 mb-6 text-slate-400 hover:text-rose-500 mx-3 sm:mx-6">
         <ArrowLeft size={16} /> Torna alla Dashboard
       </button>
-      <h1 className="text-2xl sm:text-3xl font-bold text-slate-50 mb-6">Storico Business</h1>
-      <div className="space-y-4">
+      <h1 className="text-2xl sm:text-3xl font-bold text-slate-50 mb-6 mx-3 sm:mx-6">Storico Business</h1>
+      <div className="space-y-4 mx-3 sm:mx-6">
         {months.map(month => (
           <motion.div
             key={month}

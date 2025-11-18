@@ -513,10 +513,10 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen overflow-x-hidden w-full">
+      <div className="w-full py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* HEADER */}
-        <div className="bg-slate-800/30 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-5">
+        <div className="bg-slate-800/30 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-5 mx-3 sm:mx-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 flex items-center gap-2">
               <TrendingUp size={28}/> Dashboard
@@ -548,7 +548,7 @@ export default function Dashboard() {
         </div>
 
       {/* CONTENT */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mx-3 sm:mx-6">
         <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <StatCard title="Incasso Mensile" value={monthlyIncome} icon={<DollarSign className="text-green-500"/>} isCurrency={true} />

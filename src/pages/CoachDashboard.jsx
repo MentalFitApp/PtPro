@@ -309,8 +309,8 @@ export default function CoachDashboard() {
 
   return (
     <div className="min-h-screen text-slate-200 relative overflow-x-hidden w-full">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <motion.header variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700">
+      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full py-4 sm:py-6">
+        <motion.header variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700 mx-3 sm:mx-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2"><Users size={28}/> Coach Dashboard</h1>
             <div className="flex items-center gap-4">
@@ -323,7 +323,7 @@ export default function CoachDashboard() {
           <p className="text-slate-400 mb-4">Gestisci i tuoi clienti e monitora le loro attività.</p>
         </motion.header>
 
-        <main className="mt-6">
+        <main className="mt-6 mx-3 sm:mx-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
             <StatCard 
               title="Clienti Attivi" 

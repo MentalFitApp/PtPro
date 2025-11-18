@@ -533,10 +533,10 @@ export default function Collaboratori() {
 
   return (
     <div className="overflow-x-hidden w-full">
-      <div className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <div className="w-full py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* HEADER */}
-        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
+        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full mx-3 sm:mx-6">
           <h1 className="text-2xl font-bold text-slate-50 flex items-center gap-2">
             <Users size={24} /> Gestione
           </h1>
@@ -594,7 +594,7 @@ export default function Collaboratori() {
         <ReportStatus collaboratori={collaboratori} />
 
         {/* 3 TABS LEADS */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6 mx-3 sm:mx-6">
           {[
             { label: 'Oggi', leads: stats.leadsToday },
             { label: 'Settimana', leads: stats.leadsWeek },
@@ -608,7 +608,7 @@ export default function Collaboratori() {
           ))}
         </div>
 
-        <div className="mb-6">
+        <div className="mb-6 mx-3 sm:mx-6">
           <Calendar 
             reports={collaboratori.flatMap(c => c.dailyReports || [])} 
             collaboratori={collaboratori} 
@@ -622,7 +622,7 @@ export default function Collaboratori() {
         </div>
 
         {/* REPORT SETTING & VENDITA */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 mx-3 sm:mx-6">
           {/* SETTING */}
           <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
             <div className="flex justify-between items-center mb-2">

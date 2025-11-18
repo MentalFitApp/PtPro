@@ -147,8 +147,8 @@ export default function CoachClients() {
 
   return (
     <div className="overflow-x-hidden w-full">
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-      <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full py-4 sm:py-6">
+      <header className="flex flex-col sm:flex-row justify-between items-center mb-6 mx-3 sm:mx-6">
         <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2 mb-4 sm:mb-0">
           <Users size={28} /> Gestione Clienti
         </h1>
@@ -172,7 +172,7 @@ export default function CoachClients() {
       </header>
 
       {/* Filtri */}
-      <div className="mb-6 flex flex-wrap gap-2 p-2 bg-slate-700/50 border border-slate-600 rounded-lg">
+      <div className="mb-6 flex flex-wrap gap-2 p-2 bg-slate-700/50 border border-slate-600 rounded-lg mx-3 sm:mx-6">
         <FilterButton active={filter === 'all'} onClick={() => setFilter('all')} label="Tutti" />
         <FilterButton active={filter === 'active'} onClick={() => setFilter('active')} label="Attivi" icon={<CheckCircle className="text-emerald-500" size={14} />} />
         <FilterButton active={filter === 'expiring'} onClick={() => setFilter('expiring')} label="In Scadenza" icon={<Clock className="text-amber-500" size={14} />} />
@@ -182,7 +182,7 @@ export default function CoachClients() {
       </div>
 
       {/* Tabella con scroll orizzontale */}
-      <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 overflow-hidden">
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 overflow-hidden mx-3 sm:mx-6">
         <div className="overflow-x-auto -mx-3 sm:mx-0">
           <table className="w-full min-w-[800px] text-xs sm:text-sm text-left text-slate-300">
             <thead className="bg-white/5 text-slate-400 uppercase text-[10px] sm:text-xs sticky top-0 z-10">

@@ -134,16 +134,16 @@ export default function Updates() {
   };
 
   return (
-    <div className="w-full overflow-x-hidden px-3 sm:px-6 lg:px-8">
+    <div className="w-full overflow-x-hidden">
       <motion.h1 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="text-2xl sm:text-3xl font-bold mb-6 text-slate-50"
+        className="text-2xl sm:text-3xl font-bold mb-6 text-slate-50 mx-3 sm:mx-6"
       >
         Ultimi Aggiornamenti
       </motion.h1>
       <motion.div 
-        className="flex flex-col md:flex-row gap-4 sm:gap-6"
+        className="flex flex-col md:flex-row gap-4 sm:gap-6 mx-3 sm:mx-6"
         variants={containerVariants}
         initial="hidden"
         animate="visible"

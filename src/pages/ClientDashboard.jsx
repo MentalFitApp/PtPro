@@ -181,8 +181,8 @@ const ClientDashboard = () => {
 
   return (
     <div className="min-h-screen text-slate-200 relative overflow-x-hidden w-full">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <motion.header variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full py-4 sm:py-6">
+        <motion.header variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 mx-3 sm:mx-6">
           <div className="flex items-center gap-4">
             <NotificationPanel userType="client" />
           </div>
