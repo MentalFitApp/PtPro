@@ -73,19 +73,28 @@ export default function NotificationPanel({ userType = 'client' }) {
       if (permission === 'granted') {
         setIsNotificationsEnabled(true);
         
-        // Salva il token FCM su Firestore
-        const messaging = getMessaging();
-        const token = await getToken(messaging, {
-          vapidKey: 'BLp0b5Z5uqZ3yFHYQcEY6Q7K4FZ5YHT9OHQ7Y5Z5O5Z5'
-        });
-        
-        if (token) {
-          // Usa setDoc con merge per creare/aggiornare il documento
-          await setDoc(doc(db, 'fcmTokens', auth.currentUser.uid), {
-            token,
-            userType,
-            updatedAt: serverTimestamp()
-          }, { merge: true });
+        try {
+          // Salva il token FCM su Firestore
+          const messaging = getMessaging();
+          const token = await getToken(messaging, {
+            vapidKey: 'BKagOny0KQcd-p9DC2P4pDlZ3Owv1L-n6bqqQWTUl_G2aS9qLJMIvZo3aDlN6hG1IqJeM5HJqVxD4Cc5sqUZqAU'
+          });
+          
+          if (token) {
+            console.log('Token FCM ottenuto:', token);
+            // Usa setDoc con merge per creare/aggiornare il documento
+            await setDoc(doc(db, 'fcmTokens', auth.currentUser.uid), {
+              token,
+              userType,
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+            console.log('Token salvato su Firestore');
+          } else {
+            console.log('Nessun token FCM ottenuto');
+          }
+        } catch (fcmError) {
+          console.error('Errore FCM token:', fcmError);
+          // Le notifiche browser funzionano comunque anche senza FCM
         }
       }
     } catch (error) {
@@ -149,7 +158,7 @@ export default function NotificationPanel({ userType = 'client' }) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="fixed right-4 top-20 w-96 max-h-[500px] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-[9999] overflow-hidden"
+            className="fixed right-2 top-20 w-[calc(100vw-1rem)] sm:w-96 sm:right-4 max-h-[70vh] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-[9999] overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-slate-700">

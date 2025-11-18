@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc, getDocs, collection, onSnapshot, updateDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getMessaging, isSupported } from "firebase/messaging";
 
 // Configurazione Firebase (da .env)
 export const firebaseConfig = {
@@ -21,6 +22,18 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Inizializza Firebase Messaging (solo se supportato)
+let messaging = null;
+if (typeof window !== 'undefined') {
+  isSupported().then(supported => {
+    if (supported) {
+      messaging = getMessaging(app);
+    }
+  }).catch(err => console.log('Messaging not supported:', err));
+}
+
+export { messaging };
 
 // Funzione per calcolare e aggiornare lo stato del percorso
 export const updateStatoPercorso = async (userId) => {

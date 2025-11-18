@@ -8,6 +8,7 @@
   "background_color": "#0f172a",
   "theme_color": "#06b6d4",
   "orientation": "portrait-primary",
+  "gcm_sender_id": "103953800507",
   "icons": [
     {
       "src": "/PtPro/logo192.png",
