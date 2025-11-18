@@ -6,7 +6,6 @@ import { db, auth } from './firebase';
 
 // Import dinamici dei layout
 const MainLayout = React.lazy(() => import('./components/MainLayout'));
-const ClientLayout = React.lazy(() => import('./components/ClientLayout'));
 const GuidaLayout = React.lazy(() => import('./components/GuidaLayout'));
 
 // Import dinamici delle pagine
@@ -287,7 +286,7 @@ export default function App() {
         </Route>
 
         {/* === ROTTE CLIENTI === */}
-        <Route element={authInfo.isClient ? <ClientLayout /> : <Navigate to="/login" replace />}>
+        <Route element={authInfo.isClient ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route path="/client/first-access" element={<FirstAccess />} />
           <Route path="/client/dashboard" element={<ClientDashboard />} />
           <Route path="/client/anamnesi" element={<ClientAnamnesi />} />
