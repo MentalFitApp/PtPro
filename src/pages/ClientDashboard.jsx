@@ -14,27 +14,27 @@ const LoadingSpinner = () => (
 );
 
 const DashboardCard = ({ title, value, subtext, icon, variants }) => (
-  <motion.div variants={variants} className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6">
+  <motion.div variants={variants} className="bg-slate-800/60 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-slate-700 p-4 sm:p-6">
     <div className="flex items-center justify-between">
-      <h3 className="text-lg font-semibold text-slate-300">{title}</h3>
+      <h3 className="text-sm sm:text-lg font-semibold text-slate-300">{title}</h3>
       <div className="text-cyan-300">{icon}</div>
     </div>
-    <p className="text-3xl font-bold text-slate-50 mt-2">{value}</p>
-    <p className="text-sm text-slate-400 mt-1">{subtext}</p>
+    <p className="text-2xl sm:text-3xl font-bold text-slate-50 mt-2">{value}</p>
+    <p className="text-xs sm:text-sm text-slate-400 mt-1">{subtext}</p>
   </motion.div>
 );
 
 const ActionLink = ({ to, title, description, icon, variants }) => (
   <motion.div variants={variants}>
-    <Link to={to} className="group bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg p-4 flex items-center gap-4 transition-all duration-300">
-      <div className="bg-slate-700 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-white p-3 rounded-lg transition-colors duration-300">
+    <Link to={to} className="group bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg p-3 sm:p-4 flex items-center gap-3 sm:gap-4 transition-all duration-300">
+      <div className="bg-slate-700 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-white p-2 sm:p-3 rounded-lg transition-colors duration-300 flex-shrink-0">
         {icon}
       </div>
-      <div className="flex-1">
-        <h4 className="font-bold text-slate-200">{title}</h4>
-        <p className="text-sm text-slate-400">{description}</p>
+      <div className="flex-1 min-w-0">
+        <h4 className="font-bold text-slate-200 text-sm sm:text-base">{title}</h4>
+        <p className="text-xs sm:text-sm text-slate-400 truncate">{description}</p>
       </div>
-      <ChevronRight className="text-slate-500 group-hover:text-white transition-colors duration-300" />
+      <ChevronRight className="text-slate-500 group-hover:text-white transition-colors duration-300 flex-shrink-0" size={18} />
     </Link>
   </motion.div>
 );
@@ -208,24 +208,24 @@ const ClientDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen text-slate-200 relative overflow-x-hidden w-full">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full py-4 sm:py-6">
-        <motion.header variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 mx-3 sm:mx-6">
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen text-slate-200 relative w-full overflow-hidden">
+      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
+        <motion.header variants={itemVariants} className="flex flex-col gap-4 mb-6 sm:mb-8">
+          <div className="flex items-center justify-between w-full">
             <NotificationPanel userType="client" />
+            <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 bg-red-600/80 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-colors">
+              <LogOut size={16} /><span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-50">Ciao, {clientData.name}!</h1>
-            <p className="text-slate-300">Benvenuto nella tua area personale.</p>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-50">Ciao, {clientData.name}!</h1>
+            <p className="text-sm sm:text-base text-slate-300">Benvenuto nella tua area personale.</p>
           </div>
-          <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 bg-red-600/80 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-colors">
-            <LogOut size={16} /><span>Logout</span>
-          </button>
         </motion.header>
 
         {/* PULSANTI PWA - SOLO SU MOBILE */}
         {showPWAInstall && (
-          <motion.div variants={itemVariants} className="mb-6 space-y-3">
+          <motion.div variants={itemVariants} className="mb-4 sm:mb-6 space-y-3">
             {isAndroid && (
               <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-4 rounded-xl flex items-center justify-between shadow-lg">
                 <div className="flex items-center gap-3">
@@ -254,8 +254,8 @@ const ClientDashboard = () => {
           </motion.div>
         )}
 
-        <main>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+        <main className="w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <DashboardCard 
               title="Scadenza Percorso" 
               value={`${giorniRimanenti} giorni`} 
@@ -279,9 +279,9 @@ const ClientDashboard = () => {
             />
           </div>
           
-          <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6">
-            <h3 className="text-2xl font-bold mb-4 text-white">Cosa vuoi fare?</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-slate-700 p-4 sm:p-6">
+            <h3 className="text-xl sm:text-2xl font-bold mb-4 text-white">Cosa vuoi fare?</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <ActionLink to="/client/anamnesi" title="La mia Anamnesi" description="Visualizza o aggiorna i tuoi dati" icon={<User size={22} />} variants={itemVariants}/>
               <ActionLink to="/client/checks" title="I miei Check" description="Carica i tuoi progressi periodici" icon={<CheckSquare size={22} />} variants={itemVariants}/>
               <ActionLink to="/client/payments" title="I miei Pagamenti" description="Visualizza lo storico dei pagamenti" icon={<BarChart2 size={22} />} variants={itemVariants}/>
