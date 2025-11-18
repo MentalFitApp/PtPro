@@ -110,10 +110,13 @@ const FirstAccess = () => {
 
       console.log(`Campo firstLogin aggiornato a false per ${userType}:`, user.uid);
 
+      // Attendo 500ms per dare tempo a Firestore di propagare la modifica
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       setSuccess("Password aggiornata! Sarai reindirizzato alla dashboard.");
       setTimeout(() => {
         navigate(userType === 'client' ? '/client/dashboard' : '/collaboratore/dashboard');
-      }, 3000);
+      }, 2000);
     } catch (err) {
       console.error("Errore aggiornamento password:", err.code, err.message, { uid: user?.uid, userType });
       setError("Si è verificato un errore durante l'aggiornamento della password: " + err.message);

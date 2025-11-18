@@ -72,23 +72,46 @@ const ClientDashboard = () => {
       setShowPWAInstall(true);
     }
 
+    // Timeout sicurezza per evitare hang infinito
+    const loadingTimeout = setTimeout(() => {
+      console.warn('ClientDashboard: Timeout caricamento, forzo setLoading(false)');
+      setLoading(false);
+      setError('Il caricamento sta impiegando troppo tempo. Riprova o contatta il supporto.');
+    }, 8000);
+
     // Carica dati cliente
     const fetchClientData = async () => {
       try {
         const clientDocRef = doc(db, 'clients', user.uid);
         const docSnap = await getDoc(clientDocRef);
         if (docSnap.exists()) {
-          setClientData(docSnap.data());
-          console.log('ClientDashboard: Dati cliente:', docSnap.data());
+          const data = docSnap.data();
+          
+          // Se è ancora firstLogin, redirect a FirstAccess
+          if (data.firstLogin === true) {
+            console.log('ClientDashboard: firstLogin ancora true, redirect a /first-access');
+            clearTimeout(loadingTimeout);
+            navigate('/first-access');
+            return;
+          }
+          
+          setClientData(data);
+          console.log('ClientDashboard: Dati cliente caricati:', data);
+          clearTimeout(loadingTimeout);
+          setLoading(false);
         } else {
+          clearTimeout(loadingTimeout);
+          setLoading(false);
           setError('Documento cliente non trovato.');
           console.log('ClientDashboard: Documento cliente non trovato per UID:', user.uid);
-          navigate('/login');
+          setTimeout(() => navigate('/login'), 2000);
         }
       } catch (err) {
+        clearTimeout(loadingTimeout);
+        setLoading(false);
         console.error('ClientDashboard: Errore nel recupero del documento cliente:', err.code, err.message, { uid: user.uid, email: user.email });
         setError('Errore nel caricamento dei dati cliente: ' + err.message);
-        navigate('/login');
+        setTimeout(() => navigate('/login'), 2000);
       }
     };
 
@@ -118,8 +141,13 @@ const ClientDashboard = () => {
       return unsubscribe;
     };
 
-    fetchClientData().finally(() => setLoading(false));
-    return fetchLastCheck();
+    fetchClientData();
+    const unsubCheck = fetchLastCheck();
+    
+    return () => {
+      clearTimeout(loadingTimeout);
+      if (unsubCheck) unsubCheck();
+    };
   }, [user, navigate]);
 
   const handleLogout = () => {
