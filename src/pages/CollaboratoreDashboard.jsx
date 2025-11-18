@@ -134,54 +134,81 @@ export default function CollaboratoreDashboard() {
           });
         }
 
+        // IMPORTANTE: Setta loading false PRIMA di iniziare query leads
         setLoading(false);
       } catch (err) {
+        console.error('❌ Errore nel caricamento dei dati:', err);
         setError('Errore nel caricamento dei dati.');
         setLoading(false);
       }
     };
 
-    fetchCollab();
+    // Esegui fetch e aspetta che finisca prima di fare altre query
+    fetchCollab().then(() => {
+      console.log('✅ Collaboratore loaded, now safe to query leads');
+    }).catch((err) => {
+      console.error('❌ Failed to load collaboratore:', err);
+    });
 
-    let unsub = () => {};
-    
-    // Timeout per mobile - se ci mette troppo, procedi comunque
-    const timeoutId = setTimeout(() => {
-      console.warn('⚠️ Leads query timeout, proceeding without leads');
-      setMyLeads([]);
-    }, 5000);
-    
-    try {
-      console.log('📊 Setting up leads listener...');
-      const leadsQuery = query(
-        collection(db, 'leads'),
-        where('collaboratoreId', '==', auth.currentUser.uid),
-        orderBy('timestamp', 'desc')
-      );
+    return () => {}; // Cleanup vuoto per ora
+  }, [navigate]);
 
-      unsub = onSnapshot(leadsQuery, 
-        (snap) => {
-          clearTimeout(timeoutId);
-          console.log('✅ Leads loaded:', snap.size);
-          const leadsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-          setMyLeads(leadsData);
-        }, 
-        (err) => {
-          clearTimeout(timeoutId);
-          console.error('❌ Errore lettura leads:', err);
-          console.error('Error code:', err.code, 'Message:', err.message);
-          // Non bloccare l'app se fallisce la query leads
-          setMyLeads([]);
-        }
-      );
-    } catch (err) {
-      clearTimeout(timeoutId);
-      console.error('❌ Errore setup leads listener:', err);
-      setMyLeads([]);
+  // Query leads SEPARATA - solo dopo che collaboratore è caricato
+  useEffect(() => {
+    if (!auth.currentUser || !collaboratore || loading) {
+      console.log('⏸️ Skipping leads query - not ready yet');
+      return;
     }
 
-    return () => unsub();
-  }, [navigate]);
+    console.log('🚀 Ready to query leads for:', collaboratore.name);
+    
+    let unsub = () => {};
+    let timeoutId = null;
+    
+    // Ritarda leggermente la query leads per dare tempo al render
+    const setupLeadsQuery = setTimeout(() => {
+      // Timeout per mobile - se ci mette troppo, procedi comunque
+      timeoutId = setTimeout(() => {
+        console.warn('⚠️ Leads query timeout, proceeding without leads');
+        setMyLeads([]);
+      }, 8000);
+      
+      try {
+        console.log('📊 Setting up leads listener...');
+        const leadsQuery = query(
+          collection(db, 'leads'),
+          where('collaboratoreId', '==', auth.currentUser.uid),
+          orderBy('timestamp', 'desc')
+        );
+
+        unsub = onSnapshot(leadsQuery, 
+          (snap) => {
+            if (timeoutId) clearTimeout(timeoutId);
+            console.log('✅ Leads loaded:', snap.size);
+            const leadsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            setMyLeads(leadsData);
+          }, 
+          (err) => {
+            if (timeoutId) clearTimeout(timeoutId);
+            console.error('❌ Errore lettura leads:', err);
+            console.error('Error code:', err.code, 'Message:', err.message);
+            // Non bloccare l'app se fallisce la query leads
+            setMyLeads([]);
+          }
+        );
+      } catch (err) {
+        if (timeoutId) clearTimeout(timeoutId);
+        console.error('❌ Errore setup leads listener:', err);
+        setMyLeads([]);
+      }
+    }, 500); // Ritarda di 500ms per non bloccare il render iniziale
+
+    return () => {
+      unsub();
+      clearTimeout(setupLeadsQuery);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [collaboratore, loading]); // Dipende da collaboratore e loading
 
   // --- FETCH TUTTI I SETTER ---
   useEffect(() => {
@@ -463,8 +490,23 @@ export default function CollaboratoreDashboard() {
     .sort((a, b) => b.date.localeCompare(a.date));
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500 mb-4"></div>
+      <p className="text-slate-400 text-sm">Caricamento dashboard...</p>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 p-4">
+      <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-6 max-w-md">
+        <p className="text-red-400 text-center mb-4">{error}</p>
+        <button 
+          onClick={() => navigate('/login')}
+          className="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-lg"
+        >
+          Torna al Login
+        </button>
+      </div>
     </div>
   );
 
@@ -472,59 +514,63 @@ export default function CollaboratoreDashboard() {
     <div className="overflow-x-hidden w-full">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 sm:p-6">
         {/* HEADER */}
-        <motion.header className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 w-full">
         <div className="flex items-center gap-3">
           <img 
             src={profile.photoURL || '/default-avatar.png'} 
             alt="Profile" 
-            className="w-12 h-12 rounded-full border-2 border-rose-500"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-rose-500"
           />
           <div>
-            <h1 className="text-2xl font-bold text-slate-50">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-50">
               {profile.name || 'Collaboratore'}
             </h1>
-            <p className="text-sm text-slate-400">{collaboratore?.role}</p>
+            <p className="text-xs sm:text-sm text-slate-400">{collaboratore?.role}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <NotificationPanel userType="collaboratore" />
-          <div className="text-sm text-slate-400 flex items-center gap-1">
-            <Clock size={16} /> Reset: {timeLeft}
+          <div className="text-xs sm:text-sm text-slate-400 flex items-center gap-1 px-2 py-1 bg-slate-700/50 rounded">
+            <Clock size={14} className="sm:hidden" />
+            <Clock size={16} className="hidden sm:block" />
+            <span className="hidden sm:inline">Reset:</span> {timeLeft}
           </div>
           <button 
             onClick={() => setShowProfile(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
           >
-            <User size={16} /> Profilo
+            <User size={14} className="sm:hidden" />
+            <User size={16} className="hidden sm:block" />
+            <span>Profilo</span>
           </button>
           <button 
             onClick={() => auth.signOut().then(() => navigate('/login'))} 
-            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs sm:text-sm"
           >
             Esci
           </button>
         </div>
       </motion.header>
 
-      <motion.div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-6 space-y-6 border border-white/10">
+      <motion.div className="bg-slate-800/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-6 space-y-4 sm:space-y-6 border border-white/10">
         {/* CHIAMATE GIORNALIERE */}
         <div>
-          <h3 className="text-sm font-semibold text-slate-400 mb-2">Chiamate giornaliere</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <h3 className="text-xs sm:text-sm font-semibold text-slate-400 mb-2">Chiamate giornaliere</h3>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
             {todayCalls.map((s, i) => (
               <motion.div 
                 key={i} 
-                className="bg-slate-800/70 p-3 rounded-lg border border-white/10 text-center"
+                className="bg-slate-800/70 p-2 sm:p-3 rounded-lg border border-white/10 text-center"
                 whileHover={{ scale: 1.05 }}
               >
                 <img 
                   src={s.photoURL || '/default-avatar.png'} 
                   alt={s.name} 
-                  className="w-10 h-10 rounded-full mx-auto mb-1"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full mx-auto mb-1"
                 />
-                <p className="text-xs text-slate-300 truncate">{s.name}</p>
-                <p className="text-lg font-bold text-white">{s.calls}</p>
-                <p className="text-xs text-emerald-400">Mese: {s.monthTotal}</p>
+                <p className="text-[10px] sm:text-xs text-slate-300 truncate">{s.name}</p>
+                <p className="text-base sm:text-lg font-bold text-white">{s.calls}</p>
+                <p className="text-[9px] sm:text-xs text-emerald-400">M: {s.monthTotal}</p>
               </motion.div>
             ))}
           </div>
@@ -583,11 +629,13 @@ export default function CollaboratoreDashboard() {
         )}
 
         {/* AZIONI RAPIDE */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div onClick={() => setShowTracker(true)} className="bg-slate-800/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          <div onClick={() => setShowTracker(true)} className="bg-slate-800/70 p-3 sm:p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
-                <FileText size={20} /> Tracker DMS
+              <h3 className="text-base sm:text-lg font-semibold text-slate-200 flex items-center gap-2">
+                <FileText size={18} className="sm:hidden" />
+                <FileText size={20} className="hidden sm:block" />
+                <span>Tracker DMS</span>
               </h3>
               <span className={`text-xs px-2 py-1 rounded ${trackerSent ? 'bg-green-600' : 'bg-red-600'} text-white`}>
                 {trackerSent ? 'Inviato' : 'Mancante'}
@@ -596,14 +644,26 @@ export default function CollaboratoreDashboard() {
           </div>
           {isSetter && (
             <>
-              <div onClick={() => setShowNewLead(true)} className="bg-slate-800/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
-                <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2"><Phone size={20} /> Nuovo Lead</h3>
+              <div onClick={() => setShowNewLead(true)} className="bg-slate-800/70 p-3 sm:p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-200 flex items-center gap-2">
+                  <Phone size={18} className="sm:hidden" />
+                  <Phone size={20} className="hidden sm:block" />
+                  <span>Nuovo Lead</span>
+                </h3>
               </div>
-              <div onClick={() => setShowMyLeads(true)} className="bg-slate-800/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
-                <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2"><Eye size={20} /> I miei Lead</h3>
+              <div onClick={() => setShowMyLeads(true)} className="bg-slate-800/70 p-3 sm:p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-200 flex items-center gap-2">
+                  <Eye size={18} className="sm:hidden" />
+                  <Eye size={20} className="hidden sm:block" />
+                  <span>I miei Lead</span>
+                </h3>
               </div>
-              <div onClick={() => setShowPastReports(true)} className="bg-slate-800/70 p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
-                <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2"><BarChart3 size={20} /> Report Passati</h3>
+              <div onClick={() => setShowPastReports(true)} className="bg-slate-800/70 p-3 sm:p-4 rounded-lg border border-white/10 cursor-pointer hover:border-rose-500 md:col-span-2">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-200 flex items-center gap-2">
+                  <BarChart3 size={18} className="sm:hidden" />
+                  <BarChart3 size={20} className="hidden sm:block" />
+                  <span>Report Passati</span>
+                </h3>
               </div>
             </>
           )}
