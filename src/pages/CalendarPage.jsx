@@ -477,8 +477,8 @@ export default function CalendarPage() {
                     <div className={`text-sm font-semibold mb-1 ${isToday ? 'text-rose-300' : 'text-slate-200'}`}>
                       {day}
                     </div>
-                    <div className="space-y-1">
-                      {dayEvents.slice(0, 2).map(event => (
+                    <div className="space-y-1 max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+                      {dayEvents.map(event => (
                         <div
                           key={event.id}
                           onClick={(e) => {
@@ -495,14 +495,11 @@ export default function CalendarPage() {
                               ? 'bg-blue-600/80 text-blue-100'
                               : 'bg-purple-600/80 text-purple-100'
                           }`}
-                          title={event.title}
+                          title={`${event.time} - ${event.title}`}
                         >
                           {event.time} {event.title}
                         </div>
                       ))}
-                      {dayEvents.length > 2 && (
-                        <div className="text-[10px] text-slate-400">+{dayEvents.length - 2}</div>
-                      )}
                     </div>
                   </>
                 )}
@@ -634,8 +631,17 @@ export default function CalendarPage() {
                           <div className="grid grid-rows-4 gap-0.5">
                             {quarters.map(q => {
                               const min = baseMin + q;
-                              const occupying = dayEvents.filter(e => min >= e.startMin && min < (e.startMin+e.dur));
-                              const starter = dayEvents.find(e => e.startMin === min);
+                              const slotEnd = min + 15;
+                              // Trova tutti gli eventi che si sovrappongono con questo slot (anche parzialmente)
+                              const overlappingEvents = dayEvents.filter(e => {
+                                const eventEnd = e.startMin + e.dur;
+                                // L'evento si sovrappone se inizia prima della fine dello slot E finisce dopo l'inizio dello slot
+                                return e.startMin < slotEnd && eventEnd > min;
+                              });
+                              // Raggruppa eventi che iniziano nello stesso slot di 15 minuti
+                              const eventsInThisSlot = overlappingEvents.filter(e => e.startMin >= min && e.startMin < slotEnd);
+                              const continuingEvents = overlappingEvents.filter(e => e.startMin < min);
+                              
                               const inSelection = isSelecting && selectStartMin !== null && selectEndMin !== null &&
                                 min >= Math.min(selectStartMin, selectEndMin) && min < Math.max(selectStartMin, selectEndMin);
                               const timeStr = `${String(hh).padStart(2,'0')}:${String(q).padStart(2,'0')}`;
@@ -665,22 +671,37 @@ export default function CalendarPage() {
                                     setShowEventModal(true);
                                   }}
                                 >
-                                  {starter && (
-                                    <div className={`absolute inset-0 m-0.5 p-2 rounded-lg text-xs sm:text-sm shadow ${
-                                      starter.type === 'lead' ? 'bg-emerald-600/80 text-emerald-100' : starter.type === 'call' ? 'bg-blue-600/80 text-blue-100' : 'bg-purple-600/80 text-purple-100'
-                                    }`}
-                                      onClick={(e)=>{ e.stopPropagation(); if (starter.type==='lead'){ setSelectedLead(starter); setShowLeadDetails(true);} else { handleEditEvent(starter); setModalShowDayEvents(false); setShowEventModal(true);} }}
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <div className="font-semibold truncate pr-2">{starter.title}</div>
-                                        <div className="text-[10px] opacity-90 font-mono">{starter.time} · {(starter.durationMinutes||30)}m</div>
-                                      </div>
-                                      {starter.note && <div className="text-[11px] opacity-90 mt-1 truncate">{starter.note}</div>}
+                                  {eventsInThisSlot.length > 0 ? (
+                                    <div className="absolute inset-0 m-0.5 flex gap-0.5 overflow-hidden">
+                                      {eventsInThisSlot.map((starter, idx) => (
+                                        <div 
+                                          key={starter.id}
+                                          className={`flex-1 p-1.5 rounded-lg text-[10px] sm:text-xs shadow cursor-pointer ${
+                                            starter.type === 'lead' ? 'bg-emerald-600/80 text-emerald-100 hover:bg-emerald-600/90' : 
+                                            starter.type === 'call' ? 'bg-blue-600/80 text-blue-100 hover:bg-blue-600/90' : 
+                                            'bg-purple-600/80 text-purple-100 hover:bg-purple-600/90'
+                                          }`}
+                                          style={{ minWidth: eventsInThisSlot.length > 1 ? `${100 / eventsInThisSlot.length}%` : '100%' }}
+                                          onClick={(e)=>{ 
+                                            e.stopPropagation(); 
+                                            if (starter.type==='lead'){ 
+                                              setSelectedLead(starter); 
+                                              setShowLeadDetails(true);
+                                            } else { 
+                                              handleEditEvent(starter); 
+                                              setModalShowDayEvents(false); 
+                                              setShowEventModal(true);
+                                            } 
+                                          }}
+                                        >
+                                          <div className="font-semibold truncate">{starter.title}</div>
+                                          <div className="text-[9px] opacity-90 font-mono mt-0.5">{starter.time}</div>
+                                        </div>
+                                      ))}
                                     </div>
-                                  )}
-                                  {!starter && occupying.length>0 && (
+                                  ) : continuingEvents.length > 0 ? (
                                     <div className="absolute inset-y-0 left-0 right-0 mx-1 my-2 rounded bg-slate-200/10" />
-                                  )}
+                                  ) : null}
                                 </div>
                               );
                             })}
@@ -729,64 +750,103 @@ export default function CalendarPage() {
               {/* Lista eventi del giorno (opzionale) */}
               {modalShowDayEvents && (
               <div className="mb-6">
-                <h4 className="text-lg font-semibold text-slate-200 mb-3">Eventi del giorno</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-lg font-semibold text-slate-200">Eventi del giorno</h4>
+                </div>
                 <div className="space-y-2">
                   {getEventsForDay(selectedDate).length === 0 ? (
                     <p className="text-slate-400 text-sm italic">Nessun evento</p>
                   ) : (
-                    getEventsForDay(selectedDate).map(event => (
-                      <div
-                        key={event.id}
-                        onClick={() => {
-                          if (event.type === 'lead') {
-                            setSelectedLead(event);
-                            setShowLeadDetails(true);
-                          }
-                        }}
-                        className={`bg-slate-800/70 p-3 rounded-lg border border-slate-600 flex justify-between items-start ${
-                          event.type === 'lead' ? 'cursor-pointer hover:bg-slate-800/90' : ''
-                        }`}
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {event.type === 'lead' ? (
-                              <Phone size={16} className="text-emerald-400" />
-                            ) : event.type === 'call' ? (
-                              <Phone size={16} className="text-blue-400" />
-                            ) : (
-                              <Users size={16} className="text-purple-400" />
+                    (() => {
+                      const sortedEvents = getEventsForDay(selectedDate).sort((a, b) => {
+                        const timeA = a.time || '00:00';
+                        const timeB = b.time || '00:00';
+                        return timeA.localeCompare(timeB);
+                      });
+                      const now = new Date();
+                      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                      let currentTimeInserted = false;
+                      
+                      return sortedEvents.map((event, idx) => {
+                        const showTimeline = !currentTimeInserted && event.time > currentTime;
+                        if (showTimeline) currentTimeInserted = true;
+                        
+                        return (
+                          <React.Fragment key={event.id}>
+                            {showTimeline && (
+                              <div className="flex items-center gap-2 py-2">
+                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-rose-500 to-transparent"></div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
+                                  <span className="text-rose-400 font-mono font-semibold">{currentTime}</span>
+                                </div>
+                                <div className="flex-1 h-px bg-gradient-to-r from-rose-500 via-transparent to-transparent"></div>
+                              </div>
                             )}
-                            <span className="font-semibold text-slate-100">{event.title}</span>
-                            <span className="text-sm text-slate-400">{event.time}</span>
-                            {event.type === 'lead' && (
-                              <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">LEAD</span>
+                            <div
+                              onClick={() => {
+                                if (event.type === 'lead') {
+                                  setSelectedLead(event);
+                                  setShowLeadDetails(true);
+                                }
+                              }}
+                              className={`bg-slate-800/70 p-3 rounded-lg border border-slate-600 flex justify-between items-start ${
+                                event.type === 'lead' ? 'cursor-pointer hover:bg-slate-800/90' : ''
+                              }`}
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  {event.type === 'lead' ? (
+                                    <Phone size={16} className="text-emerald-400" />
+                                  ) : event.type === 'call' ? (
+                                    <Phone size={16} className="text-blue-400" />
+                                  ) : (
+                                    <Users size={16} className="text-purple-400" />
+                                  )}
+                                  <span className="text-sm font-mono text-slate-400">{event.time}</span>
+                                  <span className="font-semibold text-slate-100">{event.title}</span>
+                                  {event.type === 'lead' && (
+                                    <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">LEAD</span>
+                                  )}
+                                </div>
+                                {event.note && <p className="text-sm text-slate-300 mt-1">{event.note}</p>}
+                                {event.type === 'lead' && event.leadData && (
+                                  <p className="text-xs text-slate-400 mt-1">Click per dettagli →</p>
+                                )}
+                              </div>
+                              {event.type !== 'lead' && (isAdmin || userRole) && (
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleEditEvent(event)}
+                                    className="text-cyan-400 hover:text-cyan-300"
+                                    title="Modifica"
+                                  >
+                                    <Edit size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteEvent(event.id)}
+                                    className="text-red-400 hover:text-red-300"
+                                    title="Elimina"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            {!currentTimeInserted && idx === sortedEvents.length - 1 && (
+                              <div className="flex items-center gap-2 py-2">
+                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-rose-500 to-transparent"></div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
+                                  <span className="text-rose-400 font-mono font-semibold">{currentTime}</span>
+                                </div>
+                                <div className="flex-1 h-px bg-gradient-to-r from-rose-500 via-transparent to-transparent"></div>
+                              </div>
                             )}
-                          </div>
-                          {event.note && <p className="text-sm text-slate-300 mt-1">{event.note}</p>}
-                          {event.type === 'lead' && event.leadData && (
-                            <p className="text-xs text-slate-400 mt-1">Click per dettagli →</p>
-                          )}
-                        </div>
-                        {event.type !== 'lead' && (isAdmin || userRole) && (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEditEvent(event)}
-                              className="text-cyan-400 hover:text-cyan-300"
-                              title="Modifica"
-                            >
-                              <Edit size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteEvent(event.id)}
-                              className="text-red-400 hover:text-red-300"
-                              title="Elimina"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))
+                          </React.Fragment>
+                        );
+                      });
+                    })()
                   )}
                 </div>
               </div>
@@ -1028,7 +1088,7 @@ export default function CalendarPage() {
                         <input type="number" min="0" className="w-full p-3 bg-slate-800/60 border border-slate-700 rounded-lg text-slate-100" value={leadForm.mesi ?? ''} onChange={(e)=>setLeadForm({...leadForm, mesi: e.target.value === '' ? '' : parseInt(e.target.value,10)})} />
                       </div>
                       <div className="grid grid-cols-2 gap-3 items-center">
-                        <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.offer} onChange={(e)=>setLeadForm({...leadForm, offer: e.target.checked})} /> Offer</label>
+                        <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.offer} onChange={(e)=>setLeadForm({...leadForm, offer: e.target.checked})} /> Warm</label>
                         <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.showUp} onChange={(e)=>setLeadForm({...leadForm, showUp: e.target.checked})} /> Show Up</label>
                       </div>
                     </div>
