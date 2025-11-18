@@ -35,6 +35,15 @@ const Login = () => {
           const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
           const isCollaboratore = collabDoc.exists();
 
+          console.log('🔍 Login check:', { 
+            uid: user.uid, 
+            isAdmin, 
+            isCoach, 
+            isClient, 
+            isCollaboratore,
+            collabData: collabDoc.exists() ? collabDoc.data() : 'N/A'
+          });
+
           if (isAdmin) {
             sessionStorage.setItem('app_role', 'admin');
             navigate('/');
@@ -43,11 +52,15 @@ const Login = () => {
             navigate('/coach');
           } else if (isCollaboratore) {
             sessionStorage.setItem('app_role', 'collaboratore');
-            navigate(collabDoc.data().firstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard');
+            const hasFirstLogin = collabDoc.data()?.firstLogin === true;
+            console.log('👤 Collaboratore login, firstLogin:', hasFirstLogin);
+            navigate(hasFirstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard');
           } else if (isClient) {
             sessionStorage.setItem('app_role', 'client');
-            navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
+            const hasFirstLogin = clientDoc.data()?.firstLogin === true;
+            navigate(hasFirstLogin ? '/client/first-access' : '/client/dashboard');
           } else {
+            console.error('❌ Nessun ruolo trovato per:', user.uid);
             setError('Accesso non autorizzato. Contatta l\'amministratore.');
             await signOut(auth);
           }

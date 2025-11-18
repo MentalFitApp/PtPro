@@ -83,28 +83,37 @@ export default function CollaboratoreDashboard() {
 
   // --- CARICA UTENTE LOGGATO ---
   useEffect(() => {
+    console.log('🏁 CollaboratoreDashboard mounted, user:', auth.currentUser?.uid);
+    
     if (!auth.currentUser) {
+      console.warn('⚠️ No user, redirecting to login');
       navigate('/login');
       return;
     }
 
     const fetchCollab = async () => {
       try {
+        console.log('📥 Fetching collaboratore doc...');
         const collabDocRef = doc(db, 'collaboratori', auth.currentUser.uid);
         const collabDoc = await getDoc(collabDocRef);
+        
         if (!collabDoc.exists()) {
-        setError('Account non trovato.');
-        setLoading(false);
-        return;
+          console.error('❌ Collaboratore doc not found');
+          setError('Account non trovato.');
+          setLoading(false);
+          return;
         }
+        
         const data = collabDoc.data();
+        console.log('✅ Collaboratore data loaded:', data);
+        
         setCollaboratore(data);
         setProfile({ 
-          name: data.name || '', 
-          photoURL: data.photoURL || '', 
-          gender: data.gender || 'M' 
+          name: data?.name || '', 
+          photoURL: data?.photoURL || '', 
+          gender: data?.gender || 'M' 
         });
-        setIsAdmin(data.role === 'Admin');
+        setIsAdmin(data?.role === 'Admin');
 
         // Usa data locale per il confronto
         const now = new Date();
@@ -134,19 +143,33 @@ export default function CollaboratoreDashboard() {
 
     fetchCollab();
 
-    const leadsQuery = query(
-      collection(db, 'leads'),
-      where('collaboratoreId', '==', auth.currentUser.uid),
-      orderBy('timestamp', 'desc')
-    );
+    let unsub = () => {};
+    
+    try {
+      console.log('📊 Setting up leads listener...');
+      const leadsQuery = query(
+        collection(db, 'leads'),
+        where('collaboratoreId', '==', auth.currentUser.uid),
+        orderBy('timestamp', 'desc')
+      );
 
-    const unsub = onSnapshot(leadsQuery, snap => {
-      const leadsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setMyLeads(leadsData);
-    }, (err) => {
-      console.error('Errore lettura leads:', err);
-      setError('Errore lettura leads.');
-    });
+      unsub = onSnapshot(leadsQuery, 
+        (snap) => {
+          console.log('✅ Leads loaded:', snap.size);
+          const leadsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          setMyLeads(leadsData);
+        }, 
+        (err) => {
+          console.error('❌ Errore lettura leads:', err);
+          console.error('Error code:', err.code, 'Message:', err.message);
+          // Non bloccare l'app se fallisce la query leads
+          setMyLeads([]);
+        }
+      );
+    } catch (err) {
+      console.error('❌ Errore setup leads listener:', err);
+      setMyLeads([]);
+    }
 
     return () => unsub();
   }, [navigate]);
