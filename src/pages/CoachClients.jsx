@@ -147,8 +147,7 @@ export default function CoachClients() {
 
   return (
     <div className="overflow-x-hidden w-full">
-      <div className="max-w-7xl mx-auto">
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 sm:p-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
       <header className="flex flex-col sm:flex-row justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2 mb-4 sm:mb-0">
           <Users size={28} /> Gestione Clienti
@@ -263,7 +262,6 @@ export default function CoachClients() {
         </div>
       </div>
     </motion.div>
-      </div>
     </div>
   );
 }

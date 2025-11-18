@@ -492,7 +492,7 @@ export default function Clients() {
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
       <ConfirmationModal isOpen={!!clientToDelete} onClose={() => setClientToDelete(null)} onConfirm={handleDelete} clientName={clientToDelete?.name} />
 
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 pb-24 md:pb-8">
+      <div className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 md:pb-8">
         {/* HEADER MOBILE */}
         <div className="md:hidden bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-4">
           <h1 className="text-2xl font-bold text-slate-100 mb-4">Clienti</h1>

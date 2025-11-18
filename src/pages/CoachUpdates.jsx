@@ -220,9 +220,8 @@ export default function CoachUpdates() {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen text-slate-200 p-4 sm:p-8 relative overflow-x-hidden">
-      <div className="max-w-7xl mx-auto">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants}>
+    <div className="min-h-screen text-slate-200 relative overflow-x-hidden w-full">
+      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
         <motion.header variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-50 flex items-center gap-2">
             <Bell size={28} /> Aggiornamenti Utili
@@ -249,7 +248,6 @@ export default function CoachUpdates() {
           </div>
         </motion.div>
       </motion.div>
-      </div>
     </div>
   );
 }

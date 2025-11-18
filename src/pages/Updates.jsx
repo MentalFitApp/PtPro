@@ -134,8 +134,7 @@ export default function Updates() {
   };
 
   return (
-    <div className="w-full overflow-x-hidden">
-      <div className="max-w-7xl mx-auto">
+    <div className="w-full overflow-x-hidden px-3 sm:px-6 lg:px-8">
       <motion.h1 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -153,7 +152,6 @@ export default function Updates() {
         <UpdateColumn title="Nuovi Check" icon={<CheckSquare className="text-emerald-400" />} items={filteredNewChecks} navigate={navigate} tab="checks" onDismiss={handleDismiss} />
         <UpdateColumn title="Nuove Anamnesi" icon={<FileText className="text-amber-400" />} items={filteredNewAnamnesis} navigate={navigate} tab="anamnesi" onDismiss={handleDismiss} />
       </motion.div>
-      </div>
     </div>
   );
 }

@@ -70,8 +70,7 @@ export default function BusinessHistory() {
   if (loading) return <div className="flex justify-center items-center h-screen">Caricamento...</div>;
 
   return (
-    <div className="p-4 sm:p-6 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto">
+    <div className="overflow-x-hidden w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
       <button onClick={() => navigate('/')} className="flex items-center gap-2 mb-6 text-slate-400 hover:text-rose-500">
         <ArrowLeft size={16} /> Torna alla Dashboard
       </button>
@@ -111,7 +110,6 @@ export default function BusinessHistory() {
           </div>
         </motion.div>
       )}
-      </div>
     </div>
   );
 }

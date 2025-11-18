@@ -511,9 +511,8 @@ export default function CollaboratoreDashboard() {
   );
 
   return (
-    <div className="overflow-x-hidden w-full">
-      <div className="max-w-7xl mx-auto">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 sm:p-6">
+    <div className="overflow-x-hidden w-full min-h-screen">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* HEADER */}
         <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 w-full">
         <div className="flex items-center gap-3">
@@ -881,7 +880,6 @@ export default function CollaboratoreDashboard() {
         )}
       </AnimatePresence>
       </motion.div>
-      </div>
     </div>
   );
 }
