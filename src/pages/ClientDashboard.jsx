@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import NotificationPanel from '../components/NotificationPanel';
 
 const LoadingSpinner = () => (
-  <div className="min-h-screen flex justify-center items-center relative">
+  <div className="min-h-screen bg-slate-900 flex justify-center items-center">
     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
   </div>
 );
@@ -47,7 +47,6 @@ const ClientDashboard = () => {
   const [showPWAInstall, setShowPWAInstall] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
-  const [disableAnimations, setDisableAnimations] = useState(false);
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
@@ -67,7 +66,6 @@ const ClientDashboard = () => {
     const android = /Android/.test(ua);
     setIsIOS(ios);
     setIsAndroid(android);
-    setDisableAnimations(ios); // Disabilita animazioni su iOS
 
     // Mostra pulsante solo su mobile
     if ((ios || android) && !window.matchMedia('(display-mode: standalone)').matches) {
@@ -166,7 +164,7 @@ const ClientDashboard = () => {
   if (loading) return <LoadingSpinner />;
   if (!clientData) {
     return (
-      <div className="min-h-screen flex justify-center items-center p-8 relative">
+      <div className="min-h-screen bg-slate-900 flex justify-center items-center p-8">
         <p className="text-center text-red-400 flex items-center gap-2">
           <AlertCircle size={18} />
           {error || 'Errore nel caricamento dei dati.'}
@@ -199,19 +197,30 @@ const ClientDashboard = () => {
     nextCheckSubtext = `Prossimo check suggerito: ${nextCheckDate.toLocaleDateString('it-IT')}`;
   }
 
-  const containerVariants = disableAnimations ? {} : {
+  const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.3, staggerChildren: 0.05 } },
   };
 
-  const itemVariants = disableAnimations ? {} : {
+  const itemVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.2 } },
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-200 w-full" style={{ WebkitOverflowScrolling: 'touch', transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}>
-      <motion.div initial={disableAnimations ? false : "hidden"} animate={disableAnimations ? false : "visible"} variants={containerVariants} className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
+    <div 
+      className={isIOS ? "min-h-screen bg-slate-900 text-slate-200 w-full" : "min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-200 w-full"}
+      style={{ 
+        WebkitOverflowScrolling: 'touch',
+        position: 'relative',
+        willChange: 'transform',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
+        perspective: 1000,
+        WebkitPerspective: 1000
+      }}
+    >
+      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
         <motion.header variants={itemVariants} className="flex flex-col gap-4 mb-6 sm:mb-8">
           <div className="flex items-center justify-between w-full">
             <NotificationPanel userType="client" />
