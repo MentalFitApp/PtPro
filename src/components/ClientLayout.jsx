@@ -41,9 +41,11 @@ const AnimatedBackground = () => {
 export default function ClientLayout() { 
   try {
     return (
-      <div className="relative min-h-screen flex flex-col">
-        <AnimatedBackground />
-        <Outlet />
+      <div className="overflow-x-hidden w-full min-h-screen">
+        <div className="relative min-h-screen flex flex-col">
+          <AnimatedBackground />
+          <Outlet />
+        </div>
       </div>
     );
   } catch (error) {

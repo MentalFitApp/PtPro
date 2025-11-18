@@ -145,6 +145,12 @@ export default function CollaboratoreDashboard() {
 
     let unsub = () => {};
     
+    // Timeout per mobile - se ci mette troppo, procedi comunque
+    const timeoutId = setTimeout(() => {
+      console.warn('⚠️ Leads query timeout, proceeding without leads');
+      setMyLeads([]);
+    }, 5000);
+    
     try {
       console.log('📊 Setting up leads listener...');
       const leadsQuery = query(
@@ -155,11 +161,13 @@ export default function CollaboratoreDashboard() {
 
       unsub = onSnapshot(leadsQuery, 
         (snap) => {
+          clearTimeout(timeoutId);
           console.log('✅ Leads loaded:', snap.size);
           const leadsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
           setMyLeads(leadsData);
         }, 
         (err) => {
+          clearTimeout(timeoutId);
           console.error('❌ Errore lettura leads:', err);
           console.error('Error code:', err.code, 'Message:', err.message);
           // Non bloccare l'app se fallisce la query leads
@@ -167,6 +175,7 @@ export default function CollaboratoreDashboard() {
         }
       );
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error('❌ Errore setup leads listener:', err);
       setMyLeads([]);
     }
@@ -460,9 +469,10 @@ export default function CollaboratoreDashboard() {
   );
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 sm:p-6">
-      {/* HEADER */}
-      <motion.header className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+    <div className="overflow-x-hidden w-full">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 sm:p-6">
+        {/* HEADER */}
+        <motion.header className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
         <div className="flex items-center gap-3">
           <img 
             src={profile.photoURL || '/default-avatar.png'} 
@@ -809,6 +819,7 @@ export default function CollaboratoreDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }

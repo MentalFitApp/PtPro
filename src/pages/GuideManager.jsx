@@ -157,10 +157,11 @@ export default function GuideManager() {
   );
 
   return (
-    <div className="p-6 space-y-8">
-      {/* HEADER */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-white">Gestione Guide & Lead</h1>
+    <div className="overflow-x-hidden w-full">
+      <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+        {/* HEADER */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Gestione Guide & Lead</h1>
         <button onClick={() => setShowAddGuide(true)} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
           <Plus size={18} /> Aggiungi Guida
         </button>
@@ -411,6 +412,7 @@ export default function GuideManager() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

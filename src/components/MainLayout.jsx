@@ -194,12 +194,12 @@ export default function MainLayout() {
   }, []);
 
   return (
-    <>
+    <div className="overflow-x-hidden w-full">
       {/* SFONDO STELLATO GLOBALE */}
       <div className="starry-background"></div>
       <AnimatedStars />
 
-      <div className="relative min-h-screen flex">
+      <div className="relative min-h-screen flex w-full">
         {/* SIDEBAR: SOLO SU PAGINE PROTETTE */}
         {showSidebar && (
           <Sidebar 
@@ -245,6 +245,6 @@ export default function MainLayout() {
           display: none;
         }
       `}</style>
-    </>
+    </div>
   );
 }

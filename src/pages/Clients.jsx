@@ -488,7 +488,7 @@ export default function Clients() {
   );
 
   return (
-    <>
+    <div className="overflow-x-hidden w-full">
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
       <ConfirmationModal isOpen={!!clientToDelete} onClose={() => setClientToDelete(null)} onConfirm={handleDelete} clientName={clientToDelete?.name} />
 
@@ -932,6 +932,6 @@ export default function Clients() {
       >
         +
       </button>
-    </>
+    </div>
   );
 }
