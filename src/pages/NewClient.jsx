@@ -62,6 +62,9 @@ export default function NewClient() {
   const [copied, setCopied] = useState(false);
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [useCustomDate, setUseCustomDate] = useState(false);
+  const [isRateizzato, setIsRateizzato] = useState(false);
+  const [rates, setRates] = useState([]);
+  const [newRate, setNewRate] = useState({ amount: '', dueDate: '', paid: false });
   const customStartDate = watch('customStartDate');
 
   // PRECOMPILAZIONE DA COLLABORATORI – AGGIORNATO E CORRETTO
@@ -149,6 +152,9 @@ export default function NewClient() {
 
       const newClientRef = doc(db, 'clients', newUserId);
       const clientData = {
+        ...data,
+        rateizzato: isRateizzato,
+        rate: isRateizzato ? rates : [],
         name: data.name,
         name_lowercase: data.name.toLowerCase(),
         email: data.email.trim(),
@@ -161,7 +167,9 @@ export default function NewClient() {
         isClient: true,
         firstLogin: true,
         tempPassword: tempPassword,
-        isOldClient
+        isOldClient,
+        assignedCoaches: [auth.currentUser.uid],
+        statoPercorso: 'Attivo'
       };
       await setDoc(newClientRef, clientData);
       console.log('Documento cliente creato:', newClientRef.path);
@@ -199,7 +207,7 @@ export default function NewClient() {
   };
 
   const copyToClipboard = () => {
-    const loginLink = "https://MentalFitApp.github.io/PtPro/#/login";
+    const loginLink = `${window.location.origin}${window.location.pathname}#/login`;
     const text = `Ciao ${newClientCredentials.name},\n\nBenvenuto in PT Manager, la tua area personale per monitorare i progressi e comunicare con il tuo coach!\n\nEcco le credenziali per il tuo primo accesso:\n\nLink: ${loginLink}\nEmail: ${newClientCredentials.email}\nPassword Temporanea: ${newClientCredentials.password}\n\nAl primo accesso ti verrà chiesto di impostare una password personale.\nA presto!`;
     
     navigator.clipboard.writeText(text);
@@ -386,6 +394,49 @@ export default function NewClient() {
               </div>
             </div>
           </div>
+          <div className="flex items-center gap-3 mt-2">
+            <label className="font-semibold text-slate-200 text-sm">Rateizzato:</label>
+            <input type="checkbox" checked={isRateizzato} onChange={e => setIsRateizzato(e.target.checked)} />
+          </div>
+          {isRateizzato && (
+            <div className="mt-4 p-4 bg-slate-900/60 rounded-xl border border-slate-700 flex flex-col gap-3">
+              <h3 className="text-lg font-bold text-slate-200 mb-2">Rate iniziali</h3>
+              <table className="w-full text-xs bg-slate-800/60 rounded-xl border border-slate-700 mb-2">
+                <thead>
+                  <tr className="bg-slate-900/50">
+                    <th className="px-2 py-2">Importo</th>
+                    <th className="px-2 py-2">Scadenza</th>
+                    <th className="px-2 py-2">Pagata</th>
+                    <th className="px-2 py-2">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rates.length > 0 ? rates.map((rate, idx) => (
+                    <tr key={idx} className="border-b border-slate-700">
+                      <td className="px-2 py-2">€{rate.amount}</td>
+                      <td className="px-2 py-2">{rate.dueDate ? new Date(rate.dueDate).toLocaleDateString() : '-'}</td>
+                      <td className="px-2 py-2">
+                        <input type="checkbox" checked={rate.paid} onChange={() => {
+                          const updated = rates.map((r, i) => i === idx ? { ...r, paid: !r.paid } : r);
+                          setRates(updated);
+                        }} />
+                      </td>
+                      <td className="px-2 py-2">
+                        <button type="button" onClick={() => setRates(rates.filter((_, i) => i !== idx))} className="text-red-400 px-2">Elimina</button>
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan={4} className="text-center py-2 text-slate-400">Nessuna rata</td></tr>
+                  )}
+                </tbody>
+              </table>
+              <div className="flex gap-2 mt-3">
+                <input type="number" placeholder="Importo (€)" value={newRate.amount} onChange={e => setNewRate({ ...newRate, amount: e.target.value })} className="p-2 rounded bg-slate-700/50 border border-slate-600 text-white" />
+                <input type="date" value={newRate.dueDate} onChange={e => setNewRate({ ...newRate, dueDate: e.target.value })} className="p-2 rounded bg-slate-700/50 border border-slate-600 text-white" />
+                <button type="button" onClick={() => { if (newRate.amount && newRate.dueDate) { setRates([...rates, newRate]); setNewRate({ amount: '', dueDate: '', paid: false }); } }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded">Aggiungi rata</button>
+              </div>
+            </div>
+          )}
           <div className="flex justify-center md:justify-end pt-4 pb-20 md:pb-4">
             <motion.button
               type="submit"

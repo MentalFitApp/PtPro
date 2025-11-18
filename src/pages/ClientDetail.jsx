@@ -294,6 +294,56 @@ const AnamnesiField = ({ label, value }) => (
   </div>
 );
 
+// COMPONENTE TABELLA RATE
+const RateTable = ({ rates, canEdit, onAdd, onUpdate, onDelete }) => {
+  const [newRate, setNewRate] = useState({ amount: '', dueDate: '', paid: false });
+
+  return (
+    <div className="mt-6">
+      <h3 className="text-lg font-bold text-slate-200 mb-2">Rate</h3>
+      <table className="w-full text-xs bg-slate-800/60 rounded-xl border border-slate-700">
+        <thead>
+          <tr className="bg-slate-900/50">
+            <th className="px-2 py-2">Importo</th>
+            <th className="px-2 py-2">Scadenza</th>
+            <th className="px-2 py-2">Pagata</th>
+            {canEdit && <th className="px-2 py-2">Azioni</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {rates && rates.length > 0 ? rates.map((rate, idx) => (
+            <tr key={idx} className="border-b border-slate-700">
+              <td className="px-2 py-2">€{rate.amount}</td>
+              <td className="px-2 py-2">{rate.dueDate ? new Date(rate.dueDate).toLocaleDateString() : '-'}</td>
+              <td className="px-2 py-2">
+                {canEdit ? (
+                  <input type="checkbox" checked={rate.paid} onChange={() => onUpdate(idx, { ...rate, paid: !rate.paid })} />
+                ) : (
+                  <span className={rate.paid ? 'text-green-400' : 'text-red-400'}>{rate.paid ? 'Pagata' : 'Da pagare'}</span>
+                )}
+              </td>
+              {canEdit && (
+                <td className="px-2 py-2">
+                  <button onClick={() => onDelete(idx)} className="text-red-400 px-2">Elimina</button>
+                </td>
+              )}
+            </tr>
+          )) : (
+            <tr><td colSpan={canEdit ? 4 : 3} className="text-center py-2 text-slate-400">Nessuna rata</td></tr>
+          )}
+        </tbody>
+      </table>
+      {canEdit && (
+        <div className="flex gap-2 mt-3">
+          <input type="number" placeholder="Importo (€)" value={newRate.amount} onChange={e => setNewRate({ ...newRate, amount: e.target.value })} className="p-2 rounded bg-slate-700/50 border border-slate-600 text-white" />
+          <input type="date" value={newRate.dueDate} onChange={e => setNewRate({ ...newRate, dueDate: e.target.value })} className="p-2 rounded bg-slate-700/50 border border-slate-600 text-white" />
+          <button onClick={() => { if (newRate.amount && newRate.dueDate) { onAdd(newRate); setNewRate({ amount: '', dueDate: '', paid: false }); } }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded">Aggiungi rata</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function ClientDetail() {
   const { clientId } = useParams();
   const navigate = useNavigate();
@@ -309,6 +359,17 @@ export default function ClientDetail() {
   const [showEdit, setShowEdit] = useState(false);
   const [showExtend, setShowExtend] = useState(false); // NUOVO
   const [zoomPhoto, setZoomPhoto] = useState({ open: false, url: '', alt: '' });
+  const [rates, setRates] = useState([]);
+  const [canEditRates, setCanEditRates] = useState(false);
+  const [isRateizzato, setIsRateizzato] = useState(false);
+
+  // Recupera ruolo utente da localStorage o sessione (adatta se hai un contesto globale)
+  let userRole = null;
+  try {
+    userRole = JSON.parse(localStorage.getItem('user'))?.role || null;
+  } catch {}
+  const isAdmin = userRole === 'admin';
+  const isCoach = userRole === 'coach';
 
   useEffect(() => {
     if (!clientId) {
@@ -415,6 +476,15 @@ export default function ClientDetail() {
     };
   }, [clientId, navigate]);
 
+  useEffect(() => {
+    // Recupera le rate dal documento cliente
+    if (client && client.rate) setRates(client.rate);
+    // Recupera flag rateizzato
+    if (client && typeof client.rateizzato === 'boolean') setIsRateizzato(client.rateizzato);
+    // Permessi: admin/coach possono modificare
+    setCanEditRates(isAdmin || isCoach);
+  }, [client, isAdmin, isCoach]);
+
   const handleDelete = async () => {
     if (window.confirm(`Eliminare ${client?.name}?`)) {
       try {
@@ -454,6 +524,26 @@ export default function ClientDetail() {
     });
   };
 
+  const handleAddRate = async (rate) => {
+    const newRates = [...rates, rate];
+    setRates(newRates);
+    await updateDoc(doc(db, 'clients', client.id), { rate: newRates });
+  };
+  const handleUpdateRate = async (idx, updatedRate) => {
+    const newRates = rates.map((r, i) => i === idx ? updatedRate : r);
+    setRates(newRates);
+    await updateDoc(doc(db, 'clients', client.id), { rate: newRates });
+  };
+  const handleDeleteRate = async (idx) => {
+    const newRates = rates.filter((_, i) => i !== idx);
+    setRates(newRates);
+    await updateDoc(doc(db, 'clients', client.id), { rate: newRates });
+  };
+  const handleRateizzatoChange = async (val) => {
+    setIsRateizzato(val);
+    await updateDoc(doc(db, 'clients', client.id), { rateizzato: val });
+  };
+
   if (loading) return <div className="text-center text-slate-400 p-8">Caricamento...</div>;
   if (error) return <div className="text-center text-red-400 p-8">{error}</div>;
   if (!client) return null;
@@ -488,6 +578,39 @@ export default function ClientDetail() {
             </div>
           </div>
 
+          {/* BOX RATEIZZAZIONE: sempre visibile e modificabile */}
+          <div className="mb-6 p-4 bg-slate-900/60 rounded-xl border border-slate-700 flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <label className="font-semibold text-slate-200 text-sm">Rateizzato:</label>
+              {canEditRates ? (
+                <input type="checkbox" checked={isRateizzato} onChange={e => handleRateizzatoChange(e.target.checked)} />
+              ) : (
+                <span className={isRateizzato ? 'text-green-400' : 'text-red-400'}>{isRateizzato ? 'Sì' : 'No'}</span>
+              )}
+            </div>
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1">
+                <RateTable 
+                  rates={rates} 
+                  canEdit={canEditRates} 
+                  onAdd={handleAddRate} 
+                  onUpdate={handleUpdateRate} 
+                  onDelete={handleDeleteRate} 
+                />
+              </div>
+              <div className="flex flex-col gap-2 min-w-[180px]">
+                <div className="text-sm text-slate-300">Totale rate pagate:</div>
+                <div className="text-lg font-bold text-emerald-400">
+                  €{rates.filter(r => r.paid).reduce((sum, r) => sum + Number(r.amount || 0), 0)}
+                </div>
+                <div className="text-sm text-slate-300 mt-4">Totale da pagare:</div>
+                <div className="text-lg font-bold text-rose-400">
+                  €{rates.reduce((sum, r) => sum + Number(r.amount || 0), 0)}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Tabs */}
           <div className="flex flex-wrap gap-2 mb-6 bg-slate-900/50 p-1 rounded-lg border border-slate-700">
             {['info', 'check', 'payments', 'anamnesi'].map(tab => (
@@ -501,7 +624,7 @@ export default function ClientDetail() {
             ))}
           </div>
 
-          {/* === INFO === */}
+          {/* === CHECK === */}
           {activeTab === 'info' && (
             <div className="space-y-4">
               <div className="flex items-center gap-3"><User className="text-slate-400" size={18} /><p>Nome: <span className="font-semibold">{client.name}</span></p></div>
@@ -517,12 +640,19 @@ export default function ClientDetail() {
               <div className="flex items-center gap-3"><Phone className="text-slate-400" size={18} /><p>Telefono: <span className="font-semibold">{client.phone || 'N/D'}</span></p></div>
               <div className="flex items-center gap-3"><Calendar className="text-slate-400" size={18} /><p>Scadenza: <span className="font-semibold">{toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}</span></p></div>
               <div className="flex items-center gap-3"><DollarSign className="text-slate-400" size={18} /><p>Stato: <PathStatusBadge status={client.statoPercorso} /></p></div>
+              {/* Casella rateizzazione modificabile */}
+              <div className="flex items-center gap-3 mt-2">
+                <label className="font-semibold text-slate-200 text-sm">Rateizzato:</label>
+                {canEditRates ? (
+                  <input type="checkbox" checked={isRateizzato} onChange={e => handleRateizzatoChange(e.target.checked)} />
+                ) : (
+                  <span className={isRateizzato ? 'text-green-400' : 'text-red-400'}>{isRateizzato ? 'Sì' : 'No'}</span>
+                )}
+              </div>
             </div>
           )}
-
-          {/* === CHECK === */}
           {activeTab === 'check' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {checks.length > 0 ? checks.map(check => (
                 <div key={check.id} className="p-5 bg-slate-700/50 rounded-xl border border-slate-600">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
@@ -530,7 +660,6 @@ export default function ClientDetail() {
                     <p className="text-sm text-slate-300">Peso: <span className="font-semibold">{check.weight || 'N/D'} kg</span></p>
                   </div>
                   {check.notes && <p className="text-sm text-slate-400 mb-4 italic">"{check.notes}"</p>}
-                  
                   {check.photoURLs && Object.values(check.photoURLs).some(Boolean) && (
                     <div>
                       <p className="text-xs text-slate-400 mb-3">Foto:</p>
@@ -662,6 +791,19 @@ export default function ClientDetail() {
               ) : (
                 <p className="text-center text-slate-400 py-8">Nessuna anamnesi compilata.</p>
               )}
+            </div>
+          )}
+
+          {/* === RATE === */}
+          {activeTab === 'rates' && (
+            <div className="space-y-4">
+              <RateTable 
+                rates={rates} 
+                canEdit={canEditRates} 
+                onAdd={handleAddRate} 
+                onUpdate={handleUpdateRate} 
+                onDelete={handleDeleteRate} 
+              />
             </div>
           )}
         </div>

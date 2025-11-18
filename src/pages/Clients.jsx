@@ -589,7 +589,7 @@ export default function Clients() {
 
             <div className="grid grid-cols-7 gap-1 md:gap-3 text-center text-xs md:text-sm">
               {['D', 'L', 'M', 'M', 'G', 'V', 'S'].map((d, i) => (
-                <div key={d} className="font-bold text-slate-400 py-2">
+                <div key={d + '-' + i} className="font-bold text-slate-400 py-2">
                   <span className="md:hidden">{d}</span>
                   <span className="hidden md:inline">{['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][i]}</span>
                 </div>
