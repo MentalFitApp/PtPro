@@ -69,36 +69,51 @@ export default function NotificationPanel({ userType = 'client' }) {
 
   const enableNotifications = async () => {
     try {
+      console.log('🔔 Richiesta permessi notifica...');
       const permission = await Notification.requestPermission();
+      console.log('✅ Permesso notifica:', permission);
+      
       if (permission === 'granted') {
         setIsNotificationsEnabled(true);
         
         try {
+          console.log('📱 Ottenendo token FCM...');
           // Salva il token FCM su Firestore
           const messaging = getMessaging();
+          console.log('Messaging instance:', messaging ? 'OK' : 'NULL');
+          
           const token = await getToken(messaging, {
             vapidKey: 'BKagOny0KQcd-p9DC2P4pDlZ3Owv1L-n6bqqQWTUl_G2aS9qLJMIvZo3aDlN6hG1IqJeM5HJqVxD4Cc5sqUZqAU'
           });
           
           if (token) {
-            console.log('Token FCM ottenuto:', token);
+            console.log('✅ Token FCM ottenuto:', token);
+            console.log('💾 Salvando token su Firestore...');
             // Usa setDoc con merge per creare/aggiornare il documento
             await setDoc(doc(db, 'fcmTokens', auth.currentUser.uid), {
               token,
               userType,
               updatedAt: serverTimestamp()
             }, { merge: true });
-            console.log('Token salvato su Firestore');
+            console.log('✅ Token salvato su Firestore con successo!');
+            alert('✅ Notifiche attivate con successo! Token: ' + token.substring(0, 20) + '...');
           } else {
-            console.log('Nessun token FCM ottenuto');
+            console.warn('⚠️ Nessun token FCM ottenuto');
+            alert('⚠️ Notifiche browser attive, ma FCM token non disponibile');
           }
         } catch (fcmError) {
-          console.error('Errore FCM token:', fcmError);
+          console.error('❌ Errore FCM token:', fcmError);
+          console.error('Dettagli errore:', fcmError.code, fcmError.message);
+          alert('❌ Errore FCM: ' + fcmError.message);
           // Le notifiche browser funzionano comunque anche senza FCM
         }
+      } else {
+        console.warn('⚠️ Permesso notifica negato');
+        alert('⚠️ Permesso notifica negato');
       }
     } catch (error) {
-      console.error('Errore attivazione notifiche:', error);
+      console.error('❌ Errore attivazione notifiche:', error);
+      alert('❌ Errore: ' + error.message);
     }
   };
 

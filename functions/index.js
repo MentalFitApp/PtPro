@@ -39,21 +39,29 @@ exports.sendPushNotification = onDocumentCreated('notifications/{notificationId}
   const notificationId = event.params.notificationId;
   const { userId, userType, title, body } = notification;
 
-  console.log('Nuova notifica creata per:', userId, userType);
+  console.log('🔔 TRIGGER: Nuova notifica creata');
+  console.log('📋 Notification ID:', notificationId);
+  console.log('👤 User ID:', userId);
+  console.log('🏷️ User Type:', userType);
+  console.log('📝 Title:', title);
+  console.log('💬 Body:', body);
 
   try {
     // Recupera il token FCM dell'utente
+    console.log('🔍 Cercando token FCM per userId:', userId);
     const tokenDoc = await db.collection('fcmTokens').doc(userId).get();
     
     if (!tokenDoc.exists) {
-      console.log('Nessun token FCM trovato per:', userId);
+      console.warn('⚠️ Nessun token FCM trovato per:', userId);
+      console.log('📂 Documenti disponibili in fcmTokens:', (await db.collection('fcmTokens').get()).size);
       return null;
     }
 
     const fcmToken = tokenDoc.data().token;
+    console.log('✅ Token FCM recuperato:', fcmToken ? fcmToken.substring(0, 20) + '...' : 'NULL');
     
     if (!fcmToken) {
-      console.log('Token FCM vuoto per:', userId);
+      console.warn('⚠️ Token FCM vuoto per:', userId);
       return null;
     }
 
@@ -84,18 +92,22 @@ exports.sendPushNotification = onDocumentCreated('notifications/{notificationId}
       }
     };
 
+    console.log('📤 Inviando messaggio FCM...');
     // Invia il messaggio
     const response = await admin.messaging().send(message);
-    console.log('Notifica push inviata con successo:', response);
+    console.log('✅ Notifica push inviata con successo!');
+    console.log('📊 Response:', response);
     
     return response;
   } catch (error) {
-    console.error('Errore invio notifica push:', error);
+    console.error('❌ ERRORE invio notifica push:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
     
     // Se il token è invalido/scaduto, rimuovilo
     if (error.code === 'messaging/invalid-registration-token' || 
         error.code === 'messaging/registration-token-not-registered') {
-      console.log('Token non valido, rimozione...');
+      console.log('🗑️ Token non valido, rimozione...');
       await db.collection('fcmTokens').doc(userId).delete();
     }
     
