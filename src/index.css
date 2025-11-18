@@ -6,12 +6,31 @@
    BASE STYLES
    ======================================== */
 @layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
   body {
     @apply bg-slate-900 text-slate-200 font-sans;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+    max-width: 100vw;
     min-height: 100vh;
+  }
+
+  /* Prevenzione overflow su tutti gli elementi principali */
+  #root,
+  #root > * {
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }
 
@@ -171,4 +190,48 @@
   mask-composite: exclude;
   -webkit-mask-composite: destination-out;
   filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.3));
+}
+
+/* ========================================
+   MOBILE LAYOUT FIX
+   ======================================== */
+@layer utilities {
+  .mobile-container {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    padding-left: 0.75rem; /* 12px */
+    padding-right: 0.75rem; /* 12px */
+  }
+
+  @media (min-width: 640px) {
+    .mobile-container {
+      padding-left: 1.5rem; /* 24px */
+      padding-right: 1.5rem; /* 24px */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .mobile-container {
+      padding-left: 2rem; /* 32px */
+      padding-right: 2rem; /* 32px */
+      max-width: 1280px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+
+  .mobile-card {
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+    border-radius: 0;
+  }
+
+  @media (min-width: 640px) {
+    .mobile-card {
+      margin-left: 0;
+      margin-right: 0;
+      border-radius: 1rem;
+    }
+  }
 }
