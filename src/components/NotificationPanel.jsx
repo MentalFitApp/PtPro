@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, setDoc } from 'firebase/firestore';
 import { getMessaging, getToken } from 'firebase/messaging';
 import { Bell, BellOff, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,6 +10,8 @@ export default function NotificationPanel({ userType = 'client' }) {
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const audioRef = useRef(null);
+  const previousCountRef = useRef(0);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -18,22 +20,52 @@ export default function NotificationPanel({ userType = 'client' }) {
     const permission = Notification.permission;
     setIsNotificationsEnabled(permission === 'granted');
 
-    // Ascolta le notifiche dell'utente
+    // Ascolta le notifiche dell'utente (SENZA orderBy per evitare indice composito)
     const q = query(
       collection(db, 'notifications'),
       where('userId', '==', auth.currentUser.uid),
-      where('userType', '==', userType),
-      orderBy('sentAt', 'desc')
+      where('userType', '==', userType)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notifs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const notifs = snapshot.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const aTime = a.sentAt?.toMillis ? a.sentAt.toMillis() : 0;
+          const bTime = b.sentAt?.toMillis ? b.sentAt.toMillis() : 0;
+          return bTime - aTime;
+        });
+      
+      const newUnreadCount = notifs.filter(n => !n.read).length;
+      
+      // Suona e mostra notifica browser se ci sono nuove notifiche
+      if (newUnreadCount > previousCountRef.current && previousCountRef.current > 0) {
+        playNotificationSound();
+        
+        // Mostra notifica browser
+        if (permission === 'granted' && notifs[0]) {
+          new Notification(notifs[0].title || 'Nuova notifica', {
+            body: notifs[0].body || '',
+            icon: '/PtPro/logo192.png',
+            badge: '/PtPro/logo192.png',
+            tag: 'notification-' + notifs[0].id
+          });
+        }
+      }
+      
+      previousCountRef.current = newUnreadCount;
       setNotifications(notifs);
-      setUnreadCount(notifs.filter(n => !n.read).length);
+      setUnreadCount(newUnreadCount);
     });
 
     return () => unsubscribe();
   }, [userType]);
+
+  const playNotificationSound = () => {
+    if (audioRef.current) {
+      audioRef.current.play().catch(err => console.log('Audio play error:', err));
+    }
+  };
 
   const enableNotifications = async () => {
     try {
@@ -48,10 +80,12 @@ export default function NotificationPanel({ userType = 'client' }) {
         });
         
         if (token) {
-          await updateDoc(doc(db, 'fcmTokens', auth.currentUser.uid), {
+          // Usa setDoc con merge per creare/aggiornare il documento
+          await setDoc(doc(db, 'fcmTokens', auth.currentUser.uid), {
             token,
-            updatedAt: new Date()
-          });
+            userType,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
         }
       }
     } catch (error) {
@@ -184,6 +218,9 @@ export default function NotificationPanel({ userType = 'client' }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Audio Element per suono notifica */}
+      <audio ref={audioRef} src="/PtPro/mixkit-long-pop-2358.wav" preload="auto" />
     </div>
   );
 }
