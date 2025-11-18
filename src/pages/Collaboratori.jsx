@@ -532,11 +532,11 @@ export default function Collaboratori() {
   if (!isAdmin) return null;
 
   return (
-    <div className="overflow-x-hidden w-full">
-      <div className="w-full py-4 sm:py-6 space-y-4 sm:space-y-6">
+    <div className="mobile-container">
+      <div className="py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* HEADER */}
-        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full mx-3 sm:mx-6">
+        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full min-w-0">
           <h1 className="text-2xl font-bold text-slate-50 flex items-center gap-2">
             <Users size={24} /> Gestione
           </h1>
