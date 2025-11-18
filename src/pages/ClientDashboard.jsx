@@ -14,7 +14,7 @@ const LoadingSpinner = () => (
 );
 
 const DashboardCard = ({ title, value, subtext, icon, variants }) => (
-  <motion.div variants={variants} className="bg-slate-800/60 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-slate-700 p-4 sm:p-6">
+  <motion.div variants={variants} className="bg-slate-800 rounded-xl sm:rounded-2xl border border-slate-700 p-4 sm:p-6 shadow-lg">
     <div className="flex items-center justify-between">
       <h3 className="text-sm sm:text-lg font-semibold text-slate-300">{title}</h3>
       <div className="text-cyan-300">{icon}</div>
@@ -26,7 +26,7 @@ const DashboardCard = ({ title, value, subtext, icon, variants }) => (
 
 const ActionLink = ({ to, title, description, icon, variants }) => (
   <motion.div variants={variants}>
-    <Link to={to} className="group bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg p-3 sm:p-4 flex items-center gap-3 sm:gap-4 transition-all duration-300">
+    <Link to={to} className="group bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg p-3 sm:p-4 flex items-center gap-3 sm:gap-4 transition-all duration-200">
       <div className="bg-slate-700 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-white p-2 sm:p-3 rounded-lg transition-colors duration-300 flex-shrink-0">
         {icon}
       </div>
@@ -47,6 +47,7 @@ const ClientDashboard = () => {
   const [showPWAInstall, setShowPWAInstall] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [disableAnimations, setDisableAnimations] = useState(false);
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
@@ -66,6 +67,7 @@ const ClientDashboard = () => {
     const android = /Android/.test(ua);
     setIsIOS(ios);
     setIsAndroid(android);
+    setDisableAnimations(ios); // Disabilita animazioni su iOS
 
     // Mostra pulsante solo su mobile
     if ((ios || android) && !window.matchMedia('(display-mode: standalone)').matches) {
@@ -197,19 +199,19 @@ const ClientDashboard = () => {
     nextCheckSubtext = `Prossimo check suggerito: ${nextCheckDate.toLocaleDateString('it-IT')}`;
   }
 
-  const containerVariants = {
+  const containerVariants = disableAnimations ? {} : {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+    visible: { opacity: 1, transition: { duration: 0.3, staggerChildren: 0.05 } },
   };
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 },
+  const itemVariants = disableAnimations ? {} : {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.2 } },
   };
 
   return (
-    <div className="min-h-screen text-slate-200 relative w-full overflow-hidden">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-200 w-full" style={{ WebkitOverflowScrolling: 'touch', transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}>
+      <motion.div initial={disableAnimations ? false : "hidden"} animate={disableAnimations ? false : "visible"} variants={containerVariants} className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
         <motion.header variants={itemVariants} className="flex flex-col gap-4 mb-6 sm:mb-8">
           <div className="flex items-center justify-between w-full">
             <NotificationPanel userType="client" />
@@ -279,7 +281,7 @@ const ClientDashboard = () => {
             />
           </div>
           
-          <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-slate-700 p-4 sm:p-6">
+          <motion.div variants={itemVariants} className="bg-slate-800 rounded-xl sm:rounded-2xl border border-slate-700 p-4 sm:p-6 shadow-lg">
             <h3 className="text-xl sm:text-2xl font-bold mb-4 text-white">Cosa vuoi fare?</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <ActionLink to="/client/anamnesi" title="La mia Anamnesi" description="Visualizza o aggiorna i tuoi dati" icon={<User size={22} />} variants={itemVariants}/>
