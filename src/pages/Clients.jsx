@@ -286,19 +286,21 @@ export default function Clients() {
         });
         setAnamnesiStatus(anamnesiStatusTemp);
 
-        // Calcolo totale pagamenti per cliente dalla subcollection `payments`
-        const paymentsPromises = clientList.map(async (client) => {
+        // Calcolo totale incasso dalle rate pagate (campo rate)
+        const ratePromises = clientList.map(async (client) => {
           try {
-            const snapPayments = await getDocs(collection(db, 'clients', client.id, 'payments'));
-            const sum = snapPayments.docs.reduce((acc, d) => acc + (d.data().amount || 0), 0);
+            const docSnap = await getDoc(doc(db, 'clients', client.id));
+            const data = docSnap.data();
+            const rateArr = Array.isArray(data?.rate) ? data.rate : [];
+            const sum = rateArr.filter(r => r.paid).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
             return { id: client.id, sum };
           } catch (e) {
             return { id: client.id, sum: 0 };
           }
         });
-        const paymentsResults = await Promise.all(paymentsPromises);
+        const rateResults = await Promise.all(ratePromises);
         const paymentsTotalsTemp = {};
-        paymentsResults.forEach(({ id, sum }) => { paymentsTotalsTemp[id] = sum; });
+        rateResults.forEach(({ id, sum }) => { paymentsTotalsTemp[id] = sum; });
         setPaymentsTotals(paymentsTotalsTemp);
 
         clientList.forEach(client => updateStatoPercorso(client.id));
