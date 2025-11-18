@@ -16,8 +16,8 @@ export default function NotificationPanel({ userType = 'client' }) {
   useEffect(() => {
     if (!auth.currentUser) return;
 
-    // Verifica se le notifiche sono attive
-    const permission = Notification.permission;
+    // Verifica se le notifiche sono attive (solo se supportate dal browser)
+    const permission = typeof Notification !== 'undefined' ? Notification.permission : 'denied';
     setIsNotificationsEnabled(permission === 'granted');
 
     // Ascolta le notifiche dell'utente (SENZA orderBy per evitare indice composito)
@@ -42,8 +42,8 @@ export default function NotificationPanel({ userType = 'client' }) {
       if (newUnreadCount > previousCountRef.current && previousCountRef.current > 0) {
         playNotificationSound();
         
-        // Mostra notifica browser
-        if (permission === 'granted' && notifs[0]) {
+        // Mostra notifica browser (solo se API Notification supportata)
+        if (typeof Notification !== 'undefined' && permission === 'granted' && notifs[0]) {
           new Notification(notifs[0].title || 'Nuova notifica', {
             body: notifs[0].body || '',
             icon: '/PtPro/logo192.png',
@@ -69,6 +69,13 @@ export default function NotificationPanel({ userType = 'client' }) {
 
   const enableNotifications = async () => {
     try {
+      // Verifica supporto API Notification
+      if (typeof Notification === 'undefined') {
+        alert('⚠️ Le notifiche browser non sono supportate su questo dispositivo. Riceverai comunque le notifiche in-app!');
+        setIsNotificationsEnabled(true); // Attiva pannello notifiche in-app comunque
+        return;
+      }
+
       console.log('🔔 Richiesta permessi notifica...');
       const permission = await Notification.requestPermission();
       console.log('✅ Permesso notifica:', permission);
