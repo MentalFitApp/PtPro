@@ -75,7 +75,7 @@ const Calendar = ({ reports = [], collaboratori = [], onDateClick }) => {
 
       <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center">
         {['D', 'L', 'M', 'M', 'G', 'V', 'S'].map((day, i) => (
-          <div key={day + i} className="text-[10px] sm:text-xs font-semibold text-slate-400 py-1 sm:py-2">
+          <div key={`day-header-${i}`} className="text-[10px] sm:text-xs font-semibold text-slate-400 py-1 sm:py-2">
             <span className="sm:hidden">{day}</span>
             <span className="hidden sm:inline">{['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][i]}</span>
           </div>

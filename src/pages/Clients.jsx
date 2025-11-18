@@ -673,13 +673,15 @@ export default function Clients() {
                       </div>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => navigate(`/edit/${c.id}`)}
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/edit/${c.id}`); }}
                           className="p-2 text-amber-400 hover:bg-white/10 rounded-lg transition-all"
                         >
                           <FilePenLine size={16}/>
                         </button>
                         <button
-                          onClick={() => setClientToDelete(c)}
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setClientToDelete(c); }}
                           className="p-2 text-red-400 hover:bg-white/10 rounded-lg transition-all"
                         >
                           <Trash2 size={16}/>
@@ -783,10 +785,10 @@ export default function Clients() {
                         <td className="p-2 md:p-4 min-w-[120px] md:min-w-[160px]"><AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} /></td>
                         <td className="p-2 md:p-4 text-right min-w-[100px] md:min-w-[120px]">
                           <div className="flex items-center gap-0.5 md:gap-1 justify-end">
-                            <button onClick={() => navigate(`/edit/${c.id}`)} className="p-1 md:p-2 text-slate-400 hover:text-amber-400 hover:bg-white/10 rounded-lg transition-all" title="Modifica">
+                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/edit/${c.id}`); }} className="p-1 md:p-2 text-slate-400 hover:text-amber-400 hover:bg-white/10 rounded-lg transition-all" title="Modifica">
                               <FilePenLine size={14} className="md:hidden"/><FilePenLine size={16} className="hidden md:block"/>
                             </button>
-                            <button onClick={() => setClientToDelete(c)} className="p-1 md:p-2 text-slate-400 hover:text-red-400 hover:bg-white/10 rounded-lg transition-all" title="Elimina">
+                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setClientToDelete(c); }} className="p-1 md:p-2 text-slate-400 hover:text-red-400 hover:bg-white/10 rounded-lg transition-all" title="Elimina">
                               <Trash2 size={14} className="md:hidden"/><Trash2 size={16} className="hidden md:block"/>
                             </button>
                           </div>
@@ -825,8 +827,8 @@ export default function Clients() {
                       <p className="text-xs text-slate-500">{c.phone || 'N/D'}</p>
                     </div>
                     <div className="flex gap-1">
-                      <button onClick={() => navigate(`/client/${c.id}`)} className="text-xs text-cyan-400 hover:text-cyan-300">Dettagli</button>
-                      <button onClick={() => setClientToDelete(c)} className="text-xs text-red-400 hover:text-red-300">Elimina</button>
+                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/client/${c.id}`); }} className="text-xs text-cyan-400 hover:text-cyan-300">Dettagli</button>
+                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setClientToDelete(c); }} className="text-xs text-red-400 hover:text-red-300">Elimina</button>
                     </div>
                   </div>
 
@@ -851,7 +853,7 @@ export default function Clients() {
                   <div className="mt-4 pt-3 border-t border-white/10"><AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} /></div>
 
                   <div className="mt-4 flex gap-2">
-                    <button onClick={() => navigate(`/edit/${c.id}`)} className="flex-1 py-2 bg-rose-600 text-white text-xs rounded-lg hover:bg-rose-700 transition font-medium">
+                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/edit/${c.id}`); }} className="flex-1 py-2 bg-rose-600 text-white text-xs rounded-lg hover:bg-rose-700 transition font-medium">
                       Modifica
                     </button>
                   </div>

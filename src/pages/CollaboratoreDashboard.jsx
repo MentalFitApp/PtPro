@@ -512,6 +512,7 @@ export default function CollaboratoreDashboard() {
 
   return (
     <div className="overflow-x-hidden w-full">
+      <div className="max-w-7xl mx-auto">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 sm:p-6">
         {/* HEADER */}
         <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 w-full">
@@ -880,6 +881,7 @@ export default function CollaboratoreDashboard() {
         )}
       </AnimatePresence>
       </motion.div>
+      </div>
     </div>
   );
 }

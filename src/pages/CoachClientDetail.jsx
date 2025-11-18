@@ -289,6 +289,8 @@ export default function CoachClientDetail() {
 
   return (
     <ErrorBoundary>
+      <div className="overflow-x-hidden w-full">
+        <div className="max-w-7xl mx-auto">
       <motion.div initial="hidden" animate="visible" variants={containerVariants} className="min-h-screen p-4 sm:p-8">
         <motion.header variants={itemVariants} className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2">
@@ -398,6 +400,8 @@ export default function CoachClientDetail() {
 
         <ImageModal src={selectedImage} onClose={() => setSelectedImage(null)} />
       </motion.div>
+        </div>
+      </div>
     </ErrorBoundary>
   );
 }

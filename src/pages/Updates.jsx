@@ -134,16 +134,17 @@ export default function Updates() {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto">
       <motion.h1 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="text-3xl font-bold mb-6 text-slate-50"
+        className="text-2xl sm:text-3xl font-bold mb-6 text-slate-50"
       >
         Ultimi Aggiornamenti
       </motion.h1>
       <motion.div 
-        className="flex flex-col md:flex-row gap-6"
+        className="flex flex-col md:flex-row gap-4 sm:gap-6"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -152,6 +153,7 @@ export default function Updates() {
         <UpdateColumn title="Nuovi Check" icon={<CheckSquare className="text-emerald-400" />} items={filteredNewChecks} navigate={navigate} tab="checks" onDismiss={handleDismiss} />
         <UpdateColumn title="Nuove Anamnesi" icon={<FileText className="text-amber-400" />} items={filteredNewAnamnesis} navigate={navigate} tab="anamnesi" onDismiss={handleDismiss} />
       </motion.div>
+      </div>
     </div>
   );
 }

@@ -308,7 +308,8 @@ export default function CoachDashboard() {
   </div>;
 
   return (
-    <div className="min-h-screen text-slate-200 p-4 sm:p-8 relative">
+    <div className="min-h-screen text-slate-200 p-4 sm:p-8 relative overflow-x-hidden">
+      <div className="max-w-7xl mx-auto">
       <motion.div initial="hidden" animate="visible" variants={containerVariants}>
         <motion.header variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
