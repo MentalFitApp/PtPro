@@ -371,6 +371,7 @@ export default function CoachDashboard() {
           </motion.div>
         </main>
       </motion.div>
+      </div>
     </div>
   );
 }
