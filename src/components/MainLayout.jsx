@@ -233,18 +233,18 @@ export default function MainLayout() {
           {/* BOTTOM NAV: SOLO SU MOBILE */}
           {showBottomNav && <BottomNav isCoach={isCoach} isCollaboratore={isCollaboratore} />}
         </div>
-      </div>
 
-      {/* SCROLLBAR NASCOSTA */}
-      <style>{`
-        .scrollbar-hidden {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hidden::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
+        {/* SCROLLBAR NASCOSTA */}
+        <style>{`
+          .scrollbar-hidden {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .scrollbar-hidden::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
+      </div>
     </div>
   );
 }
