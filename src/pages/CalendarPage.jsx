@@ -360,11 +360,11 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+    <div className="mobile-container py-4 sm:py-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 min-w-0">
         <h1 className="text-3xl font-bold text-slate-50">Calendario</h1>
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-4 flex-wrap min-w-0">
           {/* Switch vista (anche mobile) */}
           <div className="flex items-center bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden text-xs sm:text-sm">
             <button onClick={() => setView('month')} className={`px-3 py-1.5 ${view==='month'?'bg-slate-700 text-white':'text-slate-300 hover:text-white'}`}>Mese</button>
@@ -393,14 +393,14 @@ export default function CalendarPage() {
               </>
             )}
           </motion.button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={handlePrev}
               className="p-2 bg-slate-700/50 hover:bg-slate-700/70 text-slate-200 rounded-lg border border-slate-600"
             >
               <ChevronLeft size={20} />
             </button>
-            <span className="text-xl font-semibold text-slate-200 min-w-[200px] text-center capitalize">
+            <span className="flex-1 min-w-0 text-sm sm:text-xl font-semibold text-slate-200 text-center capitalize truncate">
               {view === 'month' ? monthYear : view === 'week' ? weekTitle : dayTitle}
             </span>
             <button
@@ -446,7 +446,7 @@ export default function CalendarPage() {
         {/* Intestazione giorni settimana */}
         <div className="grid grid-cols-7 gap-2 mb-4">
           {['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'].map(day => (
-            <div key={day} className="text-center text-slate-400 font-semibold text-sm py-2">
+            <div key={day} className="text-center text-slate-400 font-semibold text-[11px] sm:text-sm py-2">
               {day}
             </div>
           ))}
@@ -463,7 +463,7 @@ export default function CalendarPage() {
               <motion.div
                 key={index}
                 whileHover={day ? { scale: 1.02 } : {}}
-                className={`min-h-[80px] sm:min-h-[100px] p-2 rounded-lg border transition-colors ${
+                className={`min-h-[80px] sm:min-h-[100px] p-2 rounded-lg border transition-colors min-w-0 ${
                   day
                     ? isToday
                       ? 'bg-rose-900/30 border-rose-500/50 cursor-pointer hover:bg-rose-900/40'
@@ -516,16 +516,16 @@ export default function CalendarPage() {
       {/* Calendario - Vista Settimana */}
       {view === 'week' && (
         <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-slate-700">
-          <div className="grid grid-cols-7 gap-3">
+          <div className="grid grid-cols-7 gap-2 sm:gap-3">
             {weekDates.map((d, idx) => {
               const dateStr = formatISO(d);
               const dayEvents = getEventsForDateObj(d);
               const isToday = dateStr === todayStr;
               return (
-                <div key={idx} className={`p-3 rounded-lg border ${isToday ? 'bg-rose-900/30 border-rose-500/50' : 'bg-slate-700/50 border-slate-600'}`}>
+                <div key={idx} className={`p-2 sm:p-3 rounded-lg border ${isToday ? 'bg-rose-900/30 border-rose-500/50' : 'bg-slate-700/50 border-slate-600'}`}>
                   <div className="flex items-baseline justify-between mb-2">
-                    <div className="text-sm font-semibold text-slate-200 capitalize">{d.toLocaleDateString('it-IT', { weekday: 'short' })}</div>
-                    <div className={`text-sm font-bold ${isToday ? 'text-rose-300' : 'text-slate-100'}`}>{d.getDate()}</div>
+                    <div className="text-[11px] sm:text-sm font-semibold text-slate-200 capitalize">{d.toLocaleDateString('it-IT', { weekday: 'short' })}</div>
+                    <div className={`text-[11px] sm:text-sm font-bold ${isToday ? 'text-rose-300' : 'text-slate-100'}`}>{d.getDate()}</div>
                   </div>
                   <div className="space-y-2">
                     {dayEvents.length === 0 ? (
@@ -1032,7 +1032,7 @@ export default function CalendarPage() {
                         <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.showUp} onChange={(e)=>setLeadForm({...leadForm, showUp: e.target.checked})} /> Show Up</label>
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.chiuso} onChange={(e)=>setLeadForm({...leadForm, chiuso: e.target.checked})} /> Chiuso</label>
                       <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.riprenotato} onChange={(e)=>setLeadForm({...leadForm, riprenotato: e.target.checked})} /> Riprenotato</label>
                       <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.settingCall} onChange={(e)=>setLeadForm({...leadForm, settingCall: e.target.checked})} /> Setting Call</label>

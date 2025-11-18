@@ -492,7 +492,7 @@ export default function Clients() {
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
       <ConfirmationModal isOpen={!!clientToDelete} onClose={() => setClientToDelete(null)} onConfirm={handleDelete} clientName={clientToDelete?.name} />
 
-      <div className="w-full py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 md:pb-8">
+      <div className="mobile-container py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 md:pb-8">
         {/* HEADER MOBILE */}
         <div className="md:hidden bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-4 mx-3">
           <h1 className="text-2xl font-bold text-slate-100 mb-4">Clienti</h1>
@@ -689,7 +689,7 @@ export default function Clients() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mb-3">
                       <div>
                         <span className="text-slate-500">Inizio:</span>
                         <p className="text-slate-300 font-medium">{toDate(c.startDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>

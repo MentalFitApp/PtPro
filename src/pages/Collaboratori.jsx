@@ -594,13 +594,13 @@ export default function Collaboratori() {
         <ReportStatus collaboratori={collaboratori} />
 
         {/* 3 TABS LEADS */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6 mx-3 sm:mx-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6 mx-3 sm:mx-6">
           {[
             { label: 'Oggi', leads: stats.leadsToday },
             { label: 'Settimana', leads: stats.leadsWeek },
             { label: 'Mese', leads: stats.leadsMonth },
           ].map((stat, i) => (
-            <motion.div key={i} className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
+            <motion.div key={i} className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700 min-w-0">
               <h3 className="text-[10px] sm:text-sm font-semibold text-slate-200">{stat.label}</h3>
               <p className="text-xl sm:text-3xl font-bold text-green-500 mt-0.5 sm:mt-1">{stat.leads}</p>
               <p className="text-[9px] sm:text-xs text-slate-400">Leads</p>

@@ -556,11 +556,11 @@ export default function CollaboratoreDashboard() {
         {/* CHIAMATE GIORNALIERE */}
         <div>
           <h3 className="text-xs sm:text-sm font-semibold text-slate-400 mb-2">Chiamate giornaliere</h3>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
             {todayCalls.map((s, i) => (
               <motion.div 
                 key={i} 
-                className="bg-slate-800/70 p-2 sm:p-3 rounded-lg border border-white/10 text-center"
+                className="bg-slate-800/70 p-2 sm:p-3 rounded-lg border border-white/10 text-center min-w-0"
                 whileHover={{ scale: 1.05 }}
               >
                 <img 
