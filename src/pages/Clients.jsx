@@ -621,7 +621,7 @@ export default function Clients() {
           </div>
 
           {/* Action Buttons Mobile */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 mb-3">
             <button onClick={() => navigate("/new-client")} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors">
               <UserPlus size={16} /> Nuovo
             </button>
@@ -630,8 +630,24 @@ export default function Clients() {
             </button>
           </div>
 
+          {/* View Toggle Mobile */}
+          <div className="flex items-center justify-center gap-1 bg-slate-700/50 border border-slate-600 rounded-lg p-1 mb-3">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-md transition-colors text-xs ${viewMode === 'list' ? 'bg-rose-600 text-white' : 'text-slate-400'}`}
+            >
+              <List size={14} /> Lista
+            </button>
+            <button
+              onClick={() => setViewMode('card')}
+              className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-md transition-colors text-xs ${viewMode === 'card' ? 'bg-rose-600 text-white' : 'text-slate-400'}`}
+            >
+              <LayoutGrid size={14} /> Schede
+            </button>
+          </div>
+
           {/* Filter Chips Mobile */}
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-2 scrollbar-hidden">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hidden">
             <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors ${filter === 'all' ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-300'}`}>Tutti</button>
             <button onClick={() => setFilter('active')} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${filter === 'active' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-emerald-400'}`}><CheckCircle size={12} /> Attivi</button>
             <button onClick={() => setFilter('expiring')} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${filter === 'expiring' ? 'bg-amber-600 text-white' : 'bg-slate-700 text-amber-400'}`}><Clock size={12} /> Scadenza</button>
@@ -690,7 +706,7 @@ export default function Clients() {
         </div>
 
         {/* TOGGLE CALENDARIO MOBILE */}
-        <div className="md:hidden">
+        <div className="md:hidden mx-3">
           <button
             onClick={() => setShowCalendar(!showCalendar)}
             className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${

@@ -556,19 +556,19 @@ export default function Dashboard() {
             <StatCard title="Retention Rate" value={retentionRate} icon={<RefreshCw className="text-amber-500"/>} isPercentage={true} />
           </div>
 
-          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-6 border border-slate-700 shadow-xl mobile-chart-container flex flex-col">
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-6 border border-slate-700 shadow-xl">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 sm:mb-4">
               <h2 className="text-base sm:text-lg font-semibold text-slate-100 flex items-center gap-2"><BarChart3 size={18} className="sm:w-5 sm:h-5" /> Andamento Business</h2>
-              <div className="flex gap-1 sm:gap-2 bg-slate-800/40 backdrop-blur-xl border border-white/10 p-0.5 sm:p-1 rounded-lg overflow-x-auto">
+              <div className="flex gap-1 sm:gap-2 bg-slate-800/40 backdrop-blur-xl border border-white/10 p-0.5 sm:p-1 rounded-lg overflow-x-auto shrink-0">
                 <button onClick={() => setChartDataType('revenue')} className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md transition whitespace-nowrap ${chartDataType === 'revenue' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Fatturato</button>
                 <button onClick={() => setChartDataType('clients')} className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md transition whitespace-nowrap ${chartDataType === 'clients' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Clienti</button>
               </div>
             </div>
-            <div className="flex-1 min-h-[250px]">
+            <div className="mobile-chart-container">
               <Line data={chartDataConfig} options={chartOptions} />
             </div>
             <div className="flex justify-center mt-3 sm:mt-4">
-              <div className="flex gap-1 sm:gap-2 bg-slate-800/40 backdrop-blur-xl border border-white/10 p-0.5 sm:p-1 rounded-lg">
+              <div className="flex gap-1 sm:gap-2 bg-slate-800/40 backdrop-blur-xl border border-white/10 p-0.5 sm:p-1 rounded-lg flex-wrap justify-center">
                 <button onClick={() => setChartTimeRange('daily')} className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded-md transition ${chartTimeRange === 'daily' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Giorno</button>
                 <button onClick={() => setChartTimeRange('monthly')} className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded-md transition ${chartTimeRange === 'monthly' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Mese</button>
                 <button onClick={() => setChartTimeRange('yearly')} className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded-md transition ${chartTimeRange === 'yearly' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Anno</button>

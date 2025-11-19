@@ -33,19 +33,19 @@ const ReportStatus = ({ collaboratori }) => {
   }, [collaboratori]);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700">
-      <h2 className="text-sm font-semibold text-slate-200 mb-3">Stato Report Oggi</h2>
-      <p className="text-xs"><strong>Completati:</strong> {collaboratori.length - missingReports.length}</p>
-      <p className="text-xs"><strong>Mancanti:</strong> {missingReports.length}</p>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-slate-700 mx-3 sm:mx-6">
+      <h2 className="text-xs sm:text-sm font-semibold text-slate-200 mb-2 sm:mb-3">Stato Report Oggi</h2>
+      <p className="text-[10px] sm:text-xs"><strong>Completati:</strong> {collaboratori.length - missingReports.length}</p>
+      <p className="text-[10px] sm:text-xs"><strong>Mancanti:</strong> {missingReports.length}</p>
       {missingReports.length > 0 && (
         <div className="mt-1">
-          <p className="text-red-500 text-xs">Mancanti:</p>
-          <ul className="list-disc pl-4 text-xs">
-            {missingReports.map(name => <li key={name}>{name}</li>)}
+          <p className="text-red-500 text-[10px] sm:text-xs">Mancanti:</p>
+          <ul className="list-disc pl-4 text-[10px] sm:text-xs">
+            {missingReports.map(name => <li key={name} className="truncate">{name}</li>)}
           </ul>
         </div>
       )}
-      <p className="text-xs text-slate-400 mt-1">Nota: 2 report/giorno richiesti.</p>
+      <p className="text-[10px] sm:text-xs text-slate-400 mt-1">Nota: 2 report/giorno richiesti.</p>
     </motion.div>
   );
 };
@@ -547,15 +547,15 @@ export default function Collaboratori() {
               whileHover={{ scale: 1.05 }}
               title="Sincronizza lead esistenti con il calendario"
             >
-              <CalendarIcon size={14} /> Sync Calendario
+              <CalendarIcon size={14} /> <span className="hidden sm:inline">Sync</span> Cal
             </motion.button>
-            <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@esempio.com" className="px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-xs w-full sm:w-40" />
-            <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-xs w-full sm:w-28">
+            <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@esempio.com" className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-xs w-full sm:max-w-[160px]" />
+            <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-xs w-full sm:w-24">
               <option>Setter</option>
               <option>Marketing</option>
               <option>Vendita</option>
             </select>
-            <motion.button onClick={handleAddCollaboratore} className="flex items-center justify-center gap-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs w-full sm:w-auto" whileHover={{ scale: 1.05 }}>
+            <motion.button onClick={handleAddCollaboratore} className="flex items-center justify-center gap-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs w-full sm:w-auto whitespace-nowrap" whileHover={{ scale: 1.05 }}>
               <Plus size={14} /> Aggiungi
             </motion.button>
           </div>
@@ -565,27 +565,27 @@ export default function Collaboratori() {
         {error && <p className="text-red-500 text-center text-xs">{error}</p>}
 
         {/* RIAGGIUNGI CON UID */}
-        <div className="p-2 sm:p-3 bg-gradient-to-r from-amber-900/20 to-orange-900/20 rounded-lg border border-amber-500/30">
+        <div className="p-2 sm:p-3 bg-gradient-to-r from-amber-900/20 to-orange-900/20 rounded-lg border border-amber-500/30 mx-3 sm:mx-6">
           <p className="text-[10px] sm:text-xs font-bold text-amber-300 mb-2 text-center">RIAGGIUNGI CON UID + CAMBIA EMAIL</p>
           {!editingCollab ? (
             <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
-              <input type="text" value={newUid} onChange={e => setNewUid(e.target.value.trim())} placeholder="Inserisci UID" className="flex-1 px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs font-mono" />
-              <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs">
+              <input type="text" value={newUid} onChange={e => setNewUid(e.target.value.trim())} placeholder="UID" className="flex-1 px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs font-mono" />
+              <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs w-full sm:w-24">
                 <option>Setter</option>
                 <option>Marketing</option>
                 <option>Vendita</option>
               </select>
-              <motion.button onClick={handleAddByUid} className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded text-[10px] sm:text-xs font-bold" whileHover={{ scale: 1.05 }}>
-                <Key size={12} className="sm:hidden" /><Key size={14} className="hidden sm:block" /> Cerca UID
+              <motion.button onClick={handleAddByUid} className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded text-[10px] sm:text-xs font-bold whitespace-nowrap" whileHover={{ scale: 1.05 }}>
+                <Key size={12} className="sm:hidden" /><Key size={14} className="hidden sm:block" /> <span className="hidden sm:inline">Cerca</span> UID
               </motion.button>
             </div>
           ) : (
             <div className="flex flex-col gap-1.5 sm:gap-2">
-              <p className="text-[10px] sm:text-xs text-amber-200">Modifica email per <strong className="break-all">{editingCollab.slice(0, 12)}...</strong></p>
+              <p className="text-[10px] sm:text-xs text-amber-200">Modifica email per <strong className="break-all text-[9px] sm:text-[10px]">{editingCollab.slice(0, 8)}...</strong></p>
               <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
                 <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="nuova@email.it" className="flex-1 px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-amber-500/50 rounded text-[10px] sm:text-xs" />
-                <motion.button onClick={handleUpdateEmailAndSendReset} className="px-2 sm:px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-[10px] sm:text-xs font-bold" whileHover={{ scale: 1.05 }}>Invia</motion.button>
-                <motion.button onClick={() => { setEditingCollab(null); setEditEmail(''); }} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white rounded text-[10px] sm:text-xs" whileHover={{ scale: 1.05 }}>Annulla</motion.button>
+                <motion.button onClick={handleUpdateEmailAndSendReset} className="px-2 sm:px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-[10px] sm:text-xs font-bold whitespace-nowrap" whileHover={{ scale: 1.05 }}>Invia</motion.button>
+                <motion.button onClick={() => { setEditingCollab(null); setEditEmail(''); }} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white rounded text-[10px] sm:text-xs whitespace-nowrap" whileHover={{ scale: 1.05 }}>Annulla</motion.button>
               </div>
             </div>
           )}
@@ -725,28 +725,28 @@ export default function Collaboratori() {
         </div>
 
         {/* TABELLA LEADS */}
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
-          <div className="mobile-table-wrapper relative -mx-2 sm:mx-0">
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700 mx-3 sm:mx-6">
+          <div className="mobile-table-wrapper relative">
             <div className="inline-block min-w-full align-middle">
               <table className="w-full text-[10px] sm:text-xs text-left text-slate-400 min-w-[800px]">
                 <thead className="text-[10px] sm:text-xs uppercase bg-slate-900/50 sticky top-0">
                   <tr>
                     <th className="px-1 sm:px-2 py-1 text-center">Az</th>
                     <th className="px-1 sm:px-2 py-1">Nome</th>
-                    <th className="px-1 sm:px-2 py-1 hidden md:table-cell">Fonte</th>
+                    <th className="px-1 sm:px-2 py-1">Fonte</th>
                     <th className="px-1 sm:px-2 py-1 hidden lg:table-cell">Email</th>
                     <th className="px-1 sm:px-2 py-1">Num</th>
                     <th className="px-1 sm:px-2 py-1">Data</th>
                     <th className="px-1 sm:px-2 py-1">Setter</th>
                     <th className="px-1 sm:px-2 py-1 text-center hidden lg:table-cell">Dialed</th>
-                    <th className="px-1 sm:px-2 py-1 text-center">Setting Call</th>
-                    <th className="px-1 sm:px-2 py-1 text-center">Show-Up</th>
+                    <th className="px-1 sm:px-2 py-1 text-center">Setting</th>
+                    <th className="px-1 sm:px-2 py-1 text-center">Show</th>
                     <th className="px-1 sm:px-2 py-1 text-center hidden md:table-cell">Target</th>
                     <th className="px-1 sm:px-2 py-1 text-center">Warm</th>
-                    <th className="px-1 sm:px-2 py-1 text-center">Closed</th>
+                    <th className="px-1 sm:px-2 py-1 text-center">Close</th>
                     <th className="px-1 sm:px-2 py-1 text-center">€</th>
                     <th className="px-1 sm:px-2 py-1 text-center hidden sm:table-cell">M</th>
-                    <th className="px-1 sm:px-2 py-1 hidden lg:table-cell">Note</th>
+                    <th className="px-1 sm:px-2 py-1">Note</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -772,13 +772,13 @@ export default function Collaboratori() {
                         ) : <div className="max-w-[60px] sm:max-w-[80px] truncate font-medium">{lead.name || '—'}</div>}
                       </td>
 
-                      <td className="px-1 sm:px-2 py-1 hidden md:table-cell">
+                      <td className="px-1 sm:px-2 py-1">
                         {editingLead === lead.id ? (
                           <select value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} className="w-full p-1 bg-slate-700/50 border border-slate-600 rounded text-xs">
                             <option value="">—</option>
                             {fonti.map(f => <option key={f} value={f}>{f}</option>)}
                           </select>
-                        ) : <div className="max-w-[100px] truncate">{lead.source || '—'}</div>}
+                        ) : <div className="max-w-[60px] sm:max-w-[100px] truncate text-[9px] sm:text-[10px]">{lead.source || '—'}</div>}
                       </td>
 
                       <td className="px-1 sm:px-2 py-1 truncate max-w-[100px] hidden lg:table-cell">{lead.email || '—'}</td>
@@ -834,10 +834,10 @@ export default function Collaboratori() {
                         ) : <div className="font-bold">{lead.mesi || 0}</div>}
                       </td>
 
-                      <td className="px-1 sm:px-2 py-1 max-w-[120px] truncate hidden lg:table-cell">
+                      <td className="px-1 sm:px-2 py-1 max-w-[100px] truncate">
                         <button 
                           onClick={() => { setCurrentNote(lead.note || 'Nessuna nota'); setShowNotePopup(true); }} 
-                          className="text-cyan-400 hover:underline text-[10px] sm:text-xs"
+                          className="text-cyan-400 hover:underline text-[9px] sm:text-xs"
                         >
                           {lead.note ? 'Vedi' : '—'}
                         </button>
