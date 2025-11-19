@@ -532,7 +532,7 @@ export default function Collaboratori() {
   if (!isAdmin) return null;
 
   return (
-    <div className="mobile-container">
+    <div className="mobile-container mobile-safe-bottom">
       <div className="py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* HEADER */}
@@ -726,9 +726,9 @@ export default function Collaboratori() {
 
         {/* TABELLA LEADS */}
         <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
-          <div className="overflow-x-auto -mx-2 sm:mx-0">
+          <div className="mobile-table-wrapper relative -mx-2 sm:mx-0">
             <div className="inline-block min-w-full align-middle">
-              <table className="w-full text-[10px] sm:text-xs text-left text-slate-400">
+              <table className="w-full text-[10px] sm:text-xs text-left text-slate-400 min-w-[800px]">
                 <thead className="text-[10px] sm:text-xs uppercase bg-slate-900/50 sticky top-0">
                   <tr>
                     <th className="px-1 sm:px-2 py-1 text-center">Az</th>

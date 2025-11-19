@@ -147,7 +147,7 @@ export default function CoachClients() {
 
   return (
     <div className="overflow-x-hidden w-full">
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full py-4 sm:py-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full py-4 sm:py-6 mobile-safe-bottom">
       <header className="flex flex-col sm:flex-row justify-between items-center mb-6 mx-3 sm:mx-6">
         <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2 mb-4 sm:mb-0">
           <Users size={28} /> Gestione Clienti
@@ -183,7 +183,7 @@ export default function CoachClients() {
 
       {/* Tabella con scroll orizzontale */}
       <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 overflow-hidden mx-3 sm:mx-6">
-        <div className="overflow-x-auto -mx-3 sm:mx-0">
+        <div className="mobile-table-wrapper relative -mx-3 sm:mx-0">
           <table className="w-full min-w-[800px] text-xs sm:text-sm text-left text-slate-300">
             <thead className="bg-white/5 text-slate-400 uppercase text-[10px] sm:text-xs sticky top-0 z-10">
               <tr>
