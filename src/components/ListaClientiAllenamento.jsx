@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Filter, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 import { db, toDate } from '../firebase';
@@ -39,6 +40,7 @@ const calculateCardStatus = (scadenzaDate) => {
 };
 
 const ListaClientiAllenamento = ({ onBack }) => {
+  const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -233,7 +235,10 @@ const ListaClientiAllenamento = ({ onBack }) => {
                       {/* Scheda Allenamento Status */}
                       <td className="px-4 py-3">
                         <div className="flex justify-center">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border ${STATUS_COLORS[allenamentoStatus]}`}>
+                          <button
+                            onClick={() => navigate(`/scheda-allenamento/${client.id}`)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity ${STATUS_COLORS[allenamentoStatus]}`}
+                          >
                             {STATUS_ICONS[allenamentoStatus]}
                             {STATUS_LABELS[allenamentoStatus]}
                             {client.schedaAllenamento?.scadenza && allenamentoStatus !== 'mancante' && (
@@ -241,14 +246,17 @@ const ListaClientiAllenamento = ({ onBack }) => {
                                 ({toDate(client.schedaAllenamento.scadenza)?.toLocaleDateString('it-IT')})
                               </span>
                             )}
-                          </span>
+                          </button>
                         </div>
                       </td>
                       
                       {/* Scheda Alimentazione Status */}
                       <td className="px-4 py-3">
                         <div className="flex justify-center">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border ${STATUS_COLORS[alimentazioneStatus]}`}>
+                          <button
+                            onClick={() => navigate(`/scheda-alimentazione/${client.id}`)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity ${STATUS_COLORS[alimentazioneStatus]}`}
+                          >
                             {STATUS_ICONS[alimentazioneStatus]}
                             {STATUS_LABELS[alimentazioneStatus]}
                             {client.schedaAlimentazione?.scadenza && alimentazioneStatus !== 'mancante' && (
@@ -256,7 +264,7 @@ const ListaClientiAllenamento = ({ onBack }) => {
                                 ({toDate(client.schedaAlimentazione.scadenza)?.toLocaleDateString('it-IT')})
                               </span>
                             )}
-                          </span>
+                          </button>
                         </div>
                       </td>
                     </tr>
