@@ -536,7 +536,7 @@ export default function Collaboratori() {
       <div className="py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* HEADER */}
-        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full min-w-0">
+        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full min-w-0 mx-3 sm:mx-6">
           <h1 className="text-2xl font-bold text-slate-50 flex items-center gap-2">
             <Users size={24} /> Gestione
           </h1>

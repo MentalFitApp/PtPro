@@ -517,13 +517,13 @@ export default function Dashboard() {
       <div className="w-full py-4 sm:py-6 space-y-4 sm:space-y-6 mobile-safe-bottom">
         {/* HEADER */}
         <div className="bg-slate-800/30 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-5 space-y-3 sm:space-y-5 mx-3 sm:mx-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-100 flex items-center gap-2">
               <TrendingUp size={24} className="sm:w-7 sm:h-7"/> Dashboard
             </h1>
-            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              <span className="text-slate-300 font-semibold text-sm sm:text-base truncate">{userName}</span>
-              <button onClick={handleLogout} className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-slate-300 font-semibold text-sm sm:text-base truncate flex-1 sm:flex-none">{userName}</span>
+              <button onClick={handleLogout} className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
                 <LogOut size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
