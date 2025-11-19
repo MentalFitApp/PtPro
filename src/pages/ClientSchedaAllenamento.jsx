@@ -120,13 +120,21 @@ const ClientSchedaAllenamento = () => {
           schedaData.giorni[selectedDay]?.esercizi?.map((item, index) => {
             // Superset/Circuit markers
             if (item.isMarker) {
+              const isCircuit = item.type.includes('circuit');
+              const isStart = item.type.includes('start');
+              const colorClass = isCircuit ? 'bg-cyan-500' : 'bg-purple-500';
+              const bgClass = isCircuit ? 'bg-cyan-900/30 text-cyan-300 border-cyan-600/50' : 'bg-purple-900/30 text-purple-300 border-purple-600/50';
+              const label = isCircuit 
+                ? (isStart ? '▼ INIZIO CIRCUITO' : '▲ FINE CIRCUITO')
+                : (isStart ? '▼ INIZIO SUPERSERIE' : '▲ FINE SUPERSERIE');
+              
               return (
                 <div key={index} className="flex items-center gap-4 my-2">
-                  <div className="flex-1 h-px bg-purple-500"></div>
-                  <div className="px-4 py-2 rounded-lg font-semibold bg-purple-900/30 text-purple-300 border border-purple-600/50 text-sm">
-                    {item.type === 'superset-start' ? '▼ INIZIO SUPERSERIE' : '▲ FINE SUPERSERIE'}
+                  <div className={`flex-1 h-px ${colorClass}`}></div>
+                  <div className={`px-4 py-2 rounded-lg font-semibold border ${bgClass} text-sm`}>
+                    {label}
                   </div>
-                  <div className="flex-1 h-px bg-purple-500"></div>
+                  <div className={`flex-1 h-px ${colorClass}`}></div>
                 </div>
               );
             }

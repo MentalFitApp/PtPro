@@ -139,11 +139,11 @@ const SchedaAllenamento = () => {
     });
   };
 
-  const addSupersetMarker = (esercizioIndex, type) => {
+  const addMarkerAtEnd = (type) => {
     setSchedaData(prev => {
       const newData = { ...prev };
-      newData.giorni[selectedDay].esercizi.splice(esercizioIndex + 1, 0, {
-        type: type, // 'superset-start' or 'superset-end'
+      newData.giorni[selectedDay].esercizi.push({
+        type: type, // 'superset-start', 'superset-end', 'circuit-start', 'circuit-end'
         isMarker: true
       });
       return newData;
@@ -320,19 +320,23 @@ const SchedaAllenamento = () => {
             </div>
           ) : (
             schedaData.giorni[selectedDay].esercizi.map((item, esercizioIndex) => {
-              // Superset markers
+              // Superset/Circuit markers
               if (item.isMarker) {
+                const isCircuit = item.type.includes('circuit');
+                const isStart = item.type.includes('start');
+                const colorClass = isCircuit ? 'bg-cyan-500' : 'bg-purple-500';
+                const bgClass = isCircuit ? 'bg-cyan-900/30 text-cyan-300 border-cyan-600/50' : 'bg-purple-900/30 text-purple-300 border-purple-600/50';
+                const label = isCircuit 
+                  ? (isStart ? '▼ INIZIO CIRCUITO' : '▲ FINE CIRCUITO')
+                  : (isStart ? '▼ INIZIO SUPERSERIE' : '▲ FINE SUPERSERIE');
+                
                 return (
                   <div key={esercizioIndex} className="flex items-center gap-4">
-                    <div className={`flex-1 h-px ${item.type === 'superset-start' ? 'bg-purple-500' : 'bg-purple-500'}`}></div>
-                    <div className={`px-4 py-2 rounded-lg font-semibold ${
-                      item.type === 'superset-start' 
-                        ? 'bg-purple-900/30 text-purple-300 border border-purple-600/50' 
-                        : 'bg-purple-900/30 text-purple-300 border border-purple-600/50'
-                    }`}>
-                      {item.type === 'superset-start' ? '▼ INIZIO SUPERSERIE' : '▲ FINE SUPERSERIE'}
+                    <div className={`flex-1 h-px ${colorClass}`}></div>
+                    <div className={`px-4 py-2 rounded-lg font-semibold border ${bgClass}`}>
+                      {label}
                     </div>
-                    <div className={`flex-1 h-px ${item.type === 'superset-start' ? 'bg-purple-500' : 'bg-purple-500'}`}></div>
+                    <div className={`flex-1 h-px ${colorClass}`}></div>
                     <button
                       onClick={() => removeEsercizio(esercizioIndex)}
                       className="p-2 text-red-400 hover:text-red-300"
@@ -445,35 +449,53 @@ const SchedaAllenamento = () => {
                     />
                   </div>
 
-                  {/* Superset Controls */}
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      onClick={() => addSupersetMarker(esercizioIndex, 'superset-start')}
-                      className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/50 text-purple-300 rounded text-sm transition-colors"
-                    >
-                      + Inizio Superserie
-                    </button>
-                    <button
-                      onClick={() => addSupersetMarker(esercizioIndex, 'superset-end')}
-                      className="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/50 text-purple-300 rounded text-sm transition-colors"
-                    >
-                      + Fine Superserie
-                    </button>
-                  </div>
+
                 </motion.div>
               );
             })
           )}
         </div>
 
-        {/* Add Exercise Button */}
-        <button
-          onClick={() => setShowAddEsercizio(true)}
-          className="w-full px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors flex items-center justify-center gap-2 font-semibold"
-        >
-          <Plus size={20} />
-          Aggiungi Esercizio
-        </button>
+        {/* Add Exercise and Markers Buttons */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <button
+            onClick={() => setShowAddEsercizio(true)}
+            className="md:col-span-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors flex items-center justify-center gap-2 font-semibold"
+          >
+            <Plus size={20} />
+            Aggiungi Esercizio
+          </button>
+          
+          <button
+            onClick={() => addMarkerAtEnd('superset-start')}
+            className="px-4 py-3 bg-purple-600/20 hover:bg-purple-600/30 border-2 border-purple-500/50 text-purple-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+          >
+            Inizio Superserie
+          </button>
+          
+          <button
+            onClick={() => addMarkerAtEnd('superset-end')}
+            className="px-4 py-3 bg-purple-600/20 hover:bg-purple-600/30 border-2 border-purple-500/50 text-purple-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+          >
+            Fine Superserie
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <button
+            onClick={() => addMarkerAtEnd('circuit-start')}
+            className="px-4 py-3 bg-cyan-600/20 hover:bg-cyan-600/30 border-2 border-cyan-500/50 text-cyan-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium"
+          >
+            Inizio Circuito
+          </button>
+          
+          <button
+            onClick={() => addMarkerAtEnd('circuit-end')}
+            className="px-4 py-3 bg-cyan-600/20 hover:bg-cyan-600/30 border-2 border-cyan-500/50 text-cyan-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium"
+          >
+            Fine Circuito
+          </button>
+        </div>
 
         {/* Add Exercise Modal */}
         <AnimatePresence>
