@@ -46,6 +46,11 @@ const GuideManager = React.lazy(() => import('./pages/GuideManager'));
 const Statistiche = React.lazy(() => import('./pages/Statistiche'));
 const CalendarPage = React.lazy(() => import('./pages/CalendarPage'));
 const Notifications = React.lazy(() => import('./pages/Notifications'));
+const AlimentazioneAllenamento = React.lazy(() => import('./pages/AlimentazioneAllenamento'));
+const SchedaAlimentazione = React.lazy(() => import('./pages/SchedaAlimentazione'));
+const SchedaAllenamento = React.lazy(() => import('./pages/SchedaAllenamento'));
+const ClientSchedaAlimentazione = React.lazy(() => import('./pages/ClientSchedaAlimentazione'));
+const ClientSchedaAllenamento = React.lazy(() => import('./pages/ClientSchedaAllenamento'));
 
 // Spinner
 const PageSpinner = () => (
@@ -174,7 +179,10 @@ export default function App() {
               location.pathname === '/guide-manager' ||
               location.pathname === '/admin/dipendenti' ||
               location.pathname === '/statistiche' ||
-              location.pathname === '/notifications'
+              location.pathname === '/notifications' ||
+              location.pathname === '/alimentazione-allenamento' ||
+              location.pathname.startsWith('/scheda-alimentazione/') ||
+              location.pathname.startsWith('/scheda-allenamento/')
             )) ||
             (isCurrentUserACoach && (
               location.pathname === '/coach' ||
@@ -273,6 +281,9 @@ export default function App() {
           <Route path="/admin/dipendenti" element={<Dipendenti />} />
           <Route path="/statistiche" element={<Statistiche />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/alimentazione-allenamento" element={<AlimentazioneAllenamento />} />
+          <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
+          <Route path="/scheda-allenamento/:clientId" element={<SchedaAllenamento />} />
         </Route>
 
         {/* === ROTTE COACH (SOLO COACH) === */}
@@ -294,6 +305,8 @@ export default function App() {
           <Route path="/client/checks" element={<ClientChecks />} />
           <Route path="/client/payments" element={<ClientPayments />} />
           <Route path="/client/chat" element={<ClientChat />} />
+          <Route path="/client/scheda-alimentazione" element={<ClientSchedaAlimentazione />} />
+          <Route path="/client/scheda-allenamento" element={<ClientSchedaAllenamento />} />
         </Route>
 
         {/* === ROTTE COLLABORATORI === */}
