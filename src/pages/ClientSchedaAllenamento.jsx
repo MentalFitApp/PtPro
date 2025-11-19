@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Play } from 'lucide-react';
+import { Play, Download } from 'lucide-react';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth } from '../firebase';
+import { exportWorkoutCardToPDF } from '../utils/pdfExport';
 
 const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
 
@@ -72,9 +73,18 @@ const ClientSchedaAllenamento = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-slate-800/50 border border-slate-700 rounded-xl p-4"
         >
-          <h1 className="text-xl md:text-2xl font-bold text-slate-100 mb-2">
-            Piano Allenamento
-          </h1>
+          <div className="flex items-start justify-between mb-2">
+            <h1 className="text-xl md:text-2xl font-bold text-slate-100">
+              Piano Allenamento
+            </h1>
+            <button
+              onClick={() => exportWorkoutCardToPDF(schedaData, clientName)}
+              className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+            >
+              <Download size={16} />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
+          </div>
           <div className="flex flex-wrap gap-3 text-sm">
             {schedaData.obiettivo && (
               <span className="px-3 py-1 bg-blue-900/30 border border-blue-600/30 text-blue-300 rounded-lg">

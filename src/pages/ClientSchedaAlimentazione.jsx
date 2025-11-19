@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import { db, toDate } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth } from '../firebase';
+import { exportNutritionCardToPDF } from '../utils/pdfExport';
 
 const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
 
@@ -110,9 +111,18 @@ const ClientSchedaAlimentazione = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-slate-800/50 border border-slate-700 rounded-xl p-4"
         >
-          <h1 className="text-xl md:text-2xl font-bold text-slate-100 mb-2">
-            Piano Alimentazione
-          </h1>
+          <div className="flex items-start justify-between mb-2">
+            <h1 className="text-xl md:text-2xl font-bold text-slate-100">
+              Piano Alimentazione
+            </h1>
+            <button
+              onClick={() => exportNutritionCardToPDF(schedaData, clientName)}
+              className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
+            >
+              <Download size={16} />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
+          </div>
           {schedaData.obiettivo && (
             <p className="text-emerald-400 text-sm md:text-base">
               Obiettivo: {schedaData.obiettivo}

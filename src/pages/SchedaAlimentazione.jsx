@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Copy, RotateCcw, X } from 'lucide-react';
+import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Copy, RotateCcw, X, Download, Upload, History, FileText } from 'lucide-react';
 import { db, toDate } from '../firebase';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore';
+import { exportNutritionCardToPDF } from '../utils/pdfExport';
 
 const OBIETTIVI = ['Definizione', 'Massa', 'Mantenimento', 'Dimagrimento', 'Sportivo'];
 const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
@@ -34,6 +35,20 @@ const SchedaAlimentazione = () => {
 
   const [selectedDay, setSelectedDay] = useState('Lunedì');
   const [showAddAlimento, setShowAddAlimento] = useState({ pastoIndex: null });
+  
+  // Preset functionality
+  const [showSavePresetModal, setShowSavePresetModal] = useState(false);
+  const [showImportPresetModal, setShowImportPresetModal] = useState(false);
+  const [presetName, setPresetName] = useState('');
+  const [availablePresets, setAvailablePresets] = useState([]);
+  
+  // Copy previous card functionality
+  const [showCopyPreviousModal, setShowCopyPreviousModal] = useState(false);
+  const [previousCard, setPreviousCard] = useState(null);
+  
+  // History functionality
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [cardHistory, setCardHistory] = useState([]);
 
   useEffect(() => {
     loadClientAndScheda();
@@ -65,11 +80,15 @@ const SchedaAlimentazione = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Save current card
       const schedaRef = doc(db, 'schede_alimentazione', clientId);
       await setDoc(schedaRef, {
         ...schedaData,
         updatedAt: new Date()
       });
+
+      // Save to history
+      await saveToHistory();
 
       // Update client with expiry date
       if (schedaData.durataSettimane) {
@@ -193,6 +212,130 @@ const SchedaAlimentazione = () => {
     return totals;
   };
 
+  // PDF Export
+  const handleExportPDF = () => {
+    exportNutritionCardToPDF(schedaData, clientName);
+  };
+
+  // Preset Management
+  const loadPresets = async () => {
+    try {
+      const presetsRef = collection(db, 'preset_alimentazione');
+      const snapshot = await getDocs(presetsRef);
+      const presets = [];
+      snapshot.forEach(doc => {
+        presets.push({ id: doc.id, ...doc.data() });
+      });
+      setAvailablePresets(presets);
+    } catch (error) {
+      console.error('Errore caricamento preset:', error);
+    }
+  };
+
+  const handleSaveAsPreset = async () => {
+    if (!presetName.trim()) {
+      alert('Inserisci un nome per il preset');
+      return;
+    }
+    
+    try {
+      const presetsRef = collection(db, 'preset_alimentazione');
+      await addDoc(presetsRef, {
+        name: presetName,
+        data: schedaData,
+        createdAt: new Date()
+      });
+      alert('Preset salvato con successo!');
+      setShowSavePresetModal(false);
+      setPresetName('');
+    } catch (error) {
+      console.error('Errore salvataggio preset:', error);
+      alert('Errore nel salvataggio del preset');
+    }
+  };
+
+  const handleImportPreset = (preset) => {
+    if (!confirm(`Importare il preset "${preset.name}"? Questo sovrascriverà tutti i dati correnti.`)) return;
+    
+    setSchedaData(prev => ({
+      ...prev,
+      ...preset.data
+    }));
+    setShowImportPresetModal(false);
+  };
+
+  // Copy Previous Card
+  const loadPreviousCard = async () => {
+    try {
+      const historyRef = collection(db, 'schede_alimentazione_storico', clientId, 'history');
+      const q = query(historyRef, orderBy('savedAt', 'desc'), limit(1));
+      const snapshot = await getDocs(q);
+      
+      if (!snapshot.empty) {
+        const prevCard = snapshot.docs[0].data();
+        setPreviousCard(prevCard);
+      } else {
+        setPreviousCard(null);
+      }
+    } catch (error) {
+      console.error('Errore caricamento scheda precedente:', error);
+    }
+  };
+
+  const handleCopyPrevious = () => {
+    if (!previousCard) {
+      alert('Nessuna scheda precedente trovata');
+      return;
+    }
+    
+    if (!confirm('Copiare la scheda precedente? Questo sovrascriverà tutti i dati correnti.')) return;
+    
+    setSchedaData(prev => ({
+      ...prev,
+      ...previousCard
+    }));
+    setShowCopyPreviousModal(false);
+  };
+
+  // Card History
+  const loadCardHistory = async () => {
+    try {
+      const historyRef = collection(db, 'schede_alimentazione_storico', clientId, 'history');
+      const q = query(historyRef, orderBy('savedAt', 'desc'));
+      const snapshot = await getDocs(q);
+      
+      const history = [];
+      snapshot.forEach(doc => {
+        history.push({ id: doc.id, ...doc.data() });
+      });
+      setCardHistory(history);
+    } catch (error) {
+      console.error('Errore caricamento storico:', error);
+    }
+  };
+
+  const saveToHistory = async () => {
+    try {
+      const historyRef = collection(db, 'schede_alimentazione_storico', clientId, 'history');
+      await addDoc(historyRef, {
+        ...schedaData,
+        savedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Errore salvataggio storico:', error);
+    }
+  };
+
+  const viewHistoryCard = (historyCard) => {
+    if (!confirm('Visualizzare questa scheda storica? I dati correnti verranno sostituiti (salva prima se necessario).')) return;
+    
+    setSchedaData(prev => ({
+      ...prev,
+      ...historyCard
+    }));
+    setShowHistoryModal(false);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -207,22 +350,74 @@ const SchedaAlimentazione = () => {
     <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate('/alimentazione-allenamento')}
-            className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <ArrowLeft size={20} />
-            Torna indietro
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 text-white rounded-lg transition-colors"
-          >
-            <Save size={18} />
-            {saving ? 'Salvataggio...' : 'Salva Scheda'}
-          </button>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate('/alimentazione-allenamento')}
+              className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors"
+            >
+              <ArrowLeft size={20} />
+              Torna indietro
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 text-white rounded-lg transition-colors"
+            >
+              <Save size={18} />
+              {saving ? 'Salvataggio...' : 'Salva Scheda'}
+            </button>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
+            >
+              <Download size={16} />
+              Scarica PDF
+            </button>
+            <button
+              onClick={() => {
+                setShowSavePresetModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+            >
+              <FileText size={16} />
+              Salva come Preset
+            </button>
+            <button
+              onClick={() => {
+                loadPresets();
+                setShowImportPresetModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
+            >
+              <Upload size={16} />
+              Importa Preset
+            </button>
+            <button
+              onClick={() => {
+                loadPreviousCard();
+                setShowCopyPreviousModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-lg transition-colors"
+            >
+              <Copy size={16} />
+              Copia Precedente
+            </button>
+            <button
+              onClick={() => {
+                loadCardHistory();
+                setShowHistoryModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition-colors"
+            >
+              <History size={16} />
+              Storico Schede
+            </button>
+          </div>
         </div>
 
         {/* Client Info */}
@@ -473,6 +668,209 @@ const SchedaAlimentazione = () => {
             placeholder="Tips sull'integrazione, consigli, note..."
           />
         </div>
+
+        {/* Save Preset Modal */}
+        <AnimatePresence>
+          {showSavePresetModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => setShowSavePresetModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full"
+              >
+                <h3 className="text-xl font-bold text-slate-100 mb-4">Salva come Preset</h3>
+                <input
+                  type="text"
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  placeholder="Nome del preset (es. Definizione)"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 mb-4"
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSaveAsPreset}
+                    className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                  >
+                    Salva
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowSavePresetModal(false);
+                      setPresetName('');
+                    }}
+                    className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+                  >
+                    Annulla
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Import Preset Modal */}
+        <AnimatePresence>
+          {showImportPresetModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => setShowImportPresetModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+              >
+                <h3 className="text-xl font-bold text-slate-100 mb-4">Importa Preset</h3>
+                {availablePresets.length === 0 ? (
+                  <p className="text-slate-400 text-center py-8">Nessun preset disponibile</p>
+                ) : (
+                  <div className="space-y-3">
+                    {availablePresets.map(preset => (
+                      <button
+                        key={preset.id}
+                        onClick={() => handleImportPreset(preset)}
+                        className="w-full p-4 bg-slate-900 hover:bg-slate-700 border border-slate-700 rounded-lg text-left transition-colors"
+                      >
+                        <div className="font-bold text-slate-100">{preset.name}</div>
+                        <div className="text-sm text-slate-400 mt-1">
+                          Creato: {preset.createdAt?.toDate?.()?.toLocaleDateString('it-IT') || 'N/D'}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => setShowImportPresetModal(false)}
+                  className="w-full mt-4 px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+                >
+                  Chiudi
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Copy Previous Card Modal */}
+        <AnimatePresence>
+          {showCopyPreviousModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => setShowCopyPreviousModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full"
+              >
+                <h3 className="text-xl font-bold text-slate-100 mb-4">Copia Scheda Precedente</h3>
+                {previousCard ? (
+                  <div className="mb-4">
+                    <p className="text-slate-300 mb-2">Scheda trovata:</p>
+                    <div className="p-3 bg-slate-900 rounded-lg">
+                      <div className="text-sm text-slate-400">
+                        Obiettivo: {previousCard.obiettivo || 'N/D'}
+                      </div>
+                      <div className="text-sm text-slate-400">
+                        Durata: {previousCard.durataSettimane || 'N/D'} settimane
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-slate-400 mb-4">Nessuna scheda precedente trovata</p>
+                )}
+                <div className="flex gap-3">
+                  {previousCard && (
+                    <button
+                      onClick={handleCopyPrevious}
+                      className="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+                    >
+                      Copia
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowCopyPreviousModal(false)}
+                    className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+                  >
+                    Chiudi
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* History Modal */}
+        <AnimatePresence>
+          {showHistoryModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => setShowHistoryModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-3xl w-full max-h-[80vh] overflow-y-auto"
+              >
+                <h3 className="text-xl font-bold text-slate-100 mb-4">Storico Schede</h3>
+                {cardHistory.length === 0 ? (
+                  <p className="text-slate-400 text-center py-8">Nessuna scheda nello storico</p>
+                ) : (
+                  <div className="space-y-3">
+                    {cardHistory.map((card, idx) => (
+                      <button
+                        key={card.id}
+                        onClick={() => viewHistoryCard(card)}
+                        className="w-full p-4 bg-slate-900 hover:bg-slate-700 border border-slate-700 rounded-lg text-left transition-colors"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-bold text-slate-100">Scheda #{cardHistory.length - idx}</div>
+                            <div className="text-sm text-slate-400 mt-1">
+                              Salvata: {card.savedAt?.toDate?.()?.toLocaleDateString('it-IT') || 'N/D'}
+                            </div>
+                            <div className="text-sm text-slate-400">
+                              Obiettivo: {card.obiettivo || 'N/D'}
+                            </div>
+                          </div>
+                          <span className="text-emerald-400 text-sm">Visualizza</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => setShowHistoryModal(false)}
+                  className="w-full mt-4 px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+                >
+                  Chiudi
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
