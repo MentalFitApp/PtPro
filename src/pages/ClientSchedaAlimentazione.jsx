@@ -102,7 +102,7 @@ const ClientSchedaAlimentazione = () => {
   const dayTotals = calculateDayTotals();
 
   return (
-    <div className="min-h-screen bg-slate-900 p-4">
+    <div className="min-h-screen bg-slate-900 px-4 pt-8 pb-4">
       <div className="max-w-4xl mx-auto space-y-4">
         {/* Header */}
         <motion.div

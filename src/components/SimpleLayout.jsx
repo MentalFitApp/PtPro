@@ -57,7 +57,8 @@ export default function SimpleLayout() {
         {/* Menu Toggle Button (Mobile) */}
         <button
           onClick={() => setShowSidebar(!showSidebar)}
-          className="fixed top-4 right-4 z-50 p-3 bg-slate-800/90 backdrop-blur-xl border border-slate-700 rounded-xl text-slate-200 hover:bg-slate-700 transition-colors md:hidden"
+          className="fixed top-safe-4 md:top-4 right-4 z-50 p-3 bg-slate-800/90 backdrop-blur-xl border border-slate-700 rounded-xl text-slate-200 hover:bg-slate-700 transition-colors md:hidden"
+          style={{ top: 'max(env(safe-area-inset-top, 0px) + 1rem, 1rem)' }}
         >
           {showSidebar ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -78,7 +79,7 @@ export default function SimpleLayout() {
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'tween' }}
-                className="fixed top-0 right-0 h-full w-64 bg-slate-900/95 backdrop-blur-xl border-l border-slate-700 z-40 p-6 md:hidden"
+                className="fixed top-0 right-0 h-full w-64 bg-slate-900/95 backdrop-blur-xl border-l border-slate-700 z-40 pt-20 px-6 pb-8 md:hidden overflow-y-auto"
               >
                 <div className="mb-8">
                   <h2 className="text-xl font-bold text-slate-100">Menu</h2>
@@ -105,11 +106,11 @@ export default function SimpleLayout() {
         </AnimatePresence>
 
         {/* Sidebar Desktop */}
-        <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-slate-900/90 backdrop-blur-xl border-r border-slate-700 z-40 flex-col p-6">
+        <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-slate-900/90 backdrop-blur-xl border-r border-slate-700 z-40 flex-col p-6 pb-8">
           <div className="mb-8">
             <h2 className="text-xl font-bold text-slate-100">Menu Cliente</h2>
           </div>
-          <nav className="space-y-2">
+          <nav className="space-y-2 overflow-y-auto flex-1">
             {clientNavLinks.map(link => (
               <button
                 key={link.to}
