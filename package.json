@@ -13,6 +13,8 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.935.0",
+    "browser-image-compression": "^2.0.2",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.0",
     "date-fns": "^2.30.0",

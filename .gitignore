@@ -1,8 +1,11 @@
 # Dependencies
 /node_modules
+node_modules
+node_modules/
 
 # Build output
 /dist
+dist/
 
 # Logs
 logs
@@ -11,18 +14,24 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
-# Local env files
+# Environment files (IMPORTANT: Never commit secrets!)
+.env
 .env.local
 .env.*.local
 
 # IDE / Editor folders
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
 # Cache files
 .cache/
 *.vite/
-node_modules
-node_modules
-node_modules
+.DS_Store
+
+# Testing
+coverage/

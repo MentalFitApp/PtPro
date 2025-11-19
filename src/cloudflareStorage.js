@@ -1,0 +1,181 @@
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import imageCompression from 'browser-image-compression';
+import { v4 as uuidv4 } from 'uuid';
+
+/**
+ * Cloudflare R2 Storage Configuration
+ * R2 is S3-compatible, so we use AWS SDK with custom endpoint
+ */
+
+// Inizializza il client S3 per Cloudflare R2
+let r2Client = null;
+
+const getR2Client = () => {
+  if (!r2Client) {
+    const accountId = import.meta.env.VITE_R2_ACCOUNT_ID;
+    const accessKeyId = import.meta.env.VITE_R2_ACCESS_KEY_ID;
+    const secretAccessKey = import.meta.env.VITE_R2_SECRET_ACCESS_KEY;
+
+    if (!accountId || !accessKeyId || !secretAccessKey) {
+      throw new Error('Configurazione R2 mancante. Verifica le variabili d\'ambiente VITE_R2_*');
+    }
+
+    r2Client = new S3Client({
+      region: 'auto', // R2 usa 'auto' come region
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+    });
+  }
+  return r2Client;
+};
+
+/**
+ * Comprimi un'immagine prima dell'upload
+ * Riduce la dimensione del file del 70-80% mantenendo buona qualità
+ * 
+ * @param {File} file - File immagine da comprimere
+ * @returns {Promise<File>} - File compresso
+ */
+export const compressImage = async (file) => {
+  // Se non è un'immagine o è già piccola, ritorna il file originale
+  if (!file.type.startsWith('image/') || file.size < 200 * 1024) {
+    return file;
+  }
+
+  try {
+    const options = {
+      maxSizeMB: 1, // Dimensione massima 1MB
+      maxWidthOrHeight: 1920, // Massima larghezza/altezza 1920px
+      useWebWorker: true, // Usa Web Worker per performance migliori
+      fileType: file.type, // Mantieni il tipo originale
+    };
+
+    const compressedFile = await imageCompression(file, options);
+    console.log(`Compressione: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedFile.size / 1024).toFixed(2)}KB (${(((file.size - compressedFile.size) / file.size) * 100).toFixed(0)}% riduzione)`);
+    
+    return compressedFile;
+  } catch (error) {
+    console.warn('Errore nella compressione, uso file originale:', error);
+    return file;
+  }
+};
+
+/**
+ * Carica un file su Cloudflare R2
+ * 
+ * @param {File} file - File da caricare
+ * @param {string} clientId - ID del cliente per organizzare i file
+ * @param {string} folder - Sotto-cartella (es. 'anamnesi_photos', 'check_photos')
+ * @param {Function} onProgress - Callback per progress (opzionale)
+ * @returns {Promise<string>} - URL pubblico del file caricato
+ */
+export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onProgress = null) => {
+  if (!file) throw new Error('Nessun file fornito');
+
+  // Validazione dimensione file (prima della compressione)
+  const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+  if (file.size > maxSize) {
+    const maxSizeMB = maxSize / (1024 * 1024);
+    throw new Error(`Il file supera il limite di ${maxSizeMB}MB`);
+  }
+
+  // Validazione tipo file
+  const isImage = file.type.startsWith('image/');
+  const isVideo = file.type.startsWith('video/');
+  if (!isImage && !isVideo) {
+    throw new Error('Il file deve essere un\'immagine o un video');
+  }
+
+  try {
+    // Comprimi l'immagine se necessario
+    let fileToUpload = file;
+    if (isImage) {
+      if (onProgress) onProgress({ stage: 'compressing', percent: 0 });
+      fileToUpload = await compressImage(file);
+    }
+
+    // Crea nome file unico
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${uuidv4()}.${fileExtension}`;
+    const fileKey = `clients/${clientId}/${folder}/${fileName}`;
+
+    // Prepara il comando per l'upload
+    const bucketName = import.meta.env.VITE_R2_BUCKET_NAME;
+    if (!bucketName) {
+      throw new Error('VITE_R2_BUCKET_NAME non configurato');
+    }
+
+    if (onProgress) onProgress({ stage: 'uploading', percent: 0 });
+
+    // Converti il file in ArrayBuffer per l'upload
+    const arrayBuffer = await fileToUpload.arrayBuffer();
+    
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: fileKey,
+      Body: new Uint8Array(arrayBuffer),
+      ContentType: fileToUpload.type,
+      Metadata: {
+        originalName: file.name,
+        uploadedAt: new Date().toISOString(),
+      },
+    });
+
+    // Upload a R2
+    const client = getR2Client();
+    await client.send(command);
+
+    if (onProgress) onProgress({ stage: 'complete', percent: 100 });
+
+    // Costruisci l'URL pubblico
+    // Nota: devi configurare un custom domain su R2 o usare il public bucket URL
+    const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
+    const fileUrl = publicUrl 
+      ? `${publicUrl}/${fileKey}`
+      : `https://pub-${import.meta.env.VITE_R2_ACCOUNT_ID}.r2.dev/${fileKey}`;
+
+    console.log(`Upload completato su R2: ${fileName} -> ${fileUrl}`);
+    return fileUrl;
+
+  } catch (error) {
+    console.error('Errore upload R2:', error);
+    throw new Error(`Errore durante l'upload: ${error.message}`);
+  }
+};
+
+/**
+ * Ottieni l'URL pubblico di un file su R2
+ * 
+ * @param {string} fileKey - Chiave del file (path completo)
+ * @returns {string} - URL pubblico del file
+ */
+export const getR2URL = (fileKey) => {
+  const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
+  return publicUrl 
+    ? `${publicUrl}/${fileKey}`
+    : `https://pub-${import.meta.env.VITE_R2_ACCOUNT_ID}.r2.dev/${fileKey}`;
+};
+
+/**
+ * Wrapper per compatibilità con uploadPhoto esistente
+ * Mantiene la stessa interfaccia della funzione Firebase
+ * 
+ * @param {File} file - File da caricare
+ * @param {string} clientId - ID del cliente
+ * @param {string} folder - Sotto-cartella
+ * @returns {Promise<string>} - URL del file caricato
+ */
+export const uploadPhoto = async (file, clientId, folder = 'anamnesi_photos') => {
+  return uploadToR2(file, clientId, folder);
+};
+
+// Export default per retrocompatibilità
+export default {
+  uploadToR2,
+  uploadPhoto,
+  compressImage,
+  getR2URL,
+};
