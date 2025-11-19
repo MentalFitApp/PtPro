@@ -49,6 +49,8 @@ const Notifications = React.lazy(() => import('./pages/Notifications'));
 const AlimentazioneAllenamento = React.lazy(() => import('./pages/AlimentazioneAllenamento'));
 const SchedaAlimentazione = React.lazy(() => import('./pages/SchedaAlimentazione'));
 const SchedaAllenamento = React.lazy(() => import('./pages/SchedaAllenamento'));
+const ClientSchedaAlimentazione = React.lazy(() => import('./pages/ClientSchedaAlimentazione'));
+const ClientSchedaAllenamento = React.lazy(() => import('./pages/ClientSchedaAllenamento'));
 
 // Spinner
 const PageSpinner = () => (
@@ -303,6 +305,8 @@ export default function App() {
           <Route path="/client/checks" element={<ClientChecks />} />
           <Route path="/client/payments" element={<ClientPayments />} />
           <Route path="/client/chat" element={<ClientChat />} />
+          <Route path="/client/scheda-alimentazione" element={<ClientSchedaAlimentazione />} />
+          <Route path="/client/scheda-allenamento" element={<ClientSchedaAllenamento />} />
         </Route>
 
         {/* === ROTTE COLLABORATORI === */}
