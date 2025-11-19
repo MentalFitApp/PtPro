@@ -209,7 +209,13 @@ const ClientDashboard = () => {
 
   return (
     <div className="min-h-screen overflow-x-hidden w-full">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full max-w-6xl mx-auto px-3 sm:px-6 pt-8 sm:pt-10 pb-4 sm:pb-6 mobile-safe-bottom">
+      <motion.div 
+        initial="hidden" 
+        animate="visible" 
+        variants={containerVariants} 
+        className="w-full max-w-6xl mx-auto px-3 sm:px-6 pb-20 sm:pb-6 mobile-safe-bottom"
+        style={{ paddingTop: 'max(3rem, env(safe-area-inset-top) + 3rem)' }}
+      >
         <motion.header variants={itemVariants} className="flex flex-col gap-4 mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full">
             <NotificationPanel userType="client" />

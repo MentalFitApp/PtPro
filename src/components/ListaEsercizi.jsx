@@ -159,7 +159,7 @@ const ListaEsercizi = ({ onBack }) => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6"
+      className="space-y-6 max-w-full overflow-x-hidden"
     >
       <div className="flex items-center justify-between">
         <button
