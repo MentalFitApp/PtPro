@@ -76,23 +76,25 @@ const BottomNav = ({ isCoach, isCollaboratore }) => {
   const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : adminNavLinks);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-2xl border-t border-white/10 z-50 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-2xl border-t border-white/10 z-50 md:hidden safe-area-bottom">
       <div className="px-2 py-2">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hidden snap-x snap-mandatory">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hidden snap-x snap-mandatory pb-1">
           {links.map(link => (
             <motion.button
               key={link.to}
               onClick={() => navigate(link.to)}
-              className={`flex flex-col items-center justify-center min-w-[60px] h-14 px-3 rounded-xl transition-all text-xs snap-center ${
+              className={`flex flex-col items-center justify-center min-w-[56px] max-w-[64px] h-14 px-2 rounded-xl transition-all snap-center flex-shrink-0 ${
                 location.pathname === link.to || location.pathname.startsWith(link.to + '/')
-                  ? 'text-rose-500 bg-rose-600/10'
+                  ? 'text-rose-500 bg-rose-600/10 border border-rose-600/30'
                   : 'text-slate-400 hover:text-rose-400'
               }`}
-              whileHover={{ scale: 1.1 }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              {link.icon}
-              <span className="text-[10px] mt-1 truncate w-full">{link.label}</span>
+              <div className="flex-shrink-0">
+                {React.cloneElement(link.icon, { size: 18 })}
+              </div>
+              <span className="text-[9px] mt-0.5 truncate w-full text-center leading-tight">{link.label}</span>
             </motion.button>
           ))}
         </div>

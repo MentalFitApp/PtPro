@@ -302,8 +302,9 @@ const RateTable = ({ rates, canEdit, onAdd, onUpdate, onDelete }) => {
 
   return (
     <div className="mt-6">
-      <h3 className="text-lg font-bold text-slate-200 mb-2">Rate</h3>
-      <table className="w-full text-xs bg-slate-800/60 rounded-xl border border-slate-700">
+      <h3 className="text-base sm:text-lg font-bold text-slate-200 mb-2">Rate</h3>
+      <div className="mobile-table-wrapper">
+      <table className="w-full text-xs sm:text-sm bg-slate-800/60 rounded-xl border border-slate-700 min-w-[500px]">
         <thead>
           <tr className="bg-slate-900/50">
             <th className="px-2 py-2">Importo</th>
@@ -361,11 +362,12 @@ const RateTable = ({ rates, canEdit, onAdd, onUpdate, onDelete }) => {
           )}
         </tbody>
       </table>
+      </div>
       {canEdit && (
-        <div className="flex gap-2 mt-3">
-          <input type="number" placeholder="Importo (€)" value={newRate.amount} onChange={e => setNewRate({ ...newRate, amount: e.target.value })} className="p-2 rounded bg-slate-700/50 border border-slate-600 text-white" />
-          <input type="date" value={newRate.dueDate} onChange={e => setNewRate({ ...newRate, dueDate: e.target.value })} className="p-2 rounded bg-slate-700/50 border border-slate-600 text-white" />
-          <button onClick={() => { if (newRate.amount && newRate.dueDate) { onAdd(newRate); setNewRate({ amount: '', dueDate: '', paid: false }); } }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded">Aggiungi rata</button>
+        <div className="flex flex-col sm:flex-row gap-2 mt-3">
+          <input type="number" placeholder="Importo (€)" value={newRate.amount} onChange={e => setNewRate({ ...newRate, amount: e.target.value })} className="p-2 rounded bg-slate-700/50 border border-slate-600 text-white text-sm w-full sm:w-auto" />
+          <input type="date" value={newRate.dueDate} onChange={e => setNewRate({ ...newRate, dueDate: e.target.value })} className="p-2 rounded bg-slate-700/50 border border-slate-600 text-white text-sm w-full sm:w-auto" />
+          <button onClick={() => { if (newRate.amount && newRate.dueDate) { onAdd(newRate); setNewRate({ amount: '', dueDate: '', paid: false }); } }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-sm whitespace-nowrap">Aggiungi rata</button>
         </div>
       )}
     </div>

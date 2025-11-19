@@ -588,7 +588,7 @@ export default function Clients() {
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
       <ConfirmationModal isOpen={!!clientToDelete} onClose={() => setClientToDelete(null)} onConfirm={handleDelete} clientName={clientToDelete?.name} />
 
-      <div className="mobile-container py-4 sm:py-6 space-y-4 sm:space-y-6 pb-20 md:pb-8">
+      <div className="mobile-container py-4 sm:py-6 space-y-4 sm:space-y-6 mobile-safe-bottom">
         {/* HEADER MOBILE */}
         <div className="md:hidden bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-4 mx-3">
           <h1 className="text-2xl font-bold text-slate-100 mb-2">Clienti</h1>
@@ -879,7 +879,7 @@ export default function Clients() {
 
             {/* DESKTOP: Table */}
             <div className="hidden md:block bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 md:p-6 border border-slate-700 shadow-xl mx-3 sm:mx-6">
-              <div className="overflow-x-auto -mx-3 md:mx-0">
+              <div className="mobile-table-wrapper relative -mx-3 md:mx-0">
                 <table className="w-full min-w-[800px] text-xs md:text-sm text-left text-slate-300">
                 <thead className="text-slate-400 uppercase text-[10px] md:text-xs">
                   <tr>

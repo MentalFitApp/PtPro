@@ -35,12 +35,12 @@ const timeAgo = (date) => {
 
 // --- COMPONENTI UI ---
 const StatCard = ({ title, value, icon, isCurrency = false, isPercentage = false }) => (
-  <div className="bg-slate-800/60 backdrop-blur-sm p-5 rounded-xl border border-slate-700 shadow-xl h-full">
-    <div className="flex items-center gap-3 text-slate-400">
-      {icon}
-      <p className="text-sm font-medium">{title}</p>
+  <div className="bg-slate-800/60 backdrop-blur-sm p-3 sm:p-5 rounded-xl border border-slate-700 shadow-xl h-full">
+    <div className="flex items-center gap-2 sm:gap-3 text-slate-400">
+      {React.cloneElement(icon, { size: 18, className: `sm:w-5 sm:h-5 ${icon.props.className || ''}` })}
+      <p className="text-xs sm:text-sm font-medium truncate">{title}</p>
     </div>
-    <p className="text-3xl font-bold text-slate-100 mt-3">
+    <p className="text-2xl sm:text-3xl font-bold text-slate-100 mt-2 sm:mt-3 truncate">
       {isCurrency 
         ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value) 
         : isPercentage ? `${value}%` : value
@@ -514,17 +514,17 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen overflow-x-hidden w-full">
-      <div className="w-full py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <div className="w-full py-4 sm:py-6 space-y-4 sm:space-y-6 mobile-safe-bottom">
         {/* HEADER */}
-        <div className="bg-slate-800/30 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-5 mx-3 sm:mx-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 flex items-center gap-2">
-              <TrendingUp size={28}/> Dashboard
+        <div className="bg-slate-800/30 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-5 space-y-3 sm:space-y-5 mx-3 sm:mx-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-100 flex items-center gap-2">
+              <TrendingUp size={24} className="sm:w-7 sm:h-7"/> Dashboard
             </h1>
-            <div className="flex items-center gap-3">
-              <span className="text-slate-300 font-semibold">{userName}</span>
-              <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors">
-                <LogOut size={16} /> Logout
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <span className="text-slate-300 font-semibold text-sm sm:text-base truncate">{userName}</span>
+              <button onClick={handleLogout} className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors">
+                <LogOut size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           </div>
@@ -532,62 +532,62 @@ export default function Dashboard() {
           <div className="border-t border-white/10"></div>
 
           <div>
-            <p className="text-slate-400 text-sm mb-3">Panoramica delle metriche chiave e progressi in tempo reale.</p>
+            <p className="text-slate-400 text-xs sm:text-sm mb-3">Panoramica delle metriche chiave e progressi in tempo reale.</p>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => navigate('/clients')} className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
-                <Users size={16}/> Gestisci
+              <button onClick={() => navigate('/clients')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2">
+                <Users size={14} className="sm:w-4 sm:h-4"/> <span>Gestisci</span>
               </button>
-              <button onClick={() => navigate('/new-client')} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
-                <Plus size={16}/> Nuovo
+              <button onClick={() => navigate('/new-client')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2">
+                <Plus size={14} className="sm:w-4 sm:h-4"/> <span>Nuovo</span>
               </button>
-              <button onClick={() => navigate('/business-history')} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
-                <BarChart3 size={16}/> Storico
+              <button onClick={() => navigate('/business-history')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2">
+                <BarChart3 size={14} className="sm:w-4 sm:h-4"/> <span>Storico</span>
               </button>
             </div>
           </div>
         </div>
 
       {/* CONTENT */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mx-3 sm:mx-6">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mx-3 sm:mx-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
             <StatCard title="Incasso Mensile" value={monthlyIncome} icon={<DollarSign className="text-green-500"/>} isCurrency={true} />
             <StatCard title="Clienti Attivi" value={clientStats.active} icon={<CheckCircle className="text-blue-500"/>} />
             <StatCard title="Retention Rate" value={retentionRate} icon={<RefreshCw className="text-amber-500"/>} isPercentage={true} />
           </div>
 
-          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700 shadow-xl h-[450px] flex flex-col">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-slate-100 flex items-center gap-2"><BarChart3 size={20} /> Andamento Business</h2>
-              <div className="flex gap-2 bg-slate-800/40 backdrop-blur-xl border border-white/10 p-1 rounded-lg">
-                <button onClick={() => setChartDataType('revenue')} className={`px-3 py-1 text-sm rounded-md transition ${chartDataType === 'revenue' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Fatturato</button>
-                <button onClick={() => setChartDataType('clients')} className={`px-3 py-1 text-sm rounded-md transition ${chartDataType === 'clients' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Clienti</button>
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-6 border border-slate-700 shadow-xl mobile-chart-container flex flex-col">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 sm:mb-4">
+              <h2 className="text-base sm:text-lg font-semibold text-slate-100 flex items-center gap-2"><BarChart3 size={18} className="sm:w-5 sm:h-5" /> Andamento Business</h2>
+              <div className="flex gap-1 sm:gap-2 bg-slate-800/40 backdrop-blur-xl border border-white/10 p-0.5 sm:p-1 rounded-lg overflow-x-auto">
+                <button onClick={() => setChartDataType('revenue')} className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md transition whitespace-nowrap ${chartDataType === 'revenue' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Fatturato</button>
+                <button onClick={() => setChartDataType('clients')} className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md transition whitespace-nowrap ${chartDataType === 'clients' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Clienti</button>
               </div>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-h-[250px]">
               <Line data={chartDataConfig} options={chartOptions} />
             </div>
-            <div className="flex justify-center mt-4">
-              <div className="flex gap-2 bg-slate-800/40 backdrop-blur-xl border border-white/10 p-1 rounded-lg">
-                <button onClick={() => setChartTimeRange('daily')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'daily' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Giorno</button>
-                <button onClick={() => setChartTimeRange('monthly')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'monthly' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Mese</button>
-                <button onClick={() => setChartTimeRange('yearly')} className={`px-3 py-1 text-xs rounded-md transition ${chartTimeRange === 'yearly' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Anno</button>
+            <div className="flex justify-center mt-3 sm:mt-4">
+              <div className="flex gap-1 sm:gap-2 bg-slate-800/40 backdrop-blur-xl border border-white/10 p-0.5 sm:p-1 rounded-lg">
+                <button onClick={() => setChartTimeRange('daily')} className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded-md transition ${chartTimeRange === 'daily' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Giorno</button>
+                <button onClick={() => setChartTimeRange('monthly')} className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded-md transition ${chartTimeRange === 'monthly' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Mese</button>
+                <button onClick={() => setChartTimeRange('yearly')} className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded-md transition ${chartTimeRange === 'yearly' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Anno</button>
               </div>
             </div>
           </div>
 
           {focusClient && (
-            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700 shadow-xl">
-              <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 text-slate-100"><Target size={18} /> Focus del Giorno</h2>
-              <p className="text-sm font-bold text-rose-400">{focusClient.name}</p>
-              <p className="text-sm text-slate-400 mt-1">Obiettivo: "{focusClient.goal || 'Non specificato'}"</p>
+            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-slate-700 shadow-xl">
+              <h2 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 flex items-center gap-2 text-slate-100"><Target size={16} className="sm:w-5 sm:h-5" /> Focus del Giorno</h2>
+              <p className="text-sm font-bold text-rose-400 truncate">{focusClient.name}</p>
+              <p className="text-xs sm:text-sm text-slate-400 mt-1 line-clamp-2">Obiettivo: "{focusClient.goal || 'Non specificato'}"</p>
             </div>
           )}
         </div>
         
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-slate-700 shadow-xl">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-100"><Bell size={20} /> Feed Attività</h2>
-          <div className="space-y-3 max-h-[90vh] lg:max-h-[calc(100vh-14rem)] overflow-y-auto pr-2">
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-6 border border-slate-700 shadow-xl">
+          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-slate-100"><Bell size={18} className="sm:w-5 sm:h-5" /> Feed Attività</h2>
+          <div className="space-y-2 sm:space-y-3 max-h-[400px] sm:max-h-[500px] lg:max-h-[calc(100vh-14rem)] overflow-y-auto pr-1 sm:pr-2">
             <AnimatePresence>
               {activityFeed.length > 0 ? activityFeed
                 .sort((a, b) => toDate(b.date) - toDate(a.date))
@@ -595,7 +595,7 @@ export default function Dashboard() {
                 .map(item => (
                   <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds || item.date}`} item={item} navigate={navigate} />
                 )) 
-                : <p className="text-sm text-slate-500 p-4 text-center">Nessuna attività recente.</p>
+                : <p className="text-xs sm:text-sm text-slate-500 p-4 text-center">Nessuna attività recente.</p>
               }
             </AnimatePresence>
           </div>

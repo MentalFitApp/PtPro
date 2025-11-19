@@ -227,62 +227,62 @@ export default function Statistiche() {
   if (!isAdmin) return null;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-10">
+    <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-10 mobile-safe-bottom">
 
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
-          <BarChart3 size={32} /> Statistiche Complete
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-100 flex items-center gap-2 sm:gap-3">
+          <BarChart3 size={24} className="sm:w-7 sm:h-7 lg:w-8 lg:h-8" /> Statistiche Complete
         </h1>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-            className="px-4 py-2 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-sm" />
-          <span className="text-slate-400">→</span>
+            className="px-2 sm:px-4 py-1.5 sm:py-2 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-xs sm:text-sm flex-1 sm:flex-none" />
+          <span className="text-slate-400 text-xs sm:text-base">→</span>
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-            className="px-4 py-2 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-sm" />
+            className="px-2 sm:px-4 py-1.5 sm:py-2 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-xs sm:text-sm flex-1 sm:flex-none" />
           <button onClick={() => {
             const d = new Date(); d.setDate(d.getDate() - 6);
             setStartDate(d.toISOString().split('T')[0]);
             setEndDate(new Date().toISOString().split('T')[0]);
-          }} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+          }} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm whitespace-nowrap">
             Ultimi 7 giorni
           </button>
         </div>
       </div>
 
       {/* LEAD TOTALI */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-5 border border-slate-700">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-400">Lead Totali</p>
-              <p className="text-3xl font-bold text-amber-300">{totalLeads}</p>
+              <p className="text-xs sm:text-sm text-slate-400">Lead Totali</p>
+              <p className="text-2xl sm:text-3xl font-bold text-amber-300">{totalLeads}</p>
             </div>
-            <Users size={28} className="text-amber-400" />
+            <Users size={24} className="sm:w-7 sm:h-7 text-amber-400" />
           </div>
         </div>
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-5 border border-slate-700">
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-400">Show-Up</p>
-              <p className="text-3xl font-bold text-emerald-300">{showUpTotal}</p>
+              <p className="text-xs sm:text-sm text-slate-400">Show-Up</p>
+              <p className="text-2xl sm:text-3xl font-bold text-emerald-300">{showUpTotal}</p>
             </div>
-            <UserCheck size={28} className="text-emerald-400" />
+            <UserCheck size={24} className="sm:w-7 sm:h-7 text-emerald-400" />
           </div>
         </div>
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-5 border border-slate-700">
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-400">Chiusi</p>
-              <p className="text-3xl font-bold text-rose-300">{chiusoTotal}</p>
+              <p className="text-xs sm:text-sm text-slate-400">Chiusi</p>
+              <p className="text-2xl sm:text-3xl font-bold text-rose-300">{chiusoTotal}</p>
             </div>
-            <DollarSign size={28} className="text-rose-400" />
+            <DollarSign size={24} className="sm:w-7 sm:h-7 text-rose-400" />
           </div>
         </div>
       </div>
 
       {/* VENDITA */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-6">
         {[
           { label: 'Call Fissate', value: salesStats.fissate, color: 'text-amber-300' },
           { label: 'Call Fatte', value: salesStats.fatte, color: 'text-green-300' },
@@ -290,45 +290,45 @@ export default function Statistiche() {
           { label: 'Warm', value: `${salesStats.warmRate}%`, color: 'text-yellow-300' },
           { label: 'Close', value: `${salesStats.closeRate}%`, color: 'text-rose-300' },
         ].map((kpi, i) => (
-          <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-5 border border-slate-700">
-            <p className="text-sm text-slate-400">{kpi.label}</p>
-            <p className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</p>
+          <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">{kpi.label}</p>
+            <p className={`text-xl sm:text-2xl font-bold ${kpi.color} truncate`}>{kpi.value}</p>
           </div>
         ))}
       </div>
 
       {/* SETTING */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
         {[
           { label: 'Dialed', value: settingStats.dialed, color: 'text-blue-300' },
           { label: 'Risposte', value: `${settingStats.risposteRate}%`, color: 'text-cyan-300' },
           { label: 'Follow-Ups', value: settingStats.followUps, color: 'text-green-300' },
           { label: 'Prenotate', value: `${settingStats.prenotateRate}%`, color: 'text-rose-300' },
         ].map((kpi, i) => (
-          <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-5 border border-slate-700">
-            <p className="text-sm text-slate-400">{kpi.label}</p>
-            <p className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</p>
+          <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">{kpi.label}</p>
+            <p className={`text-xl sm:text-2xl font-bold ${kpi.color} truncate`}>{kpi.value}</p>
           </div>
         ))}
       </div>
 
       {/* LEAD PER SETTER */}
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-          <Users size={28} /> Lead per Setter
+      <div className="space-y-4 sm:space-y-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-100 flex items-center gap-2">
+          <Users size={24} className="sm:w-7 sm:h-7" /> Lead per Setter
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           {leadsBySetter.map((s, i) => (
-            <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-5 border border-slate-700">
-              <div className="flex items-center justify-between mb-3">
+            <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-xs font-bold text-slate-300">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-slate-600 rounded-full flex items-center justify-center text-xs font-bold text-slate-300">
                     {s.name.charAt(0).toUpperCase()}
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-100">{s.name}</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-100 truncate">{s.name}</h3>
                 </div>
               </div>
-              <div className="space-y-2 text-sm">
+              <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-400">Lead Totali</span>
                   <span className="font-bold text-amber-300">{s.total}</span>
@@ -345,29 +345,29 @@ export default function Statistiche() {
             </div>
           ))}
           {leadsBySetter.length === 0 && (
-            <div className="col-span-full text-center py-8 text-slate-400">Nessun lead nel periodo</div>
+            <div className="col-span-full text-center py-8 text-slate-400 text-sm">Nessun lead nel periodo</div>
           )}
         </div>
       </div>
 
       {/* DMS TRACKER - 4 TABELLE DI CONFRONTO */}
-      <div className="space-y-8">
-        <h2 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-          <Target size={28} /> DMS Tracker - Confronto
+      <div className="space-y-4 sm:space-y-8">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-100 flex items-center gap-2">
+          <Target size={24} className="sm:w-7 sm:h-7" /> DMS Tracker - Confronto
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {[
             { title: 'Outreach Totale', key: 'outreachTotale', color: 'text-amber-300', icon: MessageSquare },
             { title: 'Follow-Ups', key: 'followUpsTotali', color: 'text-green-300', icon: Phone },
             { title: 'Risposte', key: 'risposte', color: 'text-cyan-300', icon: UserCheck },
             { title: 'Call Prenotate', key: 'callPrenotate', color: 'text-rose-300', icon: Target },
           ].map((table, i) => (
-            <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-5 border border-slate-700">
-              <h3 className="text-lg font-semibold text-slate-100 mb-3 flex items-center gap-2">
-                <table.icon size={20} /> {table.title}
+            <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+              <h3 className="text-sm sm:text-lg font-semibold text-slate-100 mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
+                <table.icon size={16} className="sm:w-5 sm:h-5" /> <span className="truncate">{table.title}</span>
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {aggregatedBySetter.length === 0 ? (
                   <p className="text-xs text-slate-500 italic text-center">Nessun dato</p>
                 ) : (
@@ -375,9 +375,9 @@ export default function Statistiche() {
                     .sort((a, b) => b[table.key] - a[table.key])
                     .slice(0, 5)
                     .map((s, j) => (
-                      <div key={j} className="flex justify-between text-sm">
-                        <span className="text-slate-300 truncate max-w-[100px]">{s.name}</span>
-                        <span className={`font-bold ${table.color}`}>{s[table.key]}</span>
+                      <div key={j} className="flex justify-between text-xs sm:text-sm">
+                        <span className="text-slate-300 truncate max-w-[120px] sm:max-w-[150px]">{s.name}</span>
+                        <span className={`font-bold ${table.color} whitespace-nowrap ml-2`}>{s[table.key]}</span>
                       </div>
                     ))
                 )}
@@ -389,8 +389,8 @@ export default function Statistiche() {
         {/* TABELLA COMPLETA DMS */}
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-6 border border-slate-700">
           <h3 className="text-sm sm:text-lg font-semibold text-slate-200 mb-3 sm:mb-4">Tabella Completa DMS</h3>
-          <div className="overflow-x-auto -mx-3 sm:mx-0">
-            <table className="w-full text-xs sm:text-sm text-left">
+          <div className="mobile-table-wrapper relative -mx-3 sm:mx-0">
+            <table className="w-full text-xs sm:text-sm text-left min-w-[500px]">
               <thead className="text-[10px] sm:text-xs uppercase bg-slate-900/50">
                 <tr>
                   <th className="px-2 sm:px-4 py-2 sm:py-3">Setter</th>
