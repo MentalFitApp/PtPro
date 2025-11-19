@@ -4,11 +4,9 @@ import {
   doc, getDoc, setDoc, collection, query, where, orderBy,
   onSnapshot, deleteDoc, updateDoc
 } from 'firebase/firestore';
-import {
-  getStorage, uploadBytes, ref as storageRef, getDownloadURL
-} from 'firebase/storage';
 import { updatePassword } from 'firebase/auth';
-import { db, auth, storage } from '../firebase';
+import { db, auth } from '../firebase';
+import { uploadPhoto } from '../storageUtils.js';
 import { 
   CheckCircle, FileText, Save, Phone, TrendingUp, BarChart3, 
   Plus, X, Eye, Check, AlertCircle, Trash2, Clock, User, 
@@ -373,9 +371,8 @@ export default function CollaboratoreDashboard() {
     if (!file) return;
     setUploading(true);
     try {
-      const storageRefPath = storageRef(storage, `profilePhotos/${auth.currentUser.uid}`);
-      await uploadBytes(storageRefPath, file);
-      const url = await getDownloadURL(storageRefPath);
+      // Upload to Cloudflare R2 with automatic compression
+      const url = await uploadPhoto(file, auth.currentUser.uid, 'profile_photos');
       await updateDoc(doc(db, 'collaboratori', auth.currentUser.uid), { photoURL: url });
       setProfile({ ...profile, photoURL: url });
       setSuccess('Foto caricata!');

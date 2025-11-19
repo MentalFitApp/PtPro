@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
 import { collection, query, onSnapshot, addDoc, doc, getDoc, updateDoc, serverTimestamp, orderBy } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db } from '../firebase.js';
 import { useNavigate } from 'react-router-dom';
 import Calendar from 'react-calendar';
@@ -9,6 +8,7 @@ import 'react-calendar/dist/Calendar.css';
 import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
+import { uploadPhoto } from '../storageUtils.js';
 
 // Stili personalizzati per il calendario
 const calendarStyles = `
@@ -135,16 +135,12 @@ const CheckDetails = ({ check, handleEditClick }) => {
   useEffect(() => {
     const loadPhotos = async () => {
       if (check.photoURLs) {
-        const photoPromises = Object.entries(check.photoURLs).map(async ([type, path]) => {
-          if (path && typeof path === 'string' && !path.startsWith('http')) {
-            const fileRef = ref(storage, path);
-            const url = await getDownloadURL(fileRef).catch(() => null);
-            return { type, url };
-          }
-          return { type, url: path };
+        // R2 URLs are already public URLs, no need to fetch them
+        // Just use them directly (all new uploads will be R2 URLs starting with http)
+        const photoEntries = Object.entries(check.photoURLs).map(([type, path]) => {
+          return [type, path]; // Use URL directly
         });
-        const photos = await Promise.all(photoPromises);
-        setPhotoURLs(Object.fromEntries(photos.map(p => [p.type, p.url])));
+        setPhotoURLs(Object.fromEntries(photoEntries));
       }
     };
     loadPhotos();
@@ -218,7 +214,6 @@ export default function ClientChecks() {
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
-  const storage = getStorage();
 
   useEffect(() => {
     if (!user) {
@@ -239,22 +234,15 @@ export default function ClientChecks() {
         const q = query(checksCollectionRef, orderBy('createdAt', 'desc'));
         const unsubscribe = onSnapshot(q, async (snapshot) => {
           const checksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          // Carica dinamicamente le foto per ogni check
-          const updatedChecks = await Promise.all(checksData.map(async (check) => {
+          // R2 URLs are already public, no need to fetch them
+          // Just use them directly (all new uploads will be R2 URLs starting with http)
+          const updatedChecks = checksData.map((check) => {
             if (check.photoURLs) {
-              const photoPromises = Object.entries(check.photoURLs).map(async ([type, path]) => {
-                if (path && typeof path === 'string' && !path.startsWith('http')) {
-                  const fileRef = ref(storage, path);
-                  const url = await getDownloadURL(fileRef).catch(() => null);
-                  return { type, url };
-                }
-                return { type, url: path };
-              });
-              const photos = await Promise.all(photoPromises);
-              return { ...check, photoURLs: Object.fromEntries(photos.map(p => [p.type, p.url])) };
+              // Use URLs directly - they're already public R2 URLs
+              return { ...check, photoURLs: check.photoURLs };
             }
             return check;
-          }));
+          });
           setChecks(updatedChecks);
           setLoading(false);
         }, (err) => {
@@ -359,10 +347,9 @@ export default function ClientChecks() {
 
       if (photosToUpload.length > 0) {
         const uploadPromises = photosToUpload.map(async ([type, file]) => {
-          const filePath = `clients/${user.uid}/checks/${uuidv4()}-${file.name}`;
-          const fileRef = ref(storage, filePath);
-          await uploadBytes(fileRef, file);
-          return { type, url: await getDownloadURL(fileRef) };
+          // Upload to Cloudflare R2 with automatic compression
+          const url = await uploadPhoto(file, user.uid, 'check_photos');
+          return { type, url };
         });
         const uploadedUrls = await Promise.all(uploadPromises);
         photoURLs = { ...photoURLs, ...Object.fromEntries(uploadedUrls.map(({ type, url }) => [type, url])) };

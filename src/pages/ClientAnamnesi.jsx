@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, FilePenLine, Camera, UploadCloud, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadPhoto } from '../storageUtils.js';
 
 const Notification = ({ message, type, onDismiss }) => (
   <AnimatePresence>
@@ -139,10 +139,8 @@ const ClientAnamnesi = () => {
 
       if (photosToUpload.length > 0) {
         const uploadPromises = photosToUpload.map(async ([type, file]) => {
-          const filePath = `clients/${user.uid}/anamnesi_photos/${type}-${uuidv4()}.jpg`;
-          const fileRef = ref(storage, filePath);
-          await uploadBytes(fileRef, file);
-          const url = await getDownloadURL(fileRef);
+          // Upload to Cloudflare R2 with automatic compression
+          const url = await uploadPhoto(file, user.uid, 'anamnesi_photos');
           return { type, url };
         });
         const uploadedUrls = await Promise.all(uploadPromises);

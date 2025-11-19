@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { db, storage } from '../firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 // --- 1. NUOVE ICONE DA LUCIDE-REACT ---
 import { UploadCloud, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { uploadToR2 } from '../cloudflareStorage.js';
 
 export default function CheckForm({ clientId, onSuccess }) {
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
@@ -27,25 +27,16 @@ export default function CheckForm({ clientId, onSuccess }) {
     }
 
     try {
+      // Upload photos to Cloudflare R2 with progress tracking
       const photoURLs = await Promise.all(
-        files.map(file => {
-          return new Promise((resolve, reject) => {
-            const fileName = `${uuidv4()}-${file.name}`;
-            const storageRef = ref(storage, `clients/${clientId}/checks/${fileName}`);
-            const uploadTask = uploadBytesResumable(storageRef, file);
-
-            uploadTask.on('state_changed', 
-              (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                setUploadProgress(progress);
-              }, 
-              (error) => reject(error), 
-              async () => {
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                resolve(downloadURL);
-              }
-            );
+        files.map(async (file, index) => {
+          const url = await uploadToR2(file, clientId, 'check_photos', (progressInfo) => {
+            // Update progress: calculate average progress across all files
+            const progressPerFile = 100 / files.length;
+            const currentProgress = (index * progressPerFile) + (progressInfo.percent * progressPerFile / 100);
+            setUploadProgress(currentProgress);
           });
+          return url;
         })
       );
       
