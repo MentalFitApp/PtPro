@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Filter, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { Search, Filter, CheckCircle, AlertCircle, XCircle, UserPlus, Clock, AlertTriangle } from 'lucide-react';
 import { db, toDate } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 
 const STATUS_COLORS = {
   consegnata: 'bg-emerald-900/30 border-emerald-600/50 text-emerald-300',
@@ -45,6 +45,7 @@ const ListaClientiAllenamento = ({ onBack }) => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState(''); // '', 'attiva', 'scaduta', 'in_scadenza'
+  const [activeTab, setActiveTab] = useState('tutti'); // 'tutti', 'nuovi', 'alimentazione_scade', 'allenamento_scade', 'scaduti'
 
   useEffect(() => {
     loadClients();
@@ -62,6 +63,7 @@ const ListaClientiAllenamento = ({ onBack }) => {
           name: data.name || 'N/D',
           email: data.email || '',
           phone: data.phone || '',
+          createdAt: data.createdAt || data.startDate || null,
           // Scheda Allenamento
           schedaAllenamento: data.schedaAllenamento || {},
           // Scheda Alimentazione
@@ -80,44 +82,101 @@ const ListaClientiAllenamento = ({ onBack }) => {
     return calculateCardStatus(toDate(scheda.scadenza));
   };
 
-  const filteredClients = clients.filter(client => {
-    // Search filter
-    const matchesSearch = 
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (!matchesSearch) return false;
+  const getDaysUntilExpiry = (scadenzaDate) => {
+    if (!scadenzaDate) return null;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const scadenza = new Date(toDate(scadenzaDate));
+    scadenza.setHours(0, 0, 0, 0);
+    return Math.ceil((scadenza - now) / (1000 * 60 * 60 * 24));
+  };
 
-    // Status filter
-    if (!filterStatus) return true;
+  const isNewClient = (client) => {
+    if (!client.createdAt) return false;
+    const createdDate = toDate(client.createdAt);
+    if (!createdDate) return false;
+    const daysSinceCreated = Math.ceil((new Date() - createdDate) / (1000 * 60 * 60 * 24));
+    return daysSinceCreated <= 7 && 
+           getStatusForCard(client.schedaAllenamento) === 'mancante' && 
+           getStatusForCard(client.schedaAlimentazione) === 'mancante';
+  };
 
-    const allenamentoStatus = getStatusForCard(client.schedaAllenamento);
-    const alimentazioneStatus = getStatusForCard(client.schedaAlimentazione);
-
-    if (filterStatus === 'attiva') {
-      return allenamentoStatus === 'consegnata' && alimentazioneStatus === 'consegnata';
-    } else if (filterStatus === 'scaduta') {
-      return allenamentoStatus === 'scaduta' || alimentazioneStatus === 'scaduta';
-    } else if (filterStatus === 'in_scadenza') {
-      const allenamentoDate = toDate(client.schedaAllenamento?.scadenza);
-      const alimentazioneDate = toDate(client.schedaAlimentazione?.scadenza);
+  const getFilteredAndSortedClients = () => {
+    let filtered = clients.filter(client => {
+      // Search filter
+      const matchesSearch = 
+        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.email.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const now = new Date();
-      now.setHours(0, 0, 0, 0);
-      
-      const checkInScadenza = (date) => {
-        if (!date) return false;
-        const scadenza = new Date(date);
-        scadenza.setHours(0, 0, 0, 0);
-        const diffDays = Math.ceil((scadenza - now) / (1000 * 60 * 60 * 24));
-        return diffDays >= 0 && diffDays <= 7;
-      };
+      if (!matchesSearch) return false;
 
-      return checkInScadenza(allenamentoDate) || checkInScadenza(alimentazioneDate);
+      // Tab filter
+      if (activeTab === 'nuovi') {
+        return isNewClient(client);
+      } else if (activeTab === 'alimentazione_scade') {
+        const days = getDaysUntilExpiry(client.schedaAlimentazione?.scadenza);
+        return days !== null && days >= 0 && days <= 7;
+      } else if (activeTab === 'allenamento_scade') {
+        const days = getDaysUntilExpiry(client.schedaAllenamento?.scadenza);
+        return days !== null && days >= 0 && days <= 7;
+      } else if (activeTab === 'scaduti') {
+        const allenamentoDays = getDaysUntilExpiry(client.schedaAllenamento?.scadenza);
+        const alimentazioneDays = getDaysUntilExpiry(client.schedaAlimentazione?.scadenza);
+        return (allenamentoDays !== null && allenamentoDays < 0) || 
+               (alimentazioneDays !== null && alimentazioneDays < 0);
+      }
+
+      // Status filter (for 'tutti' tab)
+      if (!filterStatus) return true;
+
+      const allenamentoStatus = getStatusForCard(client.schedaAllenamento);
+      const alimentazioneStatus = getStatusForCard(client.schedaAlimentazione);
+
+      if (filterStatus === 'attiva') {
+        return allenamentoStatus === 'consegnata' && alimentazioneStatus === 'consegnata';
+      } else if (filterStatus === 'scaduta') {
+        return allenamentoStatus === 'scaduta' || alimentazioneStatus === 'scaduta';
+      } else if (filterStatus === 'in_scadenza') {
+        const allenamentoDays = getDaysUntilExpiry(client.schedaAllenamento?.scadenza);
+        const alimentazioneDays = getDaysUntilExpiry(client.schedaAlimentazione?.scadenza);
+        return (allenamentoDays !== null && allenamentoDays >= 0 && allenamentoDays <= 7) ||
+               (alimentazioneDays !== null && alimentazioneDays >= 0 && alimentazioneDays <= 7);
+      }
+
+      return true;
+    });
+
+    // Sort by expiry date for expiring tabs
+    if (activeTab === 'alimentazione_scade') {
+      filtered.sort((a, b) => {
+        const daysA = getDaysUntilExpiry(a.schedaAlimentazione?.scadenza) || 999;
+        const daysB = getDaysUntilExpiry(b.schedaAlimentazione?.scadenza) || 999;
+        return daysA - daysB;
+      });
+    } else if (activeTab === 'allenamento_scade') {
+      filtered.sort((a, b) => {
+        const daysA = getDaysUntilExpiry(a.schedaAllenamento?.scadenza) || 999;
+        const daysB = getDaysUntilExpiry(b.schedaAllenamento?.scadenza) || 999;
+        return daysA - daysB;
+      });
+    } else if (activeTab === 'scaduti') {
+      filtered.sort((a, b) => {
+        const daysA = Math.min(
+          getDaysUntilExpiry(a.schedaAllenamento?.scadenza) || 999,
+          getDaysUntilExpiry(a.schedaAlimentazione?.scadenza) || 999
+        );
+        const daysB = Math.min(
+          getDaysUntilExpiry(b.schedaAllenamento?.scadenza) || 999,
+          getDaysUntilExpiry(b.schedaAlimentazione?.scadenza) || 999
+        );
+        return daysA - daysB;
+      });
     }
 
-    return true;
-  });
+    return filtered;
+  };
+
+  const filteredClients = getFilteredAndSortedClients();
 
   return (
     <motion.div
@@ -135,6 +194,67 @@ const ListaClientiAllenamento = ({ onBack }) => {
         <h2 className="text-2xl font-bold text-slate-100">Lista Clienti</h2>
       </div>
 
+      {/* Tabs */}
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-6">
+        <div className="flex gap-2 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('tutti')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'tutti'
+                ? 'bg-rose-600 text-white'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            <Filter size={16} />
+            Tutti
+          </button>
+          <button
+            onClick={() => setActiveTab('nuovi')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'nuovi'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            <UserPlus size={16} />
+            Nuovi Clienti (7gg)
+          </button>
+          <button
+            onClick={() => setActiveTab('alimentazione_scade')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'alimentazione_scade'
+                ? 'bg-yellow-600 text-white'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            <Clock size={16} />
+            Alimentazione in Scadenza
+          </button>
+          <button
+            onClick={() => setActiveTab('allenamento_scade')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'allenamento_scade'
+                ? 'bg-yellow-600 text-white'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            <Clock size={16} />
+            Allenamento in Scadenza
+          </button>
+          <button
+            onClick={() => setActiveTab('scaduti')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'scaduti'
+                ? 'bg-red-600 text-white'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            <AlertTriangle size={16} />
+            Scaduti
+          </button>
+        </div>
+      </div>
+
       {/* Search and Filters */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
@@ -150,8 +270,9 @@ const ListaClientiAllenamento = ({ onBack }) => {
           </div>
         </div>
 
-        {/* Status Filters */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Status Filters - Only show in 'tutti' tab */}
+        {activeTab === 'tutti' && (
+          <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-slate-400 flex items-center gap-2">
             <Filter size={16} />
             Filtri:
@@ -197,6 +318,7 @@ const ListaClientiAllenamento = ({ onBack }) => {
             In Scadenza (7 giorni)
           </button>
         </div>
+        )}
       </div>
 
       {/* Clients List */}
