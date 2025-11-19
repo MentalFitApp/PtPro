@@ -14,7 +14,7 @@ App di gestione per personal trainer con funzionalità complete per clienti, sch
    - Inserisci le tue credenziali Firebase
 
 3. **Configura Cloudflare R2 (Storage foto/video)**:
-   - Segui la guida completa: [R2-SETUP-GUIDE.md](./R2-SETUP-GUIDE.md)
+   - Segui le istruzioni in `.env.example`
    - Configura le variabili `VITE_R2_*` nel file `.env`
 
 4. **Avvia il server di sviluppo**:
@@ -31,7 +31,7 @@ L'app usa **Cloudflare R2** per lo storage di foto e video:
 - ✅ Compressione automatica immagini (riduce 70-80%)
 - ✅ 10GB storage gratis al mese
 
-**Setup completo**: Leggi [R2-SETUP-GUIDE.md](./R2-SETUP-GUIDE.md)
+**Setup**: Vedi istruzioni in `.env.example`
 
 ## 🛠️ Scripts Disponibili
 
@@ -42,7 +42,6 @@ L'app usa **Cloudflare R2** per lo storage di foto e video:
 
 ## 📚 Documentazione
 
-- [Setup Cloudflare R2](./R2-SETUP-GUIDE.md) - Guida completa setup storage
 - [Gestione Admin](./ADMIN-MANAGEMENT.md) - Gestione amministratori
 - [Alimentazione & Allenamento](./ALIMENTAZIONE-ALLENAMENTO-DOCS.md) - Funzionalità nutrizionali
 - [Ottimizzazioni Mobile](./MOBILE_OPTIMIZATION_GUIDE.md) - Guide performance mobile
