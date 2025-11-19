@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Apple, Dumbbell, ChevronRight } from 'lucide-react';
+import ListaClientiAllenamento from '../components/ListaClientiAllenamento';
+import ListaAlimenti from '../components/ListaAlimenti';
+import ListaEsercizi from '../components/ListaEsercizi';
 
 const AlimentazioneAllenamento = () => {
   const [activeSection, setActiveSection] = useState(null);
@@ -93,54 +96,15 @@ const AlimentazioneAllenamento = () => {
 
         {/* Content Area - Will be loaded based on active section */}
         {activeSection === 'clienti' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-slate-800/50 rounded-2xl border border-slate-700 p-6"
-          >
-            <button
-              onClick={() => setActiveSection(null)}
-              className="mb-4 text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              ← Torna indietro
-            </button>
-            <h2 className="text-2xl font-bold text-slate-100 mb-4">Lista Clienti</h2>
-            <p className="text-slate-400">Sezione in sviluppo...</p>
-          </motion.div>
+          <ListaClientiAllenamento onBack={() => setActiveSection(null)} />
         )}
 
         {activeSection === 'alimenti' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-slate-800/50 rounded-2xl border border-slate-700 p-6"
-          >
-            <button
-              onClick={() => setActiveSection(null)}
-              className="mb-4 text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              ← Torna indietro
-            </button>
-            <h2 className="text-2xl font-bold text-slate-100 mb-4">Lista Alimenti</h2>
-            <p className="text-slate-400">Sezione in sviluppo...</p>
-          </motion.div>
+          <ListaAlimenti onBack={() => setActiveSection(null)} />
         )}
 
         {activeSection === 'esercizi' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-slate-800/50 rounded-2xl border border-slate-700 p-6"
-          >
-            <button
-              onClick={() => setActiveSection(null)}
-              className="mb-4 text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              ← Torna indietro
-            </button>
-            <h2 className="text-2xl font-bold text-slate-100 mb-4">Lista Esercizi</h2>
-            <p className="text-slate-400">Sezione in sviluppo...</p>
-          </motion.div>
+          <ListaEsercizi onBack={() => setActiveSection(null)} />
         )}
       </div>
     </div>
