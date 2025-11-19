@@ -477,8 +477,8 @@ export default function CalendarPage() {
                     <div className={`text-sm font-semibold mb-1 ${isToday ? 'text-rose-300' : 'text-slate-200'}`}>
                       {day}
                     </div>
-                    <div className="space-y-1 max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
-                      {dayEvents.map(event => (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {dayEvents.map((event, idx) => (
                         <div
                           key={event.id}
                           onClick={(e) => {
@@ -488,17 +488,15 @@ export default function CalendarPage() {
                               setShowLeadDetails(true);
                             }
                           }}
-                          className={`text-[10px] sm:text-xs px-1.5 py-0.5 rounded truncate ${
+                          className={`w-2 h-2 rounded-full ${
                             event.type === 'lead'
-                              ? 'bg-emerald-600/80 text-emerald-100 cursor-pointer hover:bg-emerald-500/80'
+                              ? 'bg-emerald-500 cursor-pointer hover:ring-2 hover:ring-emerald-400'
                               : event.type === 'call'
-                              ? 'bg-blue-600/80 text-blue-100'
-                              : 'bg-purple-600/80 text-purple-100'
+                              ? 'bg-blue-500'
+                              : 'bg-purple-500'
                           }`}
                           title={`${event.time} - ${event.title}`}
-                        >
-                          {event.time} {event.title}
-                        </div>
+                        />
                       ))}
                     </div>
                   </>
