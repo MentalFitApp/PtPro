@@ -127,7 +127,7 @@ export default function SimpleLayout() {
           </nav>
         </aside>
         
-        {/* Contenuto con effetto trasparenza */}
+        {/* Contenuto con effetto trasparenza - Always add margin for sidebar */}
         <div className="relative z-10 w-full md:ml-64">
           <Outlet />
         </div>

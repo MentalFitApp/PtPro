@@ -39,17 +39,23 @@ const calculateCardStatus = (scadenzaDate) => {
   return 'consegnata';
 };
 
-const ListaClientiAllenamento = ({ onBack }) => {
+const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState(''); // '', 'attiva', 'scaduta', 'in_scadenza'
-  const [activeTab, setActiveTab] = useState('tutti'); // 'tutti', 'nuovi', 'alimentazione_scade', 'allenamento_scade', 'scaduti'
+  const [activeTab, setActiveTab] = useState(initialFilter || 'tutti'); // 'tutti', 'nuovi', 'alimentazione_scade', 'allenamento_scade', 'scaduti'
 
   useEffect(() => {
     loadClients();
   }, []);
+
+  useEffect(() => {
+    if (initialFilter) {
+      setActiveTab(initialFilter);
+    }
+  }, [initialFilter]);
 
   const loadClients = async () => {
     setLoading(true);
