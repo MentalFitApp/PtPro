@@ -46,6 +46,7 @@ const GuideManager = React.lazy(() => import('./pages/GuideManager'));
 const Statistiche = React.lazy(() => import('./pages/Statistiche'));
 const CalendarPage = React.lazy(() => import('./pages/CalendarPage'));
 const Notifications = React.lazy(() => import('./pages/Notifications'));
+const AlimentazioneAllenamento = React.lazy(() => import('./pages/AlimentazioneAllenamento'));
 
 // Spinner
 const PageSpinner = () => (
@@ -174,7 +175,8 @@ export default function App() {
               location.pathname === '/guide-manager' ||
               location.pathname === '/admin/dipendenti' ||
               location.pathname === '/statistiche' ||
-              location.pathname === '/notifications'
+              location.pathname === '/notifications' ||
+              location.pathname === '/alimentazione-allenamento'
             )) ||
             (isCurrentUserACoach && (
               location.pathname === '/coach' ||
@@ -273,6 +275,7 @@ export default function App() {
           <Route path="/admin/dipendenti" element={<Dipendenti />} />
           <Route path="/statistiche" element={<Statistiche />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/alimentazione-allenamento" element={<AlimentazioneAllenamento />} />
         </Route>
 
         {/* === ROTTE COACH (SOLO COACH) === */}

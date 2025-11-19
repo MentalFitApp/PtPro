@@ -50,6 +50,7 @@ const adminNavLinks = [
   { to: '/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
   { to: '/statistiche', icon: <BarChart3 size={18} />, label: 'Statistiche' },
   { to: '/notifications', icon: <BellRing size={18} />, label: 'Notifiche' },
+  { to: '/alimentazione-allenamento', icon: <FileText size={18} />, label: 'Alimentazione' },
 ];
 
 const coachNavLinks = [
