@@ -803,107 +803,24 @@ export default function Clients() {
         </div>
         )}
 
-        {/* VISTA LISTA - Mobile: Cards, Desktop: Table */}
+        {/* VISTA LISTA - Table with horizontal scroll on mobile */}
         {viewMode === 'list' && (
           <>
-            {/* MOBILE: Cards */}
-            <div className="md:hidden space-y-3 mx-3">
-              {filteredAndSortedClients.map((c) => {
-                const expiry = toDate(c.scadenza);
-                const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
-                const totalPayments = paymentsTotals[c.id] ?? 0;
-
-                return (
-                  <motion.div
-                    key={c.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <button
-                          onClick={() => navigate(`/client/${c.id}`)}
-                          className="text-left font-semibold text-slate-100 hover:text-rose-400 transition-colors text-base"
-                        >
-                          {c.name || "-"}
-                        </button>
-                        <p className="text-xs text-slate-400 mt-0.5">{c.email}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/edit/${c.id}`); }}
-                          className="p-2 text-amber-400 hover:bg-white/10 rounded-lg transition-all"
-                        >
-                          <FilePenLine size={16}/>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setClientToDelete(c); }}
-                          className="p-2 text-red-400 hover:bg-white/10 rounded-lg transition-all"
-                        >
-                          <Trash2 size={16}/>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mb-3">
-                      <div>
-                        <span className="text-slate-500">Inizio:</span>
-                        <p className="text-slate-300 font-medium">{toDate(c.startDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">Scadenza:</span>
-                        <p className={`font-medium ${
-                          daysToExpiry < 0 ? 'text-red-400' : 
-                          daysToExpiry <= 7 ? 'text-amber-400' : 
-                          'text-emerald-400'
-                        }`}>
-                          {expiry?.toLocaleDateString('it-IT') || 'N/D'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-2">
-                        {daysToExpiry !== null && (
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            daysToExpiry < 0 ? 'bg-red-900/40 text-red-300 border border-red-600/50' 
-                            : daysToExpiry <= 7 ? 'bg-amber-900/40 text-amber-300 border border-amber-600/50'
-                            : 'bg-emerald-900/40 text-emerald-300 border border-emerald-600/50'
-                          }`}>
-                            {daysToExpiry < 0 ? 'Scaduto' : `${daysToExpiry} gg`}
-                          </span>
-                        )}
-                        <AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} />
-                      </div>
-                      <span className="text-xs px-2 py-1 rounded-full bg-cyan-900/40 text-cyan-300 border border-cyan-600/50 font-medium">
-                        €{totalPayments.toFixed(2)}
-                      </span>
-                    </div>
-                  </motion.div>
-                );
-              })}
-              {filteredAndSortedClients.length === 0 && (
-                <div className="text-center py-12 text-slate-500">
-                  <Search size={48} className="mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">Nessun cliente trovato</p>
+            {/* TABLE - Always visible with horizontal scroll on mobile */}
+            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 md:p-6 border border-slate-700 shadow-xl mx-3 sm:mx-6">
+              <div className="mobile-table-wrapper relative -mx-3 md:mx-0 overflow-x-auto">
+                {/* Scroll indicator for mobile */}
+                <div className="md:hidden absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none z-10 bg-gradient-to-l from-slate-800/90 to-transparent pl-8 pr-2">
+                  <ChevronRight size={20} className="text-slate-400 animate-pulse" />
                 </div>
-              )}
-            </div>
-
-            {/* DESKTOP: Table */}
-            <div className="hidden md:block bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 md:p-6 border border-slate-700 shadow-xl mx-3 sm:mx-6">
-              <div className="mobile-table-wrapper relative -mx-3 md:mx-0">
                 <table className="w-full min-w-[800px] text-xs md:text-sm text-left text-slate-300">
                 <thead className="text-slate-400 uppercase text-[10px] md:text-xs">
                   <tr>
-                    <th className="p-2 md:p-4 min-w-[150px] md:min-w-[180px] font-bold">Nome</th>
+                    <th className="p-2 md:p-4 min-w-[150px] md:min-w-[180px] font-bold sticky left-0 bg-slate-800/95 z-10">Nome</th>
                     <th className="p-2 md:p-4 min-w-[100px] md:min-w-[140px] font-bold">Inizio</th>
                     <th className="p-2 md:p-4 min-w-[120px] md:min-w-[160px] font-bold">Scadenza</th>
                     <th className="p-2 md:p-4 min-w-[120px] md:min-w-[160px] font-bold">Anamnesi</th>
-                    <th className="p-2 md:p-4 text-right min-w-[100px] md:min-w-[120px] font-bold">Azioni</th>
+                    <th className="p-2 md:p-4 text-right min-w-[100px] md:min-w-[120px] font-bold sticky right-0 bg-slate-800/95 z-10">Azioni</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -914,7 +831,7 @@ export default function Clients() {
 
                     return (
                       <tr key={c.id} className="border-t border-white/10 hover:bg-white/10 transition-all">
-                        <td className="p-2 md:p-4 font-medium min-w-[150px] md:min-w-[180px]">
+                        <td className="p-2 md:p-4 font-medium min-w-[150px] md:min-w-[180px] sticky left-0 bg-slate-800/95">
                           <div className="flex items-center justify-between gap-2 md:gap-3">
                             <button onClick={() => navigate(`/client/${c.id}`)} className="text-left hover:text-rose-400 transition-colors truncate">
                               {c.name || "-"}
@@ -928,27 +845,45 @@ export default function Clients() {
                         <td className="p-2 md:p-4 min-w-[120px] md:min-w-[160px]">
                           {expiry ? (
                             <div className="flex items-center gap-1 md:gap-2">
-                              <span className="text-[10px] md:text-xs">{expiry.toLocaleDateString('it-IT')}</span>
+                              <span className={`font-medium ${
+                                daysToExpiry < 0 ? 'text-red-400' : 
+                                daysToExpiry <= 7 ? 'text-amber-400' : 
+                                'text-emerald-400'
+                              }`}>
+                                {expiry.toLocaleDateString('it-IT')}
+                              </span>
                               {daysToExpiry !== null && (
-                                <span className={`text-[9px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-full font-medium transition-all whitespace-nowrap ${
-                                  daysToExpiry < 0 ? 'bg-red-900/40 text-red-300 border border-red-600/50 hover:bg-red-900/60' 
-                                  : daysToExpiry <= 7 ? 'bg-amber-900/40 text-amber-300 border border-amber-600/50 hover:bg-amber-900/60'
-                                  : 'bg-emerald-900/40 text-emerald-300 border border-emerald-600/50 hover:bg-emerald-900/60'
+                                <span className={`text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-full font-medium whitespace-nowrap ${
+                                  daysToExpiry < 0 ? 'bg-red-900/40 text-red-300 border border-red-600/50' 
+                                  : daysToExpiry <= 7 ? 'bg-amber-900/40 text-amber-300 border border-amber-600/50'
+                                  : 'bg-emerald-900/40 text-emerald-300 border border-emerald-600/50'
                                 }`}>
                                   {daysToExpiry < 0 ? 'Scaduto' : `${daysToExpiry} gg`}
                                 </span>
                               )}
                             </div>
-                          ) : 'N/D'}
+                          ) : (
+                            <span className="text-slate-500">N/D</span>
+                          )}
                         </td>
                         <td className="p-2 md:p-4 min-w-[120px] md:min-w-[160px]"><AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} /></td>
-                        <td className="p-2 md:p-4 text-right min-w-[100px] md:min-w-[120px]">
-                          <div className="flex items-center gap-0.5 md:gap-1 justify-end">
-                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/edit/${c.id}`); }} className="p-1 md:p-2 text-slate-400 hover:text-amber-400 hover:bg-white/10 rounded-lg transition-all" title="Modifica">
-                              <FilePenLine size={14} className="md:hidden"/><FilePenLine size={16} className="hidden md:block"/>
+                        <td className="p-2 md:p-4 text-right min-w-[100px] md:min-w-[120px] sticky right-0 bg-slate-800/95">
+                          <div className="flex items-center justify-end gap-1 md:gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/edit/${c.id}`); }}
+                              className="p-1.5 md:p-2 text-amber-400 hover:bg-white/10 rounded-lg transition-all min-w-[36px] min-h-[36px] md:min-w-[44px] md:min-h-[44px] flex items-center justify-center"
+                              title="Modifica"
+                            >
+                              <FilePenLine size={14}/>
                             </button>
-                            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setClientToDelete(c); }} className="p-1 md:p-2 text-slate-400 hover:text-red-400 hover:bg-white/10 rounded-lg transition-all" title="Elimina">
-                              <Trash2 size={14} className="md:hidden"/><Trash2 size={16} className="hidden md:block"/>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setClientToDelete(c); }}
+                              className="p-1.5 md:p-2 text-red-400 hover:bg-white/10 rounded-lg transition-all min-w-[36px] min-h-[36px] md:min-w-[44px] md:min-h-[44px] flex items-center justify-center"
+                              title="Elimina"
+                            >
+                              <Trash2 size={14}/>
                             </button>
                           </div>
                         </td>
@@ -957,15 +892,20 @@ export default function Clients() {
                   })}
                   {filteredAndSortedClients.length === 0 && (
                     <tr>
-                      <td colSpan="5" className="text-center p-8 text-slate-500 italic">
-                        Nessun cliente trovato con i filtri selezionati.
+                      <td colSpan="5" className="text-center py-12 text-slate-500">
+                        <div className="flex flex-col items-center">
+                          <Search size={48} className="mb-3 opacity-50" />
+                          <p className="text-sm">Nessun cliente trovato</p>
+                        </div>
                       </td>
                     </tr>
                   )}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </div>
-          </div>
+
+
           </>
         )}
 

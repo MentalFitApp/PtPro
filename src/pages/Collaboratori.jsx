@@ -734,18 +734,18 @@ export default function Collaboratori() {
                     <th className="px-1 sm:px-2 py-1 text-center">Az</th>
                     <th className="px-1 sm:px-2 py-1">Nome</th>
                     <th className="px-1 sm:px-2 py-1">Fonte</th>
-                    <th className="px-1 sm:px-2 py-1 hidden lg:table-cell">Email</th>
+                    <th className="px-1 sm:px-2 py-1 table-cell">Email</th>
                     <th className="px-1 sm:px-2 py-1">Num</th>
                     <th className="px-1 sm:px-2 py-1">Data</th>
                     <th className="px-1 sm:px-2 py-1">Setter</th>
-                    <th className="px-1 sm:px-2 py-1 text-center hidden lg:table-cell">Dialed</th>
+                    <th className="px-1 sm:px-2 py-1 text-center table-cell">Dialed</th>
                     <th className="px-1 sm:px-2 py-1 text-center">Setting</th>
                     <th className="px-1 sm:px-2 py-1 text-center">Show</th>
-                    <th className="px-1 sm:px-2 py-1 text-center hidden md:table-cell">Target</th>
+                    <th className="px-1 sm:px-2 py-1 text-center table-cell">Target</th>
                     <th className="px-1 sm:px-2 py-1 text-center">Warm</th>
                     <th className="px-1 sm:px-2 py-1 text-center">Close</th>
                     <th className="px-1 sm:px-2 py-1 text-center">€</th>
-                    <th className="px-1 sm:px-2 py-1 text-center hidden sm:table-cell">M</th>
+                    <th className="px-1 sm:px-2 py-1 text-center table-cell">M</th>
                     <th className="px-1 sm:px-2 py-1">Note</th>
                   </tr>
                 </thead>
@@ -781,12 +781,12 @@ export default function Collaboratori() {
                         ) : <div className="max-w-[60px] sm:max-w-[100px] truncate text-[9px] sm:text-[10px]">{lead.source || '—'}</div>}
                       </td>
 
-                      <td className="px-1 sm:px-2 py-1 truncate max-w-[100px] hidden lg:table-cell">{lead.email || '—'}</td>
+                      <td className="px-1 sm:px-2 py-1 truncate max-w-[100px] table-cell">{lead.email || '—'}</td>
                       <td className="px-1 sm:px-2 py-1">{lead.number || '—'}</td>
                       <td className="px-1 sm:px-2 py-1 text-[9px] sm:text-[10px]">{lead.dataPrenotazione ? `${lead.dataPrenotazione.slice(5)} ${lead.oraPrenotazione || ''}` : '—'}</td>
                       <td className="px-1 sm:px-2 py-1 truncate max-w-[60px] sm:max-w-[70px]">{lead.collaboratoreNome || '—'}</td>
 
-                      <td className="px-1 sm:px-2 py-1 text-center hidden lg:table-cell">
+                      <td className="px-1 sm:px-2 py-1 text-center table-cell">
                         {editingLead === lead.id ? (
                           <input type="number" min="0" value={editForm.dialed || 0} onChange={e => setEditForm({ ...editForm, dialed: parseInt(e.target.value) || 0 })} className="w-12 p-0.5 bg-slate-700/50 border border-slate-600 rounded text-xs text-center" />
                         ) : <span className="font-bold text-cyan-400">{lead.dialed ?? 0}</span>}
@@ -804,7 +804,7 @@ export default function Collaboratori() {
                         ) : <div className={`font-bold text-[10px] ${lead.showUp ? 'text-green-400' : 'text-red-400'}`}>{lead.showUp ? 'Sì' : 'No'}</div>}
                       </td>
 
-                      <td className="px-1 sm:px-2 py-1 text-center hidden md:table-cell">
+                      <td className="px-1 sm:px-2 py-1 text-center table-cell">
                         {editingLead === lead.id ? (
                           <input type="checkbox" checked={editForm.target || false} onChange={e => setEditForm({ ...editForm, target: e.target.checked })} className="w-3 h-3" />
                         ) : <div className={`font-bold text-[10px] ${lead.target ? 'text-yellow-400' : 'text-gray-500'}`}>{lead.target ? 'Sì' : 'No'}</div>}
@@ -828,7 +828,7 @@ export default function Collaboratori() {
                         ) : <div className="font-bold text-green-400 text-[10px] sm:text-xs">€{lead.amount || 0}</div>}
                       </td>
 
-                      <td className="px-1 sm:px-2 py-1 text-center hidden sm:table-cell">
+                      <td className="px-1 sm:px-2 py-1 text-center table-cell">
                         {editingLead === lead.id ? (
                           <input type="number" min="0" value={editForm.mesi || ''} onChange={e => setEditForm({ ...editForm, mesi: e.target.value })} className="w-10 sm:w-12 p-0.5 bg-slate-700/50 border border-slate-600 rounded text-xs text-center" />
                         ) : <div className="font-bold">{lead.mesi || 0}</div>}
