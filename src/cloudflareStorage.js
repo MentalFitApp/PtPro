@@ -70,16 +70,20 @@ export const compressImage = async (file) => {
  * @param {string} clientId - ID del cliente per organizzare i file
  * @param {string} folder - Sotto-cartella (es. 'anamnesi_photos', 'check_photos')
  * @param {Function} onProgress - Callback per progress (opzionale)
+ * @param {boolean} isAdmin - Se true, rimuove il limite di dimensione file (default: false)
  * @returns {Promise<string>} - URL pubblico del file caricato
  */
-export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onProgress = null) => {
+export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onProgress = null, isAdmin = false) => {
   if (!file) throw new Error('Nessun file fornito');
 
   // Validazione dimensione file (prima della compressione)
-  const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
-  if (file.size > maxSize) {
-    const maxSizeMB = maxSize / (1024 * 1024);
-    throw new Error(`Il file supera il limite di ${maxSizeMB}MB`);
+  // Admin: nessun limite, Clienti: 10MB per immagini, 50MB per video
+  if (!isAdmin) {
+    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      const maxSizeMB = maxSize / (1024 * 1024);
+      throw new Error(`Il file supera il limite di ${maxSizeMB}MB`);
+    }
   }
 
   // Validazione tipo file
@@ -93,8 +97,14 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
     // Comprimi l'immagine se necessario
     let fileToUpload = file;
     if (isImage) {
-      if (onProgress) onProgress({ stage: 'compressing', percent: 0 });
+      const emit = (payload) => {
+        try { window.dispatchEvent(new CustomEvent('global-upload-progress', { detail: payload })); } catch {}
+      };
+      if (onProgress) onProgress({ stage: 'compressing', percent: 5, message: 'Compressione immagine in corso...' });
+      emit({ stage: 'compressing', percent: 5, message: 'Compressione immagine in corso...' });
       fileToUpload = await compressImage(file);
+      if (onProgress) onProgress({ stage: 'compressed', percent: 15, message: 'Compressione completata' });
+      emit({ stage: 'compressed', percent: 15, message: 'Compressione completata' });
     }
 
     // Crea nome file unico
@@ -108,7 +118,9 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
       throw new Error('VITE_R2_BUCKET_NAME non configurato');
     }
 
-    if (onProgress) onProgress({ stage: 'uploading', percent: 0 });
+    const emit = (payload) => { try { window.dispatchEvent(new CustomEvent('global-upload-progress', { detail: payload })); } catch {} };
+    if (onProgress) onProgress({ stage: 'uploading', percent: 20, message: 'Upload iniziato...' });
+    emit({ stage: 'uploading', percent: 20, message: 'Upload iniziato...' });
 
     // Converti il file in ArrayBuffer per l'upload
     const arrayBuffer = await fileToUpload.arrayBuffer();
@@ -126,9 +138,28 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
 
     // Upload a R2
     const client = getR2Client();
-    await client.send(command);
+    // Simulazione avanzamento (PutObject non espone progress nativo) 
+    // Avanziamo a tappe mentre attendiamo la promise
+    const progressSteps = [40, 55, 70, 85];
+    let stepIndex = 0;
+    const intervalId = setInterval(() => {
+      if (stepIndex < progressSteps.length) {
+        const payload = { stage: 'uploading', percent: progressSteps[stepIndex], message: 'Caricamento...' };
+        if (onProgress) onProgress(payload);
+        emit(payload);
+        stepIndex++;
+      }
+    }, 250);
 
-    if (onProgress) onProgress({ stage: 'complete', percent: 100 });
+    await client.send(command); // attende completamento effettivo
+    clearInterval(intervalId);
+
+    const finalizing = { stage: 'finalizing', percent: 95, message: 'Finalizzazione...' };
+    const complete = { stage: 'complete', percent: 100, message: 'Upload completato!' };
+    if (onProgress) onProgress(finalizing);
+    emit(finalizing);
+    if (onProgress) onProgress(complete);
+    emit(complete);
 
     // Costruisci l'URL pubblico
     // Nota: devi configurare un custom domain su R2 o usare il public bucket URL
@@ -166,10 +197,12 @@ export const getR2URL = (fileKey) => {
  * @param {File} file - File da caricare
  * @param {string} clientId - ID del cliente
  * @param {string} folder - Sotto-cartella
+ * @param {Function} onProgress - Callback per progress (opzionale)
+ * @param {boolean} isAdmin - Se true, rimuove il limite di dimensione file (default: false)
  * @returns {Promise<string>} - URL del file caricato
  */
-export const uploadPhoto = async (file, clientId, folder = 'anamnesi_photos') => {
-  return uploadToR2(file, clientId, folder);
+export const uploadPhoto = async (file, clientId, folder = 'anamnesi_photos', onProgress = null, isAdmin = false) => {
+  return uploadToR2(file, clientId, folder, onProgress, isAdmin);
 };
 
 // Export default per retrocompatibilità

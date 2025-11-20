@@ -16,10 +16,12 @@ import { uploadToR2, uploadPhoto as uploadPhotoR2, compressImage } from './cloud
  * @param {File} file - Il file da caricare.
  * @param {string} clientId - L'ID del cliente per la cartella di destinazione.
  * @param {string} folder - Sotto-cartella (es. 'anamnesi_photos', 'check_photos').
+ * @param {Function} onProgress - Callback per progress (opzionale)
+ * @param {boolean} isAdmin - Se true, rimuove il limite di dimensione file (default: false)
  * @returns {Promise<string>} L'URL pubblico del file caricato.
  */
-export const uploadPhoto = async (file, clientId, folder = 'anamnesi_photos') => {
-  return uploadPhotoR2(file, clientId, folder);
+export const uploadPhoto = async (file, clientId, folder = 'anamnesi_photos', onProgress = null, isAdmin = false) => {
+  return uploadPhotoR2(file, clientId, folder, onProgress, isAdmin);
 };
 
 // Export delle funzioni R2 per uso diretto

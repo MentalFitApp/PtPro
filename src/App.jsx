@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
+import GlobalUploadBar from './components/GlobalUploadBar';
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
@@ -253,6 +254,7 @@ export default function App() {
 
   return (
     <Suspense fallback={<PageSpinner />}>
+      <GlobalUploadBar />
       <Routes>
         {/* === ROTTE PUBBLICHE === */}
         <Route element={<GuidaLayout />}>

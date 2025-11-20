@@ -10,10 +10,12 @@
     "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "migrate:photos:dry": "node migratePhotosToR2.cjs --dry",
+    "migrate:photos": "node migratePhotosToR2.cjs --run"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.935.0",
+    "@aws-sdk/client-s3": "^3.936.0",
     "browser-image-compression": "^2.0.2",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.0",

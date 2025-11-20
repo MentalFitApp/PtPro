@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Component } from 'react';
+import normalizePhotoURLs from '../utils/normalizePhotoURLs';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { db, toDate, auth } from '../firebase';
 import { Users, ArrowLeft, Calendar, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -52,23 +52,18 @@ const ImageModal = ({ src, onClose }) => (
   </AnimatePresence>
 );
 
-// Sezione Anamnesi (nessuna modifica per le foto, solo per check sotto)
+// Sezione Anamnesi - usa URL diretti (R2 o vecchi Firebase)
 const AnamnesiSection = ({ title, data, photoURLs, onImageClick, variants }) => {
   const [loadedPhotos, setLoadedPhotos] = useState({});
-  const storage = getStorage();
 
   useEffect(() => {
     const loadPhotos = async () => {
       if (!photoURLs) return;
-      const promises = Object.entries(photoURLs).map(async ([type, path]) => {
-        if (path && !path.startsWith('http')) {
-          const url = await getDownloadURL(ref(storage, path)).catch(() => null);
-          return { type, url };
-        }
-        return { type, url: path };
+      // R2 URLs are already public, use them directly
+      const photoEntries = Object.entries(photoURLs).map(([type, path]) => {
+        return [type, path]; // Use URL directly - both R2 and old Firebase URLs should work
       });
-      const photos = await Promise.all(promises);
-      setLoadedPhotos(Object.fromEntries(photos.map(p => [p.type, p.url])));
+      setLoadedPhotos(Object.fromEntries(photoEntries));
     };
     loadPhotos();
   }, [photoURLs]);
@@ -115,20 +110,15 @@ const AnamnesiSection = ({ title, data, photoURLs, onImageClick, variants }) => 
 const CheckItem = ({ check, onImageClick, variants }) => {
   const [loadedPhotos, setLoadedPhotos] = useState({});
   const [showPhotos, setShowPhotos] = useState(true);
-  const storage = getStorage();
 
   useEffect(() => {
     const loadPhotos = async () => {
       if (!check.photoURLs) return;
-      const promises = Object.entries(check.photoURLs).map(async ([type, path]) => {
-        if (path && !path.startsWith('http')) {
-          const url = await getDownloadURL(ref(storage, path)).catch(() => null);
-          return { type, url };
-        }
-        return { type, url: path };
+      // R2 URLs are already public, use them directly
+      const photoEntries = Object.entries(check.photoURLs).map(([type, path]) => {
+        return [type, path]; // Use URL directly - both R2 and old Firebase URLs should work
       });
-      const photos = await Promise.all(promises);
-      setLoadedPhotos(Object.fromEntries(photos.map(p => [p.type, p.url])));
+      setLoadedPhotos(Object.fromEntries(photoEntries));
     };
     loadPhotos();
   }, [check.photoURLs]);
@@ -238,14 +228,31 @@ export default function CoachClientDetail() {
 
         const anamnesiRef = doc(db, 'clients', clientId, 'anamnesi', 'initial');
         const anamnesiDoc = await getDoc(anamnesiRef);
-        setAnamnesi(anamnesiDoc.exists() ? anamnesiDoc.data() : null);
+        if (anamnesiDoc.exists()) {
+          let aData = anamnesiDoc.data();
+          if (aData.photoURLs) {
+            aData.photoURLs = normalizePhotoURLs(aData.photoURLs);
+            console.debug('[CoachClientDetail] Anamnesi photoURLs normalized:', aData.photoURLs);
+          }
+          setAnamnesi(aData);
+        } else {
+          setAnamnesi(null);
+        }
 
         const checksQuery = query(
           collection(db, 'clients', clientId, 'checks'),
           orderBy('createdAt', 'desc')
         );
         const unsub = onSnapshot(checksQuery, (snap) => {
-          setChecks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+          const rawChecks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          const normalizedChecks = rawChecks.map(c => {
+            if (c.photoURLs) {
+              c.photoURLs = normalizePhotoURLs(c.photoURLs);
+            }
+            return c;
+          });
+          console.debug('[CoachClientDetail] Checks photoURLs normalized');
+          setChecks(normalizedChecks);
           setLoading(false);
         }, (err) => {
           setError('Errore caricamento check');

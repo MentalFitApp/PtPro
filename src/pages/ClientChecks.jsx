@@ -9,6 +9,7 @@ import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircl
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadPhoto } from '../storageUtils.js';
+import normalizePhotoURLs from '../utils/normalizePhotoURLs';
 
 // Stili personalizzati per il calendario
 const calendarStyles = `
@@ -52,7 +53,7 @@ const Notification = ({ message, type, onDismiss }) => (
   </AnimatePresence>
 );
 
-const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, handleFileChange }) => {
+const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, uploadProgress, handleFileChange }) => {
   const handleCancel = () => setFormState({ id: null, notes: '', weight: '', photos: {}, photoPreviews: {} });
 
   const PhotoUploader = ({ type, label, preview }) => (
@@ -113,6 +114,14 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
           <PhotoUploader type="left" label="Laterale Sinistro" preview={formState.photoPreviews.left} />
           <PhotoUploader type="back" label="Posteriore" preview={formState.photoPreviews.back} />
         </div>
+        {isUploading && (
+          <div className="w-full bg-slate-700/50 rounded-lg h-3 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-teal-400 transition-all"
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        )}
         <div className="flex justify-end">
           <button
             type="submit"
@@ -120,7 +129,7 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
             className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition font-semibold disabled:opacity-50"
           >
             <Send size={16} />
-            {isUploading ? 'Salvataggio...' : (formState.id ? 'Salva Modifiche' : 'Invia Check')}
+            {isUploading ? `Caricamento ${uploadProgress}%` : (formState.id ? 'Salva Modifiche' : 'Invia Check')}
           </button>
         </div>
       </form>
@@ -128,8 +137,43 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
   );
 };
 
+const ImageModal = ({ isOpen, imageUrl, onClose }) => (
+  <AnimatePresence>
+    {isOpen && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/90 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+      >
+        <motion.div
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          exit={{ scale: 0.9 }}
+          onClick={(e) => e.stopPropagation()}
+          className="relative max-w-6xl max-h-[90vh] w-full"
+        >
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full z-10 transition-colors"
+          >
+            <X size={24} />
+          </button>
+          <img
+            src={imageUrl}
+            alt="Full size"
+            className="w-full h-full object-contain rounded-lg"
+          />
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
 const CheckDetails = ({ check, handleEditClick }) => {
   const [photoURLs, setPhotoURLs] = useState({});
+  const [modalImage, setModalImage] = useState(null);
   const isEditable = (new Date() - check.createdAt.toDate()) / (1000 * 60 * 60) < 2; // 2 ore
 
   useEffect(() => {
@@ -137,10 +181,9 @@ const CheckDetails = ({ check, handleEditClick }) => {
       if (check.photoURLs) {
         // R2 URLs are already public URLs, no need to fetch them
         // Just use them directly (all new uploads will be R2 URLs starting with http)
-        const photoEntries = Object.entries(check.photoURLs).map(([type, path]) => {
-          return [type, path]; // Use URL directly
-        });
-        setPhotoURLs(Object.fromEntries(photoEntries));
+        const normalized = normalizePhotoURLs(check.photoURLs);
+        setPhotoURLs(normalized);
+        console.debug('[ClientChecks] Normalized photoURLs for check', check.id, normalized);
       }
     };
     loadPhotos();
@@ -148,6 +191,11 @@ const CheckDetails = ({ check, handleEditClick }) => {
 
   return (
     <div>
+      <ImageModal
+        isOpen={!!modalImage}
+        imageUrl={modalImage}
+        onClose={() => setModalImage(null)}
+      />
       <div className="flex justify-between items-center">
         <h3 className="font-bold text-lg text-cyan-300">Riepilogo del {check.createdAt.toDate().toLocaleDateString('it-IT')}</h3>
         {isEditable && (
@@ -177,18 +225,16 @@ const CheckDetails = ({ check, handleEditClick }) => {
                   {type === 'front' ? 'Frontale' : type === 'back' ? 'Posteriore' : `Laterale ${type === 'left' ? 'Sinistro' : 'Destro'}`}
                 </h5>
                 {photoURLs[type] ? (
-                  <a
-                    href={photoURLs[type]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full h-48 overflow-hidden rounded-lg transition-all duration-300 group-hover:shadow-lg group-hover:shadow-cyan-500/20"
+                  <button
+                    onClick={() => setModalImage(photoURLs[type])}
+                    className="block w-full h-48 overflow-hidden rounded-lg transition-all duration-300 group-hover:shadow-lg group-hover:shadow-cyan-500/20 cursor-pointer"
                   >
                     <img
                       src={photoURLs[type]}
                       alt={type}
                       className="w-full h-full object-cover rounded-lg hover:opacity-90 transition-opacity"
                     />
-                  </a>
+                  </button>
                 ) : (
                   <div className="w-full h-48 bg-slate-700/50 rounded-lg text-slate-500 flex items-center justify-center">Foto non disponibile</div>
                 )}
@@ -208,6 +254,7 @@ export default function ClientChecks() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [formState, setFormState] = useState({ id: null, notes: '', weight: '', photos: {}, photoPreviews: {} });
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [error, setError] = useState(null);
   
@@ -238,11 +285,11 @@ export default function ClientChecks() {
           // Just use them directly (all new uploads will be R2 URLs starting with http)
           const updatedChecks = checksData.map((check) => {
             if (check.photoURLs) {
-              // Use URLs directly - they're already public R2 URLs
-              return { ...check, photoURLs: check.photoURLs };
+              return { ...check, photoURLs: normalizePhotoURLs(check.photoURLs) };
             }
             return check;
           });
+          console.debug('[ClientChecks] Snapshot normalized');
           setChecks(updatedChecks);
           setLoading(false);
         }, (err) => {
@@ -325,7 +372,7 @@ export default function ClientChecks() {
   const handleEditClick = (check) => {
     try {
       setSelectedDate(check.createdAt.toDate());
-      setFormState({ id: check.id, notes: check.notes || '', weight: check.weight || '', photos: {}, photoPreviews: check.photoURLs || {} });
+      setFormState({ id: check.id, notes: check.notes || '', weight: check.weight || '', photos: {}, photoPreviews: normalizePhotoURLs(check.photoURLs) || {} });
     } catch (err) {
       console.error("Errore handleEditClick:", err);
       showNotification("Errore nella modifica del check.");
@@ -340,6 +387,7 @@ export default function ClientChecks() {
       return;
     }
     setIsUploading(true);
+    setUploadProgress(0);
     try {
       const existingCheck = id ? checks.find(c => c.id === id) : null;
       let photoURLs = existingCheck ? { ...existingCheck.photoURLs } : { front: null, right: null, left: null, back: null };
@@ -347,9 +395,16 @@ export default function ClientChecks() {
 
       if (photosToUpload.length > 0) {
         const uploadPromises = photosToUpload.map(async ([type, file]) => {
-          // Upload to Cloudflare R2 with automatic compression
-          const url = await uploadPhoto(file, user.uid, 'check_photos');
-          return { type, url };
+          const url = await uploadPhoto(
+            file,
+            user.uid,
+            'check_photos',
+            (p) => {
+              // p.percent: avanza barra fino a 100
+              setUploadProgress(p.percent);
+            }
+          );
+            return { type, url };
         });
         const uploadedUrls = await Promise.all(uploadPromises);
         photoURLs = { ...photoURLs, ...Object.fromEntries(uploadedUrls.map(({ type, url }) => [type, url])) };
@@ -368,7 +423,10 @@ export default function ClientChecks() {
       console.error("Errore handleSubmit:", error);
       showNotification("Si è verificato un errore.");
     } finally {
-      setIsUploading(false);
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 400);
     }
   };
 
@@ -376,7 +434,7 @@ export default function ClientChecks() {
     try {
       const checkOnDate = checks.find(c => c.createdAt && c.createdAt.toDate && c.createdAt.toDate().toDateString() === selectedDate.toDateString());
       if (formState.id || !checkOnDate) {
-        return <ClientUploadForm {...{ formState, setFormState, handleSubmit, isUploading, handleFileChange }} />;
+        return <ClientUploadForm {...{ formState, setFormState, handleSubmit, isUploading, uploadProgress, handleFileChange }} />;
       }
       if (checkOnDate) {
         return <CheckDetails check={checkOnDate} handleEditClick={handleEditClick} />;

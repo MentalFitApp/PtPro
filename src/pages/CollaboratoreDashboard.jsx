@@ -58,6 +58,7 @@ export default function CollaboratoreDashboard() {
   const [leadToDelete, setLeadToDelete] = useState(null);
   const [timeLeft, setTimeLeft] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -370,9 +371,19 @@ export default function CollaboratoreDashboard() {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
+    let localProgress = 0;
     try {
-      // Upload to Cloudflare R2 with automatic compression
-      const url = await uploadPhoto(file, auth.currentUser.uid, 'profile_photos');
+      // Upload to Cloudflare R2 with automatic compression (nessun limite per admin/collaboratori)
+      const url = await uploadPhoto(
+        file,
+        auth.currentUser.uid,
+        'profile_photos',
+        (p) => {
+          localProgress = p.percent;
+          setUploadProgress(p.percent);
+        },
+        true
+      );
       await updateDoc(doc(db, 'collaboratori', auth.currentUser.uid), { photoURL: url });
       setProfile({ ...profile, photoURL: url });
       setSuccess('Foto caricata!');
@@ -381,6 +392,7 @@ export default function CollaboratoreDashboard() {
       setError('Errore caricamento foto.');
     }
     setUploading(false);
+    setTimeout(() => setUploadProgress(0), 600);
   };
 
   // --- RESET PASSWORD ---
@@ -683,6 +695,14 @@ export default function CollaboratoreDashboard() {
               <div className="space-y-4">
                 <div className="flex flex-col items-center">
                   <img src={profile.photoURL || '/default-avatar.png'} alt="Profile" className="w-24 h-24 rounded-full mb-2" />
+                  {uploading && (
+                    <div className="w-full bg-slate-700/50 rounded-lg h-3 overflow-hidden mb-3">
+                      <div
+                        className="h-full bg-gradient-to-r from-rose-500 via-pink-400 to-fuchsia-400 transition-all"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  )}
                   <input type="file" onChange={handleUploadPhoto} accept="image/*" className="text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100" disabled={uploading} />
                 </div>
                 <input type="text" value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} placeholder="Nome" className="p-3 bg-slate-800/70 border border-white/10 rounded-lg text-white w-full" />

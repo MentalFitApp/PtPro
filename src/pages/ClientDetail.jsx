@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } from 'firebase/firestore';
-import { ref, getDownloadURL } from 'firebase/storage';
-import { db, storage, toDate, calcolaStatoPercorso, updateStatoPercorso } from '../firebase';
+import normalizePhotoURLs from '../utils/normalizePhotoURLs';
+import { db, toDate, calcolaStatoPercorso, updateStatoPercorso } from '../firebase';
 import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check, X, Plus, ZoomIn, CalendarDays } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QuickNotifyButton from '../components/QuickNotifyButton';
@@ -433,24 +433,8 @@ export default function ClientDetail() {
 
         // RISOLVI FOTO
         if (data.photoURLs) {
-          const resolved = {};
-          for (const [key, path] of Object.entries(data.photoURLs)) {
-            if (path && typeof path === 'string') {
-              if (path.startsWith('http')) {
-                resolved[key] = path;
-              } else {
-                try {
-                  resolved[key] = await getDownloadURL(ref(storage, path));
-                } catch (e) {
-                  console.error(`Errore foto ${key}:`, e);
-                  resolved[key] = null;
-                }
-              }
-            } else {
-              resolved[key] = null;
-            }
-          }
-          data.photoURLs = resolved;
+          data.photoURLs = normalizePhotoURLs(data.photoURLs);
+          console.debug('[ClientDetail] Anamnesi photoURLs normalized:', data.photoURLs);
         }
 
         setAnamnesi(data);
@@ -464,29 +448,13 @@ export default function ClientDetail() {
     const unsubChecks = onSnapshot(checksQuery, async (snap) => {
       const checksData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      const resolvedChecks = await Promise.all(checksData.map(async (check) => {
+      const resolvedChecks = checksData.map((check) => {
         if (check.photoURLs) {
-          const resolved = {};
-          for (const [key, path] of Object.entries(check.photoURLs)) {
-            if (path && typeof path === 'string') {
-              if (path.startsWith('http')) {
-                resolved[key] = path;
-              } else {
-                try {
-                  resolved[key] = await getDownloadURL(ref(storage, path));
-                } catch (e) {
-                  console.error(`Errore caricamento foto ${key}:`, e);
-                  resolved[key] = null;
-                }
-              }
-            } else {
-              resolved[key] = null;
-            }
-          }
-          check.photoURLs = resolved;
+          check.photoURLs = normalizePhotoURLs(check.photoURLs);
         }
         return check;
-      }));
+      });
+      console.debug('[ClientDetail] Checks photoURLs normalized');
       setChecks(resolvedChecks);
     }, (error) => {
       console.error('Errore caricamento checks:', error);

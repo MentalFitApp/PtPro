@@ -33,12 +33,18 @@ const Notification = ({ message, type, onDismiss }) => (
 const PhotoUploader = ({ type, label, onFileSelect, previewUrl, disabled }) => {
   const [localPreview, setLocalPreview] = useState(previewUrl);
 
+  // Aggiorna l'anteprima quando previewUrl cambia dall'esterno
+  useEffect(() => {
+    setLocalPreview(previewUrl);
+  }, [previewUrl]);
+
   const handleChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert(`File troppo grande: ${file.name}`);
+    // Limite aumentato a 10MB per clienti
+    if (file.size > 10 * 1024 * 1024) {
+      alert(`File troppo grande: ${file.name}. Limite: 10MB`);
       return;
     }
     if (!file.type.startsWith('image/')) {
@@ -84,11 +90,29 @@ const ClientAnamnesi = () => {
   const [photos, setPhotos] = useState({ front: null, right: null, left: null, back: null });
   const [photoPreviews, setPhotoPreviews] = useState({ front: null, right: null, left: null, back: null });
   const [notification, setNotification] = useState({ message: '', type: '' });
+  // Helper per mostrare barra solo se ci sono file da caricare
+  const photosToUploadExists = (obj) => Object.values(obj).some(f => f);
+  const r2PublicBase = import.meta.env.VITE_R2_PUBLIC_URL || (import.meta.env.VITE_R2_ACCOUNT_ID ? `https://pub-${import.meta.env.VITE_R2_ACCOUNT_ID}.r2.dev` : '');
+
+  const normalizePhotoURLs = useCallback((photoURLs) => {
+    if (!photoURLs || typeof photoURLs !== 'object') return photoURLs;
+    const normalized = {};
+    for (const [key, val] of Object.entries(photoURLs)) {
+      if (!val) { normalized[key] = val; continue; }
+      // Se è già http/https lo lascio
+      if (/^https?:\/\//i.test(val)) {
+        normalized[key] = val;
+      } else {
+        // Legacy path Firebase (es. clients/uid/...) prova a costruire URL R2 se abbiamo base
+        normalized[key] = r2PublicBase ? `${r2PublicBase}/${val}` : val;
+      }
+    }
+    return normalized;
+  }, [r2PublicBase]);
 
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
-  const storage = getStorage();
 
   const { register, handleSubmit, setValue, formState: { isSubmitting } } = useForm();
 
@@ -103,8 +127,11 @@ const ClientAnamnesi = () => {
         const docSnap = await getDoc(anamnesiRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
+          const normalizedPhotos = normalizePhotoURLs(data.photoURLs);
+          data.photoURLs = normalizedPhotos;
           setAnamnesiData(data);
-          if (data.photoURLs) setPhotoPreviews(data.photoURLs);
+          if (normalizedPhotos) setPhotoPreviews(normalizedPhotos);
+          console.debug('[Anamnesi] Loaded photoURLs:', normalizedPhotos);
           Object.keys(data).forEach(key => setValue(key, data[key]));
           setIsEditing(false);
         } else {
@@ -129,36 +156,56 @@ const ClientAnamnesi = () => {
     showNotification(`Foto ${type} caricata!`, 'success');
   }, [showNotification]);
 
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   const onSubmit = async (data) => {
     if (!user || isSubmitting) return;
     setLoading(true);
+    setUploadProgress(0);
     try {
       await user.getIdToken(true);
       let photoURLs = anamnesiData?.photoURLs || { front: null, right: null, left: null, back: null };
       const photosToUpload = Object.entries(photos).filter(([, file]) => file !== null);
 
       if (photosToUpload.length > 0) {
-        const uploadPromises = photosToUpload.map(async ([type, file]) => {
-          // Upload to Cloudflare R2 with automatic compression
-          const url = await uploadPhoto(file, user.uid, 'anamnesi_photos');
+        const perFileFraction = 100 / photosToUpload.length;
+        let accumulatedBase = 0;
+        const uploadPromises = photosToUpload.map(async ([type, file], index) => {
+          const url = await uploadPhoto(
+            file,
+            user.uid,
+            'anamnesi_photos',
+            (p) => {
+              // Calcola avanzamento combinato (compressione + upload per ogni file)
+              const current = Math.min(100, Math.round(accumulatedBase + (p.percent / 100) * perFileFraction));
+              setUploadProgress(current);
+            }
+          );
+          accumulatedBase = perFileFraction * (index + 1);
+          setUploadProgress(Math.min(100, Math.round(accumulatedBase)));
           return { type, url };
         });
         const uploadedUrls = await Promise.all(uploadPromises);
         photoURLs = { ...photoURLs, ...Object.fromEntries(uploadedUrls.map(({ type, url }) => [type, url])) };
+        console.debug('[Anamnesi] Uploaded photoURLs temp:', photoURLs);
       }
 
-      const dataToSave = { ...data, photoURLs, submittedAt: serverTimestamp(), createdAt: serverTimestamp() };
+      const dataToSave = { ...data, photoURLs: normalizePhotoURLs(photoURLs), submittedAt: serverTimestamp(), createdAt: serverTimestamp() };
       await setDoc(doc(db, `clients/${user.uid}/anamnesi`, 'initial'), dataToSave, { merge: true });
 
       setAnamnesiData(dataToSave);
       setPhotos({ front: null, right: null, left: null, back: null });
-      setPhotoPreviews(photoURLs);
+      setPhotoPreviews(normalizePhotoURLs(photoURLs));
+      console.debug('[Anamnesi] Saved photoURLs:', normalizePhotoURLs(photoURLs));
       setIsEditing(false);
       showNotification('Anamnesi salvata!', 'success');
     } catch (error) {
       showNotification(`Errore: ${error.message}`, 'error');
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+        setUploadProgress(0);
+      }, 500);
     }
   };
 
@@ -303,6 +350,14 @@ const ClientAnamnesi = () => {
               </div>
             </div>
 
+            {photosToUploadExists(photos) && uploadProgress > 0 && (
+              <div className="w-full bg-slate-700/50 rounded-lg h-3 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-teal-400 transition-all"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            )}
             <div className="flex justify-end gap-4 pt-4">
               <motion.button
                 type="submit"
@@ -311,7 +366,7 @@ const ClientAnamnesi = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Save size={16} /> {isSubmitting ? 'Salvataggio...' : 'Salva Anamnesi'}
+                <Save size={16} /> {isSubmitting ? `Upload ${uploadProgress}%` : 'Salva Anamnesi'}
               </motion.button>
               <motion.button
                 type="button"
