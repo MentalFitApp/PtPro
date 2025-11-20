@@ -1,20 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, getDoc, serverTimestamp, increment, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, getDoc, getDocs, serverTimestamp, increment, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Trophy, MessageSquare, Lightbulb, Plus, Heart, MessageCircle, Award, Crown, Send, Image, Video, X } from 'lucide-react';
+import { Trophy, MessageSquare, Lightbulb, Plus, Heart, MessageCircle, Award, Crown, Send, Image, Video as VideoIcon, X, Users as UsersIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 /**
  * Sistema Community con Gamificazione
- * Canali: Vittorie, Domande, Consigli
+ * Canali dinamici configurabili da admin
  * Livelli: Start (0-1), Intermedio (2-15), Pro (16-49), Elite (50-99), MentalFit (100+)
  */
 
-const CHANNELS = {
-  vittorie: { name: 'Vittorie', icon: Trophy, color: 'rose', description: 'Condividi i tuoi risultati' },
-  domande: { name: 'Domande', icon: MessageSquare, color: 'cyan', description: 'Fai domande alla community' },
-  consigli: { name: 'Consigli', icon: Lightbulb, color: 'amber', description: 'Condividi esperienze utili' },
+// Default channels (fallback)
+const DEFAULT_CHANNELS = {
+  vittorie: { name: 'Vittorie', icon: 'Trophy', color: 'rose', description: 'Condividi i tuoi risultati', enabled: true },
+  domande: { name: 'Domande', icon: 'MessageSquare', color: 'cyan', description: 'Fai domande alla community', enabled: true },
+  consigli: { name: 'Consigli', icon: 'Lightbulb', color: 'amber', description: 'Condividi esperienze utili', enabled: true },
+};
+
+// Icon mapping
+const ICON_MAP = {
+  Trophy,
+  MessageSquare,
+  Lightbulb,
+  VideoIcon,
+  UsersIcon,
 };
 
 const LEVELS = [
@@ -55,6 +65,9 @@ export default function Community() {
   const [showNewPost, setShowNewPost] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostChannel, setNewPostChannel] = useState('vittorie');
+  const [channels, setChannels] = useState(DEFAULT_CHANNELS);
+  const [showMembersList, setShowMembersList] = useState(false);
+  const [allMembers, setAllMembers] = useState([]);
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
