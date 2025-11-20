@@ -173,6 +173,9 @@ export default function Community() {
   const [showNotifications, setShowNotifications] = useState(false); // Pannello notifiche
   const [pinnedPosts, setPinnedPosts] = useState([]); // Post fissati da admin
   const [analyticsData, setAnalyticsData] = useState(null); // Dati analytics admin
+  
+  // Long-press for reactions
+  const [longPressTimer, setLongPressTimer] = useState(null);
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
@@ -803,6 +806,26 @@ export default function Community() {
     }
   };
 
+  // Long-press handlers for reactions
+  const handleLongPressStart = (postId) => {
+    const timer = setTimeout(() => {
+      setShowReactionPicker(postId);
+    }, 500); // 500ms long-press threshold
+    setLongPressTimer(timer);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const handleQuickLike = (postId, currentLikes = []) => {
+    // Quick tap = like/unlike (existing behavior)
+    handleLikePost(postId, currentLikes);
+  };
+
   // Load more posts (infinite scroll)
   const loadMorePosts = async () => {
     if (!hasMore || loadingMore || !lastVisible) return;
@@ -1164,21 +1187,38 @@ export default function Community() {
                   )}
                   {/* Azioni post */}
                   <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-slate-700 mt-3">
-                    {/* Reactions Multiple */}
+                    {/* Reactions Multiple - Long Press */}
                     <div className="relative">
                       <button
-                        onClick={() => setShowReactionPicker(showReactionPicker === post.id ? null : post.id)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 transition-all"
+                        onMouseDown={() => handleLongPressStart(post.id)}
+                        onMouseUp={handleLongPressEnd}
+                        onMouseLeave={handleLongPressEnd}
+                        onTouchStart={() => handleLongPressStart(post.id)}
+                        onTouchEnd={handleLongPressEnd}
+                        onClick={(e) => {
+                          // Se non è stato un long-press, fai un quick like
+                          if (!showReactionPicker) {
+                            handleQuickLike(post.id, post.likes || []);
+                          }
+                        }}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+                          post.likes?.includes(currentUser?.uid)
+                            ? 'bg-rose-600/30 text-rose-400 border border-rose-500/50'
+                            : 'bg-slate-700/50 hover:bg-slate-700 text-slate-300'
+                        }`}
                       >
-                        <Heart size={16} />
+                        <Heart size={16} fill={post.likes?.includes(currentUser?.uid) ? 'currentColor' : 'none'} />
                         <span className="text-sm font-medium">
-                          {Object.values(post.reactions || {}).flat().length || 0}
+                          {(post.likes?.length || 0) + Object.values(post.reactions || {}).flat().length}
                         </span>
                       </button>
                       
-                      {/* Reaction Picker */}
+                      {/* Reaction Picker - Shows on long press */}
                       {showReactionPicker === post.id && (
-                        <div className="absolute bottom-full left-0 mb-2 bg-slate-800 border border-slate-700 rounded-lg p-2 flex gap-1 shadow-xl z-10">
+                        <div 
+                          className="absolute bottom-full left-0 mb-2 bg-slate-800 border border-slate-700 rounded-lg p-2 flex gap-1 shadow-xl z-10"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {REACTIONS.map(reaction => (
                             <button
                               key={reaction.id}
@@ -1186,12 +1226,18 @@ export default function Community() {
                                 handleReaction(post.id, reaction.id, post.reactions || {});
                                 setShowReactionPicker(null);
                               }}
-                              className="text-2xl hover:scale-125 transition-transform"
+                              className="text-2xl hover:scale-125 transition-transform p-1 rounded hover:bg-slate-700"
                               title={reaction.label}
                             >
                               {reaction.emoji}
                             </button>
                           ))}
+                          <button
+                            onClick={() => setShowReactionPicker(null)}
+                            className="ml-2 px-2 text-slate-400 hover:text-slate-200 text-sm"
+                          >
+                            ✕
+                          </button>
                         </div>
                       )}
                     </div>

@@ -315,6 +315,19 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Community reports (segnalazioni)
+    match /community_reports/{reportId} {
+      // Solo admin può leggere tutti i report
+      allow read, list: if isAdmin();
+      
+      // Utenti autenticati possono creare report
+      allow create: if request.auth != null && 
+                      request.resource.data.reportedBy == request.auth.uid;
+      
+      // Solo admin può aggiornare/eliminare report
+      allow update, delete: if isAdmin();
+    }
+
     // Schede alimentazione (per Smart Meal Swap)
     match /schede_alimentazione/{schedaId} {
       allow read: if request.auth != null && (
