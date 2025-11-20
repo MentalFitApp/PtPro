@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, getDoc, getDocs, setDoc, deleteDoc, serverTimestamp, increment, arrayUnion, arrayRemove, where, limit, startAfter } from 'firebase/firestore';
 import { db, auth, storage } from '../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Trophy, MessageSquare, Lightbulb, Plus, Heart, MessageCircle, Award, Crown, Send, Image, Video as VideoIcon, X, UsersRound, Bookmark, Share2, Search, Hash, Flame, ThumbsUp, Zap, Flag, Pin, TrendingUp, BarChart3, Target, CheckCircle, Trash2, MoreVertical } from 'lucide-react';
+import { Trophy, MessageSquare, Lightbulb, Plus, Heart, MessageCircle, Award, Crown, Send, Image, Video as VideoIcon, X, UsersRound, Bookmark, Share2, Search, Hash, Flame, ThumbsUp, Zap, Flag, Pin, TrendingUp, BarChart3, Target, CheckCircle, Trash2, MoreVertical, Settings } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import MediaUploadButton from '../components/MediaUploadButton';
 import MediaViewer from '../components/MediaViewer';
@@ -133,14 +133,16 @@ export default function Community() {
   const [showSettings, setShowSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState('channels');
   const [isAdmin, setIsAdmin] = useState(false);
-  // eslint-disable-next-line no-unused-vars
   const [editingChannel, setEditingChannel] = useState(null);
   const [newChannelName, setNewChannelName] = useState('');
-  // eslint-disable-next-line no-unused-vars
+  const [newChannelDescription, setNewChannelDescription] = useState('');
+  const [newChannelType, setNewChannelType] = useState('chat'); // 'chat' o 'videocall'
   const [newChannelIcon, setNewChannelIcon] = useState('MessageSquare');
+  const [deleteConfirmChannel, setDeleteConfirmChannel] = useState(null);
+  const [editingUserLevel, setEditingUserLevel] = useState(null); // { userId, currentLikes }
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [activeTab, setActiveTab] = useState('feed'); // 'feed' o 'members'
+  const [activeTab, setActiveTab] = useState('feed'); // 'feed', 'members', 'liveRoom'
   // eslint-disable-next-line no-unused-vars
   const [onlineUsers, setOnlineUsers] = useState([]);
   // eslint-disable-next-line no-unused-vars
@@ -149,6 +151,7 @@ export default function Community() {
   const [expandedPost, setExpandedPost] = useState(null); // Per mostrare commenti
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState({}); // { postId: [comments] }
+  const [errorPopup, setErrorPopup] = useState(null); // { title, message }
   const [communityEnabled, setCommunityEnabled] = useState(true);
   const [communityDisabledMessage, setCommunityDisabledMessage] = useState('La Community è temporaneamente disattivata. Torna presto!');
   
@@ -394,9 +397,11 @@ export default function Community() {
   useEffect(() => {
     if (!currentUser) return;
 
+    // Query semplificata senza indice composito
     const postsQuery = query(
       collection(db, 'community_posts'),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
+      limit(50) // Limita a 50 post per performance
     );
 
     const unsubscribePosts = onSnapshot(postsQuery, (snapshot) => {
@@ -406,10 +411,196 @@ export default function Community() {
       }));
       setPosts(postsData);
       setLoading(false);
+    }, (error) => {
+      console.error('Errore caricamento posts:', error);
+      setLoading(false);
     });
 
     return () => unsubscribePosts();
   }, [currentUser]);
+
+  // Carica tutti i membri quando admin (per gestione livelli)
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const loadMembers = async () => {
+      try {
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const usersData = usersSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        // Filtra solo utenti con nome (profili completi)
+        const validUsers = usersData.filter(u => u.name);
+        setAllMembers(validUsers);
+      } catch (error) {
+        console.error('Errore caricamento membri:', error);
+      }
+    };
+
+    loadMembers();
+  }, [isAdmin]);
+
+  // Funzioni gestione canali
+  const handleCreateChannel = async () => {
+    if (!newChannelName.trim()) {
+      setErrorPopup({ title: 'Campo obbligatorio', message: 'Inserisci un nome per il canale' });
+      return;
+    }
+    try {
+      const channelKey = newChannelName.toLowerCase().replace(/\s+/g, '_');
+      const newChannel = {
+        name: newChannelName,
+        description: newChannelDescription,
+        type: newChannelType,
+        icon: newChannelIcon,
+        emoji: newChannelType === 'videocall' ? '📹' : '💬',
+        createdAt: serverTimestamp(),
+        createdBy: currentUser.uid,
+      };
+      
+      await setDoc(doc(db, 'communityChannels', channelKey), newChannel);
+      
+      // Aggiorna stato locale
+      setChannels(prev => ({
+        ...prev,
+        [channelKey]: {
+          name: newChannelName,
+          icon: MessageSquare,
+          description: newChannelDescription,
+          type: newChannelType,
+          emoji: newChannel.emoji,
+        },
+      }));
+      
+      // Reset form
+      setNewChannelName('');
+      setNewChannelDescription('');
+      setNewChannelType('chat');
+      setErrorPopup({ title: '✅ Successo', message: 'Canale creato con successo!', type: 'success' });
+    } catch (error) {
+      console.error('Errore creazione canale:', error);
+      setErrorPopup({ 
+        title: '❌ Errore', 
+        message: error.code === 'permission-denied' 
+          ? 'Non hai i permessi per creare canali. Contatta un amministratore.' 
+          : 'Errore durante la creazione del canale. Riprova.'
+      });
+    }
+  };
+
+  const handleEditChannel = (channelKey) => {
+    const channel = channels[channelKey];
+    setEditingChannel(channelKey);
+    setNewChannelName(channel.name);
+    setNewChannelDescription(channel.description || '');
+    setNewChannelType(channel.type || 'chat');
+  };
+
+  const handleUpdateChannel = async () => {
+    if (!editingChannel || !newChannelName.trim()) return;
+    
+    try {
+      await updateDoc(doc(db, 'communityChannels', editingChannel), {
+        name: newChannelName,
+        description: newChannelDescription,
+        type: newChannelType,
+        updatedAt: serverTimestamp(),
+        updatedBy: currentUser.uid,
+      });
+      
+      // Aggiorna stato locale
+      setChannels(prev => ({
+        ...prev,
+        [editingChannel]: {
+          ...prev[editingChannel],
+          name: newChannelName,
+          description: newChannelDescription,
+          type: newChannelType,
+        },
+      }));
+      
+      // Reset form
+      setEditingChannel(null);
+      setNewChannelName('');
+      setNewChannelDescription('');
+      setNewChannelType('chat');
+      setErrorPopup({ title: '✅ Successo', message: 'Canale aggiornato con successo!', type: 'success' });
+    } catch (error) {
+      console.error('Errore aggiornamento canale:', error);
+      setErrorPopup({ 
+        title: '❌ Errore', 
+        message: error.code === 'permission-denied' 
+          ? 'Non hai i permessi per modificare canali. Contatta un amministratore.' 
+          : 'Errore durante l\'aggiornamento del canale. Riprova.'
+      });
+    }
+  };
+
+  const handleDeleteChannel = async (channelKey) => {
+    try {
+      // Elimina da Firebase
+      await deleteDoc(doc(db, 'communityChannels', channelKey));
+      
+      // Aggiorna stato locale
+      setChannels(prev => {
+        const newChannels = { ...prev };
+        delete newChannels[channelKey];
+        return newChannels;
+      });
+      
+      // Se il canale attivo era quello eliminato, torna al primo disponibile
+      if (activeChannel === channelKey) {
+        const remainingChannels = Object.keys(channels).filter(k => k !== channelKey);
+        setActiveChannel(remainingChannels[0] || 'vittorie');
+      }
+      
+      setDeleteConfirmChannel(null);
+      setErrorPopup({ title: '✅ Successo', message: 'Canale eliminato con successo!', type: 'success' });
+    } catch (error) {
+      console.error('Errore eliminazione canale:', error);
+      setErrorPopup({ 
+        title: '❌ Errore Permessi', 
+        message: error.code === 'permission-denied' 
+          ? 'Non hai i permessi per eliminare canali. Verifica di essere admin e che le regole Firestore siano aggiornate.' 
+          : `Errore durante l'eliminazione: ${error.message || 'Riprova più tardi.'}`,
+        details: 'Se sei admin, vai su Firebase Console → Firestore → Rules e verifica che siano deployate le ultime regole.'
+      });
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingChannel(null);
+    setNewChannelName('');
+    setNewChannelDescription('');
+    setNewChannelType('chat');
+  };
+
+  // Funzione per modificare manualmente i likes/livello di un utente (admin)
+  const handleUpdateUserLevel = async (userId, newLikesCount) => {
+    if (!isAdmin) return;
+    
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        totalLikes: parseInt(newLikesCount),
+        updatedAt: serverTimestamp(),
+        updatedBy: currentUser.uid,
+      });
+      
+      // Aggiorna stato locale se è l'utente corrente
+      if (userId === currentUser.uid) {
+        setUserProfile(prev => ({ ...prev, totalLikes: parseInt(newLikesCount) }));
+      }
+      
+      setErrorPopup({ title: '✅ Successo', message: 'Livello utente aggiornato con successo!', type: 'success' });
+    } catch (error) {
+      console.error('Errore aggiornamento livello:', error);
+      setErrorPopup({ 
+        title: '❌ Errore', 
+        message: 'Errore durante l\'aggiornamento del livello. Riprova.'
+      });
+    }
+  };
 
   const handleCreatePost = async () => {
     if (!newPostContent.trim() && newPostMedia.length === 0) return;
@@ -975,89 +1166,83 @@ export default function Community() {
   }
 
   // --- Restyling totale stile app ---
+  // Determina se l'utente può accedere alla Live Room
+  const userLevel = getUserLevel(userProfile?.totalLikes || 0).id;
+  const canAccessLiveRoom = isAdmin || userLevel >= 2 || userProfile?.liveRoomAccess === true;
+
   return (
     <div className="min-h-screen bg-slate-900">
       {/* Header compatto stile Discord - Responsive */}
       <header className="sticky top-0 z-40 bg-slate-800/95 backdrop-blur-md border-b border-slate-700 shadow-lg">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-3 sm:mb-4">
-            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-bold text-rose-400 flex items-center gap-2">
-                <UsersRound size={24} className="sm:w-7 sm:h-7" />
-                Community
+            {/* Titolo + Badge livello */}
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                Community MentalFit
               </h1>
-              {userProfile && (
-                <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-700/50 rounded-full text-xs sm:text-sm">
-                  <img
-                    src={userProfile.photoURL || 'https://ui-avatars.com/api/?name=' + userProfile.name}
-                    alt={userProfile.name}
-                    className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover"
-                  />
-                  <span className="text-slate-300 font-medium hidden sm:inline">{userProfile.name}</span>
-                  <LevelBadge totalLikes={userProfile.totalLikes || 0} size="sm" />
-                </div>
-              )}
-              {/* Streak Badge */}
-              {userStreak > 0 && (
-                <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-orange-600/20 to-red-600/20 rounded-full border border-orange-500/30">
-                  <Flame size={14} className="text-orange-400" />
-                  <span className="text-orange-400 font-bold text-xs">{userStreak}</span>
-                </div>
-              )}
+              {userProfile && <LevelBadge totalLikes={userProfile.totalLikes || 0} size="md" />}
             </div>
-            
-            {/* Barra ricerca e azioni */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <div className="relative flex-1 sm:flex-initial sm:w-64">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cerca post, #tag, @utenti..."
-                  className="w-full pl-9 pr-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
-                />
-              </div>
-              
-              {/* Badge Notifiche */}
+
+            {/* Toolbar azioni rapide - Desktop e Mobile ottimizzato */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Rewards Badge */}
+              <button
+                onClick={() => setShowRewards(true)}
+                className="relative p-2 hover:bg-slate-700 rounded-lg transition-colors group"
+                title="Rewards & Progressi"
+              >
+                <Trophy size={20} className="text-yellow-400 group-hover:scale-110 transition-transform" />
+                {userProfile && getUserLevel(userProfile.totalLikes || 0).id > 1 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full text-[10px] font-bold flex items-center justify-center text-white">
+                    {getUserLevel(userProfile.totalLikes || 0).id}
+                  </span>
+                )}
+              </button>
+
+              {/* Badge personali */}
+              <button
+                onClick={() => setShowBadgesModal(true)}
+                className="relative p-2 hover:bg-slate-700 rounded-lg transition-colors group"
+                title="I tuoi Badge"
+              >
+                <Award size={20} className="text-purple-400 group-hover:scale-110 transition-transform" />
+                {userBadges.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-purple-600 rounded-full text-[10px] font-bold flex items-center justify-center text-white">
+                    {userBadges.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Notifiche */}
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-all"
+                className="relative p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                title="Notifiche"
               >
                 <MessageCircle size={20} className="text-slate-300" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-600 rounded-full text-xs font-bold flex items-center justify-center text-white animate-pulse">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </button>
 
-              {/* Badge Achievement */}
-              <button
-                onClick={() => setShowBadgesModal(true)}
-                className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-all relative"
-              >
-                <Award size={20} className="text-yellow-400" />
-                {userBadges.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-purple-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                    {userBadges.length}
-                  </span>
-                )}
-              </button>
-              
+              {/* Settings (solo admin) */}
               {isAdmin && (
                 <button
                   onClick={() => setShowSettings(true)}
-                  className="px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-all shadow-lg flex items-center gap-2 text-sm sm:text-base"
+                  className="flex items-center gap-2 px-3 py-2 hover:bg-slate-700 rounded-lg transition-colors group"
+                  title="Impostazioni Admin"
                 >
-                  <Crown size={16} className="sm:w-[18px] sm:h-[18px]" />
-                  <span className="hidden lg:inline">Settings</span>
+                  <Settings size={20} className="text-purple-400 group-hover:rotate-90 transition-transform" />
+                  <span className="hidden sm:inline text-sm font-medium text-slate-300">Impostazioni</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Tabs principali: Feed / Membri - Scrollabili su mobile */}
+          {/* Tabs principali: Feed / Membri / Live Room - Scrollabili su mobile */}
           <div className="flex items-center gap-2 sm:gap-4 border-b border-slate-700 -mb-px overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveTab('feed')}
@@ -1083,6 +1268,19 @@ export default function Community() {
               <span className="sm:hidden">Membri</span>
               <span className="text-xs ml-1">({posts.length > 0 ? new Set(posts.map(p => p.authorId)).size : 0})</span>
             </button>
+            {canAccessLiveRoom && (
+              <button
+                onClick={() => setActiveTab('liveRoom')}
+                className={`px-3 sm:px-4 py-2 font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${
+                  activeTab === 'liveRoom'
+                    ? 'text-cyan-400 border-b-2 border-cyan-400'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <VideoIcon size={16} className="inline mr-1.5 sm:mr-2 sm:w-[18px] sm:h-[18px]" />
+                Live Room
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -1117,45 +1315,23 @@ export default function Community() {
         )}
 
         {activeTab === 'feed' && (
-          <>
-            {/* Tabs canali stile Discord - Scrollabili */}
-            <div className="flex items-center gap-2 mb-4 sm:mb-6 border-b border-slate-700 pb-3 overflow-x-auto scrollbar-hide">
-              {Object.entries(channels).map(([key, channel]) => {
-                const Icon = channel.icon;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setActiveChannel(key)}
-                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-t-lg transition-all whitespace-nowrap text-sm sm:text-base ${
-                      activeChannel === key
-                        ? 'bg-slate-700 text-slate-100 font-semibold border-b-2 border-cyan-400'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-                    }`}
-                  >
-                    <Icon size={16} className="sm:w-[18px] sm:h-[18px]" />
-                    {channel.name}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Feed post */}
-            <div className="space-y-4 sm:space-y-6 pb-32 sm:pb-36">
-          {filteredPosts.length === 0 ? (
-            <div className="text-center py-16">
-              <Trophy size={64} className="mx-auto mb-4 text-rose-400 opacity-50" />
-              <p className="text-rose-400 text-lg">Nessun post in questo canale</p>
-              <p className="text-slate-400 text-sm mt-2">Sii il primo a condividere qualcosa!</p>
-            </div>
-          ) : (
-            filteredPosts.map((post) => {
-              // eslint-disable-next-line no-unused-vars
-              const authorLevel = getUserLevel(post.authorTotalLikes || 0);
-              // eslint-disable-next-line no-unused-vars
-              const hasLiked = post.likes?.includes(currentUser?.uid);
-              return (
-                <div key={post.id} className="bg-slate-800/60 backdrop-blur-sm rounded-xl shadow-xl p-6 border border-slate-700">
-                  <div className="flex items-center gap-4 mb-2">
+          <div className="space-y-4">
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+                <p className="mt-4 text-slate-400">Caricamento...</p>
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="text-center py-12 bg-slate-800/30 rounded-xl border border-slate-700">
+                <MessageSquare size={48} className="mx-auto mb-4 text-slate-600" />
+                <p className="text-slate-400 mb-2">Nessun post ancora</p>
+                <p className="text-sm text-slate-500">Scrivi il primo messaggio nella community!</p>
+              </div>
+            ) : (
+              posts.map((post) => (
+                <div key={post.id} className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-slate-700 hover:border-slate-600 transition-all">
+                  {/* Header post */}
+                  <div className="flex items-start gap-3 mb-4">
                     <Avatar 
                       src={post.authorPhotoURL}
                       alt={post.authorName}
@@ -1163,401 +1339,136 @@ export default function Community() {
                       size={48}
                       showLevel={true}
                     />
-                    <div>
-                      <div className="font-semibold text-slate-100 flex items-center gap-1">
-                        {post.authorName}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-bold text-slate-100">{post.authorName}</h4>
+                        <LevelBadge totalLikes={post.authorTotalLikes || 0} size="sm" />
                         {adminIds.includes(post.authorId) && (
-                          <CheckCircle size={12} className="text-green-400" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-600/20 text-green-400 text-xs font-semibold border border-green-500/30">
+                            <CheckCircle size={10} /> Admin
+                          </span>
                         )}
                       </div>
-                      <LevelBadge totalLikes={post.authorTotalLikes || 0} size="sm" />
+                      <p className="text-xs text-slate-500 mt-1">{formatTimestamp(post.createdAt)}</p>
                     </div>
-                    <span className="ml-auto text-xs text-slate-400">
-                      {formatTimestamp(post.createdAt)}
-                    </span>
-                    {/* Post Menu */}
-                    {(isAdmin || currentUser?.uid === post.authorId) && (
-                      <div className="relative post-menu-container">
-                        <button
-                          onClick={() => setShowPostMenu(showPostMenu === post.id ? null : post.id)}
-                          className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
-                        >
-                          <MoreVertical size={18} />
-                        </button>
-                        {showPostMenu === post.id && (
-                          <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 min-w-[160px] z-20">
-                            {isAdmin && (
-                              <button
-                                onClick={() => {
-                                  handlePinPost(post.id);
-                                  setShowPostMenu(null);
-                                }}
-                                className="w-full px-4 py-2 text-left text-sm text-slate-200 hover:bg-slate-700 flex items-center gap-2"
-                              >
-                                <Pin size={16} />
-                                {pinnedPosts.includes(post.id) ? 'Rimuovi Pin' : 'Fissa in alto'}
-                              </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => setShowPostMenu(showPostMenu === post.id ? null : post.id)}
+                        className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                      >
+                        <MoreVertical size={16} className="text-slate-400" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Contenuto post */}
+                  <div className="mb-4">
+                    <p className="text-slate-200 whitespace-pre-wrap break-words">{post.content}</p>
+                    
+                    {/* Media attachments */}
+                    {post.media && post.media.length > 0 && (
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        {post.media.map((media, idx) => (
+                          <div key={idx} className="rounded-lg overflow-hidden">
+                            {media.type?.startsWith('video') ? (
+                              <video src={media.url} controls className="w-full" />
+                            ) : (
+                              <img src={media.url} alt="" className="w-full h-auto" />
                             )}
-                            <button
-                              onClick={() => handleDeletePost(post.id, post.authorId)}
-                              className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-slate-700 flex items-center gap-2"
-                            >
-                              <Trash2 size={16} />
-                              Elimina Post
-                            </button>
                           </div>
-                        )}
+                        ))}
                       </div>
                     )}
                   </div>
-                  {/* Contenuto normale o Poll */}
-                  {post.type === 'poll' ? (
-                    <div className="mb-4">
-                      <h4 className="text-slate-100 font-bold text-lg mb-3">{post.question}</h4>
-                      <div className="space-y-2">
-                        {post.options?.map((option, index) => {
-                          const totalVotes = post.options.reduce((sum, opt) => sum + (opt.votes || 0), 0);
-                          const percentage = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
-                          const hasVoted = option.voters?.includes(currentUser?.uid);
-                          
-                          return (
-                            <button
-                              key={index}
-                              onClick={() => handleVotePoll(post.id, index)}
-                              className={`w-full p-3 rounded-lg text-left relative overflow-hidden transition-all ${
-                                hasVoted
-                                  ? 'bg-cyan-600/30 border border-cyan-500/50'
-                                  : 'bg-slate-700/30 hover:bg-slate-700/50'
-                              }`}
-                            >
-                              <div
-                                className="absolute inset-0 bg-cyan-600/20"
-                                style={{ width: `${percentage}%`, transition: 'width 0.3s' }}
-                              />
-                              <div className="relative flex items-center justify-between">
-                                <span className="text-slate-200">{option.text}</span>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-slate-400 text-sm">{option.votes || 0}</span>
-                                  <span className="text-slate-400 text-sm font-bold">{percentage}%</span>
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <p className="text-slate-500 text-xs mt-2">
-                        {post.options?.reduce((sum, opt) => sum + (opt.votes || 0), 0) || 0} voti totali
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      {post.content && (
-                        <p className="text-slate-200 mb-4 whitespace-pre-wrap">{post.content}</p>
-                      )}
-                      {post.media && post.media.length > 0 && (
-                        <div className={`mb-4 ${post.media.length === 1 ? '' : 'grid grid-cols-2 gap-2'}`}>
-                          {post.media.map((media, index) => (
-                            <MediaViewer key={index} media={media} className="rounded-lg" />
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {/* Azioni post */}
-                  <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-slate-700 mt-3">
-                    {/* Reactions Multiple */}
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowReactionPicker(showReactionPicker === post.id ? null : post.id)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 transition-all"
-                      >
-                        <Heart size={16} />
-                        <span className="text-sm font-medium">
-                          {Object.values(post.reactions || {}).flat().length || 0}
-                        </span>
-                      </button>
-                      
-                      {/* Reaction Picker */}
-                      {showReactionPicker === post.id && (
-                        <div className="absolute bottom-full left-0 mb-2 bg-slate-800 border border-slate-700 rounded-lg p-2 flex gap-1 shadow-xl z-10">
-                          {REACTIONS.map(reaction => (
-                            <button
-                              key={reaction.id}
-                              onClick={() => {
-                                handleReaction(post.id, reaction.id, post.reactions || {});
-                                setShowReactionPicker(null);
-                              }}
-                              className="text-2xl hover:scale-125 transition-transform"
-                              title={reaction.label}
-                            >
-                              {reaction.emoji}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
 
-                    {/* Commenti */}
-                    <button 
+                  {/* Actions */}
+                  <div className="flex items-center gap-4 pt-3 border-t border-slate-700">
+                    <button
+                      onClick={() => handleLikePost(post.id, post.authorId)}
+                      className="flex items-center gap-2 text-slate-400 hover:text-rose-400 transition-colors"
+                    >
+                      <Heart size={18} className={post.likes?.includes(currentUser?.uid) ? 'fill-rose-500 text-rose-500' : ''} />
+                      <span className="text-sm">{post.likesCount || 0}</span>
+                    </button>
+                    <button
                       onClick={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-700/50 text-cyan-400 hover:bg-slate-700 transition-all"
+                      className="flex items-center gap-2 text-slate-400 hover:text-cyan-400 transition-colors"
                     >
-                      <MessageCircle size={16} />
-                      <span className="text-sm font-medium">{post.commentsCount || 0}</span>
-                    </button>
-
-                    {/* Bookmark */}
-                    <button
-                      onClick={() => handleBookmark(post.id)}
-                      className={`p-2 rounded-lg transition-all ${
-                        bookmarkedPosts.includes(post.id)
-                          ? 'bg-yellow-600/20 text-yellow-400'
-                          : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
-                      }`}
-                    >
-                      <Bookmark size={16} fill={bookmarkedPosts.includes(post.id) ? 'currentColor' : 'none'} />
-                    </button>
-
-                    {/* Share */}
-                    <button
-                      onClick={() => handleShare(post.id)}
-                      className="p-2 rounded-lg bg-slate-700/50 text-slate-400 hover:bg-slate-700 transition-all"
-                    >
-                      <Share2 size={16} />
-                    </button>
-
-                    {/* Report */}
-                    <button
-                      onClick={() => setShowReportModal({ type: 'post', id: post.id })}
-                      className="p-2 rounded-lg bg-slate-700/50 text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-all"
-                    >
-                      <Flag size={16} />
+                      <MessageCircle size={18} />
+                      <span className="text-sm">{post.commentsCount || 0}</span>
                     </button>
                   </div>
 
-                  {/* Mostra reactions attive */}
-                  {post.reactions && Object.keys(post.reactions).length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {REACTIONS.map(reaction => {
-                        const count = Object.values(post.reactions).filter(userReactions => 
-                          userReactions?.includes(reaction.id)
-                        ).length;
-                        
-                        if (count === 0) return null;
-                        
-                        const hasReacted = post.reactions[currentUser?.uid]?.includes(reaction.id);
-                        
-                        return (
-                          <button
-                            key={reaction.id}
-                            onClick={() => handleReaction(post.id, reaction.id, post.reactions)}
-                            className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 transition-all ${
-                              hasReacted
-                                ? 'bg-cyan-600/30 border border-cyan-500/50'
-                                : 'bg-slate-700/30 hover:bg-slate-700/50'
-                            }`}
-                          >
-                            <span>{reaction.emoji}</span>
-                            <span className="text-slate-300 font-medium">{count}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Sezione commenti espandibile */}
+                  {/* Commenti espansi */}
                   {expandedPost === post.id && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-4 pt-4 border-t border-slate-700 space-y-3"
-                    >
-                      {/* Lista commenti */}
-                      {comments[post.id]?.map((comment) => (
-                        <div key={comment.id} className="flex gap-3 bg-slate-700/30 p-3 rounded-lg">
-                          <Avatar 
-                            src={comment.authorPhotoURL} 
-                            alt={comment.authorName} 
-                            totalLikes={comment.authorTotalLikes || 0}
-                            size={32}
-                            showLevel={false}
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-slate-200 font-semibold text-sm flex items-center gap-1">
-                                {comment.authorName}
-                                {adminIds.includes(comment.authorId) && (
-                                  <CheckCircle size={12} className="text-green-400" />
-                                )}
-                              </span>
-                              <LevelBadge totalLikes={comment.authorTotalLikes || 0} size="sm" />
-                              <span className="text-slate-500 text-xs">{formatTimestamp(comment.createdAt)}</span>
+                    <div className="mt-4 pt-4 border-t border-slate-700">
+                      <div className="space-y-3 mb-3">
+                        {(comments[post.id] || []).map((comment) => (
+                          <div key={comment.id} className="flex gap-2">
+                            <Avatar 
+                              src={comment.authorPhotoURL}
+                              alt={comment.authorName}
+                              totalLikes={0}
+                              size={32}
+                              showLevel={false}
+                            />
+                            <div className="flex-1 bg-slate-700/50 rounded-lg p-2">
+                              <p className="text-xs font-semibold text-slate-200">{comment.authorName}</p>
+                              <p className="text-sm text-slate-300 mt-1">{comment.content}</p>
                             </div>
-                            <p className="text-slate-300 text-sm">{comment.content}</p>
                           </div>
-                        </div>
-                      ))}
-
-                      {/* Input nuovo commento */}
+                        ))}
+                      </div>
                       <div className="flex gap-2">
-                        <Avatar 
-                          src={userProfile.photoURL} 
-                          alt={userProfile.name}
-                          totalLikes={userProfile.totalLikes || 0}
-                          size={32}
-                          showLevel={false}
-                        />
                         <input
                           type="text"
                           value={newComment}
                           onChange={(e) => setNewComment(e.target.value)}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter' && newComment.trim()) {
-                              handleAddComment(post.id);
-                            }
-                          }}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id, post.authorId)}
                           placeholder="Scrivi un commento..."
-                          className="flex-1 px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                          className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         />
                         <button
-                          onClick={() => handleAddComment(post.id)}
-                          disabled={!newComment.trim()}
-                          className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg transition-all"
+                          onClick={() => handleAddComment(post.id, post.authorId)}
+                          className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors"
                         >
-                          <Send size={18} />
+                          <Send size={16} />
                         </button>
                       </div>
-                    </motion.div>
+                    </div>
                   )}
                 </div>
-              );
-            })
-          )}
-            </div>
-          </>
-        )}
-
-        {/* Tab Membri Attivi */}
-        {activeTab === 'members' && (
-          <div className="pb-32">
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 bg-cyan-600/20 rounded-lg">
-                    <UsersRound className="text-cyan-400" size={24} />
-                  </div>
-                  <div>
-                    <p className="text-slate-400 text-sm">Membri Totali</p>
-                    <p className="text-3xl font-bold text-slate-100">{posts.length > 0 ? new Set(posts.map(p => p.authorId)).size : 0}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 bg-rose-600/20 rounded-lg">
-                    <MessageSquare className="text-rose-400" size={24} />
-                  </div>
-                  <div>
-                    <p className="text-slate-400 text-sm">Post Totali</p>
-                    <p className="text-3xl font-bold text-slate-100">{posts.length}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-3 bg-purple-600/20 rounded-lg">
-                    <Heart className="text-purple-400" size={24} />
-                  </div>
-                  <div>
-                    <p className="text-slate-400 text-sm">Likes Totali</p>
-                    <p className="text-3xl font-bold text-slate-100">{posts.reduce((acc, p) => acc + (p.likesCount || 0), 0)}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Top Contributors */}
-            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700 mb-8">
-              <h3 className="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
-                <Trophy className="text-yellow-400" size={24} />
-                Top Contributors
-              </h3>
-              <div className="space-y-3">
-                {Array.from(new Set(posts.map(p => p.authorId)))
-                  .map(authorId => {
-                    const userPosts = posts.filter(p => p.authorId === authorId);
-                    const totalLikes = userPosts.reduce((acc, p) => acc + (p.likesCount || 0), 0);
-                    const post = userPosts[0];
-                    return { authorId, authorName: post?.authorName, authorPhotoURL: post?.authorPhotoURL, totalPosts: userPosts.length, totalLikes };
-                  })
-                  .sort((a, b) => b.totalLikes - a.totalLikes)
-                  .slice(0, 10)
-                  .map((user, index) => {
-                    // eslint-disable-next-line no-unused-vars
-                    const level = getUserLevel(user.totalLikes);
-                    return (
-                      <div key={user.authorId} className="flex items-center gap-4 p-3 bg-slate-700/30 rounded-lg hover:bg-slate-700/50 transition-colors">
-                        <span className="text-2xl font-bold text-slate-500 w-8">{index + 1}</span>
-                        <Avatar 
-                          src={user.authorPhotoURL}
-                          alt={user.authorName}
-                          totalLikes={user.totalLikes}
-                          size={48}
-                          showLevel={true}
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-slate-100 font-semibold">{user.authorName}</span>
-                            <LevelBadge totalLikes={user.totalLikes} size="sm" />
-                          </div>
-                          <p className="text-slate-400 text-sm">{user.totalPosts} post • {user.totalLikes} likes</p>
-                        </div>
-                        {index === 0 && <Crown className="text-yellow-400" size={24} />}
-                        {index === 1 && <Award className="text-slate-300" size={24} />}
-                        {index === 2 && <Award className="text-orange-400" size={24} />}
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-
-            {/* Lista completa membri */}
-            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-              <h3 className="text-xl font-bold text-slate-100 mb-4">Tutti i Membri</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Array.from(new Set(posts.map(p => p.authorId)))
-                  .map(authorId => {
-                    const post = posts.find(p => p.authorId === authorId);
-                    const userPosts = posts.filter(p => p.authorId === authorId);
-                    const totalLikes = userPosts.reduce((acc, p) => acc + (p.likesCount || 0), 0);
-                    return { authorId, authorName: post?.authorName, authorPhotoURL: post?.authorPhotoURL, totalLikes };
-                  })
-                  .sort((a, b) => (b.authorName || '').localeCompare(a.authorName || ''))
-                  .map((user) => (
-                    <div key={user.authorId} className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg hover:bg-slate-700/50 transition-colors">
-                      <Avatar 
-                        src={user.authorPhotoURL}
-                        alt={user.authorName}
-                        totalLikes={user.totalLikes}
-                        size={40}
-                        showLevel={true}
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-100 font-medium">{user.authorName}</span>
-                          <LevelBadge totalLikes={user.totalLikes} size="sm" />
-                        </div>
-                        <p className="text-slate-400 text-xs">{user.totalLikes} likes totali</p>
-                      </div>
-                      <div className="w-2 h-2 bg-green-400 rounded-full" title="Online" />
-                    </div>
-                  ))}
-              </div>
-            </div>
+              ))
+            )}
           </div>
         )}
+
+        {activeTab === 'members' && (
+          <div className="text-center py-12 text-slate-400">
+            <UsersRound size={48} className="mx-auto mb-4 opacity-50" />
+            <p>Vista membri - Coming soon</p>
+            <p className="text-sm mt-2">Usa le Impostazioni per gestire i livelli</p>
+          </div>
+        )}
+
+        {activeTab === 'liveRoom' && canAccessLiveRoom && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh]">
+            <h2 className="text-2xl font-bold text-cyan-400 mb-6 flex items-center gap-2">
+              <VideoIcon size={28} /> Live Room
+            </h2>
+            {/* Iframe Jitsi o componente video call */}
+            <div className="w-full max-w-3xl aspect-video rounded-xl overflow-hidden shadow-xl border border-cyan-600">
+              <iframe
+                src={`https://meet.jit.si/MentalFitCommunityRoom`}
+                allow="camera; microphone; fullscreen; display-capture"
+                style={{ width: '100%', height: '100%', border: 'none' }}
+                title="Live Room Video Call"
+              />
+            </div>
+            <p className="mt-4 text-slate-400 text-center">Questa stanza è accessibile solo agli utenti abilitati.<br />Se hai problemi di accesso, contatta un admin.</p>
+          </div>
+        )}
+      {/* Fine main content */}
       </main>
 
       {/* Input nuovo post - Fixed Bottom con styling */}
@@ -1892,13 +1803,31 @@ export default function Community() {
                             <div key={key} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600">
                               <div className="flex items-center gap-3">
                                 <Icon size={20} className="text-slate-300" />
-                                <span className="text-slate-100 font-medium">{channel.name}</span>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-slate-100 font-medium">{channel.name}</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-600 text-slate-300">
+                                      {channel.type === 'videocall' ? '📹 Video' : '💬 Chat'}
+                                    </span>
+                                  </div>
+                                  {channel.description && (
+                                    <p className="text-xs text-slate-400 mt-1">{channel.description}</p>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex gap-2">
-                                <button className="p-2 hover:bg-slate-600 rounded text-cyan-400 transition-colors">
+                                <button 
+                                  onClick={() => handleEditChannel(key)}
+                                  className="p-2 hover:bg-slate-600 rounded text-cyan-400 transition-colors"
+                                  title="Modifica canale"
+                                >
                                   ✏️
                                 </button>
-                                <button className="p-2 hover:bg-slate-600 rounded text-rose-400 transition-colors">
+                                <button 
+                                  onClick={() => setDeleteConfirmChannel(key)}
+                                  className="p-2 hover:bg-slate-600 rounded text-rose-400 transition-colors"
+                                  title="Elimina canale"
+                                >
                                   🗑️
                                 </button>
                               </div>
@@ -1907,9 +1836,11 @@ export default function Community() {
                         })}
                       </div>
 
-                      {/* Nuovo canale */}
+                      {/* Form nuovo/modifica canale */}
                       <div className="p-4 bg-slate-700/30 rounded-lg border border-slate-600">
-                        <h4 className="text-lg font-semibold text-slate-100 mb-3">Nuovo Canale</h4>
+                        <h4 className="text-lg font-semibold text-slate-100 mb-3">
+                          {editingChannel ? 'Modifica Canale' : 'Nuovo Canale'}
+                        </h4>
                         <div className="space-y-3">
                           <input
                             type="text"
@@ -1918,10 +1849,70 @@ export default function Community() {
                             onChange={(e) => setNewChannelName(e.target.value)}
                             className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
                           />
-                          <button className="w-full px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg">
-                            <Plus size={18} className="inline mr-2" />
-                            Crea Canale
-                          </button>
+                          <textarea
+                            placeholder="Descrizione (opzionale)"
+                            value={newChannelDescription}
+                            onChange={(e) => setNewChannelDescription(e.target.value)}
+                            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-500 focus:outline-none resize-none"
+                            rows={2}
+                          />
+                          <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">Tipo di Canale</label>
+                            <div className="grid grid-cols-2 gap-3">
+                              <button
+                                type="button"
+                                onClick={() => setNewChannelType('chat')}
+                                className={`px-4 py-3 rounded-lg border-2 transition-all ${
+                                  newChannelType === 'chat'
+                                    ? 'border-cyan-500 bg-cyan-600/20 text-cyan-400'
+                                    : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
+                                }`}
+                              >
+                                <div className="text-2xl mb-1">💬</div>
+                                <div className="text-sm font-semibold">Chat</div>
+                                <div className="text-xs opacity-75">Messaggi testuali</div>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setNewChannelType('videocall')}
+                                className={`px-4 py-3 rounded-lg border-2 transition-all ${
+                                  newChannelType === 'videocall'
+                                    ? 'border-purple-500 bg-purple-600/20 text-purple-400'
+                                    : 'border-slate-600 bg-slate-700/50 text-slate-300 hover:border-slate-500'
+                                }`}
+                              >
+                                <div className="text-2xl mb-1">📹</div>
+                                <div className="text-sm font-semibold">Video Call</div>
+                                <div className="text-xs opacity-75">Sala videochiamate</div>
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex gap-3">
+                            {editingChannel ? (
+                              <>
+                                <button 
+                                  onClick={handleUpdateChannel}
+                                  className="flex-1 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg"
+                                >
+                                  💾 Salva Modifiche
+                                </button>
+                                <button 
+                                  onClick={cancelEdit}
+                                  className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-all"
+                                >
+                                  Annulla
+                                </button>
+                              </>
+                            ) : (
+                              <button 
+                                onClick={handleCreateChannel}
+                                className="w-full px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg"
+                              >
+                                <Plus size={18} className="inline mr-2" />
+                                Crea Canale
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2106,11 +2097,12 @@ export default function Community() {
                   {settingsTab === 'members' && (
                     <div>
                       <h3 className="text-xl font-bold text-slate-100 mb-4">Membri Community</h3>
-                      <p className="text-slate-400 mb-6">Totale membri attivi: {posts.length > 0 ? new Set(posts.map(p => p.authorId)).size : 0}</p>
+                      <p className="text-slate-400 mb-6">Gestisci i livelli degli utenti manualmente</p>
                       
-                      <div className="p-4 bg-gradient-to-r from-cyan-600/20 to-blue-600/20 rounded-lg border border-cyan-500/30">
-                        <p className="text-cyan-300 font-medium">📊 Statistiche Community</p>
-                        <div className="grid grid-cols-3 gap-4 mt-4">
+                      {/* Statistiche */}
+                      <div className="p-4 bg-gradient-to-r from-cyan-600/20 to-blue-600/20 rounded-lg border border-cyan-500/30 mb-6">
+                        <p className="text-cyan-300 font-medium mb-4">📊 Statistiche Community</p>
+                        <div className="grid grid-cols-3 gap-4">
                           <div>
                             <p className="text-slate-400 text-sm">Post totali</p>
                             <p className="text-2xl font-bold text-slate-100">{posts.length}</p>
@@ -2120,9 +2112,182 @@ export default function Community() {
                             <p className="text-2xl font-bold text-slate-100">{posts.reduce((acc, p) => acc + (p.likesCount || 0), 0)}</p>
                           </div>
                           <div>
-                            <p className="text-slate-400 text-sm">Membri attivi</p>
-                            <p className="text-2xl font-bold text-slate-100">{posts.length > 0 ? new Set(posts.map(p => p.authorId)).size : 0}</p>
+                            <p className="text-slate-400 text-sm">Membri totali</p>
+                            <p className="text-2xl font-bold text-slate-100">{allMembers.length}</p>
                           </div>
+                        </div>
+                      </div>
+
+                      {/* Lista membri con possibilità di modificare livelli */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-semibold text-slate-200">Lista Utenti ({allMembers.length})</h4>
+                          <p className="text-sm text-slate-400">Click su ✏️ per modificare il livello</p>
+                        </div>
+
+                        {/* Il tuo profilo admin - sempre visibile */}
+                        {userProfile && (
+                          <div className="p-4 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-2 border-purple-500/40 rounded-lg mb-4">
+                            <p className="text-xs text-purple-300 font-semibold mb-2">👑 IL TUO PROFILO ADMIN</p>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 flex-1">
+                                <Avatar 
+                                  src={userProfile.photoURL}
+                                  alt={userProfile.name || 'Tu'}
+                                  totalLikes={userProfile.totalLikes || 0}
+                                  size={48}
+                                  showLevel={true}
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h5 className="font-semibold text-slate-100">{userProfile.name || 'Tu'}</h5>
+                                    <LevelBadge totalLikes={userProfile.totalLikes || 0} size="sm" />
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <p className={`text-sm ${getUserLevel(userProfile.totalLikes || 0).textColor}`}>
+                                      {getUserLevel(userProfile.totalLikes || 0).name}
+                                    </p>
+                                    <span className="text-slate-500">•</span>
+                                    {editingUserLevel?.userId === currentUser.uid ? (
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          defaultValue={userProfile.totalLikes || 0}
+                                          onChange={(e) => setEditingUserLevel({ ...editingUserLevel, newLikes: e.target.value })}
+                                          className="w-24 px-2 py-1 bg-slate-700 border border-cyan-500 rounded text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                          placeholder="Likes"
+                                        />
+                                        <button
+                                          onClick={() => {
+                                            handleUpdateUserLevel(currentUser.uid, editingUserLevel.newLikes || userProfile.totalLikes);
+                                            setEditingUserLevel(null);
+                                          }}
+                                          className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition-colors"
+                                        >
+                                          ✓ Salva
+                                        </button>
+                                        <button
+                                          onClick={() => setEditingUserLevel(null)}
+                                          className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm font-medium transition-colors"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <p className="text-sm text-slate-400">
+                                        {userProfile.totalLikes || 0} likes
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              {editingUserLevel?.userId !== currentUser.uid && (
+                                <button
+                                  onClick={() => setEditingUserLevel({ userId: currentUser.uid, currentLikes: userProfile.totalLikes || 0, newLikes: userProfile.totalLikes || 0 })}
+                                  className="p-2 hover:bg-purple-700/50 rounded text-cyan-400 transition-colors"
+                                  title="Modifica il tuo livello"
+                                >
+                                  ✏️
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {allMembers.length === 0 ? (
+                          <div className="text-center py-8 text-slate-400">
+                            <UsersRound size={48} className="mx-auto mb-3 opacity-50" />
+                            <p className="mb-2">Nessun membro trovato nel database</p>
+                            <p className="text-xs">Assicurati che gli utenti abbiano un profilo completo con nome</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                            {allMembers
+                              .sort((a, b) => (b.totalLikes || 0) - (a.totalLikes || 0))
+                              .map((member) => {
+                                const level = getUserLevel(member.totalLikes || 0);
+                                const isEditing = editingUserLevel?.userId === member.id;
+                                
+                                return (
+                                  <div key={member.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600 hover:border-slate-500 transition-all">
+                                    <div className="flex items-center gap-3 flex-1">
+                                      <Avatar 
+                                        src={member.photoURL}
+                                        alt={member.name || 'Utente'}
+                                        totalLikes={member.totalLikes || 0}
+                                        size={48}
+                                        showLevel={true}
+                                      />
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                          <h5 className="font-semibold text-slate-100">{member.name || 'Utente'}</h5>
+                                          <LevelBadge totalLikes={member.totalLikes || 0} size="sm" />
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                          <p className={`text-sm ${level.textColor}`}>
+                                            {level.name}
+                                          </p>
+                                          <span className="text-slate-500">•</span>
+                                          {isEditing ? (
+                                            <div className="flex items-center gap-2">
+                                              <input
+                                                type="number"
+                                                min="0"
+                                                defaultValue={member.totalLikes || 0}
+                                                onChange={(e) => setEditingUserLevel({ ...editingUserLevel, newLikes: e.target.value })}
+                                                className="w-24 px-2 py-1 bg-slate-700 border border-cyan-500 rounded text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                placeholder="Likes"
+                                              />
+                                              <button
+                                                onClick={() => {
+                                                  handleUpdateUserLevel(member.id, editingUserLevel.newLikes || member.totalLikes);
+                                                  setEditingUserLevel(null);
+                                                }}
+                                                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition-colors"
+                                              >
+                                                ✓ Salva
+                                              </button>
+                                              <button
+                                                onClick={() => setEditingUserLevel(null)}
+                                                className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm font-medium transition-colors"
+                                              >
+                                                ✕
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <p className="text-sm text-slate-400">
+                                              {member.totalLikes || 0} likes
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    {!isEditing && (
+                                      <button
+                                        onClick={() => setEditingUserLevel({ userId: member.id, currentLikes: member.totalLikes || 0, newLikes: member.totalLikes || 0 })}
+                                        className="p-2 hover:bg-slate-600 rounded text-cyan-400 transition-colors"
+                                        title="Modifica livello utente"
+                                      >
+                                        ✏️
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Info box */}
+                      <div className="mt-6 p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+                        <p className="text-purple-300 font-medium mb-2">ℹ️ Informazioni sui Livelli</p>
+                        <div className="text-slate-400 text-sm space-y-1">
+                          <p>• <span className="text-slate-300">Livello 1 (Start):</span> 0-1 likes</p>
+                          <p>• <span className="text-green-400">Livello 2 (Intermedio):</span> 2-15 likes → Sblocca Group Calls</p>
+                          <p>• <span className="text-blue-400">Livello 3 (Pro):</span> 16-49 likes → Sblocca Live Room + Contenuti</p>
+                          <p>• <span className="text-yellow-400">Livello 4 (Elite):</span> 50-99 likes → Contenuti Premium</p>
+                          <p>• <span className="text-purple-400">Livello 5 (MentalFit):</span> 100+ likes → Tutti i contenuti + Bonus</p>
                         </div>
                       </div>
                     </div>
@@ -2745,6 +2910,121 @@ export default function Community() {
                   className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-all"
                 >
                   Annulla
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Popup Errore/Successo */}
+      <AnimatePresence>
+        {errorPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] flex items-center justify-center p-4"
+            onClick={() => setErrorPopup(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: -20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: -20 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`bg-slate-800 rounded-2xl shadow-2xl border w-full max-w-md p-6 ${
+                errorPopup.type === 'success' 
+                  ? 'border-green-500/50' 
+                  : 'border-rose-600/50'
+              }`}
+            >
+              <div className="flex items-start gap-4 mb-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  errorPopup.type === 'success'
+                    ? 'bg-green-600/20'
+                    : 'bg-rose-600/20'
+                }`}>
+                  {errorPopup.type === 'success' ? (
+                    <CheckCircle className="text-green-400" size={28} />
+                  ) : (
+                    <X className="text-rose-400" size={28} />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-slate-100 mb-2">{errorPopup.title}</h3>
+                  <p className="text-slate-300 text-sm leading-relaxed">{errorPopup.message}</p>
+                  {errorPopup.details && (
+                    <div className="mt-3 p-3 bg-slate-700/50 rounded-lg border border-slate-600">
+                      <p className="text-xs text-slate-400">{errorPopup.details}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <button
+                onClick={() => setErrorPopup(null)}
+                className={`w-full px-4 py-2 rounded-lg font-semibold transition-all ${
+                  errorPopup.type === 'success'
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-slate-600 hover:bg-slate-500'
+                } text-white`}
+              >
+                OK
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Conferma Eliminazione Canale */}
+      <AnimatePresence>
+        {deleteConfirmChannel && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
+            onClick={() => setDeleteConfirmChannel(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-800 rounded-2xl shadow-2xl border border-rose-600/50 w-full max-w-md p-6"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-rose-600/20 flex items-center justify-center">
+                  <Trash2 className="text-rose-400" size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-100">Elimina Canale</h3>
+                  <p className="text-slate-400 text-sm">Questa azione è irreversibile</p>
+                </div>
+              </div>
+              
+              <div className="bg-rose-900/20 border border-rose-600/30 rounded-lg p-4 mb-6">
+                <p className="text-slate-200 mb-2">
+                  Sei sicuro di voler eliminare il canale <span className="font-bold text-rose-400">{channels[deleteConfirmChannel]?.name}</span>?
+                </p>
+                <p className="text-slate-400 text-sm">
+                  Tutti i post e i messaggi in questo canale rimarranno nel database ma non saranno più accessibili dall'interfaccia.
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteConfirmChannel(null)}
+                  className="flex-1 px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg font-medium transition-all"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={() => handleDeleteChannel(deleteConfirmChannel)}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white rounded-lg font-semibold transition-all shadow-lg"
+                >
+                  <Trash2 size={16} className="inline mr-2" />
+                  Elimina
                 </button>
               </div>
             </motion.div>

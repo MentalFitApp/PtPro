@@ -11,26 +11,25 @@ const SimpleLayout = React.lazy(() => import('./components/SimpleLayout'));
 const GuidaLayout = React.lazy(() => import('./components/GuidaLayout'));
 
 // Import dinamici delle pagine
+const VideoCall = React.lazy(() => import('./pages/VideoCall'));
 const Login = React.lazy(() => import('./pages/Login'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Clients = React.lazy(() => import('./pages/Clients'));
 const ClientDetail = React.lazy(() => import('./pages/ClientDetail'));
 const EditClient = React.lazy(() => import('./pages/EditClient'));
 const Updates = React.lazy(() => import('./pages/Updates'));
-const AdminChat = React.lazy(() => import('./pages/AdminChat'));
+const UnifiedChat = React.lazy(() => import('./pages/UnifiedChat'));
 const FirstAccess = React.lazy(() => import('./pages/FirstAccess'));
 const ClientDashboard = React.lazy(() => import('./pages/ClientDashboard'));
 const ClientAnamnesi = React.lazy(() => import('./pages/ClientAnamnesi'));
 const ClientChecks = React.lazy(() => import('./pages/ClientChecks'));
 const ClientPayments = React.lazy(() => import('./pages/ClientPayments'));
-const ClientChat = React.lazy(() => import('./pages/ClientChat'));
 const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
 const AdminAnamnesi = React.lazy(() => import('./pages/AdminAnamnesi'));
 const CoachDashboard = React.lazy(() => import('./pages/CoachDashboard'));
 const CoachAnamnesi = React.lazy(() => import('./pages/CoachAnamnesi'));
 const CoachUpdates = React.lazy(() => import('./pages/CoachUpdates'));
 const CoachClients = React.lazy(() => import('./pages/CoachClients'));
-const CoachChat = React.lazy(() => import('./pages/CoachChat'));
 const CoachClientDetail = React.lazy(() => import('./pages/CoachClientDetail'));
 const GuidaMentalFit = React.lazy(() => import('./pages/GuidaMentalFit'));
 const BusinessHistory = React.lazy(() => import('./pages/BusinessHistory'));
@@ -281,6 +280,7 @@ export default function App() {
         <Route path="/client/forgot-password" element={<ForgotPassword />} />
 
         {/* === ROTTE ADMIN (SOLO ADMIN) === */}
+        <Route path="/videocall/:ptId/:clientId" element={<VideoCall />} />
         <Route element={authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />} />
@@ -288,7 +288,7 @@ export default function App() {
           <Route path="/client/:clientId" element={<ClientDetail />} />
           <Route path="/edit/:id" element={<EditClient />} />
           <Route path="/updates" element={<Updates />} />
-          <Route path="/chat" element={<AdminChat />} />
+          <Route path="/chat" element={<UnifiedChat />} />
           <Route path="/client/:id/anamnesi" element={<AdminAnamnesi />} />
           <Route path="/collaboratori" element={<Collaboratori />} />
           <Route path="/collaboratore-detail" element={<CollaboratoreDetail />} />
@@ -321,7 +321,7 @@ export default function App() {
           <Route path="/coach/client/:id" element={<CoachClientDetail />} />
           <Route path="/coach/anamnesi" element={<CoachAnamnesi />} />
           <Route path="/coach/updates" element={<CoachUpdates />} />
-          <Route path="/coach/chat" element={<CoachChat />} />
+          <Route path="/coach/chat" element={<UnifiedChat />} />
           <Route path="/coach/client/:clientId/checks" element={<ClientChecks />} />
           <Route path="/coach/schede" element={<AlimentazioneAllenamento />} />
           <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
@@ -336,7 +336,7 @@ export default function App() {
           <Route path="/client/anamnesi" element={<ClientAnamnesi />} />
           <Route path="/client/checks" element={<ClientChecks />} />
           <Route path="/client/payments" element={<ClientPayments />} />
-          <Route path="/client/chat" element={<ClientChat />} />
+          <Route path="/client/chat" element={<UnifiedChat />} />
           <Route path="/client/scheda-alimentazione" element={<ClientSchedaAlimentazioneEnhanced />} />
           <Route path="/client/scheda-allenamento" element={<ClientSchedaAllenamento />} />
           <Route path="/client/community" element={<Community />} />

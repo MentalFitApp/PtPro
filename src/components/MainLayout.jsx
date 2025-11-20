@@ -68,6 +68,15 @@ const coachNavLinks = [
   { to: '/coach/settings', icon: <Settings size={18} />, label: 'Impostazioni' },
 ];
 
+const clientNavLinks = [
+  { to: '/client/dashboard', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
+  { to: '/client/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
+  { to: '/client/community', icon: <UsersRound size={18} />, label: 'Community' },
+  { to: '/client/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
+  { to: '/client/checks', icon: <FileText size={18} />, label: 'Check' },
+  { to: '/client/payments', icon: <FileText size={18} />, label: 'Pagamenti' },
+];
+
 const collaboratoreNavLinks = [
   { to: '/collaboratore/dashboard', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
   { to: '/collaboratore/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
@@ -77,10 +86,10 @@ const collaboratoreNavLinks = [
 const AUTH_PAGES = ['/login', '/register', '/reset-password'];
 
 // === BOTTOM NAV MOBILE ===
-const BottomNav = ({ isCoach, isCollaboratore, userIsSuperAdmin }) => {
+const BottomNav = ({ isCoach, isCollaboratore, isClient, userIsSuperAdmin }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : adminNavLinks);
+  const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : (isClient ? clientNavLinks : adminNavLinks));
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-2xl border-t border-white/10 z-50 md:hidden safe-area-bottom">
@@ -113,10 +122,10 @@ const BottomNav = ({ isCoach, isCollaboratore, userIsSuperAdmin }) => {
 };
 
 // === SIDEBAR COLLASSABILE ===
-const Sidebar = ({ isCoach, isCollaboratore, isCollapsed, setIsCollapsed, userIsSuperAdmin }) => {
+const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollapsed, userIsSuperAdmin }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : adminNavLinks);
+  const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : (isClient ? clientNavLinks : adminNavLinks));
 
   return (
     <motion.aside
@@ -189,18 +198,22 @@ export default function MainLayout() {
   const location = useLocation();
   const [isCoach, setIsCoach] = useState(false);
   const [isCollaboratore, setIsCollaboratore] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [userIsSuperAdmin, setUserIsSuperAdmin] = useState(false);
 
-  // Determina se è pagina auth
+  // Determina se è pagina auth o chat
   const isAuthPage = AUTH_PAGES.includes(location.pathname);
+  const isChatPage = location.pathname === '/chat' || location.pathname === '/coach/chat' || location.pathname === '/client/chat';
+  const [isChatSelected, setIsChatSelected] = useState(false);
   const showSidebar = !isAuthPage;
-  const showBottomNav = !isAuthPage && isMobile;
+  const showBottomNav = !isAuthPage && isMobile && !(isChatPage && isChatSelected);
 
   useEffect(() => {
     setIsCoach(location.pathname.startsWith('/coach'));
     setIsCollaboratore(location.pathname.startsWith('/collaboratore'));
+    setIsClient(location.pathname.startsWith('/client'));
   }, [location.pathname]);
 
   // Verifica se l'utente è SuperAdmin
@@ -237,6 +250,15 @@ export default function MainLayout() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Ascolta quando una chat viene selezionata in UnifiedChat
+  useEffect(() => {
+    const handleChatSelected = (event) => {
+      setIsChatSelected(event.detail);
+    };
+    window.addEventListener('chatSelected', handleChatSelected);
+    return () => window.removeEventListener('chatSelected', handleChatSelected);
+  }, []);
+
   return (
     <div className="overflow-x-hidden w-full">
       {/* SFONDO STELLATO GLOBALE */}
@@ -249,6 +271,7 @@ export default function MainLayout() {
           <Sidebar 
             isCoach={isCoach}
             isCollaboratore={isCollaboratore}
+            isClient={isClient}
             isCollapsed={isSidebarCollapsed} 
             setIsCollapsed={setIsSidebarCollapsed}
             userIsSuperAdmin={userIsSuperAdmin}
@@ -261,7 +284,9 @@ export default function MainLayout() {
             ? (isSidebarCollapsed ? 'md:ml-16' : 'md:ml-60') 
             : 'ml-0'
         }`}>
-          <main className="min-h-screen p-4 sm:p-6 lg:p-8">
+          <main className={`min-h-screen ${
+            isChatPage ? 'p-0' : 'p-4 sm:p-6 lg:p-8'
+          }`}>
             <div className="max-w-7xl mx-auto w-full">
               <motion.div
                 key={location.pathname}
@@ -276,7 +301,7 @@ export default function MainLayout() {
           </main>
 
           {/* BOTTOM NAV: SOLO SU MOBILE */}
-          {showBottomNav && <BottomNav isCoach={isCoach} isCollaboratore={isCollaboratore} userIsSuperAdmin={userIsSuperAdmin} />}
+          {showBottomNav && <BottomNav isCoach={isCoach} isCollaboratore={isCollaboratore} isClient={isClient} userIsSuperAdmin={userIsSuperAdmin} />}
         </div>
 
         {/* SCROLLBAR NASCOSTA */}
