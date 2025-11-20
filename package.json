@@ -12,7 +12,8 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "migrate:photos:dry": "node migratePhotosToR2.cjs --dry",
-    "migrate:photos": "node migratePhotosToR2.cjs --run"
+    "migrate:photos": "node migratePhotosToR2.cjs --run",
+    "superadmin:assign": "node assign-superadmin.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.936.0",
