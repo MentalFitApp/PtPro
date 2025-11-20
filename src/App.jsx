@@ -53,6 +53,9 @@ const SchedaAllenamento = React.lazy(() => import('./pages/SchedaAllenamento'));
 const ClientSchedaAlimentazione = React.lazy(() => import('./pages/ClientSchedaAlimentazione'));
 const ClientSchedaAllenamento = React.lazy(() => import('./pages/ClientSchedaAllenamento'));
 
+// SuperAdmin page
+const SuperAdminSettings = React.lazy(() => import('./pages/SuperAdminSettings'));
+
 // Spinner
 const PageSpinner = () => (
   <div className="flex justify-center items-center h-screen w-full bg-slate-900">
@@ -286,6 +289,11 @@ export default function App() {
           <Route path="/alimentazione-allenamento" element={<AlimentazioneAllenamento />} />
           <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
           <Route path="/scheda-allenamento/:clientId" element={<SchedaAllenamento />} />
+        </Route>
+
+        {/* === ROTTE SUPERADMIN (SOLO SUPERADMIN) === */}
+        <Route element={authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
+          <Route path="/superadmin" element={<SuperAdminSettings />} />
         </Route>
 
         {/* === ROTTE COACH (SOLO COACH) === */}

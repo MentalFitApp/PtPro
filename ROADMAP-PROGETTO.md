@@ -290,24 +290,50 @@ pnpm superadmin:assign <email> <UID>
 ### Obiettivi Fase 3
 
 1. **Multi-tenant Architecture**
-   - Sistema organizzazioni
-   - Gestione PT multipli
-   - Permessi granulari
-   - Isolamento dati
+   - Sistema organizzazioni isolate per ogni cliente
+   - Ogni abbonato diventa SuperAdmin della propria istanza
+   - Dati completamente isolati tra organizzazioni
+   - Database separato virtualmente per tenant
 
-2. **Sistema Abbonamenti Stripe**
-   - Integrazione Stripe
-   - Piani: Basic (€29/mese), Pro (€49/mese)
-   - Gestione pagamenti
-   - Fatturazione automatica
+2. **Onboarding Automatico SuperAdmin**
+   - ⚠️ **REGOLA CRITICA**: Al primo accesso dopo l'acquisto abbonamento:
+     - Utente viene automaticamente assegnato come SuperAdmin
+     - App inizializzata vuota (nessun dato preesistente)
+     - Tutte le funzionalità disponibili
+     - Workspace personale completamente isolato
+   - Integrazione con sistema pagamenti (Stripe/PayPal)
+   - Webhook per attivazione automatica al pagamento
+   - Email di benvenuto con credenziali
 
-3. **Gestione Utenti**
-   - Dashboard admin
-   - Onboarding PT
-   - Gestione team
-   - Analytics utilizzo
+3. **Sistema Abbonamenti**
+   - Integrazione Stripe per pagamenti
+   - Piani: 
+     - **Starter**: €29/mese (1 PT, 50 clienti)
+     - **Pro**: €49/mese (3 PT, 200 clienti) 
+     - **Enterprise**: €99/mese (illimitato)
+   - Trial gratuito 14 giorni
+   - Gestione cancellazioni e upgrade
+
+4. **Isolamento Dati**
+   - Firestore rules con campo `organizationId`
+   - Ogni query filtrata per tenant
+   - SuperAdmin vede solo dati propria organizzazione
+   - Backup separati per organizzazione
+
+5. **Dashboard Multi-Tenant**
+   - Gestione subscription attive
+   - Monitoring utilizzo per tenant
+   - Analytics revenue
+   - Support ticketing per tenant
 
 **Stima Fase 3**: 6-8 settimane full-time
+
+**Priorità Implementazione:**
+1. Sistema pagamenti + webhook (2 settimane)
+2. Onboarding automatico SuperAdmin (1 settimana)
+3. Isolamento dati Firestore (2 settimane)
+4. Multi-tenant dashboard (1 settimana)
+5. Testing e security audit (2 settimane)
 
 ---
 

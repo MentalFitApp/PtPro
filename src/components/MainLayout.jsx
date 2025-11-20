@@ -5,6 +5,8 @@ import {
   Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isSuperAdmin } from '../utils/superadmin';
+import { auth } from '../firebase';
 
 // === STELLE DI SFONDO (25, 5 DORATE) ===
 const AnimatedStars = () => {
@@ -51,6 +53,7 @@ const adminNavLinks = [
   { to: '/statistiche', icon: <BarChart3 size={18} />, label: 'Statistiche' },
   { to: '/notifications', icon: <BellRing size={18} />, label: 'Notifiche' },
   { to: '/alimentazione-allenamento', icon: <FileText size={18} />, label: 'Schede' },
+  { to: '/superadmin', icon: <Settings size={18} />, label: '👑 SuperAdmin', isSuperAdmin: true },
 ];
 
 const coachNavLinks = [
@@ -71,7 +74,7 @@ const collaboratoreNavLinks = [
 const AUTH_PAGES = ['/login', '/register', '/reset-password'];
 
 // === BOTTOM NAV MOBILE ===
-const BottomNav = ({ isCoach, isCollaboratore }) => {
+const BottomNav = ({ isCoach, isCollaboratore, userIsSuperAdmin }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : adminNavLinks);
@@ -80,7 +83,9 @@ const BottomNav = ({ isCoach, isCollaboratore }) => {
     <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-2xl border-t border-white/10 z-50 md:hidden safe-area-bottom">
       <div className="px-2 py-2">
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hidden snap-x snap-mandatory pb-1">
-          {links.map(link => (
+          {links
+            .filter(link => !link.isSuperAdmin || userIsSuperAdmin)
+            .map(link => (
             <motion.button
               key={link.to}
               onClick={() => navigate(link.to)}
@@ -105,7 +110,7 @@ const BottomNav = ({ isCoach, isCollaboratore }) => {
 };
 
 // === SIDEBAR COLLASSABILE ===
-const Sidebar = ({ isCoach, isCollaboratore, isCollapsed, setIsCollapsed }) => {
+const Sidebar = ({ isCoach, isCollaboratore, isCollapsed, setIsCollapsed, userIsSuperAdmin }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : adminNavLinks);
@@ -138,37 +143,39 @@ const Sidebar = ({ isCoach, isCollaboratore, isCollapsed, setIsCollapsed }) => {
       </div>
 
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-        {links.map(link => (
-          <motion.button
-            key={link.to}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              navigate(link.to);
-            }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              location.pathname === link.to || location.pathname.startsWith(link.to + '/')
-                ? 'bg-rose-600/20 text-rose-400 border border-rose-600/30'
-                : 'text-slate-300 hover:bg-white/5 hover:text-rose-400'
-            }`}
-            whileHover={{ x: 4 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            {link.icon}
-            <AnimatePresence>
-              {!isCollapsed && (
-                <motion.span
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
-                  className="overflow-hidden whitespace-nowrap"
-                >
-                  {link.label}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        ))}
+        {links
+          .filter(link => !link.isSuperAdmin || userIsSuperAdmin)
+          .map(link => (
+            <motion.button
+              key={link.to}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                navigate(link.to);
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                location.pathname === link.to || location.pathname.startsWith(link.to + '/')
+                  ? 'bg-rose-600/20 text-rose-400 border border-rose-600/30'
+                  : 'text-slate-300 hover:bg-white/5 hover:text-rose-400'
+              }`}
+              whileHover={{ x: 4 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {link.icon}
+              <AnimatePresence>
+                {!isCollapsed && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    className="overflow-hidden whitespace-nowrap"
+                  >
+                    {link.label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          ))}
       </nav>
     </motion.aside>
   );
@@ -181,6 +188,7 @@ export default function MainLayout() {
   const [isCollaboratore, setIsCollaboratore] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [userIsSuperAdmin, setUserIsSuperAdmin] = useState(false);
 
   // Determina se è pagina auth
   const isAuthPage = AUTH_PAGES.includes(location.pathname);
@@ -191,6 +199,32 @@ export default function MainLayout() {
     setIsCoach(location.pathname.startsWith('/coach'));
     setIsCollaboratore(location.pathname.startsWith('/collaboratore'));
   }, [location.pathname]);
+
+  // Verifica se l'utente è SuperAdmin
+  useEffect(() => {
+    const checkSuperAdmin = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const isSA = await isSuperAdmin(user.uid);
+        setUserIsSuperAdmin(isSA);
+      } else {
+        setUserIsSuperAdmin(false);
+      }
+    };
+
+    checkSuperAdmin();
+    
+    // Ricontrolla quando cambia l'utente
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        checkSuperAdmin();
+      } else {
+        setUserIsSuperAdmin(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Rileva mobile
   useEffect(() => {
@@ -213,7 +247,8 @@ export default function MainLayout() {
             isCoach={isCoach}
             isCollaboratore={isCollaboratore}
             isCollapsed={isSidebarCollapsed} 
-            setIsCollapsed={setIsSidebarCollapsed} 
+            setIsCollapsed={setIsSidebarCollapsed}
+            userIsSuperAdmin={userIsSuperAdmin}
           />
         )}
 
@@ -238,7 +273,7 @@ export default function MainLayout() {
           </main>
 
           {/* BOTTOM NAV: SOLO SU MOBILE */}
-          {showBottomNav && <BottomNav isCoach={isCoach} isCollaboratore={isCollaboratore} />}
+          {showBottomNav && <BottomNav isCoach={isCoach} isCollaboratore={isCollaboratore} userIsSuperAdmin={userIsSuperAdmin} />}
         </div>
 
         {/* SCROLLBAR NASCOSTA */}
