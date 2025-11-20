@@ -77,9 +77,14 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
   if (!file) throw new Error('Nessun file fornito');
 
   // Validazione dimensione file (prima della compressione)
-  // Admin: nessun limite, Clienti: 10MB per immagini, 50MB per video
+  // Admin: nessun limite, Clienti: 10MB per immagini, 50MB per video, 25MB per audio
   if (!isAdmin) {
-    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    let maxSize = 10 * 1024 * 1024; // Default 10MB for images
+    if (file.type.startsWith('video/')) {
+      maxSize = 50 * 1024 * 1024; // 50MB for videos
+    } else if (file.type.startsWith('audio/')) {
+      maxSize = 25 * 1024 * 1024; // 25MB for audio
+    }
     if (file.size > maxSize) {
       const maxSizeMB = maxSize / (1024 * 1024);
       throw new Error(`Il file supera il limite di ${maxSizeMB}MB`);
@@ -89,8 +94,9 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
   // Validazione tipo file
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
-  if (!isImage && !isVideo) {
-    throw new Error('Il file deve essere un\'immagine o un video');
+  const isAudio = file.type.startsWith('audio/');
+  if (!isImage && !isVideo && !isAudio) {
+    throw new Error('Il file deve essere un\'immagine, un video o un audio');
   }
 
   try {
