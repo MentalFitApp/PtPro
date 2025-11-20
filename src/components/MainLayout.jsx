@@ -52,6 +52,7 @@ const adminNavLinks = [
   { to: '/admin/dipendenti', icon: <Users size={18} />, label: 'Dipendenti' },
   { to: '/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
   { to: '/statistiche', icon: <BarChart3 size={18} />, label: 'Statistiche' },
+  { to: '/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
   { to: '/notifications', icon: <BellRing size={18} />, label: 'Notifiche' },
   { to: '/alimentazione-allenamento', icon: <FileText size={18} />, label: 'Schede' },
   { to: '/superadmin', icon: <Settings size={18} />, label: '👑 SuperAdmin', isSuperAdmin: true },
