@@ -3,7 +3,7 @@
  * Gestisce alert automatici per scadenze, check-in mancanti, ecc.
  */
 
-import { collection, query, where, getDocs, doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 /**
@@ -29,8 +29,6 @@ export const getExpiringClients = async (daysThreshold = 15) => {
     const snapshot = await getDocs(clientsRef);
     
     const expiringClients = [];
-    const now = new Date();
-    const thresholdDate = new Date(now.getTime() + (daysThreshold * 24 * 60 * 60 * 1000));
     
     snapshot.forEach(doc => {
       const client = { id: doc.id, ...doc.data() };
@@ -158,6 +156,7 @@ export const getClientsMissingCheckIn = async (daysThreshold = 7) => {
  */
 export const createNotification = async (userId, notification) => {
   try {
+    // eslint-disable-next-line no-unused-vars
     const notificationRef = collection(db, 'notifications');
     const notificationData = {
       userId,

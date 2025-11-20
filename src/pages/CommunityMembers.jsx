@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, getDocs, where, orderBy } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { collection, query, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 import { Search, Trophy, MessageSquare, Award, Crown, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 
