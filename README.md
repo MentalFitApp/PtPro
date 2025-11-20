@@ -42,8 +42,11 @@ L'app usa **Cloudflare R2** per lo storage di foto e video:
 
 ## 📚 Documentazione
 
+- [🔧 Troubleshooting](./TROUBLESHOOTING.md) - **PROBLEMI?** Soluzioni agli errori comuni
 - [⚠️ Azione Richiesta: Setup CORS R2](./AZIONE-RICHIESTA.md) - **IMPORTANTE**: Configurazione CORS per upload foto
 - [Setup CORS Cloudflare R2](./R2-CORS-SETUP.md) - Guida dettagliata configurazione CORS
+- [Setup Public Access R2](./R2-PUBLIC-ACCESS-SETUP.md) - Configurazione accesso pubblico
+- [Changelog R2 Fix](./CHANGELOG-R2-FIX.md) - Storia delle modifiche R2
 - [Roadmap Progetto](./ROADMAP-PROGETTO.md) - Stato e pianificazione features
 - [Gestione Admin](./ADMIN-MANAGEMENT.md) - Gestione amministratori
 - [Alimentazione & Allenamento](./ALIMENTAZIONE-ALLENAMENTO-DOCS.md) - Funzionalità nutrizionali
