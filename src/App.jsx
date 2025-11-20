@@ -45,6 +45,7 @@ const GuideManager = React.lazy(() => import('./pages/GuideManager'));
 
 // AGGIUNTO
 const Statistiche = React.lazy(() => import('./pages/Statistiche'));
+const Analytics = React.lazy(() => import('./pages/Analytics'));
 const CalendarPage = React.lazy(() => import('./pages/CalendarPage'));
 const Notifications = React.lazy(() => import('./pages/Notifications'));
 const AlimentazioneAllenamento = React.lazy(() => import('./pages/AlimentazioneAllenamento'));
@@ -297,6 +298,7 @@ export default function App() {
           <Route path="/guide-manager" element={<GuideManager />} />
           <Route path="/admin/dipendenti" element={<Dipendenti />} />
           <Route path="/statistiche" element={<Statistiche />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/alimentazione-allenamento" element={<AlimentazioneAllenamento />} />
           <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />

@@ -544,6 +544,9 @@ export default function Dashboard() {
               <button onClick={() => navigate('/business-history')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2">
                 <BarChart3 size={14} className="sm:w-4 sm:h-4"/> <span>Storico</span>
               </button>
+              <button onClick={() => navigate('/analytics')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2">
+                <TrendingUp size={14} className="sm:w-4 sm:h-4"/> <span>Analytics</span>
+              </button>
             </div>
           </div>
         </div>
