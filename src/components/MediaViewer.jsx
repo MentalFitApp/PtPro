@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize2, X } from 'lucide-react';
 import { formatDuration } from '../utils/mediaUpload';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -53,7 +53,6 @@ export function VideoPlayer({ url, thumbnail = null, className = '', autoPlay = 
   const [muted, setMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [showFullscreen, setShowFullscreen] = useState(false);
   const videoRef = useRef(null);
 
   const togglePlay = () => {
@@ -102,10 +101,8 @@ export function VideoPlayer({ url, thumbnail = null, className = '', autoPlay = 
     if (videoRef.current) {
       if (!document.fullscreenElement) {
         videoRef.current.requestFullscreen();
-        setShowFullscreen(true);
       } else {
         document.exitFullscreen();
-        setShowFullscreen(false);
       }
     }
   };
