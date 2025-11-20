@@ -323,6 +323,9 @@ export default function App() {
           <Route path="/coach/updates" element={<CoachUpdates />} />
           <Route path="/coach/chat" element={<CoachChat />} />
           <Route path="/coach/client/:clientId/checks" element={<ClientChecks />} />
+          <Route path="/coach/schede" element={<AlimentazioneAllenamento />} />
+          <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
+          <Route path="/scheda-allenamento/:clientId" element={<SchedaAllenamento />} />
         </Route>
 
         {/* === ROTTE CLIENTI === */}

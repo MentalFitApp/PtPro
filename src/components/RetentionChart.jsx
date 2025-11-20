@@ -1,7 +1,26 @@
 // src/components/RetentionChart.jsx
 import React, { useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 import { toDate } from '../firebase';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export default function RetentionChart({ clients }) {
   const chartData = useMemo(() => {

@@ -63,6 +63,7 @@ const coachNavLinks = [
   { to: '/coach/clients', icon: <Users size={18} />, label: 'Clienti' },
   { to: '/coach/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/coach/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
+  { to: '/coach/schede', icon: <FileText size={18} />, label: 'Schede' },
   { to: '/coach/updates', icon: <Bell size={18} />, label: 'Aggiornamenti' },
   { to: '/coach/settings', icon: <Settings size={18} />, label: 'Impostazioni' },
 ];

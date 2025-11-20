@@ -60,6 +60,7 @@ export default function CollaboratoreDashboard() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // --- TIMER MEZZANOTTE ---
   useEffect(() => {

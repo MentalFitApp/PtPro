@@ -336,6 +336,12 @@ export default function CoachClientDetail() {
           {activeTab === 'info' && (
             <div className="space-y-4 text-sm">
               <div className="flex justify-between">
+                <span className="text-slate-400">Email:</span>
+                <span className="font-medium text-white">
+                  {client.email || 'N/D'}
+                </span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-slate-400">Inizio:</span>
                 <span className="font-medium text-white">
                   {toDate(client.startDate)?.toLocaleDateString('it-IT') || 'N/D'}
