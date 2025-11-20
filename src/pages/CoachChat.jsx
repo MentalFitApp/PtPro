@@ -3,8 +3,10 @@ import { getAuth, signOut } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, setDoc, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, AlertCircle, Search, MessageSquare, X } from 'lucide-react';
+import { ArrowLeft, Send, AlertCircle, Search, MessageSquare, X, Paperclip } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import MediaUploadButton from '../components/MediaUploadButton';
+import EnhancedChatMessage from '../components/EnhancedChatMessage';
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-slate-900 text-slate-200 flex flex-col justify-center items-center">
@@ -62,6 +64,8 @@ export default function CoachChat() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [pendingMedia, setPendingMedia] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef(null);
   const unsubscribeRef = useRef(null);
 
@@ -255,29 +259,50 @@ export default function CoachChat() {
   // Invia messaggio
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (newMessage.trim() === '' || !chatId) return;
+    if ((newMessage.trim() === '' && pendingMedia.length === 0) || !chatId) return;
 
     const tempMessage = newMessage;
+    const tempMedia = [...pendingMedia];
     setNewMessage('');
+    setPendingMedia([]);
 
     try {
       const messagesCollectionRef = collection(db, 'chats', chatId, 'messages');
-      await addDoc(messagesCollectionRef, {
+      const messageData = {
         text: tempMessage,
         createdAt: serverTimestamp(),
         senderId: user.uid,
-      });
+      };
 
+      // Add media if present
+      if (tempMedia.length > 0) {
+        messageData.media = tempMedia;
+      }
+
+      await addDoc(messagesCollectionRef, messageData);
+
+      // Update last message preview
+      const lastMsgPreview = tempMessage || (tempMedia.length > 0 ? `📎 ${tempMedia.length} file` : 'Messaggio');
       const chatDocRef = doc(db, 'chats', chatId);
       await setDoc(chatDocRef, {
-        lastMessage: tempMessage,
+        lastMessage: lastMsgPreview,
         lastUpdate: serverTimestamp(),
       }, { merge: true });
-      console.log('Messaggio inviato:', { chatId, text: tempMessage });
+      console.log('Messaggio inviato:', { chatId, text: tempMessage, media: tempMedia.length });
     } catch (error) {
       console.error("Errore nell'invio del messaggio:", error);
       setError(error.code === 'permission-denied' ? 'Permessi insufficienti per inviare il messaggio.' : 'Errore nell\'invio del messaggio.');
     }
+  };
+
+  // Handle media upload
+  const handleMediaUpload = (mediaUrl, mediaType, duration) => {
+    setPendingMedia(prev => [...prev, { url: mediaUrl, type: mediaType, duration }]);
+  };
+
+  // Remove pending media
+  const removePendingMedia = (index) => {
+    setPendingMedia(prev => prev.filter((_, i) => i !== index));
   };
 
   // Selezione chat
@@ -385,27 +410,20 @@ export default function CoachChat() {
                   {chats.find(c => c.id === selectedChatId)?.participantNames?.[chats.find(c => c.id === selectedChatId)?.participants.find(p => p !== user.uid)] || 'Cliente'}
                 </h3>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                 {messages.length > 0 ? (
                   <AnimatePresence>
-                    {messages.map(msg => (
-                      <motion.div
-                        key={msg.id}
-                        className={`flex ${msg.senderId === user.uid ? 'justify-end' : 'justify-start'}`}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <div className={`max-w-[70%] sm:max-w-md p-3 rounded-2xl shadow-md ${
-                          msg.senderId === user.uid ? 'bg-rose-600/90 text-white rounded-br-none' : 'bg-cyan-600/90 text-white rounded-bl-none'
-                        }`}>
-                          <p className="break-words text-sm sm:text-base">{msg.text}</p>
-                          <p className="text-xs text-slate-200/70 mt-1 text-right">
-                            {msg.createdAt?.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                      </motion.div>
-                    ))}
+                    {messages.map(msg => {
+                      const senderName = chats.find(c => c.id === selectedChatId)?.participantNames?.[msg.senderId] || 'Utente';
+                      return (
+                        <EnhancedChatMessage
+                          key={msg.id}
+                          message={msg}
+                          isOwn={msg.senderId === user.uid}
+                          senderName={msg.senderId !== user.uid ? senderName : null}
+                        />
+                      );
+                    })}
                   </AnimatePresence>
                 ) : (
                   <p className="text-slate-400 text-center py-8">Nessun messaggio. Inizia la conversazione!</p>
@@ -413,18 +431,52 @@ export default function CoachChat() {
                 <div ref={messagesEndRef} />
               </div>
               <footer className="p-4 sm:p-6 bg-slate-900/70 backdrop-blur-lg border-t border-white/10 sticky bottom-0">
-                <form onSubmit={handleSendMessage} className="flex items-center gap-3 max-w-3xl mx-auto">
+                {/* Pending media preview */}
+                {pendingMedia.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2 max-w-3xl mx-auto">
+                    {pendingMedia.map((media, index) => (
+                      <div key={index} className="relative group">
+                        <div className="w-20 h-20 bg-slate-700 rounded-lg flex items-center justify-center">
+                          {media.type === 'image' ? (
+                            <img src={media.url} alt="preview" className="w-full h-full object-cover rounded-lg" />
+                          ) : media.type === 'video' ? (
+                            <span className="text-xs text-slate-400">📹 Video</span>
+                          ) : (
+                            <span className="text-xs text-slate-400">🎵 Audio</span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => removePendingMedia(index)}
+                          className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2 max-w-3xl mx-auto">
+                  {/* Media upload button */}
+                  <MediaUploadButton
+                    onUploadComplete={handleMediaUpload}
+                    onUploadStart={() => setIsUploading(true)}
+                    onUploadEnd={() => setIsUploading(false)}
+                    folder="chat_media"
+                    acceptedTypes="all"
+                  />
+                  
                   <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Scrivi un messaggio..."
                     className="flex-1 p-3 bg-slate-700/50 border border-slate-600 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 text-sm sm:text-base transition-all placeholder:text-slate-500 shadow-sm"
+                    disabled={isUploading}
                   />
                   <button
                     type="submit"
-                    className="p-3 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-colors disabled:bg-rose-900 disabled:cursor-not-allowed shadow-md"
-                    disabled={!newMessage.trim()}
+                    className="p-3 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-colors disabled:bg-rose-900 disabled:cursor-not-allowed shadow-md min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    disabled={(!newMessage.trim() && pendingMedia.length === 0) || isUploading}
                   >
                     <Send size={20} />
                   </button>

@@ -4,6 +4,8 @@ import { collection, query, where, orderBy, onSnapshot, doc, addDoc, serverTimes
 import { db } from '../firebase.js';
 import { Send, MessageSquare, Search, AlertCircle, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import MediaUploadButton from '../components/MediaUploadButton';
+import EnhancedChatMessage from '../components/EnhancedChatMessage';
 
 // AnimatedBackground per tema stellato
 const AnimatedBackground = () => {
