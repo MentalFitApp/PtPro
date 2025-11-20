@@ -271,6 +271,72 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ==================== COMMUNITY ====================
+    match /community_posts/{postId} {
+      // Tutti gli utenti autenticati possono leggere i post
+      allow read, list: if request.auth != null;
+      
+      // Utenti autenticati possono creare post
+      allow create: if request.auth != null && 
+                      request.resource.data.authorId == request.auth.uid;
+      
+      // Solo l'autore o admin possono modificare/eliminare
+      allow update, delete: if request.auth != null && (
+        resource.data.authorId == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Commenti sui post
+      match /comments/{commentId} {
+        allow read, list: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update, delete: if request.auth != null && (
+          resource.data.authorId == request.auth.uid ||
+          isAdmin()
+        );
+      }
+    }
+
+    // Settings della community (globali e per utente)
+    match /settings/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Users collection (per dati community: livello, likes, onboarding)
+    match /users/{userId} {
+      // Tutti possono leggere i profili pubblici
+      allow read, list: if request.auth != null;
+      
+      // Solo l'utente stesso può creare/modificare il proprio profilo
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      
+      // Solo admin può eliminare
+      allow delete: if isAdmin();
+    }
+
+    // Schede alimentazione (per Smart Meal Swap)
+    match /schede_alimentazione/{schedaId} {
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        isCoach() ||
+        resource.data.clientId == request.auth.uid
+      );
+      allow create, update: if isAdmin() || isCoach();
+      allow delete: if isAdmin();
+    }
+
+    // Schede allenamento
+    match /schede_allenamento/{schedaId} {
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        isCoach() ||
+        resource.data.clientId == request.auth.uid
+      );
+      allow create, update: if isAdmin() || isCoach();
+      allow delete: if isAdmin();
+    }
+
     // ==================== BLOCCA TUTTO IL RESTO ====================
     match /{document=**} {
       allow read, write: if false;

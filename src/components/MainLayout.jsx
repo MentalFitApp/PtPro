@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { 
   Home, Users, MessageSquare, FileText, Bell, 
-  Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing 
+  Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing, UsersRound 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isSuperAdmin } from '../utils/superadmin';
@@ -45,6 +45,7 @@ const adminNavLinks = [
   { to: '/', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
   { to: '/clients', icon: <Users size={18} />, label: 'Clienti' },
   { to: '/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
+  { to: '/community', icon: <UsersRound size={18} />, label: 'Community' },
   { to: '/updates', icon: <Bell size={18} />, label: 'Novità' },
   { to: '/collaboratori', icon: <Users size={18} />, label: 'Collaboratori' },
   { to: '/guide-manager', icon: <FileText size={18} />, label: 'Guide & Lead' },

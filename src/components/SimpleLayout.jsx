@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Apple, Dumbbell } from 'lucide-react';
+import { Home, Apple, Dumbbell, UsersRound } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Bottom nav component for mobile (matching MainLayout style)
@@ -12,6 +12,7 @@ const BottomNav = () => {
     { to: '/client/dashboard', icon: <Home size={18} />, label: 'Dashboard' },
     { to: '/client/scheda-alimentazione', icon: <Apple size={18} />, label: 'Alimentazione' },
     { to: '/client/scheda-allenamento', icon: <Dumbbell size={18} />, label: 'Allenamento' },
+    { to: '/client/community', icon: <UsersRound size={18} />, label: 'Community' },
   ];
 
   return (
@@ -51,6 +52,7 @@ const Sidebar = () => {
     { to: '/client/dashboard', icon: <Home size={18} />, label: 'Dashboard' },
     { to: '/client/scheda-alimentazione', icon: <Apple size={18} />, label: 'Alimentazione' },
     { to: '/client/scheda-allenamento', icon: <Dumbbell size={18} />, label: 'Allenamento' },
+    { to: '/client/community', icon: <UsersRound size={18} />, label: 'Community' },
   ];
 
   return (
