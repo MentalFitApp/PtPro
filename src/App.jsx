@@ -51,6 +51,7 @@ const AlimentazioneAllenamento = React.lazy(() => import('./pages/AlimentazioneA
 const SchedaAlimentazione = React.lazy(() => import('./pages/SchedaAlimentazione'));
 const SchedaAllenamento = React.lazy(() => import('./pages/SchedaAllenamento'));
 const ClientSchedaAlimentazione = React.lazy(() => import('./pages/ClientSchedaAlimentazione'));
+const ClientSchedaAlimentazioneEnhanced = React.lazy(() => import('./pages/ClientSchedaAlimentazioneEnhanced'));
 const ClientSchedaAllenamento = React.lazy(() => import('./pages/ClientSchedaAllenamento'));
 
 // SuperAdmin page
@@ -327,7 +328,7 @@ export default function App() {
           <Route path="/client/checks" element={<ClientChecks />} />
           <Route path="/client/payments" element={<ClientPayments />} />
           <Route path="/client/chat" element={<ClientChat />} />
-          <Route path="/client/scheda-alimentazione" element={<ClientSchedaAlimentazione />} />
+          <Route path="/client/scheda-alimentazione" element={<ClientSchedaAlimentazioneEnhanced />} />
           <Route path="/client/scheda-allenamento" element={<ClientSchedaAllenamento />} />
           <Route path="/client/community" element={<Community />} />
           <Route path="/client/community/members" element={<CommunityMembers />} />
