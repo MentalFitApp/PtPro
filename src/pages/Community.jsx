@@ -4,6 +4,8 @@ import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, getDoc,
 import { db, auth } from '../firebase';
 import { Trophy, MessageSquare, Lightbulb, Plus, Heart, MessageCircle, Award, Crown, Send, Image, Video as VideoIcon, X, Users as UsersIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import MediaUploadButton from '../components/MediaUploadButton';
+import MediaViewer from '../components/MediaViewer';
 
 /**
  * Sistema Community con Gamificazione
@@ -68,6 +70,7 @@ export default function Community() {
   const [channels, setChannels] = useState(DEFAULT_CHANNELS);
   const [showMembersList, setShowMembersList] = useState(false);
   const [allMembers, setAllMembers] = useState([]);
+  const [newPostMedia, setNewPostMedia] = useState([]);
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
@@ -107,7 +110,7 @@ export default function Community() {
   }, [currentUser]);
 
   const handleCreatePost = async () => {
-    if (!newPostContent.trim()) return;
+    if (!newPostContent.trim() && newPostMedia.length === 0) return;
 
     try {
       await addDoc(collection(db, 'community_posts'), {
@@ -117,18 +120,29 @@ export default function Community() {
         authorName: userProfile?.name || currentUser.displayName || 'Utente',
         authorPhotoURL: userProfile?.photoURL || currentUser.photoURL || '',
         authorLevel: getUserLevel(userProfile?.totalLikes || 0).id,
+        authorTotalLikes: userProfile?.totalLikes || 0,
         likes: [],
         likesCount: 0,
         comments: [],
         commentsCount: 0,
+        media: newPostMedia, // Array of media objects
         createdAt: serverTimestamp(),
       });
 
       setNewPostContent('');
+      setNewPostMedia([]);
       setShowNewPost(false);
     } catch (error) {
       console.error('Error creating post:', error);
     }
+  };
+
+  const handleMediaUpload = (mediaData) => {
+    setNewPostMedia(prev => [...prev, mediaData]);
+  };
+
+  const removeMedia = (index) => {
+    setNewPostMedia(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleLikePost = async (postId, currentLikes = []) => {
@@ -292,18 +306,33 @@ export default function Community() {
                   className="w-full h-40 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-500 resize-none"
                 />
 
-                <div className="flex items-center justify-between mt-4">
-                  <div className="flex gap-2">
-                    <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors" title="Aggiungi immagine">
-                      <Image size={20} className="text-slate-400" />
-                    </button>
-                    <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors" title="Aggiungi video">
-                      <Video size={20} className="text-slate-400" />
-                    </button>
+                {/* Media Preview */}
+                {newPostMedia.length > 0 && (
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    {newPostMedia.map((media, index) => (
+                      <div key={index} className="relative group">
+                        <MediaViewer media={media} className="rounded-lg" />
+                        <button
+                          onClick={() => removeMedia(index)}
+                          className="absolute top-2 right-2 p-1 bg-red-600 hover:bg-red-700 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X size={16} className="text-white" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
+                )}
+
+                <div className="flex items-center justify-between mt-4">
+                  <MediaUploadButton
+                    userId={currentUser?.uid}
+                    onUploadComplete={handleMediaUpload}
+                    folder="community_posts"
+                    showLabel={false}
+                  />
                   <button
                     onClick={handleCreatePost}
-                    disabled={!newPostContent.trim()}
+                    disabled={!newPostContent.trim() && newPostMedia.length === 0}
                     className="flex items-center gap-2 px-6 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg font-medium transition-colors"
                   >
                     <Send size={18} />
@@ -370,7 +399,18 @@ export default function Community() {
                   </div>
 
                   {/* Post Content */}
-                  <p className="text-slate-300 mb-4 whitespace-pre-wrap">{post.content}</p>
+                  {post.content && (
+                    <p className="text-slate-300 mb-4 whitespace-pre-wrap">{post.content}</p>
+                  )}
+
+                  {/* Post Media */}
+                  {post.media && post.media.length > 0 && (
+                    <div className={`mb-4 ${post.media.length === 1 ? '' : 'grid grid-cols-2 gap-2'}`}>
+                      {post.media.map((media, index) => (
+                        <MediaViewer key={index} media={media} className="rounded-lg" />
+                      ))}
+                    </div>
+                  )}
 
                   {/* Post Actions */}
                   <div className="flex items-center gap-4 pt-4 border-t border-slate-700">
