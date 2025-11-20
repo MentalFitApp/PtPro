@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAuth, updatePassword } from "firebase/auth";
+import { getAuth, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from '../firebase.js';
 import { KeyRound, Lock, CheckCircle2 } from 'lucide-react';
@@ -34,6 +34,7 @@ const AnimatedBackground = () => (
 );
 
 const FirstAccess = () => {
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -88,6 +89,11 @@ const FirstAccess = () => {
       setIsSubmitting(false);
       return;
     }
+    if (!currentPassword) {
+      setError("Inserisci la password temporanea ricevuta.");
+      setIsSubmitting(false);
+      return;
+    }
     if (newPassword.length < 6) {
       setError("La nuova password deve contenere almeno 6 caratteri.");
       setIsSubmitting(false);
@@ -100,6 +106,10 @@ const FirstAccess = () => {
     }
 
     try {
+      // Re-autentica l'utente con la password corrente prima di cambiarla
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+
       // Aggiorna password
       await updatePassword(user, newPassword);
 
@@ -119,7 +129,18 @@ const FirstAccess = () => {
       }, 2000);
     } catch (err) {
       console.error("Errore aggiornamento password:", err.code, err.message, { uid: user?.uid, userType });
-      setError("Si è verificato un errore durante l'aggiornamento della password: " + err.message);
+      
+      // Gestisci errori specifici
+      if (err.code === 'auth/wrong-password') {
+        setError("La password temporanea inserita non è corretta. Verifica e riprova.");
+      } else if (err.code === 'auth/too-many-requests') {
+        setError("Troppi tentativi falliti. Riprova più tardi o contatta il supporto.");
+      } else if (err.code === 'auth/requires-recent-login') {
+        setError("Sessione scaduta. Effettua nuovamente il login e riprova.");
+        setTimeout(() => navigate('/login'), 3000);
+      } else {
+        setError("Si è verificato un errore durante l'aggiornamento della password. " + (err.message || "Riprova."));
+      }
       setIsSubmitting(false);
     }
   };
@@ -151,17 +172,49 @@ const FirstAccess = () => {
           
           <form onSubmit={handleChangePassword} className="space-y-6">
             <div>
+              <label htmlFor="current-password" className={labelStyle}>Password Temporanea</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input 
+                  id="current-password" 
+                  type="password" 
+                  required 
+                  value={currentPassword} 
+                  onChange={(e) => setCurrentPassword(e.target.value)} 
+                  className={inputStyle}
+                  placeholder="Inserisci la password temporanea"
+                />
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Usa la password temporanea che hai ricevuto via email</p>
+            </div>
+            <div>
               <label htmlFor="new-password" className={labelStyle}>Nuova Password</label>
               <div className="relative">
                 <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input id="new-password" type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputStyle} />
+                <input 
+                  id="new-password" 
+                  type="password" 
+                  required 
+                  value={newPassword} 
+                  onChange={(e) => setNewPassword(e.target.value)} 
+                  className={inputStyle}
+                  placeholder="Minimo 6 caratteri"
+                />
               </div>
             </div>
             <div>
               <label htmlFor="confirm-password" className={labelStyle}>Conferma Nuova Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input id="confirm-password" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputStyle} />
+                <input 
+                  id="confirm-password" 
+                  type="password" 
+                  required 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  className={inputStyle}
+                  placeholder="Ripeti la nuova password"
+                />
               </div>
             </div>
 
