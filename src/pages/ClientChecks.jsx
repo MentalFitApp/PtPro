@@ -45,7 +45,7 @@ const Notification = ({ message, type, onDismiss }) => (
       >
         {type === 'success' ? <CheckCircle2 /> : <AlertTriangle />}
         <p>{message}</p>
-        <button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/10">
+        <button onClick={onDismiss} className="p-2 rounded-full hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center">
           <X size={16} />
         </button>
       </motion.div>
@@ -82,7 +82,7 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
     <div>
       <div className="flex justify-between items-center">
         <h3 className="font-bold text-lg mb-4 text-cyan-300">{formState.id ? 'Modifica Check' : 'Carica Check'}</h3>
-        <button onClick={handleCancel} className="text-slate-400 hover:text-white p-1 rounded-full">
+        <button onClick={handleCancel} className="text-slate-400 hover:text-white p-2 rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center">
           <X size={20} />
         </button>
       </div>

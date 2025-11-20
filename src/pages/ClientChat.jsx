@@ -26,7 +26,7 @@ const Notification = ({ message, onDismiss }) => (
       >
         <AlertCircle size={20} />
         <p>{message}</p>
-        <button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/10">
+        <button onClick={onDismiss} className="p-2 rounded-full hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center">
           <AlertCircle size={16} />
         </button>
       </motion.div>

@@ -36,7 +36,7 @@ const Notification = ({ message, type, onDismiss }) => (
             >
                 {type === 'success' ? <CheckCircle2 /> : <AlertTriangle />}
                 <p>{message}</p>
-                <button onClick={onDismiss} className="p-1 rounded-full hover:bg-white/10">
+                <button onClick={onDismiss} className="p-2 rounded-full hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center">
                     <X size={16} />
                 </button>
             </motion.div>

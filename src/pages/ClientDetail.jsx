@@ -598,8 +598,8 @@ export default function ClientDetail() {
                 <Mail className="text-slate-400" size={18} />
                 <div className="flex items-center gap-2">
                   <p>Email: <span className="font-semibold">{client.email}</span></p>
-                  <button onClick={copyCredentialsToClipboard} className="p-1 text-slate-400 hover:text-emerald-400">
-                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                  <button onClick={copyCredentialsToClipboard} className="p-2 text-slate-400 hover:text-emerald-400 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg">
+                    {copied ? <Check size={18} /> : <Copy size={18} />}
                   </button>
                 </div>
               </div>
