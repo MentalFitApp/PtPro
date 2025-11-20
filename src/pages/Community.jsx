@@ -1853,10 +1853,27 @@ export default function Community() {
                                 <span className="text-slate-100 font-medium">{channel.name}</span>
                               </div>
                               <div className="flex gap-2">
-                                <button className="p-2 hover:bg-slate-600 rounded text-cyan-400 transition-colors">
+                                <button 
+                                  onClick={() => {
+                                    setEditingChannel(key);
+                                    setNewChannelName(channel.name);
+                                  }}
+                                  className="p-2 hover:bg-slate-600 rounded text-cyan-400 transition-colors"
+                                  title="Modifica canale"
+                                >
                                   ✏️
                                 </button>
-                                <button className="p-2 hover:bg-slate-600 rounded text-rose-400 transition-colors">
+                                <button 
+                                  onClick={() => {
+                                    if (confirm(`Vuoi eliminare il canale "${channel.name}"?`)) {
+                                      const updatedChannels = { ...channels };
+                                      delete updatedChannels[key];
+                                      setChannels(updatedChannels);
+                                    }
+                                  }}
+                                  className="p-2 hover:bg-slate-600 rounded text-rose-400 transition-colors"
+                                  title="Elimina canale"
+                                >
                                   🗑️
                                 </button>
                               </div>
@@ -1876,7 +1893,31 @@ export default function Community() {
                             onChange={(e) => setNewChannelName(e.target.value)}
                             className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
                           />
-                          <button className="w-full px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg">
+                          <button 
+                            onClick={() => {
+                              if (!newChannelName.trim()) {
+                                alert('Inserisci un nome per il canale');
+                                return;
+                              }
+                              const channelKey = newChannelName.toLowerCase().replace(/\s+/g, '_');
+                              if (channels[channelKey]) {
+                                alert('Esiste già un canale con questo nome');
+                                return;
+                              }
+                              setChannels({
+                                ...channels,
+                                [channelKey]: {
+                                  name: newChannelName,
+                                  icon: MessageSquare,
+                                  description: 'Nuovo canale',
+                                  emoji: '💬'
+                                }
+                              });
+                              setNewChannelName('');
+                              alert('Canale creato con successo!');
+                            }}
+                            className="w-full px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg"
+                          >
                             <Plus size={18} className="inline mr-2" />
                             Crea Canale
                           </button>
@@ -1929,7 +1970,12 @@ export default function Community() {
                             </div>
                           ))}
                         </div>
-                        <button className="mt-4 w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg">
+                        <button 
+                          onClick={() => {
+                            alert('✅ Configurazione salvata! (Nota: questa funzionalità verrà completata nella prossima versione)');
+                          }}
+                          className="mt-4 w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg"
+                        >
                           Salva Configurazione Livelli
                         </button>
                       </div>
@@ -1978,7 +2024,12 @@ export default function Community() {
                             </div>
                           ))}
                         </div>
-                        <button className="mt-4 w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-semibold transition-all shadow-lg">
+                        <button 
+                          onClick={() => {
+                            alert('✅ Rewards salvati! (Nota: questa funzionalità verrà completata nella prossima versione)');
+                          }}
+                          className="mt-4 w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-semibold transition-all shadow-lg"
+                        >
                           Salva Rewards
                         </button>
                       </div>
@@ -2054,7 +2105,12 @@ export default function Community() {
                           placeholder="Inserisci parole vietate (una per riga)"
                           className="w-full h-24 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-rose-500 focus:outline-none resize-none"
                         />
-                        <button className="mt-3 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-medium transition-colors">
+                        <button 
+                          onClick={() => {
+                            alert('✅ Filtro parole salvato! (Nota: questa funzionalità verrà completata nella prossima versione)');
+                          }}
+                          className="mt-3 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-medium transition-colors"
+                        >
                           Salva Filtro
                         </button>
                       </div>
@@ -2150,7 +2206,12 @@ export default function Community() {
                           </ol>
                         </div>
 
-                        <button className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg font-semibold transition-all shadow-lg">
+                        <button 
+                          onClick={() => {
+                            alert('✅ Configurazione onboarding salvata! (Nota: questa funzionalità verrà completata nella prossima versione)');
+                          }}
+                          className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg font-semibold transition-all shadow-lg"
+                        >
                           Salva Configurazione Onboarding
                         </button>
                       </div>
@@ -2240,7 +2301,12 @@ export default function Community() {
                           </p>
                         </div>
 
-                        <button className="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg">
+                        <button 
+                          onClick={() => {
+                            alert('✅ Configurazione notifiche salvata! (Nota: questa funzionalità verrà completata nella prossima versione)');
+                          }}
+                          className="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg"
+                        >
                           Salva Configurazione Notifiche
                         </button>
                       </div>
