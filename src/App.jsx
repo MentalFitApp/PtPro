@@ -60,6 +60,7 @@ const SuperAdminSettings = React.lazy(() => import('./pages/SuperAdminSettings')
 const Community = React.lazy(() => import('./pages/Community'));
 const CommunitySettings = React.lazy(() => import('./pages/CommunitySettings'));
 const CommunityOnboarding = React.lazy(() => import('./pages/CommunityOnboarding'));
+const CommunityMembers = React.lazy(() => import('./pages/CommunityMembers'));
 
 // Spinner
 const PageSpinner = () => (
@@ -297,6 +298,7 @@ export default function App() {
           <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
           <Route path="/scheda-allenamento/:clientId" element={<SchedaAllenamento />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/community/members" element={<CommunityMembers />} />
           <Route path="/community/settings" element={<CommunitySettings />} />
           <Route path="/community/onboarding" element={<CommunityOnboarding />} />
         </Route>
@@ -328,6 +330,7 @@ export default function App() {
           <Route path="/client/scheda-alimentazione" element={<ClientSchedaAlimentazione />} />
           <Route path="/client/scheda-allenamento" element={<ClientSchedaAllenamento />} />
           <Route path="/client/community" element={<Community />} />
+          <Route path="/client/community/members" element={<CommunityMembers />} />
           <Route path="/client/community/settings" element={<CommunitySettings />} />
         </Route>
 

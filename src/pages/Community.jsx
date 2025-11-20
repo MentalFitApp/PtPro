@@ -204,6 +204,13 @@ export default function Community() {
             </div>
             {userProfile && (
               <div className="flex items-center gap-3">
+                <button
+                  onClick={() => navigate('/community/members')}
+                  className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                >
+                  <UsersIcon size={16} className="text-slate-400" />
+                  <span className="text-sm text-slate-300">Membri</span>
+                </button>
                 <div className="text-right">
                   <p className="text-sm font-medium text-slate-200">{userProfile.name}</p>
                   <p className="text-xs text-slate-400">
