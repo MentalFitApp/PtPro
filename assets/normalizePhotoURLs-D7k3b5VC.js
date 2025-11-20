@@ -1,0 +1,1 @@
+const r=e=>{if(!e||typeof e!="object")return e;const o="https://media.flowfitpro.it",n={};for(const[i,t]of Object.entries(e)){if(!t){n[i]=t;continue}/^https?:\/\//i.test(t)?n[i]=t:n[i]=`${o}/${t}`}return n};export{r as n};
