@@ -362,4 +362,85 @@
       height: 450px;
     }
   }
+
+  /* ========================================
+     MOBILE TOUCH TARGETS (44x44px minimum)
+     ======================================== */
+  .touch-target-sm {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.75rem; /* 12px */
+  }
+
+  .touch-target-md {
+    min-width: 48px;
+    min-height: 48px;
+    padding: 0.875rem; /* 14px */
+  }
+
+  /* ========================================
+     MOBILE SPACING UTILITIES
+     ======================================== */
+  .mobile-spacing-sm {
+    padding: 0.75rem; /* 12px */
+  }
+
+  @media (min-width: 640px) {
+    .mobile-spacing-sm {
+      padding: 1rem; /* 16px */
+    }
+  }
+
+  .mobile-spacing-md {
+    padding: 1rem; /* 16px */
+  }
+
+  @media (min-width: 640px) {
+    .mobile-spacing-md {
+      padding: 1.5rem; /* 24px */
+    }
+  }
+
+  .mobile-spacing-lg {
+    padding: 1.5rem; /* 24px */
+  }
+
+  @media (min-width: 640px) {
+    .mobile-spacing-lg {
+      padding: 2rem; /* 32px */
+    }
+  }
+
+  /* ========================================
+     PREVENT OVERFLOW - Ensures no element exceeds viewport
+     ======================================== */
+  .no-overflow {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .no-overflow * {
+    max-width: 100%;
+  }
+
+  /* ========================================
+     MOBILE BUTTON CONSISTENCY
+     ======================================== */
+  .btn-mobile {
+    padding: 0.625rem 1rem; /* 10px 16px */
+    min-height: 44px;
+    font-size: 0.875rem; /* 14px */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .btn-mobile {
+      padding: 0.75rem 1.25rem; /* 12px 20px */
+      min-height: 48px;
+      font-size: 1rem; /* 16px */
+    }
+  }
 }
