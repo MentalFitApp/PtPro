@@ -128,8 +128,43 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
   );
 };
 
+const ImageModal = ({ isOpen, imageUrl, onClose }) => (
+  <AnimatePresence>
+    {isOpen && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/90 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+      >
+        <motion.div
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          exit={{ scale: 0.9 }}
+          onClick={(e) => e.stopPropagation()}
+          className="relative max-w-6xl max-h-[90vh] w-full"
+        >
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full z-10 transition-colors"
+          >
+            <X size={24} />
+          </button>
+          <img
+            src={imageUrl}
+            alt="Full size"
+            className="w-full h-full object-contain rounded-lg"
+          />
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
 const CheckDetails = ({ check, handleEditClick }) => {
   const [photoURLs, setPhotoURLs] = useState({});
+  const [modalImage, setModalImage] = useState(null);
   const isEditable = (new Date() - check.createdAt.toDate()) / (1000 * 60 * 60) < 2; // 2 ore
 
   useEffect(() => {
@@ -148,6 +183,11 @@ const CheckDetails = ({ check, handleEditClick }) => {
 
   return (
     <div>
+      <ImageModal
+        isOpen={!!modalImage}
+        imageUrl={modalImage}
+        onClose={() => setModalImage(null)}
+      />
       <div className="flex justify-between items-center">
         <h3 className="font-bold text-lg text-cyan-300">Riepilogo del {check.createdAt.toDate().toLocaleDateString('it-IT')}</h3>
         {isEditable && (
@@ -177,18 +217,16 @@ const CheckDetails = ({ check, handleEditClick }) => {
                   {type === 'front' ? 'Frontale' : type === 'back' ? 'Posteriore' : `Laterale ${type === 'left' ? 'Sinistro' : 'Destro'}`}
                 </h5>
                 {photoURLs[type] ? (
-                  <a
-                    href={photoURLs[type]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full h-48 overflow-hidden rounded-lg transition-all duration-300 group-hover:shadow-lg group-hover:shadow-cyan-500/20"
+                  <button
+                    onClick={() => setModalImage(photoURLs[type])}
+                    className="block w-full h-48 overflow-hidden rounded-lg transition-all duration-300 group-hover:shadow-lg group-hover:shadow-cyan-500/20 cursor-pointer"
                   >
                     <img
                       src={photoURLs[type]}
                       alt={type}
                       className="w-full h-full object-cover rounded-lg hover:opacity-90 transition-opacity"
                     />
-                  </a>
+                  </button>
                 ) : (
                   <div className="w-full h-48 bg-slate-700/50 rounded-lg text-slate-500 flex items-center justify-center">Foto non disponibile</div>
                 )}
