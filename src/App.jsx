@@ -63,6 +63,9 @@ const CommunitySettings = React.lazy(() => import('./pages/CommunitySettings'));
 const CommunityOnboarding = React.lazy(() => import('./pages/CommunityOnboarding'));
 const CommunityMembers = React.lazy(() => import('./pages/CommunityMembers'));
 
+// Onboarding
+const Onboarding = React.lazy(() => import('./pages/Onboarding'));
+
 // Spinner
 const PageSpinner = () => (
   <div className="flex justify-center items-center h-screen w-full bg-slate-900">
@@ -322,6 +325,7 @@ export default function App() {
 
         {/* === ROTTE CLIENTI === */}
         <Route element={authInfo.isClient ? <SimpleLayout /> : <Navigate to="/login" replace />}>
+          <Route path="/client/onboarding" element={<Onboarding />} />
           <Route path="/client/first-access" element={<FirstAccess />} />
           <Route path="/client/dashboard" element={<ClientDashboard />} />
           <Route path="/client/anamnesi" element={<ClientAnamnesi />} />

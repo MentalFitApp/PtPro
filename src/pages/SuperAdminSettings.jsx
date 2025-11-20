@@ -427,19 +427,21 @@ export default function SuperAdminSettings() {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="mb-6">
-          <input
-            type="text"
-            placeholder="Cerca per nome, email o ruolo..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          />
+        {/* Search (sticky on mobile) */}
+        <div className="mb-6 sticky top-2 z-20">
+          <div className="bg-slate-900/70 backdrop-blur rounded-xl border border-slate-700 p-2">
+            <input
+              type="text"
+              placeholder="Cerca per nome, email o ruolo..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            />
+          </div>
         </div>
 
-        {/* Users Table */}
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 overflow-hidden">
+        {/* Users Table (desktop) */}
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 overflow-hidden hidden sm:block">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-900/50 border-b border-slate-700">
@@ -559,13 +561,102 @@ export default function SuperAdminSettings() {
               </tbody>
             </table>
           </div>
-
           {filteredUsers.length === 0 && (
             <div className="text-center py-12 text-slate-400">
               <Users size={48} className="mx-auto mb-4 opacity-50" />
               <p>Nessun utente trovato</p>
             </div>
           )}
+        </div>
+
+        {/* Mobile Card List */}
+        <div className="space-y-3 sm:hidden">
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-12 text-slate-400 bg-slate-800/60 rounded-2xl border border-slate-700">
+              <Users size={48} className="mx-auto mb-4 opacity-50" />
+              <p>Nessun utente trovato</p>
+            </div>
+          )}
+          {filteredUsers.map(user => (
+            <div key={user.id} className="bg-slate-800/70 backdrop-blur rounded-xl border border-slate-700 p-4 flex flex-col gap-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-semibold text-white text-sm leading-tight">
+                    {user.name} {user.id === auth.currentUser.uid && <span className="text-cyan-400 text-xs">(Tu)</span>}
+                  </p>
+                  <p className="text-xs text-slate-400 break-all">{user.email}</p>
+                  <div className="mt-2"><RoleBadge role={user.effectiveRole} /></div>
+                </div>
+                {user.effectiveRole !== 'superadmin' && (
+                  <button
+                    onClick={() => handlePromoteToSuperAdmin(user.id)}
+                    className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 active:scale-95"
+                    title="Promuovi SuperAdmin"
+                  >
+                    <Crown size={18} />
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {!['superadmin','admin'].includes(user.effectiveRole) && (
+                  <button
+                    onClick={() => handlePromoteToAdmin(user.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-500/15 text-purple-300 text-xs font-medium active:scale-95"
+                  >
+                    <Shield size={14} /> Admin
+                  </button>
+                )}
+                {user.effectiveRole === 'admin' && (
+                  <button
+                    onClick={() => handleDemoteFromAdmin(user.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-500/15 text-purple-300 text-xs font-medium active:scale-95"
+                  >
+                    <UserMinus size={14} /> -Admin
+                  </button>
+                )}
+                {!['superadmin','admin','coach'].includes(user.effectiveRole) && (
+                  <button
+                    onClick={() => handlePromoteToCoach(user.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 text-xs font-medium active:scale-95"
+                  >
+                    <UserPlus size={14} /> Coach
+                  </button>
+                )}
+                {user.effectiveRole === 'coach' && (
+                  <button
+                    onClick={() => handleDemoteFromCoach(user.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 text-xs font-medium active:scale-95"
+                  >
+                    <UserMinus size={14} /> -Coach
+                  </button>
+                )}
+                {user.id !== auth.currentUser.uid && (
+                  <button
+                    onClick={() => handleRevokeAccess(user.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-300 text-xs font-medium active:scale-95"
+                  >
+                    <Lock size={14} /> Revoca
+                  </button>
+                )}
+                {user.id !== auth.currentUser.uid && (
+                  <button
+                    onClick={() => handleDeleteUser(user.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/15 text-red-300 text-xs font-medium active:scale-95"
+                  >
+                    <Trash2 size={14} /> Elimina
+                  </button>
+                )}
+                {user.effectiveRole === 'superadmin' && user.id !== auth.currentUser.uid && (
+                  <button
+                    onClick={() => handleDemoteFromSuperAdmin(user.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-300 text-xs font-medium active:scale-95"
+                  >
+                    <UserMinus size={14} /> -Super
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

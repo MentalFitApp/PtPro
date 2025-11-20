@@ -342,6 +342,21 @@
     display: none;
   }
 
+  /* Scrollbar hide utility for horizontal scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area per iOS devices */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
   /* ========================================
      MOBILE CHART RESPONSIVE
      ======================================== */
