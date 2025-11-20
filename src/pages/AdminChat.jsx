@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getAuth } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, doc, addDoc, serverTimestamp, setDoc, getDocs, limit, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase.js';
-import { Send, MessageSquare, Search, AlertCircle, Trash2, X } from 'lucide-react';
+import { Send, MessageSquare, Search, AlertCircle, Trash2, X, Smile, Check, CheckCheck, Pin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MediaUploadButton from '../components/MediaUploadButton';
 import EnhancedChatMessage from '../components/EnhancedChatMessage';
+import EmojiPicker from '../components/EmojiPicker';
 
 // AnimatedBackground per tema stellato
 const AnimatedBackground = () => {
@@ -99,6 +100,12 @@ const AdminChat = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [notification, setNotification] = useState({ message: '', type: '' });
   const messagesEndRef = useRef(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const [chatSearchQuery, setChatSearchQuery] = useState('');
+  const [showChatSearch, setShowChatSearch] = useState(false);
+  const [pinnedMessages, setPinnedMessages] = useState([]);
 
   const auth = getAuth();
   const adminUser = auth.currentUser;
@@ -234,6 +241,52 @@ const AdminChat = () => {
     setSearchResults([]);
   };
 
+  // Handle typing indicator
+  const handleTyping = () => {
+    if (selectedChatId && adminUser) {
+      setIsTyping(true);
+      setDoc(doc(db, 'chats', selectedChatId), {
+        [`typing_${adminUser.uid}`]: serverTimestamp()
+      }, { merge: true });
+    }
+  };
+
+  // Stop typing indicator
+  useEffect(() => {
+    if (isTyping) {
+      const timer = setTimeout(() => {
+        setIsTyping(false);
+        if (selectedChatId && adminUser) {
+          setDoc(doc(db, 'chats', selectedChatId), {
+            [`typing_${adminUser.uid}`]: null
+          }, { merge: true });
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isTyping, selectedChatId, adminUser]);
+
+  // Listen for other user typing
+  useEffect(() => {
+    if (!selectedChatId) return;
+    
+    const unsubscribe = onSnapshot(doc(db, 'chats', selectedChatId), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        const otherParticipant = data.participants?.find(p => p !== adminUser?.uid);
+        if (otherParticipant && data[`typing_${otherParticipant}`]) {
+          const typingTime = data[`typing_${otherParticipant}`]?.toDate?.();
+          if (typingTime && Date.now() - typingTime < 3000) {
+            setOtherUserTyping(true);
+            setTimeout(() => setOtherUserTyping(false), 3000);
+          }
+        }
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [selectedChatId, adminUser]);
+
   // Invia messaggio
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -243,18 +296,64 @@ const AdminChat = () => {
       await addDoc(messagesRef, {
         text: newMessage,
         createdAt: serverTimestamp(),
-        senderId: adminUser.uid
+        senderId: adminUser.uid,
+        read: false
       });
       await setDoc(doc(db, 'chats', selectedChatId), {
         lastMessage: newMessage,
         lastUpdate: serverTimestamp(),
+        [`typing_${adminUser.uid}`]: null
       }, { merge: true });
       setNewMessage('');
+      setIsTyping(false);
     } catch (error) {
       console.error("Errore nell'invio del messaggio:", error.code, error.message, { uid: adminUser?.uid });
       showNotification("Errore nell'invio del messaggio. Riprova.", 'error');
     }
   };
+
+  // Handle emoji selection
+  const handleEmojiSelect = (emoji) => {
+    setNewMessage(prev => prev + emoji);
+    setShowEmojiPicker(false);
+  };
+
+  // Pin/Unpin message
+  const handlePinMessage = async (messageId) => {
+    if (!selectedChatId) return;
+    try {
+      const isPinned = pinnedMessages.includes(messageId);
+      const chatRef = doc(db, 'chats', selectedChatId);
+      
+      if (isPinned) {
+        // Unpin
+        await setDoc(chatRef, {
+          pinnedMessages: pinnedMessages.filter(id => id !== messageId)
+        }, { merge: true });
+      } else {
+        // Pin
+        await setDoc(chatRef, {
+          pinnedMessages: [...pinnedMessages, messageId]
+        }, { merge: true });
+      }
+    } catch (error) {
+      console.error("Errore nel pin del messaggio:", error);
+      showNotification("Errore nel pin del messaggio. Riprova.", 'error');
+    }
+  };
+
+  // Load pinned messages
+  useEffect(() => {
+    if (!selectedChatId) return;
+    
+    const unsubscribe = onSnapshot(doc(db, 'chats', selectedChatId), (snapshot) => {
+      if (snapshot.exists()) {
+        setPinnedMessages(snapshot.data().pinnedMessages || []);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [selectedChatId]);
 
   // Elimina chat
   const handleDeleteChat = async () => {
@@ -341,47 +440,123 @@ const AdminChat = () => {
             <>
               <div className="p-4 border-b border-slate-700 flex justify-between items-center">
                 <h3 className="font-bold text-lg text-slate-100">{getSelectedChatName()}</h3>
-                <button
-                  onClick={handleDeleteChat}
-                  className="p-2 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
-                  title="Elimina Chat"
-                >
-                  <Trash2 size={18} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowChatSearch(!showChatSearch)}
+                    className="p-2 text-slate-400 hover:bg-slate-700 rounded-lg transition-colors"
+                    title="Cerca nei messaggi"
+                  >
+                    <Search size={18} />
+                  </button>
+                  <button
+                    onClick={handleDeleteChat}
+                    className="p-2 text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
+                    title="Elimina Chat"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
+              {showChatSearch && (
+                <div className="p-3 border-b border-slate-700">
+                  <input
+                    type="text"
+                    value={chatSearchQuery}
+                    onChange={(e) => setChatSearchQuery(e.target.value)}
+                    placeholder="Cerca nei messaggi..."
+                    className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-white text-sm"
+                  />
+                </div>
+              )}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-                {loadingMessages ? <LoadingSpinner /> : messages.map(msg => (
-                  <div key={msg.id} className={`flex ${adminUIDs.includes(msg.senderId) ? 'justify-end' : 'justify-start'}`}>
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`max-w-[70%] sm:max-w-md p-3 rounded-2xl shadow-md ${adminUIDs.includes(msg.senderId) ? 'bg-rose-600 rounded-br-none' : 'bg-slate-700/80 rounded-bl-none'}`}
-                    >
-                      <p className="text-white break-words text-sm sm:text-base">{msg.text}</p>
-                      <p className="text-xs text-slate-300/70 mt-1.5 text-right">
-                        {msg.createdAt?.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </motion.div>
-                  </div>
-                ))}
+                {loadingMessages ? <LoadingSpinner /> : messages
+                  .filter(msg => !chatSearchQuery || msg.text?.toLowerCase().includes(chatSearchQuery.toLowerCase()))
+                  .map(msg => {
+                    const isPinned = pinnedMessages.includes(msg.id);
+                    const isOwnMessage = adminUIDs.includes(msg.senderId);
+                    return (
+                      <div key={msg.id} className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}>
+                        <div className="relative">
+                          {isPinned && (
+                            <div className="absolute -top-2 left-0 bg-yellow-600 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Pin size={10} /> Pinnato
+                            </div>
+                          )}
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`max-w-[70%] sm:max-w-md p-3 rounded-2xl shadow-md ${isOwnMessage ? 'bg-rose-600 rounded-br-none' : 'bg-slate-700/80 rounded-bl-none'} ${isPinned ? 'ring-2 ring-yellow-500/50' : ''}`}
+                          >
+                            <p className="text-white break-words text-sm sm:text-base">{msg.text}</p>
+                            <div className="flex items-center justify-between mt-1.5">
+                              <p className="text-xs text-slate-300/70">
+                                {msg.createdAt?.toDate().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                              {isOwnMessage && (
+                                <span className="text-slate-300/70">
+                                  {msg.read ? <CheckCheck size={14} /> : <Check size={14} />}
+                                </span>
+                              )}
+                            </div>
+                          </motion.div>
+                          <button
+                            onClick={() => handlePinMessage(msg.id)}
+                            className="absolute -right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-300"
+                            title={isPinned ? "Rimuovi pin" : "Fissa messaggio"}
+                          >
+                            <Pin size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 <div ref={messagesEndRef} />
               </div>
               <div className="p-4 sm:p-6 border-t border-slate-700">
-                <form onSubmit={handleSendMessage} className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Scrivi una risposta..."
-                    className="flex-1 p-3 bg-slate-700/50 border border-slate-600 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-white text-sm sm:text-base"
-                  />
-                  <button
-                    type="submit"
-                    className="p-3 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-colors disabled:opacity-50"
-                    disabled={!newMessage.trim()}
-                  >
-                    <Send size={20} />
-                  </button>
+                {otherUserTyping && (
+                  <div className="mb-2 text-sm text-slate-400 italic">
+                    Sta scrivendo...
+                  </div>
+                )}
+                <form onSubmit={handleSendMessage} className="relative">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => {
+                          setNewMessage(e.target.value);
+                          handleTyping();
+                        }}
+                        placeholder="Scrivi una risposta..."
+                        className="w-full p-3 pr-12 bg-slate-700/50 border border-slate-600 rounded-full outline-none focus:ring-2 focus:ring-rose-500 text-white text-sm sm:text-base"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-200 transition-colors"
+                      >
+                        <Smile size={20} />
+                      </button>
+                      {showEmojiPicker && (
+                        <EmojiPicker
+                          onSelect={handleEmojiSelect}
+                          onClose={() => setShowEmojiPicker(false)}
+                        />
+                      )}
+                    </div>
+                    <MediaUploadButton 
+                      chatId={selectedChatId}
+                      onUploadComplete={() => {}}
+                    />
+                    <button
+                      type="submit"
+                      className="p-3 bg-rose-600 hover:bg-rose-700 text-white rounded-full transition-colors disabled:opacity-50"
+                      disabled={!newMessage.trim()}
+                    >
+                      <Send size={20} />
+                    </button>
+                  </div>
                 </form>
               </div>
             </>
