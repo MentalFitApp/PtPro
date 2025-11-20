@@ -56,6 +56,11 @@ const ClientSchedaAllenamento = React.lazy(() => import('./pages/ClientSchedaAll
 // SuperAdmin page
 const SuperAdminSettings = React.lazy(() => import('./pages/SuperAdminSettings'));
 
+// Community pages
+const Community = React.lazy(() => import('./pages/Community'));
+const CommunitySettings = React.lazy(() => import('./pages/CommunitySettings'));
+const CommunityOnboarding = React.lazy(() => import('./pages/CommunityOnboarding'));
+
 // Spinner
 const PageSpinner = () => (
   <div className="flex justify-center items-center h-screen w-full bg-slate-900">
@@ -291,6 +296,9 @@ export default function App() {
           <Route path="/alimentazione-allenamento" element={<AlimentazioneAllenamento />} />
           <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
           <Route path="/scheda-allenamento/:clientId" element={<SchedaAllenamento />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/community/settings" element={<CommunitySettings />} />
+          <Route path="/community/onboarding" element={<CommunityOnboarding />} />
         </Route>
 
         {/* === ROTTE SUPERADMIN (SOLO SUPERADMIN) === */}
@@ -319,6 +327,8 @@ export default function App() {
           <Route path="/client/chat" element={<ClientChat />} />
           <Route path="/client/scheda-alimentazione" element={<ClientSchedaAlimentazione />} />
           <Route path="/client/scheda-allenamento" element={<ClientSchedaAllenamento />} />
+          <Route path="/client/community" element={<Community />} />
+          <Route path="/client/community/settings" element={<CommunitySettings />} />
         </Route>
 
         {/* === ROTTE COLLABORATORI === */}
