@@ -320,10 +320,10 @@ export default function Analytics() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-2 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto w-full">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/dashboard')}
@@ -361,7 +361,7 @@ export default function Analytics() {
             <DollarSign size={24} className="text-green-400" />
             Revenue Tracking
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard
               title="Revenue Totale"
               value={revenueMetrics.currentRevenue}
@@ -401,7 +401,7 @@ export default function Analytics() {
             <Users size={24} className="text-blue-400" />
             Client Retention
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard
               title="Clienti Attivi"
               value={retentionMetrics.activeClients}
@@ -437,7 +437,7 @@ export default function Analytics() {
             <Activity size={24} className="text-yellow-400" />
             Engagement Metrics
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <StatCard
               title="Check-in per Cliente"
               value={engagementMetrics.avgChecksPerClient}
@@ -469,7 +469,7 @@ export default function Analytics() {
             <p className="text-slate-300 mb-4">
               Questi clienti hanno abbonamenti in scadenza nei prossimi 15 giorni
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {retentionMetrics.atRiskClients.map(client => {
                 const daysLeft = Math.ceil((toDate(client.scadenza) - new Date()) / (1000 * 60 * 60 * 24));
                 return (
