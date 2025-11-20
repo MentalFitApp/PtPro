@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import GlobalUploadBar from './components/GlobalUploadBar';
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
 // Import dinamici dei layout
@@ -88,7 +88,9 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem('last_path', location.pathname || '/');
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to save last path:', err);
+    }
   }, [location.pathname]);
 
   useEffect(() => {

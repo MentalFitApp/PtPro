@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { v4 as uuidv4 } from 'uuid';
+
 // --- 1. NUOVE ICONE DA LUCIDE-REACT ---
 import { UploadCloud, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';

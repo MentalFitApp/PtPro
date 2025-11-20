@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { db } from '../firebase';
-import { collection, query, orderBy, onSnapshot, addDoc, doc, deleteDoc, serverTimestamp, writeBatch, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, deleteDoc, serverTimestamp, writeBatch, getDoc } from 'firebase/firestore';
 import { DollarSign, Plus, Trash2, Calendar, X, AlertTriangle, RotateCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 

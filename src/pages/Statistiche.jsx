@@ -181,14 +181,15 @@ export default function Statistiche() {
     return Object.values(agg);
   }, [filteredSetterReports]);
 
-  const setterTotal = useMemo(() => {
-    return aggregatedBySetter.reduce((acc, s) => ({
-      outreach: acc.outreach + s.outreachTotale,
-      followUps: acc.followUps + s.followUpsTotali,
-      risposte: acc.risposte + s.risposte,
-      callPrenotate: acc.callPrenotate + s.callPrenotate,
-    }), { outreach: 0, followUps: 0, risposte: 0, callPrenotate: 0 });
-  }, [aggregatedBySetter]);
+  // Total setter statistics (currently not displayed, reserved for future use)
+  // const setterTotal = useMemo(() => {
+  //   return aggregatedBySetter.reduce((acc, s) => ({
+  //     outreach: acc.outreach + s.outreachTotale,
+  //     followUps: acc.followUps + s.followUpsTotali,
+  //     risposte: acc.risposte + s.risposte,
+  //     callPrenotate: acc.callPrenotate + s.callPrenotate,
+  //   }), { outreach: 0, followUps: 0, risposte: 0, callPrenotate: 0 });
+  // }, [aggregatedBySetter]);
 
   // --- VENDITA & SETTING ---
   const salesStats = useMemo(() => {

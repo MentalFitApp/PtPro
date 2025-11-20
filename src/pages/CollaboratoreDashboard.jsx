@@ -59,7 +59,6 @@ export default function CollaboratoreDashboard() {
   const [timeLeft, setTimeLeft] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
 
   // --- TIMER MEZZANOTTE ---
@@ -371,7 +370,6 @@ export default function CollaboratoreDashboard() {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    let localProgress = 0;
     try {
       // Upload to Cloudflare R2 with automatic compression (nessun limite per admin/collaboratori)
       const url = await uploadPhoto(
@@ -379,7 +377,6 @@ export default function CollaboratoreDashboard() {
         auth.currentUser.uid,
         'profile_photos',
         (p) => {
-          localProgress = p.percent;
           setUploadProgress(p.percent);
         },
         true

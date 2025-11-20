@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, doc, updateDoc, deleteDoc, getDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { isSuperAdmin, addSuperAdmin, removeSuperAdmin, getUserRole } from '../utils/superadmin';
+import { isSuperAdmin, addSuperAdmin, removeSuperAdmin } from '../utils/superadmin';
 import { Settings, Users, Shield, Lock, Trash2, UserPlus, UserMinus, RefreshCw, AlertTriangle, Check, X, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SuperAdminSettings() {
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
-  const [activeTab, setActiveTab] = useState('roles');
   const [users, setUsers] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [coaches, setCoaches] = useState([]);

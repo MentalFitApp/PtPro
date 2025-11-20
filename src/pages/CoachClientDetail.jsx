@@ -254,7 +254,8 @@ export default function CoachClientDetail() {
           console.debug('[CoachClientDetail] Checks photoURLs normalized');
           setChecks(normalizedChecks);
           setLoading(false);
-        }, (err) => {
+        }, (error) => {
+          console.error('Error loading checks:', error);
           setError('Errore caricamento check');
           setLoading(false);
         });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, collectionGroup, doc, getDoc, query, onSnapshot, orderBy, where } from 'firebase/firestore';
-import { auth, db, toDate, calcolaStatoPercorso } from '../firebase';
+import { auth, db, toDate } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, PlusCircle, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -130,11 +130,13 @@ export default function CoachDashboard() {
         const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setClients(clientList);
         setLoading(false);
-      } catch (err) {
+      } catch (error) {
+        console.error('Error loading clients:', error);
         setError("Errore nel caricamento dei clienti.");
         setLoading(false);
       }
-    }, (err) => {
+    }, (error) => {
+      console.error('Snapshot error:', error);
       setError("Errore nel caricamento dei clienti.");
       setLoading(false);
     });

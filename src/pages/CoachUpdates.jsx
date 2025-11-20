@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, collectionGroup, query, orderBy, onSnapshot, getDoc, doc, setDoc, where, serverTimestamp } from 'firebase/firestore';
-import { db, toDate, calcolaStatoPercorso } from '../firebase';
+import { db, toDate } from '../firebase';
 import { CheckCircle, Clock, FileText, MessageSquare, ArrowLeft, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 

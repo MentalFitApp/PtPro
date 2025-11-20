@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, CheckCircle, AlertCircle, XCircle, UserPlus, Clock, AlertTriangle, X, ExternalLink } from 'lucide-react';
 import { db, toDate } from '../firebase';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 
 const STATUS_COLORS = {
   consegnata: 'bg-emerald-900/30 border-emerald-600/50 text-emerald-300',

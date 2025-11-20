@@ -98,7 +98,11 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
     let fileToUpload = file;
     if (isImage) {
       const emit = (payload) => {
-        try { window.dispatchEvent(new CustomEvent('global-upload-progress', { detail: payload })); } catch {}
+        try { 
+          window.dispatchEvent(new CustomEvent('global-upload-progress', { detail: payload })); 
+        } catch (err) {
+          console.warn('Failed to emit progress event:', err);
+        }
       };
       if (onProgress) onProgress({ stage: 'compressing', percent: 5, message: 'Compressione immagine in corso...' });
       emit({ stage: 'compressing', percent: 5, message: 'Compressione immagine in corso...' });
@@ -118,7 +122,13 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
       throw new Error('VITE_R2_BUCKET_NAME non configurato');
     }
 
-    const emit = (payload) => { try { window.dispatchEvent(new CustomEvent('global-upload-progress', { detail: payload })); } catch {} };
+    const emit = (payload) => { 
+      try { 
+        window.dispatchEvent(new CustomEvent('global-upload-progress', { detail: payload })); 
+      } catch (err) {
+        console.warn('Failed to emit progress event:', err);
+      }
+    };
     if (onProgress) onProgress({ stage: 'uploading', percent: 20, message: 'Upload iniziato...' });
     emit({ stage: 'uploading', percent: 20, message: 'Upload iniziato...' });
 

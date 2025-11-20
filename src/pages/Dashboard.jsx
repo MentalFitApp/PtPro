@@ -105,7 +105,8 @@ export default function Dashboard() {
     if (role !== 'admin' && role !== 'coach') {
       signOut(auth).then(() => {
         navigate('/login');
-      }).catch(err => {
+      }).catch(error => {
+        console.error('Logout error:', error);
         setErrorMessage('Errore durante il logout');
       });
       return;

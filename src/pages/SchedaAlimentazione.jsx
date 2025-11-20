@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Copy, RotateCcw, X, Download, Upload, History, FileText } from 'lucide-react';
-import { db, toDate } from '../firebase';
+import { db } from '../firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore';
 import { exportNutritionCardToPDF } from '../utils/pdfExport';
 
