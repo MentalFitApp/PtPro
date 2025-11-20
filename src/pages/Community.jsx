@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, getDoc, getDocs, setDoc, serverTimestamp, increment, arrayUnion, arrayRemove, where, limit, startAfter } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, getDoc, getDocs, setDoc, deleteDoc, serverTimestamp, increment, arrayUnion, arrayRemove, where, limit, startAfter } from 'firebase/firestore';
 import { db, auth, storage } from '../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Trophy, MessageSquare, Lightbulb, Plus, Heart, MessageCircle, Award, Crown, Send, Image, Video as VideoIcon, X, UsersRound, Bookmark, Share2, Search, Hash, Flame, ThumbsUp, Zap, Flag, Pin, TrendingUp, BarChart3, Target, CheckCircle } from 'lucide-react';
+import { Trophy, MessageSquare, Lightbulb, Plus, Heart, MessageCircle, Award, Crown, Send, Image, Video as VideoIcon, X, UsersRound, Bookmark, Share2, Search, Hash, Flame, ThumbsUp, Zap, Flag, Pin, TrendingUp, BarChart3, Target, CheckCircle, Trash2, MoreVertical } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import MediaUploadButton from '../components/MediaUploadButton';
 import MediaViewer from '../components/MediaViewer';
@@ -190,6 +190,7 @@ export default function Community() {
   const [pinnedPosts, setPinnedPosts] = useState([]); // Post fissati da admin
   // eslint-disable-next-line no-unused-vars
   const [analyticsData, setAnalyticsData] = useState(null); // Dati analytics admin
+  const [showPostMenu, setShowPostMenu] = useState(null); // ID post per mostrare menu
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
@@ -377,6 +378,18 @@ export default function Community() {
       setNewPostContent(savedDraft);
     }
   }, []);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showPostMenu && !event.target.closest('.post-menu-container')) {
+        setShowPostMenu(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPostMenu]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -662,6 +675,39 @@ export default function Community() {
       });
     } catch (error) {
       console.error('Error pinning post:', error);
+    }
+  };
+
+  // Delete post (admin or author)
+  const handleDeletePost = async (postId, authorId) => {
+    if (!currentUser) return;
+    
+    // Only admin or post author can delete
+    if (!isAdmin && currentUser.uid !== authorId) return;
+
+    if (!window.confirm('Sei sicuro di voler eliminare questo post? Questa azione non può essere annullata.')) {
+      return;
+    }
+
+    try {
+      // Delete post document
+      await deleteDoc(doc(db, 'community_posts', postId));
+      
+      // Delete associated comments
+      const commentsQuery = query(
+        collection(db, 'community_comments'),
+        where('postId', '==', postId)
+      );
+      const commentsSnapshot = await getDocs(commentsQuery);
+      const deletePromises = commentsSnapshot.docs.map(commentDoc => 
+        deleteDoc(doc(db, 'community_comments', commentDoc.id))
+      );
+      await Promise.all(deletePromises);
+      
+      setShowPostMenu(null);
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Errore durante l\'eliminazione del post. Riprova.');
     }
   };
 
@@ -1129,6 +1175,40 @@ export default function Community() {
                     <span className="ml-auto text-xs text-slate-400">
                       {formatTimestamp(post.createdAt)}
                     </span>
+                    {/* Post Menu */}
+                    {(isAdmin || currentUser?.uid === post.authorId) && (
+                      <div className="relative post-menu-container">
+                        <button
+                          onClick={() => setShowPostMenu(showPostMenu === post.id ? null : post.id)}
+                          className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+                        {showPostMenu === post.id && (
+                          <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 min-w-[160px] z-20">
+                            {isAdmin && (
+                              <button
+                                onClick={() => {
+                                  handlePinPost(post.id);
+                                  setShowPostMenu(null);
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm text-slate-200 hover:bg-slate-700 flex items-center gap-2"
+                              >
+                                <Pin size={16} />
+                                {pinnedPosts.includes(post.id) ? 'Rimuovi Pin' : 'Fissa in alto'}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeletePost(post.id, post.authorId)}
+                              className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-slate-700 flex items-center gap-2"
+                            >
+                              <Trash2 size={16} />
+                              Elimina Post
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   {/* Contenuto normale o Poll */}
                   {post.type === 'poll' ? (
@@ -1253,20 +1333,6 @@ export default function Community() {
                     >
                       <Flag size={16} />
                     </button>
-
-                    {/* Pin (Admin only) */}
-                    {isAdmin && (
-                      <button
-                        onClick={() => handlePinPost(post.id)}
-                        className={`ml-auto p-2 rounded-lg transition-all ${
-                          pinnedPosts.includes(post.id)
-                            ? 'bg-purple-600/20 text-purple-400'
-                            : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700'
-                        }`}
-                      >
-                        <Pin size={16} />
-                      </button>
-                    )}
                   </div>
 
                   {/* Mostra reactions attive */}
