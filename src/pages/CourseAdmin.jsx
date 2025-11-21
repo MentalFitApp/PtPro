@@ -23,13 +23,11 @@ import { AnimatePresence, motion } from 'framer-motion';
  */
 export default function CourseAdmin() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('courses');
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNewCourseModal, setShowNewCourseModal] = useState(false);
   const [showEditCourseModal, setShowEditCourseModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const [expandedCourse, setExpandedCourse] = useState(null);
   
   // New Course Form
   const [newCourse, setNewCourse] = useState({

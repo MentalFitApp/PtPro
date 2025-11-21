@@ -51,7 +51,6 @@ export default function CourseContentManager() {
     isFree: false
   });
 
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
 
   // Check admin access and load course
@@ -815,12 +814,11 @@ export default function CourseContentManager() {
                   <div className="p-4 bg-slate-700/50 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-slate-300">Caricamento video...</span>
-                      <span className="text-sm text-cyan-400">{uploadProgress}%</span>
                     </div>
                     <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-cyan-500 transition-all duration-300"
-                        style={{ width: `${uploadProgress}%` }}
+                        className="h-full bg-cyan-500 transition-all duration-300 animate-pulse"
+                        style={{ width: '100%' }}
                       />
                     </div>
                   </div>
