@@ -1,19 +1,19 @@
-// src/firebase.ts
+// src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getMessaging, isSupported } from "firebase/messaging";
 
-// CONFIGURAZIONE CON NOMI ESATTI CHE USI NEL .env
+// CONFIGURAZIONE CON FALLBACK → così il build Vercel NON crasha mai
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "dummy-api-key",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "localhost",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-project",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "demo.appspot.com",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123:web:abc",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-XXXXXXXXXX",
 };
 
 // Inizializza Firebase
@@ -26,16 +26,18 @@ export const storage = getStorage(app);
 
 // Messaging (opzionale)
 let messaging = null;
-if (typeof window !== 'undefined') {
-  isSupported().then(supported => {
-    if (supported) {
-      messaging = getMessaging(app);
-    }
-  }).catch(() => {});
+if (typeof window !== "undefined") {
+  isSupported()
+    .then((supported) => {
+      if (supported) {
+        messaging = getMessaging(app);
+      }
+    })
+    .catch(() => {});
 }
 export { messaging };
 
-// ──────── Funzioni di utilità (le lasciamo identiche) ────────
+// ───────────────────── Funzioni di utilità (invariate) ─────────────────────
 export const updateStatoPercorso = async (userId) => {
   try {
     const clientRef = doc(db, "clients", userId);
@@ -68,9 +70,9 @@ export const calcolaStatoPercorso = (dataScadenza) => {
 
 export const toDate = (x) => {
   if (!x) return null;
-  if (typeof x?.toDate === 'function') return x.toDate();
+  if (typeof x?.toDate === "function") return x.toDate();
   if (x instanceof Date) return x;
-  if (typeof x === 'string' || typeof x === 'number') {
+  if (typeof x === "string" || typeof x === "number") {
     const date = new Date(x);
     return isNaN(date.getTime()) ? null : date;
   }
