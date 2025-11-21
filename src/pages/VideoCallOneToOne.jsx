@@ -329,7 +329,20 @@ export default function VideoCallOneToOne() {
 
         // Verifica che l'utente sia parte della chiamata
         if (data.callerId !== user.uid && data.receiverId !== user.uid) {
-          setError('Non sei autorizzato a partecipare a questa chiamata');
+          console.log('Access denied:', {
+            userId: user.uid,
+            callerId: data.callerId,
+            receiverId: data.receiverId,
+            callId: callId
+          });
+          setError('Non sei autorizzato a partecipare a questa chiamata. Potrebbe essere una chiamata privata o già terminata.');
+          setLoading(false);
+          return;
+        }
+
+        // Verifica che la chiamata sia ancora attiva
+        if (data.status === 'ended') {
+          setError('Questa chiamata è già terminata.');
           setLoading(false);
           return;
         }
@@ -376,7 +389,7 @@ export default function VideoCallOneToOne() {
         console.error('Error updating call status:', error);
       }
     }
-    navigate('/community');
+    navigate('/dashboard');
   };
 
   if (loading) {
@@ -403,7 +416,7 @@ export default function VideoCallOneToOne() {
             onClick={() => navigate('/community')}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
           >
-            Torna alla Community
+            Torna alla Dashboard
           </button>
         </div>
       </div>

@@ -53,20 +53,7 @@ export default function Onboarding() {
         onboardingCompletedAt: serverTimestamp(),
       });
 
-      // Crea primo post di benvenuto nella community
-      const postsRef = doc(db, 'community_posts', `welcome_${currentUser.uid}`);
-      await setDoc(postsRef, {
-        authorId: currentUser.uid,
-        authorName: currentUser.displayName || 'Nuovo Membro',
-        authorPhotoURL: profileData.photoURL,
-        authorTotalLikes: 0,
-        content: profileData.welcomeMessage,
-        channel: 'vittorie',
-        likes: [],
-        likesCount: 0,
-        commentsCount: 0,
-        createdAt: serverTimestamp(),
-      });
+
 
       // Naviga al questionario anamnesi
       navigate('/first-access');
@@ -95,7 +82,7 @@ export default function Onboarding() {
       id: 3,
       title: 'Presentati',
       icon: MessageSquare,
-      description: 'Scrivi un messaggio di presentazione alla community',
+      description: 'Scrivi un messaggio di presentazione',
     },
   ];
 
@@ -239,10 +226,10 @@ export default function Onboarding() {
               >
                 <div>
                   <label className="block text-slate-200 font-semibold mb-3 text-lg">
-                    Presentati alla Community 🎉
+                    Completa il tuo profilo 🎉
                   </label>
                   <p className="text-slate-400 mb-4">
-                    Condividi i tuoi obiettivi personali e fisici con gli altri membri della community MentalFit!
+                    Condividi i tuoi obiettivi personali e fisici!
                   </p>
                   <textarea
                     value={profileData.welcomeMessage}

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   Home, Users, MessageSquare, FileText, Bell,
-  Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing, UsersRound,
-  UserCheck, BookOpen, Target, Activity
+  Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing,
+  UserCheck, BookOpen, Target, Activity, GraduationCap, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isSuperAdmin } from '../utils/superadmin';
@@ -46,29 +46,19 @@ const AnimatedStars = () => {
 const adminNavLinks = [
   { to: '/', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
 
-  // COMMUNITY SECTION
-  {
-    key: 'community',
-    label: '🌐 Community',
-    icon: <UsersRound size={18} />,
-    isExpandable: true,
-    submenu: [
-      { to: '/community', icon: <MessageSquare size={16} />, label: 'Home Community' },
-      { to: '/courses', icon: <BookOpen size={16} />, label: '📚 Corsi' },
-      { to: '/community-settings', icon: <Settings size={16} />, label: '⚙️ Impostazioni', isSuperAdmin: true },
-      { to: '/community-analytics', icon: <BarChart3 size={16} />, label: '📊 Analytics', isSuperAdmin: true },
-    ]
-  },
-
   { to: '/clients', icon: <Users size={18} />, label: 'Clienti' },
+  { to: '/new-client', icon: <Plus size={18} />, label: 'Nuovo Cliente' },
   { to: '/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/updates', icon: <BellRing size={18} />, label: 'Novità' },
   { to: '/collaboratori', icon: <UserCheck size={18} />, label: 'Collaboratori' },
   { to: '/guide-manager', icon: <BookOpen size={18} />, label: 'Guide & Lead' },
+  { to: '/business-history', icon: <BarChart3 size={18} />, label: 'Storico Business' },
   { to: '/admin/dipendenti', icon: <Users size={18} />, label: 'Dipendenti' },
   { to: '/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
   { to: '/statistiche', icon: <Activity size={18} />, label: 'Statistiche' },
   { to: '/analytics', icon: <Target size={18} />, label: 'Analytics' },
+  { to: '/courses', icon: <BookOpen size={18} />, label: 'Corsi' },
+  { to: '/course-admin', icon: <GraduationCap size={18} />, label: 'Corsi Admin' },
   { to: '/notifications', icon: <BellRing size={18} />, label: 'Notifiche' },
   { to: '/alimentazione-allenamento', icon: <FileText size={18} />, label: 'Schede' },
 
@@ -88,19 +78,8 @@ const coachNavLinks = [
 const clientNavLinks = [
   { to: '/client/dashboard', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
 
-  // COMMUNITY SECTION
-  {
-    key: 'community',
-    label: '🌐 Community',
-    icon: <UsersRound size={18} />,
-    isExpandable: true,
-    submenu: [
-      { to: '/client/community', icon: <MessageSquare size={16} />, label: 'Home Community' },
-      { to: '/client/courses', icon: <BookOpen size={16} />, label: '📚 Corsi' },
-    ]
-  },
-
   { to: '/client/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
+  { to: '/client/courses', icon: <BookOpen size={18} />, label: 'Corsi' },
   { to: '/client/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
   { to: '/client/checks', icon: <Activity size={18} />, label: 'Check' },
   { to: '/client/payments', icon: <Target size={18} />, label: 'Pagamenti' },

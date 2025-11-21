@@ -459,7 +459,7 @@ export default function VideoCallGroup() {
         console.error('Error updating call status:', error);
       }
     }
-    navigate('/community');
+    navigate('/dashboard');
   };
 
   if (loading) {
@@ -486,7 +486,7 @@ export default function VideoCallGroup() {
             onClick={() => navigate('/community')}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
           >
-            Torna alla Community
+            Torna alla Dashboard
           </button>
         </div>
       </div>

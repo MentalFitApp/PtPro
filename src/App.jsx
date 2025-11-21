@@ -59,8 +59,7 @@ const ClientSchedaAllenamento = React.lazy(() => import('./pages/ClientSchedaAll
 // SuperAdmin page
 const SuperAdminSettings = React.lazy(() => import('./pages/SuperAdminSettings'));
 
-const Community = React.lazy(() => import('./pages/Community'));
-const CommunityAdmin = React.lazy(() => import('./pages/CommunityAdmin'));
+
 const CourseAdmin = React.lazy(() => import('./pages/CourseAdmin'));
 const CourseContentManager = React.lazy(() => import('./pages/CourseContentManager'));
 const OnboardingFlow = React.lazy(() => import('./pages/OnboardingFlow'));
@@ -190,7 +189,7 @@ export default function App() {
 
           sessionStorage.setItem('app_role', role || '');
 
-          const isValidSubRoute = 
+          const isValidSubRoute =
             (isCurrentUserAdmin && (
               location.pathname === '/' ||
               location.pathname === '/clients' ||
@@ -206,10 +205,15 @@ export default function App() {
               location.pathname === '/guide-manager' ||
               location.pathname === '/admin/dipendenti' ||
               location.pathname === '/statistiche' ||
+              location.pathname === '/analytics' ||
+              location.pathname === '/course-admin' ||
               location.pathname === '/notifications' ||
               location.pathname === '/alimentazione-allenamento' ||
               location.pathname.startsWith('/scheda-alimentazione/') ||
-              location.pathname.startsWith('/scheda-allenamento/')
+              location.pathname.startsWith('/scheda-allenamento/') ||
+              location.pathname === '/courses' ||
+              location.pathname.startsWith('/courses/') ||
+              location.pathname.startsWith('/admin/course/')
             )) ||
             (isCurrentUserACoach && (
               location.pathname === '/coach' ||
@@ -328,10 +332,10 @@ export default function App() {
         {/* === ROTTE SUPERADMIN (SOLO SUPERADMIN) === */}
         <Route element={authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route path="/superadmin" element={<SuperAdminSettings />} />
-          <Route path="/community-admin" element={<CommunityAdmin />} />
+
           <Route path="/course-admin" element={<CourseAdmin />} />
           <Route path="/admin/course/:courseId/manage" element={<CourseContentManager />} />
-          <Route path="/community" element={<Community />} />
+
 
         </Route>
 
@@ -364,7 +368,7 @@ export default function App() {
           <Route path="/client/chat" element={<UnifiedChat />} />
           <Route path="/client/scheda-alimentazione" element={<ClientSchedaAlimentazioneEnhanced />} />
           <Route path="/client/scheda-allenamento" element={<ClientSchedaAllenamento />} />
-          <Route path="/client/community" element={<Community />} />
+
           <Route path="/client/courses" element={<CourseDashboard />} />
           <Route path="/client/courses/:courseId" element={<CourseDetail />} />
           <Route path="/client/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<LessonPlayer />} />

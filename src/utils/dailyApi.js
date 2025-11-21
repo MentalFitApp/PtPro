@@ -2,6 +2,31 @@ const DAILY_API_KEY = import.meta.env.VITE_DAILY_API_KEY;
 const DAILY_DOMAIN = 'biondo-fitness-coach.daily.co';
 
 /**
+ * Testa la connessione all'API Daily.co
+ * @returns {Promise<boolean>} - True se la connessione funziona
+ */
+export async function testDailyConnection() {
+  try {
+    if (!DAILY_API_KEY) {
+      console.error('Daily.co API key not configured');
+      return false;
+    }
+
+    const response = await fetch('https://api.daily.co/v1/', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${DAILY_API_KEY}`
+      }
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('Daily.co connection test failed:', error);
+    return false;
+  }
+}
+
+/**
  * Crea una room su Daily.co tramite API
  * @param {string} roomName - Nome della room
  * @param {Object} options - Opzioni per la room
@@ -9,6 +34,12 @@ const DAILY_DOMAIN = 'biondo-fitness-coach.daily.co';
  */
 export async function createDailyRoom(roomName, options = {}) {
   try {
+    // Prima testa la connessione
+    const isConnected = await testDailyConnection();
+    if (!isConnected) {
+      throw new Error('Impossibile connettersi a Daily.co. Verifica la connessione internet e la configurazione API.');
+    }
+
     const response = await fetch('https://api.daily.co/v1/rooms', {
       method: 'POST',
       headers: {
@@ -31,10 +62,26 @@ export async function createDailyRoom(roomName, options = {}) {
     });
 
     if (!response.ok) {
-      throw new Error(`Daily.co API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Daily.co API error details:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+
+      if (response.status === 401) {
+        throw new Error('Chiave API Daily.co non valida o scaduta. Contatta l\'amministratore.');
+      } else if (response.status === 403) {
+        throw new Error('Permessi insufficienti per creare stanze su Daily.co.');
+      } else if (response.status === 429) {
+        throw new Error('Troppe richieste a Daily.co. Riprova tra qualche minuto.');
+      } else {
+        throw new Error(`Errore Daily.co (${response.status}): ${response.statusText}`);
+      }
     }
 
     const roomData = await response.json();
+    console.log('Room created successfully:', roomData);
     return roomData;
   } catch (error) {
     console.error('Error creating Daily room:', error);

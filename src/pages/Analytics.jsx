@@ -54,8 +54,7 @@ export default function Analytics() {
   const [selectedPeriod, setSelectedPeriod] = useState('month'); // month, quarter, year
   const [courses, setCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
-  const [communityPosts, setCommunityPosts] = useState([]);
-  const [activeTab, setActiveTab] = useState('business'); // business, courses, community
+  const [activeTab, setActiveTab] = useState('business'); // business, courses
 
   // Check role
   useEffect(() => {
@@ -163,16 +162,7 @@ export default function Analytics() {
     return () => unsub();
   }, []);
 
-  // Fetch community posts
-  useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, 'community_posts'), orderBy('createdAt', 'desc')), 
-      (snap) => {
-        const postsList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setCommunityPosts(postsList);
-      }
-    );
-    return () => unsub();
-  }, []);
+
 
   // Calculate date ranges based on selected period
   const dateRange = useMemo(() => {
@@ -417,17 +407,7 @@ export default function Analytics() {
             <GraduationCap size={16} className="inline mr-2" />
             Corsi
           </button>
-          <button
-            onClick={() => setActiveTab('community')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-              activeTab === 'community'
-                ? 'bg-purple-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            <Users size={16} className="inline mr-2" />
-            Community
-          </button>
+
         </div>
 
         {/* Business Analytics */}
@@ -635,85 +615,6 @@ export default function Analytics() {
                     ))}
                   {courses.length === 0 && (
                     <p className="text-center text-slate-400 py-4">Nessun corso disponibile</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Community Analytics */}
-        {activeTab === 'community' && (
-          <>
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
-                <Users size={24} className="text-purple-400" />
-                Statistiche Community
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <StatCard
-                  title="Post Totali"
-                  value={communityPosts.length}
-                  icon={<Activity className="text-blue-400" />}
-                  subtitle="Tutti i post"
-                />
-                <StatCard
-                  title="Membri Attivi"
-                  value={new Set(communityPosts.map(p => p.authorId)).size}
-                  icon={<Users className="text-green-400" />}
-                  subtitle="Utenti che hanno postato"
-                />
-                <StatCard
-                  title="Reazioni Totali"
-                  value={communityPosts.reduce((sum, p) => sum + (p.reactionsCount || 0), 0)}
-                  icon={<Trophy className="text-yellow-400" />}
-                />
-                <StatCard
-                  title="Commenti Totali"
-                  value={communityPosts.reduce((sum, p) => sum + (p.commentsCount || 0), 0)}
-                  icon={<Activity className="text-cyan-400" />}
-                />
-              </div>
-
-              {/* Top Contributors */}
-              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
-                <h3 className="text-lg font-semibold text-slate-200 mb-4">Top Contributori</h3>
-                <div className="space-y-3">
-                  {(() => {
-                    const userPostCounts = communityPosts.reduce((acc, post) => {
-                      const authorId = post.authorId;
-                      if (!acc[authorId]) {
-                        acc[authorId] = {
-                          authorId,
-                          authorName: post.authorName || 'Utente',
-                          postCount: 0,
-                          totalReactions: 0
-                        };
-                      }
-                      acc[authorId].postCount++;
-                      acc[authorId].totalReactions += (post.reactionsCount || 0);
-                      return acc;
-                    }, {});
-
-                    return Object.values(userPostCounts)
-                      .sort((a, b) => b.postCount - a.postCount)
-                      .slice(0, 5)
-                      .map((user, index) => (
-                        <div key={user.authorId} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl font-bold text-slate-500">#{index + 1}</span>
-                            <div>
-                              <h4 className="font-medium text-white">{user.authorName}</h4>
-                              <p className="text-sm text-slate-400">
-                                {user.postCount} post • {user.totalReactions} reazioni
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ));
-                  })()}
-                  {communityPosts.length === 0 && (
-                    <p className="text-center text-slate-400 py-4">Nessun post disponibile</p>
                   )}
                 </div>
               </div>

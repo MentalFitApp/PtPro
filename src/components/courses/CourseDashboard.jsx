@@ -23,33 +23,24 @@ export default function CourseDashboard() {
   // Determina il prefisso delle route basato sulla posizione attuale
   const routePrefix = location.pathname.startsWith('/client') ? '/client' : '';
 
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      navigate('/login');
-      return;
+  const getTotalLessons = useCallback(async (courseId) => {
+    try {
+      const modulesQuery = query(collection(db, 'courses', courseId, 'modules'));
+      const modulesSnap = await getDocs(modulesQuery);
+
+      let totalLessons = 0;
+      for (const moduleDoc of modulesSnap.docs) {
+        const lessonsQuery = query(collection(db, 'courses', courseId, 'modules', moduleDoc.id, 'lessons'));
+        const lessonsSnap = await getDocs(lessonsQuery);
+        totalLessons += lessonsSnap.size;
+      }
+
+      return totalLessons;
+    } catch (error) {
+      console.error('Error counting lessons:', error);
+      return 0;
     }
-
-    // Carica tutti i corsi
-    const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
-    const unsubscribeCourses = onSnapshot(coursesQuery, (snapshot) => {
-      const coursesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setCourses(coursesData);
-    });
-
-    return () => unsubscribeCourses();
-  }, [navigate]);
-
-  // Carica corsi iscritti dall'utente
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (user) {
-      loadUserEnrollments(user.uid);
-    }
-  }, [loadUserEnrollments]);
+  }, []);
 
   const loadUserEnrollments = useCallback(async (userId) => {
     try {
@@ -97,24 +88,33 @@ export default function CourseDashboard() {
     }
   }, [getTotalLessons]);
 
-  const getTotalLessons = useCallback(async (courseId) => {
-    try {
-      const modulesQuery = query(collection(db, 'courses', courseId, 'modules'));
-      const modulesSnap = await getDocs(modulesQuery);
-
-      let totalLessons = 0;
-      for (const moduleDoc of modulesSnap.docs) {
-        const lessonsQuery = query(collection(db, 'courses', courseId, 'modules', moduleDoc.id, 'lessons'));
-        const lessonsSnap = await getDocs(lessonsQuery);
-        totalLessons += lessonsSnap.size;
-      }
-
-      return totalLessons;
-    } catch (error) {
-      console.error('Error counting lessons:', error);
-      return 0;
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) {
+      navigate('/login');
+      return;
     }
-  }, []);
+
+    // Carica tutti i corsi
+    const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
+    const unsubscribeCourses = onSnapshot(coursesQuery, (snapshot) => {
+      const coursesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setCourses(coursesData);
+    });
+
+    return () => unsubscribeCourses();
+  }, [navigate]);
+
+  // Carica corsi iscritti dall'utente
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (user) {
+      loadUserEnrollments(user.uid);
+    }
+  }, [loadUserEnrollments]);
 
   const handleEnroll = async (course) => {
     const user = auth.currentUser;

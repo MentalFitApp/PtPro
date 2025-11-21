@@ -47,11 +47,11 @@ export default function UnifiedChat() {
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState({});
 
-  // Determina ruolo utente e verifica profilo community
+  // Determina ruolo utente
   useEffect(() => {
     if (!currentUser) return;
 
-    const checkRoleAndProfile = async () => {
+    const checkRole = async () => {
       try {
         // Controlla se è admin
         const adminDoc = await getDoc(doc(db, 'roles', 'admins'));
@@ -68,25 +68,23 @@ export default function UnifiedChat() {
           }
         }
 
-        // Verifica profilo community completo (nome + foto)
+        // Carica profilo utente
         const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          const hasName = userData.name && userData.name.trim().length > 0;
-          const hasPhoto = userData.photoURL && userData.photoURL.trim().length > 0;
-          setProfileComplete(hasName && hasPhoto);
-        } else {
-          setProfileComplete(false);
+          setUserProfile(userData);
         }
+
+        setProfileComplete(true); // Sempre completo senza controlli community
       } catch (error) {
-        console.error('Errore verifica profilo:', error);
-        setProfileComplete(false);
+        console.error('Errore caricamento profilo:', error);
+        setProfileComplete(true); // Permetti accesso anche in caso di errore
       } finally {
         setCheckingProfile(false);
       }
     };
 
-    checkRoleAndProfile();
+    checkRole();
   }, [currentUser]);
 
   // Gestisce presenza online (aggiorna quando l'utente è attivo)
@@ -822,54 +820,7 @@ export default function UnifiedChat() {
     );
   }
 
-  // Blocca accesso se profilo non completo
-  if (!profileComplete) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-slate-800 border-2 border-amber-500 rounded-2xl shadow-2xl p-8 max-w-md text-center"
-        >
-          <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users size={40} className="text-amber-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-100 mb-3">
-            Completa il tuo profilo
-          </h2>
-          <p className="text-slate-400 mb-2">
-            Per accedere alla chat devi completare il tuo profilo Community con:
-          </p>
-          <ul className="text-left text-slate-300 space-y-2 mb-6 bg-slate-700/50 rounded-lg p-4">
-            <li className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-              Nome completo
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-              Foto profilo
-            </li>
-          </ul>
-          <button
-            onClick={() => {
-              // Naviga alla community in base al ruolo
-              if (userRole === 'client') {
-                navigate('/client/community');
-              } else {
-                navigate('/community');
-              }
-            }}
-            className="w-full px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-lg font-semibold transition-all shadow-lg"
-          >
-            Vai alla Community
-          </button>
-          <p className="text-xs text-slate-500 mt-4">
-            Dopo aver completato il profilo, torna qui per accedere alla chat
-          </p>
-        </motion.div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden safe-area-top">

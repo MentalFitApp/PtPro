@@ -284,7 +284,7 @@ const Dipendenti = () => {
 
         <div className="grid grid-cols-7 gap-1 sm:gap-3 text-center text-[10px] sm:text-sm">
           {['D', 'L', 'M', 'M', 'G', 'V', 'S'].map((d, i) => (
-            <div key={d} className="font-bold text-slate-400 py-1 sm:py-2">
+            <div key={`day-${i}`} className="font-bold text-slate-400 py-1 sm:py-2">
               <span className="sm:hidden">{d}</span>
               <span className="hidden sm:inline">{['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][i]}</span>
             </div>
