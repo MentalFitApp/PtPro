@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Download } from 'lucide-react';
-import { db, toDate } from '../firebase';
+import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth } from '../firebase';
 import { exportNutritionCardToPDF } from '../utils/pdfExport';

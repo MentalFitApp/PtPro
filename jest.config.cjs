@@ -1,13 +1,14 @@
-export default {
+module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/__mocks__/fileMock.js'
   },
   transform: {
     '^.+\\.(js|jsx)$': 'babel-jest'
   },
+  extensionsToTreatAsEsm: ['.jsx'],
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.(js|jsx)',
     '<rootDir>/src/**/*.(test|spec).(js|jsx)'
@@ -16,7 +17,8 @@ export default {
     'src/**/*.(js|jsx)',
     '!src/index.js',
     '!src/firebase.js',
-    '!src/setupTests.js'
+    '!src/setupTests.js',
+    '!src/main.jsx'
   ],
   coverageThreshold: {
     global: {

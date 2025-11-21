@@ -49,6 +49,7 @@ const Analytics = React.lazy(() => import('./pages/Analytics'));
 const CalendarPage = React.lazy(() => import('./pages/CalendarPage'));
 const Notifications = React.lazy(() => import('./pages/Notifications'));
 const AlimentazioneAllenamento = React.lazy(() => import('./pages/AlimentazioneAllenamento'));
+
 const SchedaAlimentazione = React.lazy(() => import('./pages/SchedaAlimentazione'));
 const SchedaAllenamento = React.lazy(() => import('./pages/SchedaAllenamento'));
 const ClientSchedaAlimentazione = React.lazy(() => import('./pages/ClientSchedaAlimentazione'));
@@ -58,12 +59,18 @@ const ClientSchedaAllenamento = React.lazy(() => import('./pages/ClientSchedaAll
 // SuperAdmin page
 const SuperAdminSettings = React.lazy(() => import('./pages/SuperAdminSettings'));
 
-// Community pages
 const Community = React.lazy(() => import('./pages/Community'));
-const CommunitySettings = React.lazy(() => import('./pages/CommunitySettings'));
-const CommunityOnboarding = React.lazy(() => import('./pages/CommunityOnboarding'));
-const CommunityMembers = React.lazy(() => import('./pages/CommunityMembers'));
-const CommunityManagement = React.lazy(() => import('./pages/CommunityManagement'));
+const CommunityAdmin = React.lazy(() => import('./pages/CommunityAdmin'));
+const OnboardingFlow = React.lazy(() => import('./pages/OnboardingFlow'));
+
+// Video Calls
+const VideoCallOneToOne = React.lazy(() => import('./pages/VideoCallOneToOne'));
+const VideoCallGroup = React.lazy(() => import('./pages/VideoCallGroup'));
+
+// Courses
+const CourseDashboard = React.lazy(() => import('./components/courses/CourseDashboard'));
+const CourseDetail = React.lazy(() => import('./components/courses/CourseDetail'));
+const LessonPlayer = React.lazy(() => import('./components/courses/LessonPlayer'));
 
 // Onboarding
 const Onboarding = React.lazy(() => import('./pages/Onboarding'));
@@ -306,16 +313,22 @@ export default function App() {
           <Route path="/alimentazione-allenamento" element={<AlimentazioneAllenamento />} />
           <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
           <Route path="/scheda-allenamento/:clientId" element={<SchedaAllenamento />} />
-          <Route path="/community" element={<Community />} />
-          <Route path="/community/members" element={<CommunityMembers />} />
-          <Route path="/community/settings" element={<CommunitySettings />} />
-          <Route path="/community/onboarding" element={<CommunityOnboarding />} />
+          <Route path="/courses" element={<CourseDashboard />} />
+          <Route path="/courses/:courseId" element={<CourseDetail />} />
+          <Route path="/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<LessonPlayer />} />
+
+          {/* Video Calls */}
+          <Route path="/video-call/:callId" element={<VideoCallOneToOne />} />
+          <Route path="/group-call/:callId" element={<VideoCallGroup />} />
+
         </Route>
 
         {/* === ROTTE SUPERADMIN (SOLO SUPERADMIN) === */}
         <Route element={authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route path="/superadmin" element={<SuperAdminSettings />} />
-          <Route path="/community-management" element={<CommunityManagement />} />
+          <Route path="/community-admin" element={<CommunityAdmin />} />
+          <Route path="/community" element={<Community />} />
+
         </Route>
 
         {/* === ROTTE COACH (SOLO COACH) === */}
@@ -330,6 +343,10 @@ export default function App() {
           <Route path="/coach/schede" element={<AlimentazioneAllenamento />} />
           <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
           <Route path="/scheda-allenamento/:clientId" element={<SchedaAllenamento />} />
+
+          {/* Video Calls */}
+          <Route path="/video-call/:callId" element={<VideoCallOneToOne />} />
+          <Route path="/group-call/:callId" element={<VideoCallGroup />} />
         </Route>
 
         {/* === ROTTE CLIENTI === */}
@@ -344,8 +361,14 @@ export default function App() {
           <Route path="/client/scheda-alimentazione" element={<ClientSchedaAlimentazioneEnhanced />} />
           <Route path="/client/scheda-allenamento" element={<ClientSchedaAllenamento />} />
           <Route path="/client/community" element={<Community />} />
-          <Route path="/client/community/members" element={<CommunityMembers />} />
-          <Route path="/client/community/settings" element={<CommunitySettings />} />
+          <Route path="/client/courses" element={<CourseDashboard />} />
+          <Route path="/client/courses/:courseId" element={<CourseDetail />} />
+          <Route path="/client/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<LessonPlayer />} />
+          <Route path="/client/onboarding" element={<OnboardingFlow />} />
+
+          {/* Video Calls */}
+          <Route path="/video-call/:callId" element={<VideoCallOneToOne />} />
+          <Route path="/group-call/:callId" element={<VideoCallGroup />} />
         </Route>
 
         {/* === ROTTE COLLABORATORI === */}
@@ -353,7 +376,10 @@ export default function App() {
           <Route path="/collaboratore/first-access" element={<FirstAccess />} />
           <Route path="/collaboratore/dashboard" element={<CollaboratoreDashboard />} />
           <Route path="/collaboratore/calendar" element={<CalendarPage />} />
-          {/* Aggiungi altre rotte future qui se vuoi */}
+
+          {/* Video Calls */}
+          <Route path="/video-call/:callId" element={<VideoCallOneToOne />} />
+          <Route path="/group-call/:callId" element={<VideoCallGroup />} />
         </Route>
 
         {/* === DEFAULT === */}

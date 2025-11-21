@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
-import { collection, query, onSnapshot, addDoc, doc, getDoc, updateDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, doc, updateDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { useNavigate } from 'react-router-dom';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadPhoto } from '../storageUtils.js';
 import normalizePhotoURLs from '../utils/normalizePhotoURLs';
@@ -248,7 +248,6 @@ const CheckDetails = ({ check, handleEditClick }) => {
 };
 
 export default function ClientChecks() {
-  const [clientStartDate, setClientStartDate] = useState(null);
   const [checks, setChecks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -269,13 +268,14 @@ export default function ClientChecks() {
     }
     const fetchInitialData = async () => {
       try {
-        const clientDocRef = doc(db, 'clients', user.uid);
-        const clientDoc = await getDoc(clientDocRef);
-        if (clientDoc.exists() && clientDoc.data().createdAt) {
-          setClientStartDate(clientDoc.data().createdAt.toDate());
-        } else {
-          setClientStartDate(new Date());
-        }
+        // const clientDocRef = doc(db, 'clients', user.uid);
+        // const clientDoc = await getDoc(clientDocRef);
+        // clientStartDate non utilizzato, commento il caricamento
+        // if (clientDoc.exists() && clientDoc.data().createdAt) {
+        //   setClientStartDate(clientDoc.data().createdAt.toDate());
+        // } else {
+        //   setClientStartDate(new Date());
+        // }
         
         const checksCollectionRef = collection(db, `clients/${user.uid}/checks`);
         const q = query(checksCollectionRef, orderBy('createdAt', 'desc'));

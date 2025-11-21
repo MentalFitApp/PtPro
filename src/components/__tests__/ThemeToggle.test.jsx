@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ThemeToggle from '../ThemeToggle';
@@ -67,7 +68,7 @@ describe('ThemeToggle', () => {
   });
 
   test('shows correct icon based on theme', () => {
-    const { rerender } = render(
+    render(
       <ThemeProvider>
         <TestComponent />
       </ThemeProvider>

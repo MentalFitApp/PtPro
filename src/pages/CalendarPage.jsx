@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc, getDocs, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { ChevronLeft, ChevronRight, Plus, X, Phone, Users, Trash2, Edit, Save, Bell, BellOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,13 +12,12 @@ export default function CalendarPage() {
   const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [showEventModal, setShowEventModal] = useState(false);
-  const [newEvent, setNewEvent] = useState({ title: '', time: '', endTime: '', type: 'call', note: '', durationMinutes: 30, participants: [] });
+  const [newEvent, setNewEvent] = useState({ title: '', time: '', endTime: '', type: 'call', note: '', durationMinutes: 30, participants: [], allDay: false });
   const [editingEvent, setEditingEvent] = useState(null);
   const [userRole, setUserRole] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [view, setView] = useState('month');
-  const [collaboratoriList, setCollaboratoriList] = useState([]);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectStartMin, setSelectStartMin] = useState(null);
   const [selectEndMin, setSelectEndMin] = useState(null);
@@ -185,38 +184,48 @@ export default function CalendarPage() {
     setSelectedDate(day);
     setShowEventModal(true);
     setEditingEvent(null);
-    setNewEvent({ title: '', time: '', endTime: '', type: 'call', note: '', durationMinutes: 30, participants: [auth.currentUser?.uid || ''] });
+    setNewEvent({ title: '', time: '', endTime: '', type: 'call', note: '', durationMinutes: 30, participants: [auth.currentUser?.uid || ''], allDay: false });
     setModalShowDayEvents(true);
   };
 
   const handleAddEvent = async () => {
-    if (!newEvent.title || !newEvent.time) {
-      alert('Inserisci titolo e ora');
+    if (!newEvent.title || (!newEvent.allDay && !newEvent.time)) {
+      alert(newEvent.allDay ? 'Inserisci il titolo' : 'Inserisci titolo e ora');
       return;
     }
 
     try {
       const dateStr = formatDate(selectedDate);
-      // Calcola durata da endTime se presente
+
+      let eventTime = newEvent.time;
       let duration = newEvent.durationMinutes || 30;
-      if (newEvent.endTime) {
-        const [sh, sm] = (newEvent.time || '00:00').split(':').map(Number);
-        const [eh, em] = (newEvent.endTime || '00:00').split(':').map(Number);
-        const startM = sh * 60 + sm;
-        const endM = eh * 60 + em;
-        if (endM <= startM) {
-          alert('L\'ora di fine deve essere successiva all\'inizio');
-          return;
+
+      if (newEvent.allDay) {
+        // Eventi di tutto il giorno
+        eventTime = '00:00';
+        duration = 1440; // 24 ore in minuti
+      } else {
+        // Calcola durata da endTime se presente per eventi normali
+        if (newEvent.endTime) {
+          const [sh, sm] = (newEvent.time || '00:00').split(':').map(Number);
+          const [eh, em] = (newEvent.endTime || '00:00').split(':').map(Number);
+          const startM = sh * 60 + sm;
+          const endM = eh * 60 + em;
+          if (endM <= startM) {
+            alert('L\'ora di fine deve essere successiva all\'inizio');
+            return;
+          }
+          duration = endM - startM;
         }
-        duration = endM - startM;
       }
 
       await addDoc(collection(db, 'calendarEvents'), {
         title: newEvent.title,
-        time: newEvent.time,
+        time: eventTime,
         type: newEvent.type,
         note: newEvent.note,
         durationMinutes: duration,
+        allDay: newEvent.allDay || false,
         date: dateStr,
         createdBy: auth.currentUser.uid,
         participants: [],
@@ -224,7 +233,7 @@ export default function CalendarPage() {
       });
 
       setShowEventModal(false);
-      setNewEvent({ title: '', time: '', endTime: '', type: 'call', note: '', durationMinutes: 30, participants: [auth.currentUser?.uid || ''] });
+      setNewEvent({ title: '', time: '', endTime: '', type: 'call', note: '', durationMinutes: 30, participants: [auth.currentUser?.uid || ''], allDay: false });
       setModalShowDayEvents(true);
     } catch (error) {
       console.error('Errore aggiunta evento:', error);
@@ -233,33 +242,44 @@ export default function CalendarPage() {
   };
 
   const handleUpdateEvent = async () => {
-    if (!editingEvent || !newEvent.title || !newEvent.time) return;
+    if (!editingEvent || !newEvent.title || (!newEvent.allDay && !newEvent.time)) return;
 
     try {
+      let eventTime = newEvent.time;
       let duration = newEvent.durationMinutes || 30;
-      if (newEvent.endTime) {
-        const [sh, sm] = (newEvent.time || '00:00').split(':').map(Number);
-        const [eh, em] = (newEvent.endTime || '00:00').split(':').map(Number);
-        const startM = sh * 60 + sm;
-        const endM = eh * 60 + em;
-        if (endM <= startM) {
-          alert('L\'ora di fine deve essere successiva all\'inizio');
-          return;
+
+      if (newEvent.allDay) {
+        // Eventi di tutto il giorno
+        eventTime = '00:00';
+        duration = 1440; // 24 ore in minuti
+      } else {
+        // Calcola durata da endTime se presente per eventi normali
+        if (newEvent.endTime) {
+          const [sh, sm] = (newEvent.time || '00:00').split(':').map(Number);
+          const [eh, em] = (newEvent.endTime || '00:00').split(':').map(Number);
+          const startM = sh * 60 + sm;
+          const endM = eh * 60 + em;
+          if (endM <= startM) {
+            alert('L\'ora di fine deve essere successiva all\'inizio');
+            return;
+          }
+          duration = endM - startM;
         }
-        duration = endM - startM;
       }
+
       await updateDoc(doc(db, 'calendarEvents', editingEvent.id), {
         title: newEvent.title,
-        time: newEvent.time,
+        time: eventTime,
         type: newEvent.type,
         note: newEvent.note,
         durationMinutes: duration,
-        
+        allDay: newEvent.allDay || false,
+
       });
 
       setShowEventModal(false);
       setEditingEvent(null);
-      setNewEvent({ title: '', time: '', endTime: '', type: 'call', note: '', durationMinutes: 30, participants: [auth.currentUser?.uid || ''] });
+      setNewEvent({ title: '', time: '', endTime: '', type: 'call', note: '', durationMinutes: 30, participants: [auth.currentUser?.uid || ''], allDay: false });
       setModalShowDayEvents(true);
     } catch (error) {
       console.error('Errore aggiornamento evento:', error);
@@ -278,10 +298,12 @@ export default function CalendarPage() {
 
   const handleEditEvent = (event) => {
     setEditingEvent(event);
+    const isAllDay = event.allDay || (event.durationMinutes === 1440);
+
     setNewEvent({
       title: event.title,
-      time: event.time,
-      endTime: (()=>{
+      time: isAllDay ? '' : event.time,
+      endTime: isAllDay ? '' : (()=>{
         const [h,m] = (event.time||'00:00').split(':').map(Number);
         const end = (h*60 + m) + (event.durationMinutes || 30);
         const eh = String(Math.floor(end/60)).padStart(2,'0');
@@ -290,8 +312,9 @@ export default function CalendarPage() {
       })(),
       type: event.type || 'call',
       note: event.note || '',
-      durationMinutes: event.durationMinutes || 30,
-      participants: event.participants || [auth.currentUser?.uid || '']
+      durationMinutes: isAllDay ? 30 : (event.durationMinutes || 30),
+      participants: event.participants || [auth.currentUser?.uid || ''],
+      allDay: isAllDay
     });
   };
 
@@ -331,8 +354,9 @@ export default function CalendarPage() {
     const load = async () => {
       if (!isAdmin) return;
       try {
-        const snap = await getDocs(query(collection(db, 'collaboratori'), orderBy('nome')));
-        setCollaboratoriList(snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) })));
+        // collaboratoriList non utilizzato, commento il caricamento
+        // const snap = await getDocs(query(collection(db, 'collaboratori'), orderBy('nome')));
+        // setCollaboratoriList(snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) })));
       } catch (e) {
         console.error('Errore caricamento collaboratori:', e);
       }
@@ -354,7 +378,7 @@ export default function CalendarPage() {
     const em = String(endTotal%60).padStart(2,'0');
     setSelectedDate(currentDate.getDate());
     setEditingEvent(null);
-    setNewEvent({ title: '', time: start, endTime: `${eh}:${em}`, type: 'meeting', note: '', durationMinutes: 60, participants: [auth.currentUser?.uid || ''] });
+    setNewEvent({ title: '', time: start, endTime: `${eh}:${em}`, type: 'meeting', note: '', durationMinutes: 60, participants: [auth.currentUser?.uid || ''], allDay: false });
     setModalShowDayEvents(false);
     setShowEventModal(true);
   };
@@ -478,7 +502,7 @@ export default function CalendarPage() {
                       {day}
                     </div>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {dayEvents.map((event, idx) => (
+                      {dayEvents.map((event) => (
                         <div
                           key={event.id}
                           onClick={(e) => {
@@ -548,14 +572,15 @@ export default function CalendarPage() {
 
       {/* Calendario - Vista Giorno */}
       {view === 'day' && (
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-slate-700">
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-slate-700">
           <div className="mb-4">
             <div className="text-slate-300 text-sm">{currentDate.toLocaleDateString('it-IT', { weekday: 'long' })}</div>
             <div className="text-2xl font-bold text-slate-100">{currentDate.toLocaleDateString('it-IT')}</div>
+            <div className="text-xs text-slate-400 mt-1">📅 Vista giornaliera: ore 8:00 - 20:00</div>
           </div>
           {/* Vista ad ore con selezione a 15' */}
           <div
-            className="relative max-h-[70vh] overflow-auto rounded-lg border border-slate-700 select-none"
+            className="relative max-h-[50vh] sm:max-h-[60vh] overflow-auto rounded-lg border border-slate-700 select-none"
             onMouseUp={() => {
               if (!isSelecting || selectStartMin === null || selectEndMin === null) return;
               const start = Math.min(selectStartMin, selectEndMin);
@@ -597,7 +622,7 @@ export default function CalendarPage() {
                 startMin: (()=>{ const [h,m]=(ev.time||'00:00').split(':').map(Number); return h*60+m; })(),
                 dur: ev.durationMinutes || 30,
               }));
-              const hours = Array.from({ length: 24 }, (_,h)=>h);
+              const hours = Array.from({ length: 13 }, (_,h)=>h+8); // Ore 8:00-20:00 (13 ore)
               return (
                 <div>
                   {hours.map(hh => {
@@ -607,7 +632,7 @@ export default function CalendarPage() {
                     return (
                       <div key={hh} className="grid grid-cols-[70px,1fr] border-b border-slate-700/60">
                         <div
-                          className="px-2 py-4 text-xs text-slate-400 font-mono select-none cursor-pointer hover:text-slate-200"
+                          className="px-1 sm:px-2 py-1 sm:py-2 text-xs text-slate-400 font-mono select-none cursor-pointer hover:text-slate-200"
                           onClick={() => {
                             // Click sull'ora: seleziona 60 minuti
                             const start = baseMin;
@@ -625,7 +650,7 @@ export default function CalendarPage() {
                         >
                           {hourLabel}
                         </div>
-                        <div className="py-1 pr-2">
+                        <div className="py-0.5 pr-1">
                           <div className="grid grid-rows-4 gap-0.5">
                             {quarters.map(q => {
                               const min = baseMin + q;
@@ -642,11 +667,10 @@ export default function CalendarPage() {
                               
                               const inSelection = isSelecting && selectStartMin !== null && selectEndMin !== null &&
                                 min >= Math.min(selectStartMin, selectEndMin) && min < Math.max(selectStartMin, selectEndMin);
-                              const timeStr = `${String(hh).padStart(2,'0')}:${String(q).padStart(2,'0')}`;
                               return (
                                 <div
                                   key={q}
-                                  className={`relative rounded ${inSelection ? 'bg-rose-500/20' : 'bg-slate-900/20'} border border-slate-800/50 h-10`}
+                                  className={`relative rounded ${inSelection ? 'bg-rose-500/20' : 'bg-slate-900/20'} border border-slate-800/50 h-6 sm:h-8`}
                                   onMouseDown={() => { setIsSelecting(true); setSelectStartMin(min); setSelectEndMin(min); }}
                                   onMouseEnter={() => { if (isSelecting) setSelectEndMin(min); }}
                                   onMouseUp={() => {
@@ -671,7 +695,7 @@ export default function CalendarPage() {
                                 >
                                   {eventsInThisSlot.length > 0 ? (
                                     <div className="absolute inset-0 m-0.5 flex gap-0.5 overflow-hidden">
-                                      {eventsInThisSlot.map((starter, idx) => (
+                                      {eventsInThisSlot.map((starter) => (
                                         <div 
                                           key={starter.id}
                                           className={`flex-1 p-1.5 rounded-lg text-[10px] sm:text-xs shadow cursor-pointer ${
@@ -757,6 +781,13 @@ export default function CalendarPage() {
                   ) : (
                     (() => {
                       const sortedEvents = getEventsForDay(selectedDate).sort((a, b) => {
+                        // Prima gli eventi di tutto il giorno, poi ordinati per ora
+                        const aAllDay = a.allDay || a.durationMinutes === 1440;
+                        const bAllDay = b.allDay || b.durationMinutes === 1440;
+
+                        if (aAllDay && !bAllDay) return -1;
+                        if (!aAllDay && bAllDay) return 1;
+
                         const timeA = a.time || '00:00';
                         const timeB = b.time || '00:00';
                         return timeA.localeCompare(timeB);
@@ -766,7 +797,8 @@ export default function CalendarPage() {
                       let currentTimeInserted = false;
                       
                       return sortedEvents.map((event, idx) => {
-                        const showTimeline = !currentTimeInserted && event.time > currentTime;
+                        const isAllDay = event.allDay || event.durationMinutes === 1440;
+                        const showTimeline = !currentTimeInserted && !isAllDay && event.time > currentTime;
                         if (showTimeline) currentTimeInserted = true;
                         
                         return (
@@ -794,14 +826,20 @@ export default function CalendarPage() {
                             >
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  {event.type === 'lead' ? (
+                                  {isAllDay ? (
+                                    <div className="w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
+                                      <span className="text-xs text-slate-900 font-bold">🌅</span>
+                                    </div>
+                                  ) : event.type === 'lead' ? (
                                     <Phone size={16} className="text-emerald-400" />
                                   ) : event.type === 'call' ? (
                                     <Phone size={16} className="text-blue-400" />
                                   ) : (
                                     <Users size={16} className="text-purple-400" />
                                   )}
-                                  <span className="text-sm font-mono text-slate-400">{event.time}</span>
+                                  <span className="text-sm font-mono text-slate-400">
+                                    {isAllDay ? 'Tutto il giorno' : event.time}
+                                  </span>
                                   <span className="font-semibold text-slate-100">{event.title}</span>
                                   {event.type === 'lead' && (
                                     <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">LEAD</span>
@@ -863,19 +901,42 @@ export default function CalendarPage() {
                     placeholder="Titolo evento"
                     className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-rose-500"
                   />
-                  <input
-                    type="time"
-                    value={newEvent.time}
-                    onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                    className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-rose-500"
-                  />
-                  <input
-                    type="time"
-                    value={newEvent.endTime || ''}
-                    onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })}
-                    className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-rose-500"
-                    placeholder="Ora fine"
-                  />
+
+                  {/* Toggle evento di tutto il giorno */}
+                  <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
+                    <div>
+                      <div className="font-medium text-white">Evento di tutto il giorno</div>
+                      <div className="text-sm text-slate-400">L'evento dura l'intera giornata</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newEvent.allDay || false}
+                        onChange={(e) => setNewEvent({ ...newEvent, allDay: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+
+                  {!newEvent.allDay && (
+                    <>
+                      <input
+                        type="time"
+                        value={newEvent.time}
+                        onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                        className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-rose-500"
+                      />
+                      <input
+                        type="time"
+                        value={newEvent.endTime || ''}
+                        onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })}
+                        className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-rose-500"
+                        placeholder="Ora fine"
+                      />
+                    </>
+                  )}
+
                   <select
                     value={newEvent.type}
                     onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value })}
@@ -884,23 +945,25 @@ export default function CalendarPage() {
                     <option value="call">Chiamata</option>
                     <option value="meeting">Riunione</option>
                   </select>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">Durata</label>
-                      <select
-                        value={newEvent.durationMinutes}
-                        onChange={(e) => setNewEvent({ ...newEvent, durationMinutes: parseInt(e.target.value, 10) })}
-                        className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-rose-500"
-                      >
-                        <option value={15}>15 minuti</option>
-                        <option value={30}>30 minuti</option>
-                        <option value={45}>45 minuti</option>
-                        <option value={60}>60 minuti</option>
-                        <option value={90}>90 minuti</option>
-                        <option value={120}>120 minuti</option>
-                      </select>
+                  {!newEvent.allDay && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-slate-400 mb-1">Durata</label>
+                        <select
+                          value={newEvent.durationMinutes}
+                          onChange={(e) => setNewEvent({ ...newEvent, durationMinutes: parseInt(e.target.value, 10) })}
+                          className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:border-rose-500"
+                        >
+                          <option value={15}>15 minuti</option>
+                          <option value={30}>30 minuti</option>
+                          <option value={45}>45 minuti</option>
+                          <option value={60}>60 minuti</option>
+                          <option value={90}>90 minuti</option>
+                          <option value={120}>120 minuti</option>
+                        </select>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   {/* Visibilità eventi gestita da regole: tutti i collaboratori possono vedere. */}
                   <textarea
                     value={newEvent.note}

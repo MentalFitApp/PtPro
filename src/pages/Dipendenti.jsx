@@ -488,7 +488,7 @@ const Dipendenti = () => {
         +
       </button>
 
-      <style jsx>{`
+      <style>{`
         input[type="range"].slider::-webkit-slider-thumb {
           appearance: none;
           width: 16px;

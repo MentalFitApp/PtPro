@@ -27,7 +27,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm }) => (
             <AlertTriangle className="h-6 w-6 text-red-400" />
           </div>
           <h3 className="text-lg font-bold text-slate-50">Conferma Eliminazione</h3>
-          <p className="text-sm text-slate-400 mt-2">Sei sicuro di voler eliminare questo pagamento? L'operazione non è reversibile.</p>
+          <p className="text-sm text-slate-400 mt-2">Sei sicuro di voler eliminare questo pagamento? L&apos;operazione non è reversibile.</p>
           <div className="mt-6 flex justify-center gap-4">
             <button onClick={onClose} className="px-6 py-2 text-sm font-semibold text-slate-300 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg transition-colors">Annulla</button>
             <button onClick={onConfirm} className="px-6 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">Elimina</button>

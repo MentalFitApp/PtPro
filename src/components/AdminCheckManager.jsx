@@ -118,9 +118,24 @@ const AdminCheckManager = ({ clientId }) => {
                         <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6">
                             <h3 className="text-xl font-semibold text-rose-300">Dettagli Check del {selectedCheck.createdAt.toDate().toLocaleDateString('it-IT')}</h3>
                              <div className="mt-4 space-y-4">
-                                <div><h4 className="font-semibold text-slate-400">Peso Registrato:</h4><p className="text-slate-50 text-xl font-bold">{selectedCheck.weight} kg</p></div>
-                                <div><h4 className="font-semibold text-slate-400">Note del Cliente:</h4><p className="text-slate-300 p-3 bg-slate-800 rounded-lg whitespace-pre-wrap">{selectedCheck.notes || 'Nessuna nota.'}</p></div>
-                                <div><h4 className="font-semibold text-slate-400">Foto Caricate:</h4><div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">{selectedCheck.photoURLs && Object.values(selectedCheck.photoURLs).map((url, i) => <a href={url} target="_blank" rel="noopener noreferrer"><img key={i} src={url} alt={`foto ${i}`} className="rounded-lg w-full h-auto"/></a>)}</div></div>
+                                <div>
+                                    <h4 className="font-semibold text-slate-400">Peso Registrato:</h4>
+                                    <p className="text-slate-50 text-xl font-bold">{selectedCheck.weight} kg</p>
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold text-slate-400">Note del Cliente:</h4>
+                                    <p className="text-slate-300 p-3 bg-slate-800 rounded-lg whitespace-pre-wrap">{selectedCheck.notes || 'Nessuna nota.'}</p>
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold text-slate-400">Foto Caricate:</h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+                                        {selectedCheck.photoURLs && Object.values(selectedCheck.photoURLs).map((url, i) => (
+                                            <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                                                <img src={url} alt={`foto ${i}`} className="rounded-lg w-full h-auto"/>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                             <div className="mt-6 pt-4 border-t border-white/10">
                                 <h4 className="font-semibold text-slate-400 flex items-center gap-2"><MessageSquare size={16}/> Lascia un Feedback</h4>

@@ -155,7 +155,7 @@ const AlimentazioneAllenamento = () => {
             Alimentazione e Allenamento
           </h1>
           <p className="text-slate-400">
-            Gestisci schede, alimenti ed esercizi in un'unica sezione
+            Gestisci schede, alimenti ed esercizi in un&apos;unica sezione
           </p>
         </motion.div>
 

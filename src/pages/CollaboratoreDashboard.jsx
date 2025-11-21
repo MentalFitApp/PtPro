@@ -60,7 +60,6 @@ export default function CollaboratoreDashboard() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [weekOffset, setWeekOffset] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   // --- TIMER MEZZANOTTE ---
   useEffect(() => {
@@ -112,7 +111,6 @@ export default function CollaboratoreDashboard() {
           photoURL: data?.photoURL || '', 
           gender: data?.gender || 'M' 
         });
-        setIsAdmin(data?.role === 'Admin');
 
         // Usa data locale per il confronto
         const now = new Date();
@@ -488,7 +486,7 @@ export default function CollaboratoreDashboard() {
     'Info Storie Prima e Dopo', 'Info Storie Promo', 'Info Reel', 'Inizio Reel',
     'Guida Maniglie', 'Guida Tartaruga', 'Guida 90', 'Altre Guide',
     'Guida Panettone', 'DM Richiesta', 'Outreach Nuovi Followers', 
-    'Outreach Vecchi Followers', 'Follow-Ups', 'Facebook', 'TikTok', 'Referral'
+    'Views Storie', 'Follow-Ups', 'Facebook', 'TikTok', 'Referral'
   ];
 
   // --- REPORT PASSATI (solo tracker) ---

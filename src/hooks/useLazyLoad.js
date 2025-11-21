@@ -60,7 +60,8 @@ export const useLazyData = (fetchFunction, dependencies = []) => {
         .catch(setError)
         .finally(() => setLoading(false));
     }
-  }, [hasBeenInView, data, loading, ...dependencies]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasBeenInView, data, loading, fetchFunction, ...dependencies]);
 
   return { ref, data, loading, error };
 };

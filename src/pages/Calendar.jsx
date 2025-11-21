@@ -90,7 +90,6 @@ const Calendar = ({ reports = [], collaboratori = [], onDateClick }) => {
         {Array.from({ length: daysInMonth }, (_, i) => {
           const day = i + 1;
           const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-          const dateStr = date.toISOString().split('T')[0];
 
           return (
             <motion.button

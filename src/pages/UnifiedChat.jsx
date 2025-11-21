@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
-import { collection, query, where, orderBy, onSnapshot, doc, addDoc, serverTimestamp, setDoc, getDocs, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, addDoc, serverTimestamp, setDoc, getDocs, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Send, Video, Search, Plus, Phone, MessageSquare, X, ArrowLeft, Check, CheckCheck, UserPlus, Users, Image as ImageIcon, Mic, Paperclip, Play, Pause, Camera, CameraOff, Mic as MicOn, MicOff, Monitor, PhoneOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,7 +41,6 @@ export default function UnifiedChat() {
   // Stati per media
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [audioChunks, setAudioChunks] = useState([]);
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [profileComplete, setProfileComplete] = useState(false);
@@ -396,7 +395,6 @@ export default function UnifiedChat() {
   const handleStartVideoCall = async () => {
     if (!selectedChat) return;
 
-    const otherUser = getOtherUser(selectedChat);
     const otherUserId = selectedChat.participants.find(p => p !== currentUser.uid);
 
     try {
@@ -478,7 +476,6 @@ export default function UnifiedChat() {
   const handleStartVoiceCall = async () => {
     if (!selectedChat) return;
 
-    const otherUser = getOtherUser(selectedChat);
     const otherUserId = selectedChat.participants.find(p => p !== currentUser.uid);
 
     try {
@@ -1487,7 +1484,7 @@ export default function UnifiedChat() {
 }
 
 // Componente Video Call con Daily.co migliorato
-function VideoCallInterface({ roomUrl, onClose, isVideoEnabled, isAudioEnabled, isScreenSharing, onToggleVideo, onToggleAudio, onToggleScreenShare }) {
+function VideoCallInterface({ onClose, isVideoEnabled, isAudioEnabled, isScreenSharing, onToggleVideo, onToggleAudio, onToggleScreenShare }) {
   const callObject = useDaily();
   const participantIds = useParticipantIds();
   const localParticipant = useLocalParticipant();

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } from 'firebase/firestore';
 import normalizePhotoURLs from '../utils/normalizePhotoURLs';
-import { db, toDate, calcolaStatoPercorso, updateStatoPercorso } from '../firebase';
+import { db, toDate, updateStatoPercorso } from '../firebase';
 import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check, X, Plus, ZoomIn, CalendarDays } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QuickNotifyButton from '../components/QuickNotifyButton';
@@ -397,7 +397,9 @@ export default function ClientDetail() {
   let userRole = null;
   try {
     userRole = JSON.parse(localStorage.getItem('user'))?.role || null;
-  } catch {}
+  } catch {
+    // Ignora errori di parsing JSON
+  }
   const isAdmin = userRole === 'admin';
   const isCoach = userRole === 'coach';
 
@@ -419,7 +421,7 @@ export default function ClientDetail() {
         setTimeout(() => navigate('/clients'), 3000);
       }
       setLoading(false);
-    }, (err) => {
+    }, () => {
       setError("Errore caricamento.");
       setTimeout(() => navigate('/clients'), 3000);
       setLoading(false);
@@ -621,7 +623,7 @@ export default function ClientDetail() {
                     <p className="text-sm font-medium text-slate-300">Data: {toDate(check.createdAt)?.toLocaleDateString('it-IT') || 'N/D'}</p>
                     <p className="text-sm text-slate-300">Peso: <span className="font-semibold">{check.weight || 'N/D'} kg</span></p>
                   </div>
-                  {check.notes && <p className="text-sm text-slate-400 mb-4 italic">"{check.notes}"</p>}
+                  {check.notes && <p className="text-sm text-slate-400 mb-4 italic">&ldquo;{check.notes}&rdquo;</p>}
                   {check.photoURLs && Object.values(check.photoURLs).some(Boolean) && (
                     <div>
                       <p className="text-xs text-slate-400 mb-3">Foto:</p>
@@ -752,7 +754,7 @@ export default function ClientDetail() {
                   {/* FOTO INIZIALI */}
                   <div className={sectionStyle}>
                     <h4 className={headingStyle}><FileText size={16} /> Foto Iniziali</h4>
-                    <p className="text-sm text-slate-400 mb-6">Caricate dal cliente al momento dell'iscrizione.</p>
+                    <p className="text-sm text-slate-400 mb-6">Caricate dal cliente al momento dell&apos;iscrizione.</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                       {['front', 'right', 'left', 'back'].map(type => (
                         <div key={type} className="text-center">

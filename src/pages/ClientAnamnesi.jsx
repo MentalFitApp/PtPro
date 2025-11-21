@@ -142,7 +142,7 @@ const ClientAnamnesi = () => {
       setLoading(false);
     };
     fetchAnamnesi();
-  }, [user, navigate, setValue]);
+  }, [user, navigate, setValue, normalizePhotoURLs]);
 
   const showNotification = useCallback((message, type = 'error') => {
     setNotification({ message, type });

@@ -6,7 +6,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import SmartFoodSwap from '../components/SmartFoodSwap';
-import { getFoodById } from '../utils/foodDatabase';
+
 
 const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
 
@@ -19,7 +19,6 @@ export default function ClientSchedaAlimentazioneEnhanced() {
   const [loading, setLoading] = useState(true);
   const [schedaData, setSchedaData] = useState(null);
   const [selectedDay, setSelectedDay] = useState('Lunedì');
-  const [clientName, setClientName] = useState('');
   const [swapModalData, setSwapModalData] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -35,12 +34,7 @@ export default function ClientSchedaAlimentazioneEnhanced() {
         return;
       }
 
-      // Load client info
-      const clientRef = doc(db, 'clients', user.uid);
-      const clientSnap = await getDoc(clientRef);
-      if (clientSnap.exists()) {
-        setClientName(clientSnap.data().name || 'N/D');
-      }
+
 
       // Load scheda
       const schedaRef = doc(db, 'schede_alimentazione', user.uid);
@@ -324,7 +318,7 @@ export default function ClientSchedaAlimentazioneEnhanced() {
         {/* Info Box */}
         <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
           <p className="text-sm text-cyan-300">
-            💡 <strong>Suggerimento:</strong> Clicca sull'icona <RefreshCw size={14} className="inline" /> accanto a qualsiasi alimento per sostituirlo. 
+            💡 <strong>Suggerimento:</strong> Clicca sull&apos;icona <RefreshCw size={14} className="inline" /> accanto a qualsiasi alimento per sostituirlo. 
             Il sistema calcolerà automaticamente la quantità necessaria per mantenere i tuoi macros!
           </p>
         </div>

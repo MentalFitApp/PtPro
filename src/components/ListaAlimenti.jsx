@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Plus, Search, Edit2, Trash2, X, Save } from 'lucide-react';
 import { db } from '../firebase';
@@ -44,9 +44,9 @@ const ListaAlimenti = ({ onBack }) => {
     if (selectedCategory) {
       loadFoods();
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, loadFoods]);
 
-  const loadFoods = async () => {
+  const loadFoods = useCallback(async () => {
     setLoading(true);
     try {
       const foodsRef = collection(db, 'alimenti', selectedCategory, 'items');
@@ -57,7 +57,7 @@ const ListaAlimenti = ({ onBack }) => {
       console.error('Errore nel caricamento degli alimenti:', error);
     }
     setLoading(false);
-  };
+  }, [selectedCategory]);
 
   const handleAddFood = async () => {
     if (!formData.nome || !formData.kcal || !formData.proteine || !formData.carboidrati || !formData.grassi) {

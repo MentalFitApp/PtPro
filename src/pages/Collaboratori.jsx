@@ -118,13 +118,65 @@ export default function Collaboratori() {
   // NUOVO: POPUP CONVERSIONE LEAD → CLIENTE
   const [showConvertPopup, setShowConvertPopup] = useState(false);
   const [leadToConvert, setLeadToConvert] = useState(null);
+  const [showFontiModal, setShowFontiModal] = useState(false);
+  const [editingFonte, setEditingFonte] = useState(null);
+  const [newFonteName, setNewFonteName] = useState('');
 
-  const fonti = [
+  // Funzioni per gestire le fonti
+  const addFonte = () => {
+    if (newFonteName.trim() && !fonti.includes(newFonteName.trim())) {
+      setFonti([...fonti, newFonteName.trim()]);
+      setNewFonteName('');
+    }
+  };
+
+  const updateFonte = () => {
+    if (editingFonte && newFonteName.trim()) {
+      const trimmedName = newFonteName.trim();
+      // Verifica che il nuovo nome non sia già usato (considerando anche i nomi mappati)
+      const existingNames = fonti.map(f => getDisplayFonteName(f));
+      if (!existingNames.includes(trimmedName) || trimmedName === getDisplayFonteName(editingFonte)) {
+        // Salva la mappatura dal vecchio nome al nuovo
+        setSourceMapping(prev => ({
+          ...prev,
+          [editingFonte]: trimmedName
+        }));
+        setFonti(fonti.map(f => f === editingFonte ? trimmedName : f));
+        setEditingFonte(null);
+        setNewFonteName('');
+      }
+    }
+  };
+
+  const deleteFonte = (fonteToDelete) => {
+    if (confirm(`Sei sicuro di voler eliminare la fonte "${fonteToDelete}"?`)) {
+      setFonti(fonti.filter(f => f !== fonteToDelete));
+      // Rimuovi anche dalla mappatura se presente
+      setSourceMapping(prev => {
+        const newMapping = { ...prev };
+        delete newMapping[fonteToDelete];
+        return newMapping;
+      });
+    }
+  };
+
+  const startEditFonte = (fonte) => {
+    setEditingFonte(fonte);
+    setNewFonteName(fonte);
+  };
+
+  // Funzione helper per ottenere il nome visualizzato di una fonte
+  const getDisplayFonteName = (fonte) => {
+    return sourceMapping[fonte] || fonte;
+  };
+
+  const [fonti, setFonti] = useState([
     'Info Storie Prima e Dopo', 'Info Storie Promo', 'Info Reel', 'Inizio Reel',
     'Guida Maniglie', 'Guida Tartaruga', 'Guida 90', 'Altre Guide',
-    'Guida Panettone', 'DM Richiesta', 'Outreach Nuovi Followers', 'Outreach Vecchi Followers',
+    'Guida Panettone', 'DM Richiesta', 'Outreach Nuovi Followers', 'Views Storie',
     'Follow-Ups', 'Facebook', 'TikTok', 'Referral'
-  ];
+  ]);
+  const [sourceMapping, setSourceMapping] = useState({}); // Mappa vecchi nomi a nuovi nomi
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -497,17 +549,24 @@ export default function Collaboratori() {
 
   const getSourceStats = () => {
     const stats = {};
+    let totalLeads = 0;
+
     leads.forEach(l => {
-      const src = l.source || 'Sconosciuta';
+      // Applica la mappatura se esiste
+      const originalSrc = l.source || 'Sconosciuta';
+      const src = sourceMapping[originalSrc] || originalSrc;
       if (!stats[src]) stats[src] = { total: 0, showUp: 0, chiuso: 0 };
       stats[src].total++;
+      totalLeads++;
       if (l.showUp) stats[src].showUp++;
       if (l.chiuso) stats[src].chiuso++;
     });
 
     return Object.entries(stats).map(([source, data], i) => ({
-      index: i + 1, source,
+      index: i + 1,
+      source,
       total: data.total,
+      totalPercentage: totalLeads > 0 ? ((data.total / totalLeads) * 100).toFixed(1) : '0.0',
       showUp: ((data.showUp / data.total) * 100).toFixed(1),
       chiusura: ((data.chiuso / data.total) * 100).toFixed(1),
     }));
@@ -541,14 +600,24 @@ export default function Collaboratori() {
             <Users size={24} /> Gestione
           </h1>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <motion.button 
-              onClick={handleSyncLeadsToCalendar} 
-              className="flex items-center justify-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs w-full sm:w-auto" 
+            <motion.button
+              onClick={handleSyncLeadsToCalendar}
+              className="flex items-center justify-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs w-full sm:w-auto"
               whileHover={{ scale: 1.05 }}
               title="Sincronizza lead esistenti con il calendario"
             >
               <CalendarIcon size={14} /> <span className="hidden sm:inline">Sync</span> Cal
             </motion.button>
+            {isAdmin && (
+              <motion.button
+                onClick={() => setShowFontiModal(true)}
+                className="flex items-center justify-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs w-full sm:w-auto"
+                whileHover={{ scale: 1.05 }}
+                title="Gestisci fonti lead"
+              >
+                <File size={14} /> <span className="hidden sm:inline">Fonti</span>
+              </motion.button>
+            )}
             <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@esempio.com" className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-xs w-full sm:max-w-[160px]" />
             <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-xs w-full sm:w-24">
               <option>Setter</option>
@@ -861,6 +930,9 @@ export default function Collaboratori() {
         {/* LEAD PER FONTE */}
         <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
           <h2 className="text-xs sm:text-sm font-semibold text-slate-200 mb-2 sm:mb-3">Lead per Fonte</h2>
+          <div className="text-[9px] sm:text-[10px] text-slate-400 mb-2">
+            📊 <strong>% Totale</strong> = quota sul totale dei lead • 🟢 <strong>% Show-up</strong> = % di presenze su lead fonte • 🔴 <strong>% Chiusura</strong> = % di chiusure su lead fonte
+          </div>
           <div className="space-y-1 text-[10px] sm:text-xs">
             {sourceStats.length === 0 ? (
               <p className="text-slate-400">Nessun lead</p>
@@ -869,12 +941,25 @@ export default function Collaboratori() {
                 <div key={s.source} className="flex justify-between items-center p-1.5 sm:p-2 bg-slate-700/50 rounded border border-slate-600">
                   <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
                     <span className="text-cyan-400 font-bold flex-shrink-0">{s.index}.</span>
-                    <span className="truncate max-w-[100px] sm:max-w-[120px]">{s.source}</span>
+                    <span className="truncate max-w-[80px] sm:max-w-[100px]">{s.source}</span>
                   </div>
-                  <div className="flex gap-2 sm:gap-3 flex-shrink-0">
-                    <span><strong>{s.total}</strong></span>
-                    <span className="text-green-400"><strong>{s.showUp}%</strong></span>
-                    <span className="text-rose-400"><strong>{s.chiusura}%</strong></span>
+                  <div className="flex gap-1 sm:gap-2 flex-shrink-0 text-center">
+                    <div className="flex flex-col items-center">
+                      <span className="text-blue-400 font-bold">{s.totalPercentage}%</span>
+                      <span className="text-[8px] sm:text-[9px] text-slate-500">TOT</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span><strong>{s.total}</strong></span>
+                      <span className="text-[8px] sm:text-[9px] text-slate-500">LEAD</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-green-400"><strong>{s.showUp}%</strong></span>
+                      <span className="text-[8px] sm:text-[9px] text-slate-500">SHOW</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-rose-400"><strong>{s.chiusura}%</strong></span>
+                      <span className="text-[8px] sm:text-[9px] text-slate-500">CHIUS</span>
+                    </div>
                   </div>
                 </div>
               ))
@@ -1000,6 +1085,90 @@ export default function Collaboratori() {
                 </button>
                 <button onClick={() => { setEditingCollab(null); setEditEmail(''); }} className="flex-1 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-slate-300 py-2 rounded-lg text-sm font-medium">
                   Annulla
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* MODAL GESTIONE FONTI */}
+        {showFontiModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-md w-full border border-slate-700 max-h-[80vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-slate-100">Gestisci Fonti Lead</h3>
+                <button
+                  onClick={() => setShowFontiModal(false)}
+                  className="text-slate-400 hover:text-slate-200"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Aggiungi nuova fonte */}
+              <div className="mb-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newFonteName}
+                    onChange={(e) => setNewFonteName(e.target.value)}
+                    placeholder="Nome nuova fonte"
+                    className="flex-1 px-3 py-2 bg-slate-700/50 border border-slate-600 rounded text-sm focus:ring-1 focus:ring-purple-500"
+                  />
+                  <button
+                    onClick={editingFonte ? updateFonte : addFonte}
+                    disabled={!newFonteName.trim()}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-sm font-medium"
+                  >
+                    {editingFonte ? 'Modifica' : 'Aggiungi'}
+                  </button>
+                  {editingFonte && (
+                    <button
+                      onClick={() => { setEditingFonte(null); setNewFonteName(''); }}
+                      className="px-3 py-2 bg-slate-600 hover:bg-slate-700 text-slate-300 rounded text-sm"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Lista fonti */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-slate-300 mb-2">Fonti Attuali:</h4>
+                {fonti.map((fonte, index) => (
+                  <div key={fonte} className="flex items-center justify-between p-2 bg-slate-700/50 rounded border border-slate-600">
+                    <span className="text-sm text-slate-200">{index + 1}. {getDisplayFonteName(fonte)}</span>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => startEditFonte(fonte)}
+                        className="p-1 text-yellow-400 hover:text-yellow-300"
+                        title="Modifica"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        onClick={() => deleteFonte(fonte)}
+                        className="p-1 text-red-400 hover:text-red-300"
+                        title="Elimina"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => setShowFontiModal(false)}
+                  className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-slate-300 rounded-lg text-sm font-medium"
+                >
+                  Chiudi
                 </button>
               </div>
             </motion.div>

@@ -84,7 +84,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, clientName }) => (
           </div>
           <h3 className="text-lg font-bold text-slate-100">Conferma Eliminazione</h3>
           <p className="text-sm text-slate-400 mt-2">
-            Sei sicuro di voler eliminare il cliente <strong className="text-rose-400">{clientName}</strong>? L'operazione è irreversibile.
+            Sei sicuro di voler eliminare il cliente <strong className="text-rose-400">{clientName}</strong>? L&apos;operazione è irreversibile.
           </p>
           <div className="mt-6 flex justify-center gap-4">
             <button onClick={onClose} className="px-6 py-2 text-sm font-semibold text-slate-300 bg-slate-700/50 hover:bg-slate-700/70 rounded-lg transition-colors border border-slate-600">
@@ -353,7 +353,7 @@ export default function Clients() {
         showNotification("Errore caricamento clienti", 'error');
         setLoading(false);
       }
-    }, (error) => {
+    }, () => {
       showNotification("Errore connessione", 'error');
       setLoading(false);
     });

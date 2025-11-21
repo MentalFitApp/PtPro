@@ -1,7 +1,7 @@
 // src/pages/Analytics.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, collectionGroup, onSnapshot, query, orderBy, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, collectionGroup, onSnapshot, query, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, auth, toDate } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { 

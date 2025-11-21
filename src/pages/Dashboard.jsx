@@ -1,9 +1,9 @@
 // src/pages/Dashboard.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  collection, onSnapshot, collectionGroup, doc, getDoc, setDoc, serverTimestamp, query, orderBy 
-} from "firebase/firestore"; // ← AGGIUNTO setDoc
+import {
+  collection, onSnapshot, collectionGroup, doc, getDoc, getDocs, setDoc, serverTimestamp, query, orderBy, where
+} from "firebase/firestore"; // ← AGGIUNTO setDoc, where e getDocs
 import { auth, db, toDate } from "../firebase";
 import { uploadPhoto } from "../cloudflareStorage";
 import { signOut, updateProfile } from "firebase/auth";
@@ -91,6 +91,7 @@ export default function Dashboard() {
   const [clients, setClients] = useState([]);
   const [activityFeed, setActivityFeed] = useState([]);
   const [monthlyIncome, setMonthlyIncome] = useState(0);
+  const [monthlyRenewals, setMonthlyRenewals] = useState(0);
   const [lastViewed, setLastViewed] = useState(null);
   const [focusClient, setFocusClient] = useState(null);
   const [retentionRate, setRetentionRate] = useState(0);
@@ -343,6 +344,8 @@ export default function Dashboard() {
     const unsubPayments = onSnapshot(paymentsQuery, async (snap) => {
       try {
         let income = 0;
+        let renewals = 0;
+
         for (const docSnap of snap.docs) {
           const paymentDate = toDate(docSnap.data().paymentDate);
           if (paymentDate && paymentDate >= currentMonthStart) {
@@ -351,12 +354,28 @@ export default function Dashboard() {
             if (clientDocSnap.exists()) {
               const clientData = clientDocSnap.data();
               if (!clientData.isOldClient && !docSnap.data().isPast) {
-                income += docSnap.data().amount || 0;
+                const paymentAmount = docSnap.data().amount || 0;
+
+                // Verifica se il cliente ha pagamenti precedenti (è un rinnovo)
+                const clientPaymentsQuery = query(
+                  collection(db, 'clients', clientDocRef.id, 'payments'),
+                  where('paymentDate', '<', paymentDate)
+                );
+                const previousPayments = await getDocs(clientPaymentsQuery);
+
+                if (previousPayments.size > 0) {
+                  // È un rinnovo
+                  renewals += paymentAmount;
+                } else {
+                  // È un nuovo cliente
+                  income += paymentAmount;
+                }
               }
             }
           }
         }
         setMonthlyIncome(income);
+        setMonthlyRenewals(renewals);
       } catch (error) {
         console.error("Errore snapshot pagamenti:", error);
       }
@@ -591,8 +610,9 @@ export default function Dashboard() {
       {/* CONTENT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mx-3 sm:mx-6">
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             <StatCard title="Incasso Mensile" value={monthlyIncome} icon={<DollarSign className="text-green-500"/>} isCurrency={true} />
+            <StatCard title="Rinnovi Mensili" value={monthlyRenewals} icon={<RefreshCw className="text-blue-500"/>} isCurrency={true} />
             <StatCard title="Clienti Attivi" value={clientStats.active} icon={<CheckCircle className="text-blue-500"/>} />
             <StatCard title="Retention Rate" value={retentionRate} icon={<RefreshCw className="text-amber-500"/>} isPercentage={true} />
           </div>
@@ -621,7 +641,7 @@ export default function Dashboard() {
             <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-slate-700 shadow-xl">
               <h2 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 flex items-center gap-2 text-slate-100"><Target size={16} className="sm:w-5 sm:h-5" /> Focus del Giorno</h2>
               <p className="text-sm font-bold text-rose-400 truncate">{focusClient.name}</p>
-              <p className="text-xs sm:text-sm text-slate-400 mt-1 line-clamp-2">Obiettivo: "{focusClient.goal || 'Non specificato'}"</p>
+              <p className="text-xs sm:text-sm text-slate-400 mt-1 line-clamp-2">Obiettivo: &quot;{focusClient.goal || 'Non specificato'}&quot;</p>
             </div>
           )}
         </div>

@@ -42,12 +42,26 @@ const AnimatedStars = () => {
   return null;
 };
 
-// === LINKS NAVIGAZIONE ===
+// === LINKS NAVIGAZIONE CON SOTTOMENU ===
 const adminNavLinks = [
   { to: '/', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
+
+  // COMMUNITY SECTION
+  {
+    key: 'community',
+    label: '🌐 Community',
+    icon: <UsersRound size={18} />,
+    isExpandable: true,
+    submenu: [
+      { to: '/community', icon: <MessageSquare size={16} />, label: 'Home Community' },
+      { to: '/courses', icon: <BookOpen size={16} />, label: '📚 Corsi' },
+      { to: '/community-settings', icon: <Settings size={16} />, label: '⚙️ Impostazioni', isSuperAdmin: true },
+      { to: '/community-analytics', icon: <BarChart3 size={16} />, label: '📊 Analytics', isSuperAdmin: true },
+    ]
+  },
+
   { to: '/clients', icon: <Users size={18} />, label: 'Clienti' },
   { to: '/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
-  { to: '/community', icon: <UsersRound size={18} />, label: 'Community' },
   { to: '/updates', icon: <BellRing size={18} />, label: 'Novità' },
   { to: '/collaboratori', icon: <UserCheck size={18} />, label: 'Collaboratori' },
   { to: '/guide-manager', icon: <BookOpen size={18} />, label: 'Guide & Lead' },
@@ -57,8 +71,8 @@ const adminNavLinks = [
   { to: '/analytics', icon: <Target size={18} />, label: 'Analytics' },
   { to: '/notifications', icon: <BellRing size={18} />, label: 'Notifiche' },
   { to: '/alimentazione-allenamento', icon: <FileText size={18} />, label: 'Schede' },
-  { to: '/community-management', icon: <UsersRound size={18} />, label: '👥 Gestione Community', isSuperAdmin: true },
-  { to: '/superadmin', icon: <Settings size={18} />, label: '👑 SuperAdmin', isSuperAdmin: true },
+
+  { to: '/superadmin', icon: <Settings size={18} />, label: 'Super Admin', isSuperAdmin: true },
 ];
 
 const coachNavLinks = [
@@ -73,8 +87,20 @@ const coachNavLinks = [
 
 const clientNavLinks = [
   { to: '/client/dashboard', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
+
+  // COMMUNITY SECTION
+  {
+    key: 'community',
+    label: '🌐 Community',
+    icon: <UsersRound size={18} />,
+    isExpandable: true,
+    submenu: [
+      { to: '/client/community', icon: <MessageSquare size={16} />, label: 'Home Community' },
+      { to: '/client/courses', icon: <BookOpen size={16} />, label: '📚 Corsi' },
+    ]
+  },
+
   { to: '/client/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
-  { to: '/client/community', icon: <UsersRound size={18} />, label: 'Community' },
   { to: '/client/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
   { to: '/client/checks', icon: <Activity size={18} />, label: 'Check' },
   { to: '/client/payments', icon: <Target size={18} />, label: 'Pagamenti' },
@@ -93,29 +119,61 @@ const BottomNav = ({ isCoach, isCollaboratore, isClient, userIsSuperAdmin }) => 
   const location = useLocation();
   const navigate = useNavigate();
   const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : (isClient ? clientNavLinks : adminNavLinks));
+  const [expandedMenus, setExpandedMenus] = useState({});
+
+  const toggleMenu = (menuKey) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [menuKey]: !prev[menuKey]
+    }));
+  };
+
+  const allLinks = [];
+  links
+    .filter(link => !link.isSuperAdmin || userIsSuperAdmin)
+    .forEach(link => {
+      allLinks.push(link);
+      if (link.submenu && expandedMenus[link.key]) {
+        link.submenu.forEach(sub => {
+          allLinks.push({
+            ...sub,
+            isSubmenu: true,
+            parentKey: link.key
+          });
+        });
+      }
+    });
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-2xl border-t border-white/10 z-50 md:hidden safe-area-bottom">
       <div className="px-2 py-2">
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hidden snap-x snap-mandatory pb-1">
-          {links
-            .filter(link => !link.isSuperAdmin || userIsSuperAdmin)
-            .map(link => (
+          {allLinks.map(link => (
             <motion.button
-              key={link.to}
-              onClick={() => navigate(link.to)}
+              key={link.isSubmenu ? `${link.parentKey}-${link.to}` : link.to}
+              onClick={() => {
+                if (link.submenu) {
+                  toggleMenu(link.key);
+                } else {
+                  navigate(link.to);
+                }
+              }}
               className={`flex flex-col items-center justify-center min-w-[56px] max-w-[64px] h-14 px-2 rounded-xl transition-all snap-center flex-shrink-0 ${
                 location.pathname === link.to || location.pathname.startsWith(link.to + '/')
                   ? 'text-rose-500 bg-rose-600/10 border border-rose-600/30'
-                  : 'text-slate-400 hover:text-rose-400'
+                  : link.isSubmenu
+                    ? 'text-slate-300 hover:text-rose-400 bg-slate-800/50'
+                    : 'text-slate-400 hover:text-rose-400'
               }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               <div className="flex-shrink-0">
-                {React.cloneElement(link.icon, { size: 18 })}
+                {React.cloneElement(link.icon, { size: link.isSubmenu ? 16 : 18 })}
               </div>
-              <span className="text-[9px] mt-0.5 truncate w-full text-center leading-tight">{link.label}</span>
+              <span className={`mt-0.5 truncate w-full text-center leading-tight ${link.isSubmenu ? 'text-[8px]' : 'text-[9px]'}`}>
+                {link.label}
+              </span>
             </motion.button>
           ))}
         </div>
@@ -129,6 +187,7 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
   const navigate = useNavigate();
   const location = useLocation();
   const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : (isClient ? clientNavLinks : adminNavLinks));
+  const [expandedMenus, setExpandedMenus] = useState({});
 
   return (
     <motion.aside
@@ -163,35 +222,129 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
         {links
           .filter(link => !link.isSuperAdmin || userIsSuperAdmin)
-          .map(link => (
-            <motion.button
-              key={link.to}
-              onClick={() => {
-                navigate(link.to);
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                location.pathname === link.to || location.pathname.startsWith(link.to + '/')
-                  ? 'bg-rose-600/20 text-rose-400 border border-rose-600/30'
-                  : 'text-slate-300 hover:bg-white/5 hover:text-rose-400'
-              }`}
-              whileHover={{ x: 4 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {link.icon}
-              <AnimatePresence>
-                {!isCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    className="overflow-hidden whitespace-nowrap"
+          .map((link) => {
+            if (link.isExpandable) {
+              const isExpanded = expandedMenus[link.label];
+              const hasActiveSubmenu = link.submenu?.some(sub => location.pathname === sub.to || location.pathname.startsWith(sub.to + '/'));
+
+              return (
+                <div key={link.label}>
+                  <motion.button
+                    onClick={() => {
+                      setExpandedMenus(prev => ({
+                        ...prev,
+                        [link.label]: !prev[link.label]
+                      }));
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                      hasActiveSubmenu
+                        ? 'bg-rose-600/20 text-rose-400 border border-rose-600/30'
+                        : 'text-slate-300 hover:bg-white/5 hover:text-rose-400'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    {link.label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
-          ))}
+                    <div className="flex-shrink-0">
+                      {React.cloneElement(link.icon, { size: 18 })}
+                    </div>
+                    <AnimatePresence>
+                      {!isCollapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: 'auto' }}
+                          exit={{ opacity: 0, width: 0 }}
+                          className="truncate"
+                        >
+                          {link.label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                    <motion.div
+                      animate={{ rotate: isExpanded ? 90 : 0 }}
+                      className="ml-auto flex-shrink-0"
+                    >
+                      <ChevronRight size={14} />
+                    </motion.div>
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="ml-6 mt-1 space-y-1 overflow-hidden"
+                      >
+                        {link.submenu
+                          .filter(sub => !sub.isSuperAdmin || userIsSuperAdmin)
+                          .map(sub => (
+                            <motion.button
+                              key={sub.to}
+                              onClick={() => navigate(sub.to)}
+                              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                                location.pathname === sub.to || location.pathname.startsWith(sub.to + '/')
+                                  ? 'bg-rose-600/15 text-rose-400 border border-rose-600/20'
+                                  : 'text-slate-400 hover:bg-white/5 hover:text-rose-400'
+                              }`}
+                              whileHover={{ scale: 1.01 }}
+                              whileTap={{ scale: 0.99 }}
+                            >
+                              <div className="flex-shrink-0">
+                                {React.cloneElement(sub.icon, { size: 14 })}
+                              </div>
+                              <AnimatePresence>
+                                {!isCollapsed && (
+                                  <motion.span
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="truncate"
+                                  >
+                                    {sub.label}
+                                  </motion.span>
+                                )}
+                              </AnimatePresence>
+                            </motion.button>
+                          ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            }
+
+            return (
+              <motion.button
+                key={link.to}
+                onClick={() => {
+                  navigate(link.to);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  location.pathname === link.to || location.pathname.startsWith(link.to + '/')
+                    ? 'bg-rose-600/20 text-rose-400 border border-rose-600/30'
+                    : 'text-slate-300 hover:bg-white/5 hover:text-rose-400'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex-shrink-0">
+                  {React.cloneElement(link.icon, { size: 18 })}
+                </div>
+                <AnimatePresence>
+                  {!isCollapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: 'auto' }}
+                      exit={{ opacity: 0, width: 0 }}
+                      className="truncate"
+                    >
+                      {link.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            );
+          })}
       </nav>
     </motion.aside>
   );
@@ -203,7 +356,13 @@ export default function MainLayout() {
   const [isCoach, setIsCoach] = useState(false);
   const [isCollaboratore, setIsCollaboratore] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('sidebarCollapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isMobile, setIsMobile] = useState(false);
   const [userIsSuperAdmin, setUserIsSuperAdmin] = useState(false);
 
@@ -211,7 +370,7 @@ export default function MainLayout() {
   const isAuthPage = AUTH_PAGES.includes(location.pathname);
   const isChatPage = location.pathname === '/chat' || location.pathname === '/coach/chat' || location.pathname === '/client/chat';
   const [isChatSelected, setIsChatSelected] = useState(false);
-  const showSidebar = !isAuthPage;
+  const showSidebar = !isAuthPage && auth.currentUser;
   const showBottomNav = !isAuthPage && isMobile && !(isChatPage && isChatSelected);
 
   useEffect(() => {
@@ -219,6 +378,15 @@ export default function MainLayout() {
     setIsCollaboratore(location.pathname.startsWith('/collaboratore'));
     setIsClient(location.pathname.startsWith('/client'));
   }, [location.pathname]);
+
+  // Salva lo stato della sidebar in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('sidebarCollapsed', isSidebarCollapsed.toString());
+    } catch (error) {
+      console.warn('Failed to save sidebar state:', error);
+    }
+  }, [isSidebarCollapsed]);
 
   // Verifica se l'utente è SuperAdmin
   useEffect(() => {

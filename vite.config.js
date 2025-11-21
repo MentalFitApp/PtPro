@@ -16,13 +16,15 @@ export default defineConfig({
       'sale-commentary-priority-inns.trycloudflare.com',
       '.trycloudflare.com',
       '.app.github.dev',
-      'miniature-cod-6vvj6wv5rxr2597w-5173.app.github.dev'
+      'miniature-cod-6vvj6wv5rxr2597w-5173.app.github.dev',
+      'github.dev'
     ],
     cors: {
       origin: [
         'http://localhost:5173',
         'https://miniature-cod-6vvj6wv5rxr2597w-5173.app.github.dev',
-        /\.app\.github\.dev$/
+        /\.app\.github\.dev$/,
+        'https://github.dev'
       ],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -34,16 +36,6 @@ export default defineConfig({
       'Access-Control-Allow-Headers': '*',
     },
     proxy: {
-      '/manifest.json': {
-        target: 'http://localhost:5173',
-        changeOrigin: true,
-        secure: false,
-        configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            proxyReq.setHeader('Access-Control-Allow-Origin', '*');
-          });
-        }
-      },
       '/favicon.ico': {
         target: 'http://localhost:5173',
         changeOrigin: true,
