@@ -43,17 +43,9 @@ export async function isAdmin(userId) {
   if (!userId) return false;
   
   try {
-    // SuperAdmin è anche admin
-    const isSuperAdminUser = await isSuperAdmin(userId);
-    if (isSuperAdminUser) return true;
-    
-    const adminRef = doc(db, 'roles', 'admins');
-    const adminDoc = await getDoc(adminRef);
-    
-    if (!adminDoc.exists()) return false;
-    
-    const uids = adminDoc.data().uids || [];
-    return uids.includes(userId);
+    // Use getUserRole which is more efficient (single operation for all role checks)
+    const roleInfo = await getUserRole(userId);
+    return roleInfo.isAdmin || roleInfo.isSuperAdmin;
   } catch (error) {
     console.error('Error checking admin status:', error);
     return false;

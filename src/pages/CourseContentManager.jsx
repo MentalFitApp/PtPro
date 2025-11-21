@@ -264,7 +264,7 @@ export default function CourseContentManager() {
       let videoUrl = lessonData.videoUrl;
 
       // Upload new video if file is provided
-      if (lessonData.videoFile && typeof lessonData.videoFile !== 'string') {
+      if (lessonData.videoFile && lessonData.videoFile instanceof File) {
         const videoRef = storageRef(
           storage,
           `courses/${courseId}/modules/${selectedModule.id}/lessons/${Date.now()}_${lessonData.videoFile.name}`
@@ -273,15 +273,8 @@ export default function CourseContentManager() {
         await uploadBytes(videoRef, lessonData.videoFile);
         videoUrl = await getDownloadURL(videoRef);
         
-        // Delete old video if exists
-        if (selectedLesson.videoUrl) {
-          try {
-            const oldVideoRef = storageRef(storage, selectedLesson.videoUrl);
-            await deleteObject(oldVideoRef);
-          } catch (err) {
-            console.log('Could not delete old video:', err);
-          }
-        }
+        // Delete old video if exists (note: old video deletion should be handled server-side for better reliability)
+        // We're skipping deletion here to avoid issues with URL vs path conversion
       }
 
       await updateDoc(

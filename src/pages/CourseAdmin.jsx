@@ -165,7 +165,7 @@ export default function CourseAdmin() {
       let thumbnailUrl = selectedCourse.thumbnail;
       
       // Upload new thumbnail if provided
-      if (newCourse.thumbnail && typeof newCourse.thumbnail !== 'string') {
+      if (newCourse.thumbnail && newCourse.thumbnail instanceof File) {
         const thumbnailRef = storageRef(storage, `courses/thumbnails/${Date.now()}_${newCourse.thumbnail.name}`);
         await uploadBytes(thumbnailRef, newCourse.thumbnail);
         thumbnailUrl = await getDownloadURL(thumbnailRef);

@@ -590,7 +590,11 @@ export default function Analytics() {
                 />
                 <StatCard
                   title="Tasso di Completamento"
-                  value={Math.round((enrollments.filter(e => e.completed).length / (enrollments.length || 1)) * 100)}
+                  value={(() => {
+                    const completedCount = enrollments.filter(e => e.completed).length;
+                    const totalCount = enrollments.length || 1;
+                    return Math.round((completedCount / totalCount) * 100);
+                  })()}
                   icon={<CheckCircle className="text-blue-400" />}
                   isPercentage
                 />
