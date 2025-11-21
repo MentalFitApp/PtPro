@@ -1,41 +1,41 @@
+// src/firebase.ts
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getMessaging, isSupported } from "firebase/messaging";
 
-// Configurazione Firebase (da .env)
-export const firebaseConfig = {
-  apiKey: import.meta.env.VITE_API_KEY,
-  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_APP_ID,
-  measurementId: import.meta.env.VITE_MEASUREMENT_ID,
+// CONFIGURAZIONE CON NOMI ESATTI CHE USI NEL .env
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 // Inizializza Firebase
 const app = initializeApp(firebaseConfig);
 
-// Servizi Firebase
+// Servizi
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// Inizializza Firebase Messaging (solo se supportato)
+// Messaging (opzionale)
 let messaging = null;
 if (typeof window !== 'undefined') {
   isSupported().then(supported => {
     if (supported) {
       messaging = getMessaging(app);
     }
-  }).catch(err => console.log('Messaging not supported:', err));
+  }).catch(() => {});
 }
-
 export { messaging };
 
-// Funzione per calcolare e aggiornare lo stato del percorso
+// ──────── Funzioni di utilità (le lasciamo identiche) ────────
 export const updateStatoPercorso = async (userId) => {
   try {
     const clientRef = doc(db, "clients", userId);
@@ -44,17 +44,14 @@ export const updateStatoPercorso = async (userId) => {
 
     const dataScadenza = clientSnap.data().scadenza;
     const stato = calcolaStatoPercorso(dataScadenza);
-
     await updateDoc(clientRef, { statoPercorso: stato });
   } catch (error) {
     console.error("Errore in updateStatoPercorso:", error);
   }
 };
 
-// Funzione di calcolo stato percorso
 export const calcolaStatoPercorso = (dataScadenza) => {
   if (!dataScadenza) return "N/D";
-
   const scadenza = toDate(dataScadenza);
   if (!scadenza) return "N/D";
 
@@ -69,31 +66,13 @@ export const calcolaStatoPercorso = (dataScadenza) => {
   return "Attivo";
 };
 
-// Funzione di utilità per convertire timestamp (ottimizzata e silenziosa)
 export const toDate = (x) => {
   if (!x) return null;
-
-  // Firebase Timestamp
   if (typeof x?.toDate === 'function') return x.toDate();
-
-  // Date object
   if (x instanceof Date) return x;
-
-  // Stringa ISO
-  if (typeof x === 'string') {
-    try {
-      const date = new Date(x);
-      return isNaN(date.getTime()) ? null : date;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  // Numero (timestamp in ms)
-  if (typeof x === 'number') {
+  if (typeof x === 'string' || typeof x === 'number') {
     const date = new Date(x);
     return isNaN(date.getTime()) ? null : date;
   }
-
   return null;
 };
