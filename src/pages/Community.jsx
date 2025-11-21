@@ -3574,4 +3574,99 @@ function ParticipantVideo({ sessionId }) {
       </div>
     </div>
   );
+
+  {/* Modale modifica profilo */}
+  return showProfileModal && editingProfile ? (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-slate-800">Modifica profilo</h3>
+            <button
+              onClick={() => setShowProfileModal(false)}
+              className="text-slate-400 hover:text-slate-600"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {/* Foto profilo */}
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <img
+                  src={editPhotoPreview || editingProfile.photoURL || '/default-avatar.png'}
+                  alt="Foto profilo"
+                  className="w-20 h-20 rounded-full object-cover border-2 border-slate-200"
+                />
+                <label className="absolute -bottom-2 -right-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 cursor-pointer transition-colors">
+                  <Camera className="w-4 h-4" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditPhotoSelect}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Nome */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Nome *
+              </label>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Inserisci il nome"
+              />
+            </div>
+
+            {/* Livello */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Livello
+              </label>
+              <select
+                value={editLevel}
+                onChange={(e) => setEditLevel(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value={1}>Principiante</option>
+                <option value={2}>Intermedio</option>
+                <option value={3}>Avanzato</option>
+                <option value={4}>Esperto</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={() => setShowProfileModal(false)}
+              className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Annulla
+            </button>
+            <button
+              onClick={updateMemberProfile}
+              disabled={!editName.trim() || updatingProfile}
+              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              {updatingProfile ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Aggiornamento...
+                </>
+              ) : (
+                'Aggiorna'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
 }

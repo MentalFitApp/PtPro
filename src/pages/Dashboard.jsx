@@ -5,10 +5,11 @@ import {
   collection, onSnapshot, collectionGroup, doc, getDoc, setDoc, serverTimestamp, query, orderBy 
 } from "firebase/firestore"; // ← AGGIUNTO setDoc
 import { auth, db, toDate } from "../firebase";
-import { signOut } from "firebase/auth";
-import { 
-  DollarSign, CheckCircle, RefreshCw, BarChart3, Bell, Target, 
-  Plus, Clock, FileText, TrendingUp, Users, LogOut 
+import { uploadPhoto } from "../cloudflareStorage";
+import { signOut, updateProfile } from "firebase/auth";
+import {
+  DollarSign, CheckCircle, RefreshCw, BarChart3, Bell, Target,
+  Plus, Clock, FileText, TrendingUp, Users, LogOut, User, Settings, X
 } from "lucide-react";
 import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, LineElement, PointElement, LinearScale, CategoryScale, Title, Tooltip, Legend, Filler } from "chart.js";
@@ -98,6 +99,35 @@ export default function Dashboard() {
   const [chartTimeRange, setChartTimeRange] = useState('monthly');
   const [chartData, setChartData] = useState([]);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [currentPhotoURL, setCurrentPhotoURL] = useState(null);
+
+  // --- Gestione foto profilo ---
+  const handlePhotoSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validazione tipo file
+      if (!file.type.startsWith('image/')) {
+        alert('Seleziona un file immagine valido');
+        return;
+      }
+
+      // Validazione dimensione (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('L\'immagine non può superare i 5MB');
+        return;
+      }
+
+      setSelectedPhotoFile(file);
+
+      // Crea anteprima
+      const reader = new FileReader();
+      reader.onload = (e) => setPhotoPreview(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
 
   // --- Check ruolo ---
   useEffect(() => {
@@ -113,12 +143,13 @@ export default function Dashboard() {
     }
   }, [navigate]);
 
-  // --- User name ---
+  // --- User profile ---
   const [userName, setUserName] = useState('');
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       if (user) {
         setUserName(user.displayName || user.email?.split('@')[0] || 'Admin');
+        setCurrentPhotoURL(user.photoURL);
       }
     });
     return () => unsubscribe();
@@ -524,6 +555,12 @@ export default function Dashboard() {
             </h1>
             <div className="flex items-center gap-2 sm:gap-3">
               <span className="text-slate-300 font-semibold text-sm sm:text-base truncate flex-1 sm:flex-none">{userName}</span>
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+              >
+                <User size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Profilo</span>
+              </button>
               <button onClick={handleLogout} className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
                 <LogOut size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Logout</span>
               </button>
@@ -606,6 +643,157 @@ export default function Dashboard() {
         </div>
       </div>
       </div>
+
+      {/* Profile Modal */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-2xl max-w-md w-full"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
+                <User size={20} /> Profilo Admin
+              </h3>
+              <button
+                onClick={() => {
+                  setShowProfileModal(false);
+                  setSelectedPhotoFile(null);
+                  setPhotoPreview(null);
+                }}
+                className="text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Nome</label>
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Inserisci il tuo nome"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Foto Profilo</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-slate-600 rounded-full flex items-center justify-center overflow-hidden relative">
+                    {photoPreview ? (
+                      <img src={photoPreview} alt="Anteprima" className="w-full h-full object-cover" />
+                    ) : currentPhotoURL ? (
+                      <img
+                        src={currentPhotoURL}
+                        alt="Foto profilo"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.warn('Errore caricamento foto profilo:', currentPhotoURL);
+                          // Ritenta dopo un breve delay
+                          setTimeout(() => {
+                            const img = e.target;
+                            img.src = currentPhotoURL + '?retry=' + Date.now();
+                            img.style.display = 'block';
+                          }, 1000);
+                        }}
+                        onLoad={() => {
+                          console.log('Foto profilo caricata correttamente:', currentPhotoURL);
+                        }}
+                      />
+                    ) : null}
+                    {(!photoPreview && !currentPhotoURL) && (userName ? (
+                      <span className="text-lg font-semibold text-slate-100">
+                        {userName.charAt(0).toUpperCase()}
+                      </span>
+                    ) : (
+                      <User size={20} className="text-slate-400" />
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoSelect}
+                      className="hidden"
+                      id="photo-upload"
+                    />
+                    <label
+                      htmlFor="photo-upload"
+                      className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-sm cursor-pointer inline-block text-center"
+                    >
+                      Cambia Foto
+                    </label>
+                    {currentPhotoURL && (
+                      <button
+                        onClick={() => {
+                          // Forza ricaricamento della foto profilo
+                          const img = new Image();
+                          img.onload = () => setCurrentPhotoURL(currentPhotoURL + '?t=' + Date.now());
+                          img.src = currentPhotoURL;
+                        }}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors"
+                      >
+                        Ricarica Foto
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowProfileModal(false);
+                  setSelectedPhotoFile(null);
+                  setPhotoPreview(null);
+                }}
+                className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const updateData = { displayName: userName };
+
+                    // Se è stata selezionata una nuova foto, caricala
+                    if (selectedPhotoFile) {
+                      const photoURL = await uploadPhoto(selectedPhotoFile, auth.currentUser.uid, 'profile_photos', null, true);
+                      updateData.photoURL = photoURL;
+                    }
+
+                    await updateProfile(auth.currentUser, updateData);
+
+                    // Aggiorna il currentPhotoURL se è stata cambiata la foto
+                    if (selectedPhotoFile && updateData.photoURL) {
+                      setCurrentPhotoURL(updateData.photoURL + '?t=' + Date.now()); // Aggiungi timestamp per forzare refresh
+                    }
+
+                    // Reset stati
+                    setSelectedPhotoFile(null);
+                    setPhotoPreview(null);
+
+                    setShowProfileModal(false);
+                    alert('Profilo aggiornato con successo!');
+                  } catch (error) {
+                    console.error('Errore aggiornamento profilo:', error);
+                    alert('Errore durante l\'aggiornamento del profilo. Riprova.');
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Salva
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
+import { ThemeProvider } from './utils/ThemeContext';
 
 // Import dinamici dei layout
 const MainLayout = React.lazy(() => import('./components/MainLayout'));
@@ -62,6 +63,7 @@ const Community = React.lazy(() => import('./pages/Community'));
 const CommunitySettings = React.lazy(() => import('./pages/CommunitySettings'));
 const CommunityOnboarding = React.lazy(() => import('./pages/CommunityOnboarding'));
 const CommunityMembers = React.lazy(() => import('./pages/CommunityMembers'));
+const CommunityManagement = React.lazy(() => import('./pages/CommunityManagement'));
 
 // Onboarding
 const Onboarding = React.lazy(() => import('./pages/Onboarding'));
@@ -268,9 +270,10 @@ export default function App() {
   if (authInfo.error) return <div className="text-red-500 text-center p-4">{authInfo.error}</div>;
 
   return (
-    <Suspense fallback={<PageSpinner />}>
-      <GlobalUploadBar />
-      <Routes>
+    <ThemeProvider>
+      <Suspense fallback={<PageSpinner />}>
+        <GlobalUploadBar />
+        <Routes>
         {/* === ROTTE PUBBLICHE === */}
         <Route element={<GuidaLayout />}>
           <Route path="/guida" element={<GuidaMentalFit />} />
@@ -312,6 +315,7 @@ export default function App() {
         {/* === ROTTE SUPERADMIN (SOLO SUPERADMIN) === */}
         <Route element={authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route path="/superadmin" element={<SuperAdminSettings />} />
+          <Route path="/community-management" element={<CommunityManagement />} />
         </Route>
 
         {/* === ROTTE COACH (SOLO COACH) === */}
@@ -368,5 +372,6 @@ export default function App() {
         } />
       </Routes>
     </Suspense>
+    </ThemeProvider>
   );
 }

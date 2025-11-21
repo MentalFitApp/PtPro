@@ -387,12 +387,67 @@ service cloud.firestore {
     match /users/{userId} {
       // Tutti possono leggere i profili pubblici
       allow read, list: if request.auth != null;
-      
-      // Solo l'utente stesso può creare/modificare il proprio profilo
-      allow create, update: if request.auth != null && request.auth.uid == userId;
-      
+
+      // L'utente stesso può creare/modificare il proprio profilo, oppure admin/superadmin possono modificare qualsiasi profilo
+      allow create, update: if request.auth != null && (
+        request.auth.uid == userId ||
+        isSuperAdmin() ||
+        isAdmin()
+      );
+
       // Solo admin può eliminare
       allow delete: if isAdmin();
+    }
+
+    // Chat community avanzata
+    match /community_chat/{messageId} {
+      // Tutti gli utenti autenticati possono leggere i messaggi
+      allow read, list: if request.auth != null;
+
+      // Admin, superadmin e coach possono sempre scrivere
+      // Gli altri utenti possono scrivere solo se hanno un profilo community completo
+      allow create: if request.auth != null &&
+                      request.resource.data.authorId == request.auth.uid &&
+                      (isSuperAdmin() || isAdmin() || isCoach() ||
+                       (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name != null &&
+                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name != '' &&
+                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.photoURL != null &&
+                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.photoURL != ''));
+
+      // Solo l'autore o admin possono modificare/eliminare
+      allow update, delete: if request.auth != null && (
+        resource.data.authorId == request.auth.uid ||
+        isSuperAdmin() ||
+        isAdmin()
+      );
+    }
+
+    // Presenza online degli utenti
+    match /presence/{userId} {
+      // Tutti possono leggere la presenza online
+      allow read, list: if request.auth != null;
+
+      // Solo l'utente stesso può aggiornare la propria presenza
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Indicatori di digitazione
+    match /typing/{userId} {
+      // Tutti possono leggere gli indicatori di digitazione
+      allow read, list: if request.auth != null;
+
+      // Solo l'utente stesso può gestire i propri indicatori
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Courses collection (corsi community)
+    match /courses/{courseId} {
+      // Tutti gli utenti autenticati possono leggere i corsi
+      allow read, list: if request.auth != null;
+
+      // Solo admin può creare/modificare/eliminare corsi
+      allow create, update, delete: if isAdmin();
     }
 
     // Schede alimentazione (per Smart Meal Swap)

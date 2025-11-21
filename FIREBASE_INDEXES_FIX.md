@@ -15,7 +15,7 @@ Questo ti porterà direttamente alla Firebase Console per creare l'indice automa
 
 ### Opzione 2: Crea manualmente (Alternativa)
 
-1. Vai su [Firebase Console](https://console.firebase.google.com/project/biondo-fitness-coach/firestore/indexes)
+1. Vai su [Firebase Console](https://npm .firebase.google.com/project/biondo-fitness-coach/firestore/indexes)
 
 2. Crea questi indici:
 

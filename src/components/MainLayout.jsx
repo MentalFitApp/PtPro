@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { 
-  Home, Users, MessageSquare, FileText, Bell, 
-  Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing, UsersRound 
+import {
+  Home, Users, MessageSquare, FileText, Bell,
+  Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing, UsersRound,
+  UserCheck, BookOpen, Target, Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isSuperAdmin } from '../utils/superadmin';
 import { auth } from '../firebase';
+import ThemeToggle from './ThemeToggle';
 
 // === STELLE DI SFONDO (25, 5 DORATE) ===
 const AnimatedStars = () => {
@@ -46,15 +48,16 @@ const adminNavLinks = [
   { to: '/clients', icon: <Users size={18} />, label: 'Clienti' },
   { to: '/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/community', icon: <UsersRound size={18} />, label: 'Community' },
-  { to: '/updates', icon: <Bell size={18} />, label: 'Novità' },
-  { to: '/collaboratori', icon: <Users size={18} />, label: 'Collaboratori' },
-  { to: '/guide-manager', icon: <FileText size={18} />, label: 'Guide & Lead' },
+  { to: '/updates', icon: <BellRing size={18} />, label: 'Novità' },
+  { to: '/collaboratori', icon: <UserCheck size={18} />, label: 'Collaboratori' },
+  { to: '/guide-manager', icon: <BookOpen size={18} />, label: 'Guide & Lead' },
   { to: '/admin/dipendenti', icon: <Users size={18} />, label: 'Dipendenti' },
   { to: '/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
-  { to: '/statistiche', icon: <BarChart3 size={18} />, label: 'Statistiche' },
-  { to: '/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
+  { to: '/statistiche', icon: <Activity size={18} />, label: 'Statistiche' },
+  { to: '/analytics', icon: <Target size={18} />, label: 'Analytics' },
   { to: '/notifications', icon: <BellRing size={18} />, label: 'Notifiche' },
   { to: '/alimentazione-allenamento', icon: <FileText size={18} />, label: 'Schede' },
+  { to: '/community-management', icon: <UsersRound size={18} />, label: '👥 Gestione Community', isSuperAdmin: true },
   { to: '/superadmin', icon: <Settings size={18} />, label: '👑 SuperAdmin', isSuperAdmin: true },
 ];
 
@@ -63,8 +66,8 @@ const coachNavLinks = [
   { to: '/coach/clients', icon: <Users size={18} />, label: 'Clienti' },
   { to: '/coach/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/coach/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
-  { to: '/coach/schede', icon: <FileText size={18} />, label: 'Schede' },
-  { to: '/coach/updates', icon: <Bell size={18} />, label: 'Aggiornamenti' },
+  { to: '/coach/schede', icon: <Target size={18} />, label: 'Schede' },
+  { to: '/coach/updates', icon: <BellRing size={18} />, label: 'Aggiornamenti' },
   { to: '/coach/settings', icon: <Settings size={18} />, label: 'Impostazioni' },
 ];
 
@@ -73,8 +76,8 @@ const clientNavLinks = [
   { to: '/client/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/client/community', icon: <UsersRound size={18} />, label: 'Community' },
   { to: '/client/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
-  { to: '/client/checks', icon: <FileText size={18} />, label: 'Check' },
-  { to: '/client/payments', icon: <FileText size={18} />, label: 'Pagamenti' },
+  { to: '/client/checks', icon: <Activity size={18} />, label: 'Check' },
+  { to: '/client/payments', icon: <Target size={18} />, label: 'Pagamenti' },
 ];
 
 const collaboratoreNavLinks = [
@@ -131,7 +134,7 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
     <motion.aside
       initial={false}
       animate={{ width: isCollapsed ? 64 : 240 }}
-      className="hidden md:flex fixed left-0 top-0 h-screen bg-slate-900/90 backdrop-blur-xl border-r border-white/10 z-40 flex-col transition-all duration-300"
+      className="hidden lg:flex fixed left-0 top-0 h-screen bg-slate-900/90 backdrop-blur-xl border-r border-white/10 z-40 flex-col transition-all duration-300 data-[theme='dark']:bg-slate-900 data-[theme='dark']:border-slate-700"
     >
       <div className="p-4 flex items-center justify-between border-b border-white/5">
         <AnimatePresence>
@@ -146,12 +149,15 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
             </motion.h1>
           )}
         </AnimatePresence>
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-slate-400"
-        >
-          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-slate-400"
+          >
+            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+        </div>
       </div>
 
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
@@ -160,9 +166,7 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
           .map(link => (
             <motion.button
               key={link.to}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
+              onClick={() => {
                 navigate(link.to);
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
@@ -280,12 +284,12 @@ export default function MainLayout() {
 
         {/* CONTENUTO PRINCIPALE - LARGHEZZA MASSIMA DESKTOP */}
         <div className={`flex-1 transition-all duration-300 ${
-          showSidebar 
-            ? (isSidebarCollapsed ? 'md:ml-16' : 'md:ml-60') 
+          showSidebar
+            ? (isSidebarCollapsed ? 'lg:ml-16 xl:ml-16' : 'lg:ml-60 xl:ml-60')
             : 'ml-0'
         }`}>
           <main className={`min-h-screen ${
-            isChatPage ? 'p-0' : 'p-4 sm:p-6 lg:p-8'
+            isChatPage ? 'p-0' : 'p-2 xs:p-4 sm:p-6 md:p-8 lg:p-10'
           }`}>
             <div className="max-w-7xl mx-auto w-full">
               <motion.div
