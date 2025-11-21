@@ -7,13 +7,13 @@ import { getMessaging, isSupported } from "firebase/messaging";
 
 // CONFIGURAZIONE CON FALLBACK → così il build Vercel NON crasha mai
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "dummy-api-key",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "localhost",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-project",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "demo.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123:web:abc",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-XXXXXXXXXX",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? "fallback-key",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? "localhost",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "demo-project",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ?? "demo.appspot.com",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "000000000",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID ?? "1:000:web:000",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID ?? "G-0000000000",
 };
 
 // Inizializza Firebase
