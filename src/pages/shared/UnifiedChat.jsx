@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, doc, addDoc, serverTimestamp, setDoc, getDocs, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { Send, Video, Search, Plus, Phone, MessageSquare, X, ArrowLeft, Check, CheckCheck, UserPlus, Users, Image as ImageIcon, Mic, Paperclip, Play, Pause, Camera, CameraOff, Mic as MicOn, MicOff, Monitor, PhoneOff } from 'lucide-react';
+import { Send, Video, Search, Plus, Phone, MessageSquare, X, ArrowLeft, Check, CheckCheck, UserPlus, Users, Image as ImageIcon, Mic, Paperclip, Play, Pause, Camera, CameraOff, Mic as MicOn, MicOff, Monitor, PhoneOff, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
@@ -46,6 +46,7 @@ export default function UnifiedChat() {
   const [profileComplete, setProfileComplete] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState({});
+  const [userProfile, setUserProfile] = useState(null);
 
   // Determina ruolo utente
   useEffect(() => {
@@ -356,9 +357,6 @@ export default function UnifiedChat() {
   const [incomingCall, setIncomingCall] = useState(null);
   const [callDuration, setCallDuration] = useState(0);
   const [dailyCallObject, setDailyCallObject] = useState(null);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const callTimerRef = useRef(null);
   const activeCallMessageRef = useRef(null);
 
@@ -405,7 +403,7 @@ export default function UnifiedChat() {
         },
         body: JSON.stringify({
           name: `videocall_${selectedChat.id}_${Date.now()}`,
-          privacy: 'private',
+          privacy: 'public',
           properties: {
             max_participants: 2,
             enable_chat: false,
@@ -413,6 +411,7 @@ export default function UnifiedChat() {
             enable_recording: false,
             start_video_off: false,
             start_audio_off: false,
+            exp: Math.floor(Date.now() / 1000) + 3600,
           },
         }),
       });
@@ -486,7 +485,7 @@ export default function UnifiedChat() {
         },
         body: JSON.stringify({
           name: `voicecall_${selectedChat.id}_${Date.now()}`,
-          privacy: 'private',
+          privacy: 'public',
           properties: {
             max_participants: 2,
             enable_chat: false,
@@ -494,6 +493,7 @@ export default function UnifiedChat() {
             enable_recording: false,
             start_video_off: true,
             start_audio_off: false,
+            exp: Math.floor(Date.now() / 1000) + 3600,
           },
         }),
       });
@@ -601,69 +601,21 @@ export default function UnifiedChat() {
         console.error('Errore Daily.co:', event.error);
       });
 
-      // Partecipa alla chiamata
-      await call.join();
+      // Partecipa alla chiamata con video e audio attivi
+      await call.join({
+        userName: currentUser?.displayName || 'Utente',
+        url: roomUrl,
+      });
+
+      // Assicurati che video e audio siano attivi
+      await call.setLocalVideo(true);
+      await call.setLocalAudio(true);
 
       // Avvia timer
       startCallTimer();
 
     } catch (error) {
       console.error('Errore inizializzazione Daily.co:', error);
-    }
-  };
-
-  // Controlli chiamata
-  const toggleVideo = async () => {
-    if (!dailyCallObject) {
-      console.warn('Call object non disponibile per toggle video');
-      return;
-    }
-    try {
-      const newState = !isVideoEnabled;
-      if (newState) {
-        await dailyCallObject.setLocalVideo(true);
-      } else {
-        await dailyCallObject.setLocalVideo(false);
-      }
-      setIsVideoEnabled(newState);
-    } catch (error) {
-      console.error('Errore toggle video:', error);
-    }
-  };
-
-  const toggleAudio = async () => {
-    if (!dailyCallObject) {
-      console.warn('Call object non disponibile per toggle audio');
-      return;
-    }
-    try {
-      const newState = !isAudioEnabled;
-      if (newState) {
-        await dailyCallObject.setLocalAudio(true);
-      } else {
-        await dailyCallObject.setLocalAudio(false);
-      }
-      setIsAudioEnabled(newState);
-    } catch (error) {
-      console.error('Errore toggle audio:', error);
-    }
-  };
-
-  const toggleScreenShare = async () => {
-    if (!dailyCallObject) {
-      console.warn('Call object non disponibile per toggle screen share');
-      return;
-    }
-    try {
-      const newState = !isScreenSharing;
-      if (newState) {
-        await dailyCallObject.startScreenShare();
-      } else {
-        await dailyCallObject.stopScreenShare();
-      }
-      setIsScreenSharing(newState);
-    } catch (error) {
-      console.error('Errore screen share:', error);
     }
   };
 
@@ -1386,7 +1338,6 @@ export default function UnifiedChat() {
 
               <DailyProvider callObject={dailyCallObject}>
                 <VideoCallInterface
-                  roomUrl={videoCallRoom}
                   onClose={async () => {
                     // Aggiorna stato chiamata a "cancelled"
                     if (activeCallMessageRef.current) {
@@ -1414,16 +1365,7 @@ export default function UnifiedChat() {
 
                     setShowVideoCallModal(false);
                     setVideoCallRoom(null);
-                    setIsVideoEnabled(true);
-                    setIsAudioEnabled(true);
-                    setIsScreenSharing(false);
                   }}
-                  isVideoEnabled={isVideoEnabled}
-                  isAudioEnabled={isAudioEnabled}
-                  isScreenSharing={isScreenSharing}
-                  onToggleVideo={toggleVideo}
-                  onToggleAudio={toggleAudio}
-                  onToggleScreenShare={toggleScreenShare}
                 />
               </DailyProvider>
             </motion.div>
@@ -1435,26 +1377,67 @@ export default function UnifiedChat() {
 }
 
 // Componente Video Call con Daily.co migliorato
-function VideoCallInterface({ onClose, isVideoEnabled, isAudioEnabled, isScreenSharing, onToggleVideo, onToggleAudio, onToggleScreenShare }) {
+function VideoCallInterface({ onClose }) {
   const callObject = useDaily();
   const participantIds = useParticipantIds();
   const localParticipant = useLocalParticipant();
-  const { screens } = useScreenShare();
+  const localVideo = useVideoTrack('local');
+  const localAudio = useAudioTrack('local');
+  const { isSharingScreen, startScreenShare, stopScreenShare } = useScreenShare();
+
+  // Filtra solo i partecipanti remoti (esclude il locale)
+  const remoteParticipantIds = participantIds.filter(id => {
+    return id !== 'local' && id !== localParticipant?.session_id;
+  });
+
+  // Controlli video/audio basati sullo stato reale di Daily
+  const toggleVideo = async () => {
+    if (!callObject) return;
+    
+    if (localVideo?.state === 'playable') {
+      await callObject.setLocalVideo(false);
+    } else {
+      await callObject.setLocalVideo(true);
+    }
+  };
+
+  const toggleAudio = async () => {
+    if (!callObject) return;
+    
+    if (localAudio?.state === 'playable') {
+      await callObject.setLocalAudio(false);
+    } else {
+      await callObject.setLocalAudio(true);
+    }
+  };
+
+  const toggleScreenShare = async () => {
+    if (!callObject) return;
+    
+    if (isSharingScreen) {
+      await stopScreenShare();
+    } else {
+      await startScreenShare();
+    }
+  };
+
+  const isVideoEnabled = localVideo?.state === 'playable';
+  const isAudioEnabled = localAudio?.state === 'playable';
 
   return (
     <div className="flex-1 relative bg-slate-900">
       {/* Video Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-4 h-full overflow-auto">
+      <div className={`grid gap-2 p-4 h-full overflow-auto ${remoteParticipantIds.length > 0 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 place-items-center'}`}>
         {/* Partecipante locale */}
-        <div className="relative bg-slate-800 rounded-xl overflow-hidden aspect-video">
+        <div className={`relative bg-slate-800 rounded-xl overflow-hidden ${remoteParticipantIds.length > 0 ? 'aspect-video' : 'w-full max-w-2xl aspect-video'}`}>
           <video
             autoPlay
             muted
             playsInline
             className="w-full h-full object-cover"
             ref={(el) => {
-              if (el && localParticipant?.videoTrack) {
-                el.srcObject = new MediaStream([localParticipant.videoTrack]);
+              if (el && localVideo?.persistentTrack) {
+                el.srcObject = new MediaStream([localVideo.persistentTrack]);
               }
             }}
           />
@@ -1466,12 +1449,12 @@ function VideoCallInterface({ onClose, isVideoEnabled, isAudioEnabled, isScreenS
             </div>
           )}
           <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
-            Tu {isAudioEnabled ? '' : '(muto)'}
+            Tu {!isAudioEnabled && '(muto)'}
           </div>
         </div>
 
-        {/* Altri partecipanti */}
-        {participantIds.filter(id => id !== localParticipant?.sessionId).map((id) => (
+        {/* Altri partecipanti - mostrati solo se presenti */}
+        {remoteParticipantIds.map((id) => (
           <ParticipantVideo key={id} sessionId={id} />
         ))}
 
@@ -1498,7 +1481,7 @@ function VideoCallInterface({ onClose, isVideoEnabled, isAudioEnabled, isScreenS
       {/* Controlli chiamata */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-slate-800/90 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg">
         <button
-          onClick={onToggleVideo}
+          onClick={toggleVideo}
           className={`p-3 rounded-full transition-all ${
             isVideoEnabled
               ? 'bg-slate-600 hover:bg-slate-500 text-white'
@@ -1510,7 +1493,7 @@ function VideoCallInterface({ onClose, isVideoEnabled, isAudioEnabled, isScreenS
         </button>
 
         <button
-          onClick={onToggleAudio}
+          onClick={toggleAudio}
           className={`p-3 rounded-full transition-all ${
             isAudioEnabled
               ? 'bg-slate-600 hover:bg-slate-500 text-white'
@@ -1522,13 +1505,13 @@ function VideoCallInterface({ onClose, isVideoEnabled, isAudioEnabled, isScreenS
         </button>
 
         <button
-          onClick={onToggleScreenShare}
+          onClick={toggleScreenShare}
           className={`p-3 rounded-full transition-all ${
-            isScreenSharing
+            isSharingScreen
               ? 'bg-cyan-600 hover:bg-cyan-500 text-white'
               : 'bg-slate-600 hover:bg-slate-500 text-white'
           }`}
-          title={isScreenSharing ? 'Ferma condivisione' : 'Condividi schermo'}
+          title={isSharingScreen ? 'Ferma condivisione' : 'Condividi schermo'}
         >
           <Monitor size={20} />
         </button>
@@ -1553,14 +1536,14 @@ function ParticipantVideo({ sessionId }) {
 
   return (
     <div className="relative bg-slate-800 rounded-xl overflow-hidden aspect-video">
-      {videoTrack?.isEnabled ? (
+      {videoTrack?.persistentTrack ? (
         <video
           autoPlay
           playsInline
           className="w-full h-full object-cover"
           ref={(el) => {
-            if (el && videoTrack.track) {
-              el.srcObject = new MediaStream([videoTrack.track]);
+            if (el && videoTrack.persistentTrack) {
+              el.srcObject = new MediaStream([videoTrack.persistentTrack]);
             }
           }}
         />
@@ -1572,7 +1555,7 @@ function ParticipantVideo({ sessionId }) {
         </div>
       )}
       <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
-        {participant?.user_name || 'Partecipante'} {!audioTrack?.isEnabled && '(muto)'}
+        {participant?.user_name || 'Partecipante'} {!audioTrack?.state === 'playable' && '(muto)'}
       </div>
     </div>
   );

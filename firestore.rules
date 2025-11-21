@@ -144,29 +144,25 @@ service cloud.firestore {
       allow delete: if request.auth != null &&
                       request.auth.uid in resource.data.participants;
 
-      // Messaggi: pieno controllo per i partecipanti con profilo completo o admin/superadmin
+      // Messaggi: pieno controllo per i partecipanti o admin/superadmin
       match /messages/{messageId} {
-        // Lettura messaggi: solo partecipanti della chat con profilo completo o admin/superadmin
+        // Lettura messaggi: solo partecipanti della chat o admin/superadmin
         allow read: if request.auth != null && (
-                      (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants &&
-                       hasCompleteProfile(request.auth.uid)) ||
+                      request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants ||
                       isSuperAdmin() || isAdmin()
                     );
         
-        // Invio messaggi, foto, audio, video: solo partecipanti con profilo completo
+        // Invio messaggi, foto, audio, video: solo partecipanti
         allow create: if request.auth != null &&
-                        request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants &&
-                        hasCompleteProfile(request.auth.uid);
+                        request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
         
-        // Modifica messaggi: solo l'autore con profilo completo
+        // Modifica messaggi: solo l'autore
         allow update: if request.auth != null && 
-                        resource.data.senderId == request.auth.uid &&
-                        hasCompleteProfile(request.auth.uid);
+                        resource.data.senderId == request.auth.uid;
         
-        // Eliminazione messaggi: solo l'autore con profilo completo
+        // Eliminazione messaggi: solo l'autore
         allow delete: if request.auth != null && 
-                        resource.data.senderId == request.auth.uid &&
-                        hasCompleteProfile(request.auth.uid);
+                        resource.data.senderId == request.auth.uid;
       }
     }
 
