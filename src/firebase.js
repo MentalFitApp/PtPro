@@ -38,18 +38,15 @@ if (typeof window !== "undefined") {
 export { messaging };
 
 // ───────────────────── Funzioni di utilità (invariate) ─────────────────────
-export const updateStatoPercorso = async (userId) => {
-  try {
-    const clientRef = doc(db, "clients", userId);
-    const clientSnap = await getDoc(clientRef);
-    if (!clientSnap.exists()) return;
-
-    const dataScadenza = clientSnap.data().scadenza;
-    const stato = calcolaStatoPercorso(dataScadenza);
-    await updateDoc(clientRef, { statoPercorso: stato });
-  } catch (error) {
-    console.error("Errore in updateStatoPercorso:", error);
+export const toDate = (x) => {
+  if (!x) return null;
+  if (typeof x?.toDate === "function") return x.toDate();
+  if (x instanceof Date) return x;
+  if (typeof x === "string" || typeof x === "number") {
+    const date = new Date(x);
+    return isNaN(date.getTime()) ? null : date;
   }
+  return null;
 };
 
 export const calcolaStatoPercorso = (dataScadenza) => {
@@ -68,13 +65,16 @@ export const calcolaStatoPercorso = (dataScadenza) => {
   return "Attivo";
 };
 
-export const toDate = (x) => {
-  if (!x) return null;
-  if (typeof x?.toDate === "function") return x.toDate();
-  if (x instanceof Date) return x;
-  if (typeof x === "string" || typeof x === "number") {
-    const date = new Date(x);
-    return isNaN(date.getTime()) ? null : date;
+export const updateStatoPercorso = async (userId) => {
+  try {
+    const clientRef = doc(db, "clients", userId);
+    const clientSnap = await getDoc(clientRef);
+    if (!clientSnap.exists()) return;
+
+    const dataScadenza = clientSnap.data().scadenza;
+    const stato = calcolaStatoPercorso(dataScadenza);
+    await updateDoc(clientRef, { statoPercorso: stato });
+  } catch (error) {
+    console.error("Errore in updateStatoPercorso:", error);
   }
-  return null;
 };
