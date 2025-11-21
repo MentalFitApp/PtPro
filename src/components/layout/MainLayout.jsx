@@ -58,6 +58,7 @@ const adminNavLinks = [
   { to: '/statistiche', icon: <Activity size={18} />, label: 'Statistiche' },
   { to: '/analytics', icon: <Target size={18} />, label: 'Analytics' },
   { to: '/courses', icon: <BookOpen size={18} />, label: 'Corsi' },
+  { to: '/community', icon: <Users size={18} />, label: 'Community' },
   { to: '/course-admin', icon: <GraduationCap size={18} />, label: 'Corsi Admin' },
   { to: '/notifications', icon: <BellRing size={18} />, label: 'Notifiche' },
   { to: '/alimentazione-allenamento', icon: <FileText size={18} />, label: 'Schede' },
@@ -80,6 +81,7 @@ const clientNavLinks = [
 
   { to: '/client/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/client/courses', icon: <BookOpen size={18} />, label: 'Corsi' },
+  { to: '/client/community', icon: <Users size={18} />, label: 'Community' },
   { to: '/client/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
   { to: '/client/checks', icon: <Activity size={18} />, label: 'Check' },
   { to: '/client/payments', icon: <Target size={18} />, label: 'Pagamenti' },

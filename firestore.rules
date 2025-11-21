@@ -319,12 +319,11 @@ service cloud.firestore {
       // Tutti possono leggere i profili pubblici
       allow read, list: if request.auth != null;
 
-      // L'utente stesso può creare/modificare il proprio profilo, oppure admin/superadmin possono modificare qualsiasi profilo
-      allow create, update: if request.auth != null && (
-        request.auth.uid == userId ||
-        isSuperAdmin() ||
-        isAdmin()
-      );
+      // L'utente stesso può creare/modificare il proprio profilo
+      allow create, update: if request.auth.uid == userId;
+      
+      // SuperAdmin può modificare il livello manualmente
+      allow update: if isSuperAdmin();
 
       // Solo admin può eliminare
       allow delete: if isAdmin();
@@ -350,6 +349,33 @@ service cloud.firestore {
       );
       allow create, update: if isAdmin() || isCoach();
       allow delete: if isAdmin();
+    }
+
+    // ==================== COMMUNITY ====================
+    
+    // Post della community
+    match /community_posts/{postId} {
+      allow read: if request.auth != null;
+      
+      allow create: if request.auth != null &&
+        request.resource.data.author.uid == request.auth.uid &&
+        request.resource.data.content is string &&
+        request.resource.data.content.size() <= 3000 &&
+        request.resource.data.channel in ['welcome','introductions','wins','questions','tips','live'];
+
+      allow update: if request.auth != null && (
+        resource.data.author.uid == request.auth.uid ||
+        isSuperAdmin() || 
+        isAdmin()
+      );
+
+      allow delete: if isSuperAdmin() || isAdmin();
+    }
+
+    // Canali della community
+    match /community_channels/{channelId} {
+      allow read: if request.auth != null;
+      allow write: if isSuperAdmin();
     }
 
     // ==================== CORSI E LEARNING PLATFORM ====================

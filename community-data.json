@@ -1,0 +1,57 @@
+{
+  "config": {
+    "superadmins": {
+      "uids": ["AeZKjJYu5zMZ4mvffaGiqCBb0cF2"]
+    }
+  },
+  "community_channels": {
+    "welcome": {
+      "name": "benvenuto",
+      "icon": "sparkles",
+      "readOnly": true,
+      "order": 0
+    },
+    "introductions": {
+      "name": "presentazioni",
+      "icon": "users",
+      "order": 1
+    },
+    "wins": {
+      "name": "vittorie",
+      "icon": "trophy",
+      "order": 2
+    },
+    "questions": {
+      "name": "domande",
+      "icon": "message-circle",
+      "order": 3
+    },
+    "tips": {
+      "name": "consigli",
+      "icon": "lightbulb",
+      "order": 4
+    },
+    "live": {
+      "name": "live",
+      "icon": "calendar",
+      "minLevel": 2,
+      "order": 5
+    }
+  },
+  "community_posts": {
+    "welcome-1": {
+      "content": "Benvenuti nella community FitFlow Pro!\n\nQui condivideremo vittorie, domande, consigli e tanto altro.\n\nLivello 2+ → accesso alle group call settimanali!\n\nForza ragazzi!",
+      "author": {
+        "uid": "AeZKjJYu5zMZ4mvffaGiqCBb0cF2",
+        "name": "Maurizio",
+        "level": 4
+      },
+      "channel": "welcome",
+      "pinned": true,
+      "pinnedAt": "2025-11-21T22:00:00Z",
+      "timestamp": "2025-11-21T22:00:00Z",
+      "likes": 999,
+      "likedBy": []
+    }
+  }
+}

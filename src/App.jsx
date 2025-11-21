@@ -68,6 +68,7 @@ const SchedaAllenamento = React.lazy(() => import('./pages/shared/SchedaAllename
 const GuidaMentalFit = React.lazy(() => import('./pages/shared/GuidaMentalFit'));
 const Onboarding = React.lazy(() => import('./pages/shared/Onboarding'));
 const OnboardingFlow = React.lazy(() => import('./pages/shared/OnboardingFlow'));
+const Community = React.lazy(() => import('./pages/community/Community'));
 
 // Courses
 const CourseDashboard = React.lazy(() => import('./components/courses/CourseDashboard'));
@@ -320,6 +321,7 @@ export default function App() {
           <Route path="/courses" element={<CourseDashboard />} />
           <Route path="/courses/:courseId" element={<CourseDetail />} />
           <Route path="/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<LessonPlayer />} />
+          <Route path="/community" element={<Community />} />
 
         </Route>
 
@@ -363,6 +365,7 @@ export default function App() {
           <Route path="/client/courses/:courseId" element={<CourseDetail />} />
           <Route path="/client/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<LessonPlayer />} />
           <Route path="/client/onboarding" element={<OnboardingFlow />} />
+          <Route path="/client/community" element={<Community />} />
         </Route>
 
         {/* === ROTTE COLLABORATORI === */}
