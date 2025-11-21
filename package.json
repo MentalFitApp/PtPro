@@ -1,16 +1,13 @@
 {
-  "name": "pt-manager-v2",
+  "name": "fitflow",
   "private": true,
-  "homepage": "https://MentalFitApp.github.io/PtPro",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist",
     "migrate:photos:dry": "node migratePhotosToR2.cjs --dry",
     "migrate:photos": "node migratePhotosToR2.cjs --run",
     "superadmin:assign": "node assign-superadmin.cjs"

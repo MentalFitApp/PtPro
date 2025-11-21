@@ -4,20 +4,19 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
 
-  // Base path: usa '/' in sviluppo, '/PtPro/' solo in produzione
-  base: process.env.NODE_ENV === 'production' ? '/PtPro/' : '/',
+  // IMPORTANTE: base sempre '/' su Vercel (mai /PtPro/)
+  base: '/',
 
-  // CORS per dev in Codespaces
+  // Solo per sviluppo locale (Codespaces, Cloudflare Tunnel, ecc.)
   server: {
-    host: '0.0.0.0', // Ascolta su tutte le interfacce di rete
+    host: '0.0.0.0',
     port: 5173,
     strictPort: true,
-    allowedHosts: ['sale-commentary-priority-inns.trycloudflare.com', '.trycloudflare.com'], // Permette tunnel Cloudflare
+    allowedHosts: ['sale-commentary-priority-inns.trycloudflare.com', '.trycloudflare.com'],
     cors: {
-      origin: true, // Permette richieste da github.dev
+      origin: true,
       credentials: true,
     },
-    // Proxy per manifest.json e altri asset
     proxy: {
       '/manifest.json': {
         target: 'http://localhost:5173',
@@ -40,8 +39,8 @@ export default defineConfig({
           if (id.includes('node_modules')) {
             return id.toString().split('node_modules/')[1].split('/')[0].toString();
           }
-        }
-      }
-    }
+        },
+      },
+    },
   },
 })
