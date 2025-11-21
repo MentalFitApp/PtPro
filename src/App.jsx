@@ -11,7 +11,7 @@ const SimpleLayout = React.lazy(() => import('./components/SimpleLayout'));
 const GuidaLayout = React.lazy(() => import('./components/GuidaLayout'));
 
 // Import dinamici delle pagine
-const VideoCall = React.lazy(() => import('./pages/VideoCall'));
+
 const Login = React.lazy(() => import('./pages/Login'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Clients = React.lazy(() => import('./pages/Clients'));
@@ -280,7 +280,7 @@ export default function App() {
         <Route path="/client/forgot-password" element={<ForgotPassword />} />
 
         {/* === ROTTE ADMIN (SOLO ADMIN) === */}
-        <Route path="/videocall/:ptId/:clientId" element={<VideoCall />} />
+
         <Route element={authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />} />

@@ -68,6 +68,12 @@ const getUserLevel = (totalLikes) => {
   return { id: 1, name: 'Start', color: 'from-slate-500 to-slate-600', borderColor: 'border-slate-500', textColor: 'text-slate-400' };
 };
 
+// Helper: converte nome livello in ID numerico
+const getLevelIdFromName = (levelName, levels = ["Newbie", "Member", "Pro", "Mentor", "Legend"]) => {
+  const index = levels.indexOf(levelName);
+  return index >= 0 ? index + 1 : 1;
+};
+
 // Badge livello compatto riutilizzato nel feed/members
 const LevelBadge = ({ totalLikes = 0, size = 'sm' }) => {
   const level = getUserLevel(totalLikes);
@@ -145,6 +151,44 @@ export default function Community() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [activeTab, setActiveTab] = useState('feed'); // 'feed', 'members', 'liveRoom'
+
+  // Gestisci cambio tab e chiusura Live Room
+  const handleTabChange = (newTab) => {
+    // Se stiamo lasciando il tab liveRoom, chiudi la chiamata
+    if (activeTab === 'liveRoom' && newTab !== 'liveRoom' && dailyCallObject) {
+      try {
+        dailyCallObject.leave();
+        dailyCallObject.destroy();
+        setDailyCallObject(null);
+        setIsVideoEnabled(true);
+        setIsAudioEnabled(true);
+        setIsScreenSharing(false);
+      } catch (error) {
+        console.warn('Errore chiusura Live Room:', error);
+      }
+    }
+    setActiveTab(newTab);
+  };
+
+  // Funzione per uscire dalla Live Room
+  const handleLeaveRoom = () => {
+    if (dailyCallObject) {
+      try {
+        dailyCallObject.leave();
+        dailyCallObject.destroy();
+        setDailyCallObject(null);
+        setIsVideoEnabled(true);
+        setIsAudioEnabled(true);
+        setIsScreenSharing(false);
+      } catch (error) {
+        console.warn('Errore chiusura Live Room:', error);
+      }
+    }
+    // Forza il re-render della LiveRoomInterface per mostrare di nuovo il pulsante di ingresso
+    setTimeout(() => {
+      // Questo triggererà un nuovo render del componente
+    }, 100);
+  };
   // eslint-disable-next-line no-unused-vars
   const [onlineUsers, setOnlineUsers] = useState([]);
   // Stati per Daily.co Live Room
@@ -155,6 +199,8 @@ export default function Community() {
   // eslint-disable-next-line no-unused-vars
   const [rewards, setRewards] = useState(DEFAULT_REWARDS);
   const [showRewards, setShowRewards] = useState(false);
+  const [videoChatSettings, setVideoChatSettings] = useState({ minLevelForLiveRoom: 'Member' });
+  const [levelSettings, setLevelSettings] = useState({ levels: ["Newbie", "Member", "Pro", "Mentor", "Legend"], liveRoomAccess: {} });
   const [expandedPost, setExpandedPost] = useState(null); // Per mostrare commenti
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState({}); // { postId: [comments] }
@@ -253,6 +299,12 @@ export default function Community() {
           if (settings.disabledMessage) {
             setCommunityDisabledMessage(settings.disabledMessage);
           }
+          if (settings.videochat) {
+            setVideoChatSettings(settings.videochat);
+          }
+          if (settings.levels) {
+            setLevelSettings(settings.levels);
+          }
         }
       } else {
         navigate('/login');
@@ -330,75 +382,164 @@ export default function Community() {
   };
 
   // Funzioni Daily.co per Live Room
-  const initializeDailyCall = async (roomUrl) => {
+  const initializeDailyCall = async () => {
     try {
-      const call = DailyIframe.createCallObject({
-        url: roomUrl,
-        dailyConfig: {
-          experimentalChromeVideoMuteLightOff: true,
+      // Richiedi permessi videocamera e microfono prima di creare la stanza
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        console.log('Permessi videocamera e microfono concessi');
+      } catch (permError) {
+        console.error('Errore richiesta permessi:', permError);
+        alert('Per partecipare alla Live Room è necessario consentire l\'accesso a videocamera e microfono. Ricarica la pagina e concedi i permessi quando richiesto.');
+        return;
+      }
+
+      // Distruggi istanza precedente se esiste
+      if (dailyCallObject) {
+        try {
+          await dailyCallObject.leave();
+          dailyCallObject.destroy();
+          setDailyCallObject(null);
+        } catch (cleanupError) {
+          console.warn('Errore pulizia istanza precedente:', cleanupError);
+        }
+      }
+
+      // Prima prova a joinare stanza esistente
+      const roomUrl = `https://flowfitpro.daily.co/MentalFitCommunityRoom`;
+      try {
+        await joinExistingRoom(roomUrl);
+        return;
+      } catch (joinError) {
+        console.log('Stanza non esistente, tentando creazione...');
+      }
+
+      // Se la stanza non esiste, creala
+      const response = await fetch('https://api.daily.co/v1/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_DAILY_API_KEY}`,
         },
+        body: JSON.stringify({
+          name: 'MentalFitCommunityRoom',
+          privacy: 'public',
+          properties: {
+            max_participants: 50,
+            enable_chat: false,
+            enable_screenshare: true,
+            enable_recording: false,
+            start_video_off: false,
+            start_audio_off: false,
+          },
+        }),
       });
 
-      setDailyCallObject(call);
+      if (!response.ok) {
+        throw new Error(`Errore creazione stanza Daily.co: ${response.status}`);
+      }
 
-      // Event listeners
-      call.on('participant-joined', (event) => {
-        console.log('Partecipante entrato nel Live Room:', event.participant);
-      });
+      const roomData = await response.json();
+      const newRoomUrl = roomData.url;
 
-      call.on('participant-left', (event) => {
-        console.log('Partecipante uscito dal Live Room:', event.participant);
-      });
-
-      call.on('error', (event) => {
-        console.error('Errore Daily.co Live Room:', event.error);
-      });
-
-      // Partecipa alla chiamata
-      await call.join();
+      await joinExistingRoom(newRoomUrl);
 
     } catch (error) {
       console.error('Errore inizializzazione Daily.co Live Room:', error);
+      alert('Errore durante l\'accesso alla Live Room. Riprova più tardi.');
     }
   };
 
-  const toggleVideo = async () => {
-    if (!dailyCallObject) return;
-    try {
-      if (isVideoEnabled) {
-        await dailyCallObject.setLocalVideo(false);
-      } else {
-        await dailyCallObject.setLocalVideo(true);
+  const joinExistingRoom = async (roomUrl) => {
+    // Distruggi istanza precedente se esiste
+    if (dailyCallObject) {
+      try {
+        await dailyCallObject.leave();
+        dailyCallObject.destroy();
+      } catch (cleanupError) {
+        console.warn('Errore pulizia istanza precedente:', cleanupError);
       }
-      setIsVideoEnabled(!isVideoEnabled);
+    }
+
+    const call = DailyIframe.createCallObject({
+      url: roomUrl,
+      dailyConfig: {
+        experimentalChromeVideoMuteLightOff: true,
+      },
+    });
+
+    setDailyCallObject(call);
+
+    // Event listeners
+    call.on('participant-joined', (event) => {
+      console.log('Partecipante entrato nel Live Room:', event.participant);
+    });
+
+    call.on('participant-left', (event) => {
+      console.log('Partecipante uscito dal Live Room:', event.participant);
+    });
+
+    call.on('error', (event) => {
+      console.error('Errore Daily.co Live Room:', event.error);
+      // Se la stanza non esiste, rilancia l'errore
+      if (event.error && event.error.type === 'meeting-not-found') {
+        throw new Error('Stanza non trovata');
+      }
+    });
+
+    // Partecipa alla chiamata
+    await call.join();
+  };
+
+  const toggleVideo = async () => {
+    if (!dailyCallObject) {
+      console.warn('Call object non disponibile per toggle video');
+      return;
+    }
+    try {
+      const newState = !isVideoEnabled;
+      if (newState) {
+        await dailyCallObject.setLocalVideo(true);
+      } else {
+        await dailyCallObject.setLocalVideo(false);
+      }
+      setIsVideoEnabled(newState);
     } catch (error) {
       console.error('Errore toggle video:', error);
     }
   };
 
   const toggleAudio = async () => {
-    if (!dailyCallObject) return;
+    if (!dailyCallObject) {
+      console.warn('Call object non disponibile per toggle audio');
+      return;
+    }
     try {
-      if (isAudioEnabled) {
-        await dailyCallObject.setLocalAudio(false);
-      } else {
+      const newState = !isAudioEnabled;
+      if (newState) {
         await dailyCallObject.setLocalAudio(true);
+      } else {
+        await dailyCallObject.setLocalAudio(false);
       }
-      setIsAudioEnabled(!isAudioEnabled);
+      setIsAudioEnabled(newState);
     } catch (error) {
       console.error('Errore toggle audio:', error);
     }
   };
 
   const toggleScreenShare = async () => {
-    if (!dailyCallObject) return;
+    if (!dailyCallObject) {
+      console.warn('Call object non disponibile per screen share');
+      return;
+    }
     try {
-      if (isScreenSharing) {
-        await dailyCallObject.stopScreenShare();
-      } else {
+      const newState = !isScreenSharing;
+      if (newState) {
         await dailyCallObject.startScreenShare();
+      } else {
+        await dailyCallObject.stopScreenShare();
       }
-      setIsScreenSharing(!isScreenSharing);
+      setIsScreenSharing(newState);
     } catch (error) {
       console.error('Errore screen share:', error);
     }
@@ -1249,8 +1390,8 @@ export default function Community() {
 
   // --- Restyling totale stile app ---
   // Determina se l'utente può accedere alla Live Room
-  const userLevel = getUserLevel(userProfile?.totalLikes || 0).id;
-  const canAccessLiveRoom = isAdmin || userLevel >= 2 || userProfile?.liveRoomAccess === true;
+  const userLevelName = getUserLevel(userProfile?.totalLikes || 0).name;
+  const canAccessLiveRoom = isAdmin || (levelSettings.liveRoomAccess && levelSettings.liveRoomAccess[userLevelName]) || userProfile?.liveRoomAccess === true;
 
   return (
     <div className="min-h-screen bg-slate-900">
@@ -1327,7 +1468,7 @@ export default function Community() {
           {/* Tabs principali: Feed / Membri / Live Room - Scrollabili su mobile */}
           <div className="flex items-center gap-2 sm:gap-4 border-b border-slate-700 -mb-px overflow-x-auto scrollbar-hide">
             <button
-              onClick={() => setActiveTab('feed')}
+              onClick={() => handleTabChange('feed')}
               className={`px-3 sm:px-4 py-2 font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${
                 activeTab === 'feed'
                   ? 'text-cyan-400 border-b-2 border-cyan-400'
@@ -1338,7 +1479,7 @@ export default function Community() {
               Feed
             </button>
             <button
-              onClick={() => setActiveTab('members')}
+              onClick={() => handleTabChange('members')}
               className={`px-3 sm:px-4 py-2 font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${
                 activeTab === 'members'
                   ? 'text-cyan-400 border-b-2 border-cyan-400'
@@ -1350,9 +1491,9 @@ export default function Community() {
               <span className="sm:hidden">Membri</span>
               <span className="text-xs ml-1">({posts.length > 0 ? new Set(posts.map(p => p.authorId)).size : 0})</span>
             </button>
-            {canAccessLiveRoom && (
+            {canAccessLiveRoom ? (
               <button
-                onClick={() => setActiveTab('liveRoom')}
+                onClick={() => handleTabChange('liveRoom')}
                 className={`px-3 sm:px-4 py-2 font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${
                   activeTab === 'liveRoom'
                     ? 'text-cyan-400 border-b-2 border-cyan-400'
@@ -1362,6 +1503,14 @@ export default function Community() {
                 <VideoIcon size={16} className="inline mr-1.5 sm:mr-2 sm:w-[18px] sm:h-[18px]" />
                 Live Room
               </button>
+            ) : (
+              <div className="px-3 sm:px-4 py-2 text-slate-500 text-sm sm:text-base cursor-not-allowed opacity-50">
+                <VideoIcon size={16} className="inline mr-1.5 sm:mr-2 sm:w-[18px] sm:h-[18px]" />
+                Live Room
+                <div className="text-xs mt-1">
+                  Accesso limitato ai livelli: {Object.keys(levelSettings.liveRoomAccess || {}).filter(level => levelSettings.liveRoomAccess[level]).join(', ') || 'Nessuno'}
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -1533,7 +1682,8 @@ export default function Community() {
           </div>
         )}
 
-        {activeTab === 'liveRoom' && canAccessLiveRoom && (
+        {activeTab === 'liveRoom' && (
+          canAccessLiveRoom ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh]">
             <h2 className="text-2xl font-bold text-cyan-400 mb-6 flex items-center gap-2">
               <VideoIcon size={28} /> Live Room
@@ -1542,18 +1692,32 @@ export default function Community() {
             <div className="w-full max-w-6xl rounded-xl overflow-hidden shadow-xl border border-cyan-600 bg-slate-900">
               <DailyProvider callObject={dailyCallObject}>
                 <LiveRoomInterface
-                  onJoin={() => initializeDailyCall('https://flowfitpro.daily.co/MentalFitCommunityRoom')}
+                  onJoin={() => initializeDailyCall()}
+                  onLeave={handleLeaveRoom}
                   isVideoEnabled={isVideoEnabled}
                   isAudioEnabled={isAudioEnabled}
                   isScreenSharing={isScreenSharing}
                   onToggleVideo={toggleVideo}
                   onToggleAudio={toggleAudio}
                   onToggleScreenShare={toggleScreenShare}
+                  isAdmin={isAdmin}
                 />
               </DailyProvider>
             </div>
             <p className="mt-4 text-slate-400 text-center">Questa stanza è accessibile solo agli utenti abilitati.<br />Se hai problemi di accesso, contatta un admin.</p>
           </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[60vh]">
+              <VideoIcon size={48} className="mx-auto mb-4 text-slate-500 opacity-50" />
+              <h2 className="text-2xl font-bold text-slate-400 mb-4">Accesso Live Room</h2>
+              <p className="text-slate-300 text-center mb-4">
+                Per accedere alla Live Room devi avere uno dei seguenti livelli abilitati: <strong>{Object.keys(levelSettings.liveRoomAccess || {}).filter(level => levelSettings.liveRoomAccess[level]).join(', ') || 'Nessuno'}</strong>.
+              </p>
+              <p className="text-slate-400 text-center text-sm">
+                Continua a partecipare alla community per sbloccare nuove funzionalità!
+              </p>
+            </div>
+          )
         )}
       {/* Fine main content */}
       </main>
@@ -3123,31 +3287,105 @@ export default function Community() {
 }
 
 // Componente Live Room con Daily.co migliorato
-function LiveRoomInterface({ onJoin, isVideoEnabled, isAudioEnabled, isScreenSharing, onToggleVideo, onToggleAudio, onToggleScreenShare }) {
-  const [hasJoined, setHasJoined] = useState(false);
+function LiveRoomInterface({ onJoin, onLeave, isVideoEnabled, isAudioEnabled, isScreenSharing, onToggleVideo, onToggleAudio, onToggleScreenShare, isAdmin }) {
   const callObject = useDaily();
   const participantIds = useParticipantIds();
   const localParticipant = useLocalParticipant();
   const { screens } = useScreenShare();
+  const [hasJoined, setHasJoined] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
 
-  const handleJoin = async () => {
-    await onJoin();
-    setHasJoined(true);
+  // Funzioni di moderazione per admin
+  const muteAllParticipants = async () => {
+    if (!callObject || !isAdmin) return;
+    try {
+      const participants = callObject.participants();
+      for (const [sessionId, participant] of Object.entries(participants)) {
+        if (sessionId !== callObject.participantsLocal().sessionId) {
+          await callObject.updateParticipant(sessionId, { setAudio: false });
+        }
+      }
+      alert('Tutti i partecipanti sono stati mutati');
+    } catch (error) {
+      console.error('Errore mute all:', error);
+    }
   };
 
+  const kickParticipant = async (sessionId) => {
+    if (!callObject || !isAdmin) return;
+    try {
+      await callObject.updateParticipant(sessionId, { eject: true });
+    } catch (error) {
+      console.error('Errore kick participant:', error);
+    }
+  };
+
+  const disableParticipantVideo = async (sessionId) => {
+    if (!callObject || !isAdmin) return;
+    try {
+      await callObject.updateParticipant(sessionId, { setVideo: false });
+    } catch (error) {
+      console.error('Errore disable video:', error);
+    }
+  };
+
+  // Cleanup quando il componente viene smontato
+  useEffect(() => {
+    return () => {
+      if (callObject) {
+        try {
+          callObject.leave();
+          callObject.destroy();
+        } catch (error) {
+          console.warn('Errore cleanup Live Room:', error);
+        }
+      }
+    };
+  }, [callObject]);
+
+  const handleJoinRoom = async () => {
+    setIsJoining(true);
+    try {
+      await onJoin();
+      setHasJoined(true);
+    } catch (error) {
+      console.error('Errore accesso Live Room:', error);
+      alert('Errore durante l\'accesso alla Live Room');
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  // Se non ha ancora joinato, mostra il pulsante di ingresso
   if (!hasJoined) {
     return (
       <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
-        <div className="text-center">
-          <VideoIcon size={64} className="mx-auto mb-4 text-cyan-400" />
-          <h3 className="text-xl font-bold text-white mb-2">Live Room Community</h3>
-          <p className="text-slate-400 mb-6">Partecipa alla stanza live della community</p>
+        <div className="text-center max-w-md">
+          <VideoIcon size={48} className="mx-auto mb-6 text-cyan-400" />
+          <h3 className="text-2xl font-bold text-white mb-4">Live Room Community</h3>
+          <p className="text-slate-300 mb-6">
+            Entra nella stanza video della community per interagire con altri membri in tempo reale.
+          </p>
           <button
-            onClick={handleJoin}
-            className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-xl font-semibold transition-all shadow-lg"
+            onClick={handleJoinRoom}
+            disabled={isJoining}
+            className="px-8 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 disabled:from-slate-600 disabled:to-slate-600 text-white rounded-xl font-semibold transition-all shadow-lg disabled:cursor-not-allowed"
           >
-            Entra nella Live Room
+            {isJoining ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline mr-2"></div>
+                Connessione...
+              </>
+            ) : (
+              <>
+                <VideoIcon size={20} className="inline mr-2" />
+                Entra nella Live Room
+              </>
+            )}
           </button>
+          <p className="text-slate-400 text-sm mt-4">
+            Assicurati di avere videocamera e microfono funzionanti
+          </p>
         </div>
       </div>
     );
@@ -3207,6 +3445,47 @@ function LiveRoomInterface({ onJoin, isVideoEnabled, isAudioEnabled, isScreenSha
         )}
       </div>
 
+      {/* Controlli moderazione admin */}
+      {isAdmin && (
+        <div className="absolute top-4 right-4 bg-slate-800/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={muteAllParticipants}
+              className="px-3 py-2 bg-red-600 hover:bg-red-500 text-white text-xs rounded transition-all"
+              title="Muta tutti i partecipanti"
+            >
+              Muta Tutti
+            </button>
+            {/* Lista partecipanti con controlli */}
+            {participantIds.filter(id => id !== localParticipant?.sessionId).map((sessionId) => {
+              const participant = callObject?.participants()[sessionId];
+              if (!participant) return null;
+              return (
+                <div key={sessionId} className="flex items-center gap-2">
+                  <span className="text-white text-xs truncate max-w-20">
+                    {participant.user_name || 'Partecipante'}
+                  </span>
+                  <button
+                    onClick={() => disableParticipantVideo(sessionId)}
+                    className="p-1 bg-yellow-600 hover:bg-yellow-500 text-white rounded text-xs"
+                    title="Disattiva video"
+                  >
+                    📷
+                  </button>
+                  <button
+                    onClick={() => kickParticipant(sessionId)}
+                    className="p-1 bg-red-600 hover:bg-red-500 text-white rounded text-xs"
+                    title="Espelli"
+                  >
+                    🚫
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Controlli chiamata */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-slate-800/90 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg">
         <button
@@ -3243,6 +3522,17 @@ function LiveRoomInterface({ onJoin, isVideoEnabled, isAudioEnabled, isScreenSha
           title={isScreenSharing ? 'Ferma condivisione' : 'Condividi schermo'}
         >
           <Monitor size={20} />
+        </button>
+
+        <button
+          onClick={() => {
+            setHasJoined(false);
+            onLeave();
+          }}
+          className="p-3 bg-red-600 hover:bg-red-500 text-white rounded-full transition-all"
+          title="Esci dalla Live Room"
+        >
+          <PhoneOff size={20} />
         </button>
 
         <div className="ml-4 text-white text-sm">

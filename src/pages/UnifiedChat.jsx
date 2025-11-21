@@ -555,9 +555,35 @@ export default function UnifiedChat() {
     }
   };
 
+  // Richiedi permessi browser per camera/microfono
+  const requestMediaPermissions = async () => {
+    try {
+      // Richiedi accesso a camera e microfono
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      });
+
+      // Ferma lo stream subito dopo aver ottenuto i permessi
+      stream.getTracks().forEach(track => track.stop());
+
+      return true;
+    } catch (error) {
+      console.error('Errore richiesta permessi media:', error);
+      alert('Per partecipare alla videochiamata è necessario consentire l\'accesso a videocamera e microfono.');
+      return false;
+    }
+  };
+
   // Inizializza chiamata Daily.co
   const initializeDailyCall = async (roomUrl) => {
     try {
+      // Richiedi permessi prima di procedere
+      const hasPermissions = await requestMediaPermissions();
+      if (!hasPermissions) {
+        return;
+      }
+
       const call = DailyIframe.createCallObject({
         url: roomUrl,
         dailyConfig: {
@@ -593,42 +619,54 @@ export default function UnifiedChat() {
 
   // Controlli chiamata
   const toggleVideo = async () => {
-    if (!dailyCallObject) return;
+    if (!dailyCallObject) {
+      console.warn('Call object non disponibile per toggle video');
+      return;
+    }
     try {
-      if (isVideoEnabled) {
-        await dailyCallObject.setLocalVideo(false);
-      } else {
+      const newState = !isVideoEnabled;
+      if (newState) {
         await dailyCallObject.setLocalVideo(true);
+      } else {
+        await dailyCallObject.setLocalVideo(false);
       }
-      setIsVideoEnabled(!isVideoEnabled);
+      setIsVideoEnabled(newState);
     } catch (error) {
       console.error('Errore toggle video:', error);
     }
   };
 
   const toggleAudio = async () => {
-    if (!dailyCallObject) return;
+    if (!dailyCallObject) {
+      console.warn('Call object non disponibile per toggle audio');
+      return;
+    }
     try {
-      if (isAudioEnabled) {
-        await dailyCallObject.setLocalAudio(false);
-      } else {
+      const newState = !isAudioEnabled;
+      if (newState) {
         await dailyCallObject.setLocalAudio(true);
+      } else {
+        await dailyCallObject.setLocalAudio(false);
       }
-      setIsAudioEnabled(!isAudioEnabled);
+      setIsAudioEnabled(newState);
     } catch (error) {
       console.error('Errore toggle audio:', error);
     }
   };
 
   const toggleScreenShare = async () => {
-    if (!dailyCallObject) return;
+    if (!dailyCallObject) {
+      console.warn('Call object non disponibile per toggle screen share');
+      return;
+    }
     try {
-      if (isScreenSharing) {
-        await dailyCallObject.stopScreenShare();
-      } else {
+      const newState = !isScreenSharing;
+      if (newState) {
         await dailyCallObject.startScreenShare();
+      } else {
+        await dailyCallObject.stopScreenShare();
       }
-      setIsScreenSharing(!isScreenSharing);
+      setIsScreenSharing(newState);
     } catch (error) {
       console.error('Errore screen share:', error);
     }
