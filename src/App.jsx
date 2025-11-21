@@ -62,6 +62,7 @@ const SuperAdminSettings = React.lazy(() => import('./pages/SuperAdminSettings')
 const Community = React.lazy(() => import('./pages/Community'));
 const CommunityAdmin = React.lazy(() => import('./pages/CommunityAdmin'));
 const CourseAdmin = React.lazy(() => import('./pages/CourseAdmin'));
+const CourseContentManager = React.lazy(() => import('./pages/CourseContentManager'));
 const OnboardingFlow = React.lazy(() => import('./pages/OnboardingFlow'));
 
 // Video Calls
@@ -329,6 +330,7 @@ export default function App() {
           <Route path="/superadmin" element={<SuperAdminSettings />} />
           <Route path="/community-admin" element={<CommunityAdmin />} />
           <Route path="/course-admin" element={<CourseAdmin />} />
+          <Route path="/admin/course/:courseId/manage" element={<CourseContentManager />} />
           <Route path="/community" element={<Community />} />
 
         </Route>
