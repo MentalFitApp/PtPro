@@ -371,10 +371,10 @@ service cloud.firestore {
 
     // ==================== COMMUNITY SYSTEM ====================
 
-    // Canali community (solo superadmin può gestirli)
+    // Canali community (admin/superadmin può gestirli)
     match /community_channels/{channelId} {
       allow read: if request.auth != null;
-      allow create, update, delete: if isSuperAdmin();
+      allow create, update, delete: if isSuperAdmin() || isAdmin();
     }
 
     // Post community
@@ -382,21 +382,23 @@ service cloud.firestore {
       // Tutti gli utenti autenticati possono leggere
       allow read, list: if request.auth != null;
 
-      // Creazione: profilo completo obbligatorio (admin possono sempre)
+      // Creazione: profilo completo obbligatorio (admin/superadmin possono sempre)
       allow create: if request.auth != null &&
                       request.resource.data.authorId == request.auth.uid &&
-                      (hasCompleteProfile(request.auth.uid) || isSuperAdmin());
+                      (hasCompleteProfile(request.auth.uid) || isSuperAdmin() || isAdmin());
 
-      // Modifica: solo autore o superadmin
+      // Modifica: solo autore o admin/superadmin
       allow update: if request.auth != null && (
         resource.data.authorId == request.auth.uid ||
-        isSuperAdmin()
+        isSuperAdmin() ||
+        isAdmin()
       );
 
-      // Eliminazione: solo autore o superadmin
+      // Eliminazione: solo autore o admin/superadmin
       allow delete: if request.auth != null && (
         resource.data.authorId == request.auth.uid ||
-        isSuperAdmin()
+        isSuperAdmin() ||
+        isAdmin()
       );
 
       // Commenti sui post
@@ -421,14 +423,14 @@ service cloud.firestore {
     // Livelli disponibili (solo lettura per tutti)
     match /levels/{levelId} {
       allow read: if request.auth != null;
-      allow create, update, delete: if isSuperAdmin();
+      allow create, update, delete: if isSuperAdmin() || isAdmin();
     }
 
-    // Livelli utenti (calcolati automaticamente, ma superadmin può override)
+    // Livelli utenti (calcolati automaticamente, ma admin/superadmin può override)
     match /user_levels/{userId} {
       allow read: if request.auth != null;
-      allow create, update: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
-      allow delete: if isSuperAdmin();
+      allow create, update: if request.auth != null && (request.auth.uid == userId || isSuperAdmin() || isAdmin());
+      allow delete: if isSuperAdmin() || isAdmin();
     }
 
     // Rewards utenti
@@ -438,22 +440,22 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
-    // Statistiche community (tutti possono leggere, solo superadmin può scrivere)
+    // Statistiche community (tutti possono leggere, admin/superadmin può scrivere)
     match /community_stats/{docId} {
       allow read: if request.auth != null;
-      allow write: if isSuperAdmin();
+      allow write: if isSuperAdmin() || isAdmin();
     }
 
-    // Statistiche corsi (tutti possono leggere, solo superadmin può scrivere)
+    // Statistiche corsi (tutti possono leggere, admin/superadmin può scrivere)
     match /course_stats/{docId} {
       allow read: if request.auth != null;
-      allow write: if isSuperAdmin();
+      allow write: if isSuperAdmin() || isAdmin();
     }
 
-    // Impostazioni community (solo superadmin)
+    // Impostazioni community (admin/superadmin possono gestire)
     match /community_settings/{docId} {
       allow read: if request.auth != null;
-      allow write: if isSuperAdmin();
+      allow write: if isSuperAdmin() || isAdmin();
     }
 
     // Preferenze utente
@@ -511,30 +513,38 @@ service cloud.firestore {
 
     // Corsi principali
     match /courses/{courseId} {
-      // Lettura pubblica per scoprire corsi
-      allow read: if request.auth != null;
+      // Lettura: utenti autenticati possono vedere corsi pubblici o a cui sono iscritti
+      allow read: if request.auth != null && (
+        resource.data.isPublic == true ||
+        isSuperAdmin() ||
+        isAdmin() ||
+        exists(/databases/$(database)/documents/course_enrollments/$(request.auth.uid + '_' + courseId))
+      );
 
-      // Creazione/modifica solo admin
-      allow create, update: if isSuperAdmin();
-      allow delete: if isSuperAdmin();
+      // Lista: tutti gli utenti autenticati possono vedere l'elenco
+      allow list: if request.auth != null;
+
+      // Creazione/modifica: solo admin/superadmin
+      allow create, update: if isSuperAdmin() || isAdmin();
+      allow delete: if isSuperAdmin() || isAdmin();
     }
 
     // Moduli dei corsi
     match /courses/{courseId}/modules/{moduleId} {
       allow read: if request.auth != null;
-      allow create, update, delete: if isSuperAdmin();
+      allow create, update, delete: if isSuperAdmin() || isAdmin();
     }
 
     // Lezioni dei moduli
     match /courses/{courseId}/modules/{moduleId}/lessons/{lessonId} {
       allow read: if request.auth != null;
-      allow create, update, delete: if isSuperAdmin();
+      allow create, update, delete: if isSuperAdmin() || isAdmin();
     }
 
     // Quiz delle lezioni
     match /courses/{courseId}/modules/{moduleId}/lessons/{lessonId}/quiz/{quizId} {
       allow read: if request.auth != null;
-      allow create, update, delete: if isSuperAdmin();
+      allow create, update, delete: if isSuperAdmin() || isAdmin();
     }
 
     // Iscrizioni ai corsi

@@ -35,6 +35,32 @@ export async function isSuperAdmin(userId) {
 }
 
 /**
+ * Verifica se l'utente corrente è admin
+ * @param {string} userId - UID Firebase dell'utente
+ * @returns {Promise<boolean>}
+ */
+export async function isAdmin(userId) {
+  if (!userId) return false;
+  
+  try {
+    // SuperAdmin è anche admin
+    const isSuperAdminUser = await isSuperAdmin(userId);
+    if (isSuperAdminUser) return true;
+    
+    const adminRef = doc(db, 'roles', 'admins');
+    const adminDoc = await getDoc(adminRef);
+    
+    if (!adminDoc.exists()) return false;
+    
+    const uids = adminDoc.data().uids || [];
+    return uids.includes(userId);
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+}
+
+/**
  * Ottiene info ruolo utente (superadmin > admin > coach > client > collaboratore)
  * @param {string} userId 
  * @returns {Promise<{role: string, isSuperAdmin: boolean, isAdmin: boolean, isCoach: boolean}>}

@@ -1372,12 +1372,22 @@ function CommunityContent() {
                 )}
 
                 <button
-                  onClick={() => navigate('/courses')}
+                  onClick={() => setActiveTab('courses')}
                   className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 text-sm font-medium transition-all"
                 >
                   <BookOpen size={16} />
                   Esplora Corsi
                 </button>
+
+                {isUserSuperAdmin && (
+                  <button
+                    onClick={() => navigate('/course-admin')}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-sm font-medium transition-all"
+                  >
+                    <Settings size={16} />
+                    Gestisci Corsi
+                  </button>
+                )}
               </div>
 
               {/* Channel Tabs */}
@@ -1983,44 +1993,53 @@ function CommunityContent() {
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min="1"
-                            max="100"
-                            defaultValue={userProgress.level}
-                            className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-yellow-500"
-                            id="admin-level-input"
-                          />
-                          <button
-                            onClick={async () => {
-                              const newLevel = parseInt(document.getElementById('admin-level-input').value);
-                              if (newLevel && newLevel > 0 && newLevel <= 100) {
-                                try {
-                                  await setDoc(doc(db, 'user_levels', currentUser.uid), {
-                                    level: newLevel,
-                                    updatedAt: serverTimestamp()
-                                  }, { merge: true });
-                                  alert(`✅ Livello aggiornato a ${newLevel}!`);
-                                  // Ricarica il progresso
-                                  const levelData = await calculateUserLevel(currentUser.uid);
-                                  setUserProgress(levelData);
-                                } catch (error) {
-                                  console.error('Error updating level:', error);
-                                  alert('❌ Errore nell\'aggiornamento del livello');
-                                }
-                              } else {
-                                alert('⚠️ Inserisci un livello valido (1-100)');
-                              }
-                            }}
-                            className="px-6 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
-                          >
-                            Aggiorna Livello
-                          </button>
-                        </div>
-                        <p className="text-xs text-slate-400 italic">
-                          ⚠️ Modifica manuale del livello - disponibile solo per admin
-                        </p>
+                        {isUserSuperAdmin && (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min="1"
+                                max="100"
+                                defaultValue={userProgress?.level || 1}
+                                className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-yellow-500"
+                                id="admin-level-input"
+                              />
+                              <button
+                                onClick={async () => {
+                                  const newLevel = parseInt(document.getElementById('admin-level-input').value);
+                                  if (newLevel && newLevel > 0 && newLevel <= 100) {
+                                    try {
+                                      await setDoc(doc(db, 'user_levels', currentUser.uid), {
+                                        level: newLevel,
+                                        isManual: true,
+                                        updatedAt: serverTimestamp(),
+                                        updatedBy: currentUser.uid
+                                      }, { merge: true });
+                                      alert(`✅ Livello aggiornato a ${newLevel}!`);
+                                      // Ricarica il progresso
+                                      const levelData = await calculateUserLevel(currentUser.uid);
+                                      if (levelData) {
+                                        setUserProgress(levelData);
+                                        setUserLevel(getUserLevel(levelData.level * 10)); // Aggiorna anche il badge
+                                      }
+                                    } catch (error) {
+                                      console.error('Error updating level:', error);
+                                      alert('❌ Errore nell\'aggiornamento del livello: ' + error.message);
+                                    }
+                                  } else {
+                                    alert('⚠️ Inserisci un livello valido (1-100)');
+                                  }
+                                }}
+                                className="px-6 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
+                              >
+                                Aggiorna Livello
+                              </button>
+                            </div>
+                            <p className="text-xs text-slate-400 italic">
+                              ⚠️ Modifica manuale del livello - disponibile solo per admin
+                            </p>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2047,22 +2066,19 @@ function CommunityContent() {
                       </div>
                       <div className="space-y-2">
                         <button
-                          onClick={() => navigate('/community-settings')}
+                          onClick={() => {
+                            setActiveTab('settings');
+                            setShowAdminSettings(true);
+                          }}
                           className="w-full text-left px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded text-xs text-slate-200 transition-colors"
                         >
-                          ⚙️ Impostazioni Complete
-                        </button>
-                        <button
-                          onClick={() => navigate('/levels-management')}
-                          className="w-full text-left px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded text-xs text-slate-200 transition-colors"
-                        >
-                          🏆 Gestione Livelli
+                          ⚙️ Impostazioni Community
                         </button>
                         <button
                           onClick={() => navigate('/community-admin')}
                           className="w-full text-left px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded text-xs text-slate-200 transition-colors"
                         >
-                          🛡️ Amministrazione Community
+                          🛡️ Pannello Amministrazione
                         </button>
                         <button
                           onClick={() => setShowMembersList(true)}
