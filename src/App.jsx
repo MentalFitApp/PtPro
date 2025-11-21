@@ -68,8 +68,6 @@ const SchedaAllenamento = React.lazy(() => import('./pages/shared/SchedaAllename
 const GuidaMentalFit = React.lazy(() => import('./pages/shared/GuidaMentalFit'));
 const Onboarding = React.lazy(() => import('./pages/shared/Onboarding'));
 const OnboardingFlow = React.lazy(() => import('./pages/shared/OnboardingFlow'));
-const VideoCallOneToOne = React.lazy(() => import('./pages/shared/VideoCallOneToOne'));
-const VideoCallGroup = React.lazy(() => import('./pages/shared/VideoCallGroup'));
 
 // Courses
 const CourseDashboard = React.lazy(() => import('./components/courses/CourseDashboard'));
@@ -323,10 +321,6 @@ export default function App() {
           <Route path="/courses/:courseId" element={<CourseDetail />} />
           <Route path="/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<LessonPlayer />} />
 
-          {/* Video Calls */}
-          <Route path="/video-call/:callId" element={<VideoCallOneToOne />} />
-          <Route path="/group-call/:callId" element={<VideoCallGroup />} />
-
         </Route>
 
         {/* === ROTTE SUPERADMIN (SOLO SUPERADMIN) === */}
@@ -351,10 +345,6 @@ export default function App() {
           <Route path="/coach/schede" element={<AlimentazioneAllenamento />} />
           <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
           <Route path="/scheda-allenamento/:clientId" element={<SchedaAllenamento />} />
-
-          {/* Video Calls */}
-          <Route path="/video-call/:callId" element={<VideoCallOneToOne />} />
-          <Route path="/group-call/:callId" element={<VideoCallGroup />} />
         </Route>
 
         {/* === ROTTE CLIENTI === */}
@@ -373,10 +363,6 @@ export default function App() {
           <Route path="/client/courses/:courseId" element={<CourseDetail />} />
           <Route path="/client/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<LessonPlayer />} />
           <Route path="/client/onboarding" element={<OnboardingFlow />} />
-
-          {/* Video Calls */}
-          <Route path="/video-call/:callId" element={<VideoCallOneToOne />} />
-          <Route path="/group-call/:callId" element={<VideoCallGroup />} />
         </Route>
 
         {/* === ROTTE COLLABORATORI === */}
@@ -384,10 +370,6 @@ export default function App() {
           <Route path="/collaboratore/first-access" element={<FirstAccess />} />
           <Route path="/collaboratore/dashboard" element={<CollaboratoreDashboard />} />
           <Route path="/collaboratore/calendar" element={<CalendarPage />} />
-
-          {/* Video Calls */}
-          <Route path="/video-call/:callId" element={<VideoCallOneToOne />} />
-          <Route path="/group-call/:callId" element={<VideoCallGroup />} />
         </Route>
 
         {/* === DEFAULT === */}
