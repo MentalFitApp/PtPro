@@ -4,7 +4,7 @@ import { doc, getDoc, collection, query, orderBy, setDoc, updateDoc, serverTimes
 import { db, auth } from '../../firebase';
 import { ArrowLeft, Play, Pause, CheckCircle, ChevronRight, ChevronLeft, Clock } from 'lucide-react';
 
-import MediaViewer from '../MediaViewer';
+import MediaViewer from '../ui/MediaViewer';
 
 /**
  * Player per visualizzare e completare le lezioni

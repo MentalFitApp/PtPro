@@ -1,11 +1,18 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
 
   // IMPORTANTE: base sempre '/' su Vercel (mai /PtPro/)
   base: '/',
+  
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
 
   // Solo per sviluppo locale (Codespaces, Cloudflare Tunnel, ecc.)
   server: {

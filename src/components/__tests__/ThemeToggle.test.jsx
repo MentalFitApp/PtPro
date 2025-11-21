@@ -2,7 +2,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ThemeToggle from '../ThemeToggle';
-import { ThemeProvider, useTheme } from '../../utils/ThemeContext';
+import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
 
 // Test component that uses the theme
 const TestComponent = () => {

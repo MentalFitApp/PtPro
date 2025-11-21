@@ -1,80 +1,80 @@
 import React, { useState, useEffect, Suspense } from 'react';
-import GlobalUploadBar from './components/GlobalUploadBar';
+import GlobalUploadBar from './components/ui/GlobalUploadBar';
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
-import { ThemeProvider } from './utils/ThemeContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 // Import dinamici dei layout
-const MainLayout = React.lazy(() => import('./components/MainLayout'));
-const SimpleLayout = React.lazy(() => import('./components/SimpleLayout'));
-const GuidaLayout = React.lazy(() => import('./components/GuidaLayout'));
+const MainLayout = React.lazy(() => import('./components/layout/MainLayout'));
+const SimpleLayout = React.lazy(() => import('./components/layout/SimpleLayout'));
+const GuidaLayout = React.lazy(() => import('./components/layout/GuidaLayout'));
 
 // Import dinamici delle pagine
 
-const Login = React.lazy(() => import('./pages/Login'));
-const Dashboard = React.lazy(() => import('./pages/Dashboard'));
-const Clients = React.lazy(() => import('./pages/Clients'));
-const ClientDetail = React.lazy(() => import('./pages/ClientDetail'));
-const EditClient = React.lazy(() => import('./pages/EditClient'));
-const Updates = React.lazy(() => import('./pages/Updates'));
-const UnifiedChat = React.lazy(() => import('./pages/UnifiedChat'));
-const FirstAccess = React.lazy(() => import('./pages/FirstAccess'));
-const ClientDashboard = React.lazy(() => import('./pages/ClientDashboard'));
-const ClientAnamnesi = React.lazy(() => import('./pages/ClientAnamnesi'));
-const ClientChecks = React.lazy(() => import('./pages/ClientChecks'));
-const ClientPayments = React.lazy(() => import('./pages/ClientPayments'));
-const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
-const AdminAnamnesi = React.lazy(() => import('./pages/AdminAnamnesi'));
-const CoachDashboard = React.lazy(() => import('./pages/CoachDashboard'));
-const CoachAnamnesi = React.lazy(() => import('./pages/CoachAnamnesi'));
-const CoachUpdates = React.lazy(() => import('./pages/CoachUpdates'));
-const CoachClients = React.lazy(() => import('./pages/CoachClients'));
-const CoachClientDetail = React.lazy(() => import('./pages/CoachClientDetail'));
-const GuidaMentalFit = React.lazy(() => import('./pages/GuidaMentalFit'));
-const BusinessHistory = React.lazy(() => import('./pages/BusinessHistory'));
-const Collaboratori = React.lazy(() => import('./pages/Collaboratori'));
-const CollaboratoreDashboard = React.lazy(() => import('./pages/CollaboratoreDashboard'));
-const CollaboratoreDetail = React.lazy(() => import('./pages/CollaboratoreDetail'));
-const CalendarReport = React.lazy(() => import('./pages/CalendarReport'));
-const NewClient = React.lazy(() => import('./pages/NewClient'));
-const Dipendenti = React.lazy(() => import('./pages/Dipendenti'));
-const GuideCapture = React.lazy(() => import('./pages/GuideCapture'));
-const GuideManager = React.lazy(() => import('./pages/GuideManager'));
+// Auth Pages
+const Login = React.lazy(() => import('./pages/auth/Login'));
+const ForgotPassword = React.lazy(() => import('./pages/auth/ForgotPassword'));
+const FirstAccess = React.lazy(() => import('./pages/auth/FirstAccess'));
 
-// AGGIUNTO
-const Statistiche = React.lazy(() => import('./pages/Statistiche'));
-const Analytics = React.lazy(() => import('./pages/Analytics'));
-const CalendarPage = React.lazy(() => import('./pages/CalendarPage'));
-const Notifications = React.lazy(() => import('./pages/Notifications'));
-const AlimentazioneAllenamento = React.lazy(() => import('./pages/AlimentazioneAllenamento'));
+// Admin Pages
+const Dashboard = React.lazy(() => import('./pages/admin/Dashboard'));
+const Clients = React.lazy(() => import('./pages/admin/Clients'));
+const ClientDetail = React.lazy(() => import('./pages/admin/ClientDetail'));
+const EditClient = React.lazy(() => import('./pages/admin/EditClient'));
+const NewClient = React.lazy(() => import('./pages/admin/NewClient'));
+const AdminAnamnesi = React.lazy(() => import('./pages/admin/AdminAnamnesi'));
+const BusinessHistory = React.lazy(() => import('./pages/admin/BusinessHistory'));
+const Collaboratori = React.lazy(() => import('./pages/admin/Collaboratori'));
+const CollaboratoreDetail = React.lazy(() => import('./pages/admin/CollaboratoreDetail'));
+const Dipendenti = React.lazy(() => import('./pages/admin/Dipendenti'));
+const GuideCapture = React.lazy(() => import('./pages/admin/GuideCapture'));
+const GuideManager = React.lazy(() => import('./pages/admin/GuideManager'));
+const Statistiche = React.lazy(() => import('./pages/admin/Statistiche'));
+const Analytics = React.lazy(() => import('./pages/admin/Analytics'));
+const CourseAdmin = React.lazy(() => import('./pages/admin/CourseAdmin'));
+const CourseContentManager = React.lazy(() => import('./pages/admin/CourseContentManager'));
+const SuperAdminSettings = React.lazy(() => import('./pages/admin/SuperAdminSettings'));
 
-const SchedaAlimentazione = React.lazy(() => import('./pages/SchedaAlimentazione'));
-const SchedaAllenamento = React.lazy(() => import('./pages/SchedaAllenamento'));
-const ClientSchedaAlimentazione = React.lazy(() => import('./pages/ClientSchedaAlimentazione'));
-const ClientSchedaAlimentazioneEnhanced = React.lazy(() => import('./pages/ClientSchedaAlimentazioneEnhanced'));
-const ClientSchedaAllenamento = React.lazy(() => import('./pages/ClientSchedaAllenamento'));
+// Client Pages
+const ClientDashboard = React.lazy(() => import('./pages/client/ClientDashboard'));
+const ClientAnamnesi = React.lazy(() => import('./pages/client/ClientAnamnesi'));
+const ClientChecks = React.lazy(() => import('./pages/client/ClientChecks'));
+const ClientPayments = React.lazy(() => import('./pages/client/ClientPayments'));
+const ClientSchedaAlimentazione = React.lazy(() => import('./pages/client/ClientSchedaAlimentazione'));
+const ClientSchedaAlimentazioneEnhanced = React.lazy(() => import('./pages/client/ClientSchedaAlimentazioneEnhanced'));
+const ClientSchedaAllenamento = React.lazy(() => import('./pages/client/ClientSchedaAllenamento'));
 
-// SuperAdmin page
-const SuperAdminSettings = React.lazy(() => import('./pages/SuperAdminSettings'));
+// Coach Pages
+const CoachDashboard = React.lazy(() => import('./pages/coach/CoachDashboard'));
+const CoachAnamnesi = React.lazy(() => import('./pages/coach/CoachAnamnesi'));
+const CoachUpdates = React.lazy(() => import('./pages/coach/CoachUpdates'));
+const CoachClients = React.lazy(() => import('./pages/coach/CoachClients'));
+const CoachClientDetail = React.lazy(() => import('./pages/coach/CoachClientDetail'));
 
+// Collaboratore Pages
+const CollaboratoreDashboard = React.lazy(() => import('./pages/collaboratore/CollaboratoreDashboard'));
 
-const CourseAdmin = React.lazy(() => import('./pages/CourseAdmin'));
-const CourseContentManager = React.lazy(() => import('./pages/CourseContentManager'));
-const OnboardingFlow = React.lazy(() => import('./pages/OnboardingFlow'));
-
-// Video Calls
-const VideoCallOneToOne = React.lazy(() => import('./pages/VideoCallOneToOne'));
-const VideoCallGroup = React.lazy(() => import('./pages/VideoCallGroup'));
+// Shared Pages
+const UnifiedChat = React.lazy(() => import('./pages/shared/UnifiedChat'));
+const Updates = React.lazy(() => import('./pages/shared/Updates'));
+const CalendarPage = React.lazy(() => import('./pages/shared/CalendarPage'));
+const CalendarReport = React.lazy(() => import('./pages/shared/CalendarReport'));
+const Notifications = React.lazy(() => import('./pages/shared/Notifications'));
+const AlimentazioneAllenamento = React.lazy(() => import('./pages/shared/AlimentazioneAllenamento'));
+const SchedaAlimentazione = React.lazy(() => import('./pages/shared/SchedaAlimentazione'));
+const SchedaAllenamento = React.lazy(() => import('./pages/shared/SchedaAllenamento'));
+const GuidaMentalFit = React.lazy(() => import('./pages/shared/GuidaMentalFit'));
+const Onboarding = React.lazy(() => import('./pages/shared/Onboarding'));
+const OnboardingFlow = React.lazy(() => import('./pages/shared/OnboardingFlow'));
+const VideoCallOneToOne = React.lazy(() => import('./pages/shared/VideoCallOneToOne'));
+const VideoCallGroup = React.lazy(() => import('./pages/shared/VideoCallGroup'));
 
 // Courses
 const CourseDashboard = React.lazy(() => import('./components/courses/CourseDashboard'));
 const CourseDetail = React.lazy(() => import('./components/courses/CourseDetail'));
 const LessonPlayer = React.lazy(() => import('./components/courses/LessonPlayer'));
-
-// Onboarding
-const Onboarding = React.lazy(() => import('./pages/Onboarding'));
 
 // Spinner
 const PageSpinner = () => (
