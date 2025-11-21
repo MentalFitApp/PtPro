@@ -6,7 +6,8 @@ import { db, auth, toDate } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { 
   DollarSign, TrendingUp, TrendingDown, Users, UserCheck, UserX, 
-  Clock, Target, BarChart3, Activity, Calendar, ArrowLeft
+  Clock, Target, BarChart3, Activity, Calendar, ArrowLeft, 
+  BookOpen, GraduationCap, Trophy, Video, CheckCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import RevenueChart from '../components/RevenueChart';
@@ -51,6 +52,10 @@ export default function Analytics() {
   const [checks, setChecks] = useState([]);
   const [messages, setMessages] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('month'); // month, quarter, year
+  const [courses, setCourses] = useState([]);
+  const [enrollments, setEnrollments] = useState([]);
+  const [communityPosts, setCommunityPosts] = useState([]);
+  const [activeTab, setActiveTab] = useState('business'); // business, courses, community
 
   // Check role
   useEffect(() => {
@@ -133,6 +138,39 @@ export default function Analytics() {
       }
       setMessages(messagesList);
     });
+    return () => unsub();
+  }, []);
+
+  // Fetch courses
+  useEffect(() => {
+    const unsub = onSnapshot(query(collection(db, 'courses'), orderBy('createdAt', 'desc')), 
+      (snap) => {
+        const coursesList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCourses(coursesList);
+      }
+    );
+    return () => unsub();
+  }, []);
+
+  // Fetch enrollments
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'course_enrollments'), 
+      (snap) => {
+        const enrollmentsList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setEnrollments(enrollmentsList);
+      }
+    );
+    return () => unsub();
+  }, []);
+
+  // Fetch community posts
+  useEffect(() => {
+    const unsub = onSnapshot(query(collection(db, 'community_posts'), orderBy('createdAt', 'desc')), 
+      (snap) => {
+        const postsList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setCommunityPosts(postsList);
+      }
+    );
     return () => unsub();
   }, []);
 
@@ -355,12 +393,52 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* Revenue Metrics */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
-            <DollarSign size={24} className="text-green-400" />
-            Revenue Tracking
-          </h2>
+        {/* Analytics Tabs */}
+        <div className="flex gap-2 mb-6 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('business')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'business'
+                ? 'bg-rose-600 text-white'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            <DollarSign size={16} className="inline mr-2" />
+            Business
+          </button>
+          <button
+            onClick={() => setActiveTab('courses')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'courses'
+                ? 'bg-cyan-600 text-white'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            <GraduationCap size={16} className="inline mr-2" />
+            Corsi
+          </button>
+          <button
+            onClick={() => setActiveTab('community')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'community'
+                ? 'bg-purple-600 text-white'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            <Users size={16} className="inline mr-2" />
+            Community
+          </button>
+        </div>
+
+        {/* Business Analytics */}
+        {activeTab === 'business' && (
+          <>
+            {/* Revenue Metrics */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
+                <DollarSign size={24} className="text-green-400" />
+                Revenue Tracking
+              </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard
               title="Revenue Totale"
@@ -459,32 +537,184 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* At Risk Clients */}
-        {retentionMetrics.atRiskCount > 0 && (
-          <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-red-400 mb-4 flex items-center gap-2">
-              <UserX size={24} />
-              Clienti a Rischio ({retentionMetrics.atRiskCount})
-            </h2>
-            <p className="text-slate-300 mb-4">
-              Questi clienti hanno abbonamenti in scadenza nei prossimi 15 giorni
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {retentionMetrics.atRiskClients.map(client => {
-                const daysLeft = Math.ceil((toDate(client.scadenza) - new Date()) / (1000 * 60 * 60 * 24));
-                return (
-                  <button
-                    key={client.id}
-                    onClick={() => navigate(`/client/${client.id}?tab=payments`)}
-                    className="bg-slate-800/60 p-4 rounded-lg text-left hover:bg-slate-800 transition-colors"
-                  >
-                    <p className="font-semibold text-slate-200">{client.name}</p>
-                    <p className="text-sm text-red-400 mt-1">Scade tra {daysLeft} giorni</p>
-                  </button>
-                );
-              })}
+            {/* At Risk Clients */}
+            {retentionMetrics.atRiskCount > 0 && (
+              <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-6">
+                <h2 className="text-xl font-semibold text-red-400 mb-4 flex items-center gap-2">
+                  <UserX size={24} />
+                  Clienti a Rischio ({retentionMetrics.atRiskCount})
+                </h2>
+                <p className="text-slate-300 mb-4">
+                  Questi clienti hanno abbonamenti in scadenza nei prossimi 15 giorni
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {retentionMetrics.atRiskClients.map(client => {
+                    const daysLeft = Math.ceil((toDate(client.scadenza) - new Date()) / (1000 * 60 * 60 * 24));
+                    return (
+                      <button
+                        key={client.id}
+                        onClick={() => navigate(`/client/${client.id}?tab=payments`)}
+                        className="bg-slate-800/60 p-4 rounded-lg text-left hover:bg-slate-800 transition-colors"
+                      >
+                        <p className="font-semibold text-slate-200">{client.name}</p>
+                        <p className="text-sm text-red-400 mt-1">Scade tra {daysLeft} giorni</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Courses Analytics */}
+        {activeTab === 'courses' && (
+          <>
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
+                <GraduationCap size={24} className="text-cyan-400" />
+                Statistiche Corsi
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <StatCard
+                  title="Corsi Totali"
+                  value={courses.length}
+                  icon={<BookOpen className="text-cyan-400" />}
+                  subtitle={`${courses.filter(c => c.isPublic).length} pubblici`}
+                />
+                <StatCard
+                  title="Iscrizioni Totali"
+                  value={enrollments.length}
+                  icon={<Users className="text-green-400" />}
+                  subtitle="Tutti i corsi"
+                />
+                <StatCard
+                  title="Tasso di Completamento"
+                  value={Math.round((enrollments.filter(e => e.completed).length / (enrollments.length || 1)) * 100)}
+                  icon={<CheckCircle className="text-blue-400" />}
+                  isPercentage
+                />
+                <StatCard
+                  title="Media Iscrizioni/Corso"
+                  value={(enrollments.length / (courses.length || 1)).toFixed(1)}
+                  icon={<Trophy className="text-yellow-400" />}
+                />
+              </div>
+
+              {/* Top Courses */}
+              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
+                <h3 className="text-lg font-semibold text-slate-200 mb-4">Corsi Più Popolari</h3>
+                <div className="space-y-3">
+                  {courses
+                    .map(course => ({
+                      ...course,
+                      enrollmentCount: enrollments.filter(e => e.courseId === course.id).length
+                    }))
+                    .sort((a, b) => b.enrollmentCount - a.enrollmentCount)
+                    .slice(0, 5)
+                    .map((course, index) => (
+                      <div key={course.id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl font-bold text-slate-500">#{index + 1}</span>
+                          <div>
+                            <h4 className="font-medium text-white">{course.title}</h4>
+                            <p className="text-sm text-slate-400">{course.enrollmentCount} iscritti</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => navigate(`/admin/course/${course.id}/manage`)}
+                          className="px-3 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded text-sm"
+                        >
+                          Gestisci
+                        </button>
+                      </div>
+                    ))}
+                  {courses.length === 0 && (
+                    <p className="text-center text-slate-400 py-4">Nessun corso disponibile</p>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
+          </>
+        )}
+
+        {/* Community Analytics */}
+        {activeTab === 'community' && (
+          <>
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
+                <Users size={24} className="text-purple-400" />
+                Statistiche Community
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <StatCard
+                  title="Post Totali"
+                  value={communityPosts.length}
+                  icon={<Activity className="text-blue-400" />}
+                  subtitle="Tutti i post"
+                />
+                <StatCard
+                  title="Membri Attivi"
+                  value={new Set(communityPosts.map(p => p.authorId)).size}
+                  icon={<Users className="text-green-400" />}
+                  subtitle="Utenti che hanno postato"
+                />
+                <StatCard
+                  title="Reazioni Totali"
+                  value={communityPosts.reduce((sum, p) => sum + (p.reactionsCount || 0), 0)}
+                  icon={<Trophy className="text-yellow-400" />}
+                />
+                <StatCard
+                  title="Commenti Totali"
+                  value={communityPosts.reduce((sum, p) => sum + (p.commentsCount || 0), 0)}
+                  icon={<Activity className="text-cyan-400" />}
+                />
+              </div>
+
+              {/* Top Contributors */}
+              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
+                <h3 className="text-lg font-semibold text-slate-200 mb-4">Top Contributori</h3>
+                <div className="space-y-3">
+                  {(() => {
+                    const userPostCounts = communityPosts.reduce((acc, post) => {
+                      const authorId = post.authorId;
+                      if (!acc[authorId]) {
+                        acc[authorId] = {
+                          authorId,
+                          authorName: post.authorName || 'Utente',
+                          postCount: 0,
+                          totalReactions: 0
+                        };
+                      }
+                      acc[authorId].postCount++;
+                      acc[authorId].totalReactions += (post.reactionsCount || 0);
+                      return acc;
+                    }, {});
+
+                    return Object.values(userPostCounts)
+                      .sort((a, b) => b.postCount - a.postCount)
+                      .slice(0, 5)
+                      .map((user, index) => (
+                        <div key={user.authorId} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl font-bold text-slate-500">#{index + 1}</span>
+                            <div>
+                              <h4 className="font-medium text-white">{user.authorName}</h4>
+                              <p className="text-sm text-slate-400">
+                                {user.postCount} post • {user.totalReactions} reazioni
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ));
+                  })()}
+                  {communityPosts.length === 0 && (
+                    <p className="text-center text-slate-400 py-4">Nessun post disponibile</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
