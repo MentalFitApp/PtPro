@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, getDoc, getDocs, setDoc, deleteDoc, serverTimestamp, increment, arrayUnion, arrayRemove, where, limit, startAfter } from 'firebase/firestore';
 import { db, auth, storage } from '../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Trophy, MessageSquare, Lightbulb, Plus, Heart, MessageCircle, Award, Crown, Send, Image, Video as VideoIcon, X, UsersRound, Bookmark, Share2, Search, Hash, Flame, ThumbsUp, Zap, Flag, Pin, TrendingUp, BarChart3, Target, CheckCircle, Trash2, MoreVertical, Settings } from 'lucide-react';
+import { Trophy, MessageSquare, Lightbulb, Plus, Heart, MessageCircle, Award, Crown, Send, Image, Video as VideoIcon, X, UsersRound, Bookmark, Share2, Search, Hash, Flame, ThumbsUp, Zap, Flag, Pin, TrendingUp, BarChart3, Target, CheckCircle, Trash2, MoreVertical, Settings, Camera, CameraOff, Mic as MicOn, MicOff, Monitor, PhoneOff, User } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import MediaUploadButton from '../components/MediaUploadButton';
 import MediaViewer from '../components/MediaViewer';
+import DailyIframe from '@daily-co/daily-js';
+import { DailyProvider, useParticipantIds, useParticipant, useDaily, useScreenShare, useLocalParticipant, useVideoTrack, useAudioTrack } from '@daily-co/daily-react';
 
 // Canali community con icone come componenti React
 const DEFAULT_CHANNELS = {
@@ -145,6 +147,11 @@ export default function Community() {
   const [activeTab, setActiveTab] = useState('feed'); // 'feed', 'members', 'liveRoom'
   // eslint-disable-next-line no-unused-vars
   const [onlineUsers, setOnlineUsers] = useState([]);
+  // Stati per Daily.co Live Room
+  const [dailyCallObject, setDailyCallObject] = useState(null);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   // eslint-disable-next-line no-unused-vars
   const [rewards, setRewards] = useState(DEFAULT_REWARDS);
   const [showRewards, setShowRewards] = useState(false);
@@ -319,6 +326,81 @@ export default function Community() {
     } catch (error) {
       console.error('Errore salvataggio profilo:', error);
       alert('Errore salvataggio profilo');
+    }
+  };
+
+  // Funzioni Daily.co per Live Room
+  const initializeDailyCall = async (roomUrl) => {
+    try {
+      const call = DailyIframe.createCallObject({
+        url: roomUrl,
+        dailyConfig: {
+          experimentalChromeVideoMuteLightOff: true,
+        },
+      });
+
+      setDailyCallObject(call);
+
+      // Event listeners
+      call.on('participant-joined', (event) => {
+        console.log('Partecipante entrato nel Live Room:', event.participant);
+      });
+
+      call.on('participant-left', (event) => {
+        console.log('Partecipante uscito dal Live Room:', event.participant);
+      });
+
+      call.on('error', (event) => {
+        console.error('Errore Daily.co Live Room:', event.error);
+      });
+
+      // Partecipa alla chiamata
+      await call.join();
+
+    } catch (error) {
+      console.error('Errore inizializzazione Daily.co Live Room:', error);
+    }
+  };
+
+  const toggleVideo = async () => {
+    if (!dailyCallObject) return;
+    try {
+      if (isVideoEnabled) {
+        await dailyCallObject.setLocalVideo(false);
+      } else {
+        await dailyCallObject.setLocalVideo(true);
+      }
+      setIsVideoEnabled(!isVideoEnabled);
+    } catch (error) {
+      console.error('Errore toggle video:', error);
+    }
+  };
+
+  const toggleAudio = async () => {
+    if (!dailyCallObject) return;
+    try {
+      if (isAudioEnabled) {
+        await dailyCallObject.setLocalAudio(false);
+      } else {
+        await dailyCallObject.setLocalAudio(true);
+      }
+      setIsAudioEnabled(!isAudioEnabled);
+    } catch (error) {
+      console.error('Errore toggle audio:', error);
+    }
+  };
+
+  const toggleScreenShare = async () => {
+    if (!dailyCallObject) return;
+    try {
+      if (isScreenSharing) {
+        await dailyCallObject.stopScreenShare();
+      } else {
+        await dailyCallObject.startScreenShare();
+      }
+      setIsScreenSharing(!isScreenSharing);
+    } catch (error) {
+      console.error('Errore screen share:', error);
     }
   };
 
@@ -1456,14 +1538,19 @@ export default function Community() {
             <h2 className="text-2xl font-bold text-cyan-400 mb-6 flex items-center gap-2">
               <VideoIcon size={28} /> Live Room
             </h2>
-            {/* Iframe Jitsi o componente video call */}
-            <div className="w-full max-w-3xl aspect-video rounded-xl overflow-hidden shadow-xl border border-cyan-600">
-              <iframe
-                src={`https://meet.jit.si/MentalFitCommunityRoom`}
-                allow="camera; microphone; fullscreen; display-capture"
-                style={{ width: '100%', height: '100%', border: 'none' }}
-                title="Live Room Video Call"
-              />
+            {/* Componente Daily.co Live Room */}
+            <div className="w-full max-w-6xl rounded-xl overflow-hidden shadow-xl border border-cyan-600 bg-slate-900">
+              <DailyProvider callObject={dailyCallObject}>
+                <LiveRoomInterface
+                  onJoin={() => initializeDailyCall('https://flowfitpro.daily.co/MentalFitCommunityRoom')}
+                  isVideoEnabled={isVideoEnabled}
+                  isAudioEnabled={isAudioEnabled}
+                  isScreenSharing={isScreenSharing}
+                  onToggleVideo={toggleVideo}
+                  onToggleAudio={toggleAudio}
+                  onToggleScreenShare={toggleScreenShare}
+                />
+              </DailyProvider>
             </div>
             <p className="mt-4 text-slate-400 text-center">Questa stanza è accessibile solo agli utenti abilitati.<br />Se hai problemi di accesso, contatta un admin.</p>
           </div>
@@ -3031,6 +3118,170 @@ export default function Community() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// Componente Live Room con Daily.co migliorato
+function LiveRoomInterface({ onJoin, isVideoEnabled, isAudioEnabled, isScreenSharing, onToggleVideo, onToggleAudio, onToggleScreenShare }) {
+  const [hasJoined, setHasJoined] = useState(false);
+  const callObject = useDaily();
+  const participantIds = useParticipantIds();
+  const localParticipant = useLocalParticipant();
+  const { screens } = useScreenShare();
+
+  const handleJoin = async () => {
+    await onJoin();
+    setHasJoined(true);
+  };
+
+  if (!hasJoined) {
+    return (
+      <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+        <div className="text-center">
+          <VideoIcon size={64} className="mx-auto mb-4 text-cyan-400" />
+          <h3 className="text-xl font-bold text-white mb-2">Live Room Community</h3>
+          <p className="text-slate-400 mb-6">Partecipa alla stanza live della community</p>
+          <button
+            onClick={handleJoin}
+            className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-xl font-semibold transition-all shadow-lg"
+          >
+            Entra nella Live Room
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="aspect-video relative bg-slate-900">
+      {/* Video Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-4 h-full overflow-auto">
+        {/* Partecipante locale */}
+        <div className="relative bg-slate-800 rounded-xl overflow-hidden aspect-video">
+          <video
+            autoPlay
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+            ref={(el) => {
+              if (el && localParticipant?.videoTrack) {
+                el.srcObject = new MediaStream([localParticipant.videoTrack]);
+              }
+            }}
+          />
+          {!isVideoEnabled && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-700">
+              <div className="w-20 h-20 bg-slate-600 rounded-full flex items-center justify-center">
+                <User size={32} className="text-slate-400" />
+              </div>
+            </div>
+          )}
+          <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+            Tu {isAudioEnabled ? '' : '(muto)'}
+          </div>
+        </div>
+
+        {/* Altri partecipanti */}
+        {participantIds.filter(id => id !== localParticipant?.sessionId).map((id) => (
+          <ParticipantVideo key={id} sessionId={id} />
+        ))}
+
+        {/* Screen share */}
+        {screens.length > 0 && (
+          <div className="col-span-full relative bg-slate-800 rounded-xl overflow-hidden aspect-video">
+            <video
+              autoPlay
+              playsInline
+              className="w-full h-full object-contain"
+              ref={(el) => {
+                if (el && screens[0]?.screenVideoTrack) {
+                  el.srcObject = new MediaStream([screens[0].screenVideoTrack]);
+                }
+              }}
+            />
+            <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+              Condivisione schermo
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Controlli chiamata */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-slate-800/90 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg">
+        <button
+          onClick={onToggleVideo}
+          className={`p-3 rounded-full transition-all ${
+            isVideoEnabled
+              ? 'bg-slate-600 hover:bg-slate-500 text-white'
+              : 'bg-red-600 hover:bg-red-500 text-white'
+          }`}
+          title={isVideoEnabled ? 'Disattiva video' : 'Attiva video'}
+        >
+          {isVideoEnabled ? <Camera size={20} /> : <CameraOff size={20} />}
+        </button>
+
+        <button
+          onClick={onToggleAudio}
+          className={`p-3 rounded-full transition-all ${
+            isAudioEnabled
+              ? 'bg-slate-600 hover:bg-slate-500 text-white'
+              : 'bg-red-600 hover:bg-red-500 text-white'
+          }`}
+          title={isAudioEnabled ? 'Disattiva audio' : 'Attiva audio'}
+        >
+          {isAudioEnabled ? <MicOn size={20} /> : <MicOff size={20} />}
+        </button>
+
+        <button
+          onClick={onToggleScreenShare}
+          className={`p-3 rounded-full transition-all ${
+            isScreenSharing
+              ? 'bg-cyan-600 hover:bg-cyan-500 text-white'
+              : 'bg-slate-600 hover:bg-slate-500 text-white'
+          }`}
+          title={isScreenSharing ? 'Ferma condivisione' : 'Condividi schermo'}
+        >
+          <Monitor size={20} />
+        </button>
+
+        <div className="ml-4 text-white text-sm">
+          {participantIds.length} partecipante{participantIds.length !== 1 ? 'i' : ''}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Componente per video partecipante remoto
+function ParticipantVideo({ sessionId }) {
+  const participant = useParticipant(sessionId);
+  const videoTrack = useVideoTrack(sessionId);
+  const audioTrack = useAudioTrack(sessionId);
+
+  return (
+    <div className="relative bg-slate-800 rounded-xl overflow-hidden aspect-video">
+      {videoTrack?.isEnabled ? (
+        <video
+          autoPlay
+          playsInline
+          className="w-full h-full object-cover"
+          ref={(el) => {
+            if (el && videoTrack.track) {
+              el.srcObject = new MediaStream([videoTrack.track]);
+            }
+          }}
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-slate-700">
+          <div className="w-20 h-20 bg-slate-600 rounded-full flex items-center justify-center">
+            <User size={32} className="text-slate-400" />
+          </div>
+        </div>
+      )}
+      <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+        {participant?.user_name || 'Partecipante'} {!audioTrack?.isEnabled && '(muto)'}
+      </div>
     </div>
   );
 }

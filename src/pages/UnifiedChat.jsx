@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, doc, addDoc, serverTimestamp, setDoc, getDocs, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Send, Video, Search, Plus, Phone, MessageSquare, X, ArrowLeft, Check, CheckCheck, UserPlus, Users, Image as ImageIcon, Mic, Paperclip, Play, Pause } from 'lucide-react';
+import { Send, Video, Search, Plus, Phone, MessageSquare, X, ArrowLeft, Check, CheckCheck, UserPlus, Users, Image as ImageIcon, Mic, Paperclip, Play, Pause, Camera, CameraOff, Mic as MicOn, MicOff, Monitor, PhoneOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
+import DailyIframe from '@daily-co/daily-js';
+import { DailyProvider, useParticipantIds, useParticipant, useDaily, useScreenShare, useLocalParticipant, useVideoTrack, useAudioTrack } from '@daily-co/daily-react';
 
 export default function UnifiedChat() {
   const navigate = useNavigate();
@@ -349,13 +351,17 @@ export default function UnifiedChat() {
     return onlineUsers[userId]?.online === true;
   };
 
-  // Stati per videocall e chiamate vocali
+  // Stati per videocall e chiamate vocali con Daily.co
   const [showVideoCallModal, setShowVideoCallModal] = useState(false);
   const [showVoiceCallModal, setShowVoiceCallModal] = useState(false);
   const [videoCallRoom, setVideoCallRoom] = useState(null);
   const [voiceCallRoom, setVoiceCallRoom] = useState(null);
   const [incomingCall, setIncomingCall] = useState(null);
   const [callDuration, setCallDuration] = useState(0);
+  const [dailyCallObject, setDailyCallObject] = useState(null);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const callTimerRef = useRef(null);
   const activeCallMessageRef = useRef(null);
 
@@ -386,21 +392,48 @@ export default function UnifiedChat() {
     return () => unsubscribe();
   }, [currentUser]);
 
-  // Apri videocall - crea stanza e invia notifica
+  // Apri videocall - crea stanza Daily.co e invia notifica
   const handleStartVideoCall = async () => {
     if (!selectedChat) return;
-    
+
     const otherUser = getOtherUser(selectedChat);
     const otherUserId = selectedChat.participants.find(p => p !== currentUser.uid);
-    const roomId = `videocall_${selectedChat.id}_${Date.now()}`;
-    
+
     try {
+      // Crea stanza Daily.co
+      const response = await fetch('https://api.daily.co/v1/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_DAILY_API_KEY}`,
+        },
+        body: JSON.stringify({
+          name: `videocall_${selectedChat.id}_${Date.now()}`,
+          privacy: 'private',
+          properties: {
+            max_participants: 2,
+            enable_chat: false,
+            enable_screenshare: true,
+            enable_recording: false,
+            start_video_off: false,
+            start_audio_off: false,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Errore creazione stanza Daily.co');
+      }
+
+      const roomData = await response.json();
+      const roomUrl = roomData.url;
+
       // Invia messaggio sistema nella chat
       const callMessageRef = await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
         type: 'call',
         callType: 'video',
         callStatus: 'calling',
-        roomId: roomId,
+        roomUrl: roomUrl,
         senderId: currentUser.uid,
         senderName: currentUser.displayName || 'Utente',
         senderPhotoURL: currentUser.photoURL || '',
@@ -414,7 +447,7 @@ export default function UnifiedChat() {
         type: 'videocall',
         title: 'Videochiamata in arrivo',
         message: `${currentUser.displayName || 'Un utente'} sta chiamando...`,
-        roomId: roomId,
+        roomUrl: roomUrl,
         callMessageId: callMessageRef.id,
         callerId: currentUser.uid,
         callerName: currentUser.displayName || 'Utente',
@@ -431,30 +464,58 @@ export default function UnifiedChat() {
       // Salva riferimento per gestire la chiusura
       activeCallMessageRef.current = { chatId: selectedChat.id, messageId: callMessageRef.id };
 
-      // Apri modal con iframe Jitsi
-      setVideoCallRoom(roomId);
+      // Apri modal con Daily.co
+      setVideoCallRoom(roomUrl);
       setShowVideoCallModal(true);
+      initializeDailyCall(roomUrl);
     } catch (error) {
       console.error('Errore avvio videocall:', error);
       alert('Errore durante l\'avvio della videochiamata');
     }
   };
 
-  // Chiamata vocale (solo audio)
+  // Chiamata vocale (solo audio) con Daily.co
   const handleStartVoiceCall = async () => {
     if (!selectedChat) return;
-    
+
     const otherUser = getOtherUser(selectedChat);
     const otherUserId = selectedChat.participants.find(p => p !== currentUser.uid);
-    const roomId = `voicecall_${selectedChat.id}_${Date.now()}`;
-    
+
     try {
+      // Crea stanza Daily.co per chiamata vocale
+      const response = await fetch('https://api.daily.co/v1/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_DAILY_API_KEY}`,
+        },
+        body: JSON.stringify({
+          name: `voicecall_${selectedChat.id}_${Date.now()}`,
+          privacy: 'private',
+          properties: {
+            max_participants: 2,
+            enable_chat: false,
+            enable_screenshare: false,
+            enable_recording: false,
+            start_video_off: true,
+            start_audio_off: false,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Errore creazione stanza Daily.co');
+      }
+
+      const roomData = await response.json();
+      const roomUrl = roomData.url;
+
       // Invia messaggio sistema nella chat
       const callMessageRef = await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
         type: 'call',
         callType: 'voice',
         callStatus: 'calling',
-        roomId: roomId,
+        roomUrl: roomUrl,
         senderId: currentUser.uid,
         senderName: currentUser.displayName || 'Utente',
         senderPhotoURL: currentUser.photoURL || '',
@@ -467,7 +528,7 @@ export default function UnifiedChat() {
         type: 'voicecall',
         title: 'Chiamata vocale in arrivo',
         message: `${currentUser.displayName || 'Un utente'} sta chiamando...`,
-        roomId: roomId,
+        roomUrl: roomUrl,
         callMessageId: callMessageRef.id,
         callerId: currentUser.uid,
         callerName: currentUser.displayName || 'Utente',
@@ -484,12 +545,92 @@ export default function UnifiedChat() {
       // Salva riferimento per gestire la chiusura
       activeCallMessageRef.current = { chatId: selectedChat.id, messageId: callMessageRef.id };
 
-      setVoiceCallRoom(roomId);
+      setVoiceCallRoom(roomUrl);
       setShowVoiceCallModal(true);
-      startCallTimer();
+      setIsVideoEnabled(false); // Per chiamata vocale
+      initializeDailyCall(roomUrl);
     } catch (error) {
       console.error('Errore avvio chiamata vocale:', error);
       alert('Errore durante l\'avvio della chiamata');
+    }
+  };
+
+  // Inizializza chiamata Daily.co
+  const initializeDailyCall = async (roomUrl) => {
+    try {
+      const call = DailyIframe.createCallObject({
+        url: roomUrl,
+        dailyConfig: {
+          experimentalChromeVideoMuteLightOff: true,
+        },
+      });
+
+      setDailyCallObject(call);
+
+      // Event listeners
+      call.on('participant-joined', (event) => {
+        console.log('Partecipante entrato:', event.participant);
+      });
+
+      call.on('participant-left', (event) => {
+        console.log('Partecipante uscito:', event.participant);
+      });
+
+      call.on('error', (event) => {
+        console.error('Errore Daily.co:', event.error);
+      });
+
+      // Partecipa alla chiamata
+      await call.join();
+
+      // Avvia timer
+      startCallTimer();
+
+    } catch (error) {
+      console.error('Errore inizializzazione Daily.co:', error);
+    }
+  };
+
+  // Controlli chiamata
+  const toggleVideo = async () => {
+    if (!dailyCallObject) return;
+    try {
+      if (isVideoEnabled) {
+        await dailyCallObject.setLocalVideo(false);
+      } else {
+        await dailyCallObject.setLocalVideo(true);
+      }
+      setIsVideoEnabled(!isVideoEnabled);
+    } catch (error) {
+      console.error('Errore toggle video:', error);
+    }
+  };
+
+  const toggleAudio = async () => {
+    if (!dailyCallObject) return;
+    try {
+      if (isAudioEnabled) {
+        await dailyCallObject.setLocalAudio(false);
+      } else {
+        await dailyCallObject.setLocalAudio(true);
+      }
+      setIsAudioEnabled(!isAudioEnabled);
+    } catch (error) {
+      console.error('Errore toggle audio:', error);
+    }
+  };
+
+  const toggleScreenShare = async () => {
+    if (!dailyCallObject) return;
+    try {
+      if (isScreenSharing) {
+        await dailyCallObject.stopScreenShare();
+      } else {
+        await dailyCallObject.startScreenShare();
+      }
+      setIsScreenSharing(!isScreenSharing);
+    } catch (error) {
+      console.error('Errore screen share:', error);
     }
   };
 
@@ -1112,12 +1253,14 @@ export default function UnifiedChat() {
                 onClick={async () => {
                   // Accetta la chiamata
                   if (incomingCall.type === 'voicecall') {
-                    setVoiceCallRoom(incomingCall.roomId);
+                    setVoiceCallRoom(incomingCall.roomUrl);
                     setShowVoiceCallModal(true);
-                    startCallTimer();
+                    setIsVideoEnabled(false);
+                    initializeDailyCall(incomingCall.roomUrl);
                   } else {
-                    setVideoCallRoom(incomingCall.roomId);
+                    setVideoCallRoom(incomingCall.roomUrl);
                     setShowVideoCallModal(true);
+                    initializeDailyCall(incomingCall.roomUrl);
                   }
                   
                   // Marca notifica come letta
@@ -1192,47 +1335,11 @@ export default function UnifiedChat() {
               exit={{ scale: 0.8, opacity: 0 }}
               className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl shadow-2xl border border-slate-700 w-full max-w-md overflow-hidden"
             >
-              {/* Header */}
-              <div className="p-6 text-center border-b border-slate-700/50">
-                <div className="relative inline-block mb-4">
-                  <img
-                    src={getOtherUser(selectedChat).photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(getOtherUser(selectedChat).name)}`}
-                    alt={getOtherUser(selectedChat).name}
-                    className="w-32 h-32 rounded-full object-cover border-4 border-green-500 shadow-xl"
-                  />
-                  <div className="absolute inset-0 rounded-full border-4 border-green-500 animate-ping opacity-50"></div>
-                </div>
-                <h2 className="text-2xl font-bold text-slate-100 mb-1">
-                  {getOtherUser(selectedChat).name}
-                </h2>
-                <p className="text-green-400 font-medium flex items-center justify-center gap-2">
-                  <Phone size={16} className="animate-pulse" />
-                  Chiamata in corso
-                </p>
-              </div>
-
-              {/* Durata chiamata */}
-              <div className="p-6 text-center">
-                <div className="text-5xl font-bold text-slate-100 mb-2 font-mono">
-                  {formatCallDuration(callDuration)}
-                </div>
-                <p className="text-sm text-slate-400">Durata chiamata</p>
-              </div>
-
-              {/* Audio iframe nascosto (Jitsi solo audio) */}
-              <div className="hidden">
-                <iframe
-                  src={`https://meet.jit.si/${voiceCallRoom}#config.startWithVideoMuted=true&config.startWithAudioMuted=false`}
-                  allow="microphone"
-                  className="w-full h-full border-0"
-                  title="Voice Call"
-                />
-              </div>
-
-              {/* Pulsante termina */}
-              <div className="p-6">
-                <button
-                  onClick={async () => {
+              {/* Interfaccia chiamata vocale Daily.co */}
+              <DailyProvider callObject={dailyCallObject}>
+                <VoiceCallInterface
+                  roomUrl={voiceCallRoom}
+                  onClose={async () => {
                     // Aggiorna stato chiamata a "cancelled"
                     if (activeCallMessageRef.current) {
                       try {
@@ -1245,16 +1352,31 @@ export default function UnifiedChat() {
                       }
                       activeCallMessageRef.current = null;
                     }
+
+                    // Rilascio risorse Daily.co
+                    if (dailyCallObject) {
+                      try {
+                        await dailyCallObject.leave();
+                        dailyCallObject.destroy();
+                        setDailyCallObject(null);
+                      } catch (error) {
+                        console.error('Errore rilascio Daily.co:', error);
+                      }
+                    }
+
                     setShowVoiceCallModal(false);
                     setVoiceCallRoom(null);
+                    setIsVideoEnabled(true);
+                    setIsAudioEnabled(true);
+                    setIsScreenSharing(false);
                     stopCallTimer();
                   }}
-                  className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold text-lg transition-all shadow-lg flex items-center justify-center gap-3"
-                >
-                  <X size={24} />
-                  Termina Chiamata
-                </button>
-              </div>
+                  isAudioEnabled={isAudioEnabled}
+                  onToggleAudio={toggleAudio}
+                  callDuration={callDuration}
+                  formatCallDuration={formatCallDuration}
+                />
+              </DailyProvider>
             </motion.div>
           </motion.div>
         )}
@@ -1275,13 +1397,11 @@ export default function UnifiedChat() {
               exit={{ scale: 0.9 }}
               className="bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-6xl h-[90vh] overflow-hidden flex flex-col"
             >
-              <div className="p-4 border-b border-slate-700 flex items-center justify-between bg-slate-800">
-                <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                  <Video size={24} className="text-cyan-500" />
-                  Videochiamata in corso
-                </h2>
-                <button
-                  onClick={async () => {
+
+              <DailyProvider callObject={dailyCallObject}>
+                <VideoCallInterface
+                  roomUrl={videoCallRoom}
+                  onClose={async () => {
                     // Aggiorna stato chiamata a "cancelled"
                     if (activeCallMessageRef.current) {
                       try {
@@ -1294,28 +1414,239 @@ export default function UnifiedChat() {
                       }
                       activeCallMessageRef.current = null;
                     }
+
+                    // Rilascio risorse Daily.co
+                    if (dailyCallObject) {
+                      try {
+                        await dailyCallObject.leave();
+                        dailyCallObject.destroy();
+                        setDailyCallObject(null);
+                      } catch (error) {
+                        console.error('Errore rilascio Daily.co:', error);
+                      }
+                    }
+
                     setShowVideoCallModal(false);
                     setVideoCallRoom(null);
+                    setIsVideoEnabled(true);
+                    setIsAudioEnabled(true);
+                    setIsScreenSharing(false);
                   }}
-                  className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                  title="Termina chiamata"
-                >
-                  <X size={20} className="text-white" />
-                </button>
-              </div>
-
-              <div className="flex-1 relative">
-                <iframe
-                  src={`https://meet.jit.si/${videoCallRoom}`}
-                  allow="camera; microphone; fullscreen; display-capture"
-                  className="w-full h-full border-0"
-                  title="Video Call"
+                  isVideoEnabled={isVideoEnabled}
+                  isAudioEnabled={isAudioEnabled}
+                  isScreenSharing={isScreenSharing}
+                  onToggleVideo={toggleVideo}
+                  onToggleAudio={toggleAudio}
+                  onToggleScreenShare={toggleScreenShare}
                 />
-              </div>
+              </DailyProvider>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// Componente Video Call con Daily.co migliorato
+function VideoCallInterface({ roomUrl, onClose, isVideoEnabled, isAudioEnabled, isScreenSharing, onToggleVideo, onToggleAudio, onToggleScreenShare }) {
+  const callObject = useDaily();
+  const participantIds = useParticipantIds();
+  const localParticipant = useLocalParticipant();
+  const { screens } = useScreenShare();
+
+  return (
+    <div className="flex-1 relative bg-slate-900">
+      {/* Video Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-4 h-full overflow-auto">
+        {/* Partecipante locale */}
+        <div className="relative bg-slate-800 rounded-xl overflow-hidden aspect-video">
+          <video
+            autoPlay
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+            ref={(el) => {
+              if (el && localParticipant?.videoTrack) {
+                el.srcObject = new MediaStream([localParticipant.videoTrack]);
+              }
+            }}
+          />
+          {!isVideoEnabled && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-700">
+              <div className="w-20 h-20 bg-slate-600 rounded-full flex items-center justify-center">
+                <User size={32} className="text-slate-400" />
+              </div>
+            </div>
+          )}
+          <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+            Tu {isAudioEnabled ? '' : '(muto)'}
+          </div>
+        </div>
+
+        {/* Altri partecipanti */}
+        {participantIds.filter(id => id !== localParticipant?.sessionId).map((id) => (
+          <ParticipantVideo key={id} sessionId={id} />
+        ))}
+
+        {/* Screen share */}
+        {screens.length > 0 && (
+          <div className="col-span-full relative bg-slate-800 rounded-xl overflow-hidden aspect-video">
+            <video
+              autoPlay
+              playsInline
+              className="w-full h-full object-contain"
+              ref={(el) => {
+                if (el && screens[0]?.screenVideoTrack) {
+                  el.srcObject = new MediaStream([screens[0].screenVideoTrack]);
+                }
+              }}
+            />
+            <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+              Condivisione schermo
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Controlli chiamata */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-slate-800/90 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg">
+        <button
+          onClick={onToggleVideo}
+          className={`p-3 rounded-full transition-all ${
+            isVideoEnabled
+              ? 'bg-slate-600 hover:bg-slate-500 text-white'
+              : 'bg-red-600 hover:bg-red-500 text-white'
+          }`}
+          title={isVideoEnabled ? 'Disattiva video' : 'Attiva video'}
+        >
+          {isVideoEnabled ? <Camera size={20} /> : <CameraOff size={20} />}
+        </button>
+
+        <button
+          onClick={onToggleAudio}
+          className={`p-3 rounded-full transition-all ${
+            isAudioEnabled
+              ? 'bg-slate-600 hover:bg-slate-500 text-white'
+              : 'bg-red-600 hover:bg-red-500 text-white'
+          }`}
+          title={isAudioEnabled ? 'Disattiva audio' : 'Attiva audio'}
+        >
+          {isAudioEnabled ? <MicOn size={20} /> : <MicOff size={20} />}
+        </button>
+
+        <button
+          onClick={onToggleScreenShare}
+          className={`p-3 rounded-full transition-all ${
+            isScreenSharing
+              ? 'bg-cyan-600 hover:bg-cyan-500 text-white'
+              : 'bg-slate-600 hover:bg-slate-500 text-white'
+          }`}
+          title={isScreenSharing ? 'Ferma condivisione' : 'Condividi schermo'}
+        >
+          <Monitor size={20} />
+        </button>
+
+        <button
+          onClick={onClose}
+          className="p-3 bg-red-600 hover:bg-red-500 text-white rounded-full transition-all"
+          title="Termina chiamata"
+        >
+          <PhoneOff size={20} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Componente per video partecipante remoto
+function ParticipantVideo({ sessionId }) {
+  const participant = useParticipant(sessionId);
+  const videoTrack = useVideoTrack(sessionId);
+  const audioTrack = useAudioTrack(sessionId);
+
+  return (
+    <div className="relative bg-slate-800 rounded-xl overflow-hidden aspect-video">
+      {videoTrack?.isEnabled ? (
+        <video
+          autoPlay
+          playsInline
+          className="w-full h-full object-cover"
+          ref={(el) => {
+            if (el && videoTrack.track) {
+              el.srcObject = new MediaStream([videoTrack.track]);
+            }
+          }}
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-slate-700">
+          <div className="w-20 h-20 bg-slate-600 rounded-full flex items-center justify-center">
+            <User size={32} className="text-slate-400" />
+          </div>
+        </div>
+      )}
+      <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+        {participant?.user_name || 'Partecipante'} {!audioTrack?.isEnabled && '(muto)'}
+      </div>
+    </div>
+  );
+}
+
+// Componente chiamata vocale migliorata
+function VoiceCallInterface({ roomUrl, onClose, isAudioEnabled, onToggleAudio, callDuration, formatCallDuration }) {
+  const participantIds = useParticipantIds();
+  const localParticipant = useLocalParticipant();
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
+      {/* Avatar grande del partecipante */}
+      <div className="relative mb-8">
+        <div className="w-40 h-40 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center shadow-2xl">
+          <User size={64} className="text-white" />
+        </div>
+        {/* Indicatore chiamata attiva */}
+        <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+          <Phone size={16} className="text-white" />
+        </div>
+        {/* Anello pulsante */}
+        <div className="absolute inset-0 rounded-full border-4 border-green-500 animate-ping opacity-30"></div>
+      </div>
+
+      {/* Info chiamata */}
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-slate-100 mb-2">
+          Chiamata vocale
+        </h2>
+        <div className="text-4xl font-bold text-slate-100 mb-2 font-mono">
+          {formatCallDuration(callDuration)}
+        </div>
+        <p className="text-slate-400">
+          {participantIds.length - 1} partecipante{participantIds.length - 1 !== 1 ? 'i' : ''}
+        </p>
+      </div>
+
+      {/* Controlli chiamata */}
+      <div className="flex items-center gap-6">
+        <button
+          onClick={onToggleAudio}
+          className={`p-4 rounded-full transition-all shadow-lg ${
+            isAudioEnabled
+              ? 'bg-slate-600 hover:bg-slate-500 text-white'
+              : 'bg-red-600 hover:bg-red-500 text-white'
+          }`}
+          title={isAudioEnabled ? 'Disattiva audio' : 'Attiva audio'}
+        >
+          {isAudioEnabled ? <MicOn size={24} /> : <MicOff size={24} />}
+        </button>
+
+        <button
+          onClick={onClose}
+          className="p-4 bg-red-600 hover:bg-red-500 text-white rounded-full transition-all shadow-lg"
+          title="Termina chiamata"
+        >
+          <PhoneOff size={24} />
+        </button>
+      </div>
     </div>
   );
 }
