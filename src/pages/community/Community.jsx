@@ -710,11 +710,12 @@ export default function Community() {
               console.log('📊 Progress:', progress);
               setUploadProgress(progress.percent);
             },
-            isSuperAdmin
+            Boolean(isSuperAdmin) // Assicura che sia un booleano
           );
           console.log('✅ Upload profilo completato:', photoURL);
         } catch (uploadError) {
           console.error('❌ Errore upload profilo:', uploadError);
+          console.error('❌ Stack completo:', uploadError.stack);
           throw new Error(`Errore upload foto: ${uploadError.message}`);
         }
       }
@@ -806,12 +807,26 @@ export default function Community() {
               console.log('📊 Progress:', progress);
               setUploadProgress(progress.percent);
             },
-            isSuperAdmin
+            Boolean(isSuperAdmin) // Assicura che sia un booleano
           );
           console.log('✅ Upload completato:', photoURL);
         } catch (uploadError) {
           console.error('❌ Errore upload R2:', uploadError);
-          throw new Error(`Errore upload foto: ${uploadError.message}`);
+          console.error('❌ Stack completo:', uploadError.stack);
+          
+          // Offri un fallback: usa un avatar placeholder
+          const shouldContinue = window.confirm(
+            `Errore nel caricamento della foto: ${uploadError.message}\n\n` +
+            `Vuoi continuare con un avatar placeholder? (Potrai caricare la foto in seguito dal tuo profilo)`
+          );
+          
+          if (shouldContinue) {
+            // Genera URL avatar placeholder basato sul nome
+            const userName = profileData.displayName || 'User';
+            photoURL = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&size=200&background=random`;
+          } else {
+            throw new Error(`Errore upload foto: ${uploadError.message}`);
+          }
         }
       }
 
