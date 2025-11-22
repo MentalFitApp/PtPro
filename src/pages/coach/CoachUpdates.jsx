@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, collectionGroup, query, orderBy, onSnapshot, getDoc, doc, setDoc, where, serverTimestamp } from 'firebase/firestore';
-import { db, toDate } from '../../firebase';
+import { db, toDate } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { CheckCircle, Clock, FileText, MessageSquare, ArrowLeft, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -76,7 +77,7 @@ export default function CoachUpdates() {
 
   // Fetch lastViewed
   useEffect(() => {
-    const lastViewedRef = doc(db, 'app-data', 'lastViewed');
+    const lastViewedRef = getTenantDoc(db, 'app-data', 'lastViewed');
     const fetchLastViewed = async () => {
       try {
         const docSnap = await getDoc(lastViewedRef);
@@ -104,7 +105,7 @@ export default function CoachUpdates() {
         for (const doc of snap.docs) {
           if (toDate(doc.data().createdAt) > toDate(lastViewed)) {
             const clientId = doc.ref.parent.parent.id;
-            const clientDoc = await getDoc(doc(db, 'clients', clientId));
+            const clientDoc = await getDoc(getTenantDoc(db, 'clients', clientId));
             newChecks.push({
               type: 'new_check',
               clientId,
@@ -128,7 +129,7 @@ export default function CoachUpdates() {
         for (const doc of snap.docs) {
           if (toDate(doc.data().submittedAt) > toDate(lastViewed)) {
             const clientId = doc.ref.parent.parent.id;
-            const clientDoc = await getDoc(doc(db, 'clients', clientId));
+            const clientDoc = await getDoc(getTenantDoc(db, 'clients', clientId));
             newAnamnesi.push({
               type: 'new_anamnesi',
               clientId,
@@ -145,7 +146,7 @@ export default function CoachUpdates() {
       }
     });
 
-    const chatsQuery = query(collection(db, 'chats'), where('participants', 'array-contains', COACH_UID), orderBy('lastUpdate', 'desc'));
+    const chatsQuery = query(getTenantCollection(db, 'chats'), where('participants', 'array-contains', COACH_UID), orderBy('lastUpdate', 'desc'));
     const unsubChats = onSnapshot(chatsQuery, async (snap) => {
       try {
         const newMessages = [];
@@ -153,7 +154,7 @@ export default function CoachUpdates() {
           const chatData = doc.data();
           const clientId = chatData.participants.find(p => !adminUIDs.includes(p));
           if (chatData.lastUpdate && toDate(chatData.lastUpdate) > toDate(lastViewed)) {
-            const clientDoc = await getDoc(doc(db, 'clients', clientId));
+            const clientDoc = await getDoc(getTenantDoc(db, 'clients', clientId));
             newMessages.push({
               type: 'new_message',
               clientId,
@@ -170,7 +171,7 @@ export default function CoachUpdates() {
       }
     });
 
-    const clientsQuery = query(collection(db, 'clients'));
+    const clientsQuery = query(getTenantCollection(db, 'clients'));
     const unsubClients = onSnapshot(clientsQuery, (snap) => {
       try {
         const expiring = snap.docs

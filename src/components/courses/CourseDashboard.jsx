@@ -5,6 +5,8 @@ import { db, auth } from '../../firebase';
 import { BookOpen, Search, Filter, Grid, List, GraduationCap } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import CourseCard from './CourseCard';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 /**
  * Dashboard principale per i corsi - mostra tutti i corsi disponibili
@@ -67,7 +69,7 @@ export default function CourseDashboard() {
 
           // Carica progresso per questo corso
           const progressQuery = query(
-            collection(db, 'user_progress'),
+            getTenantCollection(db, 'user_progress'),
             where('userId', '==', userId),
             where('courseId', '==', courseId)
           );

@@ -3,6 +3,8 @@ import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, setDoc } from
 import { db } from '../../firebase';
 import { Trash2, Edit, X, Check, Copy, Plus, Archive, ExternalLink, Search, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 export default function GuideManager() {
   const [guides, setGuides] = useState([]);
@@ -28,7 +30,7 @@ export default function GuideManager() {
   const [countdownDate, setCountdownDate] = useState('');
 
   useEffect(() => {
-    const q = query(collection(db, 'guides'));
+    const q = query(getTenantCollection(db, 'guides'));
     const unsub = onSnapshot(q, snap => {
       setGuides(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
@@ -36,7 +38,7 @@ export default function GuideManager() {
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, 'guideLeads'));
+    const q = query(getTenantCollection(db, 'guideLeads'));
     const unsub = onSnapshot(q, snap => {
       setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
@@ -48,7 +50,7 @@ export default function GuideManager() {
       return alert('Tutti i campi sono obbligatori');
     }
 
-    await setDoc(doc(db, 'guides', newGuide.id), {
+    await setDoc(getTenantDoc(db, 'guides', newGuide.id), {
       name: newGuide.name,
       redirectUrl: newGuide.redirectUrl,
       active: true,
@@ -63,7 +65,7 @@ export default function GuideManager() {
   };
 
   const archiveGuide = async (id) => {
-    await updateDoc(doc(db, 'guides', id), { active: false });
+    await updateDoc(getTenantDoc(db, 'guides', id), { active: false });
   };
 
   const copyLink = (id) => {
@@ -91,7 +93,7 @@ export default function GuideManager() {
     if (!editingLead) return;
 
     try {
-      await updateDoc(doc(db, 'guideLeads', editingLead), editForm);
+      await updateDoc(getTenantDoc(db, 'guideLeads', editingLead), editForm);
       setEditingLead(null);
       setEditForm({});
     } catch (err) {
@@ -106,14 +108,14 @@ export default function GuideManager() {
 
   const handleDeleteLead = async (id) => {
     if (confirm('Eliminare questo lead?')) {
-      await deleteDoc(doc(db, 'guideLeads', id));
+      await deleteDoc(getTenantDoc(db, 'guideLeads', id));
     }
   };
 
   const addToClients = async () => {
     if (!importo || !showAddClient) return;
 
-    await updateDoc(doc(db, 'guideLeads', showAddClient.id), { chiuso: true, importo: parseFloat(importo) });
+    await updateDoc(getTenantDoc(db, 'guideLeads', showAddClient.id), { chiuso: true, importo: parseFloat(importo) });
     setShowAddClient(null);
     setImporto('');
     window.location.href = `/new-client?prefill=${encodeURIComponent(JSON.stringify({
@@ -128,7 +130,7 @@ export default function GuideManager() {
   const handleSaveGuideEdit = async () => {
     if (!editingGuide) return;
 
-    await updateDoc(doc(db, 'guides', editingGuide.id), {
+    await updateDoc(getTenantDoc(db, 'guides', editingGuide.id), {
       postMessage: postMessage.trim() || null,
       urgencyText: urgencyText.trim() || null,
       countdownDate: countdownDate || null

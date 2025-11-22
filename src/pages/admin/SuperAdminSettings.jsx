@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db, auth } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { isSuperAdmin, addSuperAdmin, removeSuperAdmin } from '../../utils/superadmin';
 import { Settings, Users, Shield, Lock, Trash2, UserPlus, UserMinus, RefreshCw, AlertTriangle, Check, X, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -42,7 +43,7 @@ export default function SuperAdminSettings() {
   const loadAllUsers = async () => {
     try {
       // Carica ruoli
-      const rolesSnapshot = await getDocs(collection(db, 'roles'));
+      const rolesSnapshot = await getDocs(getTenantCollection(db, 'roles'));
       const rolesData = {};
       rolesSnapshot.docs.forEach(doc => {
         rolesData[doc.id] = doc.data().uids || [];
@@ -53,7 +54,7 @@ export default function SuperAdminSettings() {
       setSuperadmins(rolesData.superadmins || []);
 
       // Carica tutti i clienti
-      const clientsSnap = await getDocs(collection(db, 'clients'));
+      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
       const clientsList = clientsSnap.docs.map(d => ({
         id: d.id,
         email: d.data().email || 'N/D',
@@ -63,7 +64,7 @@ export default function SuperAdminSettings() {
       }));
 
       // Carica collaboratori
-      const collabSnap = await getDocs(collection(db, 'collaboratori'));
+      const collabSnap = await getDocs(getTenantCollection(db, 'collaboratori'));
       const collabList = collabSnap.docs.map(d => ({
         id: d.id,
         email: d.data().email || 'N/D',
@@ -131,7 +132,7 @@ export default function SuperAdminSettings() {
 
   const handlePromoteToAdmin = async (userId) => {
     try {
-      const adminRef = doc(db, 'roles', 'admins');
+      const adminRef = getTenantDoc(db, 'roles', 'admins');
       await setDoc(adminRef, {
         uids: arrayUnion(userId),
         updatedAt: new Date(),
@@ -147,7 +148,7 @@ export default function SuperAdminSettings() {
 
   const handleDemoteFromAdmin = async (userId) => {
     try {
-      const adminRef = doc(db, 'roles', 'admins');
+      const adminRef = getTenantDoc(db, 'roles', 'admins');
       await updateDoc(adminRef, {
         uids: arrayRemove(userId),
         updatedAt: new Date(),
@@ -163,7 +164,7 @@ export default function SuperAdminSettings() {
 
   const handlePromoteToCoach = async (userId) => {
     try {
-      const coachRef = doc(db, 'roles', 'coaches');
+      const coachRef = getTenantDoc(db, 'roles', 'coaches');
       await setDoc(coachRef, {
         uids: arrayUnion(userId),
         updatedAt: new Date(),
@@ -179,7 +180,7 @@ export default function SuperAdminSettings() {
 
   const handleDemoteFromCoach = async (userId) => {
     try {
-      const coachRef = doc(db, 'roles', 'coaches');
+      const coachRef = getTenantDoc(db, 'roles', 'coaches');
       await updateDoc(coachRef, {
         uids: arrayRemove(userId),
         updatedAt: new Date(),
@@ -228,8 +229,8 @@ export default function SuperAdminSettings() {
       onConfirm: async () => {
         try {
           // Elimina documento cliente o collaboratore
-          const clientRef = doc(db, 'clients', userId);
-          const collabRef = doc(db, 'collaboratori', userId);
+          const clientRef = getTenantDoc(db, 'clients', userId);
+          const collabRef = getTenantDoc(db, 'collaboratori', userId);
           
           await Promise.all([
             deleteDoc(clientRef).catch(() => {}),

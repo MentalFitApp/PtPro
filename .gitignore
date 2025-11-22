@@ -35,3 +35,6 @@ lerna-debug.log*
 
 # Testing
 coverage/
+
+# Firebase Service Account (NEVER COMMIT THIS)
+service-account.json

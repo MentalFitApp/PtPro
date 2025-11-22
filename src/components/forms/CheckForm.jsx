@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { db } from '../../firebase';
+import { db } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 // --- 1. NUOVE ICONE DA LUCIDE-REACT ---
@@ -40,7 +41,7 @@ export default function CheckForm({ clientId, onSuccess }) {
         })
       );
       
-      await addDoc(collection(db, 'clients', clientId, 'checks'), {
+      await addDoc(getTenantSubcollection(db, 'clients', clientId, 'checks'), {
         notes: data.notes,
         weight: parseFloat(data.weight), // Assicuriamoci di salvare anche il peso
         photoURLs: photoURLs,

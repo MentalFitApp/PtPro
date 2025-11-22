@@ -5,6 +5,7 @@ import { db, firebaseConfig, auth } from '../../firebase.js';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc, collection } from 'firebase/firestore';
+import { getTenantDoc, getTenantCollection } from '../../config/tenant';
 import { Save, ArrowLeft, DollarSign, Copy, Check, X, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -150,7 +151,7 @@ export default function NewClient() {
       const newUserId = userCredential.user.uid;
       console.log('Utente creato con UID:', newUserId);
 
-      const newClientRef = doc(db, 'clients', newUserId);
+      const newClientRef = getTenantDoc(db, 'clients', newUserId);
       const clientData = {
         ...data,
         rateizzato: isRateizzato,
@@ -175,7 +176,7 @@ export default function NewClient() {
       console.log('Documento cliente creato:', newClientRef.path);
 
       if (data.paymentAmount) {
-        const paymentRef = doc(collection(db, 'clients', newUserId, 'payments'));
+        const paymentRef = doc(getTenantSubcollection(db, 'clients', newUserId, 'payments'));
         const paymentData = {
           amount: parseFloat(data.paymentAmount),
           duration: useCustomDate ? 'personalizzata' : `${parseInt(data.duration, 10)} mes${parseInt(data.duration, 10) > 1 ? 'i' : 'e'}`,

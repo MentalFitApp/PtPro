@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { db } from '../../firebase';
+import { db } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc, serverTimestamp, writeBatch, getDoc } from 'firebase/firestore';
 import { DollarSign, Plus, Trash2, Calendar, X, AlertTriangle, RotateCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -94,7 +95,7 @@ export default function PaymentManager({ clientId }) {
     }
 
     // Fetch pagamenti
-    const q = query(collection(db, 'clients', clientId, 'payments'), orderBy('paymentDate', 'desc'));
+    const q = query(getTenantSubcollection(db, 'clients', clientId, 'payments'), orderBy('paymentDate', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       console.log('Pagamenti caricati:', snapshot.docs.length);
       setPayments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -106,7 +107,7 @@ export default function PaymentManager({ clientId }) {
     // Fetch scadenza corrente
     const fetchClient = async () => {
       try {
-        const clientRef = doc(db, 'clients', clientId);
+        const clientRef = getTenantDoc(db, 'clients', clientId);
         const clientSnap = await getDoc(clientRef);
         if (clientSnap.exists()) {
           setCurrentExpiry(toDate(clientSnap.data().scadenza));
@@ -137,7 +138,7 @@ export default function PaymentManager({ clientId }) {
       }
 
       const batch = writeBatch(db);
-      const newPaymentRef = doc(collection(db, 'clients', clientId, 'payments'));
+      const newPaymentRef = doc(getTenantSubcollection(db, 'clients', clientId, 'payments'));
       batch.set(newPaymentRef, {
         amount: amountNum,
         duration: `${durationNum} mes${durationNum > 1 ? 'i' : 'e'}`,
@@ -145,7 +146,7 @@ export default function PaymentManager({ clientId }) {
         paymentDate: serverTimestamp(),
       });
 
-      const clientRef = doc(db, 'clients', clientId);
+      const clientRef = getTenantDoc(db, 'clients', clientId);
       let newExpiry = currentExpiry && currentExpiry > new Date() ? new Date(currentExpiry) : new Date();
       newExpiry.setMonth(newExpiry.getMonth() + durationNum);
       batch.update(clientRef, { scadenza: newExpiry });
@@ -167,7 +168,7 @@ export default function PaymentManager({ clientId }) {
   const onQuickRenew = async () => {
     try {
       const batch = writeBatch(db);
-      const newPaymentRef = doc(collection(db, 'clients', clientId, 'payments'));
+      const newPaymentRef = doc(getTenantSubcollection(db, 'clients', clientId, 'payments'));
       batch.set(newPaymentRef, {
         amount: 100,
         duration: '1 mese',
@@ -175,7 +176,7 @@ export default function PaymentManager({ clientId }) {
         paymentDate: serverTimestamp(),
       });
 
-      const clientRef = doc(db, 'clients', clientId);
+      const clientRef = getTenantDoc(db, 'clients', clientId);
       let newExpiry = currentExpiry && currentExpiry > new Date() ? new Date(currentExpiry) : new Date();
       newExpiry.setMonth(newExpiry.getMonth() + 1);
       batch.update(clientRef, { scadenza: newExpiry });
@@ -195,7 +196,7 @@ export default function PaymentManager({ clientId }) {
   const handleDeletePayment = async () => {
     if (!paymentToDelete) return;
     try {
-      const paymentRef = doc(db, 'clients', clientId, 'payments', paymentToDelete.id);
+      const paymentRef = getTenantDoc(db, 'clients', clientId, 'payments', paymentToDelete.id);
       await deleteDoc(paymentRef);
       showNotification('Pagamento eliminato con successo!', 'success');
     } catch (error) {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, getDoc, doc, deleteDoc } from 'firebase/firestore';
-import { db, toDate, auth } from '../../firebase';
+import { db, toDate, auth } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { signOut } from 'firebase/auth';
 import {
   Search, ArrowUp, ArrowDown, CheckCircle, XCircle, Clock,
@@ -103,7 +104,7 @@ export default function CoachClients() {
   const handleDelete = async () => {
     if (!clientToDelete) return;
     try {
-      await deleteDoc(doc(db, 'clients', clientToDelete.id));
+      await deleteDoc(getTenantDoc(db, 'clients', clientToDelete.id));
       setClients(prev => prev.filter(c => c.id !== clientToDelete.id));
       showNotification('Cliente eliminato', 'success');
     } catch (error) {
@@ -128,7 +129,7 @@ export default function CoachClients() {
       navigate('/login');
       return;
     }
-    const q = collection(db, 'clients');
+    const q = getTenantCollection(db, 'clients');
     const unsub = onSnapshot(q, async snap => {
       try {
         const clientList = snap.docs.map(d => ({ id: d.id, ...d.data() }));

@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { getTenantDoc } from './config/tenant';
 
 // Import dinamici dei layout
 const MainLayout = React.lazy(() => import('./components/layout/MainLayout'));
@@ -36,8 +37,10 @@ const Analytics = React.lazy(() => import('./pages/admin/Analytics'));
 const CourseAdmin = React.lazy(() => import('./pages/admin/CourseAdmin'));
 const CourseContentManager = React.lazy(() => import('./pages/admin/CourseContentManager'));
 const SuperAdminSettings = React.lazy(() => import('./pages/admin/SuperAdminSettings'));
-const CEODashboard = React.lazy(() => import('./pages/ceo/CEODashboard'));
-const CEOLogin = React.lazy(() => import('./pages/ceo/CEOLogin'));
+
+// Platform CEO Pages
+const CEOPlatformDashboard = React.lazy(() => import('./pages/platform/CEOPlatformDashboard'));
+const PlatformLogin = React.lazy(() => import('./pages/platform/PlatformLogin'));
 
 // Client Pages
 const ClientDashboard = React.lazy(() => import('./pages/client/ClientDashboard'));
@@ -99,6 +102,7 @@ export default function App() {
     isCoach: false,
     isAdmin: false,
     isCollaboratore: false,
+    isPlatformCEO: false,
     error: null,
   });
   const [lastNavigated, setLastNavigated] = useState(null);
@@ -131,10 +135,31 @@ export default function App() {
 
       try {
         if (currentUser) {
-          const clientDocRef = doc(db, 'clients', currentUser.uid);
-          const adminDocRef = doc(db, 'roles', 'admins');
-          const coachDocRef = doc(db, 'roles', 'coaches');
-          const collabDocRef = doc(db, 'collaboratori', currentUser.uid);
+          // PRIMA: Verifica se è Platform CEO (livello root, non tenant)
+          const platformAdminRef = doc(db, 'platform_admins', 'superadmins');
+          const platformAdminDoc = await getDoc(platformAdminRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) }));
+          const isPlatformCEO = platformAdminDoc.exists() && platformAdminDoc.data().uids?.includes(currentUser.uid);
+          
+          // Se è Platform CEO e sta navigando verso /platform-*, permettilo senza redirect
+          if (isPlatformCEO && (location.pathname === '/platform-dashboard' || location.pathname.startsWith('/platform'))) {
+            setAuthInfo({
+              isLoading: false,
+              user: currentUser,
+              isClient: false,
+              isCoach: false,
+              isAdmin: false,
+              isCollaboratore: false,
+              isPlatformCEO: true,
+              error: null
+            });
+            return;
+          }
+          
+          // SECONDO: Controlla ruoli nel tenant
+          const clientDocRef = getTenantDoc(db, 'clients', currentUser.uid);
+          const adminDocRef = getTenantDoc(db, 'roles', 'admins');
+          const coachDocRef = getTenantDoc(db, 'roles', 'coaches');
+          const collabDocRef = getTenantDoc(db, 'collaboratori', currentUser.uid);
 
           // Prima controlla se è collaboratore (non richiede permessi su roles)
           const collabDoc = await getDoc(collabDocRef).catch(() => ({ exists: () => false, data: () => ({}) }));
@@ -240,6 +265,7 @@ export default function App() {
             isCoach: isCurrentUserACoach,
             isAdmin: isCurrentUserAdmin,
             isCollaboratore: isCurrentUserACollaboratore,
+            isPlatformCEO: false,
             error: null
           });
         } else {
@@ -251,11 +277,12 @@ export default function App() {
             isCoach: false,
             isAdmin: false,
             isCollaboratore: false,
+            isPlatformCEO: false,
             error: null
           });
 
-          const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId', '/ceo-login'];
-          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/'));
+          const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId', '/platform-login', '/platform-dashboard'];
+          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/') || location.pathname.startsWith('/platform'));
           if (!isPublic) {
             const target = '/login';
             if (lastNavigated !== target) {
@@ -294,8 +321,13 @@ export default function App() {
           <Route path="/guida/:guideId" element={<GuideCapture />} />
         </Route>
         <Route path="/login" element={<Login />} />
-        <Route path="/ceo-login" element={<CEOLogin />} />
+        <Route path="/platform-login" element={<PlatformLogin />} />
         <Route path="/client/forgot-password" element={<ForgotPassword />} />
+
+        {/* === ROTTE PLATFORM CEO === */}
+        <Route path="/platform-dashboard" element={
+          authInfo.isPlatformCEO ? <CEOPlatformDashboard /> : <Navigate to="/platform-login" replace />
+        } />
 
         {/* === ROTTE ADMIN (SOLO ADMIN) === */}
 
@@ -330,7 +362,6 @@ export default function App() {
 
         {/* === ROTTE SUPERADMIN (SOLO SUPERADMIN) === */}
         <Route element={authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
-          <Route path="/ceo" element={<CEODashboard />} />
           <Route path="/superadmin" element={<SuperAdminSettings />} />
 
           <Route path="/course-admin" element={<CourseAdmin />} />

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { db } from '../../firebase';
+import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Save, ArrowLeft, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -71,7 +72,7 @@ export default function EditClient() {
 
     const fetchClient = async () => {
       try {
-        const docRef = doc(db, 'clients', clientId);
+        const docRef = getTenantDoc(db, 'clients', clientId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const clientData = docSnap.data();
@@ -100,7 +101,7 @@ export default function EditClient() {
 
   const onSubmit = async (data) => {
     try {
-      const clientRef = doc(db, 'clients', clientId);
+      const clientRef = getTenantDoc(db, 'clients', clientId);
       const updatedData = {
         name: data.name,
         email: data.email,

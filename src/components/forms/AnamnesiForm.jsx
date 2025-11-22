@@ -5,6 +5,8 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 // --- 1. NUOVE ICONE DA LUCIDE-REACT ---
 import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 export default function AnamnesiForm({ clientId, onSave }) {
   const { register, handleSubmit, formState: { isSubmitting } } = useForm();
@@ -15,7 +17,7 @@ export default function AnamnesiForm({ clientId, onSave }) {
     setMessage('');
     setIsError(false);
     try {
-      const anamnesiRef = doc(db, 'clients', clientId, 'anamnesi', 'initial');
+      const anamnesiRef = getTenantDoc(db, 'clients', clientId, 'anamnesi', 'initial');
       await setDoc(anamnesiRef, { ...data, createdAt: serverTimestamp() });
       setMessage("Anamnesi salvata con successo!");
       setTimeout(onSave, 1500);

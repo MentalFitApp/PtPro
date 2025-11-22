@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db, auth } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { ChevronLeft, ChevronRight, Plus, X, Phone, Users, Trash2, Edit, Save, Bell, BellOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { requestNotificationPermission, checkNotificationPermission, scheduleEventNotifications, setupForegroundMessageListener } from '../../utils/notifications';
@@ -38,12 +39,12 @@ export default function CalendarPage() {
 
     const init = async () => {
       // Carica ruolo utente
-      const collabDoc = await getDoc(doc(db, 'collaboratori', auth.currentUser.uid));
+      const collabDoc = await getDoc(getTenantDoc(db, 'collaboratori', auth.currentUser.uid));
       if (collabDoc.exists()) {
         setUserRole(collabDoc.data().role || '');
       }
       
-      const adminDoc = await getDoc(doc(db, 'roles', 'admins'));
+      const adminDoc = await getDoc(getTenantDoc(db, 'roles', 'admins'));
       const userIsAdmin = adminDoc.exists() && adminDoc.data().uids?.includes(auth.currentUser.uid);
       setIsAdmin(userIsAdmin);
 
@@ -60,10 +61,10 @@ export default function CalendarPage() {
       let eventsQuery;
       if (userIsAdmin) {
         // Admin vede tutti gli eventi
-        eventsQuery = collection(db, 'calendarEvents');
+        eventsQuery = getTenantCollection(db, 'calendarEvents');
       } else {
         // Collaboratori vedono tutti gli eventi
-        eventsQuery = collection(db, 'calendarEvents');
+        eventsQuery = getTenantCollection(db, 'calendarEvents');
       }
 
       unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
@@ -219,7 +220,7 @@ export default function CalendarPage() {
         }
       }
 
-      await addDoc(collection(db, 'calendarEvents'), {
+      await addDoc(getTenantCollection(db, 'calendarEvents'), {
         title: newEvent.title,
         time: eventTime,
         type: newEvent.type,
@@ -267,7 +268,7 @@ export default function CalendarPage() {
         }
       }
 
-      await updateDoc(doc(db, 'calendarEvents', editingEvent.id), {
+      await updateDoc(getTenantDoc(db, 'calendarEvents', editingEvent.id), {
         title: newEvent.title,
         time: eventTime,
         type: newEvent.type,
@@ -290,7 +291,7 @@ export default function CalendarPage() {
     if (!confirm('Eliminare questo evento?')) return;
     
     try {
-      await deleteDoc(doc(db, 'calendarEvents', eventId));
+      await deleteDoc(getTenantDoc(db, 'calendarEvents', eventId));
     } catch (error) {
       console.error('Errore eliminazione evento:', error);
     }
@@ -355,7 +356,7 @@ export default function CalendarPage() {
       if (!isAdmin) return;
       try {
         // collaboratoriList non utilizzato, commento il caricamento
-        // const snap = await getDocs(query(collection(db, 'collaboratori'), orderBy('nome')));
+        // const snap = await getDocs(query(getTenantCollection(db, 'collaboratori'), orderBy('nome')));
         // setCollaboratoriList(snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) })));
       } catch (e) {
         console.error('Errore caricamento collaboratori:', e);
@@ -1173,7 +1174,7 @@ export default function CalendarPage() {
                             return;
                           }
                           // Aggiorna lead
-                          await updateDoc(doc(db, 'leads', selectedLead.leadId), {
+                          await updateDoc(getTenantDoc(db, 'leads', selectedLead.leadId), {
                             name: leadForm.name,
                             number: leadForm.number,
                             email: leadForm.email,
@@ -1192,7 +1193,7 @@ export default function CalendarPage() {
                             settingCall: !!leadForm.settingCall
                           });
                           // Aggiorna evento calendario
-                          await updateDoc(doc(db, 'calendarEvents', selectedLead.id), {
+                          await updateDoc(getTenantDoc(db, 'calendarEvents', selectedLead.id), {
                             title: `📞 ${leadForm.name}`,
                             date: leadForm.date,
                             time: leadForm.time,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, addDoc, doc, updateDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { db, auth } from '../../firebase.js';
 import { useNavigate } from 'react-router-dom';
+import { getTenantSubcollection } from '../../config/tenant';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
@@ -267,7 +268,7 @@ export default function ClientChecks() {
     }
     const fetchInitialData = async () => {
       try {
-        // const clientDocRef = doc(db, 'clients', user.uid);
+        // const clientDocRef = getTenantDoc(db, 'clients', user.uid);
         // const clientDoc = await getDoc(clientDocRef);
         // clientStartDate non utilizzato, commento il caricamento
         // if (clientDoc.exists() && clientDoc.data().createdAt) {

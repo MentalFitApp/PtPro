@@ -4,7 +4,8 @@ import {
   doc, getDoc, setDoc, collection, query, orderBy, onSnapshot, updateDoc, deleteDoc,
   where, getDocs
 } from 'firebase/firestore';
-import { db, auth, firebaseConfig } from '../../firebase';
+import { db, auth, firebaseConfig } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { 
@@ -186,7 +187,7 @@ export default function Collaboratori() {
 
     const checkAdmin = async () => {
       try {
-        const adminDocRef = doc(db, 'roles', 'admins');
+        const adminDocRef = getTenantDoc(db, 'roles', 'admins');
         const adminDoc = await getDoc(adminDocRef);
         if (!adminDoc.exists()) {
           setError('Documento "roles/admins" non trovato.');
@@ -210,13 +211,13 @@ export default function Collaboratori() {
 
     checkAdmin();
 
-    const collabQuery = query(collection(db, 'collaboratori'), orderBy('nome'));
+    const collabQuery = query(getTenantCollection(db, 'collaboratori'), orderBy('nome'));
     const unsubCollab = onSnapshot(collabQuery, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setCollaboratori(data);
     });
 
-    const leadsQuery = query(collection(db, 'leads'), orderBy('timestamp', 'desc'));
+    const leadsQuery = query(getTenantCollection(db, 'leads'), orderBy('timestamp', 'desc'));
     const unsubLeads = onSnapshot(leadsQuery, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setLeads(data);
@@ -229,7 +230,7 @@ export default function Collaboratori() {
       setSettingReports(data);
     });
 
-    const salesQuery = query(collection(db, 'salesReports'), orderBy('date', 'desc'));
+    const salesQuery = query(getTenantCollection(db, 'salesReports'), orderBy('date', 'desc'));
     const unsubSales = onSnapshot(salesQuery, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setSalesReports(data);
@@ -269,7 +270,7 @@ export default function Collaboratori() {
       let uid;
       let isNewUser = false;
 
-      const collabQuery = query(collection(db, 'collaboratori'), where('email', '==', newEmail));
+      const collabQuery = query(getTenantCollection(db, 'collaboratori'), where('email', '==', newEmail));
       const collabSnap = await getDocs(collabQuery);
 
       if (!collabSnap.empty) {
@@ -297,7 +298,7 @@ export default function Collaboratori() {
         dailyReports: [], tracker: {}, personalPipeline: [],
       };
 
-      await setDoc(doc(db, 'collaboratori', uid), collabData, { merge: true });
+      await setDoc(getTenantDoc(db, 'collaboratori', uid), collabData, { merge: true });
       await sendPasswordResetEmail(tempAuth, newEmail);
 
       setSuccess(isNewUser ? `Creato!` : `Riaggiunto!`);
@@ -316,7 +317,7 @@ export default function Collaboratori() {
     }
 
     try {
-      const collabDoc = doc(db, 'collaboratori', newUid);
+      const collabDoc = getTenantDoc(db, 'collaboratori', newUid);
       const snap = await getDoc(collabDoc);
 
       if (snap.exists()) {
@@ -347,7 +348,7 @@ export default function Collaboratori() {
     }
 
     try {
-      await updateDoc(doc(db, 'collaboratori', editingCollab), {
+      await updateDoc(getTenantDoc(db, 'collaboratori', editingCollab), {
         email: editEmail, nome: editEmail.split('@')[0]
       });
 
@@ -382,7 +383,7 @@ export default function Collaboratori() {
   const handleSaveReportVendita = async () => {
     const reportId = `admin_${reportVendita.date}`;
     try {
-      await setDoc(doc(db, 'salesReports', reportId), {
+      await setDoc(getTenantDoc(db, 'salesReports', reportId), {
         ...reportVendita, uid: auth.currentUser.uid, timestamp: new Date()
       });
       setReportVendita({ ...reportVendita, chiamateFissate: '', chiamateFatte: '', offersFatte: '', chiuse: '', cash: '' });
@@ -432,7 +433,7 @@ export default function Collaboratori() {
       const wasClosed = leads.find(l => l.id === editingLead)?.chiuso;
       const willBeClosed = editForm.chiuso;
 
-      await updateDoc(doc(db, 'leads', editingLead), editForm);
+      await updateDoc(getTenantDoc(db, 'leads', editingLead), editForm);
 
       if (willBeClosed && !wasClosed) {
         const lead = { ...leads.find(l => l.id === editingLead), ...editForm };
@@ -458,7 +459,7 @@ export default function Collaboratori() {
   const handleDeleteLead = async (id) => {
     if (confirm('Eliminare questo lead?')) {
       try {
-        await deleteDoc(doc(db, 'leads', id));
+        await deleteDoc(getTenantDoc(db, 'leads', id));
         setSuccess('Lead eliminato!');
         setTimeout(() => setSuccess(''), 3000);
       } catch (err) {
@@ -470,7 +471,7 @@ export default function Collaboratori() {
   const handleDeleteCollaboratore = async (id) => {
     if (confirm('Eliminare?')) {
       try {
-        await deleteDoc(doc(db, 'collaboratori', id));
+        await deleteDoc(getTenantDoc(db, 'collaboratori', id));
         setSuccess('Eliminato!');
         setTimeout(() => setSuccess(''), 3000);
       } catch (err) {
@@ -502,7 +503,7 @@ export default function Collaboratori() {
         try {
           // Usa l'ID del lead come parte dell'ID dell'evento per evitare duplicati
           // setDoc con merge non sovrascrive se esiste già
-          const eventDocRef = doc(db, 'calendarEvents', `lead_${lead.id}`);
+          const eventDocRef = getTenantDoc(db, 'calendarEvents', `lead_${lead.id}`);
           const eventDoc = await getDoc(eventDocRef);
           
           if (eventDoc.exists()) {

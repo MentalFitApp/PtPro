@@ -4,6 +4,7 @@ import { ArrowLeft, Download } from 'lucide-react';
 import { db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth } from '../../firebase';
+import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { exportNutritionCardToPDF } from '../../utils/pdfExport';
 
 const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
@@ -24,14 +25,14 @@ const ClientSchedaAlimentazione = () => {
       if (!user) return;
 
       // Load client info
-      const clientRef = doc(db, 'clients', user.uid);
+      const clientRef = getTenantDoc(db, 'clients', user.uid);
       const clientSnap = await getDoc(clientRef);
       if (clientSnap.exists()) {
         setClientName(clientSnap.data().name || 'N/D');
       }
 
       // Load scheda
-      const schedaRef = doc(db, 'schede_alimentazione', user.uid);
+      const schedaRef = getTenantDoc(db, 'schede_alimentazione', user.uid);
       const schedaSnap = await getDoc(schedaRef);
       
       if (schedaSnap.exists()) {

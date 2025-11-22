@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, collectionGroup, doc, getDoc, query, onSnapshot, orderBy, where } from 'firebase/firestore';
-import { auth, db, toDate } from '../../firebase';
+import { auth, db, toDate } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { signOut } from 'firebase/auth';
 import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, PlusCircle, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -102,7 +103,7 @@ export default function CoachDashboard() {
     const unsubscribe = auth.onAuthStateChanged(async user => {
       if (user) {
         try {
-          const coachDocRef = doc(db, 'roles', 'coaches');
+          const coachDocRef = getTenantDoc(db, 'roles', 'coaches');
           const coachDoc = await getDoc(coachDocRef);
           const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(user.uid);
           if (isCoach) {
@@ -125,7 +126,7 @@ export default function CoachDashboard() {
 
   // Clienti
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'clients'), (snap) => {
+    const unsub = onSnapshot(getTenantCollection(db, 'clients'), (snap) => {
       try {
         const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setClients(clientList);
@@ -154,7 +155,7 @@ export default function CoachDashboard() {
         const items = [];
         for (const checkDoc of snap.docs) {
           const clientId = checkDoc.ref.parent.parent.id;
-          const clientDoc = await getDoc(doc(db, 'clients', clientId));
+          const clientDoc = await getDoc(getTenantDoc(db, 'clients', clientId));
           items.push({
             type: 'new_check',
             clientId,
@@ -180,7 +181,7 @@ export default function CoachDashboard() {
         const items = [];
         for (const anamnesiDoc of snap.docs) {
           const clientId = anamnesiDoc.ref.parent.parent.id;
-          const clientDoc = await getDoc(doc(db, 'clients', clientId));
+          const clientDoc = await getDoc(getTenantDoc(db, 'clients', clientId));
           items.push({
             type: 'new_anamnesi',
             clientId,
@@ -200,7 +201,7 @@ export default function CoachDashboard() {
 
     // Chat (messaggi)
     const chatsQuery = query(
-      collection(db, 'chats'),
+      getTenantCollection(db, 'chats'),
       where('participants', 'array-contains', auth.currentUser.uid),
       orderBy('lastUpdate', 'desc')
     );
@@ -211,7 +212,7 @@ export default function CoachDashboard() {
           const chatData = chatDoc.data();
           const clientId = chatData.participants.find(p => p !== auth.currentUser.uid);
           if (chatData.lastUpdate) {
-            const clientDoc = await getDoc(doc(db, 'clients', clientId));
+            const clientDoc = await getDoc(getTenantDoc(db, 'clients', clientId));
             items.push({
               type: 'new_message',
               clientId,
@@ -231,7 +232,7 @@ export default function CoachDashboard() {
     });
 
     // Clienti in scadenza
-    const clientsQuery = query(collection(db, 'clients'));
+    const clientsQuery = query(getTenantCollection(db, 'clients'));
     const unsubClients = onSnapshot(clientsQuery, (snap) => {
       try {
         const expiring = snap.docs

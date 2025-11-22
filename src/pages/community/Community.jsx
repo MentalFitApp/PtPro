@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { db, auth } from '../../firebase';
+import { db, auth } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import {
   collection, query, where, orderBy, limit, getDocs,
   addDoc, serverTimestamp, doc, onSnapshot, updateDoc, setDoc,
@@ -137,7 +138,7 @@ export default function Community() {
   // Carica utente + livello
   useEffect(() => {
     if (!auth.currentUser) return;
-    const unsub = onSnapshot(doc(db, "users", auth.currentUser.uid), (doc) => {
+    const unsub = onSnapshot(getTenantDoc(db, 'users', auth.currentUser.uid), (doc) => {
       const data = doc.data() || {};
       setUserData({
         ...data,
@@ -197,7 +198,7 @@ export default function Community() {
 
   // Carica impostazioni community (per tutti, non solo superadmin)
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "community_config", "settings"), (doc) => {
+    const unsub = onSnapshot(getTenantDoc(db, 'community_config', "settings"), (doc) => {
       const data = doc.data();
       if (data) {
         setCommunitySettings({
@@ -218,7 +219,7 @@ export default function Community() {
   // Carica lista membri (per tutti gli utenti)
   useEffect(() => {
     if (!auth.currentUser) return;
-    const unsub = onSnapshot(collection(db, "users"), (snapshot) => {
+    const unsub = onSnapshot(getTenantCollection(db, 'users'), (snapshot) => {
       const members = snapshot.docs.map(doc => ({
         uid: doc.id,
         ...doc.data()
@@ -233,7 +234,7 @@ export default function Community() {
     if (!auth.currentUser) return;
 
     const unsub = onSnapshot(
-      query(collection(db, "daily_rooms"), where("active", "==", true)),
+      query(getTenantCollection(db, 'daily_rooms'), where("active", "==", true)),
       (snapshot) => {
         if (!snapshot.empty) {
           const call = snapshot.docs[0].data();
@@ -251,7 +252,7 @@ export default function Community() {
     if (!auth.currentUser) return;
 
     const q = query(
-      collection(db, "community_posts"),
+      getTenantCollection(db, 'community_posts'),
       where("channel", "==", selectedChannel),
       orderBy("timestamp", "desc"),
       limit(50)
@@ -275,7 +276,7 @@ export default function Community() {
         console.error("Errore caricamento post:", error);
         // Fallback senza orderBy se c'è un errore di indice
         const simpleQuery = query(
-          collection(db, "community_posts"),
+          getTenantCollection(db, 'community_posts'),
           where("channel", "==", selectedChannel),
           limit(50)
         );
@@ -312,13 +313,13 @@ export default function Community() {
       const post = posts.find(p => p.id === postId);
       if (!post) return;
       
-      await updateDoc(doc(db, 'community_posts', postId), {
+      await updateDoc(getTenantDoc(db, 'community_posts', postId), {
         deleted: true,
         deletedAt: serverTimestamp()
       });
       
       // Decrementa contatore post dell'autore
-      const authorRef = doc(db, "users", post.author.uid);
+      const authorRef = getTenantDoc(db, 'users', post.author.uid);
       await updateDoc(authorRef, {
         posts: increment(-1)
       });
@@ -354,10 +355,10 @@ export default function Community() {
         postData.mediaType = mediaType; // 'image' | 'audio' | 'video'
       }
 
-      await addDoc(collection(db, "community_posts"), postData);
+      await addDoc(getTenantCollection(db, 'community_posts'), postData);
       
       // Incrementa contatore post dell'utente
-      const userRef = doc(db, "users", auth.currentUser.uid);
+      const userRef = getTenantDoc(db, 'users', auth.currentUser.uid);
       await updateDoc(userRef, {
         posts: increment(1)
       });
@@ -455,9 +456,9 @@ export default function Community() {
   };
 
   const likePost = async (postId, liked) => {
-    const postRef = doc(db, "community_posts", postId);
-    const userRef = doc(db, "users", auth.currentUser.uid);
-    const authorRef = doc(db, "users", posts.find(p => p.id === postId).author.uid);
+    const postRef = getTenantDoc(db, 'community_posts', postId);
+    const userRef = getTenantDoc(db, 'users', auth.currentUser.uid);
+    const authorRef = getTenantDoc(db, 'users', posts.find(p => p.id === postId).author.uid);
 
     const batch = writeBatch(db);
     batch.update(postRef, {
@@ -472,7 +473,7 @@ export default function Community() {
   const saveLevels = async () => {
     if (!isSuperAdmin) return;
     // Salva livelli in Firestore
-    await updateDoc(doc(db, "app-data", "community-config"), {
+    await updateDoc(getTenantDoc(db, 'app-data', "community-config"), {
       levels: adminLevels,
       updatedAt: serverTimestamp(),
       updatedBy: auth.currentUser.uid
@@ -483,7 +484,7 @@ export default function Community() {
   const saveChannels = async () => {
     if (!isSuperAdmin) return;
     // Salva canali in Firestore
-    await updateDoc(doc(db, "app-data", "community-config"), {
+    await updateDoc(getTenantDoc(db, 'app-data', "community-config"), {
       channels: adminChannels,
       updatedAt: serverTimestamp(),
       updatedBy: auth.currentUser.uid
@@ -540,22 +541,22 @@ export default function Community() {
   // Funzioni Super Admin
   const banUser = async (userId) => {
     if (!isSuperAdmin) return;
-    await updateDoc(doc(db, "users", userId), { banned: true });
+    await updateDoc(getTenantDoc(db, 'users', userId), { banned: true });
   };
 
   const unbanUser = async (userId) => {
     if (!isSuperAdmin) return;
-    await updateDoc(doc(db, "users", userId), { banned: false });
+    await updateDoc(getTenantDoc(db, 'users', userId), { banned: false });
   };
 
   const changeUserLevel = async (userId, newLevel) => {
     if (!isSuperAdmin) return;
-    await updateDoc(doc(db, "users", userId), { manualLevel: newLevel });
+    await updateDoc(getTenantDoc(db, 'users', userId), { manualLevel: newLevel });
   };
 
   const pinPost = async (postId, pinned) => {
     if (!isSuperAdmin) return;
-    await updateDoc(doc(db, "community_posts", postId), {
+    await updateDoc(getTenantDoc(db, 'community_posts', postId), {
       pinned,
       pinnedAt: pinned ? serverTimestamp() : null,
       pinnedBy: pinned ? auth.currentUser.uid : null
@@ -603,7 +604,7 @@ export default function Community() {
       console.log('✅ Stanza Daily.co creata:', roomData);
       
       // Salva in Firestore
-      const roomDoc = await addDoc(collection(db, "daily_rooms"), {
+      const roomDoc = await addDoc(getTenantCollection(db, 'daily_rooms'), {
         roomName: roomData.name,
         url: roomData.url,
         active: true,
@@ -627,7 +628,7 @@ export default function Community() {
   const endGroupCall = async () => {
     if (!isSuperAdmin || !activeGroupCall) return;
 
-    await updateDoc(doc(db, "daily_rooms", activeGroupCall.id), {
+    await updateDoc(getTenantDoc(db, 'daily_rooms', activeGroupCall.id), {
       active: false,
       endedAt: serverTimestamp(),
       endedBy: auth.currentUser.uid
@@ -641,7 +642,7 @@ export default function Community() {
   const saveCommunitySettings = async () => {
     setSavingSettings(true);
     try {
-      await setDoc(doc(db, "community_config", "settings"), {
+      await setDoc(getTenantDoc(db, 'community_config', "settings"), {
         name: communitySettings.name,
         description: communitySettings.description,
         communityEnabled: communitySettings.communityEnabled,
@@ -721,7 +722,7 @@ export default function Community() {
       }
 
       // Usa setDoc con merge per creare il documento se non esiste
-      await setDoc(doc(db, "users", targetUid), {
+      await setDoc(getTenantDoc(db, 'users', targetUid), {
         displayName: profileData.displayName,
         photoURL: photoURL,
         updatedAt: serverTimestamp()
@@ -835,7 +836,7 @@ export default function Community() {
       }
       
       // Usa setDoc con merge per creare il documento se non esiste
-      await setDoc(doc(db, "users", auth.currentUser.uid), {
+      await setDoc(getTenantDoc(db, 'users', auth.currentUser.uid), {
         displayName: profileData.displayName,
         photoURL: photoURL,
         email: auth.currentUser.email,
@@ -875,7 +876,7 @@ export default function Community() {
   // Completa visione video
   const completeVideoWatching = async () => {
     try {
-      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+      await updateDoc(getTenantDoc(db, 'users', auth.currentUser.uid), {
         communityVideoWatched: true,
         videoWatchedAt: serverTimestamp()
       });
@@ -890,7 +891,7 @@ export default function Community() {
     if (!isSuperAdmin) return;
     try {
       const newLevel = LEVELS[newLevelIndex];
-      await setDoc(doc(db, "users", userId), {
+      await setDoc(getTenantDoc(db, 'users', userId), {
         manualLevel: newLevelIndex,
         levelOverride: true,
         updatedAt: serverTimestamp()
@@ -910,7 +911,7 @@ export default function Community() {
   // Comments
   const addComment = async (postId, content) => {
     if (!content.trim()) return;
-    await addDoc(collection(db, "community_posts", postId, "comments"), {
+    await addDoc(getTenantSubcollection(db, 'community_posts', postId, 'comments'), {
       content,
       author: {
         uid: auth.currentUser.uid,
@@ -926,7 +927,7 @@ export default function Community() {
   const loadCommentsForPost = (postId) => {
     setLoadingComments(true);
     const q = query(
-      collection(db, "community_posts", postId, "comments"),
+      getTenantSubcollection(db, 'community_posts', postId, 'comments'),
       orderBy("timestamp", "desc")
     );
     

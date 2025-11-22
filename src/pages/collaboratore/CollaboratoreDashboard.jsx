@@ -5,7 +5,8 @@ import {
   onSnapshot, deleteDoc, updateDoc
 } from 'firebase/firestore';
 import { updatePassword } from 'firebase/auth';
-import { db, auth } from '../../firebase';
+import { db, auth } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { uploadPhoto } from '../../storageUtils.js';
 import { 
   CheckCircle, FileText, Save, Phone, TrendingUp, BarChart3, 
@@ -92,7 +93,7 @@ export default function CollaboratoreDashboard() {
     const fetchCollab = async () => {
       try {
         console.log('📥 Fetching collaboratore doc...');
-        const collabDocRef = doc(db, 'collaboratori', auth.currentUser.uid);
+        const collabDocRef = getTenantDoc(db, 'collaboratori', auth.currentUser.uid);
         const collabDoc = await getDoc(collabDocRef);
         
         if (!collabDoc.exists()) {
@@ -173,7 +174,7 @@ export default function CollaboratoreDashboard() {
       try {
         console.log('📊 Setting up leads listener...');
         const leadsQuery = query(
-          collection(db, 'leads'),
+          getTenantCollection(db, 'leads'),
           where('collaboratoreId', '==', auth.currentUser.uid),
           orderBy('timestamp', 'desc')
         );
@@ -209,7 +210,7 @@ export default function CollaboratoreDashboard() {
 
   // --- FETCH TUTTI I SETTER ---
   useEffect(() => {
-    const q = query(collection(db, 'collaboratori'), where('role', '==', 'Setter'));
+    const q = query(getTenantCollection(db, 'collaboratori'), where('role', '==', 'Setter'));
     const unsub = onSnapshot(q, (snap) => {
       const collabs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setAllCollaboratori(collabs);
@@ -221,7 +222,7 @@ export default function CollaboratoreDashboard() {
   useEffect(() => {
     if (!auth.currentUser) return;
 
-    const collabRef = doc(db, 'collaboratori', auth.currentUser.uid);
+    const collabRef = getTenantDoc(db, 'collaboratori', auth.currentUser.uid);
     const unsub = onSnapshot(collabRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -252,7 +253,7 @@ export default function CollaboratoreDashboard() {
   // --- SALVA PROFILO ---
   const handleSaveProfile = async () => {
     try {
-      await updateDoc(doc(db, 'collaboratori', auth.currentUser.uid), { 
+      await updateDoc(getTenantDoc(db, 'collaboratori', auth.currentUser.uid), { 
         name: profile.name,
         gender: profile.gender 
       });
@@ -273,7 +274,7 @@ export default function CollaboratoreDashboard() {
   const handleSaveTracker = async () => {
     setError(''); setSuccess('');
     try {
-      const collabRef = doc(db, 'collaboratori', auth.currentUser.uid);
+      const collabRef = getTenantDoc(db, 'collaboratori', auth.currentUser.uid);
       // Usa la data locale corrente, non UTC
       const now = new Date();
       const year = now.getFullYear();
@@ -306,7 +307,7 @@ export default function CollaboratoreDashboard() {
     }
 
     try {
-      const leadRef = doc(collection(db, 'leads'));
+      const leadRef = doc(getTenantCollection(db, 'leads'));
       const leadId = leadRef.id;
       
       await setDoc(leadRef, {
@@ -319,7 +320,7 @@ export default function CollaboratoreDashboard() {
       });
 
       // Crea automaticamente evento calendario
-      await setDoc(doc(collection(db, 'calendarEvents')), {
+      await setDoc(doc(getTenantCollection(db, 'calendarEvents')), {
         title: `📞 ${newLead.name}`,
         date: newLead.dataPrenotazione,
         time: newLead.oraPrenotazione,
@@ -352,7 +353,7 @@ export default function CollaboratoreDashboard() {
   const handleDeleteLead = async () => {
     if (!leadToDelete) return;
     try {
-      await deleteDoc(doc(db, 'leads', leadToDelete.id));
+      await deleteDoc(getTenantDoc(db, 'leads', leadToDelete.id));
       setMyLeads(prev => prev.filter(l => l.id !== leadToDelete.id));
       setSuccess('Lead eliminato!');
       setTimeout(() => setSuccess(''), 3000);
@@ -380,7 +381,7 @@ export default function CollaboratoreDashboard() {
         },
         true
       );
-      await updateDoc(doc(db, 'collaboratori', auth.currentUser.uid), { photoURL: url });
+      await updateDoc(getTenantDoc(db, 'collaboratori', auth.currentUser.uid), { photoURL: url });
       setProfile({ ...profile, photoURL: url });
       setSuccess('Foto caricata!');
       setTimeout(() => setSuccess(''), 3000);

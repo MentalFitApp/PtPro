@@ -6,6 +6,8 @@ import { db } from '../../firebase';
 import { CheckCircle, Loader2, Star, ChevronRight, Clock, ArrowRight, User, Phone, Mail, Instagram, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FormLayout from '../../components/forms/FormLayout';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 export default function GuideCapture() {
   const { guideId } = useParams();
@@ -21,7 +23,7 @@ export default function GuideCapture() {
   useEffect(() => {
     const fetchGuide = async () => {
       try {
-        const docRef = doc(db, 'guides', guideId);
+        const docRef = getTenantDoc(db, 'guides', guideId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists() && docSnap.data().active) {
           setGuide({ id: docSnap.id, ...docSnap.data() });
@@ -45,7 +47,7 @@ export default function GuideCapture() {
     setLoading(true);
     try {
       // 1. Crea il lead
-      const leadRef = await addDoc(collection(db, 'guideLeads'), {
+      const leadRef = await addDoc(getTenantCollection(db, 'guideLeads'), {
         guideId,
         nome: form.nome.trim(),
         telefono: form.telefono.trim(),
@@ -101,7 +103,7 @@ export default function GuideCapture() {
     }
 
     try {
-      await updateDoc(doc(db, 'guideLeads', currentLeadId), {
+      await updateDoc(getTenantDoc(db, 'guideLeads', currentLeadId), {
         wantsPromo: contactMethod !== 'no',
         contactMethod
       });

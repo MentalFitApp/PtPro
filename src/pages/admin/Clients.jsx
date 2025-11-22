@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { db, auth, toDate, calcolaStatoPercorso, updateStatoPercorso } from "../../firebase";
+import { db, auth, toDate, calcolaStatoPercorso, updateStatoPercorso } from "../../firebase"
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { collection, onSnapshot, deleteDoc, doc, getDoc, getDocs } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { 
@@ -297,7 +298,7 @@ export default function Clients() {
       return;
     }
 
-    const q = collection(db, "clients");
+    const q = getTenantCollection(db, 'clients');
     const unsub = onSnapshot(q, async (snap) => {
       try {
         const clientList = snap.docs.map(doc => {
@@ -334,7 +335,7 @@ export default function Clients() {
           const rateSum = rateArr.filter(r => r.paid).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
           
           // Totale dalla collection payments
-          const paymentsSnap = await getDocs(collection(db, 'clients', client.id, 'payments'));
+          const paymentsSnap = await getDocs(getTenantSubcollection(db, 'clients', client.id, 'payments'));
           const paymentsSum = paymentsSnap.docs.reduce((acc, doc) => {
             const data = doc.data();
             return acc + (Number(data.amount) || 0);
@@ -364,7 +365,7 @@ export default function Clients() {
   const handleDelete = async () => {
     if (!clientToDelete) return;
     try {
-      await deleteDoc(doc(db, 'clients', clientToDelete.id));
+      await deleteDoc(getTenantDoc(db, 'clients', clientToDelete.id));
       setClients(prev => prev.filter(c => c.id !== clientToDelete.id));
       showNotification('Cliente eliminato!', 'success');
     } catch (error) {

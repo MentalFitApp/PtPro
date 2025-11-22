@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
-import { BarChart3, Lock, Mail, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Crown, Lock, Mail, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
-export default function CEOLogin() {
+export default function PlatformLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,18 +13,18 @@ export default function CEOLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Verifica se l'utente è già loggato come CEO
   useEffect(() => {
-    const checkCEOAuth = async () => {
+    const checkPlatformAuth = async () => {
       const user = auth.currentUser;
       if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists() && userDoc.data().roles?.includes('ceo')) {
-          navigate('/ceo', { replace: true });
+        const platformAdminDoc = await getDoc(doc(db, 'platform_admins', 'superadmins'));
+        const platformAdminData = platformAdminDoc.data();
+        if (platformAdminData?.uids?.includes(user.uid)) {
+          navigate('/platform-dashboard', { replace: true });
         }
       }
     };
-    checkCEOAuth();
+    checkPlatformAuth();
   }, [navigate]);
 
   const handleLogin = async (e) => {
@@ -33,31 +33,31 @@ export default function CEOLogin() {
     setLoading(true);
 
     try {
-      // Login con Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Verifica ruolo CEO
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      // Verifica ruolo Platform CEO
+      console.log('🔍 Verifica Platform CEO per UID:', user.uid);
+      const platformAdminDoc = await getDoc(doc(db, 'platform_admins', 'superadmins'));
+      const platformAdminData = platformAdminDoc.data();
       
-      if (!userDoc.exists()) {
-        setError('Utente non trovato nel sistema');
+      console.log('📋 Platform admins doc exists:', platformAdminDoc.exists());
+      console.log('📋 Platform admins data:', platformAdminData);
+      console.log('📋 UIDs in platform_admins:', platformAdminData?.uids);
+      console.log('✅ UID trovato?', platformAdminData?.uids?.includes(user.uid));
+      
+      if (!platformAdminData?.uids?.includes(user.uid)) {
+        setError('Accesso negato: solo CEO della piattaforma può accedere');
+        console.error('❌ UID non trovato in platform_admins/superadmins');
         await auth.signOut();
         return;
       }
-
-      const userData = userDoc.data();
       
-      if (!userData.roles?.includes('ceo')) {
-        setError('Accesso negato: questo portale è riservato ai CEO');
-        await auth.signOut();
-        return;
-      }
+      console.log('✅ Accesso Platform CEO autorizzato!');
 
-      // Accesso autorizzato
-      navigate('/ceo', { replace: true });
+      navigate('/platform-dashboard', { replace: true });
     } catch (err) {
-      console.error('Errore login CEO:', err);
+      console.error('Errore login Platform CEO:', err);
       
       switch (err.code) {
         case 'auth/invalid-email':
@@ -67,8 +67,6 @@ export default function CEOLogin() {
           setError('Account disabilitato');
           break;
         case 'auth/user-not-found':
-          setError('Email o password non corretti');
-          break;
         case 'auth/wrong-password':
           setError('Email o password non corretti');
           break;
@@ -84,22 +82,22 @@ export default function CEOLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 flex items-center justify-center px-4">
       {/* Background decorativo */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
       </div>
 
       {/* Card Login */}
       <div className="relative w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl mb-4 shadow-2xl">
-            <BarChart3 className="w-10 h-10 text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl mb-4 shadow-2xl">
+            <Crown className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">CEO Dashboard</h1>
-          <p className="text-slate-400">Accesso riservato agli amministratori CEO</p>
+          <h1 className="text-3xl font-bold text-white mb-2">FitFlow Platform</h1>
+          <p className="text-slate-400">CEO Dashboard Access</p>
         </div>
 
         {/* Form Card */}
@@ -116,8 +114,8 @@ export default function CEOLogin() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                  placeholder="ceo@esempio.com"
+                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  placeholder="ceo@fitflow.com"
                   required
                   autoComplete="email"
                   disabled={loading}
@@ -136,7 +134,7 @@ export default function CEOLogin() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
@@ -165,7 +163,7 @@ export default function CEOLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/25"
+              className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/25"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -176,7 +174,7 @@ export default function CEOLogin() {
                   Accesso in corso...
                 </span>
               ) : (
-                'Accedi al Dashboard'
+                'Accedi al Platform Dashboard'
               )}
             </button>
           </form>
@@ -184,9 +182,9 @@ export default function CEOLogin() {
           {/* Info */}
           <div className="mt-6 pt-6 border-t border-white/10">
             <p className="text-xs text-slate-400 text-center">
-              Questo portale è riservato esclusivamente agli utenti con ruolo CEO.
+              Accesso riservato esclusivamente al CEO della piattaforma FitFlow.
               <br />
-              Per assistenza, contatta l'amministratore di sistema.
+              Gestisci tutti i tenants, subscriptions e analytics globali.
             </p>
           </div>
         </div>
@@ -194,7 +192,7 @@ export default function CEOLogin() {
         {/* Footer */}
         <div className="mt-6 text-center">
           <p className="text-sm text-slate-400">
-            Powered by FitFlow Pro
+            FitFlow Platform © 2025
           </p>
         </div>
       </div>

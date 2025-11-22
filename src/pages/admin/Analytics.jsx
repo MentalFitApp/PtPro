@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, collectionGroup, onSnapshot, query, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
-import { db, auth, toDate } from '../../firebase';
+import { db, auth, toDate } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { signOut } from 'firebase/auth';
 import { 
   DollarSign, TrendingUp, TrendingDown, Users, UserCheck, UserX, 
@@ -67,7 +68,7 @@ export default function Analytics() {
 
   // Fetch clients
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'clients'), (snap) => {
+    const unsub = onSnapshot(getTenantCollection(db, 'clients'), (snap) => {
       const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setClients(clientList);
     });
@@ -82,7 +83,7 @@ export default function Analytics() {
         for (const docSnap of snap.docs) {
           const paymentData = docSnap.data();
           const clientId = docSnap.ref.parent.parent.id;
-          const clientDoc = await getDoc(doc(db, 'clients', clientId));
+          const clientDoc = await getDoc(getTenantDoc(db, 'clients', clientId));
           
           if (clientDoc.exists() && !clientDoc.data().isOldClient && !paymentData.isPast) {
             paymentsList.push({
@@ -122,11 +123,11 @@ export default function Analytics() {
 
   // Fetch messages for response time
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'chats'), async (snap) => {
+    const unsub = onSnapshot(getTenantCollection(db, 'chats'), async (snap) => {
       const messagesList = [];
       for (const chatDoc of snap.docs) {
         const messagesSnap = await getDocs(
-          query(collection(db, 'chats', chatDoc.id, 'messages'), orderBy('timestamp', 'desc'))
+          query(getTenantSubcollection(db, 'chats', chatDoc.id, 'messages'), orderBy('timestamp', 'desc'))
         );
         messagesSnap.docs.forEach(msgDoc => {
           messagesList.push({

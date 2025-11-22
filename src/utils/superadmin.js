@@ -11,6 +11,7 @@
 
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { getTenantDoc } from '../config/tenant';
 
 /**
  * Verifica se l'utente corrente è superadmin
@@ -21,7 +22,7 @@ export async function isSuperAdmin(userId) {
   if (!userId) return false;
   
   try {
-    const superadminRef = doc(db, 'roles', 'superadmins');
+    const superadminRef = getTenantDoc(db, 'roles', 'superadmins');
     const superadminDoc = await getDoc(superadminRef);
     
     if (!superadminDoc.exists()) return false;
@@ -68,7 +69,7 @@ export async function getUserRole(userId) {
     }
 
     // Check admin
-    const adminRef = doc(db, 'roles', 'admins');
+    const adminRef = getTenantDoc(db, 'roles', 'admins');
     const adminDoc = await getDoc(adminRef);
     const isAdminUser = adminDoc.exists() && (adminDoc.data().uids || []).includes(userId);
     
@@ -77,7 +78,7 @@ export async function getUserRole(userId) {
     }
 
     // Check coach
-    const coachRef = doc(db, 'roles', 'coaches');
+    const coachRef = getTenantDoc(db, 'roles', 'coaches');
     const coachDoc = await getDoc(coachRef);
     const isCoachUser = coachDoc.exists() && (coachDoc.data().uids || []).includes(userId);
     
@@ -86,14 +87,14 @@ export async function getUserRole(userId) {
     }
 
     // Check client
-    const clientRef = doc(db, 'clients', userId);
+    const clientRef = getTenantDoc(db, 'clients', userId);
     const clientDoc = await getDoc(clientRef);
     if (clientDoc.exists()) {
       return { role: 'client', isSuperAdmin: false, isAdmin: false, isCoach: false };
     }
 
     // Check collaboratore
-    const collabRef = doc(db, 'collaboratori', userId);
+    const collabRef = getTenantDoc(db, 'collaboratori', userId);
     const collabDoc = await getDoc(collabRef);
     if (collabDoc.exists()) {
       const collabRole = collabDoc.data().role || 'collaboratore';
@@ -121,7 +122,7 @@ export async function addSuperAdmin(currentUserId, targetUserId) {
       return { success: false, message: 'Solo un superadmin può assegnare questo ruolo' };
     }
 
-    const superadminRef = doc(db, 'roles', 'superadmins');
+    const superadminRef = getTenantDoc(db, 'roles', 'superadmins');
     await setDoc(superadminRef, {
       uids: arrayUnion(targetUserId),
       updatedAt: new Date(),
@@ -153,7 +154,7 @@ export async function removeSuperAdmin(currentUserId, targetUserId) {
       return { success: false, message: 'Non puoi rimuovere te stesso come superadmin' };
     }
 
-    const superadminRef = doc(db, 'roles', 'superadmins');
+    const superadminRef = getTenantDoc(db, 'roles', 'superadmins');
     await updateDoc(superadminRef, {
       uids: arrayRemove(targetUserId),
       updatedAt: new Date(),

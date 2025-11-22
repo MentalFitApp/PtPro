@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, doc, addDoc, serverTimestamp, setDoc, getDocs, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { Send, Video, Search, Plus, Phone, MessageSquare, X, ArrowLeft, Check, CheckCheck, UserPlus, Users, Image as ImageIcon, Mic, Paperclip, Play, Pause, Camera, CameraOff, Mic as MicOn, MicOff, Monitor, PhoneOff, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -55,12 +56,12 @@ export default function UnifiedChat() {
     const checkRole = async () => {
       try {
         // Controlla se è admin
-        const adminDoc = await getDoc(doc(db, 'roles', 'admins'));
+        const adminDoc = await getDoc(getTenantDoc(db, 'roles', 'admins'));
         if (adminDoc.exists() && adminDoc.data().uids?.includes(currentUser.uid)) {
           setUserRole('admin');
         } else {
           // Controlla se è coach
-          const coachDoc = await getDoc(doc(db, 'roles', 'coaches'));
+          const coachDoc = await getDoc(getTenantDoc(db, 'roles', 'coaches'));
           if (coachDoc.exists() && coachDoc.data().uids?.includes(currentUser.uid)) {
             setUserRole('coach');
           } else {
@@ -70,7 +71,7 @@ export default function UnifiedChat() {
         }
 
         // Carica profilo utente
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const userDoc = await getDoc(getTenantDoc(db, 'users', currentUser.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setUserProfile(userData);
@@ -92,7 +93,7 @@ export default function UnifiedChat() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const userStatusRef = doc(db, 'userStatus', currentUser.uid);
+    const userStatusRef = getTenantDoc(db, 'userStatus', currentUser.uid);
 
     // Imposta online quando monta il componente
     const setOnline = async () => {
@@ -141,7 +142,7 @@ export default function UnifiedChat() {
 
   // Ascolta stati online di tutti gli utenti
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'userStatus'), (snapshot) => {
+    const unsubscribe = onSnapshot(getTenantCollection(db, 'userStatus'), (snapshot) => {
       const statusMap = {};
       snapshot.docs.forEach((doc) => {
         statusMap[doc.id] = doc.data();
@@ -156,7 +157,7 @@ export default function UnifiedChat() {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const usersSnapshot = await getDocs(getTenantCollection(db, 'users'));
         const usersData = usersSnapshot.docs
           .map(doc => ({
             id: doc.id,
@@ -181,7 +182,7 @@ export default function UnifiedChat() {
     if (!currentUser) return;
 
     const chatsQuery = query(
-      collection(db, 'chats'),
+      getTenantCollection(db, 'chats'),
       where('participants', 'array-contains', currentUser.uid),
       orderBy('lastUpdate', 'desc')
     );
@@ -203,7 +204,7 @@ export default function UnifiedChat() {
     if (!selectedChat) return;
 
     const messagesQuery = query(
-      collection(db, 'chats', selectedChat.id, 'messages'),
+      getTenantSubcollection(db, 'chats', selectedChat.id, 'messages'),
       orderBy('timestamp', 'asc')
     );
 
@@ -254,7 +255,7 @@ export default function UnifiedChat() {
       }
 
       // Crea nuova chat
-      const newChatRef = await addDoc(collection(db, 'chats'), {
+      const newChatRef = await addDoc(getTenantCollection(db, 'chats'), {
         participants: [currentUser.uid, otherUser.id],
         participantsData: {
           [currentUser.uid]: {
@@ -313,7 +314,7 @@ export default function UnifiedChat() {
 
     setSending(true);
     try {
-      await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
+      await addDoc(getTenantSubcollection(db, 'chats', selectedChat.id, 'messages'), {
         text: newMessage.trim(),
         senderId: currentUser.uid,
         senderName: currentUser.displayName || 'Utente',
@@ -323,7 +324,7 @@ export default function UnifiedChat() {
       });
 
       // Aggiorna lastMessage della chat
-      await updateDoc(doc(db, 'chats', selectedChat.id), {
+      await updateDoc(getTenantDoc(db, 'chats', selectedChat.id), {
         lastMessage: newMessage.trim(),
         lastUpdate: serverTimestamp(),
       });
@@ -365,7 +366,7 @@ export default function UnifiedChat() {
     if (!currentUser) return;
 
     const notificationsQuery = query(
-      collection(db, 'notifications'),
+      getTenantCollection(db, 'notifications'),
       where('userId', '==', currentUser.uid),
       where('type', 'in', ['videocall', 'voicecall']),
       where('read', '==', false),
@@ -424,7 +425,7 @@ export default function UnifiedChat() {
       const roomUrl = roomData.url;
 
       // Invia messaggio sistema nella chat
-      const callMessageRef = await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
+      const callMessageRef = await addDoc(getTenantSubcollection(db, 'chats', selectedChat.id, 'messages'), {
         type: 'call',
         callType: 'video',
         callStatus: 'calling',
@@ -437,7 +438,7 @@ export default function UnifiedChat() {
       });
 
       // Crea notifica per l'altro utente
-      await addDoc(collection(db, 'notifications'), {
+      await addDoc(getTenantCollection(db, 'notifications'), {
         userId: otherUserId,
         type: 'videocall',
         title: 'Videochiamata in arrivo',
@@ -451,7 +452,7 @@ export default function UnifiedChat() {
         read: false,
       });
 
-      await updateDoc(doc(db, 'chats', selectedChat.id), {
+      await updateDoc(getTenantDoc(db, 'chats', selectedChat.id), {
         lastMessage: '📹 Videochiamata',
         lastUpdate: serverTimestamp(),
       });
@@ -506,7 +507,7 @@ export default function UnifiedChat() {
       const roomUrl = roomData.url;
 
       // Invia messaggio sistema nella chat
-      const callMessageRef = await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
+      const callMessageRef = await addDoc(getTenantSubcollection(db, 'chats', selectedChat.id, 'messages'), {
         type: 'call',
         callType: 'voice',
         callStatus: 'calling',
@@ -518,7 +519,7 @@ export default function UnifiedChat() {
         read: false,
       });
 
-      await addDoc(collection(db, 'notifications'), {
+      await addDoc(getTenantCollection(db, 'notifications'), {
         userId: otherUserId,
         type: 'voicecall',
         title: 'Chiamata vocale in arrivo',
@@ -532,7 +533,7 @@ export default function UnifiedChat() {
         read: false,
       });
 
-      await updateDoc(doc(db, 'chats', selectedChat.id), {
+      await updateDoc(getTenantDoc(db, 'chats', selectedChat.id), {
         lastMessage: '📞 Chiamata vocale',
         lastUpdate: serverTimestamp(),
       });
@@ -652,7 +653,7 @@ export default function UnifiedChat() {
       await uploadBytes(storageRef, file);
       const imageUrl = await getDownloadURL(storageRef);
 
-      await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
+      await addDoc(getTenantSubcollection(db, 'chats', selectedChat.id, 'messages'), {
         type: 'image',
         imageUrl: imageUrl,
         senderId: currentUser.uid,
@@ -662,7 +663,7 @@ export default function UnifiedChat() {
         read: false,
       });
 
-      await updateDoc(doc(db, 'chats', selectedChat.id), {
+      await updateDoc(getTenantDoc(db, 'chats', selectedChat.id), {
         lastMessage: '📷 Immagine',
         lastUpdate: serverTimestamp(),
       });
@@ -716,7 +717,7 @@ export default function UnifiedChat() {
       await uploadBytes(storageRef, audioBlob);
       const audioUrl = await getDownloadURL(storageRef);
 
-      await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
+      await addDoc(getTenantSubcollection(db, 'chats', selectedChat.id, 'messages'), {
         type: 'audio',
         audioUrl: audioUrl,
         senderId: currentUser.uid,
@@ -726,7 +727,7 @@ export default function UnifiedChat() {
         read: false,
       });
 
-      await updateDoc(doc(db, 'chats', selectedChat.id), {
+      await updateDoc(getTenantDoc(db, 'chats', selectedChat.id), {
         lastMessage: '🎤 Messaggio vocale',
         lastUpdate: serverTimestamp(),
       });
@@ -982,7 +983,7 @@ export default function UnifiedChat() {
                                     initializeDailyCall(message.roomUrl);
                                   }
                                   // Aggiorna stato messaggio
-                                  updateDoc(doc(db, 'chats', selectedChat.id, 'messages', message.id), {
+                                  updateDoc(getTenantDoc(db, 'chats', selectedChat.id, 'messages', message.id), {
                                     callStatus: 'accepted'
                                   }).catch(console.error);
                                 }}
@@ -1241,7 +1242,7 @@ export default function UnifiedChat() {
                   }
                   
                   // Marca notifica come letta
-                  await updateDoc(doc(db, 'notifications', incomingCall.id), {
+                  await updateDoc(getTenantDoc(db, 'notifications', incomingCall.id), {
                     read: true,
                   });
 
@@ -1253,7 +1254,7 @@ export default function UnifiedChat() {
                     );
                     if (userChats.length > 0) {
                       const chatId = userChats[0].id;
-                      await updateDoc(doc(db, 'chats', chatId, 'messages', incomingCall.callMessageId), {
+                      await updateDoc(getTenantDoc(db, 'chats', chatId, 'messages', incomingCall.callMessageId), {
                         callStatus: 'accepted',
                       });
                     }
@@ -1269,7 +1270,7 @@ export default function UnifiedChat() {
               <button
                 onClick={async () => {
                   // Rifiuta la chiamata
-                  await updateDoc(doc(db, 'notifications', incomingCall.id), {
+                  await updateDoc(getTenantDoc(db, 'notifications', incomingCall.id), {
                     read: true,
                   });
 
@@ -1280,7 +1281,7 @@ export default function UnifiedChat() {
                     );
                     if (userChats.length > 0) {
                       const chatId = userChats[0].id;
-                      await updateDoc(doc(db, 'chats', chatId, 'messages', incomingCall.callMessageId), {
+                      await updateDoc(getTenantDoc(db, 'chats', chatId, 'messages', incomingCall.callMessageId), {
                         callStatus: 'declined',
                       });
                     }
@@ -1321,7 +1322,7 @@ export default function UnifiedChat() {
                     if (activeCallMessageRef.current) {
                       try {
                         const { chatId, messageId } = activeCallMessageRef.current;
-                        await updateDoc(doc(db, 'chats', chatId, 'messages', messageId), {
+                        await updateDoc(getTenantDoc(db, 'chats', chatId, 'messages', messageId), {
                           callStatus: 'cancelled',
                         });
                       } catch (error) {
@@ -1382,7 +1383,7 @@ export default function UnifiedChat() {
                     if (activeCallMessageRef.current) {
                       try {
                         const { chatId, messageId } = activeCallMessageRef.current;
-                        await updateDoc(doc(db, 'chats', chatId, 'messages', messageId), {
+                        await updateDoc(getTenantDoc(db, 'chats', chatId, 'messages', messageId), {
                           callStatus: 'cancelled',
                         });
                       } catch (error) {

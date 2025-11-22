@@ -6,6 +6,8 @@ import 'react-calendar/dist/Calendar.css';
 // --- 1. NUOVE ICONE DA LUCIDE-REACT ---
 import { Save, MessageSquare, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 // --- 2. STILI DEL CALENDARIO AGGIORNATI ---
 const calendarStyles = `
@@ -88,7 +90,7 @@ const AdminCheckManager = ({ clientId }) => {
         if (!selectedCheck) return;
         setIsSaving(true);
         try {
-            const checkDocRef = doc(db, 'clients', clientId, 'checks', selectedCheck.id);
+            const checkDocRef = getTenantDoc(db, 'clients', clientId, 'checks', selectedCheck.id);
             await updateDoc(checkDocRef, {
                 coachFeedback: feedbackText,
                 feedbackUpdatedAt: serverTimestamp()

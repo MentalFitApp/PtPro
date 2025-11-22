@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'; // IMPORT AGGIUNTO
 import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../../firebase';
+import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { Users, Check, TrendingUp, Phone, Calendar, Target, Award, AlertCircle, Edit, Save, X, Copy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
@@ -38,7 +39,7 @@ export default function CollaboratoreDetail() {
         return;
       }
 
-      const adminDoc = await getDoc(doc(db, 'roles', 'admins'));
+      const adminDoc = await getDoc(getTenantDoc(db, 'roles', 'admins'));
       const adminUids = adminDoc.exists() ? adminDoc.data().uids || [] : [];
       const adminOk = adminUids.includes(currentUser.uid);
       setIsAdmin(adminOk);
@@ -50,7 +51,7 @@ export default function CollaboratoreDetail() {
       }
 
       try {
-        const docRef = doc(db, 'collaboratori', effectiveId);
+        const docRef = getTenantDoc(db, 'collaboratori', effectiveId);
         const docSnap = await getDoc(docRef);
         if (!docSnap.exists()) {
           setError('Collaboratore non trovato.');
@@ -77,7 +78,7 @@ export default function CollaboratoreDetail() {
     if (!location.state?.collaboratoreId) return;
 
     const leadsQuery = query(
-      collection(db, 'leads'),
+      getTenantCollection(db, 'leads'),
       where('collaboratoreId', '==', location.state.collaboratoreId),
       orderBy('timestamp', 'desc')
     );
@@ -93,7 +94,7 @@ export default function CollaboratoreDetail() {
   useEffect(() => {
     if (!location.state?.collaboratoreId) return;
 
-    const collabRef = doc(db, 'collaboratori', location.state.collaboratoreId);
+    const collabRef = getTenantDoc(db, 'collaboratori', location.state.collaboratoreId);
     const unsub = onSnapshot(collabRef, (doc) => {
       if (doc.exists()) {
         const data = doc.data();
@@ -201,7 +202,7 @@ export default function CollaboratoreDetail() {
   const handleSaveRole = async () => {
     if (!isAdmin) return;
     try {
-      await updateDoc(doc(db, 'collaboratori', location.state.collaboratoreId), { role });
+      await updateDoc(getTenantDoc(db, 'collaboratori', location.state.collaboratoreId), { role });
       setCollaboratore(prev => ({ ...prev, role }));
       setEditingRole(false);
     } catch (err) {

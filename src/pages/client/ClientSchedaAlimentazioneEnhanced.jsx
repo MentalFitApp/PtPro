@@ -4,6 +4,7 @@ import { ArrowLeft, Download, RefreshCw, ChevronRight } from 'lucide-react';
 import { db } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth } from '../../firebase';
+import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { useNavigate } from 'react-router-dom';
 import SmartFoodSwap from '../../components/SmartFoodSwap';
 
@@ -37,7 +38,7 @@ export default function ClientSchedaAlimentazioneEnhanced() {
 
 
       // Load scheda
-      const schedaRef = doc(db, 'schede_alimentazione', user.uid);
+      const schedaRef = getTenantDoc(db, 'schede_alimentazione', user.uid);
       const schedaSnap = await getDoc(schedaRef);
       
       if (schedaSnap.exists()) {
@@ -107,7 +108,7 @@ export default function ClientSchedaAlimentazioneEnhanced() {
       }
 
       // Save to Firestore
-      const schedaRef = doc(db, 'schede_alimentazione', user.uid);
+      const schedaRef = getTenantDoc(db, 'schede_alimentazione', user.uid);
       await setDoc(schedaRef, updatedScheda);
 
       setSchedaData(updatedScheda);

@@ -13,6 +13,7 @@ import {
   getDoc,
   deleteDoc,
 } from "firebase/firestore";
+import { getTenantCollection, getTenantDoc } from "../../config/tenant";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths } from "date-fns";
 import { formatCurrency } from "../../utils/formatters";
 import { Edit2, Trash2, Calendar, TrendingUp, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -72,7 +73,7 @@ const Dipendenti = () => {
 
   // === DIPENDENTI & PAGAMENTI ===
   useEffect(() => {
-    const unsubDip = onSnapshot(collection(db, "dipendenti_provvigioni"), (snap) => {
+    const unsubDip = onSnapshot(getTenantCollection(db, 'dipendenti_provvigioni'), (snap) => {
       const list = snap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -86,7 +87,7 @@ const Dipendenti = () => {
       setLoading(false);
     });
 
-    const unsubPag = onSnapshot(collection(db, "pagamenti_dipendenti"), (snap) => {
+    const unsubPag = onSnapshot(getTenantCollection(db, 'pagamenti_dipendenti'), (snap) => {
       const list = snap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -147,7 +148,7 @@ const Dipendenti = () => {
 
   const salvaDipendente = async () => {
     if (!formDip.nome.trim()) return;
-    const ref = editingDip ? doc(db, "dipendenti_provvigioni", editingDip.id) : doc(collection(db, "dipendenti_provvigioni"));
+    const ref = editingDip ? getTenantDoc(db, 'dipendenti_provvigioni', editingDip.id) : doc(getTenantCollection(db, 'dipendenti_provvigioni'));
     const data = {
       nome: formDip.nome.trim(),
       nominativo: formDip.nominativo.trim(),
@@ -167,13 +168,13 @@ const Dipendenti = () => {
 
   const archiviaDipendente = async (dip) => {
     if (!confirm(`Archiviare ${dip.nome}?`)) return;
-    await setDoc(doc(db, "dipendenti_provvigioni", dip.id), { archived: true }, { merge: true });
+    await setDoc(getTenantDoc(db, 'dipendenti_provvigioni', dip.id), { archived: true }, { merge: true });
   };
 
   const salvaPagamento = async () => {
     if (!formPagamento.dipId || !formPagamento.importoBase || !formPagamento.data) return;
     const importoTotale = parseFloat(formPagamento.importoBase) + (parseFloat(formPagamento.bonus) || 0);
-    const ref = editingPagamento ? doc(db, "pagamenti_dipendenti", editingPagamento.id) : doc(collection(db, "pagamenti_dipendenti"));
+    const ref = editingPagamento ? getTenantDoc(db, 'pagamenti_dipendenti', editingPagamento.id) : doc(getTenantCollection(db, 'pagamenti_dipendenti'));
     await setDoc(ref, {
       dipId: formPagamento.dipId,
       importo: importoTotale,
@@ -190,7 +191,7 @@ const Dipendenti = () => {
 
   const eliminaPagamento = async (id) => {
     if (!confirm("Eliminare pagamento?")) return;
-    await deleteDoc(doc(db, "pagamenti_dipendenti", id));
+    await deleteDoc(getTenantDoc(db, 'pagamenti_dipendenti', id));
   };
 
   const modificaPagamento = (pagamento) => {

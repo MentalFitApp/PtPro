@@ -2,7 +2,8 @@ import React, { useState, useEffect, Component } from 'react';
 import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { db, toDate, auth } from '../../firebase';
+import { db, toDate, auth } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { Users, ArrowLeft, Calendar, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -217,7 +218,7 @@ export default function CoachClientDetail() {
 
     const fetchData = async () => {
       try {
-        const clientRef = doc(db, 'clients', clientId);
+        const clientRef = getTenantDoc(db, 'clients', clientId);
         const clientDoc = await getDoc(clientRef);
         if (!clientDoc.exists()) {
           setError("Cliente non trovato");
@@ -226,7 +227,7 @@ export default function CoachClientDetail() {
         }
         setClient({ id: clientId, ...clientDoc.data() });
 
-        const anamnesiRef = doc(db, 'clients', clientId, 'anamnesi', 'initial');
+        const anamnesiRef = getTenantDoc(db, 'clients', clientId, 'anamnesi', 'initial');
         const anamnesiDoc = await getDoc(anamnesiRef);
         if (anamnesiDoc.exists()) {
           let aData = anamnesiDoc.data();
@@ -240,7 +241,7 @@ export default function CoachClientDetail() {
         }
 
         const checksQuery = query(
-          collection(db, 'clients', clientId, 'checks'),
+          getTenantSubcollection(db, 'clients', clientId, 'checks'),
           orderBy('createdAt', 'desc')
         );
         const unsub = onSnapshot(checksQuery, (snap) => {

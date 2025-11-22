@@ -5,6 +5,7 @@ import { auth, db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Lock, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getTenantDoc } from '../../config/tenant';
 
 // === LOGIN COMPONENTE COMPLETO ===
 const Login = () => {
@@ -19,10 +20,10 @@ const Login = () => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
         try {
-          const adminDocRef = doc(db, 'roles', 'admins');
-          const coachDocRef = doc(db, 'roles', 'coaches');
-          const clientDocRef = doc(db, 'clients', user.uid);
-          const collabDocRef = doc(db, 'collaboratori', user.uid);
+          const adminDocRef = getTenantDoc(db, 'roles', 'admins');
+          const coachDocRef = getTenantDoc(db, 'roles', 'coaches');
+          const clientDocRef = getTenantDoc(db, 'clients', user.uid);
+          const collabDocRef = getTenantDoc(db, 'collaboratori', user.uid);
           const [adminDoc, coachDoc, clientDoc, collabDoc] = await Promise.all([
             getDoc(adminDocRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
             getDoc(coachDocRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
@@ -79,10 +80,10 @@ const Login = () => {
     setError('');
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const adminDocRef = doc(db, 'roles', 'admins');
-      const coachDocRef = doc(db, 'roles', 'coaches');
-      const clientDocRef = doc(db, 'clients', userCredential.user.uid);
-      const collabDocRef = doc(db, 'collaboratori', userCredential.user.uid);
+      const adminDocRef = getTenantDoc(db, 'roles', 'admins');
+      const coachDocRef = getTenantDoc(db, 'roles', 'coaches');
+      const clientDocRef = getTenantDoc(db, 'clients', userCredential.user.uid);
+      const collabDocRef = getTenantDoc(db, 'collaboratori', userCredential.user.uid);
       const [adminDoc, coachDoc, clientDoc, collabDoc] = await Promise.all([
         getDoc(adminDocRef),
         getDoc(coachDocRef),

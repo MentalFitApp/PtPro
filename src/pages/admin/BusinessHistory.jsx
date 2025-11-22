@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, collectionGroup, query, where, getDocs } from "firebase/firestore";
-import { db, toDate } from "../../firebase";
+import { db, toDate } from "../../firebase"
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { ArrowLeft, BarChart3, Users, DollarSign, RefreshCw, Plus } from 'lucide-react'; // Aggiunto Plus
 import { motion } from "framer-motion";
 
@@ -13,7 +14,7 @@ export default function BusinessHistory() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'clients'), (snap) => {
+    const unsub = onSnapshot(getTenantCollection(db, 'clients'), (snap) => {
       const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const monthData = {};
       clientList.forEach(client => {
@@ -38,7 +39,7 @@ export default function BusinessHistory() {
     const endMonth = new Date(parseInt(year), parseInt(month), 1);
 
     try {
-      const clientsQuery = query(collection(db, 'clients'), where('startDate', '>=', startMonth), where('startDate', '<', endMonth));
+      const clientsQuery = query(getTenantCollection(db, 'clients'), where('startDate', '>=', startMonth), where('startDate', '<', endMonth));
       const clientsSnap = await getDocs(clientsQuery);
       const clientsList = clientsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db, auth } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -40,7 +41,7 @@ export default function Statistiche() {
   useEffect(() => {
     const checkAdmin = async () => {
       if (!auth.currentUser) { navigate('/login'); return; }
-      const adminDoc = await getDoc(doc(db, 'roles', 'admins'));
+      const adminDoc = await getDoc(getTenantDoc(db, 'roles', 'admins'));
       const uids = adminDoc.exists() ? adminDoc.data().uids || [] : [];
       setIsAdmin(uids.includes(auth.currentUser.uid));
       setLoading(false);
@@ -52,7 +53,7 @@ export default function Statistiche() {
   useEffect(() => {
     if (!isAdmin) return;
 
-    const qSetters = query(collection(db, 'collaboratori'));
+    const qSetters = query(getTenantCollection(db, 'collaboratori'));
     const unsub = onSnapshot(qSetters, snap => {
       const map = {};
       const list = snap.docs
@@ -89,9 +90,9 @@ export default function Statistiche() {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const qSales = query(collection(db, 'salesReports'), where('date', '>=', startDate), where('date', '<=', endDate));
+    const qSales = query(getTenantCollection(db, 'salesReports'), where('date', '>=', startDate), where('date', '<=', endDate));
     const qSetting = query(collection(db, 'settingReports'), where('date', '>=', startDate), where('date', '<=', endDate));
-    const qLeads = query(collection(db, 'leads'));
+    const qLeads = query(getTenantCollection(db, 'leads'));
 
     const unsubs = [
       onSnapshot(qSales, snap => setSalesReports(snap.docs.map(d => d.data()))),

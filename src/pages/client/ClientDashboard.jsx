@@ -3,6 +3,7 @@ import { getAuth, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase.js';
 import { useNavigate, Link } from 'react-router-dom';
+import { getTenantDoc } from '../../config/tenant';
 import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
@@ -82,7 +83,7 @@ const ClientDashboard = () => {
     // Carica dati cliente
     const fetchClientData = async () => {
       try {
-        const clientDocRef = doc(db, 'clients', user.uid);
+        const clientDocRef = getTenantDoc(db, 'clients', user.uid);
         const docSnap = await getDoc(clientDocRef);
         if (docSnap.exists()) {
           const data = docSnap.data();

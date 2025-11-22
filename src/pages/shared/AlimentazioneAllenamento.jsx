@@ -4,7 +4,8 @@ import { Users, Apple, Dumbbell, ChevronRight, UserPlus, Clock, AlertTriangle } 
 import ListaClientiAllenamento from '../../components/ListaClientiAllenamento';
 import ListaAlimenti from '../../components/ListaAlimenti';
 import ListaEsercizi from '../../components/ListaEsercizi';
-import { db, toDate } from '../../firebase';
+import { db, toDate } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { collection, getDocs } from 'firebase/firestore';
 
 const AlimentazioneAllenamento = () => {
@@ -23,7 +24,7 @@ const AlimentazioneAllenamento = () => {
 
   const loadClientStats = async () => {
     try {
-      const clientsRef = collection(db, 'clients');
+      const clientsRef = getTenantCollection(db, 'clients');
       const snapshot = await getDocs(clientsRef);
       
       let nuovi = 0, alimentazioneScade = 0, allenamentoScade = 0, scaduti = 0;

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Copy, RotateCcw, X, Download, Upload, History, FileText } from 'lucide-react';
 import { db } from '../../firebase';
+import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore';
 import { exportNutritionCardToPDF } from '../../utils/pdfExport';
 
@@ -57,14 +58,14 @@ const SchedaAlimentazione = () => {
   const loadClientAndScheda = async () => {
     try {
       // Load client info
-      const clientRef = doc(db, 'clients', clientId);
+      const clientRef = getTenantDoc(db, 'clients', clientId);
       const clientSnap = await getDoc(clientRef);
       
       if (clientSnap.exists()) {
         setClientName(clientSnap.data().name || 'N/D');
         
         // Load scheda alimentazione if exists
-        const schedaRef = doc(db, 'schede_alimentazione', clientId);
+        const schedaRef = getTenantDoc(db, 'schede_alimentazione', clientId);
         const schedaSnap = await getDoc(schedaRef);
         
         if (schedaSnap.exists()) {
@@ -81,7 +82,7 @@ const SchedaAlimentazione = () => {
     setSaving(true);
     try {
       // Save current card
-      const schedaRef = doc(db, 'schede_alimentazione', clientId);
+      const schedaRef = getTenantDoc(db, 'schede_alimentazione', clientId);
       await setDoc(schedaRef, {
         ...schedaData,
         updatedAt: new Date()
@@ -92,7 +93,7 @@ const SchedaAlimentazione = () => {
 
       // Update client with expiry date
       if (schedaData.durataSettimane) {
-        const clientRef = doc(db, 'clients', clientId);
+        const clientRef = getTenantDoc(db, 'clients', clientId);
         const scadenza = new Date();
         scadenza.setDate(scadenza.getDate() + (parseInt(schedaData.durataSettimane) * 7));
         

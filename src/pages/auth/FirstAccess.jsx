@@ -5,6 +5,7 @@ import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from '../../firebase.js';
 import { KeyRound, Lock, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getTenantDoc } from '../../config/tenant';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -54,14 +55,14 @@ const FirstAccess = () => {
 
       try {
         // Controlla se è cliente
-        const clientDoc = await getDoc(doc(db, 'clients', user.uid));
+        const clientDoc = await getDoc(getTenantDoc(db, 'clients', user.uid));
         if (clientDoc.exists() && clientDoc.data().firstLogin) {
           setUserType('client');
           return;
         }
 
         // Controlla se è collaboratore
-        const collabDoc = await getDoc(doc(db, 'collaboratori', user.uid));
+        const collabDoc = await getDoc(getTenantDoc(db, 'collaboratori', user.uid));
         if (collabDoc.exists() && collabDoc.data().firstLogin) {
           setUserType('collaboratore');
           return;

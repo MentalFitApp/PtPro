@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth } from '../../firebase';
+import { db, auth } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { Bell, Send, Clock, Users, UserPlus, Calendar, AlertTriangle, CheckSquare, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -58,8 +59,8 @@ export default function Notifications() {
 
   const loadClientsAndCollaboratori = async () => {
     try {
-      const clientsSnap = await getDocs(collection(db, 'clients'));
-      const collabSnap = await getDocs(collection(db, 'collaboratori'));
+      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+      const collabSnap = await getDocs(getTenantCollection(db, 'collaboratori'));
       
       setClients(clientsSnap.docs.map(d => ({ id: d.id, ...d.data(), type: 'client' })));
       setCollaboratori(collabSnap.docs.map(d => ({ id: d.id, ...d.data(), type: 'collaboratore' })));
@@ -71,7 +72,7 @@ export default function Notifications() {
   const loadSentNotifications = async () => {
     try {
       const q = query(
-        collection(db, 'notifications'),
+        getTenantCollection(db, 'notifications'),
         where('sentBy', '==', auth.currentUser.uid),
         orderBy('sentAt', 'desc')
       );
@@ -125,7 +126,7 @@ export default function Notifications() {
         const personalizedTitle = notificationTitle.replace('{name}', user.name || 'utente');
         const personalizedBody = notificationBody.replace('{name}', user.name || 'utente');
 
-        await addDoc(collection(db, 'notifications'), {
+        await addDoc(getTenantCollection(db, 'notifications'), {
           userId: user.id,
           userType: user.type,
           title: personalizedTitle,

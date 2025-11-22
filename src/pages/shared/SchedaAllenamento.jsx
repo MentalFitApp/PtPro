@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, ArrowLeft, Plus, Trash2, Copy, RotateCcw, X, ChevronUp, ChevronDown, Play, Download, Upload, History, FileText } from 'lucide-react';
 import { db } from '../../firebase';
+import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore';
 import { exportWorkoutCardToPDF } from '../../utils/pdfExport';
 
@@ -55,7 +56,7 @@ const SchedaAllenamento = () => {
   const loadData = async () => {
     try {
       // Load client info
-      const clientRef = doc(db, 'clients', clientId);
+      const clientRef = getTenantDoc(db, 'clients', clientId);
       const clientSnap = await getDoc(clientRef);
       
       if (clientSnap.exists()) {
@@ -69,7 +70,7 @@ const SchedaAllenamento = () => {
       setAvailableExercises(exercisesData);
 
       // Load scheda allenamento if exists
-      const schedaRef = doc(db, 'schede_allenamento', clientId);
+      const schedaRef = getTenantDoc(db, 'schede_allenamento', clientId);
       const schedaSnap = await getDoc(schedaRef);
       
       if (schedaSnap.exists()) {
@@ -85,7 +86,7 @@ const SchedaAllenamento = () => {
     setSaving(true);
     try {
       // Save current card
-      const schedaRef = doc(db, 'schede_allenamento', clientId);
+      const schedaRef = getTenantDoc(db, 'schede_allenamento', clientId);
       await setDoc(schedaRef, {
         ...schedaData,
         updatedAt: new Date()
@@ -96,7 +97,7 @@ const SchedaAllenamento = () => {
 
       // Update client with expiry date
       if (schedaData.durataSettimane) {
-        const clientRef = doc(db, 'clients', clientId);
+        const clientRef = getTenantDoc(db, 'clients', clientId);
         const scadenza = new Date();
         scadenza.setDate(scadenza.getDate() + (parseInt(schedaData.durataSettimane) * 7));
         

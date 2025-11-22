@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import {
   collection, onSnapshot, collectionGroup, doc, getDoc, getDocs, setDoc, serverTimestamp, query, orderBy, where
 } from "firebase/firestore"; // ← AGGIUNTO setDoc, where e getDocs
-import { auth, db, toDate } from "../../firebase";
+import { auth, db, toDate } from "../../firebase"
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { uploadPhoto } from "../../cloudflareStorage";
 import { signOut, updateProfile } from "firebase/auth";
 import {
@@ -177,7 +178,7 @@ export default function Dashboard() {
 
   // --- Fetch clients ---
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'clients'), (snap) => {
+    const unsub = onSnapshot(getTenantCollection(db, 'clients'), (snap) => {
       try {
         const clientList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setClients(clientList);
@@ -197,7 +198,7 @@ export default function Dashboard() {
 
   // --- Last viewed (CORRETTO CON setDoc) ---
   useEffect(() => {
-    const lastViewedRef = doc(db, 'app-data', 'lastViewed');
+    const lastViewedRef = getTenantDoc(db, 'app-data', 'lastViewed');
     const fetchLastViewed = async () => {
       try {
         const docSnap = await getDoc(lastViewedRef);
@@ -231,7 +232,7 @@ export default function Dashboard() {
           const paymentDate = toDate(paymentData.paymentDate);
           if (paymentDate && paymentDate >= currentMonthStart) {
             const clientId = docSnap.ref.parent.parent.id;
-            const clientDocSnap = await getDoc(doc(db, 'clients', clientId));
+            const clientDocSnap = await getDoc(getTenantDoc(db, 'clients', clientId));
             if (clientDocSnap.exists()) {
               const clientData = clientDocSnap.data();
               if (!clientData.isOldClient && !paymentData.isPast) {
@@ -262,7 +263,7 @@ export default function Dashboard() {
           const createdAt = toDate(docSnap.data().createdAt);
           if (createdAt > toDate(lastViewed)) {
             const clientId = docSnap.ref.parent.parent.id;
-            const clientDocSnap = await getDoc(doc(db, 'clients', clientId));
+            const clientDocSnap = await getDoc(getTenantDoc(db, 'clients', clientId));
             newChecks.push({
               type: 'new_check',
               clientId,
@@ -288,7 +289,7 @@ export default function Dashboard() {
           const submittedAt = toDate(docSnap.data().submittedAt);
           if (submittedAt > toDate(lastViewed)) {
             const clientId = docSnap.ref.parent.parent.id;
-            const clientDocSnap = await getDoc(doc(db, 'clients', clientId));
+            const clientDocSnap = await getDoc(getTenantDoc(db, 'clients', clientId));
             newAnamnesi.push({
               type: 'new_anamnesi',
               clientId,
@@ -306,7 +307,7 @@ export default function Dashboard() {
     unsubs.push(unsubAnamnesi);
 
     // --- SCADENZE ---
-    const clientsQuery = query(collection(db, 'clients'));
+    const clientsQuery = query(getTenantCollection(db, 'clients'));
     const unsubClients = onSnapshot(clientsQuery, (snap) => {
       try {
         const expiring = snap.docs
@@ -358,7 +359,7 @@ export default function Dashboard() {
 
                 // Verifica se il cliente ha pagamenti precedenti (è un rinnovo)
                 const clientPaymentsQuery = query(
-                  collection(db, 'clients', clientDocRef.id, 'payments'),
+                  getTenantSubcollection(db, 'clients', clientDocRef.id, 'payments'),
                   where('paymentDate', '<', paymentDate)
                 );
                 const previousPayments = await getDocs(clientPaymentsQuery);
@@ -461,7 +462,7 @@ export default function Dashboard() {
           }
         });
       } else {
-        const clientsQuery = query(collection(db, 'clients'), orderBy('createdAt', 'asc'));
+        const clientsQuery = query(getTenantCollection(db, 'clients'), orderBy('createdAt', 'asc'));
         unsub = onSnapshot(clientsQuery, (snap) => {
           try {
             const dailyData = {};

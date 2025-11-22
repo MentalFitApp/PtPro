@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc, serverTimestamp, addDoc, collection, getDoc } from 'firebase/firestore';
-import { db, auth, storage } from '../../firebase';
+import { db, auth, storage } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Play, SkipForward, Check, ChevronRight, Camera, User, MessageSquare, FileText, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -42,7 +43,7 @@ const OnboardingFlow = () => {
       }
 
       try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userDoc = await getDoc(getTenantDoc(db, 'users', user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setUserProfile(userData);
@@ -98,7 +99,7 @@ const OnboardingFlow = () => {
       await uploadBytes(photoRef, profilePhoto);
       const photoURL = await getDownloadURL(photoRef);
 
-      await updateDoc(doc(db, 'users', user.uid), {
+      await updateDoc(getTenantDoc(db, 'users', user.uid), {
         photoURL,
         updatedAt: serverTimestamp(),
       });
@@ -130,9 +131,9 @@ const OnboardingFlow = () => {
         media: []
       };
 
-      await addDoc(collection(db, 'community_posts'), postData);
+      await addDoc(getTenantCollection(db, 'community_posts'), postData);
 
-      await updateDoc(doc(db, 'users', user.uid), {
+      await updateDoc(getTenantDoc(db, 'users', user.uid), {
         presentationPosted: true,
         updatedAt: serverTimestamp(),
       });
@@ -147,7 +148,7 @@ const OnboardingFlow = () => {
   const handleQuestionnaireComplete = async () => {
     try {
       const user = auth.currentUser;
-      await updateDoc(doc(db, 'users', user.uid), {
+      await updateDoc(getTenantDoc(db, 'users', user.uid), {
         questionnaireCompleted: true,
         onboardingCompleted: true,
         onboardingCompletedAt: serverTimestamp(),

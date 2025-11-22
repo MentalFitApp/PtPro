@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } from 'firebase/firestore';
 import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
-import { db, toDate, updateStatoPercorso } from '../../firebase';
+import { db, toDate, updateStatoPercorso } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check, X, Plus, ZoomIn, CalendarDays } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
@@ -91,7 +92,7 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
         paymentMethod
       };
 
-      const clientRef = doc(db, 'clients', client.id);
+      const clientRef = getTenantDoc(db, 'clients', client.id);
       await updateDoc(clientRef, {
         scadenza: expiry,
         payments: [...(client.payments || []), payment]
@@ -173,7 +174,7 @@ const EditClientModal = ({ isOpen, onClose, client, onSave }) => {
 
   const handleSave = async () => {
     try {
-      const clientRef = doc(db, 'clients', client.id);
+      const clientRef = getTenantDoc(db, 'clients', client.id);
       await updateDoc(clientRef, form);
       onSave();
       onClose();
@@ -220,7 +221,7 @@ const ExtendExpiryModal = ({ isOpen, onClose, client, onSave }) => {
         newExpiry.setDate(newExpiry.getDate() + days);
       }
 
-      const clientRef = doc(db, 'clients', client.id);
+      const clientRef = getTenantDoc(db, 'clients', client.id);
       await updateDoc(clientRef, { scadenza: newExpiry });
 
       updateStatoPercorso(client.id);
@@ -410,7 +411,7 @@ export default function ClientDetail() {
       return;
     }
 
-    const clientRef = doc(db, 'clients', clientId);
+    const clientRef = getTenantDoc(db, 'clients', clientId);
     const unsubClient = onSnapshot(clientRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = { id: docSnap.id, ...docSnap.data() };
@@ -428,7 +429,7 @@ export default function ClientDetail() {
     });
 
     // === ANAMNESI COMPLETA CON FOTO RISOLTE ===
-    const anamnesiRef = doc(db, 'clients', clientId, 'anamnesi', 'initial');
+    const anamnesiRef = getTenantDoc(db, 'clients', clientId, 'anamnesi', 'initial');
     const unsubAnamnesi = onSnapshot(anamnesiRef, async (docSnap) => {
       if (docSnap.exists()) {
         let data = docSnap.data();
@@ -446,7 +447,7 @@ export default function ClientDetail() {
     });
 
     // === CHECKS CON FOTO RISOLTE ===
-    const checksQuery = query(collection(db, 'clients', clientId, 'checks'), orderBy('createdAt', 'desc'));
+    const checksQuery = query(getTenantSubcollection(db, 'clients', clientId, 'checks'), orderBy('createdAt', 'desc'));
     const unsubChecks = onSnapshot(checksQuery, async (snap) => {
       const checksData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -463,7 +464,7 @@ export default function ClientDetail() {
     });
 
     // === PAGAMENTI ===
-    const paymentsQuery = query(collection(db, 'clients', clientId, 'payments'), orderBy('paymentDate', 'desc'));
+    const paymentsQuery = query(getTenantSubcollection(db, 'clients', clientId, 'payments'), orderBy('paymentDate', 'desc'));
     const unsubPayments = onSnapshot(paymentsQuery, (snap) => {
       setPayments(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
@@ -488,7 +489,7 @@ export default function ClientDetail() {
   const handleDelete = async () => {
     if (window.confirm(`Eliminare ${client?.name}?`)) {
       try {
-        await deleteDoc(doc(db, 'clients', clientId));
+        await deleteDoc(getTenantDoc(db, 'clients', clientId));
         navigate('/clients');
       } catch (err) {
         alert("Errore eliminazione.");
@@ -504,21 +505,21 @@ export default function ClientDetail() {
   };
 
   const handleRenewalSaved = () => {
-    const clientRef = doc(db, 'clients', clientId);
+    const clientRef = getTenantDoc(db, 'clients', clientId);
     onSnapshot(clientRef, (snap) => {
       if (snap.exists()) setClient({ id: snap.id, ...snap.data() });
     });
   };
 
   const handleEditSaved = () => {
-    const clientRef = doc(db, 'clients', clientId);
+    const clientRef = getTenantDoc(db, 'clients', clientId);
     onSnapshot(clientRef, (snap) => {
       if (snap.exists()) setClient({ id: snap.id, ...snap.data() });
     });
   };
 
   const handleExtendSaved = () => {
-    const clientRef = doc(db, 'clients', clientId);
+    const clientRef = getTenantDoc(db, 'clients', clientId);
     onSnapshot(clientRef, (snap) => {
       if (snap.exists()) setClient({ id: snap.id, ...snap.data() });
     });
@@ -527,21 +528,21 @@ export default function ClientDetail() {
   const handleAddRate = async (rate) => {
     const newRates = [...rates, rate];
     setRates(newRates);
-    await updateDoc(doc(db, 'clients', client.id), { rate: newRates });
+    await updateDoc(getTenantDoc(db, 'clients', client.id), { rate: newRates });
   };
   const handleUpdateRate = async (idx, updatedRate) => {
     const newRates = rates.map((r, i) => i === idx ? { ...r, ...updatedRate } : r);
     setRates(newRates);
-    await updateDoc(doc(db, 'clients', client.id), { rate: newRates });
+    await updateDoc(getTenantDoc(db, 'clients', client.id), { rate: newRates });
   };
   const handleDeleteRate = async (idx) => {
     const newRates = rates.filter((_, i) => i !== idx);
     setRates(newRates);
-    await updateDoc(doc(db, 'clients', client.id), { rate: newRates });
+    await updateDoc(getTenantDoc(db, 'clients', client.id), { rate: newRates });
   };
   const handleRateizzatoChange = async (val) => {
     setIsRateizzato(val);
-    await updateDoc(doc(db, 'clients', client.id), { rateizzato: val });
+    await updateDoc(getTenantDoc(db, 'clients', client.id), { rateizzato: val });
   };
 
   if (loading) return <div className="text-center text-slate-400 p-8">Caricamento...</div>;

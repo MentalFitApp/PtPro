@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../../firebase';
+import { db } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { collection, collectionGroup, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 // --- 1. NUOVE ICONE DA LUCIDE-REACT ---
 import { UserPlus, FileText, CheckSquare, X } from 'lucide-react';
@@ -77,7 +78,7 @@ export default function Updates() {
   }, [dismissedItems]);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "clients"), (snap) => {
+    const unsub = onSnapshot(getTenantCollection(db, 'clients'), (snap) => {
       setClients(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
     return () => unsub();

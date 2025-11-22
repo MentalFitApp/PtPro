@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db, auth } from '../../firebase';
+import { db, auth } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { collection, query, where, onSnapshot, updateDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getMessaging, getToken } from 'firebase/messaging';
 import { Bell, BellOff, X, Check } from 'lucide-react';
@@ -22,7 +23,7 @@ export default function NotificationPanel({ userType = 'client' }) {
 
     // Ascolta le notifiche dell'utente (SENZA orderBy per evitare indice composito)
     const q = query(
-      collection(db, 'notifications'),
+      getTenantCollection(db, 'notifications'),
       where('userId', '==', auth.currentUser.uid),
       where('userType', '==', userType)
     );
@@ -126,7 +127,7 @@ export default function NotificationPanel({ userType = 'client' }) {
 
   const markAsRead = async (notificationId) => {
     try {
-      await updateDoc(doc(db, 'notifications', notificationId), { read: true });
+      await updateDoc(getTenantDoc(db, 'notifications', notificationId), { read: true });
     } catch (error) {
       console.error('Errore marcatura notifica letta:', error);
     }
@@ -136,7 +137,7 @@ export default function NotificationPanel({ userType = 'client' }) {
     try {
       const unreadNotifs = notifications.filter(n => !n.read);
       await Promise.all(
-        unreadNotifs.map(n => updateDoc(doc(db, 'notifications', n.id), { read: true }))
+        unreadNotifs.map(n => updateDoc(getTenantDoc(db, 'notifications', n.id), { read: true }))
       );
     } catch (error) {
       console.error('Errore marcatura tutte lette:', error);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { Search, FileText, Dumbbell, ArrowUp, ArrowDown } from 'lucide-react';
 
 export default function CoachSchede() {
@@ -14,7 +15,7 @@ export default function CoachSchede() {
   const [anamnesiStatus, setAnamnesiStatus] = useState({});
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'clients'), async snap => {
+    const unsub = onSnapshot(getTenantCollection(db, 'clients'), async snap => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       // carica stato anamnesi (solo exists)
       const promises = list.map(c => getDoc(doc(db, `clients/${c.id}/anamnesi`, 'initial')).catch(() => ({ exists: () => false })));

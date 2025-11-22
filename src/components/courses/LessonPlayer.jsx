@@ -5,6 +5,8 @@ import { db, auth } from '../../firebase';
 import { ArrowLeft, Play, Pause, CheckCircle, ChevronRight, ChevronLeft, Clock } from 'lucide-react';
 
 import MediaViewer from '../ui/MediaViewer';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 /**
  * Player per visualizzare e completare le lezioni
@@ -93,7 +95,7 @@ export default function LessonPlayer() {
   const checkProgress = useCallback(async (userId) => {
     try {
       const progressQuery = query(
-        collection(db, 'user_progress'),
+        getTenantCollection(db, 'user_progress'),
         where('userId', '==', userId),
         where('lessonId', '==', lessonId)
       );
@@ -115,7 +117,7 @@ export default function LessonPlayer() {
     try {
       // Cerca progresso esistente
       const progressQuery = query(
-        collection(db, 'user_progress'),
+        getTenantCollection(db, 'user_progress'),
         where('userId', '==', user.uid),
         where('lessonId', '==', lessonId)
       );
@@ -124,7 +126,7 @@ export default function LessonPlayer() {
 
       if (progressSnap.empty) {
         // Crea nuovo progresso
-        await setDoc(doc(collection(db, 'user_progress')), {
+        await setDoc(doc(getTenantCollection(db, 'user_progress')), {
           userId: user.uid,
           courseId: courseId,
           moduleId: moduleId,
@@ -135,7 +137,7 @@ export default function LessonPlayer() {
       } else {
         // Aggiorna progresso esistente
         const progressId = progressSnap.docs[0].id;
-        await updateDoc(doc(db, 'user_progress', progressId), {
+        await updateDoc(getTenantDoc(db, 'user_progress', progressId), {
           completed: true,
           completedAt: serverTimestamp(),
         });

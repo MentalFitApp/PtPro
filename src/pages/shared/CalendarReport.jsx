@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, onSnapshot } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { db, auth } from '../../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
 import { Users, Settings, FileText, Phone, Calendar, CheckCircle, XCircle, AlertCircle, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -22,7 +23,7 @@ export default function CalendarReport() {
 
     const checkAdminRole = async () => {
       try {
-        const adminDocRef = doc(db, 'roles', 'admins');
+        const adminDocRef = getTenantDoc(db, 'roles', 'admins');
         const adminDoc = await getDoc(adminDocRef);
         if (!adminDoc.exists() || !adminDoc.data().uids.includes(auth.currentUser.uid)) {
           navigate('/collaboratori');
@@ -36,7 +37,7 @@ export default function CalendarReport() {
 
     checkAdminRole();
 
-    const collabQuery = query(collection(db, 'collaboratori'));
+    const collabQuery = query(getTenantCollection(db, 'collaboratori'));
     const unsubCollab = onSnapshot(collabQuery, (snap) => {
       const collabData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCollaboratori(collabData);
@@ -51,7 +52,7 @@ export default function CalendarReport() {
       setSettingReports(reports);
     });
 
-    const salesQuery = query(collection(db, 'salesReports'));
+    const salesQuery = query(getTenantCollection(db, 'salesReports'));
     const unsubSales = onSnapshot(salesQuery, (snap) => {
       const reports = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setSalesReports(reports);

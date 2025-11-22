@@ -4,7 +4,8 @@
  */
 
 import { collection, getDocs, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../firebase'
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../../config/tenant';;
 
 /**
  * Calcola i giorni rimanenti fino alla scadenza
@@ -25,7 +26,7 @@ export const getDaysUntilExpiry = (expiryDate) => {
  */
 export const getExpiringClients = async (daysThreshold = 15) => {
   try {
-    const clientsRef = collection(db, 'clients');
+    const clientsRef = getTenantCollection(db, 'clients');
     const snapshot = await getDocs(clientsRef);
     
     const expiringClients = [];
@@ -59,7 +60,7 @@ export const getExpiringClients = async (daysThreshold = 15) => {
  */
 export const getExpiredClients = async () => {
   try {
-    const clientsRef = collection(db, 'clients');
+    const clientsRef = getTenantCollection(db, 'clients');
     const snapshot = await getDocs(clientsRef);
     
     const expiredClients = [];
@@ -92,7 +93,7 @@ export const getExpiredClients = async () => {
  */
 export const getClientsMissingCheckIn = async (daysThreshold = 7) => {
   try {
-    const clientsRef = collection(db, 'clients');
+    const clientsRef = getTenantCollection(db, 'clients');
     const clientsSnapshot = await getDocs(clientsRef);
     
     const clientsMissingCheck = [];
@@ -157,7 +158,7 @@ export const getClientsMissingCheckIn = async (daysThreshold = 7) => {
 export const createNotification = async (userId, notification) => {
   try {
     // eslint-disable-next-line no-unused-vars
-    const notificationRef = collection(db, 'notifications');
+    const notificationRef = getTenantCollection(db, 'notifications');
     const notificationData = {
       userId,
       ...notification,

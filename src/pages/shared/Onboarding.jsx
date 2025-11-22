@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
+import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { CheckCircle, Upload, MessageSquare, FileText, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MediaUploadButton from '../../components/ui/MediaUploadButton';
@@ -24,7 +25,7 @@ export default function Onboarding() {
       if (user) {
         setCurrentUser(user);
         // Verifica se ha già completato l'onboarding
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userDoc = await getDoc(getTenantDoc(db, 'users', user.uid));
         if (userDoc.exists() && userDoc.data().onboardingCompleted) {
           navigate('/dashboard');
         }
@@ -47,7 +48,7 @@ export default function Onboarding() {
 
     try {
       // Aggiorna profilo utente
-      await updateDoc(doc(db, 'users', currentUser.uid), {
+      await updateDoc(getTenantDoc(db, 'users', currentUser.uid), {
         photoURL: profileData.photoURL,
         onboardingCompleted: true,
         onboardingCompletedAt: serverTimestamp(),
