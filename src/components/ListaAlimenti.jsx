@@ -40,13 +40,8 @@ const ListaAlimenti = ({ onBack }) => {
     grassi: ''
   });
 
-  useEffect(() => {
-    if (selectedCategory) {
-      loadFoods();
-    }
-  }, [selectedCategory, loadFoods]);
-
   const loadFoods = useCallback(async () => {
+    if (!selectedCategory) return;
     setLoading(true);
     try {
       const foodsRef = collection(db, 'alimenti', selectedCategory, 'items');
@@ -58,6 +53,12 @@ const ListaAlimenti = ({ onBack }) => {
     }
     setLoading(false);
   }, [selectedCategory]);
+
+  useEffect(() => {
+    if (selectedCategory) {
+      loadFoods();
+    }
+  }, [selectedCategory, loadFoods]);
 
   const handleAddFood = async () => {
     if (!formData.nome || !formData.kcal || !formData.proteine || !formData.carboidrati || !formData.grassi) {

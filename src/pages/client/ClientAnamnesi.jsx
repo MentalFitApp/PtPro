@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { getAuth } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase.js';
+import { db, auth } from '../../firebase.js';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, FilePenLine, Camera, UploadCloud, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -110,7 +109,6 @@ const ClientAnamnesi = () => {
   }, [r2PublicBase]);
 
   const navigate = useNavigate();
-  const auth = getAuth();
   const user = auth.currentUser;
 
   const { register, handleSubmit, setValue, formState: { isSubmitting } } = useForm();

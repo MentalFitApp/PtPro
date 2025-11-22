@@ -322,6 +322,11 @@ service cloud.firestore {
       // L'utente stesso può creare/modificare il proprio profilo (incluso communityVideoWatched)
       allow create, update: if request.auth.uid == userId;
       
+      // Utenti autenticati possono aggiornare stats.likesReceived (per like ai post)
+      allow update: if request.auth != null && 
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
+                      request.resource.data.stats.diff(resource.data.stats).affectedKeys().hasOnly(['likesReceived']);
+      
       // SuperAdmin può modificare il livello manualmente e altri campi
       allow update: if isSuperAdmin();
 
@@ -372,12 +377,20 @@ service cloud.firestore {
          !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['banned']) ||
          !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.banned);
 
+      // Autore o superadmin possono modificare contenuto
       allow update: if request.auth != null && (
         resource.data.author.uid == request.auth.uid ||
         isSuperAdmin()
       ) && (!exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
             !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['banned']) ||
             !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.banned);
+
+      // Tutti possono aggiornare likes e likedBy (per like ai post)
+      allow update: if request.auth != null && 
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedBy']) &&
+                      (!exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+                       !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['banned']) ||
+                       !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.banned);
 
       allow delete: if isSuperAdmin() || resource.data.author.uid == request.auth.uid;
     }

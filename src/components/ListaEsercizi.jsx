@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, X, Save, Filter } from 'lucide-react';
-import { db } from '../firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { Plus, Search, Edit2, Trash2, X, Save, Filter, Video, Upload } from 'lucide-react';
+import { db, auth } from '../firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, or } from 'firebase/firestore';
+import { uploadToR2 } from '../cloudflareStorage';
 
 const ATTREZZI = [
   'Bilanciere',
@@ -42,15 +43,21 @@ const ListaEsercizi = ({ onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAttrezzo, setSelectedAttrezzo] = useState('');
   const [selectedGruppo, setSelectedGruppo] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all'); // 'all', 'global', 'personal'
   const [isAddingExercise, setIsAddingExercise] = useState(false);
   const [editingExercise, setEditingExercise] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedVideoFile, setSelectedVideoFile] = useState(null);
+  const videoInputRef = useRef(null);
   const [formData, setFormData] = useState({
     nome: '',
     attrezzo: '',
     gruppoMuscolare: '',
     descrizione: '',
-    videoUrl: ''
+    videoUrl: '',
+    isGlobal: true // true = Esercizi Maurizio, false = Personale
   });
 
   useEffect(() => {
@@ -61,13 +68,42 @@ const ListaEsercizi = ({ onBack }) => {
     setLoading(true);
     try {
       const exercisesRef = collection(db, 'esercizi');
-      const snapshot = await getDocs(exercisesRef);
+      const currentUserId = auth.currentUser?.uid;
+      
+      // Query per caricare esercizi globali (categoria: 'maurizio') E esercizi personali dell'utente
+      const q = query(
+        exercisesRef,
+        or(
+          where('category', '==', 'maurizio'),
+          where('userId', '==', currentUserId)
+        )
+      );
+      
+      const snapshot = await getDocs(q);
       const exercisesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setExercises(exercisesData);
     } catch (error) {
       console.error('Errore nel caricamento degli esercizi:', error);
     }
     setLoading(false);
+  };
+
+  const handleVideoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      alert('Seleziona un file video valido');
+      return;
+    }
+
+    // Limite 50MB per video
+    if (file.size > 50 * 1024 * 1024) {
+      alert('Il video non può superare i 50MB');
+      return;
+    }
+
+    setSelectedVideoFile(file);
   };
 
   const handleAddExercise = async () => {
@@ -77,9 +113,40 @@ const ListaEsercizi = ({ onBack }) => {
     }
 
     try {
+      setUploadingVideo(true);
+      let videoUrl = formData.videoUrl;
+
+      // Se c'è un video selezionato, caricalo su R2
+      if (selectedVideoFile) {
+        console.log('📤 Upload video esercizio...', selectedVideoFile.name);
+        try {
+          videoUrl = await uploadToR2(
+            selectedVideoFile,
+            'maurizio', // Categoria globale
+            'exercise_videos',
+            (progress) => {
+              console.log('📊 Progress:', progress);
+              setUploadProgress(progress.percent);
+            },
+            true // isAdmin = true per rimuovere limite dimensione
+          );
+          console.log('✅ Video caricato:', videoUrl);
+        } catch (uploadError) {
+          console.error('❌ Errore upload video:', uploadError);
+          alert(`Errore upload video: ${uploadError.message}`);
+          setUploadingVideo(false);
+          return;
+        }
+      }
+
       const exercisesRef = collection(db, 'esercizi');
+      const { isGlobal, ...exerciseData } = formData;
       await addDoc(exercisesRef, {
-        ...formData,
+        ...exerciseData,
+        videoUrl,
+        category: isGlobal ? 'maurizio' : 'personal', // Categoria globale o personale
+        userId: auth.currentUser.uid,
+        createdBy: auth.currentUser.displayName || 'Admin',
         createdAt: new Date()
       });
       
@@ -87,7 +154,10 @@ const ListaEsercizi = ({ onBack }) => {
       loadExercises();
     } catch (error) {
       console.error('Errore nell\'aggiunta dell\'esercizio:', error);
-      alert('Errore nell\'aggiunta dell\'esercizio');
+      alert(`Errore nell\'aggiunta dell\'esercizio: ${error.message}`);
+    } finally {
+      setUploadingVideo(false);
+      setUploadProgress(0);
     }
   };
 
@@ -98,17 +168,47 @@ const ListaEsercizi = ({ onBack }) => {
     }
 
     try {
+      setUploadingVideo(true);
+      let videoUrl = formData.videoUrl;
+
+      // Se c'è un nuovo video selezionato, caricalo
+      if (selectedVideoFile) {
+        console.log('📤 Upload nuovo video...', selectedVideoFile.name);
+        try {
+          videoUrl = await uploadToR2(
+            selectedVideoFile,
+            editingExercise.category || 'maurizio',
+            'exercise_videos',
+            (progress) => setUploadProgress(progress.percent),
+            true
+          );
+          console.log('✅ Video aggiornato:', videoUrl);
+        } catch (uploadError) {
+          console.error('❌ Errore upload video:', uploadError);
+          alert(`Errore upload video: ${uploadError.message}`);
+          setUploadingVideo(false);
+          return;
+        }
+      }
+
       const exerciseRef = doc(db, 'esercizi', editingExercise.id);
+      const { isGlobal, ...exerciseData } = formData;
       await updateDoc(exerciseRef, {
-        ...formData,
-        updatedAt: new Date()
+        ...exerciseData,
+        videoUrl,
+        category: isGlobal ? 'maurizio' : 'personal',
+        updatedAt: new Date(),
+        updatedBy: auth.currentUser.displayName || 'Admin'
       });
       
       resetForm();
       loadExercises();
     } catch (error) {
       console.error('Errore nell\'aggiornamento dell\'esercizio:', error);
-      alert('Errore nell\'aggiornamento dell\'esercizio');
+      alert(`Errore nell\'aggiornamento dell\'esercizio: ${error.message}`);
+    } finally {
+      setUploadingVideo(false);
+      setUploadProgress(0);
     }
   };
 
@@ -131,10 +231,17 @@ const ListaEsercizi = ({ onBack }) => {
       attrezzo: '',
       gruppoMuscolare: '',
       descrizione: '',
-      videoUrl: ''
+      videoUrl: '',
+      isGlobal: true
     });
+    setSelectedVideoFile(null);
+    setUploadingVideo(false);
+    setUploadProgress(0);
     setIsAddingExercise(false);
     setEditingExercise(null);
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
+    }
   };
 
   const startEdit = (exercise) => {
@@ -144,7 +251,8 @@ const ListaEsercizi = ({ onBack }) => {
       attrezzo: exercise.attrezzo,
       gruppoMuscolare: exercise.gruppoMuscolare,
       descrizione: exercise.descrizione || '',
-      videoUrl: exercise.videoUrl || ''
+      videoUrl: exercise.videoUrl || '',
+      isGlobal: exercise.category === 'maurizio'
     });
   };
 
@@ -152,7 +260,10 @@ const ListaEsercizi = ({ onBack }) => {
     const matchesSearch = exercise.nome.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAttrezzo = !selectedAttrezzo || exercise.attrezzo === selectedAttrezzo;
     const matchesGruppo = !selectedGruppo || exercise.gruppoMuscolare === selectedGruppo;
-    return matchesSearch && matchesAttrezzo && matchesGruppo;
+    const matchesCategory = categoryFilter === 'all' || 
+      (categoryFilter === 'global' && exercise.category === 'maurizio') ||
+      (categoryFilter === 'personal' && exercise.category === 'personal' && exercise.userId === auth.currentUser?.uid);
+    return matchesSearch && matchesAttrezzo && matchesGruppo && matchesCategory;
   });
 
   return (
@@ -184,6 +295,18 @@ const ListaEsercizi = ({ onBack }) => {
               className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
             />
           </div>
+          
+          {/* Filtro Categoria */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
+          >
+            <option value="all">Tutti gli Esercizi</option>
+            <option value="global">🌍 Esercizi Maurizio</option>
+            <option value="personal">👤 I Miei Esercizi</option>
+          </select>
+          
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors flex items-center gap-2"
@@ -267,6 +390,36 @@ const ListaEsercizi = ({ onBack }) => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Toggle Categoria */}
+              <div className="md:col-span-2 bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-slate-300 block mb-1">
+                      Categoria Esercizio
+                    </label>
+                    <p className="text-xs text-slate-500">
+                      {formData.isGlobal 
+                        ? '🌍 Esercizio globale - Visibile a tutti gli utenti'
+                        : '👤 Esercizio personale - Visibile solo a te'
+                      }
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, isGlobal: !formData.isGlobal })}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      formData.isGlobal ? 'bg-yellow-600' : 'bg-cyan-600'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        formData.isGlobal ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+              
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Nome Esercizio <span className="text-red-400">*</span>
@@ -327,25 +480,98 @@ const ListaEsercizi = ({ onBack }) => {
               
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  URL Video (opzionale)
+                  Video Esercizio
                 </label>
-                <input
-                  type="url"
-                  value={formData.videoUrl}
-                  onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
-                  placeholder="https://..."
-                />
+                
+                {/* Opzione 1: Carica Video */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/*"
+                      onChange={handleVideoSelect}
+                      className="hidden"
+                      id="video-upload"
+                      disabled={uploadingVideo}
+                    />
+                    <label
+                      htmlFor="video-upload"
+                      className="flex-1 cursor-pointer px-4 py-2 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg text-slate-200 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Upload size={18} />
+                      {selectedVideoFile ? selectedVideoFile.name : 'Carica Video (max 50MB)'}
+                    </label>
+                    {selectedVideoFile && (
+                      <button
+                        onClick={() => {
+                          setSelectedVideoFile(null);
+                          if (videoInputRef.current) videoInputRef.current.value = '';
+                        }}
+                        className="p-2 text-slate-400 hover:text-red-400 transition-colors"
+                      >
+                        <X size={18} />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Opzione 2: URL Video */}
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-600"></div>
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="px-2 bg-slate-800 text-slate-500">oppure inserisci URL</span>
+                    </div>
+                  </div>
+                  
+                  <input
+                    type="url"
+                    value={formData.videoUrl}
+                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
+                    placeholder="https://..."
+                    disabled={selectedVideoFile !== null}
+                  />
+                  
+                  {/* Anteprima video esistente */}
+                  {(formData.videoUrl && !selectedVideoFile) && (
+                    <div className="mt-2">
+                      <video 
+                        src={formData.videoUrl} 
+                        controls 
+                        className="w-full max-h-64 rounded-lg"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
+
+            {/* Progress bar upload */}
+            {uploadingVideo && (
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center justify-between text-sm text-slate-400">
+                  <span>Caricamento video...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 flex gap-3">
               <button
                 onClick={editingExercise ? handleUpdateExercise : handleAddExercise}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                disabled={uploadingVideo}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save size={18} />
-                {editingExercise ? 'Salva Modifiche' : 'Aggiungi'}
+                {uploadingVideo ? `Caricamento ${uploadProgress}%...` : editingExercise ? 'Salva Modifiche' : 'Aggiungi'}
               </button>
               <button
                 onClick={resetForm}
@@ -374,16 +600,30 @@ const ListaEsercizi = ({ onBack }) => {
               <thead className="bg-slate-800">
                 <tr>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Nome</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Categoria</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Attrezzo</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Gruppo Muscolare</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Descrizione</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Gruppo</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-slate-300">Video</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold text-slate-300">Azioni</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700">
                 {filteredExercises.map((exercise) => (
                   <tr key={exercise.id} className="hover:bg-slate-800/50 transition-colors">
-                    <td className="px-4 py-3 text-slate-200 font-medium">{exercise.nome}</td>
+                    <td className="px-4 py-3 text-slate-200 font-medium">
+                      {exercise.nome}
+                    </td>
+                    <td className="px-4 py-3">
+                      {exercise.category === 'maurizio' ? (
+                        <span className="px-2 py-1 bg-yellow-900/30 border border-yellow-600/30 text-yellow-300 rounded text-xs flex items-center gap-1 w-fit">
+                          🌍 Maurizio
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 bg-cyan-900/30 border border-cyan-600/30 text-cyan-300 rounded text-xs flex items-center gap-1 w-fit">
+                          👤 Personale
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span className="px-2 py-1 bg-blue-900/30 border border-blue-600/30 text-blue-300 rounded text-xs">
                         {exercise.attrezzo}
@@ -394,20 +634,32 @@ const ListaEsercizi = ({ onBack }) => {
                         {exercise.gruppoMuscolare}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-400 text-sm max-w-xs truncate">
-                      {exercise.descrizione || '-'}
+                    <td className="px-4 py-3 text-center">
+                      {exercise.videoUrl ? (
+                        <button
+                          onClick={() => window.open(exercise.videoUrl, '_blank')}
+                          className="p-2 text-green-400 hover:bg-green-600/20 rounded-lg transition-colors inline-flex items-center gap-1"
+                          title="Guarda video"
+                        >
+                          <Video size={16} />
+                        </button>
+                      ) : (
+                        <span className="text-slate-600 text-xs">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => startEdit(exercise)}
                           className="p-2 text-blue-400 hover:bg-blue-600/20 rounded-lg transition-colors"
+                          title="Modifica"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button
                           onClick={() => handleDeleteExercise(exercise.id)}
                           className="p-2 text-red-400 hover:bg-red-600/20 rounded-lg transition-colors"
+                          title="Elimina"
                         >
                           <Trash2 size={16} />
                         </button>

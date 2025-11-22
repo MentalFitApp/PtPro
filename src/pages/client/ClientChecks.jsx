@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getAuth } from 'firebase/auth';
 import { collection, query, onSnapshot, addDoc, doc, updateDoc, serverTimestamp, orderBy } from 'firebase/firestore';
-import { db } from '../../firebase.js';
+import { db, auth } from '../../firebase.js';
 import { useNavigate } from 'react-router-dom';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -258,7 +257,7 @@ export default function ClientChecks() {
   const [error, setError] = useState(null);
   
   const navigate = useNavigate();
-  const auth = getAuth();
+
   const user = auth.currentUser;
 
   useEffect(() => {

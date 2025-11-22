@@ -72,6 +72,7 @@ export default function Community() {
   });
   const [membersList, setMembersList] = useState([]);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
   const [profileData, setProfileData] = useState({
     displayName: "",
@@ -93,6 +94,11 @@ export default function Community() {
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
   // Sidebar: su desktop sempre visibile, su mobile parte chiusa (dentro il canale)
   const [showSidebar, setShowSidebar] = useState(window.innerWidth >= 1024);
+  const [showCommentsForPost, setShowCommentsForPost] = useState(null);
+  const [commentText, setCommentText] = useState("");
+  const [postComments, setPostComments] = useState({});
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [commentsUnsubscribers, setCommentsUnsubscribers] = useState({});
   const navigate = useNavigate();
 
   // Monitor screen size per sidebar responsiva
@@ -122,8 +128,10 @@ export default function Community() {
   useEffect(() => {
     return () => {
       window.dispatchEvent(new CustomEvent('chatSelected', { detail: false }));
+      // Cleanup all comment listeners
+      Object.values(commentsUnsubscribers).forEach(unsub => unsub && unsub());
     };
-  }, []);
+  }, [commentsUnsubscribers]);
 
   // Carica utente + livello
   useEffect(() => {
@@ -666,20 +674,37 @@ export default function Community() {
 
       // Se c'è un file selezionato, caricalo su R2
       if (selectedProfilePhoto) {
-        photoURL = await uploadToR2(
-          selectedProfilePhoto,
+        console.log('📤 Salvataggio profilo - upload foto...', {
+          fileName: selectedProfilePhoto.name,
+          fileSize: selectedProfilePhoto.size,
           targetUid,
-          'profile_photos',
-          (progress) => setUploadProgress(progress.percent),
           isSuperAdmin
-        );
+        });
+        
+        try {
+          photoURL = await uploadToR2(
+            selectedProfilePhoto,
+            targetUid,
+            'profile_photos',
+            (progress) => {
+              console.log('📊 Progress:', progress);
+              setUploadProgress(progress.percent);
+            },
+            isSuperAdmin
+          );
+          console.log('✅ Upload profilo completato:', photoURL);
+        } catch (uploadError) {
+          console.error('❌ Errore upload profilo:', uploadError);
+          throw new Error(`Errore upload foto: ${uploadError.message}`);
+        }
       }
 
-      await updateDoc(doc(db, "users", targetUid), {
+      // Usa setDoc con merge per creare il documento se non esiste
+      await setDoc(doc(db, "users", targetUid), {
         displayName: profileData.displayName,
         photoURL: photoURL,
         updatedAt: serverTimestamp()
-      });
+      }, { merge: true });
 
       // Aggiorna anche userData se è il profilo proprio
       if (!editingProfile) {
@@ -698,9 +723,10 @@ export default function Community() {
       setShowProfileModal(false);
       setEditingProfile(null);
     } catch (error) {
-      console.error("Errore salvataggio profilo:", error);
-      alert("Errore durante il salvataggio. Riprova.");
+      console.error("❌ Errore salvataggio profilo:", error);
+      alert(`Errore durante il salvataggio: ${error.message || 'Errore sconosciuto'}. Controlla la console per dettagli.`);
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -743,25 +769,45 @@ export default function Community() {
 
       // Se c'è un file selezionato, caricalo su R2
       if (selectedProfilePhoto) {
-        photoURL = await uploadToR2(
-          selectedProfilePhoto,
-          auth.currentUser.uid,
-          'profile_photos',
-          (progress) => setUploadProgress(progress.percent),
+        console.log('📤 Inizio upload foto profilo...', {
+          fileName: selectedProfilePhoto.name,
+          fileSize: selectedProfilePhoto.size,
+          fileType: selectedProfilePhoto.type,
+          userId: auth.currentUser.uid,
           isSuperAdmin
-        );
+        });
+        
+        try {
+          photoURL = await uploadToR2(
+            selectedProfilePhoto,
+            auth.currentUser.uid,
+            'profile_photos',
+            (progress) => {
+              console.log('📊 Progress:', progress);
+              setUploadProgress(progress.percent);
+            },
+            isSuperAdmin
+          );
+          console.log('✅ Upload completato:', photoURL);
+        } catch (uploadError) {
+          console.error('❌ Errore upload R2:', uploadError);
+          throw new Error(`Errore upload foto: ${uploadError.message}`);
+        }
       }
 
       if (!photoURL) {
-        alert("Errore nel caricamento della foto");
-        setIsUploading(false);
-        return;
+        throw new Error("Nessun URL foto generato");
       }
-      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+      
+      // Usa setDoc con merge per creare il documento se non esiste
+      await setDoc(doc(db, "users", auth.currentUser.uid), {
         displayName: profileData.displayName,
         photoURL: photoURL,
-        updatedAt: serverTimestamp()
-      });
+        email: auth.currentUser.email,
+        uid: auth.currentUser.uid,
+        updatedAt: serverTimestamp(),
+        communityOnboarded: true
+      }, { merge: true });
 
       // Aggiorna stato locale
       setUserData(prev => ({
@@ -784,9 +830,10 @@ export default function Community() {
         setOnboardingStep('video');
       }
     } catch (error) {
-      console.error("Errore setup profilo:", error);
-      alert("Errore durante il salvataggio. Riprova.");
+      console.error("❌ Errore setup profilo:", error);
+      alert(`Errore durante il salvataggio: ${error.message || 'Errore sconosciuto'}. Controlla la console per dettagli.`);
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -837,6 +884,50 @@ export default function Community() {
       },
       timestamp: serverTimestamp()
     });
+    setCommentText("");
+    // No need to reload - realtime listener will update automatically
+  };
+
+  const loadCommentsForPost = (postId) => {
+    setLoadingComments(true);
+    const q = query(
+      collection(db, "community_posts", postId, "comments"),
+      orderBy("timestamp", "desc")
+    );
+    
+    // Use realtime listener for comments
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const comments = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setPostComments(prev => ({ ...prev, [postId]: comments }));
+      setLoadingComments(false);
+    });
+    
+    return unsubscribe;
+  };
+
+  const toggleComments = (postId) => {
+    if (showCommentsForPost === postId) {
+      // Close comments and unsubscribe
+      setShowCommentsForPost(null);
+      if (commentsUnsubscribers[postId]) {
+        commentsUnsubscribers[postId]();
+        setCommentsUnsubscribers(prev => {
+          const updated = { ...prev };
+          delete updated[postId];
+          return updated;
+        });
+      }
+    } else {
+      // Open comments and subscribe
+      setShowCommentsForPost(postId);
+      if (!postComments[postId]) {
+        const unsubscribe = loadCommentsForPost(postId);
+        setCommentsUnsubscribers(prev => ({ ...prev, [postId]: unsubscribe }));
+      }
+    }
   };
 
   const { scrollYProgress } = useScroll();
@@ -1131,6 +1222,16 @@ export default function Community() {
                   Online
                 </div>
                 <div className="flex flex-col gap-2">
+                  {/* Pulsante Membri Community */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setShowMembersModal(true)}
+                    className="p-2 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-xl border border-cyan-500/30 hover:border-cyan-500/50 transition-all"
+                    title="Vedi Membri"
+                  >
+                    <Users size={16} className="text-cyan-400" />
+                  </motion.button>
                   {activeGroupCall && currentLevel.min >= 2 && (
                     <motion.button
                       whileHover={{ scale: 1.1 }}
@@ -1530,10 +1631,15 @@ export default function Community() {
                             </button>
 
                             <button
-                              className="flex items-center gap-1.5 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl md:rounded-2xl hover:bg-white/5 text-slate-400 hover:text-cyan-400 transition-all duration-200"
+                              onClick={() => toggleComments(post.id)}
+                              className={`flex items-center gap-1.5 md:gap-3 px-2 md:px-4 py-1.5 md:py-2 rounded-xl md:rounded-2xl transition-all duration-200 ${
+                                showCommentsForPost === post.id
+                                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                                  : 'hover:bg-white/5 text-slate-400 hover:text-cyan-400'
+                              }`}
                             >
                               <MessageSquare size={16} className="md:w-5 md:h-5" />
-                              <span className="text-xs md:text-base font-medium">{post.replies?.length || 0}</span>
+                              <span className="text-xs md:text-base font-medium">{postComments[post.id]?.length || 0}</span>
                             </button>
 
                             <button
@@ -1572,6 +1678,89 @@ export default function Community() {
                               <MoreHorizontal size={20} />
                             </button>
                           </div>
+
+                          {/* Comments Section */}
+                          <AnimatePresence>
+                            {showCommentsForPost === post.id && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="mt-4 border-t border-white/10 pt-4 space-y-3"
+                              >
+                                {/* Comment Input */}
+                                <div className="flex items-start gap-3">
+                                  <img
+                                    src={auth.currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(auth.currentUser.displayName || 'User')}`}
+                                    alt="Your avatar"
+                                    className="w-8 h-8 rounded-full object-cover border border-white/20"
+                                  />
+                                  <div className="flex-1 flex gap-2">
+                                    <input
+                                      type="text"
+                                      value={showCommentsForPost === post.id ? commentText : ''}
+                                      onChange={(e) => setCommentText(e.target.value)}
+                                      onKeyPress={(e) => {
+                                        if (e.key === 'Enter' && commentText.trim()) {
+                                          addComment(post.id, commentText);
+                                        }
+                                      }}
+                                      placeholder="Scrivi un commento..."
+                                      className="flex-1 bg-slate-800/50 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+                                    />
+                                    <button
+                                      onClick={() => addComment(post.id, commentText)}
+                                      disabled={!commentText.trim()}
+                                      className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-cyan-500/50 transition-all"
+                                    >
+                                      <Send size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Comments List */}
+                                <div className="space-y-3 max-h-96 overflow-y-auto">
+                                  {loadingComments && showCommentsForPost === post.id ? (
+                                    <div className="text-center py-4">
+                                      <div className="inline-block w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                  ) : postComments[post.id]?.length > 0 ? (
+                                    postComments[post.id].map((comment) => (
+                                      <motion.div
+                                        key={comment.id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="flex items-start gap-3 bg-slate-800/30 rounded-xl p-3"
+                                      >
+                                        <img
+                                          src={comment.author?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.author?.name || 'User')}`}
+                                          alt={comment.author?.name}
+                                          className="w-8 h-8 rounded-full object-cover border border-white/20"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-semibold text-white text-sm">
+                                              {comment.author?.name || 'Utente'}
+                                            </span>
+                                            <span className="text-xs text-slate-500">
+                                              {comment.timestamp && formatDistanceToNow(comment.timestamp.toDate(), { addSuffix: true, locale: it })}
+                                            </span>
+                                          </div>
+                                          <p className="text-slate-300 text-sm break-words">
+                                            {comment.content}
+                                          </p>
+                                        </div>
+                                      </motion.div>
+                                    ))
+                                  ) : (
+                                    <p className="text-center text-slate-500 text-sm py-4">
+                                      Nessun commento ancora. Sii il primo a commentare!
+                                    </p>
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </div>
                     </motion.div>
@@ -2917,6 +3106,120 @@ export default function Community() {
                   </motion.button>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Members Modal */}
+      <AnimatePresence>
+        {showMembersModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowMembersModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-slate-900/95 backdrop-blur-xl rounded-3xl border border-white/10 p-8 max-w-2xl w-full max-h-[80vh] shadow-2xl flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-white">Membri Community</h3>
+                <div className="text-slate-400 text-sm">
+                  {membersList.length} membri
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                {membersList.map((member) => {
+                  const level = LEVELS.find(l => l.name === member.level) || LEVELS[0];
+                  return (
+                    <motion.div
+                      key={member.uid}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-4 border border-white/10 hover:border-cyan-400/50 transition-all"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          <img
+                            src={member.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.displayName || 'User')}`}
+                            alt={member.displayName}
+                            className="w-16 h-16 rounded-full object-cover border-2 border-white/20"
+                          />
+                          <div 
+                            className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-lg"
+                            style={{ 
+                              background: `linear-gradient(135deg, ${level.color}, ${level.color}dd)`,
+                              color: 'white'
+                            }}
+                          >
+                            {level.icon}
+                          </div>
+                        </div>
+
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="text-white font-semibold">
+                              {member.displayName || 'Utente'}
+                            </h4>
+                            {member.role === 'admin' && (
+                              <span className="px-2 py-0.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full font-medium">
+                                Admin
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="px-3 py-1 rounded-full text-sm font-semibold"
+                              style={{ 
+                                background: `linear-gradient(135deg, ${level.color}, ${level.color}dd)`,
+                                color: 'white'
+                              }}
+                            >
+                              {level.icon} {level.name}
+                            </div>
+                            <div className="text-slate-400 text-sm">
+                              {member.posts || 0} post
+                            </div>
+                          </div>
+                        </div>
+
+                        {isAdmin && member.uid !== currentUser.uid && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => {
+                              setEditingProfile(member);
+                              setShowMembersModal(false);
+                              setShowProfileModal(true);
+                            }}
+                            className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-full transition-colors"
+                            title="Modifica profilo"
+                          >
+                            <Edit2 size={16} className="text-slate-300" />
+                          </motion.button>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowMembersModal(false)}
+                className="mt-6 w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-3 rounded-2xl font-semibold"
+              >
+                Chiudi
+              </motion.button>
             </motion.div>
           </motion.div>
         )}
