@@ -66,9 +66,9 @@ export const compressImage = async (file) => {
 /**
  * Carica un file su Cloudflare R2
  * 
- * @param {File} file - File da caricare
+ * @param {File} file - File da caricare (immagine, video, audio)
  * @param {string} clientId - ID del cliente per organizzare i file
- * @param {string} folder - Sotto-cartella (es. 'anamnesi_photos', 'check_photos')
+ * @param {string} folder - Sotto-cartella (es. 'anamnesi_photos', 'check_photos', 'community_media')
  * @param {Function} onProgress - Callback per progress (opzionale)
  * @param {boolean} isAdmin - Se true, rimuove il limite di dimensione file (default: false)
  * @returns {Promise<string>} - URL pubblico del file caricato
@@ -77,9 +77,10 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
   if (!file) throw new Error('Nessun file fornito');
 
   // Validazione dimensione file (prima della compressione)
-  // Admin: nessun limite, Clienti: 10MB per immagini, 50MB per video
+  // Admin: nessun limite, Clienti: 10MB per immagini, 50MB per video, 10MB per audio
   if (!isAdmin) {
-    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    const isVideo = file.type.startsWith('video/');
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxSize) {
       const maxSizeMB = maxSize / (1024 * 1024);
       throw new Error(`Il file supera il limite di ${maxSizeMB}MB`);
@@ -89,8 +90,9 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
   // Validazione tipo file
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
-  if (!isImage && !isVideo) {
-    throw new Error('Il file deve essere un\'immagine o un video');
+  const isAudio = file.type.startsWith('audio/');
+  if (!isImage && !isVideo && !isAudio) {
+    throw new Error('Il file deve essere un\'immagine, un video o un audio');
   }
 
   try {
@@ -171,12 +173,11 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
     if (onProgress) onProgress(complete);
     emit(complete);
 
-    // Costruisci l'URL pubblico
-    // Nota: devi configurare un custom domain su R2 o usare il public bucket URL
+    // Costruisci l'URL pubblico usando il custom domain
     const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
-    const fileUrl = publicUrl 
-      ? `${publicUrl}/${fileKey}`
-      : `https://pub-${import.meta.env.VITE_R2_ACCOUNT_ID}.r2.dev/${fileKey}`;
+    
+    // Usa il custom domain configurato: https://media.flowfitpro.it/<key>
+    const fileUrl = `${publicUrl}/${fileKey}`;
 
     console.log(`Upload completato su R2: ${fileName} -> ${fileUrl}`);
     return fileUrl;
@@ -195,9 +196,7 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
  */
 export const getR2URL = (fileKey) => {
   const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
-  return publicUrl 
-    ? `${publicUrl}/${fileKey}`
-    : `https://pub-${import.meta.env.VITE_R2_ACCOUNT_ID}.r2.dev/${fileKey}`;
+  return `${publicUrl}/${fileKey}`;
 };
 
 /**

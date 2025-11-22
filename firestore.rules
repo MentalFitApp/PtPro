@@ -319,10 +319,10 @@ service cloud.firestore {
       // Tutti possono leggere i profili pubblici
       allow read, list: if request.auth != null;
 
-      // L'utente stesso può creare/modificare il proprio profilo
+      // L'utente stesso può creare/modificare il proprio profilo (incluso communityVideoWatched)
       allow create, update: if request.auth.uid == userId;
       
-      // SuperAdmin può modificare il livello manualmente
+      // SuperAdmin può modificare il livello manualmente e altri campi
       allow update: if isSuperAdmin();
 
       // Solo admin può eliminare
@@ -352,33 +352,96 @@ service cloud.firestore {
     }
 
     // ==================== COMMUNITY ====================
-    
+
     // Post della community
     match /community_posts/{postId} {
       allow read: if request.auth != null;
-      
+      allow list: if request.auth != null;
+
       allow create: if request.auth != null &&
         request.resource.data.author.uid == request.auth.uid &&
-        request.resource.data.content is string &&
-        request.resource.data.content.size() <= 3000 &&
-        request.resource.data.channel in ['welcome','introductions','wins','questions','tips','live'];
+        (
+          (request.resource.data.keys().hasAny(['content']) && 
+           request.resource.data.content is string &&
+           request.resource.data.content.size() <= 3000) ||
+          (request.resource.data.keys().hasAny(['mediaUrl']) &&
+           request.resource.data.mediaUrl is string &&
+           request.resource.data.mediaType in ['image', 'audio', 'video'])
+        ) &&
+        (!exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+         !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['banned']) ||
+         !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.banned);
 
       allow update: if request.auth != null && (
         resource.data.author.uid == request.auth.uid ||
-        isSuperAdmin() || 
-        isAdmin()
-      );
+        isSuperAdmin()
+      ) && (!exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+            !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['banned']) ||
+            !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.banned);
 
-      allow delete: if isSuperAdmin() || isAdmin();
+      allow delete: if isSuperAdmin() || resource.data.author.uid == request.auth.uid;
     }
 
-    // Canali della community
-    match /community_channels/{channelId} {
+    // Commenti ai post
+    match /community_posts/{postId}/comments/{commentId} {
+      allow read: if request.auth != null;
+      allow list: if request.auth != null;
+
+      allow create: if request.auth != null &&
+        request.resource.data.author.uid == request.auth.uid &&
+        (!exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+         !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['banned']) ||
+         !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.banned);
+
+      allow update: if request.auth != null &&
+        resource.data.author.uid == request.auth.uid &&
+        (!exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+         !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['banned']) ||
+         !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.banned);
+
+      allow delete: if isSuperAdmin() || resource.data.author.uid == request.auth.uid;
+    }
+
+    // Configurazione community (livelli, canali, impostazioni)
+    match /app-data/community-config {
       allow read: if request.auth != null;
       allow write: if isSuperAdmin();
     }
 
-    // ==================== CORSI E LEARNING PLATFORM ====================
+    // Impostazioni community
+    match /community_config/{configId} {
+      allow read: if request.auth != null;
+      allow write: if isSuperAdmin();
+    }
+
+    // Stanze Daily.co per group calls
+    match /daily_rooms/{roomId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isSuperAdmin();
+
+      // Partecipanti possono leggere la propria stanza
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/daily_rooms/$(roomId)) &&
+        request.auth.uid in get(/databases/$(database)/documents/daily_rooms/$(roomId)).data.participants;
+    }
+
+    // Registrazioni group calls
+    match /call_recordings/{recordingId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    // Statistiche community
+    match /community_stats/{statId} {
+      allow read: if isSuperAdmin();
+      allow write: if isSuperAdmin();
+    }
+
+    // Canali della community (legacy)
+    match /community_channels/{channelId} {
+      allow read: if request.auth != null;
+      allow write: if isSuperAdmin();
+    }    // ==================== CORSI E LEARNING PLATFORM ====================
 
     // Corsi principali
     match /courses/{courseId} {

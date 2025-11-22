@@ -349,7 +349,7 @@ export default function MainLayout() {
 
   // Determina se è pagina auth o chat
   const isAuthPage = AUTH_PAGES.includes(location.pathname);
-  const isChatPage = location.pathname === '/chat' || location.pathname === '/coach/chat' || location.pathname === '/client/chat';
+  const isChatPage = location.pathname === '/chat' || location.pathname === '/coach/chat' || location.pathname === '/client/chat' || location.pathname === '/community';
   const [isChatSelected, setIsChatSelected] = useState(false);
   const showSidebar = !isAuthPage && auth.currentUser;
   const showBottomNav = !isAuthPage && isMobile && !(isChatPage && isChatSelected);
@@ -403,14 +403,15 @@ export default function MainLayout() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Ascolta quando una chat viene selezionata in UnifiedChat
+  // Ascolta quando una chat viene selezionata in UnifiedChat o Community
   useEffect(() => {
     const handleChatSelected = (event) => {
+      console.log('MainLayout - chatSelected event received:', event.detail, 'isChatPage:', isChatPage, 'isMobile:', isMobile);
       setIsChatSelected(event.detail);
     };
     window.addEventListener('chatSelected', handleChatSelected);
     return () => window.removeEventListener('chatSelected', handleChatSelected);
-  }, []);
+  }, [isChatPage, isMobile]);
 
   return (
     <div className="overflow-x-hidden w-full">
