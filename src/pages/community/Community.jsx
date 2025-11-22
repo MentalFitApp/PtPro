@@ -77,6 +77,8 @@ export default function Community() {
     displayName: "",
     photoURL: ""
   });
+  const [selectedProfilePhoto, setSelectedProfilePhoto] = useState(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState("");
   const [savingSettings, setSavingSettings] = useState(false);
   const [activeAdminSection, setActiveAdminSection] = useState('levels');
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -648,15 +650,34 @@ export default function Community() {
         photoURL: userData?.photoURL || ""
       });
     }
+    // Reset stati upload
+    setSelectedProfilePhoto(null);
+    setProfilePhotoPreview("");
+    setIsUploading(false);
+    setUploadProgress(0);
     setShowProfileModal(true);
   };
 
   const saveProfile = async () => {
     try {
+      setIsUploading(true);
       const targetUid = editingProfile ? editingProfile.uid : auth.currentUser.uid;
+      let photoURL = profileData.photoURL;
+
+      // Se c'è un file selezionato, caricalo su R2
+      if (selectedProfilePhoto) {
+        photoURL = await uploadToR2(
+          selectedProfilePhoto,
+          targetUid,
+          'profile_photos',
+          (progress) => setUploadProgress(progress.percent),
+          isSuperAdmin
+        );
+      }
+
       await updateDoc(doc(db, "users", targetUid), {
         displayName: profileData.displayName,
-        photoURL: profileData.photoURL,
+        photoURL: photoURL,
         updatedAt: serverTimestamp()
       });
 
@@ -665,30 +686,95 @@ export default function Community() {
         setUserData(prev => ({
           ...prev,
           displayName: profileData.displayName,
-          photoURL: profileData.photoURL
+          photoURL: photoURL
         }));
       }
 
+      // Reset stati
+      setSelectedProfilePhoto(null);
+      setProfilePhotoPreview("");
+      setIsUploading(false);
+      setUploadProgress(0);
       setShowProfileModal(false);
       setEditingProfile(null);
     } catch (error) {
       console.error("Errore salvataggio profilo:", error);
+      alert("Errore durante il salvataggio. Riprova.");
+      setIsUploading(false);
     }
+  };
+
+  // Gestisce la selezione della foto profilo
+  const handleProfilePhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Seleziona un file immagine valido');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('L\'immagine non può superare i 5MB');
+      return;
+    }
+
+    setSelectedProfilePhoto(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setProfilePhotoPreview(e.target.result);
+    reader.readAsDataURL(file);
   };
 
   // Completa onboarding profilo
   const completeProfileSetup = async () => {
-    if (!profileData.displayName.trim() || !profileData.photoURL.trim()) {
-      alert("Inserisci nome e foto profilo");
+    if (!profileData.displayName.trim()) {
+      alert("Inserisci il tuo nome");
+      return;
+    }
+
+    if (!selectedProfilePhoto && !profileData.photoURL.trim()) {
+      alert("Carica una foto profilo");
       return;
     }
     
     try {
+      setIsUploading(true);
+      let photoURL = profileData.photoURL;
+
+      // Se c'è un file selezionato, caricalo su R2
+      if (selectedProfilePhoto) {
+        photoURL = await uploadToR2(
+          selectedProfilePhoto,
+          auth.currentUser.uid,
+          'profile_photos',
+          (progress) => setUploadProgress(progress.percent),
+          isSuperAdmin
+        );
+      }
+
+      if (!photoURL) {
+        alert("Errore nel caricamento della foto");
+        setIsUploading(false);
+        return;
+      }
       await updateDoc(doc(db, "users", auth.currentUser.uid), {
         displayName: profileData.displayName,
-        photoURL: profileData.photoURL,
+        photoURL: photoURL,
         updatedAt: serverTimestamp()
       });
+
+      // Aggiorna stato locale
+      setUserData(prev => ({
+        ...prev,
+        displayName: profileData.displayName,
+        photoURL: photoURL
+      }));
+
+      // Reset stati
+      setSelectedProfilePhoto(null);
+      setProfilePhotoPreview("");
+      setIsUploading(false);
+      setUploadProgress(0);
 
       // Se non serve il video, chiudi onboarding
       if (!communitySettings.requireIntroVideo || !communitySettings.introVideoUrl) {
@@ -700,6 +786,7 @@ export default function Community() {
     } catch (error) {
       console.error("Errore setup profilo:", error);
       alert("Errore durante il salvataggio. Riprova.");
+      setIsUploading(false);
     }
   };
 
@@ -830,22 +917,53 @@ export default function Community() {
                 />
               </div>
               <div>
-                <label className="text-sm text-slate-400 block mb-2">URL Foto Profilo</label>
-                <input
-                  type="url"
-                  value={profileData.photoURL}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, photoURL: e.target.value }))}
-                  placeholder="https://..."
-                  className="w-full bg-slate-800/50 border border-white/20 rounded-xl px-4 py-3 text-white focus:border-cyan-400 focus:outline-none"
-                />
+                <label className="text-sm text-slate-400 block mb-2">Foto Profilo</label>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <img 
+                      src={profilePhotoPreview || profileData.photoURL || 'https://ui-avatars.com/api/?name=' + (profileData.displayName || 'User')} 
+                      alt="Preview" 
+                      className="w-24 h-24 rounded-full object-cover border-4 border-cyan-400"
+                    />
+                    {selectedProfilePhoto && (
+                      <div className="absolute -bottom-2 -right-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full">
+                        ✓ Pronta
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePhotoSelect}
+                      className="hidden"
+                      id="profile-photo-upload"
+                      disabled={isUploading}
+                    />
+                    <label
+                      htmlFor="profile-photo-upload"
+                      className="block w-full text-center px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl font-medium cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {selectedProfilePhoto ? 'Cambia Foto' : 'Carica Foto'}
+                    </label>
+                    <p className="text-xs text-slate-500 mt-2 text-center">
+                      Formato consigliato: quadrata, max 5MB
+                    </p>
+                  </div>
+                </div>
               </div>
-              {profileData.photoURL && (
-                <div className="flex justify-center">
-                  <img 
-                    src={profileData.photoURL} 
-                    alt="Preview" 
-                    className="w-24 h-24 rounded-full object-cover border-4 border-cyan-400"
-                  />
+              {isUploading && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm text-slate-400">
+                    <span>Caricamento...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-slate-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -854,9 +972,10 @@ export default function Community() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={completeProfileSetup}
-              className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-medium"
+              disabled={isUploading || !profileData.displayName.trim()}
+              className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continua
+              {isUploading ? `Caricamento ${uploadProgress}%...` : 'Continua'}
             </motion.button>
           </motion.div>
         </div>
@@ -2717,17 +2836,15 @@ export default function Community() {
                 <div className="flex justify-center">
                   <div className="relative">
                     <img
-                      src={profileData.photoURL || "/default-avatar.png"}
+                      src={profilePhotoPreview || profileData.photoURL || 'https://ui-avatars.com/api/?name=' + (profileData.displayName || 'User')}
                       alt="Foto profilo"
                       className="w-24 h-24 rounded-full object-cover border-4 border-white/20"
                     />
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      className="absolute bottom-0 right-0 p-2 bg-cyan-500 rounded-full text-white"
-                    >
-                      <Edit size={14} />
-                    </motion.button>
+                    {selectedProfilePhoto && (
+                      <div className="absolute -top-2 -right-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full">
+                        ✓ Pronta
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -2744,15 +2861,40 @@ export default function Community() {
                   </div>
 
                   <div>
-                    <label className="text-sm text-slate-400 block mb-2">URL Foto Profilo</label>
+                    <label className="text-sm text-slate-400 block mb-2">Foto Profilo</label>
                     <input
-                      type="url"
-                      value={profileData.photoURL}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, photoURL: e.target.value }))}
-                      className="w-full bg-slate-800/50 border border-white/20 rounded-lg px-3 py-2 text-white focus:border-cyan-400 focus:outline-none"
-                      placeholder="https://example.com/photo.jpg"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePhotoSelect}
+                      className="hidden"
+                      id="edit-profile-photo-upload"
+                      disabled={isUploading}
                     />
+                    <label
+                      htmlFor="edit-profile-photo-upload"
+                      className="block w-full text-center px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-lg font-medium cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {selectedProfilePhoto ? 'Cambia Foto' : 'Carica Nuova Foto'}
+                    </label>
+                    <p className="text-xs text-slate-500 mt-2 text-center">
+                      Max 5MB - Formato quadrato consigliato
+                    </p>
                   </div>
+
+                  {isUploading && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm text-slate-400">
+                        <span>Caricamento...</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-slate-700 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-3 pt-4">
@@ -2768,9 +2910,10 @@ export default function Community() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={saveProfile}
-                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-3 rounded-2xl font-semibold"
+                    disabled={isUploading}
+                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-3 rounded-2xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Salva
+                    {isUploading ? `Caricamento ${uploadProgress}%...` : 'Salva'}
                   </motion.button>
                 </div>
               </div>
