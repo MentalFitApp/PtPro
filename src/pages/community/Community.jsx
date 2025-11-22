@@ -49,6 +49,7 @@ export default function Community() {
   const [replyingTo, setReplyingTo] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [adminUids, setAdminUids] = useState([]);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [adminLevels, setAdminLevels] = useState(LEVELS);
   const [adminChannels, setAdminChannels] = useState(CHANNELS);
@@ -173,12 +174,14 @@ export default function Community() {
     setShowOnboarding(false);
   }, [userData, communitySettings]);
 
-  // Verifica se è superadmin
+  // Verifica se è superadmin e carica lista admin
   useEffect(() => {
     if (!auth.currentUser) return;
     const unsub = onSnapshot(doc(db, "roles/superadmins"), (doc) => {
       const data = doc.data();
-      setIsSuperAdmin(data?.uids?.includes(auth.currentUser.uid) || false);
+      const uids = data?.uids || [];
+      setAdminUids(uids);
+      setIsSuperAdmin(uids.includes(auth.currentUser.uid));
     });
     return unsub;
   }, []);
@@ -212,9 +215,9 @@ export default function Community() {
     return unsub;
   }, []);
 
-  // Carica lista membri
+  // Carica lista membri (per tutti gli utenti)
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!auth.currentUser) return;
     const unsub = onSnapshot(collection(db, "users"), (snapshot) => {
       const members = snapshot.docs.map(doc => ({
         uid: doc.id,
@@ -223,7 +226,7 @@ export default function Community() {
       setMembersList(members);
     });
     return unsub;
-  }, [isSuperAdmin, bannedUsers]);
+  }, [bannedUsers]);
 
   // Carica group call attiva
   useEffect(() => {
@@ -1222,6 +1225,24 @@ export default function Community() {
                   Online
                 </div>
                 <div className="flex flex-col gap-2">
+                  {/* Pulsante Il Mio Profilo */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => {
+                      setEditingProfile(null);
+                      setProfileData({
+                        displayName: userData?.displayName || '',
+                        photoURL: userData?.photoURL || ''
+                      });
+                      setShowProfileModal(true);
+                    }}
+                    className="p-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl border border-purple-500/30 hover:border-purple-500/50 transition-all"
+                    title="Il Mio Profilo"
+                  >
+                    <UserCheck size={16} className="text-purple-400" />
+                  </motion.button>
+                  
                   {/* Pulsante Membri Community */}
                   <motion.button
                     whileHover={{ scale: 1.1 }}
@@ -3018,7 +3039,7 @@ export default function Community() {
               className="bg-slate-900/95 backdrop-blur-xl rounded-3xl border border-white/10 p-8 max-w-md w-full shadow-2xl"
             >
               <h3 className="text-2xl font-bold text-white mb-6">
-                {editingProfile ? `Modifica Profilo: ${editingProfile.displayName || 'Utente'}` : 'Modifica Mio Profilo'}
+                {editingProfile ? `Modifica Profilo: ${editingProfile.displayName || 'Utente'}` : 'Il Mio Profilo'}
               </h3>
 
               <div className="space-y-6">
@@ -3036,6 +3057,58 @@ export default function Community() {
                     )}
                   </div>
                 </div>
+
+                {/* Statistiche (solo per il proprio profilo) */}
+                {!editingProfile && (
+                  <div className="bg-slate-800/50 rounded-2xl p-4 border border-white/10 space-y-3">
+                    <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">Le Mie Statistiche</h4>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-slate-900/50 rounded-xl p-3 text-center">
+                        <div className="text-2xl font-bold text-cyan-400">{userData?.posts || 0}</div>
+                        <div className="text-xs text-slate-400 mt-1">Post Pubblicati</div>
+                      </div>
+                      
+                      <div className="bg-slate-900/50 rounded-xl p-3 text-center">
+                        <div className="text-2xl font-bold text-rose-400">{userData?.totalLikes || 0}</div>
+                        <div className="text-xs text-slate-400 mt-1">Likes Ricevuti</div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-900/50 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-slate-300">Livello Attuale</span>
+                        <div 
+                          className="px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1.5"
+                          style={{ 
+                            background: `linear-gradient(135deg, ${currentLevel.color}, ${currentLevel.color}dd)`,
+                            color: 'white'
+                          }}
+                        >
+                          <currentLevel.icon size={16} />
+                          {currentLevel.name}
+                        </div>
+                      </div>
+                      
+                      {nextLevel && (
+                        <>
+                          <div className="w-full bg-slate-700/50 rounded-full h-2 mb-2">
+                            <div 
+                              className="h-2 rounded-full transition-all duration-300"
+                              style={{ 
+                                width: `${progress}%`,
+                                background: `linear-gradient(90deg, ${currentLevel.color}, ${nextLevel.color})`
+                              }}
+                            />
+                          </div>
+                          <p className="text-xs text-slate-400 text-center">
+                            {nextLevel.min - (userData?.totalLikes || 0)} likes per raggiungere {nextLevel.name}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-4">
                   <div>
@@ -3159,7 +3232,7 @@ export default function Community() {
                               color: 'white'
                             }}
                           >
-                            {level.icon}
+                            <level.icon size={12} />
                           </div>
                         </div>
 
@@ -3168,7 +3241,7 @@ export default function Community() {
                             <h4 className="text-white font-semibold">
                               {member.displayName || 'Utente'}
                             </h4>
-                            {member.role === 'admin' && (
+                            {adminUids.includes(member.uid) && (
                               <span className="px-2 py-0.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs rounded-full font-medium">
                                 Admin
                               </span>
@@ -3177,35 +3250,20 @@ export default function Community() {
                           
                           <div className="flex items-center gap-2">
                             <div 
-                              className="px-3 py-1 rounded-full text-sm font-semibold"
+                              className="px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1.5"
                               style={{ 
                                 background: `linear-gradient(135deg, ${level.color}, ${level.color}dd)`,
                                 color: 'white'
                               }}
                             >
-                              {level.icon} {level.name}
+                              <level.icon size={14} />
+                              {level.name}
                             </div>
                             <div className="text-slate-400 text-sm">
                               {member.posts || 0} post
                             </div>
                           </div>
                         </div>
-
-                        {isAdmin && member.uid !== currentUser.uid && (
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => {
-                              setEditingProfile(member);
-                              setShowMembersModal(false);
-                              setShowProfileModal(true);
-                            }}
-                            className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-full transition-colors"
-                            title="Modifica profilo"
-                          >
-                            <Edit2 size={16} className="text-slate-300" />
-                          </motion.button>
-                        )}
                       </div>
                     </motion.div>
                   );
