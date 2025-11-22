@@ -15,7 +15,8 @@ import {
   Home, Search, Filter, Download, Upload, Trash2, Edit3,
   Bell, Moon, Sun, Menu, X, Server, Globe, Lock, Unlock,
   Star, Award, Target, Sparkles, MessageSquare, FileText,
-  Calendar, ShieldCheck, Clock, ArrowUp, ArrowDown, Plus
+  Calendar, ShieldCheck, Clock, ArrowUp, ArrowDown, Plus,
+  MessageCircle, Webhook, Send
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
@@ -29,6 +30,110 @@ ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, BarElement,
   Title, Tooltip, Legend, ArcElement, Filler
 );
+
+// === TRANSLATIONS ===
+const translations = {
+  en: {
+    overview: 'Platform Overview',
+    tenants: 'Tenants Management',
+    subscriptions: 'Subscription Plans',
+    billing: 'Billing & Invoices',
+    addons: 'Add-ons & Extensions',
+    features: 'Features Manager',
+    analytics: 'Platform Analytics',
+    users: 'All Platform Users',
+    revenue: 'Revenue Dashboard',
+    database: 'Database Management',
+    activity: 'Activity Log',
+    notifications: 'Platform Notifications',
+    settings: 'Platform Settings',
+    support: 'Support Tickets',
+    webhooks: 'Webhooks & Integrations',
+    totalTenants: 'Total Tenants',
+    activeTenants: 'Active Tenants',
+    totalUsers: 'Total Users',
+    monthlyRevenue: 'Monthly Revenue',
+    healthScore: 'Health Score',
+    plan: 'Plan',
+    status: 'Status',
+    actions: 'Actions',
+    createTenant: 'Create New Tenant',
+    impersonate: 'Login as Tenant',
+    exitImpersonation: 'Exit Impersonation',
+    impersonationActive: 'Impersonation Mode Active',
+    viewingAs: 'You are viewing as',
+    addTenant: 'Add Tenant',
+    search: 'Search tenants...',
+    allPlans: 'All Plans',
+    // Support Tickets
+    newTicket: 'New Ticket',
+    ticketSubject: 'Subject',
+    ticketMessage: 'Message',
+    ticketPriority: 'Priority',
+    ticketStatus: 'Status',
+    low: 'Low',
+    medium: 'Medium',
+    high: 'High',
+    urgent: 'Urgent',
+    open: 'Open',
+    inProgress: 'In Progress',
+    resolved: 'Resolved',
+    closed: 'Closed',
+    reply: 'Reply',
+    close: 'Close',
+    logout: 'Logout',
+  },
+  it: {
+    overview: 'Panoramica Piattaforma',
+    tenants: 'Gestione Tenant',
+    subscriptions: 'Piani Abbonamento',
+    billing: 'Fatturazione',
+    addons: 'Componenti Aggiuntivi',
+    features: 'Gestione Funzionalità',
+    analytics: 'Analytics Piattaforma',
+    users: 'Tutti gli Utenti',
+    revenue: 'Dashboard Ricavi',
+    database: 'Gestione Database',
+    activity: 'Registro Attività',
+    notifications: 'Notifiche Piattaforma',
+    settings: 'Impostazioni Piattaforma',
+    support: 'Ticket Supporto',
+    webhooks: 'Webhooks e Integrazioni',
+    totalTenants: 'Tenant Totali',
+    activeTenants: 'Tenant Attivi',
+    totalUsers: 'Utenti Totali',
+    monthlyRevenue: 'Ricavi Mensili',
+    healthScore: 'Punteggio Salute',
+    plan: 'Piano',
+    status: 'Stato',
+    actions: 'Azioni',
+    createTenant: 'Crea Nuovo Tenant',
+    impersonate: 'Accedi come Tenant',
+    exitImpersonation: 'Esci da Impersonazione',
+    impersonationActive: 'Modalità Impersonazione Attiva',
+    viewingAs: 'Stai visualizzando come',
+    addTenant: 'Aggiungi Tenant',
+    search: 'Cerca tenant...',
+    allPlans: 'Tutti i Piani',
+    // Support Tickets
+    newTicket: 'Nuovo Ticket',
+    ticketSubject: 'Oggetto',
+    ticketMessage: 'Messaggio',
+    ticketPriority: 'Priorità',
+    ticketStatus: 'Stato',
+    low: 'Bassa',
+    medium: 'Media',
+    high: 'Alta',
+    urgent: 'Urgente',
+    open: 'Aperto',
+    inProgress: 'In Corso',
+    resolved: 'Risolto',
+    closed: 'Chiuso',
+    reply: 'Rispondi',
+    close: 'Chiudi',
+    logout: 'Esci',
+  }
+};
 
 // === ANIMATED STARS BACKGROUND ===
 const AnimatedStars = () => {
@@ -72,21 +177,23 @@ const AnimatedStars = () => {
 };
 
 // === SIDEBAR COMPONENT ===
-const Sidebar = ({ currentPage, setCurrentPage, onLogout, collapsed, setCollapsed }) => {
+const Sidebar = ({ currentPage, setCurrentPage, onLogout, collapsed, setCollapsed, t }) => {
   const menuItems = [
-    { id: 'overview', icon: <Home size={20} />, label: 'Overview' },
-    { id: 'tenants', icon: <Building2 size={20} />, label: 'Tenants' },
-    { id: 'subscriptions', icon: <CreditCard size={20} />, label: 'Subscriptions' },
-    { id: 'billing', icon: <FileText size={20} />, label: 'Billing & Invoices' },
-    { id: 'addons', icon: <Package size={20} />, label: 'Add-ons' },
-    { id: 'features', icon: <Zap size={20} />, label: 'Features Manager' },
-    { id: 'analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
-    { id: 'users', icon: <Users size={20} />, label: 'All Users' },
-    { id: 'revenue', icon: <DollarSign size={20} />, label: 'Revenue' },
-    { id: 'database', icon: <Database size={20} />, label: 'Database' },
-    { id: 'activity', icon: <Activity size={20} />, label: 'Activity Log' },
-    { id: 'notifications', icon: <Bell size={20} />, label: 'Notifications' },
-    { id: 'settings', icon: <Settings size={20} />, label: 'Settings' },
+    { id: 'overview', icon: <Home size={20} />, labelKey: 'overview' },
+    { id: 'tenants', icon: <Building2 size={20} />, labelKey: 'tenants' },
+    { id: 'subscriptions', icon: <CreditCard size={20} />, labelKey: 'subscriptions' },
+    { id: 'billing', icon: <FileText size={20} />, labelKey: 'billing' },
+    { id: 'addons', icon: <Package size={20} />, labelKey: 'addons' },
+    { id: 'features', icon: <Zap size={20} />, labelKey: 'features' },
+    { id: 'analytics', icon: <BarChart3 size={20} />, labelKey: 'analytics' },
+    { id: 'users', icon: <Users size={20} />, labelKey: 'users' },
+    { id: 'revenue', icon: <DollarSign size={20} />, labelKey: 'revenue' },
+    { id: 'database', icon: <Database size={20} />, labelKey: 'database' },
+    { id: 'activity', icon: <Activity size={20} />, labelKey: 'activity' },
+    { id: 'support', icon: <MessageCircle size={20} />, labelKey: 'support' },
+    { id: 'webhooks', icon: <Webhook size={20} />, labelKey: 'webhooks' },
+    { id: 'notifications', icon: <Bell size={20} />, labelKey: 'notifications' },
+    { id: 'settings', icon: <Settings size={20} />, labelKey: 'settings' },
   ];
 
   return (
@@ -131,7 +238,7 @@ const Sidebar = ({ currentPage, setCurrentPage, onLogout, collapsed, setCollapse
             }`}
           >
             {item.icon}
-            {!collapsed && <span className="font-medium">{item.label}</span>}
+            {!collapsed && <span className="font-medium">{t(item.labelKey)}</span>}
             {!collapsed && currentPage === item.id && (
               <ChevronRight size={16} className="ml-auto" />
             )}
@@ -148,7 +255,7 @@ const Sidebar = ({ currentPage, setCurrentPage, onLogout, collapsed, setCollapse
           className="w-full flex items-center gap-3 px-4 py-3 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition-all border border-red-500/30"
         >
           <LogOut size={20} />
-          {!collapsed && <span className="font-medium">Logout</span>}
+          {!collapsed && <span className="font-medium">{t('logout')}</span>}
         </motion.button>
       </div>
     </motion.aside>
@@ -244,6 +351,21 @@ export default function CEOPlatformDashboard() {
   const [showActivityLog, setShowActivityLog] = useState(false);
   const [impersonatedTenant, setImpersonatedTenant] = useState(null);
   const [showImpersonationBanner, setShowImpersonationBanner] = useState(false);
+  const [supportTickets, setSupportTickets] = useState([]);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [language, setLanguage] = useState(localStorage.getItem('ceo_language') || 'en');
+  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [webhooks, setWebhooks] = useState([]);
+
+  // Translation helper
+  const t = (key) => translations[language][key] || key;
+  
+  // Handle language change
+  const handleLanguageChange = (newLang) => {
+    setLanguage(newLang);
+    localStorage.setItem('ceo_language', newLang);
+  };
 
   // Stats
   const [stats, setStats] = useState({
@@ -562,10 +684,10 @@ export default function CEOPlatformDashboard() {
                 <AlertCircle className="text-white" size={24} />
                 <div>
                   <p className="text-white font-bold">
-                    🎭 Impersonation Mode Active
+                    🎭 {t('impersonationActive')}
                   </p>
                   <p className="text-purple-200 text-sm">
-                    You are viewing as: <span className="font-semibold">{impersonatedTenant.name}</span>
+                    {t('viewingAs')}: <span className="font-semibold">{impersonatedTenant.name}</span>
                   </p>
                 </div>
               </div>
@@ -574,7 +696,7 @@ export default function CEOPlatformDashboard() {
                 className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg font-medium transition-all"
               >
                 <X size={18} />
-                Exit Impersonation
+                {t('exitImpersonation')}
               </button>
             </div>
           </motion.div>
@@ -587,16 +709,47 @@ export default function CEOPlatformDashboard() {
         onLogout={handleLogout}
         collapsed={collapsed}
         setCollapsed={setCollapsed}
+        t={t}
       />
 
       <main className={`transition-all duration-300 ${collapsed ? 'ml-20' : 'ml-72'} ${showImpersonationBanner ? 'mt-20' : ''} p-8 relative z-10`}>
+        
+        {/* Language Toggle Button */}
+        <div className="fixed top-4 right-4 z-50">
+          <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-sm rounded-xl p-2 border border-slate-700/50">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleLanguageChange('en')}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                language === 'en' 
+                  ? 'bg-yellow-500 text-slate-900' 
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              🇬🇧 EN
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleLanguageChange('it')}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                language === 'it' 
+                  ? 'bg-yellow-500 text-slate-900' 
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              🇮🇹 IT
+            </motion.button>
+          </div>
+        </div>
         
         {/* OVERVIEW PAGE */}
         {currentPage === 'overview' && (
           <div className="space-y-8">
             <div>
               <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
-                Platform Overview
+                {t('overview')}
               </h1>
               <p className="text-slate-400">Welcome back, Alex. Here's what's happening with your platform.</p>
             </div>
@@ -604,7 +757,7 @@ export default function CEOPlatformDashboard() {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard
-                title="Total Tenants"
+                title={t('totalTenants')}
                 value={stats.totalTenants}
                 change={12}
                 icon={<Building2 size={24} />}
@@ -612,7 +765,7 @@ export default function CEOPlatformDashboard() {
                 color="blue"
               />
               <StatCard
-                title="Active Tenants"
+                title={t('activeTenants')}
                 value={stats.activeTenants}
                 change={8}
                 icon={<CheckCircle size={24} />}
@@ -620,7 +773,7 @@ export default function CEOPlatformDashboard() {
                 color="green"
               />
               <StatCard
-                title="Total Users"
+                title={t('totalUsers')}
                 value={stats.totalUsers}
                 change={15}
                 icon={<Users size={24} />}
@@ -628,7 +781,7 @@ export default function CEOPlatformDashboard() {
                 color="purple"
               />
               <StatCard
-                title="Monthly Revenue"
+                title={t('monthlyRevenue')}
                 value={`€${stats.monthlyRevenue.toLocaleString()}`}
                 change={23}
                 icon={<DollarSign size={24} />}
@@ -730,7 +883,7 @@ export default function CEOPlatformDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
-                  Tenants Management
+                  {t('tenants')}
                 </h1>
                 <p className="text-slate-400">{filteredTenants.length} tenants found</p>
               </div>
@@ -739,7 +892,7 @@ export default function CEOPlatformDashboard() {
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl font-medium hover:shadow-lg hover:shadow-yellow-500/50 transition-all"
               >
                 <Plus size={20} />
-                Add Tenant
+                {t('addTenant')}
               </button>
             </div>
 
@@ -749,7 +902,7 @@ export default function CEOPlatformDashboard() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 <input
                   type="text"
-                  placeholder="Search tenants..."
+                  placeholder={t('search')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500"
@@ -760,7 +913,7 @@ export default function CEOPlatformDashboard() {
                 onChange={(e) => setFilterPlan(e.target.value)}
                 className="px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500"
               >
-                <option value="all">All Plans</option>
+                <option value="all">{t('allPlans')}</option>
                 <option value="free">Free</option>
                 <option value="starter">Starter</option>
                 <option value="professional">Professional</option>
@@ -851,7 +1004,7 @@ export default function CEOPlatformDashboard() {
                       <button
                         onClick={() => handleImpersonateTenant(tenant)}
                         className="flex items-center justify-center gap-1 px-2 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors text-xs"
-                        title="Login as Tenant"
+                        title={t('impersonate')}
                       >
                         <UserPlus size={14} />
                       </button>
@@ -1837,6 +1990,286 @@ export default function CEOPlatformDashboard() {
                 </button>
               </div>
             </motion.div>
+          </div>
+        )}
+
+        {/* SUPPORT TICKETS PAGE */}
+        {currentPage === 'support' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
+                  {t('support')}
+                </h1>
+                <p className="text-slate-400">{supportTickets.length} tickets</p>
+              </div>
+              <button 
+                onClick={() => setShowTicketModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl font-medium hover:shadow-lg hover:shadow-yellow-500/50 transition-all"
+              >
+                <Plus size={20} />
+                {t('newTicket')}
+              </button>
+            </div>
+
+            {/* Tickets List */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden"
+            >
+              <table className="w-full">
+                <thead className="bg-slate-800/50 border-b border-slate-700/50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">#</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">{t('ticketSubject')}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Tenant</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">{t('ticketPriority')}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">{t('ticketStatus')}</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Date</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">{t('actions')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700/50">
+                  {supportTickets.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="px-6 py-12 text-center text-slate-400">
+                        No support tickets yet
+                      </td>
+                    </tr>
+                  ) : (
+                    supportTickets.map((ticket, index) => {
+                      const priorityColors = {
+                        low: 'bg-blue-500/20 text-blue-400',
+                        medium: 'bg-yellow-500/20 text-yellow-400',
+                        high: 'bg-orange-500/20 text-orange-400',
+                        urgent: 'bg-red-500/20 text-red-400'
+                      };
+                      const statusColors = {
+                        open: 'bg-green-500/20 text-green-400',
+                        'in-progress': 'bg-blue-500/20 text-blue-400',
+                        resolved: 'bg-slate-500/20 text-slate-400',
+                        closed: 'bg-slate-600/20 text-slate-500'
+                      };
+
+                      return (
+                        <motion.tr
+                          key={ticket.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="hover:bg-slate-800/50 transition-colors"
+                        >
+                          <td className="px-6 py-4 text-sm text-slate-300">#{ticket.id}</td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium">{ticket.subject}</div>
+                            <div className="text-xs text-slate-400 line-clamp-1">{ticket.message}</div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-300">{ticket.tenantName}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${priorityColors[ticket.priority]}`}>
+                              {t(ticket.priority)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[ticket.status]}`}>
+                              {t(ticket.status.replace('-', ''))}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-400">
+                            {new Date(ticket.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setSelectedTicket(ticket)}
+                                className="p-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
+                                title="View Details"
+                              >
+                                <Eye size={16} />
+                              </button>
+                              <button
+                                className="p-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors"
+                                title={t('reply')}
+                              >
+                                <Send size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </motion.div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-br from-green-500/10 to-green-600/10 border border-green-500/20 rounded-2xl p-6"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm text-slate-400">{t('open')}</div>
+                  <MessageCircle size={20} className="text-green-400" />
+                </div>
+                <div className="text-3xl font-bold text-green-400">
+                  {supportTickets.filter(t => t.status === 'open').length}
+                </div>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border border-blue-500/20 rounded-2xl p-6"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm text-slate-400">{t('inProgress')}</div>
+                  <Clock size={20} className="text-blue-400" />
+                </div>
+                <div className="text-3xl font-bold text-blue-400">
+                  {supportTickets.filter(t => t.status === 'in-progress').length}
+                </div>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border border-purple-500/20 rounded-2xl p-6"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm text-slate-400">{t('resolved')}</div>
+                  <CheckCircle size={20} className="text-purple-400" />
+                </div>
+                <div className="text-3xl font-bold text-purple-400">
+                  {supportTickets.filter(t => t.status === 'resolved').length}
+                </div>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-gradient-to-br from-red-500/10 to-red-600/10 border border-red-500/20 rounded-2xl p-6"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm text-slate-400">{t('urgent')}</div>
+                  <AlertCircle size={20} className="text-red-400" />
+                </div>
+                <div className="text-3xl font-bold text-red-400">
+                  {supportTickets.filter(t => t.priority === 'urgent').length}
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
+
+        {/* WEBHOOKS & INTEGRATIONS PAGE */}
+        {currentPage === 'webhooks' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
+                  {t('webhooks')}
+                </h1>
+                <p className="text-slate-400">{webhooks.length} active webhooks</p>
+              </div>
+              <button 
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl font-medium hover:shadow-lg hover:shadow-yellow-500/50 transition-all"
+              >
+                <Plus size={20} />
+                Add Webhook
+              </button>
+            </div>
+
+            {/* Webhooks List */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {webhooks.length === 0 ? (
+                <div className="col-span-2 text-center py-12 text-slate-400">
+                  No webhooks configured yet
+                </div>
+              ) : (
+                webhooks.map((webhook, index) => (
+                  <motion.div
+                    key={webhook.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-blue-500/20 rounded-xl">
+                          <Webhook size={24} className="text-blue-400" />
+                        </div>
+                        <div>
+                          <div className="font-bold">{webhook.name}</div>
+                          <div className="text-xs text-slate-400">{webhook.url}</div>
+                        </div>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        webhook.active 
+                          ? 'bg-green-500/20 text-green-400' 
+                          : 'bg-slate-500/20 text-slate-400'
+                      }`}>
+                        {webhook.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {webhook.events.map(event => (
+                        <span key={event} className="px-2 py-1 bg-slate-800 rounded-lg text-xs text-slate-300">
+                          {event}
+                        </span>
+                      ))}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <button className="flex-1 px-3 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors text-sm">
+                        Test
+                      </button>
+                      <button className="flex-1 px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-sm">
+                        Edit
+                      </button>
+                      <button className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
+
+            {/* Integration Cards */}
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Popular Integrations</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[
+                  { name: 'Slack', icon: '💬', description: 'Get notifications in Slack' },
+                  { name: 'Discord', icon: '🎮', description: 'Send alerts to Discord' },
+                  { name: 'Zapier', icon: '⚡', description: 'Connect to 5000+ apps' }
+                ].map((integration, index) => (
+                  <motion.div
+                    key={integration.name}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:border-yellow-500/50 transition-all cursor-pointer"
+                  >
+                    <div className="text-4xl mb-3">{integration.icon}</div>
+                    <div className="font-bold mb-2">{integration.name}</div>
+                    <div className="text-sm text-slate-400 mb-4">{integration.description}</div>
+                    <button className="w-full px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg font-medium hover:shadow-lg hover:shadow-yellow-500/50 transition-all">
+                      Connect
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
