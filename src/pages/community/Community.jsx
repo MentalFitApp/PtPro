@@ -308,9 +308,19 @@ export default function Community() {
   const deletePost = async (postId) => {
     if (!window.confirm('Vuoi eliminare questo post?')) return;
     try {
+      // Trova il post per ottenere l'autore
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+      
       await updateDoc(doc(db, 'community_posts', postId), {
         deleted: true,
         deletedAt: serverTimestamp()
+      });
+      
+      // Decrementa contatore post dell'autore
+      const authorRef = doc(db, "users", post.author.uid);
+      await updateDoc(authorRef, {
+        posts: increment(-1)
       });
     } catch (error) {
       console.error('Errore eliminazione post:', error);
@@ -345,6 +355,13 @@ export default function Community() {
       }
 
       await addDoc(collection(db, "community_posts"), postData);
+      
+      // Incrementa contatore post dell'utente
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      await updateDoc(userRef, {
+        posts: increment(1)
+      });
+      
       setNewPost("");
       console.log("Post inviato con successo");
     } catch (error) {
@@ -1216,7 +1233,7 @@ export default function Community() {
             </motion.div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-3">
+          <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-3">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Canali</h3>
               <div className="flex items-center gap-2">
@@ -3036,11 +3053,19 @@ export default function Community() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="bg-slate-900/95 backdrop-blur-xl rounded-3xl border border-white/10 p-8 max-w-md w-full shadow-2xl"
+              className="bg-slate-900/95 backdrop-blur-xl rounded-3xl border border-white/10 p-6 md:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl"
             >
-              <h3 className="text-2xl font-bold text-white mb-6">
-                {editingProfile ? `Modifica Profilo: ${editingProfile.displayName || 'Utente'}` : 'Il Mio Profilo'}
-              </h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-white">
+                  {editingProfile ? `Modifica Profilo: ${editingProfile.displayName || 'Utente'}` : 'Il Mio Profilo'}
+                </h3>
+                <button
+                  onClick={() => setShowProfileModal(false)}
+                  className="p-2 hover:bg-slate-800 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-slate-400" />
+                </button>
+              </div>
 
               <div className="space-y-6">
                 <div className="flex justify-center">
@@ -3210,7 +3235,13 @@ export default function Community() {
 
               <div className="flex-1 overflow-y-auto space-y-3 pr-2">
                 {membersList.map((member) => {
-                  const level = LEVELS.find(l => l.name === member.level) || LEVELS[0];
+                  // Calculate level based on totalLikes
+                  const memberLikes = member.totalLikes || 0;
+                  const hasManualLevel = member.manualLevel !== undefined;
+                  const levelIndex = hasManualLevel 
+                    ? member.manualLevel 
+                    : LEVELS.findIndex(l => memberLikes >= l.min && (l.next === undefined || memberLikes < l.next));
+                  const level = LEVELS[levelIndex >= 0 ? levelIndex : 0];
                   return (
                     <motion.div
                       key={member.uid}
