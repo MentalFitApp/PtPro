@@ -223,36 +223,43 @@ export default function Dashboard() {
     // --- RINNOVI (PAGAMENTI NEL MESE CORRENTE) ---
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'desc'));
-    const unsubPayments = onSnapshot(paymentsQuery, async (snap) => {
-      try {
+    
+    // Prima otteniamo tutti i clienti, poi ascoltiamo i loro pagamenti
+    const clientsSnapshot = await getDocs(getTenantCollection(db, 'clients'));
+    const allRenewals = [];
+    
+    clientsSnapshot.forEach(clientDoc => {
+      const clientData = clientDoc.data();
+      if (clientData.isOldClient) return; // Salta clienti vecchi
+      
+      const paymentsQuery = query(
+        getTenantSubcollection(db, 'clients', clientDoc.id, 'payments'),
+        orderBy('paymentDate', 'desc')
+      );
+      
+      const unsubPayment = onSnapshot(paymentsQuery, (paymentsSnap) => {
         const newRenewals = [];
-        for (const docSnap of snap.docs) {
-          const paymentData = docSnap.data();
+        paymentsSnap.forEach(paymentDoc => {
+          const paymentData = paymentDoc.data();
           const paymentDate = toDate(paymentData.paymentDate);
-          if (paymentDate && paymentDate >= currentMonthStart) {
-            const clientId = docSnap.ref.parent.parent.id;
-            const clientDocSnap = await getDoc(getTenantDoc(db, 'clients', clientId));
-            if (clientDocSnap.exists()) {
-              const clientData = clientDocSnap.data();
-              if (!clientData.isOldClient && !paymentData.isPast) {
-                newRenewals.push({
-                  type: 'renewal',
-                  clientId,
-                  clientName: clientData.name || 'Cliente',
-                  description: `Rinnovo di ${paymentData.duration} per ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(paymentData.amount || 0)}`,
-                  date: paymentData.paymentDate
-                });
-              }
-            }
+          if (paymentDate && paymentDate >= currentMonthStart && !paymentData.isPast) {
+            newRenewals.push({
+              type: 'renewal',
+              clientId: clientDoc.id,
+              clientName: clientData.name || 'Cliente',
+              description: `Rinnovo di ${paymentData.duration} per ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(paymentData.amount || 0)}`,
+              date: paymentData.paymentDate
+            });
           }
-        }
-        setActivityFeed(prev => [...prev.filter(i => i.type !== 'renewal'), ...newRenewals]);
-      } catch (error) {
-        console.error("Errore snapshot pagamenti:", error);
-      }
+        });
+        setActivityFeed(prev => {
+          // Rimuovi i vecchi rinnovi di questo cliente e aggiungi i nuovi
+          const filtered = prev.filter(i => i.type !== 'renewal' || i.clientId !== clientDoc.id);
+          return [...filtered, ...newRenewals];
+        });
+      });
+      unsubs.push(unsubPayment);
     });
-    unsubs.push(unsubPayments);
 
     // --- CHECK ---
     const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));
@@ -341,47 +348,59 @@ export default function Dashboard() {
   useEffect(() => {
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'desc'));
-    const unsubPayments = onSnapshot(paymentsQuery, async (snap) => {
+    
+    const calculateIncome = async () => {
       try {
         let income = 0;
         let renewals = 0;
 
-        for (const docSnap of snap.docs) {
-          const paymentDate = toDate(docSnap.data().paymentDate);
-          if (paymentDate && paymentDate >= currentMonthStart) {
-            const clientDocRef = docSnap.ref.parent.parent;
-            const clientDocSnap = await getDoc(clientDocRef);
-            if (clientDocSnap.exists()) {
-              const clientData = clientDocSnap.data();
-              if (!clientData.isOldClient && !docSnap.data().isPast) {
-                const paymentAmount = docSnap.data().amount || 0;
+        // Ottieni tutti i clienti
+        const clientsSnapshot = await getDocs(getTenantCollection(db, 'clients'));
+        
+        for (const clientDoc of clientsSnapshot.docs) {
+          const clientData = clientDoc.data();
+          if (clientData.isOldClient) continue; // Salta clienti vecchi
+          
+          // Ottieni i pagamenti di questo cliente nel mese corrente
+          const paymentsSnapshot = await getDocs(
+            getTenantSubcollection(db, 'clients', clientDoc.id, 'payments')
+          );
+          
+          for (const paymentDoc of paymentsSnapshot.docs) {
+            const paymentData = paymentDoc.data();
+            const paymentDate = toDate(paymentData.paymentDate);
+            
+            if (paymentDate && paymentDate >= currentMonthStart && !paymentData.isPast) {
+              const paymentAmount = paymentData.amount || 0;
 
-                // Verifica se il cliente ha pagamenti precedenti (è un rinnovo)
-                const clientPaymentsQuery = query(
-                  getTenantSubcollection(db, 'clients', clientDocRef.id, 'payments'),
-                  where('paymentDate', '<', paymentDate)
-                );
-                const previousPayments = await getDocs(clientPaymentsQuery);
+              // Verifica se il cliente ha pagamenti precedenti (è un rinnovo)
+              const previousPayments = paymentsSnapshot.docs.filter(doc => {
+                const prevDate = toDate(doc.data().paymentDate);
+                return prevDate && prevDate < paymentDate;
+              });
 
-                if (previousPayments.size > 0) {
-                  // È un rinnovo
-                  renewals += paymentAmount;
-                } else {
-                  // È un nuovo cliente
-                  income += paymentAmount;
-                }
+              if (previousPayments.length > 0) {
+                // È un rinnovo
+                renewals += paymentAmount;
+              } else {
+                // È un nuovo cliente
+                income += paymentAmount;
               }
             }
           }
         }
+        
         setMonthlyIncome(income);
         setMonthlyRenewals(renewals);
       } catch (error) {
-        console.error("Errore snapshot pagamenti:", error);
+        console.error("Errore calcolo income:", error);
       }
-    });
-    return () => unsubPayments();
+    };
+    
+    calculateIncome();
+    // Ricalcola ogni minuto per aggiornamenti in tempo reale
+    const interval = setInterval(calculateIncome, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   // --- Retention rate ---
@@ -409,58 +428,65 @@ export default function Dashboard() {
     const generateChartData = async () => {
       const now = new Date();
       if (chartDataType === 'revenue') {
-        const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'asc'));
-        unsub = onSnapshot(paymentsQuery, async (snap) => {
-          try {
-            const dailyData = {};
-            const monthlyData = {};
-            const yearlyData = {};
+        try {
+          const dailyData = {};
+          const monthlyData = {};
+          const yearlyData = {};
 
-            for (const docSnap of snap.docs) {
-              const date = toDate(docSnap.data().paymentDate);
-              const clientDocRef = docSnap.ref.parent.parent;
-              const clientDocSnap = await getDoc(clientDocRef);
-              if (date && clientDocSnap.exists()) {
-                const clientData = clientDocSnap.data();
-                if (!clientData.isOldClient && !docSnap.data().isPast) {
-                  const amount = docSnap.data().amount || 0;
+          // Ottieni tutti i clienti
+          const clientsSnapshot = await getDocs(getTenantCollection(db, 'clients'));
+          
+          for (const clientDoc of clientsSnapshot.docs) {
+            const clientData = clientDoc.data();
+            if (clientData.isOldClient) continue; // Salta clienti vecchi
+            
+            // Ottieni i pagamenti di questo cliente
+            const paymentsSnapshot = await getDocs(
+              getTenantSubcollection(db, 'clients', clientDoc.id, 'payments')
+            );
+            
+            paymentsSnapshot.forEach(paymentDoc => {
+              const paymentData = paymentDoc.data();
+              const date = toDate(paymentData.paymentDate);
+              
+              if (date && !paymentData.isPast) {
+                const amount = paymentData.amount || 0;
 
-                  const dayKey = date.toLocaleDateString('it-IT');
-                  dailyData[dayKey] = (dailyData[dayKey] || 0) + amount;
+                const dayKey = date.toLocaleDateString('it-IT');
+                dailyData[dayKey] = (dailyData[dayKey] || 0) + amount;
 
-                  const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                  monthlyData[monthKey] = (monthlyData[monthKey] || 0) + amount;
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                monthlyData[monthKey] = (monthlyData[monthKey] || 0) + amount;
 
-                  const yearKey = date.getFullYear().toString();
-                  yearlyData[yearKey] = (yearlyData[yearKey] || 0) + amount;
-                }
+                const yearKey = date.getFullYear().toString();
+                yearlyData[yearKey] = (yearlyData[yearKey] || 0) + amount;
               }
-            }
-
-            let data = [];
-            if (chartTimeRange === 'daily') {
-              for (let i = 29; i >= 0; i--) {
-                const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-                const key = d.toLocaleDateString('it-IT');
-                data.push({ name: key, value: dailyData[key] || 0 });
-              }
-            } else if (chartTimeRange === 'monthly') {
-              for (let i = 11; i >= 0; i--) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                data.push({ name: key, value: monthlyData[key] || 0 });
-              }
-            } else {
-              for (let i = 4; i >= 0; i--) {
-                const year = now.getFullYear() - i;
-                data.push({ name: year.toString(), value: yearlyData[year] || 0 });
-              }
-            }
-            setChartData(data);
-          } catch (error) {
-            console.error("Errore chart revenue:", error);
+            });
           }
-        });
+
+          let data = [];
+          if (chartTimeRange === 'daily') {
+            for (let i = 29; i >= 0; i--) {
+              const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+              const key = d.toLocaleDateString('it-IT');
+              data.push({ name: key, value: dailyData[key] || 0 });
+            }
+          } else if (chartTimeRange === 'monthly') {
+            for (let i = 11; i >= 0; i--) {
+              const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+              data.push({ name: key, value: monthlyData[key] || 0 });
+            }
+          } else {
+            for (let i = 4; i >= 0; i--) {
+              const year = now.getFullYear() - i;
+              data.push({ name: year.toString(), value: yearlyData[year] || 0 });
+            }
+          }
+          setChartData(data);
+        } catch (error) {
+          console.error("Errore chart revenue:", error);
+        }
       } else {
         const clientsQuery = query(getTenantCollection(db, 'clients'), orderBy('createdAt', 'asc'));
         unsub = onSnapshot(clientsQuery, (snap) => {

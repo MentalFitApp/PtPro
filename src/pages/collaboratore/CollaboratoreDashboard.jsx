@@ -213,6 +213,8 @@ export default function CollaboratoreDashboard() {
     const q = query(getTenantCollection(db, 'collaboratori'), where('role', '==', 'Setter'));
     const unsub = onSnapshot(q, (snap) => {
       const collabs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log('📊 Collaboratori caricati:', collabs.length);
+      console.log('📊 Primo collaboratore:', collabs[0]);
       setAllCollaboratori(collabs);
     });
     return () => unsub();
@@ -458,14 +460,20 @@ export default function CollaboratoreDashboard() {
       return date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric' });
     });
 
+    console.log('📊 Generazione chart - allCollaboratori:', allCollaboratori.length);
+    
     const datasets = allCollaboratori.map((c, i) => {
       const weekCalls = days.map((_, j) => {
         const date = new Date(start);
         date.setDate(date.getDate() + j);
         const dateStr = date.toISOString().split('T')[0];
         const report = c.dailyReports?.find(r => r.date === dateStr);
-        return report?.tracker?.callPrenotate || 0;
+        const calls = report?.tracker?.callPrenotate || 0;
+        return calls;
       });
+      
+      console.log(`📊 Dataset ${c.name}:`, weekCalls);
+      
       return { 
         label: c.name, 
         data: weekCalls, 
