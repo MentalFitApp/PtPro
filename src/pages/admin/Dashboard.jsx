@@ -221,45 +221,48 @@ export default function Dashboard() {
     let unsubs = [];
 
     // --- RINNOVI (PAGAMENTI NEL MESE CORRENTE) ---
-    const now = new Date();
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    
-    // Prima otteniamo tutti i clienti, poi ascoltiamo i loro pagamenti
-    const clientsSnapshot = await getDocs(getTenantCollection(db, 'clients'));
-    const allRenewals = [];
-    
-    clientsSnapshot.forEach(clientDoc => {
-      const clientData = clientDoc.data();
-      if (clientData.isOldClient) return; // Salta clienti vecchi
+    const setupRenewalsListener = async () => {
+      const now = new Date();
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       
-      const paymentsQuery = query(
-        getTenantSubcollection(db, 'clients', clientDoc.id, 'payments'),
-        orderBy('paymentDate', 'desc')
-      );
+      // Prima otteniamo tutti i clienti, poi ascoltiamo i loro pagamenti
+      const clientsSnapshot = await getDocs(getTenantCollection(db, 'clients'));
       
-      const unsubPayment = onSnapshot(paymentsQuery, (paymentsSnap) => {
-        const newRenewals = [];
-        paymentsSnap.forEach(paymentDoc => {
-          const paymentData = paymentDoc.data();
-          const paymentDate = toDate(paymentData.paymentDate);
-          if (paymentDate && paymentDate >= currentMonthStart && !paymentData.isPast) {
-            newRenewals.push({
-              type: 'renewal',
-              clientId: clientDoc.id,
-              clientName: clientData.name || 'Cliente',
-              description: `Rinnovo di ${paymentData.duration} per ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(paymentData.amount || 0)}`,
-              date: paymentData.paymentDate
-            });
-          }
+      clientsSnapshot.forEach(clientDoc => {
+        const clientData = clientDoc.data();
+        if (clientData.isOldClient) return; // Salta clienti vecchi
+        
+        const paymentsQuery = query(
+          getTenantSubcollection(db, 'clients', clientDoc.id, 'payments'),
+          orderBy('paymentDate', 'desc')
+        );
+        
+        const unsubPayment = onSnapshot(paymentsQuery, (paymentsSnap) => {
+          const newRenewals = [];
+          paymentsSnap.forEach(paymentDoc => {
+            const paymentData = paymentDoc.data();
+            const paymentDate = toDate(paymentData.paymentDate);
+            if (paymentDate && paymentDate >= currentMonthStart && !paymentData.isPast) {
+              newRenewals.push({
+                type: 'renewal',
+                clientId: clientDoc.id,
+                clientName: clientData.name || 'Cliente',
+                description: `Rinnovo di ${paymentData.duration} per ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(paymentData.amount || 0)}`,
+                date: paymentData.paymentDate
+              });
+            }
+          });
+          setActivityFeed(prev => {
+            // Rimuovi i vecchi rinnovi di questo cliente e aggiungi i nuovi
+            const filtered = prev.filter(i => i.type !== 'renewal' || i.clientId !== clientDoc.id);
+            return [...filtered, ...newRenewals];
+          });
         });
-        setActivityFeed(prev => {
-          // Rimuovi i vecchi rinnovi di questo cliente e aggiungi i nuovi
-          const filtered = prev.filter(i => i.type !== 'renewal' || i.clientId !== clientDoc.id);
-          return [...filtered, ...newRenewals];
-        });
+        unsubs.push(unsubPayment);
       });
-      unsubs.push(unsubPayment);
-    });
+    };
+    
+    setupRenewalsListener();
 
     // --- CHECK ---
     const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));

@@ -138,7 +138,11 @@ service cloud.firestore {
 
       // --- COLLABORATORI ---
       match /collaboratori/{collabId} {
-        allow read, list: if isTenantAdmin(tenantId) || isTenantCollaboratore(tenantId, collabId);
+        // I collaboratori possono vedere tutti gli altri collaboratori (per grafici/statistiche)
+        allow read: if isTenantAdmin(tenantId) || 
+                      isTenantCollaboratore(tenantId, request.auth.uid);
+        allow list: if isTenantAdmin(tenantId) ||
+                      exists(/databases/$(database)/documents/tenants/$(tenantId)/collaboratori/$(request.auth.uid));
         allow create: if isTenantAdmin(tenantId);
         allow update: if isTenantCollaboratore(tenantId, collabId) || isTenantAdmin(tenantId);
         allow delete: if isTenantAdmin(tenantId);

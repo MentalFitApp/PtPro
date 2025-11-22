@@ -429,18 +429,29 @@ export default function CollaboratoreDashboard() {
 
   // --- CHIAMATE OGGI + CLASSIFICA + TOTALE MESE ---
   const todayCalls = allCollaboratori.map(c => {
-    const todayR = c.dailyReports?.find(r => r.date === new Date().toISOString().split('T')[0]);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayR = c.dailyReports?.find(r => r.date === todayStr);
+    
+    console.log(`📞 ${c.name} - Today report:`, todayR);
+    console.log(`📞 ${c.name} - Tracker:`, todayR?.tracker);
+    
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
     const monthTotal = (c.dailyReports || []).reduce((acc, r) => {
       const rDate = new Date(r.date);
-      return rDate.getMonth() === currentMonth && rDate.getFullYear() === currentYear 
-        ? acc + (r.tracker?.callPrenotate || 0) 
-        : acc;
+      if (rDate.getMonth() === currentMonth && rDate.getFullYear() === currentYear) {
+        const calls = parseInt(r.tracker?.callPrenotate) || 0;
+        return acc + calls;
+      }
+      return acc;
     }, 0);
+    
+    // Converti in numero per evitare stringhe
+    const todayCalls = parseInt(todayR?.tracker?.callPrenotate) || 0;
+    
     return { 
       name: c.name, 
-      calls: todayR?.tracker?.callPrenotate || 0,
+      calls: todayCalls,
       monthTotal,
       photoURL: c.photoURL,
       gender: c.gender || 'M'
@@ -468,7 +479,8 @@ export default function CollaboratoreDashboard() {
         date.setDate(date.getDate() + j);
         const dateStr = date.toISOString().split('T')[0];
         const report = c.dailyReports?.find(r => r.date === dateStr);
-        const calls = report?.tracker?.callPrenotate || 0;
+        // Converti sempre in numero per evitare stringhe
+        const calls = parseInt(report?.tracker?.callPrenotate) || 0;
         return calls;
       });
       
