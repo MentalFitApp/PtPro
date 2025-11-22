@@ -51,7 +51,6 @@ const adminNavLinks = [
   { to: '/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/updates', icon: <BellRing size={18} />, label: 'Novità' },
   { to: '/collaboratori', icon: <UserCheck size={18} />, label: 'Collaboratori' },
-  { to: '/guide-manager', icon: <BookOpen size={18} />, label: 'Guide & Lead' },
   { to: '/business-history', icon: <BarChart3 size={18} />, label: 'Storico Business' },
   { to: '/admin/dipendenti', icon: <Users size={18} />, label: 'Dipendenti' },
   { to: '/calendar', icon: <Calendar size={18} />, label: 'Calendario' },

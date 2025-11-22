@@ -30,8 +30,6 @@ const BusinessHistory = React.lazy(() => import('./pages/admin/BusinessHistory')
 const Collaboratori = React.lazy(() => import('./pages/admin/Collaboratori'));
 const CollaboratoreDetail = React.lazy(() => import('./pages/admin/CollaboratoreDetail'));
 const Dipendenti = React.lazy(() => import('./pages/admin/Dipendenti'));
-const GuideCapture = React.lazy(() => import('./pages/admin/GuideCapture'));
-const GuideManager = React.lazy(() => import('./pages/admin/GuideManager'));
 const Statistiche = React.lazy(() => import('./pages/admin/Statistiche'));
 const Analytics = React.lazy(() => import('./pages/admin/Analytics'));
 const CourseAdmin = React.lazy(() => import('./pages/admin/CourseAdmin'));
@@ -228,7 +226,6 @@ export default function App() {
               location.pathname.startsWith('/collaboratore/') ||
               location.pathname.startsWith('/calendar-report/') ||
               location.pathname === '/business-history' ||
-              location.pathname === '/guide-manager' ||
               location.pathname === '/admin/dipendenti' ||
               location.pathname === '/statistiche' ||
               location.pathname === '/analytics' ||
@@ -318,7 +315,6 @@ export default function App() {
         {/* === ROTTE PUBBLICHE === */}
         <Route element={<GuidaLayout />}>
           <Route path="/guida" element={<GuidaMentalFit />} />
-          <Route path="/guida/:guideId" element={<GuideCapture />} />
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/platform-login" element={<PlatformLogin />} />
@@ -345,7 +341,6 @@ export default function App() {
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/calendar-report/:date" element={<CalendarReport />} />
           <Route path="/business-history" element={<BusinessHistory />} />
-          <Route path="/guide-manager" element={<GuideManager />} />
           <Route path="/admin/dipendenti" element={<Dipendenti />} />
           <Route path="/statistiche" element={<Statistiche />} />
           <Route path="/analytics" element={<Analytics />} />

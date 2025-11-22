@@ -4,7 +4,6 @@ import { db } from '../../firebase';
 import { Trash2, Edit, X, Check, Copy, Plus, Archive, ExternalLink, Search, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 export default function GuideManager() {
   const [guides, setGuides] = useState([]);
