@@ -82,6 +82,148 @@ const translations = {
     reply: 'Reply',
     close: 'Close',
     logout: 'Logout',
+    // Subscriptions
+    subscriptionPlans: 'Subscription Plans',
+    month: 'month',
+    tenantsCount: 'tenants',
+    managePlanFor: 'Manage Plan for',
+    // Billing
+    billingInvoices: 'Billing & Invoices',
+    manageBillingDesc: 'Manage billing, invoices, and payment status',
+    generateInvoice: 'Generate Invoice',
+    pendingPayments: 'Pending Payments',
+    failedPayments: 'Failed Payments',
+    totalInvoiced: 'Total Invoiced',
+    successRate: 'Success Rate',
+    recentInvoices: 'Recent Invoices',
+    invoiceNumber: 'Invoice #',
+    tenant: 'Tenant',
+    amount: 'Amount',
+    dueDate: 'Due Date',
+    paid: 'Paid',
+    pending: 'Pending',
+    overdue: 'Overdue',
+    viewDetails: 'View Details',
+    // Add-ons
+    addonsExtensions: 'Add-ons & Extensions',
+    manageAddonsDesc: 'Manage additional features and extensions for tenants',
+    availableAddons: 'Available Add-ons',
+    active: 'Active',
+    inactive: 'Inactive',
+    addToTenant: 'Add to Tenant',
+    // Features
+    featuresManager: 'Features Manager',
+    controlFeaturesDesc: 'Control feature flags and rollout across the platform',
+    featureFlags: 'Feature Flags',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    rolloutPercentage: 'Rollout',
+    toggle: 'Toggle',
+    // Revenue
+    revenueDashboard: 'Revenue Dashboard',
+    revenueMetrics: 'Revenue Metrics and Financial Overview',
+    totalRevenue: 'Total Revenue',
+    mrr: 'MRR (Monthly Recurring)',
+    arr: 'ARR (Annual Recurring)',
+    churnRate: 'Churn Rate',
+    revenueGrowth: 'Revenue Growth',
+    revenueByPlan: 'Revenue by Plan',
+    // Users
+    allUsers: 'All Platform Users',
+    userManagementDesc: 'Manage users across all tenants',
+    totalUsersCount: 'Total Users',
+    activeUsers: 'Active Users',
+    newUsersThisMonth: 'New Users This Month',
+    avgUsersPerTenant: 'Avg Users per Tenant',
+    userList: 'User List',
+    name: 'Name',
+    email: 'Email',
+    role: 'Role',
+    lastActive: 'Last Active',
+    // Database
+    databaseManagement: 'Database Management',
+    monitorPerformanceDesc: 'Monitor database performance and run maintenance tasks',
+    collections: 'Collections',
+    documents: 'Documents',
+    storageUsed: 'Storage Used',
+    queriesPerDay: 'Queries/Day',
+    databaseCollections: 'Database Collections',
+    collection: 'Collection',
+    documentCount: 'Document Count',
+    avgSize: 'Avg Size',
+    lastModified: 'Last Modified',
+    viewCollection: 'View Collection',
+    // Notifications
+    platformNotifications: 'Platform Notifications',
+    systemAlertsDesc: 'System alerts and platform-wide notifications',
+    sendNotification: 'Send Notification',
+    systemAlerts: 'System Alerts',
+    timestamp: 'Timestamp',
+    message: 'Message',
+    severity: 'Severity',
+    info: 'Info',
+    warning: 'Warning',
+    error: 'Error',
+    critical: 'Critical',
+    // Settings
+    platformSettings: 'Platform Settings',
+    configureSystemDesc: 'Configure system-wide settings and preferences',
+    generalSettings: 'General Settings',
+    platformName: 'Platform Name',
+    maintenanceMode: 'Maintenance Mode',
+    allowNewRegistrations: 'Allow New Registrations',
+    maxTenantsPerPlan: 'Max Tenants per Plan',
+    emailSettings: 'Email Settings',
+    smtpServer: 'SMTP Server',
+    smtpPort: 'SMTP Port',
+    smtpUser: 'SMTP User',
+    smtpPassword: 'SMTP Password',
+    securitySettings: 'Security Settings',
+    enforceSSL: 'Enforce SSL',
+    twoFactorAuth: 'Two-Factor Authentication',
+    sessionTimeout: 'Session Timeout (minutes)',
+    maxLoginAttempts: 'Max Login Attempts',
+    saveChanges: 'Save Changes',
+    // Support
+    supportTickets: 'Support Tickets',
+    manageSupportDesc: 'Manage customer support tickets and inquiries',
+    allTickets: 'All Tickets',
+    subject: 'Subject',
+    priority: 'Priority',
+    assignedTo: 'Assigned To',
+    createdAt: 'Created',
+    // Webhooks
+    webhooksIntegrations: 'Webhooks & Integrations',
+    manageWebhooksDesc: 'Manage webhooks and third-party integrations',
+    addWebhook: 'Add Webhook',
+    activeWebhooks: 'Active Webhooks',
+    event: 'Event',
+    url: 'URL',
+    lastTriggered: 'Last Triggered',
+    // Common
+    welcome: 'Welcome back',
+    hereIsWhatsHappening: "Here's what's happening with your platform",
+    revenueGrowthChart: 'Revenue Growth',
+    recentTenants: 'Recent Tenants',
+    suspended: 'Suspended',
+    trial: 'Trial',
+    free: 'Free',
+    starter: 'Starter',
+    professional: 'Professional',
+    enterprise: 'Enterprise',
+    manage: 'Manage',
+    view: 'View',
+    edit: 'Edit',
+    delete: 'Delete',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    loading: 'Loading...',
+    noDataAvailable: 'No data available',
+    search: 'Search',
+    filter: 'Filter',
+    export: 'Export',
+    import: 'Import',
+    refresh: 'Refresh',
   },
   it: {
     overview: 'Panoramica Piattaforma',
@@ -132,6 +274,148 @@ const translations = {
     reply: 'Rispondi',
     close: 'Chiudi',
     logout: 'Esci',
+    // Subscriptions
+    subscriptionPlans: 'Piani Abbonamento',
+    month: 'mese',
+    tenantsCount: 'tenant',
+    managePlanFor: 'Gestisci Piano per',
+    // Billing
+    billingInvoices: 'Fatturazione e Fatture',
+    manageBillingDesc: 'Gestisci fatturazione, fatture e stato pagamenti',
+    generateInvoice: 'Genera Fattura',
+    pendingPayments: 'Pagamenti in Sospeso',
+    failedPayments: 'Pagamenti Falliti',
+    totalInvoiced: 'Totale Fatturato',
+    successRate: 'Tasso di Successo',
+    recentInvoices: 'Fatture Recenti',
+    invoiceNumber: 'Fattura #',
+    tenant: 'Tenant',
+    amount: 'Importo',
+    dueDate: 'Scadenza',
+    paid: 'Pagato',
+    pending: 'In Sospeso',
+    overdue: 'Scaduto',
+    viewDetails: 'Vedi Dettagli',
+    // Add-ons
+    addonsExtensions: 'Componenti Aggiuntivi ed Estensioni',
+    manageAddonsDesc: 'Gestisci funzionalità aggiuntive ed estensioni per i tenant',
+    availableAddons: 'Componenti Disponibili',
+    active: 'Attivo',
+    inactive: 'Inattivo',
+    addToTenant: 'Aggiungi a Tenant',
+    // Features
+    featuresManager: 'Gestione Funzionalità',
+    controlFeaturesDesc: 'Controlla flag funzionalità e distribuzione sulla piattaforma',
+    featureFlags: 'Flag Funzionalità',
+    enabled: 'Abilitato',
+    disabled: 'Disabilitato',
+    rolloutPercentage: 'Distribuzione',
+    toggle: 'Attiva/Disattiva',
+    // Revenue
+    revenueDashboard: 'Dashboard Ricavi',
+    revenueMetrics: 'Metriche Ricavi e Panoramica Finanziaria',
+    totalRevenue: 'Ricavi Totali',
+    mrr: 'MRR (Ricorrente Mensile)',
+    arr: 'ARR (Ricorrente Annuale)',
+    churnRate: 'Tasso di Abbandono',
+    revenueGrowth: 'Crescita Ricavi',
+    revenueByPlan: 'Ricavi per Piano',
+    // Users
+    allUsers: 'Tutti gli Utenti Piattaforma',
+    userManagementDesc: 'Gestisci utenti su tutti i tenant',
+    totalUsersCount: 'Utenti Totali',
+    activeUsers: 'Utenti Attivi',
+    newUsersThisMonth: 'Nuovi Utenti Questo Mese',
+    avgUsersPerTenant: 'Media Utenti per Tenant',
+    userList: 'Lista Utenti',
+    name: 'Nome',
+    email: 'Email',
+    role: 'Ruolo',
+    lastActive: 'Ultima Attività',
+    // Database
+    databaseManagement: 'Gestione Database',
+    monitorPerformanceDesc: 'Monitora prestazioni database ed esegui task di manutenzione',
+    collections: 'Collezioni',
+    documents: 'Documenti',
+    storageUsed: 'Storage Utilizzato',
+    queriesPerDay: 'Query/Giorno',
+    databaseCollections: 'Collezioni Database',
+    collection: 'Collezione',
+    documentCount: 'Numero Documenti',
+    avgSize: 'Dimensione Media',
+    lastModified: 'Ultima Modifica',
+    viewCollection: 'Vedi Collezione',
+    // Notifications
+    platformNotifications: 'Notifiche Piattaforma',
+    systemAlertsDesc: 'Avvisi di sistema e notifiche globali',
+    sendNotification: 'Invia Notifica',
+    systemAlerts: 'Avvisi di Sistema',
+    timestamp: 'Data/Ora',
+    message: 'Messaggio',
+    severity: 'Gravità',
+    info: 'Info',
+    warning: 'Avviso',
+    error: 'Errore',
+    critical: 'Critico',
+    // Settings
+    platformSettings: 'Impostazioni Piattaforma',
+    configureSystemDesc: 'Configura impostazioni di sistema e preferenze',
+    generalSettings: 'Impostazioni Generali',
+    platformName: 'Nome Piattaforma',
+    maintenanceMode: 'Modalità Manutenzione',
+    allowNewRegistrations: 'Consenti Nuove Registrazioni',
+    maxTenantsPerPlan: 'Max Tenant per Piano',
+    emailSettings: 'Impostazioni Email',
+    smtpServer: 'Server SMTP',
+    smtpPort: 'Porta SMTP',
+    smtpUser: 'Utente SMTP',
+    smtpPassword: 'Password SMTP',
+    securitySettings: 'Impostazioni Sicurezza',
+    enforceSSL: 'Forza SSL',
+    twoFactorAuth: 'Autenticazione a Due Fattori',
+    sessionTimeout: 'Timeout Sessione (minuti)',
+    maxLoginAttempts: 'Max Tentativi Login',
+    saveChanges: 'Salva Modifiche',
+    // Support
+    supportTickets: 'Ticket Supporto',
+    manageSupportDesc: 'Gestisci ticket supporto clienti e richieste',
+    allTickets: 'Tutti i Ticket',
+    subject: 'Oggetto',
+    priority: 'Priorità',
+    assignedTo: 'Assegnato a',
+    createdAt: 'Creato il',
+    // Webhooks
+    webhooksIntegrations: 'Webhook e Integrazioni',
+    manageWebhooksDesc: 'Gestisci webhook e integrazioni di terze parti',
+    addWebhook: 'Aggiungi Webhook',
+    activeWebhooks: 'Webhook Attivi',
+    event: 'Evento',
+    url: 'URL',
+    lastTriggered: 'Ultimo Trigger',
+    // Common
+    welcome: 'Bentornato',
+    hereIsWhatsHappening: 'Ecco cosa sta succedendo sulla tua piattaforma',
+    revenueGrowthChart: 'Crescita Ricavi',
+    recentTenants: 'Tenant Recenti',
+    suspended: 'Sospeso',
+    trial: 'Prova',
+    free: 'Gratuito',
+    starter: 'Starter',
+    professional: 'Professional',
+    enterprise: 'Enterprise',
+    manage: 'Gestisci',
+    view: 'Visualizza',
+    edit: 'Modifica',
+    delete: 'Elimina',
+    cancel: 'Annulla',
+    confirm: 'Conferma',
+    loading: 'Caricamento...',
+    noDataAvailable: 'Nessun dato disponibile',
+    search: 'Cerca',
+    filter: 'Filtra',
+    export: 'Esporta',
+    import: 'Importa',
+    refresh: 'Aggiorna',
   }
 };
 
@@ -382,41 +666,61 @@ export default function CEOPlatformDashboard() {
     const loadData = async () => {
       try {
         // Realtime listener for tenants
-        const unsubscribe = onSnapshot(collection(db, 'tenants'), async (tenantsSnap) => {
-          const tenantsData = await Promise.all(
-            tenantsSnap.docs.map(async (tenantDoc) => {
-              const tenantData = tenantDoc.data();
-              
-              // Load users count
-              const usersSnap = await getDocs(collection(db, `tenants/${tenantDoc.id}/clients`));
-              const coachesSnap = await getDocs(collection(db, `tenants/${tenantDoc.id}/collaboratori`));
+        const unsubscribe = onSnapshot(
+          collection(db, 'tenants'), 
+          async (tenantsSnap) => {
+            const tenantsData = await Promise.all(
+              tenantsSnap.docs.map(async (tenantDoc) => {
+                const tenantData = tenantDoc.data();
+                
+                // Load users count with error handling
+                let usersCount = 0;
+                let coachesCount = 0;
+                let revenue = 0;
 
-              // Load revenue from payments
-              let revenue = 0;
-              try {
-                const paymentsSnap = await getDocs(collection(db, `tenants/${tenantDoc.id}/clients`));
-                for (const clientDoc of paymentsSnap.docs) {
-                  const clientPayments = await getDocs(collection(db, `tenants/${tenantDoc.id}/clients/${clientDoc.id}/payments`));
-                  revenue += clientPayments.docs.reduce((sum, paymentDoc) => sum + (paymentDoc.data().amount || 0), 0);
+                try {
+                  const usersSnap = await getDocs(collection(db, `tenants/${tenantDoc.id}/clients`));
+                  usersCount = usersSnap.size;
+                } catch (err) {
+                  console.log(`No clients collection for tenant ${tenantDoc.id}`);
                 }
-              } catch (err) {
-                console.error('Error loading payments:', err);
-              }
 
-              return {
-                id: tenantDoc.id,
-                ...tenantData,
-                usersCount: usersSnap.size,
-                coachesCount: coachesSnap.size,
-                revenue,
-                subscription: tenantData.subscription || 'free',
-                addons: tenantData.addons || [],
-                status: tenantData.status || 'active',
-                createdAt: tenantData.createdAt || null,
-                lastActive: tenantData.lastActive || null,
-              };
-            })
-          );
+                try {
+                  const coachesSnap = await getDocs(collection(db, `tenants/${tenantDoc.id}/collaboratori`));
+                  coachesCount = coachesSnap.size;
+                } catch (err) {
+                  console.log(`No collaboratori collection for tenant ${tenantDoc.id}`);
+                }
+
+                // Load revenue from payments
+                try {
+                  const clientsSnap = await getDocs(collection(db, `tenants/${tenantDoc.id}/clients`));
+                  for (const clientDoc of clientsSnap.docs) {
+                    try {
+                      const clientPayments = await getDocs(collection(db, `tenants/${tenantDoc.id}/clients/${clientDoc.id}/payments`));
+                      revenue += clientPayments.docs.reduce((sum, paymentDoc) => sum + (paymentDoc.data().amount || 0), 0);
+                    } catch (err) {
+                      // Client might not have payments collection yet
+                    }
+                  }
+                } catch (err) {
+                  console.log(`No payments data for tenant ${tenantDoc.id}`);
+                }
+
+                return {
+                  id: tenantDoc.id,
+                  ...tenantData,
+                  usersCount,
+                  coachesCount,
+                  revenue,
+                  subscription: tenantData.subscription || 'free',
+                  addons: tenantData.addons || [],
+                  status: tenantData.status || 'active',
+                  createdAt: tenantData.createdAt || null,
+                  lastActive: tenantData.lastActive || null,
+                };
+              })
+            );
 
           setTenants(tenantsData);
 
@@ -645,14 +949,23 @@ export default function CEOPlatformDashboard() {
 
   // Load Activity Logs
   useEffect(() => {
-    const unsubscribe = onSnapshot(
-      query(collection(db, 'platform_activity_logs'), orderBy('timestamp', 'desc'), limit(50)),
-      (snapshot) => {
-        const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setActivityLogs(logs);
-      }
-    );
-    return () => unsubscribe();
+    try {
+      const unsubscribe = onSnapshot(
+        query(collection(db, 'platform_activity_logs'), orderBy('timestamp', 'desc'), limit(50)),
+        (snapshot) => {
+          const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setActivityLogs(logs);
+        },
+        (error) => {
+          console.log('Activity logs not available yet:', error.message);
+          setActivityLogs([]);
+        }
+      );
+      return () => unsubscribe();
+    } catch (error) {
+      console.log('Could not load activity logs:', error.message);
+      return () => {};
+    }
   }, []);
 
   if (loading) {
@@ -751,7 +1064,7 @@ export default function CEOPlatformDashboard() {
               <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
                 {t('overview')}
               </h1>
-              <p className="text-slate-400">Welcome back, Alex. Here's what's happening with your platform.</p>
+              <p className="text-slate-400">{t('welcome')}, Alex. {t('hereIsWhatsHappening')}.</p>
             </div>
 
             {/* Stats Grid */}
@@ -798,7 +1111,7 @@ export default function CEOPlatformDashboard() {
             >
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <TrendingUp className="text-yellow-400" size={24} />
-                Revenue Growth
+                {t('revenueGrowthChart')}
               </h2>
               <div className="h-64">
                 <Line
@@ -841,7 +1154,7 @@ export default function CEOPlatformDashboard() {
               animate={{ opacity: 1, y: 0 }}
               className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50"
             >
-              <h2 className="text-xl font-bold mb-4">Recent Tenants</h2>
+              <h2 className="text-xl font-bold mb-4">{t('recentTenants')}</h2>
               <div className="space-y-3">
                 {tenants.slice(0, 5).map((tenant) => (
                   <div key={tenant.id} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl">
@@ -1029,7 +1342,7 @@ export default function CEOPlatformDashboard() {
         {currentPage === 'subscriptions' && (
           <div className="space-y-6">
             <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
-              Subscription Plans
+              {t('subscriptionPlans')}
             </h1>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1043,7 +1356,7 @@ export default function CEOPlatformDashboard() {
                     <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                     <div className="flex items-baseline justify-center gap-1">
                       <span className="text-4xl font-bold">€{plan.price}</span>
-                      <span className="text-slate-400">/month</span>
+                      <span className="text-slate-400">/{t('month')}</span>
                     </div>
                   </div>
 
@@ -1057,7 +1370,7 @@ export default function CEOPlatformDashboard() {
                   </ul>
 
                   <div className="text-center text-sm text-slate-400">
-                    {tenants.filter(t => t.subscription === key).length} tenants
+                    {tenants.filter(t => t.subscription === key).length} {t('tenantsCount')}
                   </div>
                 </motion.div>
               ))}
@@ -1071,7 +1384,7 @@ export default function CEOPlatformDashboard() {
                 className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50"
               >
                 <h2 className="text-xl font-bold mb-4">
-                  Manage Plan for {selectedTenant.name}
+                  {t('managePlanFor')} {selectedTenant.name}
                 </h2>
                 <div className="grid grid-cols-4 gap-4">
                   {Object.entries(SUBSCRIPTION_PLANS).map(([key, plan]) => (
@@ -1100,38 +1413,38 @@ export default function CEOPlatformDashboard() {
             <div className="flex items-start justify-between">
               <div>
                 <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
-                  Billing & Invoices
+                  {t('billingInvoices')}
                 </h1>
-                <p className="text-slate-400">Manage billing, invoices, and payment status</p>
+                <p className="text-slate-400">{t('manageBillingDesc')}</p>
               </div>
               <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl font-medium hover:shadow-lg hover:shadow-yellow-500/50 transition-all">
                 <Plus size={20} />
-                Generate Invoice
+                {t('generateInvoice')}
               </button>
             </div>
 
             {/* Billing Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <StatCard
-                title="Pending Payments"
+                title={t('pendingPayments')}
                 value={tenants.filter(t => t.subscription !== 'free').length}
                 icon={<Clock size={24} />}
                 color="yellow"
               />
               <StatCard
-                title="Failed Payments"
+                title={t('failedPayments')}
                 value="3"
                 icon={<AlertCircle size={24} />}
                 color="red"
               />
               <StatCard
-                title="Total Invoiced"
+                title={t('totalInvoiced')}
                 value={`€${(stats.monthlyRevenue * 12).toLocaleString()}`}
                 icon={<FileText size={24} />}
                 color="green"
               />
               <StatCard
-                title="Outstanding"
+                title={t('successRate')}
                 value="€1,234"
                 icon={<DollarSign size={24} />}
                 color="purple"
@@ -1297,7 +1610,7 @@ export default function CEOPlatformDashboard() {
         {currentPage === 'addons' && (
           <div className="space-y-6">
             <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
-              Add-ons & Extensions
+              {t('addonsExtensions')}
             </h1>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1313,7 +1626,7 @@ export default function CEOPlatformDashboard() {
                     </div>
                     <div className="text-right">
                       <div className="text-2xl font-bold text-yellow-400">€{addon.price}</div>
-                      <div className="text-xs text-slate-400">per month</div>
+                      <div className="text-xs text-slate-400">/{t('month')}</div>
                     </div>
                   </div>
 
@@ -1321,7 +1634,7 @@ export default function CEOPlatformDashboard() {
                   <p className="text-sm text-slate-400 mb-4">{addon.description}</p>
 
                   <div className="text-sm text-slate-400">
-                    {tenants.filter(t => t.addons?.includes(addon.id)).length} tenants using this
+                    {tenants.filter(t => t.addons?.includes(addon.id)).length} {t('tenantsCount')}
                   </div>
                 </motion.div>
               ))}
@@ -1375,13 +1688,13 @@ export default function CEOPlatformDashboard() {
         {currentPage === 'features' && (
           <div className="space-y-6">
             <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
-              Features Manager
+              {t('featuresManager')}
             </h1>
-            <p className="text-slate-400">Control which features are available to each tenant</p>
+            <p className="text-slate-400">{t('controlFeaturesDesc')}</p>
 
             {selectedTenant && (
               <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50">
-                <h2 className="text-xl font-bold mb-4">Features for {selectedTenant.name}</h2>
+                <h2 className="text-xl font-bold mb-4">{t('features')} - {selectedTenant.name}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
                     { id: 'dashboard', name: 'Dashboard', icon: <Home size={20} /> },
@@ -1402,7 +1715,7 @@ export default function CEOPlatformDashboard() {
                         <span className="font-medium">{feature.name}</span>
                       </div>
                       <button className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg">
-                        Enabled
+                        {t('enabled')}
                       </button>
                     </div>
                   ))}
@@ -1528,12 +1841,12 @@ export default function CEOPlatformDashboard() {
         {currentPage === 'revenue' && (
           <div className="space-y-6">
             <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
-              Revenue Dashboard
+              {t('revenueDashboard')}
             </h1>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <StatCard
-                title="Monthly Revenue"
+                title={t('monthlyRevenue')}
                 value={`€${stats.monthlyRevenue.toLocaleString()}`}
                 change={23}
                 icon={<DollarSign size={24} />}
@@ -1541,7 +1854,7 @@ export default function CEOPlatformDashboard() {
                 color="yellow"
               />
               <StatCard
-                title="Annual Revenue"
+                title={t('totalRevenue')}
                 value={`€${stats.totalRevenue.toLocaleString()}`}
                 change={18}
                 icon={<TrendingUp size={24} />}
@@ -1549,7 +1862,7 @@ export default function CEOPlatformDashboard() {
                 color="green"
               />
               <StatCard
-                title="Avg per Tenant"
+                title={t('avgUsersPerTenant')}
                 value={`€${Math.round(stats.monthlyRevenue / (stats.totalTenants || 1))}`}
                 icon={<Target size={24} />}
                 color="blue"
@@ -1568,7 +1881,7 @@ export default function CEOPlatformDashboard() {
               animate={{ opacity: 1, y: 0 }}
               className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50"
             >
-              <h2 className="text-xl font-bold mb-4">Revenue by Tenant</h2>
+              <h2 className="text-xl font-bold mb-4">{t('revenueByPlan')}</h2>
               <div className="space-y-3">
                 {tenants
                   .sort((a, b) => {
@@ -1616,24 +1929,24 @@ export default function CEOPlatformDashboard() {
         {currentPage === 'users' && (
           <div className="space-y-6">
             <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
-              All Platform Users
+              {t('allUsers')}
             </h1>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <StatCard
-                title="Total Users"
+                title={t('totalUsersCount')}
                 value={stats.totalUsers}
                 icon={<Users size={24} />}
                 color="blue"
               />
               <StatCard
-                title="Active Today"
+                title={t('activeUsers')}
                 value={Math.round(stats.totalUsers * 0.35)}
                 icon={<Activity size={24} />}
                 color="green"
               />
               <StatCard
-                title="New This Month"
+                title={t('newUsersThisMonth')}
                 value={Math.round(stats.totalUsers * 0.12)}
                 icon={<UserPlus size={24} />}
                 color="purple"
@@ -1678,13 +1991,13 @@ export default function CEOPlatformDashboard() {
             <div className="flex items-start justify-between">
               <div>
                 <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
-                  Platform Notifications
+                  {t('platformNotifications')}
                 </h1>
-                <p className="text-slate-400">Send notifications to all tenants or specific groups</p>
+                <p className="text-slate-400">{t('systemAlertsDesc')}</p>
               </div>
               <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl font-medium hover:shadow-lg hover:shadow-yellow-500/50 transition-all">
                 <Plus size={20} />
-                New Notification
+                {t('sendNotification')}
               </button>
             </div>
 
@@ -1727,12 +2040,12 @@ export default function CEOPlatformDashboard() {
         {currentPage === 'database' && (
           <div className="space-y-6">
             <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
-              Database Management
+              {t('databaseManagement')}
             </h1>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <StatCard
-                title="Total Collections"
+                title={t('collections')}
                 value={tenants.length * 25}
                 icon={<Database size={24} />}
                 color="blue"
@@ -1922,7 +2235,7 @@ export default function CEOPlatformDashboard() {
         {currentPage === 'settings' && (
           <div className="space-y-6">
             <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
-              Platform Settings
+              {t('platformSettings')}
             </h1>
 
             {/* Platform Configuration */}
@@ -1935,11 +2248,11 @@ export default function CEOPlatformDashboard() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl">
                   <div>
-                    <div className="font-medium">Maintenance Mode</div>
+                    <div className="font-medium">{t('maintenanceMode')}</div>
                     <div className="text-sm text-slate-400">Disable access for all tenants</div>
                   </div>
                   <button className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-all">
-                    Off
+                    {t('disabled')}
                   </button>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl">
@@ -2182,7 +2495,7 @@ export default function CEOPlatformDashboard() {
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl font-medium hover:shadow-lg hover:shadow-yellow-500/50 transition-all"
               >
                 <Plus size={20} />
-                Add Webhook
+                {t('addWebhook')}
               </button>
             </div>
 
@@ -2216,7 +2529,7 @@ export default function CEOPlatformDashboard() {
                           ? 'bg-green-500/20 text-green-400' 
                           : 'bg-slate-500/20 text-slate-400'
                       }`}>
-                        {webhook.active ? 'Active' : 'Inactive'}
+                        {webhook.active ? t('active') : t('inactive')}
                       </span>
                     </div>
                     

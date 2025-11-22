@@ -64,6 +64,13 @@ service cloud.firestore {
       allow write: if isPlatformCEO();
     }
 
+    // ==================== PLATFORM ACTIVITY LOGS ====================
+    match /platform_activity_logs/{logId} {
+      allow read, list: if isPlatformCEO();
+      allow create: if isPlatformCEO();
+      allow update, delete: if isPlatformCEO();
+    }
+
     // ==================== TENANTS (METADATA) ====================
     match /tenants/{tenantId} {
       // Platform CEO può vedere e gestire tutti i tenants
@@ -79,7 +86,7 @@ service cloud.firestore {
     match /tenants/{tenantId}/{document=**} {
       
       // Platform CEO ha accesso completo a TUTTI i tenant (per analytics)
-      allow read: if isPlatformCEO();
+      allow read, list: if isPlatformCEO();
       
       // Regole specifiche per collection
       
