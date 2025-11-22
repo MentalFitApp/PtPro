@@ -77,12 +77,14 @@ const Sidebar = ({ currentPage, setCurrentPage, onLogout, collapsed, setCollapse
     { id: 'overview', icon: <Home size={20} />, label: 'Overview' },
     { id: 'tenants', icon: <Building2 size={20} />, label: 'Tenants' },
     { id: 'subscriptions', icon: <CreditCard size={20} />, label: 'Subscriptions' },
+    { id: 'billing', icon: <FileText size={20} />, label: 'Billing & Invoices' },
     { id: 'addons', icon: <Package size={20} />, label: 'Add-ons' },
     { id: 'features', icon: <Zap size={20} />, label: 'Features Manager' },
     { id: 'analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
     { id: 'users', icon: <Users size={20} />, label: 'All Users' },
     { id: 'revenue', icon: <DollarSign size={20} />, label: 'Revenue' },
     { id: 'database', icon: <Database size={20} />, label: 'Database' },
+    { id: 'activity', icon: <Activity size={20} />, label: 'Activity Log' },
     { id: 'notifications', icon: <Bell size={20} />, label: 'Notifications' },
     { id: 'settings', icon: <Settings size={20} />, label: 'Settings' },
   ];
@@ -238,6 +240,10 @@ export default function CEOPlatformDashboard() {
     email: '',
     subscription: 'free'
   });
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [showActivityLog, setShowActivityLog] = useState(false);
+  const [impersonatedTenant, setImpersonatedTenant] = useState(null);
+  const [showImpersonationBanner, setShowImpersonationBanner] = useState(false);
 
   // Stats
   const [stats, setStats] = useState({
@@ -348,11 +354,20 @@ export default function CEOPlatformDashboard() {
 
   const handleUpdateTenantPlan = async (tenantId, newPlan) => {
     try {
+      const tenant = tenants.find(t => t.id === tenantId);
+      const oldPlan = tenant.subscription;
+      
       await updateDoc(doc(db, 'tenants', tenantId), {
         subscription: newPlan,
         updatedAt: serverTimestamp()
       });
       setTenants(tenants.map(t => t.id === tenantId ? { ...t, subscription: newPlan } : t));
+      
+      await logActivity('update_plan', `Changed plan for ${tenant.name} from ${oldPlan} to ${newPlan}`, { 
+        tenantId, 
+        oldPlan, 
+        newPlan 
+      });
     } catch (error) {
       console.error('Error updating plan:', error);
     }
@@ -364,6 +379,7 @@ export default function CEOPlatformDashboard() {
     const newAddons = currentAddons.includes(addonId)
       ? currentAddons.filter(id => id !== addonId)
       : [...currentAddons, addonId];
+    const action = currentAddons.includes(addonId) ? 'removed' : 'added';
 
     try {
       await updateDoc(doc(db, 'tenants', tenantId), {
@@ -371,6 +387,13 @@ export default function CEOPlatformDashboard() {
         updatedAt: serverTimestamp()
       });
       setTenants(tenants.map(t => t.id === tenantId ? { ...t, addons: newAddons } : t));
+      
+      const addon = ADDONS.find(a => a.id === addonId);
+      await logActivity('toggle_addon', `${action} add-on "${addon.name}" for ${tenant.name}`, { 
+        tenantId, 
+        addonId, 
+        action 
+      });
     } catch (error) {
       console.error('Error updating addons:', error);
     }
@@ -386,6 +409,11 @@ export default function CEOPlatformDashboard() {
         updatedAt: serverTimestamp()
       });
       setTenants(tenants.map(t => t.id === tenantId ? { ...t, status: newStatus } : t));
+      
+      await logActivity('suspend_tenant', `${newStatus === 'suspended' ? 'Suspended' : 'Reactivated'} tenant: ${tenant.name}`, { 
+        tenantId, 
+        newStatus 
+      });
     } catch (error) {
       console.error('Error updating status:', error);
     }
@@ -405,8 +433,10 @@ export default function CEOPlatformDashboard() {
         subscription: newTenantData.subscription,
         status: 'active',
         addons: [],
+        healthScore: 100,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        lastActive: serverTimestamp(),
       });
 
       // Create roles subcollection
@@ -420,6 +450,9 @@ export default function CEOPlatformDashboard() {
         uids: []
       });
 
+      // Log activity
+      await logActivity('create_tenant', `Created tenant: ${newTenantData.name}`, { tenantId: newTenantData.id });
+
       setShowNewTenantModal(false);
       setNewTenantData({ id: '', name: '', email: '', subscription: 'free' });
     } catch (error) {
@@ -427,6 +460,78 @@ export default function CEOPlatformDashboard() {
       alert('Error creating tenant: ' + error.message);
     }
   };
+
+  // Activity Logger
+  const logActivity = async (action, description, metadata = {}) => {
+    try {
+      await setDoc(doc(collection(db, 'platform_activity_logs')), {
+        action,
+        description,
+        metadata,
+        userId: auth.currentUser.uid,
+        userEmail: auth.currentUser.email,
+        timestamp: serverTimestamp(),
+        ipAddress: 'N/A', // In production, get from server
+      });
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
+  };
+
+  // Tenant Impersonation
+  const handleImpersonateTenant = async (tenant) => {
+    setImpersonatedTenant(tenant);
+    setShowImpersonationBanner(true);
+    await logActivity('impersonate_tenant', `Started impersonating tenant: ${tenant.name}`, { tenantId: tenant.id });
+    
+    // Redirect to tenant's dashboard
+    window.open(`/dashboard?impersonate=${tenant.id}`, '_blank');
+  };
+
+  const handleExitImpersonation = async () => {
+    if (impersonatedTenant) {
+      await logActivity('exit_impersonation', `Exited impersonation of tenant: ${impersonatedTenant.name}`, { tenantId: impersonatedTenant.id });
+    }
+    setImpersonatedTenant(null);
+    setShowImpersonationBanner(false);
+  };
+
+  // Calculate Health Score
+  const calculateHealthScore = (tenant) => {
+    let score = 100;
+    
+    // Payment status (-30 if suspended)
+    if (tenant.status === 'suspended') score -= 30;
+    
+    // User activity (-20 if no users)
+    if (tenant.usersCount === 0) score -= 20;
+    
+    // Last active (-15 if > 7 days)
+    if (tenant.lastActive) {
+      const daysSinceActive = (Date.now() - tenant.lastActive.toDate?.().getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceActive > 7) score -= 15;
+    }
+    
+    // Revenue contribution (-10 if free plan)
+    if (tenant.subscription === 'free') score -= 10;
+    
+    // User growth (-10 if < 5 users)
+    if (tenant.usersCount < 5) score -= 10;
+    
+    return Math.max(0, Math.min(100, score));
+  };
+
+  // Load Activity Logs
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'platform_activity_logs'), orderBy('timestamp', 'desc'), limit(50)),
+      (snapshot) => {
+        const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setActivityLogs(logs);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
 
   if (loading) {
     return (
@@ -443,6 +548,39 @@ export default function CEOPlatformDashboard() {
     <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden">
       <AnimatedStars />
       
+      {/* IMPERSONATION BANNER */}
+      <AnimatePresence>
+        {showImpersonationBanner && impersonatedTenant && (
+          <motion.div
+            initial={{ y: -100 }}
+            animate={{ y: 0 }}
+            exit={{ y: -100 }}
+            className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-600 to-purple-800 border-b-4 border-purple-400 shadow-lg"
+          >
+            <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <AlertCircle className="text-white" size={24} />
+                <div>
+                  <p className="text-white font-bold">
+                    🎭 Impersonation Mode Active
+                  </p>
+                  <p className="text-purple-200 text-sm">
+                    You are viewing as: <span className="font-semibold">{impersonatedTenant.name}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleExitImpersonation}
+                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg font-medium transition-all"
+              >
+                <X size={18} />
+                Exit Impersonation
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       <Sidebar
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
@@ -451,7 +589,7 @@ export default function CEOPlatformDashboard() {
         setCollapsed={setCollapsed}
       />
 
-      <main className={`transition-all duration-300 ${collapsed ? 'ml-20' : 'ml-72'} p-8 relative z-10`}>
+      <main className={`transition-all duration-300 ${collapsed ? 'ml-20' : 'ml-72'} ${showImpersonationBanner ? 'mt-20' : ''} p-8 relative z-10`}>
         
         {/* OVERVIEW PAGE */}
         {currentPage === 'overview' && (
@@ -634,6 +772,9 @@ export default function CEOPlatformDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTenants.map((tenant) => {
                 const plan = SUBSCRIPTION_PLANS[tenant.subscription] || SUBSCRIPTION_PLANS.free;
+                const healthScore = calculateHealthScore(tenant);
+                const healthColor = healthScore >= 80 ? 'green' : healthScore >= 50 ? 'yellow' : 'red';
+                
                 return (
                   <motion.div
                     key={tenant.id}
@@ -664,6 +805,21 @@ export default function CEOPlatformDashboard() {
                       </button>
                     </div>
 
+                    {/* Health Score Badge */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-slate-400">Health Score</span>
+                        <span className={`text-sm font-bold text-${healthColor}-400`}>{healthScore}/100</span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${healthScore}%` }}
+                          className={`h-full bg-gradient-to-r from-${healthColor}-400 to-${healthColor}-600`}
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-3 mb-4">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-slate-400">Plan</span>
@@ -685,23 +841,28 @@ export default function CEOPlatformDashboard() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <button
                         onClick={() => setSelectedTenant(tenant)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
+                        className="flex items-center justify-center gap-1 px-2 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-xs"
                       >
-                        <Eye size={16} />
-                        View
+                        <Eye size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleImpersonateTenant(tenant)}
+                        className="flex items-center justify-center gap-1 px-2 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors text-xs"
+                        title="Login as Tenant"
+                      >
+                        <UserPlus size={14} />
                       </button>
                       <button
                         onClick={() => {
                           setSelectedTenant(tenant);
                           setCurrentPage('subscriptions');
                         }}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors"
+                        className="flex items-center justify-center gap-1 px-2 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors text-xs"
                       >
-                        <Edit3 size={16} />
-                        Manage
+                        <Edit3 size={14} />
                       </button>
                     </div>
                   </motion.div>
@@ -777,6 +938,205 @@ export default function CEOPlatformDashboard() {
                 </div>
               </motion.div>
             )}
+          </div>
+        )}
+
+        {/* BILLING & INVOICES PAGE */}
+        {currentPage === 'billing' && (
+          <div className="space-y-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
+                  Billing & Invoices
+                </h1>
+                <p className="text-slate-400">Manage billing, invoices, and payment status</p>
+              </div>
+              <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl font-medium hover:shadow-lg hover:shadow-yellow-500/50 transition-all">
+                <Plus size={20} />
+                Generate Invoice
+              </button>
+            </div>
+
+            {/* Billing Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <StatCard
+                title="Pending Payments"
+                value={tenants.filter(t => t.subscription !== 'free').length}
+                icon={<Clock size={24} />}
+                color="yellow"
+              />
+              <StatCard
+                title="Failed Payments"
+                value="3"
+                icon={<AlertCircle size={24} />}
+                color="red"
+              />
+              <StatCard
+                title="Total Invoiced"
+                value={`€${(stats.monthlyRevenue * 12).toLocaleString()}`}
+                icon={<FileText size={24} />}
+                color="green"
+              />
+              <StatCard
+                title="Outstanding"
+                value="€1,234"
+                icon={<DollarSign size={24} />}
+                color="purple"
+              />
+            </div>
+
+            {/* Recent Invoices */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-800">
+                <h2 className="text-xl font-bold">Recent Invoices</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-800/50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Invoice #</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Tenant</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Amount</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Period</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Status</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {tenants.slice(0, 10).map((tenant, index) => {
+                      const plan = SUBSCRIPTION_PLANS[tenant.subscription] || SUBSCRIPTION_PLANS.free;
+                      const amount = plan.price + (tenant.addons?.reduce((sum, id) => {
+                        const addon = ADDONS.find(a => a.id === id);
+                        return sum + (addon?.price || 0);
+                      }, 0) || 0);
+                      
+                      const statuses = ['paid', 'pending', 'failed'];
+                      const status = statuses[index % 3];
+                      const statusColors = {
+                        paid: 'green',
+                        pending: 'yellow',
+                        failed: 'red'
+                      };
+
+                      return (
+                        <tr key={tenant.id} className="hover:bg-slate-800/30 transition-colors">
+                          <td className="px-6 py-4 text-sm">
+                            <code className="text-slate-300">INV-{2025}{(index + 1).toString().padStart(4, '0')}</code>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-white text-xs font-bold">
+                                {tenant.name?.[0] || 'T'}
+                              </div>
+                              <span className="text-sm font-medium">{tenant.name || tenant.id}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm font-bold text-yellow-400">
+                            €{amount}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-400">
+                            Nov 2025
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium bg-${statusColors[status]}-500/20 text-${statusColors[status]}-400`}>
+                              {status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex gap-2">
+                              <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors" title="Download PDF">
+                                <Download size={16} className="text-slate-400" />
+                              </button>
+                              <button className="p-2 hover:bg-slate-700 rounded-lg transition-colors" title="Send Email">
+                                <Bell size={16} className="text-slate-400" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+
+            {/* Payment Methods */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50"
+              >
+                <h2 className="text-xl font-bold mb-4">Payment Methods</h2>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-lg bg-blue-500/20">
+                        <CreditCard className="text-blue-400" size={20} />
+                      </div>
+                      <div>
+                        <div className="font-medium">Stripe</div>
+                        <div className="text-sm text-slate-400">Primary payment gateway</div>
+                      </div>
+                    </div>
+                    <CheckCircle className="text-green-400" size={20} />
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-lg bg-purple-500/20">
+                        <CreditCard className="text-purple-400" size={20} />
+                      </div>
+                      <div>
+                        <div className="font-medium">PayPal</div>
+                        <div className="text-sm text-slate-400">Alternative payment method</div>
+                      </div>
+                    </div>
+                    <Lock className="text-slate-500" size={20} />
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50"
+              >
+                <h2 className="text-xl font-bold mb-4">Billing Settings</h2>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl">
+                    <div>
+                      <div className="font-medium">Auto-billing</div>
+                      <div className="text-sm text-slate-400">Automatic invoice generation</div>
+                    </div>
+                    <button className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg">
+                      Enabled
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl">
+                    <div>
+                      <div className="font-medium">Payment Reminders</div>
+                      <div className="text-sm text-slate-400">Email reminders for unpaid invoices</div>
+                    </div>
+                    <button className="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg">
+                      Enabled
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl">
+                    <div>
+                      <div className="font-medium">Grace Period</div>
+                      <div className="text-sm text-slate-400">7 days after invoice due date</div>
+                    </div>
+                    <button className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-all">
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </div>
         )}
 
@@ -1294,6 +1654,114 @@ export default function CEOPlatformDashboard() {
                 </div>
               </motion.div>
             </div>
+          </div>
+        )}
+
+        {/* ACTIVITY LOG PAGE */}
+        {currentPage === 'activity' && (
+          <div className="space-y-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
+                  Activity Log
+                </h1>
+                <p className="text-slate-400">Complete audit trail of all platform actions</p>
+              </div>
+              <div className="flex gap-3">
+                <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
+                  <Filter size={18} />
+                  Filter
+                </button>
+                <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">
+                  <Download size={18} />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden"
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-800/50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Timestamp
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        User
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Action
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                        Details
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {activityLogs.map((log, index) => {
+                      const actionColors = {
+                        create_tenant: 'green',
+                        update_plan: 'blue',
+                        toggle_addon: 'purple',
+                        suspend_tenant: 'red',
+                        impersonate_tenant: 'yellow',
+                        exit_impersonation: 'yellow',
+                      };
+                      const color = actionColors[log.action] || 'slate';
+                      
+                      return (
+                        <motion.tr
+                          key={log.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="hover:bg-slate-800/30 transition-colors"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                            {log.timestamp?.toDate?.().toLocaleString() || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <div className="flex items-center gap-2">
+                              <Crown size={14} className="text-yellow-400" />
+                              <span className="text-slate-300">{log.userEmail || 'System'}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium bg-${color}-500/20 text-${color}-400`}>
+                              {log.action.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-300">
+                            {log.description}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-400">
+                            {log.metadata?.tenantId && (
+                              <code className="text-xs bg-slate-800 px-2 py-1 rounded">
+                                {log.metadata.tenantId}
+                              </code>
+                            )}
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              
+              {activityLogs.length === 0 && (
+                <div className="text-center py-12 text-slate-400">
+                  No activity logs yet
+                </div>
+              )}
+            </motion.div>
           </div>
         )}
 
