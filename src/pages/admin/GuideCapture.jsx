@@ -7,7 +7,6 @@ import { CheckCircle, Loader2, Star, ChevronRight, Clock, ArrowRight, User, Phon
 import { motion } from 'framer-motion';
 import FormLayout from '../../components/forms/FormLayout';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 export default function GuideCapture() {
   const { guideId } = useParams();
