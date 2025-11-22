@@ -5,7 +5,6 @@ import { db, auth } from '../../firebase';
 import { ArrowLeft, BookOpen, Play, CheckCircle, Clock, Users, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 /**
  * Pagina dettaglio di un corso con moduli e lezioni

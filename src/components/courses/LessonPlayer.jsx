@@ -6,7 +6,6 @@ import { ArrowLeft, Play, Pause, CheckCircle, ChevronRight, ChevronLeft, Clock }
 
 import MediaViewer from '../ui/MediaViewer';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 /**
  * Player per visualizzare e completare le lezioni

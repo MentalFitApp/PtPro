@@ -6,7 +6,6 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 export default function AnamnesiForm({ clientId, onSave }) {
   const { register, handleSubmit, formState: { isSubmitting } } = useForm();

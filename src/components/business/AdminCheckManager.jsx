@@ -7,7 +7,6 @@ import 'react-calendar/dist/Calendar.css';
 import { Save, MessageSquare, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 // --- 2. STILI DEL CALENDARIO AGGIORNATI ---
 const calendarStyles = `

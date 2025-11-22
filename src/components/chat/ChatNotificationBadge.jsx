@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 export default function ChatNotificationBadge() {
   const [unreadCount, setUnreadCount] = useState(0);

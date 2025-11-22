@@ -6,7 +6,6 @@ import { BookOpen, Search, Filter, Grid, List, GraduationCap } from 'lucide-reac
 import { AnimatePresence } from 'framer-motion';
 import CourseCard from './CourseCard';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 /**
  * Dashboard principale per i corsi - mostra tutti i corsi disponibili
