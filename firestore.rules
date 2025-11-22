@@ -18,6 +18,12 @@ service cloud.firestore {
              request.auth.uid in get(/databases/$(database)/documents/roles/superadmins).data.uids;
     }
 
+    function isCEO() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             'ceo' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles;
+    }
+
     function isAdmin() {
       return isSuperAdmin() ||
              (request.auth != null && (
@@ -62,14 +68,14 @@ service cloud.firestore {
     // ==================== CLIENTS & SUBCOLLEZIONI ====================
     match /clients/{userId} {
       allow create: if isSuperAdmin() || isCoach() || isAdmin();
-      allow read: if isSuperAdmin() ||
+      allow read: if isSuperAdmin() || isCEO() ||
                     (request.auth != null && (
                       request.auth.uid == userId ||
                       isCoach() ||
                       isAdmin() ||
                       (get(/databases/$(database)/documents/clients/$(userId)).data.isOldClient == true && isAssignedCoach(userId))
                     ));
-      allow list: if isSuperAdmin() || isCoach() || isAdmin();
+      allow list: if isSuperAdmin() || isCoach() || isAdmin() || isCEO();
       allow update: if isSuperAdmin() || isCoach() || isAdmin() || isClient(userId);
       allow delete: if isSuperAdmin() || isAdmin();
 
@@ -105,15 +111,15 @@ service cloud.firestore {
 
     // --- COLLECTION GROUP: PAGAMENTI (per incasso lordo) ---
     match /{path=**}/payments/{paymentId} {
-      allow read: if isAdmin();
+      allow read: if isAdmin() || isCEO();
     }
 
     // --- COLLECTION GROUP: CHECKS & ANAMNESI ---
     match /{path=**}/checks/{checkId} {
-      allow read: if isCoach() || isAdmin();
+      allow read: if isCoach() || isAdmin() || isCEO();
     }
     match /{path=**}/anamnesi/{anamnesiId} {
-      allow read: if isCoach() || isAdmin();
+      allow read: if isCoach() || isAdmin() || isCEO();
     }
 
     // ==================== CHAT ====================
@@ -316,7 +322,7 @@ service cloud.firestore {
 
     // Users collection
     match /users/{userId} {
-      // Tutti possono leggere i profili pubblici
+      // Tutti possono leggere i profili pubblici, CEO può leggere tutto per stats
       allow read, list: if request.auth != null;
 
       // L'utente stesso può creare/modificare il proprio profilo (incluso communityVideoWatched)
@@ -360,8 +366,8 @@ service cloud.firestore {
 
     // Post della community
     match /community_posts/{postId} {
-      allow read: if request.auth != null;
-      allow list: if request.auth != null;
+      allow read: if request.auth != null || isCEO();
+      allow list: if request.auth != null || isCEO();
 
       allow create: if request.auth != null &&
         request.resource.data.author.uid == request.auth.uid &&

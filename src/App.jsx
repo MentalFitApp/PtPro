@@ -36,6 +36,8 @@ const Analytics = React.lazy(() => import('./pages/admin/Analytics'));
 const CourseAdmin = React.lazy(() => import('./pages/admin/CourseAdmin'));
 const CourseContentManager = React.lazy(() => import('./pages/admin/CourseContentManager'));
 const SuperAdminSettings = React.lazy(() => import('./pages/admin/SuperAdminSettings'));
+const CEODashboard = React.lazy(() => import('./pages/ceo/CEODashboard'));
+const CEOLogin = React.lazy(() => import('./pages/ceo/CEOLogin'));
 
 // Client Pages
 const ClientDashboard = React.lazy(() => import('./pages/client/ClientDashboard'));
@@ -252,7 +254,7 @@ export default function App() {
             error: null
           });
 
-          const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId'];
+          const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId', '/ceo-login'];
           const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/'));
           if (!isPublic) {
             const target = '/login';
@@ -292,6 +294,7 @@ export default function App() {
           <Route path="/guida/:guideId" element={<GuideCapture />} />
         </Route>
         <Route path="/login" element={<Login />} />
+        <Route path="/ceo-login" element={<CEOLogin />} />
         <Route path="/client/forgot-password" element={<ForgotPassword />} />
 
         {/* === ROTTE ADMIN (SOLO ADMIN) === */}
@@ -327,6 +330,7 @@ export default function App() {
 
         {/* === ROTTE SUPERADMIN (SOLO SUPERADMIN) === */}
         <Route element={authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
+          <Route path="/ceo" element={<CEODashboard />} />
           <Route path="/superadmin" element={<SuperAdminSettings />} />
 
           <Route path="/course-admin" element={<CourseAdmin />} />
