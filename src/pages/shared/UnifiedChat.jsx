@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import { collection, query, where, orderBy, onSnapshot, doc, addDoc, serverTimestamp, setDoc, getDocs, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { Send, Video, Search, Plus, Phone, MessageSquare, X, ArrowLeft, Check, CheckCheck, UserPlus, Users, Image as ImageIcon, Mic, Paperclip, Play, Pause, Camera, CameraOff, Mic as MicOn, MicOff, Monitor, PhoneOff, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -983,7 +983,8 @@ export default function UnifiedChat() {
                                     initializeDailyCall(message.roomUrl);
                                   }
                                   // Aggiorna stato messaggio
-                                  updateDoc(getTenantDoc(db, 'chats', selectedChat.id, 'messages', message.id), {
+                                  const messagesCollectionRef = getTenantSubcollection(db, 'chats', selectedChat.id, 'messages');
+                                  updateDoc(doc(messagesCollectionRef.firestore, messagesCollectionRef.path, message.id), {
                                     callStatus: 'accepted'
                                   }).catch(console.error);
                                 }}
@@ -1254,7 +1255,8 @@ export default function UnifiedChat() {
                     );
                     if (userChats.length > 0) {
                       const chatId = userChats[0].id;
-                      await updateDoc(getTenantDoc(db, 'chats', chatId, 'messages', incomingCall.callMessageId), {
+                      const messagesCollectionRef = getTenantSubcollection(db, 'chats', chatId, 'messages');
+                      await updateDoc(doc(messagesCollectionRef.firestore, messagesCollectionRef.path, incomingCall.callMessageId), {
                         callStatus: 'accepted',
                       });
                     }
@@ -1281,7 +1283,8 @@ export default function UnifiedChat() {
                     );
                     if (userChats.length > 0) {
                       const chatId = userChats[0].id;
-                      await updateDoc(getTenantDoc(db, 'chats', chatId, 'messages', incomingCall.callMessageId), {
+                      const messagesCollectionRef = getTenantSubcollection(db, 'chats', chatId, 'messages');
+                      await updateDoc(doc(messagesCollectionRef.firestore, messagesCollectionRef.path, incomingCall.callMessageId), {
                         callStatus: 'declined',
                       });
                     }
@@ -1322,7 +1325,8 @@ export default function UnifiedChat() {
                     if (activeCallMessageRef.current) {
                       try {
                         const { chatId, messageId } = activeCallMessageRef.current;
-                        await updateDoc(getTenantDoc(db, 'chats', chatId, 'messages', messageId), {
+                        const messagesCollectionRef = getTenantSubcollection(db, 'chats', chatId, 'messages');
+                        await updateDoc(doc(messagesCollectionRef.firestore, messagesCollectionRef.path, messageId), {
                           callStatus: 'cancelled',
                         });
                       } catch (error) {
@@ -1383,7 +1387,8 @@ export default function UnifiedChat() {
                     if (activeCallMessageRef.current) {
                       try {
                         const { chatId, messageId } = activeCallMessageRef.current;
-                        await updateDoc(getTenantDoc(db, 'chats', chatId, 'messages', messageId), {
+                        const messagesCollectionRef = getTenantSubcollection(db, 'chats', chatId, 'messages');
+                        await updateDoc(doc(messagesCollectionRef.firestore, messagesCollectionRef.path, messageId), {
                           callStatus: 'cancelled',
                         });
                       } catch (error) {

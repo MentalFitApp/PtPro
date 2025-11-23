@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  collection, onSnapshot, collectionGroup, doc, getDoc, getDocs, setDoc, serverTimestamp, query, orderBy, where
-} from "firebase/firestore"; // ← AGGIUNTO setDoc, where e getDocs
+  collection, onSnapshot, doc, getDoc, getDocs, setDoc, serverTimestamp, query, orderBy, where
+} from "firebase/firestore";
 import { auth, db, toDate } from "../../firebase"
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { uploadPhoto } from "../../cloudflareStorage";
 import { signOut, updateProfile } from "firebase/auth";
 import {
@@ -265,56 +265,75 @@ export default function Dashboard() {
     setupRenewalsListener();
 
     // --- CHECK ---
-    const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));
-    const unsubChecks = onSnapshot(checksQuery, async (snap) => {
+    // Carica tutti i clients e poi ascolta i loro checks
+    const loadChecksActivity = async () => {
       try {
+        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
         const newChecks = [];
-        for (const docSnap of snap.docs) {
-          const createdAt = toDate(docSnap.data().createdAt);
-          if (createdAt > toDate(lastViewed)) {
-            const clientId = docSnap.ref.parent.parent.id;
-            const clientDocSnap = await getDoc(getTenantDoc(db, 'clients', clientId));
-            newChecks.push({
-              type: 'new_check',
-              clientId,
-              clientName: clientDocSnap.exists() ? clientDocSnap.data().name || 'Cliente' : 'Cliente',
-              description: 'Ha inviato un nuovo check-in',
-              date: docSnap.data().createdAt
-            });
-          }
+        
+        for (const clientDoc of clientsSnap.docs) {
+          const checksSnap = await getDocs(
+            query(
+              getTenantSubcollection(db, 'clients', clientDoc.id, 'checks'),
+              orderBy('createdAt', 'desc')
+            )
+          );
+          
+          checksSnap.docs.forEach(checkDoc => {
+            const createdAt = toDate(checkDoc.data().createdAt);
+            if (createdAt > toDate(lastViewed)) {
+              newChecks.push({
+                type: 'new_check',
+                clientId: clientDoc.id,
+                clientName: clientDoc.data().name || 'Cliente',
+                description: 'Ha inviato un nuovo check-in',
+                date: checkDoc.data().createdAt
+              });
+            }
+          });
         }
+        
         setActivityFeed(prev => [...prev.filter(i => i.type !== 'new_check'), ...newChecks]);
       } catch (error) {
-        console.error("Errore snapshot checks:", error);
+        console.error("Errore caricamento checks:", error);
       }
-    });
-    unsubs.push(unsubChecks);
+    };
+    
+    loadChecksActivity();
 
     // --- ANAMNESI ---
-    const anamnesiQuery = query(collectionGroup(db, 'anamnesi'), orderBy('submittedAt', 'desc'));
-    const unsubAnamnesi = onSnapshot(anamnesiQuery, async (snap) => {
+    // Carica anamnesi dal tenant corrente
+    const loadAnamnesiActivity = async () => {
       try {
+        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
         const newAnamnesi = [];
-        for (const docSnap of snap.docs) {
-          const submittedAt = toDate(docSnap.data().submittedAt);
-          if (submittedAt > toDate(lastViewed)) {
-            const clientId = docSnap.ref.parent.parent.id;
-            const clientDocSnap = await getDoc(getTenantDoc(db, 'clients', clientId));
-            newAnamnesi.push({
-              type: 'new_anamnesi',
-              clientId,
-              clientName: clientDocSnap.exists() ? clientDocSnap.data().name || 'Cliente' : 'Cliente',
-              description: 'Ha compilato l\'anamnesi iniziale',
-              date: docSnap.data().submittedAt
-            });
-          }
+        
+        for (const clientDoc of clientsSnap.docs) {
+          const anamnesiSnap = await getDocs(
+            getTenantSubcollection(db, 'clients', clientDoc.id, 'anamnesi')
+          );
+          
+          anamnesiSnap.docs.forEach(anamnesiDoc => {
+            const submittedAt = toDate(anamnesiDoc.data().submittedAt);
+            if (submittedAt && submittedAt > toDate(lastViewed)) {
+              newAnamnesi.push({
+                type: 'new_anamnesi',
+                clientId: clientDoc.id,
+                clientName: clientDoc.data().name || 'Cliente',
+                description: 'Ha compilato l\'anamnesi iniziale',
+                date: anamnesiDoc.data().submittedAt
+              });
+            }
+          });
         }
+        
         setActivityFeed(prev => [...prev.filter(i => i.type !== 'new_anamnesi'), ...newAnamnesi]);
       } catch (error) {
-        console.error("Errore snapshot anamnesi:", error);
+        console.error("Errore caricamento anamnesi:", error);
       }
-    });
-    unsubs.push(unsubAnamnesi);
+    };
+    
+    loadAnamnesiActivity();
 
     // --- SCADENZE ---
     const clientsQuery = query(getTenantCollection(db, 'clients'));

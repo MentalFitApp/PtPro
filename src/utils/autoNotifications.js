@@ -4,8 +4,8 @@
  */
 
 import { collection, getDocs, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../../config/tenant';;
+import { db } from '../firebase';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 
 /**
  * Calcola i giorni rimanenti fino alla scadenza
@@ -110,7 +110,7 @@ export const getClientsMissingCheckIn = async (daysThreshold = 7) => {
       }
       
       // Cerca ultimo check del cliente
-      const checksRef = collection(db, `clients/${client.id}/checks`);
+      const checksRef = getTenantSubcollection(db, 'clients', client.id, 'checks');
       const checksSnapshot = await getDocs(checksRef);
       
       if (checksSnapshot.empty) {

@@ -16,7 +16,8 @@ export default function AnamnesiForm({ clientId, onSave }) {
     setMessage('');
     setIsError(false);
     try {
-      const anamnesiRef = getTenantDoc(db, 'clients', clientId, 'anamnesi', 'initial');
+      const anamnesiCollectionRef = getTenantSubcollection(db, 'clients', clientId, 'anamnesi');
+      const anamnesiRef = doc(anamnesiCollectionRef.firestore, anamnesiCollectionRef.path, 'initial');
       await setDoc(anamnesiRef, { ...data, createdAt: serverTimestamp() });
       setMessage("Anamnesi salvata con successo!");
       setTimeout(onSave, 1500);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { db } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 // --- 1. NUOVE ICONE DA LUCIDE-REACT ---

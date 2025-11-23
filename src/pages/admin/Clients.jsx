@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { db, auth, toDate, calcolaStatoPercorso, updateStatoPercorso } from "../../firebase"
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
-import { collection, onSnapshot, deleteDoc, doc, getDoc, getDocs } from "firebase/firestore";
+import { db, auth, toDate, calcolaStatoPercorso, updateStatoPercorso } from "../../firebase";
+import { getTenantCollection } from '../../config/tenant';
+import { onSnapshot } from "firebase/firestore";
 import { signOut } from "firebase/auth";
+import { getClientAnamnesi, getClientPayments, deleteClient } from '../../services/clientService';
 import { 
   UserPlus, FilePenLine, Trash2, Search, ArrowUp, ArrowDown, 
   CheckCircle, XCircle, Calendar, Clock, AlertCircle, LogOut, Download, FileText, X, Menu, Filter, LayoutGrid, List, ChevronLeft, ChevronRight
@@ -317,29 +318,30 @@ export default function Clients() {
           };
         });
 
+        // Carica anamnesi e pagamenti usando i services
         const anamnesiPromises = clientList.map(client => 
-          getDoc(doc(db, `clients/${client.id}/anamnesi`, 'initial')).catch(() => ({ exists: () => false }))
+          getClientAnamnesi(db, client.id, 1)
+            .then(anamnesi => ({ clientId: client.id, hasAnamnesi: anamnesi.length > 0 }))
+            .catch(() => ({ clientId: client.id, hasAnamnesi: false }))
         );
+        
         const anamnesiResults = await Promise.all(anamnesiPromises);
         const anamnesiStatusTemp = {};
-        clientList.forEach((client, i) => {
-          anamnesiStatusTemp[client.id] = anamnesiResults[i].exists();
+        anamnesiResults.forEach(result => {
+          anamnesiStatusTemp[result.clientId] = result.hasAnamnesi;
         });
         setAnamnesiStatus(anamnesiStatusTemp);
 
-        // Calcolo totale incasso dalle rate pagate + payments collection in tempo reale
+        // Calcolo totale incasso dalle rate pagate + payments collection usando service
         const paymentsTotalsTemp = {};
         const paymentsPromises = clientList.map(async client => {
           // Totale dalle rate pagate
           const rateArr = Array.isArray(client.rate) ? client.rate : [];
           const rateSum = rateArr.filter(r => r.paid).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
           
-          // Totale dalla collection payments
-          const paymentsSnap = await getDocs(getTenantSubcollection(db, 'clients', client.id, 'payments'));
-          const paymentsSum = paymentsSnap.docs.reduce((acc, doc) => {
-            const data = doc.data();
-            return acc + (Number(data.amount) || 0);
-          }, 0);
+          // Totale dalla collection payments usando service
+          const payments = await getClientPayments(db, client.id).catch(() => []);
+          const paymentsSum = payments.reduce((acc, payment) => acc + (Number(payment.amount) || 0), 0);
           
           paymentsTotalsTemp[client.id] = rateSum + paymentsSum;
         });
@@ -365,11 +367,11 @@ export default function Clients() {
   const handleDelete = async () => {
     if (!clientToDelete) return;
     try {
-      await deleteDoc(getTenantDoc(db, 'clients', clientToDelete.id));
+      await deleteClient(db, clientToDelete.id);
       setClients(prev => prev.filter(c => c.id !== clientToDelete.id));
       showNotification('Cliente eliminato!', 'success');
     } catch (error) {
-      showNotification(`Errore: ${error.message}`, 'error');
+      showNotification(error.message || 'Errore eliminazione', 'error');
     } finally {
       setClientToDelete(null);
     }

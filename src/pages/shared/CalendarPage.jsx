@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { ChevronLeft, ChevronRight, Plus, X, Phone, Users, Trash2, Edit, Save, Bell, BellOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { requestNotificationPermission, checkNotificationPermission, scheduleEventNotifications, setupForegroundMessageListener } from '../../utils/notifications';

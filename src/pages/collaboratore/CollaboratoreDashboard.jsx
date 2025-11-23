@@ -6,7 +6,7 @@ import {
 } from 'firebase/firestore';
 import { updatePassword } from 'firebase/auth';
 import { db, auth } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { uploadPhoto } from '../../storageUtils.js';
 import { 
   CheckCircle, FileText, Save, Phone, TrendingUp, BarChart3, 

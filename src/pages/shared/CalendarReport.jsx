@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { Users, Settings, FileText, Phone, Calendar, CheckCircle, XCircle, AlertCircle, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -46,7 +46,7 @@ export default function CalendarReport() {
       setError('Errore nel recupero dei collaboratori: ' + err.message);
     });
 
-    const settingQuery = query(collection(db, 'settingReports'));
+    const settingQuery = query(getTenantCollection(db, 'settingReports'));
     const unsubSetting = onSnapshot(settingQuery, (snap) => {
       const reports = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setSettingReports(reports);

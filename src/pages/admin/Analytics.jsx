@@ -1,9 +1,9 @@
 // src/pages/Analytics.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, collectionGroup, onSnapshot, query, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, auth, toDate } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { signOut } from 'firebase/auth';
 import { 
   DollarSign, TrendingUp, TrendingDown, Users, UserCheck, UserX, 
@@ -75,50 +75,71 @@ export default function Analytics() {
     return () => unsub();
   }, []);
 
-  // Fetch all payments
+  // Fetch all payments dal tenant corrente
   useEffect(() => {
-    const unsub = onSnapshot(query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'desc')), 
-      async (snap) => {
+    const loadPayments = async () => {
+      try {
+        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
         const paymentsList = [];
-        for (const docSnap of snap.docs) {
-          const paymentData = docSnap.data();
-          const clientId = docSnap.ref.parent.parent.id;
-          const clientDoc = await getDoc(getTenantDoc(db, 'clients', clientId));
-          
-          if (clientDoc.exists() && !clientDoc.data().isOldClient && !paymentData.isPast) {
-            paymentsList.push({
-              id: docSnap.id,
-              clientId,
-              clientName: clientDoc.data().name || 'Cliente',
-              ...paymentData
+        
+        for (const clientDoc of clientsSnap.docs) {
+          const clientData = clientDoc.data();
+          if (!clientData.isOldClient) {
+            const paymentsSnap = await getDocs(
+              query(getTenantSubcollection(db, 'clients', clientDoc.id, 'payments'), orderBy('paymentDate', 'desc'))
+            );
+            
+            paymentsSnap.docs.forEach(paymentDoc => {
+              const paymentData = paymentDoc.data();
+              if (!paymentData.isPast) {
+                paymentsList.push({
+                  id: paymentDoc.id,
+                  clientId: clientDoc.id,
+                  clientName: clientData.name || 'Cliente',
+                  ...paymentData
+                });
+              }
             });
           }
         }
+        
         setPayments(paymentsList);
+      } catch (err) {
+        console.error('Errore caricamento payments:', err);
       }
-    );
-    return () => unsub();
+    };
+    loadPayments();
   }, []);
 
-  // Fetch all checks
+  // Fetch all checks dal tenant corrente
   useEffect(() => {
-    const unsub = onSnapshot(query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc')),
-      async (snap) => {
+    const loadChecks = async () => {
+      try {
+        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
         const checksList = [];
-        for (const docSnap of snap.docs) {
-          const checkData = docSnap.data();
-          const clientId = docSnap.ref.parent.parent.id;
-          checksList.push({
-            id: docSnap.id,
-            clientId,
-            createdAt: checkData.createdAt
+        
+        for (const clientDoc of clientsSnap.docs) {
+          const checksSnap = await getDocs(
+            query(getTenantSubcollection(db, 'clients', clientDoc.id, 'checks'), orderBy('createdAt', 'desc'))
+          );
+          
+          checksSnap.docs.forEach(checkDoc => {
+            checksList.push({
+              id: checkDoc.id,
+              clientId: clientDoc.id,
+              createdAt: checkDoc.data().createdAt
+            });
           });
         }
+        
         setChecks(checksList);
         setLoading(false);
+      } catch (err) {
+        console.error('Errore caricamento checks:', err);
+        setLoading(false);
       }
-    );
-    return () => unsub();
+    };
+    loadChecks();
   }, []);
 
   // Fetch messages for response time

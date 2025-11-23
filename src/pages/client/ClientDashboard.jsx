@@ -3,7 +3,7 @@ import { getAuth, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase.js';
 import { useNavigate, Link } from 'react-router-dom';
-import { getTenantDoc } from '../../config/tenant';
+import { getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
@@ -118,7 +118,7 @@ const ClientDashboard = () => {
 
     // Listener per check-in
     const fetchLastCheck = () => {
-      const checksCollectionRef = collection(db, `clients/${user.uid}/checks`);
+      const checksCollectionRef = getTenantSubcollection(db, 'clients', user.uid, 'checks');
       const q = query(checksCollectionRef, orderBy('createdAt', 'desc'));
       let snapshotCount = 0;
       const unsubscribe = onSnapshot(q, (snapshot) => {

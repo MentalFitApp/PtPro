@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { db } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc, serverTimestamp, writeBatch, getDoc } from 'firebase/firestore';
 import { DollarSign, Plus, Trash2, Calendar, X, AlertTriangle, RotateCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -196,7 +196,8 @@ export default function PaymentManager({ clientId }) {
   const handleDeletePayment = async () => {
     if (!paymentToDelete) return;
     try {
-      const paymentRef = getTenantDoc(db, 'clients', clientId, 'payments', paymentToDelete.id);
+      const paymentsCollectionRef = getTenantSubcollection(db, 'clients', clientId, 'payments');
+      const paymentRef = doc(paymentsCollectionRef.firestore, paymentsCollectionRef.path, paymentToDelete.id);
       await deleteDoc(paymentRef);
       showNotification('Pagamento eliminato con successo!', 'success');
     } catch (error) {

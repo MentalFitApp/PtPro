@@ -64,7 +64,7 @@ const SchedaAllenamento = () => {
       }
 
       // Load available exercises
-      const exercisesRef = collection(db, 'esercizi');
+      const exercisesRef = getTenantCollection(db, 'esercizi');
       const exercisesSnap = await getDocs(exercisesRef);
       const exercisesData = exercisesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setAvailableExercises(exercisesData);

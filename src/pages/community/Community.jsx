@@ -15,7 +15,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { db, auth } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import {
   collection, query, where, orderBy, limit, getDocs,
   addDoc, serverTimestamp, doc, onSnapshot, updateDoc, setDoc,

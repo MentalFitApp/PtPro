@@ -5,7 +5,7 @@ import ListaClientiAllenamento from '../../components/ListaClientiAllenamento';
 import ListaAlimenti from '../../components/ListaAlimenti';
 import ListaEsercizi from '../../components/ListaEsercizi';
 import { db, toDate } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { collection, getDocs } from 'firebase/firestore';
 
 const AlimentazioneAllenamento = () => {

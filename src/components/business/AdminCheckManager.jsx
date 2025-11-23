@@ -56,7 +56,7 @@ const AdminCheckManager = ({ clientId }) => {
     const [notification, setNotification] = useState({ message: '', type: '' });
 
     useEffect(() => {
-        const checksCollectionRef = collection(db, `clients/${clientId}/checks`);
+        const checksCollectionRef = getTenantSubcollection(db, 'clients', clientId, 'checks');
         const q = query(checksCollectionRef, orderBy('createdAt', 'desc'));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const checksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -89,7 +89,8 @@ const AdminCheckManager = ({ clientId }) => {
         if (!selectedCheck) return;
         setIsSaving(true);
         try {
-            const checkDocRef = getTenantDoc(db, 'clients', clientId, 'checks', selectedCheck.id);
+            const checksCollectionRef = getTenantSubcollection(db, 'clients', clientId, 'checks');
+            const checkDocRef = doc(checksCollectionRef.firestore, checksCollectionRef.path, selectedCheck.id);
             await updateDoc(checkDocRef, {
                 coachFeedback: feedbackText,
                 feedbackUpdatedAt: serverTimestamp()

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, collectionGroup, doc, getDoc, query, onSnapshot, orderBy, where } from 'firebase/firestore';
+import { collection, doc, getDoc, query, onSnapshot, orderBy, where, getDocs } from 'firebase/firestore';
 import { auth, db, toDate } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { signOut } from 'firebase/auth';
 import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, PlusCircle, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -148,48 +148,60 @@ export default function CoachDashboard() {
   useEffect(() => {
     if (!auth.currentUser) return;
 
-    // Check-in
-    const checksQuery = query(collectionGroup(db, 'checks'), orderBy('createdAt', 'desc'));
-    const unsubChecks = onSnapshot(checksQuery, async (snap) => {
+    // Check-in - carica dal tenant corrente
+    const loadChecksActivity = async () => {
       try {
+        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
         const items = [];
-        for (const checkDoc of snap.docs) {
-          const clientId = checkDoc.ref.parent.parent.id;
-          const clientDoc = await getDoc(getTenantDoc(db, 'clients', clientId));
-          items.push({
-            type: 'new_check',
-            clientId,
-            clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
-            description: 'Ha inviato un nuovo check-in',
-            date: checkDoc.data().createdAt
+        
+        for (const clientDoc of clientsSnap.docs) {
+          const checksSnap = await getDocs(
+            query(getTenantSubcollection(db, 'clients', clientDoc.id, 'checks'), orderBy('createdAt', 'desc'))
+          );
+          
+          checksSnap.docs.forEach(checkDoc => {
+            items.push({
+              type: 'new_check',
+              clientId: clientDoc.id,
+              clientName: clientDoc.data().name || 'Cliente',
+              description: 'Ha inviato un nuovo check-in',
+              date: checkDoc.data().createdAt
+            });
           });
         }
+        
         setActivityFeed(prev => {
-          // rimuovi check-in duplicati (clientId e data uguale)
           const all = [...items, ...prev.filter(it => it.type !== 'new_check')];
           return all.sort((a, b) => toDate(b.date) - toDate(a.date)).slice(0, 30);
         });
       } catch (err) {
         setError("Errore nel caricamento dei check.");
       }
-    });
+    };
+    loadChecksActivity();
 
-    // Anamnesi
-    const anamnesiQuery = query(collectionGroup(db, 'anamnesi'), orderBy('submittedAt', 'desc'));
-    const unsubAnamnesi = onSnapshot(anamnesiQuery, async (snap) => {
+    // Anamnesi - carica dal tenant corrente
+    const loadAnamnesiActivity = async () => {
       try {
+        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
         const items = [];
-        for (const anamnesiDoc of snap.docs) {
-          const clientId = anamnesiDoc.ref.parent.parent.id;
-          const clientDoc = await getDoc(getTenantDoc(db, 'clients', clientId));
-          items.push({
-            type: 'new_anamnesi',
-            clientId,
-            clientName: clientDoc.exists() ? clientDoc.data().name || 'Cliente' : 'Cliente',
-            description: 'Ha compilato l\'anamnesi iniziale',
-            date: anamnesiDoc.data().submittedAt
+        
+        for (const clientDoc of clientsSnap.docs) {
+          const anamnesiSnap = await getDocs(
+            getTenantSubcollection(db, 'clients', clientDoc.id, 'anamnesi')
+          );
+          
+          anamnesiSnap.docs.forEach(anamnesiDoc => {
+            items.push({
+              type: 'new_anamnesi',
+              clientId: clientDoc.id,
+              clientName: clientDoc.data().name || 'Cliente',
+              description: 'Ha compilato l\'anamnesi iniziale',
+              date: anamnesiDoc.data().submittedAt
+            });
           });
         }
+        
         setActivityFeed(prev => {
           const all = [...items, ...prev.filter(it => it.type !== 'new_anamnesi')];
           return all.sort((a, b) => toDate(b.date) - toDate(a.date)).slice(0, 30);
@@ -197,7 +209,8 @@ export default function CoachDashboard() {
       } catch (err) {
         setError("Errore nel caricamento delle anamnesi.");
       }
-    });
+    };
+    loadAnamnesiActivity();
 
     // Chat (messaggi)
     const chatsQuery = query(

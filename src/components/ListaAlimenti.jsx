@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Plus, Search, Edit2, Trash2, X, Save } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { getTenantSubcollection } from '../config/tenant';
 
 const CATEGORIES = [
   'Antipasti',
@@ -44,7 +45,7 @@ const ListaAlimenti = ({ onBack }) => {
     if (!selectedCategory) return;
     setLoading(true);
     try {
-      const foodsRef = collection(db, 'alimenti', selectedCategory, 'items');
+      const foodsRef = getTenantSubcollection(db, 'alimenti', selectedCategory, 'items');
       const snapshot = await getDocs(foodsRef);
       const foodsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setFoods(foodsData);
@@ -67,7 +68,7 @@ const ListaAlimenti = ({ onBack }) => {
     }
 
     try {
-      const foodsRef = collection(db, 'alimenti', selectedCategory, 'items');
+      const foodsRef = getTenantSubcollection(db, 'alimenti', selectedCategory, 'items');
       await addDoc(foodsRef, {
         nome: formData.nome,
         kcal: parseFloat(formData.kcal),
@@ -92,7 +93,7 @@ const ListaAlimenti = ({ onBack }) => {
     }
 
     try {
-      const foodRef = doc(db, 'alimenti', selectedCategory, 'items', editingFood.id);
+      const foodRef = doc(getTenantSubcollection(db, 'alimenti', selectedCategory, 'items'), editingFood.id);
       await updateDoc(foodRef, {
         nome: formData.nome,
         kcal: parseFloat(formData.kcal),
@@ -114,7 +115,7 @@ const ListaAlimenti = ({ onBack }) => {
     if (!confirm('Sei sicuro di voler eliminare questo alimento?')) return;
 
     try {
-      const foodRef = doc(db, 'alimenti', selectedCategory, 'items', foodId);
+      const foodRef = doc(getTenantSubcollection(db, 'alimenti', selectedCategory, 'items'), foodId);
       await deleteDoc(foodRef);
       loadFoods();
     } catch (error) {

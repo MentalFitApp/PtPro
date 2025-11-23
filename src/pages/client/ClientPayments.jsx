@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase.js';
+import { getTenantSubcollection } from '../../config/tenant';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, DollarSign, History } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -34,7 +35,7 @@ const ClientPayments = () => {
       navigate('/login');
       return;
     }
-    const paymentsCollectionRef = collection(db, `clients/${user.uid}/payments`);
+    const paymentsCollectionRef = getTenantSubcollection(db, 'clients', user.uid, 'payments');
     const q = query(paymentsCollectionRef, orderBy('paymentDate', 'desc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {

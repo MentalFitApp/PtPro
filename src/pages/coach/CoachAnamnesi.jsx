@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, query, onSnapshot, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, toDate, auth } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { FileText, Calendar, ArrowLeft, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -61,7 +61,8 @@ export default function CoachAnamnesi() {
       // --- BATCH ANAMNESI ---
       const anamnesiPromises = clientIds.map(async (clientId) => {
         const clientName = snap.docs.find(d => d.id === clientId).data().name || 'Cliente';
-        const anamnesiRef = getTenantDoc(db, 'clients', clientId, 'anamnesi', 'initial');
+        const anamnesiCollectionRef = getTenantSubcollection(db, 'clients', clientId, 'anamnesi');
+        const anamnesiRef = doc(anamnesiCollectionRef.firestore, anamnesiCollectionRef.path, 'initial');
         const anamnesiSnap = await getDoc(anamnesiRef);
         if (anamnesiSnap.exists()) {
           const data = anamnesiSnap.data();

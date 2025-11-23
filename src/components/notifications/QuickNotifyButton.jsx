@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { db, auth } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Bell, Send, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';

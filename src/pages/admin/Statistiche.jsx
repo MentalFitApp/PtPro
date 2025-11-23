@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -91,7 +91,7 @@ export default function Statistiche() {
     end.setHours(23, 59, 59, 999);
 
     const qSales = query(getTenantCollection(db, 'salesReports'), where('date', '>=', startDate), where('date', '<=', endDate));
-    const qSetting = query(collection(db, 'settingReports'), where('date', '>=', startDate), where('date', '<=', endDate));
+    const qSetting = query(getTenantCollection(db, 'settingReports'), where('date', '>=', startDate), where('date', '<=', endDate));
     const qLeads = query(getTenantCollection(db, 'leads'));
 
     const unsubs = [

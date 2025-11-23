@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase.js';
+import { getTenantSubcollection } from '../../config/tenant';
 import { ArrowLeft, FilePenLine, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -53,7 +54,8 @@ const AdminAnamnesi = () => {
         setLoading(false);
         return;
       }
-      const anamnesiRef = doc(db, `clients/${uid}/anamnesi`, 'initial');
+      const anamnesiCollectionRef = getTenantSubcollection(db, 'clients', uid, 'anamnesi');
+      const anamnesiRef = doc(anamnesiCollectionRef.firestore, anamnesiCollectionRef.path, 'initial');
       const docSnap = await getDoc(anamnesiRef);
       if (docSnap.exists()) {
         setAnamnesiData(docSnap.data());

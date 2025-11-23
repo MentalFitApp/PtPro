@@ -3,7 +3,7 @@ import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, toDate, auth } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { Users, ArrowLeft, Calendar, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -227,7 +227,8 @@ export default function CoachClientDetail() {
         }
         setClient({ id: clientId, ...clientDoc.data() });
 
-        const anamnesiRef = getTenantDoc(db, 'clients', clientId, 'anamnesi', 'initial');
+        const anamnesiCollectionRef = getTenantSubcollection(db, 'clients', clientId, 'anamnesi');
+        const anamnesiRef = doc(anamnesiCollectionRef.firestore, anamnesiCollectionRef.path, 'initial');
         const anamnesiDoc = await getDoc(anamnesiRef);
         if (anamnesiDoc.exists()) {
           let aData = anamnesiDoc.data();

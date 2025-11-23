@@ -5,6 +5,7 @@ import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getMessaging, isSupported } from "firebase/messaging";
 import { getFunctions } from "firebase/functions";
+import { getTenantDoc } from "./config/tenant";
 
 // CONFIGURAZIONE CON FALLBACK → così il build Vercel NON crasha mai
 const firebaseConfig = {
@@ -70,7 +71,7 @@ export const calcolaStatoPercorso = (dataScadenza) => {
 
 export const updateStatoPercorso = async (userId) => {
   try {
-    const clientRef = doc(db, "clients", userId);
+    const clientRef = getTenantDoc(db, "clients", userId);
     const clientSnap = await getDoc(clientRef);
     if (!clientSnap.exists()) return;
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { collection, query, where, onSnapshot, updateDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getMessaging, getToken } from 'firebase/messaging';
 import { Bell, BellOff, X, Check } from 'lucide-react';

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
-import { collection, collectionGroup, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { collection, onSnapshot, query, orderBy, limit, getDocs } from 'firebase/firestore';
 // --- 1. NUOVE ICONE DA LUCIDE-REACT ---
 import { UserPlus, FileText, CheckSquare, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -91,27 +91,41 @@ export default function Updates() {
   useEffect(() => {
     if (Object.keys(clientNameMap).length === 0) return;
 
-    const createListener = (collectionName, setState) => {
-        const q = query(collectionGroup(db, collectionName), orderBy('createdAt', 'desc'), limit(30));
-        return onSnapshot(q, (snap) => {
-            const items = snap.docs.map(doc => {
-                const clientId = doc.ref.path.split('/')[1];
-                return { id: doc.id, clientId, clientName: clientNameMap[clientId], date: doc.data().createdAt };
-            }).filter(item => item.clientName);
-            setState(items.slice(0, 10));
-        }, (error) => {
-            console.error(`Errore collectionGroup ${collectionName}:`, error);
-            console.error('Se vedi "index", crea l\'indice composito su Firebase Console');
-        });
+    const loadUpdates = async () => {
+      try {
+        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+        const checksItems = [];
+        const anamnesiItems = [];
+        
+        for (const clientDoc of clientsSnap.docs) {
+          const clientName = clientNameMap[clientDoc.id];
+          if (!clientName) continue;
+          
+          // Checks
+          const checksSnap = await getDocs(
+            query(getTenantSubcollection(db, 'clients', clientDoc.id, 'checks'), orderBy('createdAt', 'desc'), limit(10))
+          );
+          checksSnap.docs.forEach(checkDoc => {
+            checksItems.push({ id: checkDoc.id, clientId: clientDoc.id, clientName, date: checkDoc.data().createdAt });
+          });
+          
+          // Anamnesi
+          const anamnesiSnap = await getDocs(
+            getTenantSubcollection(db, 'clients', clientDoc.id, 'anamnesi')
+          );
+          anamnesiSnap.docs.forEach(anamnesiDoc => {
+            anamnesiItems.push({ id: anamnesiDoc.id, clientId: clientDoc.id, clientName, date: anamnesiDoc.data().createdAt });
+          });
+        }
+        
+        setNewChecks(checksItems.sort((a, b) => toDate(b.date) - toDate(a.date)).slice(0, 10));
+        setNewAnamnesis(anamnesiItems.sort((a, b) => toDate(b.date) - toDate(a.date)).slice(0, 10));
+      } catch (error) {
+        console.error('Errore caricamento updates:', error);
+      }
     };
 
-    const unsubChecks = createListener('checks', setNewChecks);
-    const unsubAnamnesis = createListener('anamnesi', setNewAnamnesis);
-
-    return () => {
-      unsubChecks();
-      unsubAnamnesis();
-    };
+    loadUpdates();
   }, [clientNameMap]);
   
   const newClients = useMemo(() => {

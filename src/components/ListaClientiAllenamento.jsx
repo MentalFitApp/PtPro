@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, CheckCircle, AlertCircle, XCircle, UserPlus, Clock, AlertTriangle, X, ExternalLink } from 'lucide-react';
-import { db, toDate } from '../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../config/tenant';;
+import { db, toDate } from '../firebase';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../config/tenant';
 import { collection, getDocs } from 'firebase/firestore';
 
 const STATUS_COLORS = {

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, getDoc, doc, deleteDoc } from 'firebase/firestore';
-import { db, toDate, auth } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { onSnapshot } from 'firebase/firestore';
+import { db, toDate, auth } from '../../firebase';
+import { getTenantCollection } from '../../config/tenant';
+import { getClientAnamnesi, deleteClient } from '../../services/clientService';
 import { signOut } from 'firebase/auth';
 import {
   Search, ArrowUp, ArrowDown, CheckCircle, XCircle, Clock,
@@ -104,12 +105,12 @@ export default function CoachClients() {
   const handleDelete = async () => {
     if (!clientToDelete) return;
     try {
-      await deleteDoc(getTenantDoc(db, 'clients', clientToDelete.id));
+      await deleteClient(db, clientToDelete.id);
       setClients(prev => prev.filter(c => c.id !== clientToDelete.id));
       showNotification('Cliente eliminato', 'success');
     } catch (error) {
       console.error('Errore eliminazione:', error);
-      showNotification('Errore eliminazione', 'error');
+      showNotification(error.message || 'Errore eliminazione', 'error');
     } finally {
       setClientToDelete(null);
     }
@@ -133,20 +134,27 @@ export default function CoachClients() {
     const unsub = onSnapshot(q, async snap => {
       try {
         const clientList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // Anamnesi status
-        const anamnesiPromises = clientList.map(client =>
-          getDoc(doc(db, `clients/${client.id}/anamnesi`, 'initial')).catch(() => ({ exists: () => false }))
+        
+        // Carica stato anamnesi per ogni client usando il service
+        const anamnesiPromises = clientList.map(client => 
+          getClientAnamnesi(db, client.id, 1)
+            .then(anamnesi => ({ clientId: client.id, hasAnamnesi: anamnesi.length > 0 }))
+            .catch(() => ({ clientId: client.id, hasAnamnesi: false }))
         );
+        
         const anamnesiResults = await Promise.all(anamnesiPromises);
         const anamnesiStatusTemp = {};
-        clientList.forEach((client, i) => { anamnesiStatusTemp[client.id] = anamnesiResults[i].exists(); });
+        anamnesiResults.forEach(result => {
+          anamnesiStatusTemp[result.clientId] = result.hasAnamnesi;
+        });
+        
         setAnamnesiStatus(anamnesiStatusTemp);
         setClients(clientList);
         setLoading(false);
       } catch (error) {
         console.error('Errore:', error);
         setLoading(false);
-        showNotification('Errore caricamento', 'error');
+        showNotification(error.message || 'Errore caricamento', 'error');
       }
     });
     return () => unsub();

@@ -8,7 +8,7 @@ import {
   setDoc,
   serverTimestamp,
   query,
-  collectionGroup,
+
   orderBy,
   getDoc,
   deleteDoc,
@@ -49,26 +49,35 @@ const Dipendenti = () => {
 
   // === INCASSO MENSILE ===
   useEffect(() => {
-    const currentMonthStart = startOfMonth(new Date());
-    const paymentsQuery = query(collectionGroup(db, 'payments'), orderBy('paymentDate', 'desc'));
-    const unsub = onSnapshot(paymentsQuery, async (snap) => {
-      let income = 0;
-      for (const docSnap of snap.docs) {
-        const paymentDate = docSnap.data().paymentDate?.toDate();
-        if (paymentDate && paymentDate >= currentMonthStart) {
-          const clientDocRef = docSnap.ref.parent.parent;
-          const clientDocSnap = await getDoc(clientDocRef);
-          if (clientDocSnap.exists()) {
-            const clientData = clientDocSnap.data();
-            if (!clientData.isOldClient && !docSnap.data().isPast) {
-              income += docSnap.data().amount || 0;
-            }
+    const loadIncassoMensile = async () => {
+      try {
+        const currentMonthStart = startOfMonth(new Date());
+        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+        let income = 0;
+        
+        for (const clientDoc of clientsSnap.docs) {
+          const clientData = clientDoc.data();
+          if (!clientData.isOldClient) {
+            const paymentsSnap = await getDocs(
+              query(getTenantSubcollection(db, 'clients', clientDoc.id, 'payments'), orderBy('paymentDate', 'desc'))
+            );
+            
+            paymentsSnap.docs.forEach(paymentDoc => {
+              const paymentData = paymentDoc.data();
+              const paymentDate = paymentData.paymentDate?.toDate();
+              if (paymentDate && paymentDate >= currentMonthStart && !paymentData.isPast) {
+                income += paymentData.amount || 0;
+              }
+            });
           }
         }
+        
+        setIncassoMensile(income);
+      } catch (err) {
+        console.error('Errore caricamento incasso mensile:', err);
       }
-      setIncassoMensile(income);
-    });
-    return () => unsub();
+    };
+    loadIncassoMensile();
   }, []);
 
   // === DIPENDENTI & PAGAMENTI ===

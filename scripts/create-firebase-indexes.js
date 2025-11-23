@@ -1,99 +1,142 @@
-// Script per creare gli index Firebase necessari per la Community
+// Script per creare gli index Firebase necessari
 // Questo script NON crea effettivamente gli index (devono essere creati da console Firebase)
 // ma fornisce le istruzioni dettagliate per ciascun index
 
 const indexes = [
+  // COMMUNITY
   {
-    collection: 'community_posts',
+    collection: 'tenants/{tenantId}/community_posts',
     name: 'pinned_posts',
     fields: [
       { field: 'pinned', order: 'ASCENDING' },
       { field: 'pinnedAt', order: 'DESCENDING' },
       { field: 'timestamp', order: 'DESCENDING' }
     ],
-    description: 'Per mostrare i post pinnati prima, ordinati per data di pinning e poi per data creazione'
+    description: 'Post pinnati ordinati per data pinning e creazione'
   },
   {
-    collection: 'community_posts', 
+    collection: 'tenants/{tenantId}/community_posts', 
     name: 'popular_posts',
     fields: [
       { field: 'likes', order: 'DESCENDING' },
       { field: 'timestamp', order: 'DESCENDING' }
     ],
-    description: 'Per ordinare i post per popolarità (like) e data'
+    description: 'Post ordinati per popolarità (like) e data'
+  },
+  
+  // CLIENTS
+  {
+    collection: 'tenants/{tenantId}/clients',
+    name: 'active_clients',
+    fields: [
+      { field: 'isActive', order: 'ASCENDING' },
+      { field: 'createdAt', order: 'DESCENDING' }
+    ],
+    description: 'Clients attivi ordinati per data creazione'
   },
   {
-    collection: 'users',
-    name: 'users_by_level',
+    collection: 'tenants/{tenantId}/clients/{clientId}/checks',
+    name: 'checks_by_date',
     fields: [
-      { field: 'level', order: 'DESCENDING' }
+      { field: 'createdAt', order: 'DESCENDING' }
     ],
-    description: 'Per mostrare i membri ordinati per livello (dal più alto al più basso)'
+    description: 'Check-in ordinati per data (più recenti prima)'
   },
   {
-    collection: 'courses',
-    name: 'courses_by_level',
+    collection: 'tenants/{tenantId}/clients/{clientId}/payments',
+    name: 'payments_by_date',
     fields: [
-      { field: 'level', order: 'ASCENDING' }
+      { field: 'paymentDate', order: 'DESCENDING' }
     ],
-    description: 'Per mostrare i corsi ordinati per livello richiesto (dal più basso al più alto)'
+    description: 'Pagamenti ordinati per data'
+  },
+  
+  // LEADS
+  {
+    collection: 'tenants/{tenantId}/leads',
+    name: 'leads_by_status_date',
+    fields: [
+      { field: 'status', order: 'ASCENDING' },
+      { field: 'createdAt', order: 'DESCENDING' }
+    ],
+    description: 'Leads filtrati per stato e ordinati per data'
+  },
+  {
+    collection: 'tenants/{tenantId}/leads',
+    name: 'leads_by_date_range',
+    fields: [
+      { field: 'createdAt', order: 'ASCENDING' },
+      { field: 'createdAt', order: 'DESCENDING' }
+    ],
+    description: 'Leads in un range di date'
+  },
+  
+  // CALENDAR
+  {
+    collection: 'tenants/{tenantId}/calendarEvents',
+    name: 'events_by_date',
+    fields: [
+      { field: 'date', order: 'ASCENDING' },
+      { field: 'startTime', order: 'ASCENDING' }
+    ],
+    description: 'Eventi calendario ordinati per data e ora'
+  },
+  
+  // CHATS
+  {
+    collection: 'tenants/{tenantId}/chats',
+    name: 'chats_by_participant',
+    fields: [
+      { field: 'participants', order: 'ASCENDING' },
+      { field: 'lastUpdate', order: 'DESCENDING' }
+    ],
+    description: 'Chat di un utente ordinate per ultimo aggiornamento'
+  },
+  {
+    collection: 'tenants/{tenantId}/chats/{chatId}/messages',
+    name: 'messages_by_date',
+    fields: [
+      { field: 'timestamp', order: 'ASCENDING' }
+    ],
+    description: 'Messaggi ordinati cronologicamente'
   }
 ];
 
-console.log('🔥 GUIDA INDEX FIREBASE - VERSIONE AGGIORNATA');
-console.log('=' .repeat(60));
+console.log('🔥 GUIDA INDEX FIREBASE - MULTI-TENANT');
+console.log('=' .repeat(80));
 console.log('');
-console.log('❗ IMPORTANTE: Firebase Console richiede MINIMO 2 campi per index compositi');
-console.log('   Gli index su singolo campo vengono creati automaticamente da Firebase');
-console.log('');
-
-console.log('📋 INDEX DA CREARE MANUALMENTE (solo compositi):');
+console.log('⚠️  IMPORTANTE: Questi index devono essere creati manualmente nella Firebase Console');
+console.log('   Gli index su singolo campo sono automatici, servono solo i compositi (2+ campi)');
 console.log('');
 
-// Solo gli index compositi per community_posts
 const compositeIndexes = indexes.filter(idx => idx.fields.length > 1);
 
+console.log(`📋 INDEX COMPOSITI DA CREARE (${compositeIndexes.length} totali):\n`);
+
 compositeIndexes.forEach((index, i) => {
-  console.log(`${i + 1}. Index: ${index.name}`);
+  console.log(`${i + 1}. ${index.name.toUpperCase()}`);
   console.log(`   Collection: ${index.collection}`);
   console.log(`   Descrizione: ${index.description}`);
   console.log('   Campi:');
   index.fields.forEach(field => {
-    console.log(`     - ${field.field} (${field.order})`);
+    console.log(`     • ${field.field} → ${field.order}`);
   });
   console.log('');
-  console.log('   🔗 URL creazione:');
-  console.log(`   https://console.firebase.google.com/u/1/project/biondo-fitness-coach/firestore/databases/-default-/indexes`);
-  console.log('');
-  console.log('   📋 Istruzioni:');
-  console.log('   1. Clicca "Crea Index"');
-  console.log(`   2. Collection ID: ${index.collection}`);
-  console.log('   3. Aggiungi campi:');
-  index.fields.forEach(field => {
-    console.log(`      - Campo: ${field.field}, Ordine: ${field.order}`);
-  });
-  console.log('   4. Clicca "Crea"');
-  console.log('');
-  console.log('-'.repeat(50));
 });
 
-console.log('🤖 INDEX SU SINGOLO CAMPO (creati automaticamente):');
-console.log('   - users.level (descending) → creato automaticamente alla prima query');
-console.log('   - courses.level (ascending) → creato automaticamente alla prima query');
-console.log('   - community_posts.pinned (descending) → creato automaticamente');
+console.log('=' .repeat(80));
+console.log('\n📝 ISTRUZIONI VELOCI:\n');
+console.log('1. Apri: https://console.firebase.google.com/project/biondo-fitness-coach/firestore/indexes');
+console.log('2. Clicca "Create Index"');
+console.log('3. Per ogni index sopra:');
+console.log('   - Inserisci Collection path');
+console.log('   - Aggiungi i campi specificati con il loro ordine');
+console.log('   - Query scope: Collection');
+console.log('   - Clicca "Create"');
 console.log('');
-
+console.log('⏱️  Gli index richiedono 5-10 minuti per essere creati');
+console.log('✅ Verifica che siano tutti "Enabled" prima di usare l\'app');
 console.log('');
-console.log('⚠️  IMPORTANTE:');
-console.log('- Crea SOLO gli index compositi (2+ campi) - i singoli sono automatici');
-console.log('- Gli index possono richiedere fino a 10 minuti per essere creati');
-console.log('- Le query falliranno fino a quando gli index non sono pronti');
-console.log('- Puoi monitorare lo stato degli index nella console Firebase');
+console.log('💡 TIP: Firebase ti mostrerà un link per creare l\'index quando una query fallisce');
 console.log('');
-console.log('🚀 Dopo aver creato gli index compositi, esegui:');
-console.log('node scripts/populate-firebase.js');
-console.log('');
-console.log('📱 Poi testa su: http://localhost:5173/community');
-console.log('');
-console.log('🔗 Link diretto alla console Firebase:');
-console.log('https://console.firebase.google.com/u/1/project/biondo-fitness-coach/firestore/databases/-default-/indexes');
+console.log('=' .repeat(80));

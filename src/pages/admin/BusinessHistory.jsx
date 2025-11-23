@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, collectionGroup, query, where, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query, where, getDocs } from "firebase/firestore";
 import { db, toDate } from "../../firebase"
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { ArrowLeft, BarChart3, Users, DollarSign, RefreshCw, Plus } from 'lucide-react'; // Aggiunto Plus
 import { motion } from "framer-motion";
 
@@ -46,15 +46,27 @@ export default function BusinessHistory() {
       const renewals = clientsList.filter(c => c.isOldClient).length;
       const newClients = clientsList.length - renewals;
       
-      const paymentsQuery = query(collectionGroup(db, 'payments'), where('paymentDate', '>=', startMonth), where('paymentDate', '<', endMonth));
-      const paymentsSnap = await getDocs(paymentsQuery);
-      const income = paymentsSnap.docs
-        .filter(doc => {
-          const clientDocRef = doc.ref.parent.parent;
-          const clientDoc = clientDocRef.data();
-          return !clientDoc.isOldClient || !doc.data().isPast;
-        })
-        .reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+      // Carica payments dal tenant corrente
+      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+      let income = 0;
+      
+      for (const clientDoc of clientsSnap.docs) {
+        const clientData = clientDoc.data();
+        const paymentsSnap = await getDocs(
+          query(
+            getTenantSubcollection(db, 'clients', clientDoc.id, 'payments'),
+            where('paymentDate', '>=', startMonth),
+            where('paymentDate', '<', endMonth)
+          )
+        );
+        
+        paymentsSnap.docs.forEach(paymentDoc => {
+          const paymentData = paymentDoc.data();
+          if (!clientData.isOldClient || !paymentData.isPast) {
+            income += paymentData.amount || 0;
+          }
+        });
+      }
 
       setMonthStats({
         clients: clientsList.length,

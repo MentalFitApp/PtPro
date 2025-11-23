@@ -1,28 +1,23 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, query, where, addDoc, limit } from 'firebase/firestore';
+const admin = require('firebase-admin');
 
-const firebaseConfig = {
-  apiKey: "AIzaSyC9RJwIQnc0eQ15vLkVZ-Zp_2Bi1v8-E60",
-  authDomain: "biondo-fitness-coach.firebaseapp.com",
-  projectId: "biondo-fitness-coach",
-  storageBucket: "biondo-fitness-coach.firebasestorage.app",
-  messagingSenderId: "699748663641",
-  appId: "1:699748663641:web:bd9c53e1e5ca5a2d2cbae7"
-};
+// Usa le credenziali di default di Firebase CLI
+admin.initializeApp({
+  projectId: 'biondo-fitness-coach'
+});
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = admin.firestore();
 
 async function syncLeadsToCalendar() {
   try {
     console.log('🔄 Inizio sincronizzazione leads → calendario...\n');
 
     // Recupera tutti i leads
-    const leadsSnapshot = await getDocs(collection(db, 'leads'));
+    const leadsSnapshot = await db.collection('leads').get();
     console.log(`📋 Trovati ${leadsSnapshot.size} leads totali`);
 
     let created = 0;
     let skipped = 0;
+    let errors = 0;
 
     for (const leadDoc of leadsSnapshot.docs) {
       const lead = leadDoc.data();
@@ -36,12 +31,10 @@ async function syncLeadsToCalendar() {
       }
 
       // Verifica se esiste già un evento calendario per questo lead
-      const q = query(
-        collection(db, 'calendarEvents'),
-        where('leadId', '==', leadId),
-        limit(1)
-      );
-      const existingEvent = await getDocs(q);
+      const existingEvent = await db.collection('calendarEvents')
+        .where('leadId', '==', leadId)
+        .limit(1)
+        .get();
 
       if (!existingEvent.empty) {
         console.log(`⏭️  Lead ${lead.name} già presente nel calendario`);
@@ -50,7 +43,7 @@ async function syncLeadsToCalendar() {
       }
 
       // Crea evento calendario
-      await addDoc(collection(db, 'calendarEvents'), {
+      await db.collection('calendarEvents').add({
         title: `📞 ${lead.name}`,
         date: lead.dataPrenotazione,
         time: lead.oraPrenotazione,
@@ -76,10 +69,13 @@ async function syncLeadsToCalendar() {
     console.log('📊 RIEPILOGO SINCRONIZZAZIONE:');
     console.log(`   ✅ Eventi creati: ${created}`);
     console.log(`   ⏭️  Già esistenti: ${skipped}`);
+    console.log(`   ❌ Errori: ${errors}`);
     console.log('='.repeat(50));
 
   } catch (error) {
     console.error('❌ Errore durante la sincronizzazione:', error);
+  } finally {
+    process.exit();
   }
 }
 

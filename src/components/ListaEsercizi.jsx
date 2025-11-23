@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Edit2, Trash2, X, Save, Filter, Video, Upload } from 'lucide-react';
 import { db, auth } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, or } from 'firebase/firestore';
+import { getTenantCollection, getTenantDoc } from '../config/tenant';
 import { uploadToR2 } from '../cloudflareStorage';
 
 const ATTREZZI = [
@@ -67,7 +68,7 @@ const ListaEsercizi = ({ onBack }) => {
   const loadExercises = async () => {
     setLoading(true);
     try {
-      const exercisesRef = collection(db, 'esercizi');
+      const exercisesRef = getTenantCollection(db, 'esercizi');
       const currentUserId = auth.currentUser?.uid;
       
       // Query per caricare esercizi globali (categoria: 'maurizio') E esercizi personali dell'utente
@@ -139,7 +140,7 @@ const ListaEsercizi = ({ onBack }) => {
         }
       }
 
-      const exercisesRef = collection(db, 'esercizi');
+      const exercisesRef = getTenantCollection(db, 'esercizi');
       const { isGlobal, ...exerciseData } = formData;
       await addDoc(exercisesRef, {
         ...exerciseData,
@@ -191,7 +192,7 @@ const ListaEsercizi = ({ onBack }) => {
         }
       }
 
-      const exerciseRef = doc(db, 'esercizi', editingExercise.id);
+      const exerciseRef = getTenantDoc(db, 'esercizi', editingExercise.id);
       const { isGlobal, ...exerciseData } = formData;
       await updateDoc(exerciseRef, {
         ...exerciseData,
@@ -216,7 +217,7 @@ const ListaEsercizi = ({ onBack }) => {
     if (!confirm('Sei sicuro di voler eliminare questo esercizio?')) return;
 
     try {
-      const exerciseRef = doc(db, 'esercizi', exerciseId);
+      const exerciseRef = getTenantDoc(db, 'esercizi', exerciseId);
       await deleteDoc(exerciseRef);
       loadExercises();
     } catch (error) {

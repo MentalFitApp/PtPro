@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { Search, FileText, Dumbbell, ArrowUp, ArrowDown } from 'lucide-react';
 
 export default function CoachSchede() {
@@ -18,7 +18,10 @@ export default function CoachSchede() {
     const unsub = onSnapshot(getTenantCollection(db, 'clients'), async snap => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       // carica stato anamnesi (solo exists)
-      const promises = list.map(c => getDoc(doc(db, `clients/${c.id}/anamnesi`, 'initial')).catch(() => ({ exists: () => false })));
+      const promises = list.map(c => {
+        const anamnesiCollectionRef = getTenantSubcollection(db, 'clients', c.id, 'anamnesi');
+        return getDoc(doc(anamnesiCollectionRef.firestore, anamnesiCollectionRef.path, 'initial')).catch(() => ({ exists: () => false }));
+      });
       const results = await Promise.all(promises);
       const status = {}; list.forEach((c,i)=> status[c.id] = results[i].exists());
       setAnamnesiStatus(status);

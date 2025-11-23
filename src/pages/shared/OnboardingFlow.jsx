@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc, serverTimestamp, addDoc, collection, getDoc } from 'firebase/firestore';
 import { db, auth, storage } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Play, SkipForward, Check, ChevronRight, Camera, User, MessageSquare, FileText, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';

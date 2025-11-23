@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } from 'firebase/firestore';
 import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
 import { db, toDate, updateStatoPercorso } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check, X, Plus, ZoomIn, CalendarDays } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
@@ -429,7 +429,8 @@ export default function ClientDetail() {
     });
 
     // === ANAMNESI COMPLETA CON FOTO RISOLTE ===
-    const anamnesiRef = getTenantDoc(db, 'clients', clientId, 'anamnesi', 'initial');
+    const anamnesiCollectionRef = getTenantSubcollection(db, 'clients', clientId, 'anamnesi');
+    const anamnesiRef = doc(anamnesiCollectionRef.firestore, anamnesiCollectionRef.path, 'initial');
     const unsubAnamnesi = onSnapshot(anamnesiRef, async (docSnap) => {
       if (docSnap.exists()) {
         let data = docSnap.data();

@@ -174,7 +174,7 @@ const ImageModal = ({ isOpen, imageUrl, onClose }) => (
 const CheckDetails = ({ check, handleEditClick }) => {
   const [photoURLs, setPhotoURLs] = useState({});
   const [modalImage, setModalImage] = useState(null);
-  const isEditable = (new Date() - check.createdAt.toDate()) / (1000 * 60 * 60) < 2; // 2 ore
+  const isEditable = check.createdAt ? (new Date() - check.createdAt.toDate()) / (1000 * 60 * 60) < 2 : false; // 2 ore
 
   useEffect(() => {
     const loadPhotos = async () => {
@@ -197,7 +197,7 @@ const CheckDetails = ({ check, handleEditClick }) => {
         onClose={() => setModalImage(null)}
       />
       <div className="flex justify-between items-center">
-        <h3 className="font-bold text-lg text-cyan-300">Riepilogo del {check.createdAt.toDate().toLocaleDateString('it-IT')}</h3>
+        <h3 className="font-bold text-lg text-cyan-300">Riepilogo del {check.createdAt?.toDate().toLocaleDateString('it-IT') || 'N/D'}</h3>
         {isEditable && (
           <button
             onClick={() => handleEditClick(check)}
@@ -277,7 +277,7 @@ export default function ClientChecks() {
         //   setClientStartDate(new Date());
         // }
         
-        const checksCollectionRef = collection(db, `clients/${user.uid}/checks`);
+        const checksCollectionRef = getTenantSubcollection(db, 'clients', user.uid, 'checks');
         const q = query(checksCollectionRef, orderBy('createdAt', 'desc'));
         const unsubscribe = onSnapshot(q, async (snapshot) => {
           const checksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -412,10 +412,11 @@ export default function ClientChecks() {
 
       const checkData = { notes, weight: parseFloat(weight), photoURLs, createdAt: id ? existingCheck.createdAt : serverTimestamp() };
       if (id) {
-        await updateDoc(doc(db, `clients/${user.uid}/checks`, id), { ...checkData, lastUpdatedAt: serverTimestamp() });
+        const checksCollectionRef = getTenantSubcollection(db, 'clients', user.uid, 'checks');
+        await updateDoc(doc(checksCollectionRef.firestore, checksCollectionRef.path, id), { ...checkData, lastUpdatedAt: serverTimestamp() });
         showNotification('Check modificato con successo!', 'success');
       } else {
-        await addDoc(collection(db, `clients/${user.uid}/checks`), checkData);
+        await addDoc(getTenantSubcollection(db, 'clients', user.uid, 'checks'), checkData);
         showNotification('Check caricato con successo!', 'success');
       }
       setFormState({ id: null, notes: '', weight: '', photos: {}, photoPreviews: {} });

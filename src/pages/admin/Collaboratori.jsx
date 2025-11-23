@@ -5,7 +5,7 @@ import {
   where, getDocs
 } from 'firebase/firestore';
 import { db, auth, firebaseConfig } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';;
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { 
@@ -224,7 +224,7 @@ export default function Collaboratori() {
       calculateStats(data);
     });
 
-    const settingQuery = query(collection(db, 'settingReports'), orderBy('date', 'desc'));
+    const settingQuery = query(getTenantCollection(db, 'settingReports'), orderBy('date', 'desc'));
     const unsubSetting = onSnapshot(settingQuery, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setSettingReports(data);
@@ -369,7 +369,7 @@ export default function Collaboratori() {
   const handleSaveReportSetting = async () => {
     const reportId = `admin_${reportSetting.date}`;
     try {
-      await setDoc(doc(db, 'settingReports', reportId), {
+      await setDoc(getTenantDoc(db, 'settingReports', reportId), {
         ...reportSetting, uid: auth.currentUser.uid, timestamp: new Date()
       });
       setReportSetting({ ...reportSetting, followUpsFatti: '', dialedFatti: '', dialedRisposte: '', chiamatePrenotate: '' });

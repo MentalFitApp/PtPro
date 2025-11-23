@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../firebase.js';
+import { getTenantSubcollection } from '../../config/tenant';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, FilePenLine, Camera, UploadCloud, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -120,7 +121,8 @@ const ClientAnamnesi = () => {
     }
     const fetchAnamnesi = async () => {
       try {
-        const anamnesiRef = doc(db, `clients/${user.uid}/anamnesi`, 'initial');
+        const anamnesiCollectionRef = getTenantSubcollection(db, 'clients', user.uid, 'anamnesi');
+        const anamnesiRef = doc(anamnesiCollectionRef.firestore, anamnesiCollectionRef.path, 'initial');
         const docSnap = await getDoc(anamnesiRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
@@ -188,7 +190,8 @@ const ClientAnamnesi = () => {
       }
 
       const dataToSave = { ...data, photoURLs: normalizePhotoURLs(photoURLs), submittedAt: serverTimestamp(), createdAt: serverTimestamp() };
-      await setDoc(doc(db, `clients/${user.uid}/anamnesi`, 'initial'), dataToSave, { merge: true });
+      const anamnesiCollectionRef = getTenantSubcollection(db, 'clients', user.uid, 'anamnesi');
+      await setDoc(doc(anamnesiCollectionRef.firestore, anamnesiCollectionRef.path, 'initial'), dataToSave, { merge: true });
 
       setAnamnesiData(dataToSave);
       setPhotos({ front: null, right: null, left: null, back: null });
