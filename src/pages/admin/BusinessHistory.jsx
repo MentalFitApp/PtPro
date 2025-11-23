@@ -47,10 +47,10 @@ export default function BusinessHistory() {
       const newClients = clientsList.length - renewals;
       
       // Carica payments dal tenant corrente
-      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+      const allClientsSnap = await getDocs(getTenantCollection(db, 'clients'));
       let income = 0;
       
-      for (const clientDoc of clientsSnap.docs) {
+      for (const clientDoc of allClientsSnap.docs) {
         const clientData = clientDoc.data();
         const paymentsSnap = await getDocs(
           query(

@@ -1,19 +1,6 @@
 // Firebase Messaging Service Worker
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
-
-// Configurazione Firebase (stessa del progetto)
-firebase.initializeApp({
-  apiKey: "AIzaSyDpYkf75yRq2hd-t7GJyBR0PmlnXs10mEA",
-  authDomain: "pt-manager-pro.firebaseapp.com",
-  projectId: "pt-manager-pro",
-  storageBucket: "pt-manager-pro.firebasestorage.app",
-  messagingSenderId: "644470824116",
-  appId: "1:644470824116:web:d8b4c82fbfce3a8fadd2d5",
-  measurementId: "G-3NWNJFV1JW"
-});
-
-const messaging = firebase.messaging();
+// Le credenziali Firebase sono caricate dinamicamente dal client
+// Questo file viene generato al runtime da src/firebase.js
 
 // Gestione notifiche in background
 messaging.onBackgroundMessage((payload) => {
