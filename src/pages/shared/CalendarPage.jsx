@@ -1084,17 +1084,60 @@ export default function CalendarPage() {
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => {
-                          setEditingLeadDetails(true);
-                          setLeadForm({
-                            name: selectedLead.leadData.name || '',
-                            number: selectedLead.leadData.number || '',
-                            email: selectedLead.leadData.email || '',
-                            source: selectedLead.leadData.source || '',
-                            note: selectedLead.leadData.note || '',
-                            date: selectedLead.date || '',
-                            time: selectedLead.time || ''
-                          });
+                        onClick={async () => {
+                          try {
+                            // Carica il documento lead completo da Firestore
+                            if (selectedLead.leadId) {
+                              const leadDoc = await getDoc(getTenantDoc(db, 'leads', selectedLead.leadId));
+                              if (leadDoc.exists()) {
+                                const leadData = leadDoc.data();
+                                setLeadForm({
+                                  name: leadData.name || '',
+                                  number: leadData.number || '',
+                                  email: leadData.email || '',
+                                  source: leadData.source || '',
+                                  note: leadData.note || '',
+                                  date: leadData.dataPrenotazione || selectedLead.date || '',
+                                  time: leadData.oraPrenotazione || selectedLead.time || '',
+                                  dialed: leadData.dialed ?? 0,
+                                  amount: leadData.amount ?? '',
+                                  mesi: leadData.mesi ?? '',
+                                  chiuso: leadData.chiuso ?? false,
+                                  showUp: leadData.showUp ?? false,
+                                  offer: leadData.offer ?? false,
+                                  riprenotato: leadData.riprenotato ?? false,
+                                  target: leadData.target ?? false,
+                                  settingCall: leadData.settingCall ?? false
+                                });
+                              } else {
+                                // Fallback se il lead non esiste più
+                                setLeadForm({
+                                  name: selectedLead.leadData.name || '',
+                                  number: selectedLead.leadData.number || '',
+                                  email: selectedLead.leadData.email || '',
+                                  source: selectedLead.leadData.source || '',
+                                  note: selectedLead.leadData.note || '',
+                                  date: selectedLead.date || '',
+                                  time: selectedLead.time || ''
+                                });
+                              }
+                            } else {
+                              // Nessun leadId, usa solo i dati embedded
+                              setLeadForm({
+                                name: selectedLead.leadData.name || '',
+                                number: selectedLead.leadData.number || '',
+                                email: selectedLead.leadData.email || '',
+                                source: selectedLead.leadData.source || '',
+                                note: selectedLead.leadData.note || '',
+                                date: selectedLead.date || '',
+                                time: selectedLead.time || ''
+                              });
+                            }
+                            setEditingLeadDetails(true);
+                          } catch (err) {
+                            console.error('Errore caricamento lead:', err);
+                            alert('Errore nel caricamento dei dati del lead');
+                          }
                         }}
                         className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold py-3 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition-all"
                       >

@@ -558,15 +558,16 @@ export default function ClientDetail() {
 
   return (
     <ErrorBoundary>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-5xl mx-auto p-4 sm:p-6">
-        <button onClick={() => navigate('/clients')} className="flex items-center gap-2 text-slate-400 hover:text-rose-400 mb-6">
-          <ArrowLeft size={18} /> Torna ai Clienti
-        </button>
+      <div className="min-h-screen bg-slate-900 overflow-x-hidden">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
+          <button onClick={() => navigate('/clients')} className="flex items-center gap-2 text-slate-400 hover:text-rose-400 mb-6">
+            <ArrowLeft size={18} /> Torna ai Clienti
+          </button>
 
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6">
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-4 sm:p-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <h1 className="text-3xl font-bold text-slate-50">{client.name}</h1>
-            <div className="flex flex-wrap gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-50 break-words">{client.name}</h1>
+            <div className="flex flex-wrap gap-2 w-full md:w-auto">
               <QuickNotifyButton userId={clientId} userName={client.name} userType="client" />
               <button onClick={() => setShowEdit(true)} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg">
                 <Edit size={16} /> Modifica
@@ -585,12 +586,12 @@ export default function ClientDetail() {
 
 
           {/* Tabs */}
-          <div className="flex flex-wrap gap-2 mb-6 bg-slate-900/50 p-1 rounded-lg border border-slate-700">
+          <div className="flex overflow-x-auto gap-2 mb-6 bg-slate-900/50 p-1 rounded-lg border border-slate-700 scrollbar-thin scrollbar-thumb-slate-600">
             {['info', 'check', 'payments', 'anamnesi'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 text-sm rounded-md transition-colors ${activeTab === tab ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+                className={`px-4 py-2 text-sm rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${activeTab === tab ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
               >
                 {tab === 'info' ? 'Informazioni' : tab === 'check' ? 'Check' : tab === 'payments' ? 'Pagamenti' : 'Anamnesi'}
               </button>
@@ -821,6 +822,7 @@ export default function ClientDetail() {
           alt={zoomPhoto.alt} 
         />
       </motion.div>
+    </div>
     </ErrorBoundary>
   );
 }

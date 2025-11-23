@@ -539,10 +539,10 @@ export default function CollaboratoreDashboard() {
   );
 
   return (
-    <div className="overflow-x-hidden w-full min-h-screen">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full py-4 sm:py-6">
+    <div className="overflow-x-hidden w-full min-h-screen bg-slate-900">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
         {/* HEADER */}
-        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 w-full mx-3 sm:mx-6 bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-slate-700/50 shadow-xl">
+        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 w-full bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-slate-700/50 shadow-xl">
         <div className="flex items-center gap-4">
           <img 
             src={profile.photoURL || '/default-avatar.png'} 
@@ -582,7 +582,7 @@ export default function CollaboratoreDashboard() {
         </div>
       </motion.header>
 
-      <motion.div className="bg-slate-800/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-6 space-y-4 sm:space-y-6 border border-white/10 mx-3 sm:mx-6">
+      <motion.div className="bg-slate-800/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-6 space-y-4 sm:space-y-6 border border-white/10 w-full">
         {/* CHIAMATE GIORNALIERE */}
         <div>
           <h3 className="text-xs sm:text-sm font-semibold text-slate-400 mb-2">Chiamate giornaliere</h3>

@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   Home, Users, MessageSquare, FileText, Bell,
   Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing,
-  UserCheck, BookOpen, Target, Activity, GraduationCap, Plus, Menu, X, Palette
+  UserCheck, BookOpen, Target, Activity, GraduationCap, Plus, Menu, X, Palette, Globe
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isSuperAdmin } from '../../utils/superadmin';
@@ -141,7 +141,16 @@ const adminNavLinks = [
     ]
   },
   
-  { to: '/admin/branding', icon: <Palette size={18} />, label: 'Personalizzazione' },
+  // Sezione Impostazioni
+  { 
+    label: 'Impostazioni', 
+    icon: <Settings size={18} />, 
+    isSection: true,
+    children: [
+      { to: '/admin/branding', icon: <Palette size={18} />, label: 'Branding' },
+      { to: '/admin/landing', icon: <Globe size={18} />, label: 'Sito Web' },
+    ]
+  },
 
   { to: '/superadmin', icon: <Settings size={18} />, label: 'Super Admin', isSuperAdmin: true },
 ];

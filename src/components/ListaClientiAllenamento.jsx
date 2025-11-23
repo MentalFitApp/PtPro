@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, CheckCircle, AlertCircle, XCircle, UserPlus, Clock, AlertTriangle, X, ExternalLink } from 'lucide-react';
+import { Search, Filter, CheckCircle, AlertCircle, XCircle, UserPlus, Clock, AlertTriangle, X, ExternalLink, ChevronRight } from 'lucide-react';
 import { db, toDate } from '../firebase';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../config/tenant';
 import { collection, getDocs } from 'firebase/firestore';
@@ -187,27 +187,28 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
   const filteredClients = getFilteredAndSortedClients();
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-6 max-w-full overflow-x-hidden"
-    >
-      <div className="flex items-center justify-between">
-        <button
-          onClick={onBack}
-          className="text-slate-400 hover:text-slate-200 transition-colors"
-        >
-          ← Torna indietro
-        </button>
-        <h2 className="text-2xl font-bold text-slate-100">Lista Clienti</h2>
-      </div>
+    <div className="w-full max-w-full overflow-x-hidden">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="space-y-3 w-full"
+      >
+        <div className="flex items-center justify-between gap-2 w-full">
+          <button
+            onClick={onBack}
+            className="text-slate-400 hover:text-slate-200 transition-colors text-sm whitespace-nowrap flex-shrink-0"
+          >
+            ← Indietro
+          </button>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-100 truncate">Lista Clienti</h2>
+        </div>
 
       {/* Tabs */}
-      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-6">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-1.5 sm:p-3 w-full">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
           <button
             onClick={() => setActiveTab('tutti')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
+            className={`px-3 py-1.5 text-xs sm:text-sm rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${
               activeTab === 'tutti'
                 ? 'bg-rose-600 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -218,9 +219,9 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
           </button>
           <button
             onClick={() => setActiveTab('nuovi')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
+            className={`px-2 py-1.5 text-xs sm:text-sm rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-1 flex-shrink-0 ${
               activeTab === 'nuovi'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-rose-600 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
             }`}
           >
@@ -229,9 +230,9 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
           </button>
           <button
             onClick={() => setActiveTab('alimentazione_scade')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
+            className={`px-2 py-1.5 text-xs sm:text-sm rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-1 flex-shrink-0 ${
               activeTab === 'alimentazione_scade'
-                ? 'bg-yellow-600 text-white'
+                ? 'bg-rose-600 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
             }`}
           >
@@ -240,9 +241,9 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
           </button>
           <button
             onClick={() => setActiveTab('allenamento_scade')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
+            className={`px-2 py-1.5 text-xs sm:text-sm rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-1 flex-shrink-0 ${
               activeTab === 'allenamento_scade'
-                ? 'bg-yellow-600 text-white'
+                ? 'bg-rose-600 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
             }`}
           >
@@ -251,9 +252,9 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
           </button>
           <button
             onClick={() => setActiveTab('scaduti')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
+            className={`px-2 py-1.5 text-xs sm:text-sm rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-1 flex-shrink-0 ${
               activeTab === 'scaduti'
-                ? 'bg-red-600 text-white'
+                ? 'bg-rose-600 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
             }`}
           >
@@ -264,30 +265,30 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
       </div>
 
       {/* Search and Filters */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+      <div className="space-y-3 w-full">
+        <div className="w-full">
+          <div className="relative">
+            <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
             <input
               type="text"
-              placeholder="Cerca cliente per nome o email..."
+              placeholder="Cerca cliente..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-rose-500"
+              className="w-full pl-8 sm:pl-10 pr-3 py-1.5 sm:py-2 text-sm bg-slate-800/50 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-rose-500"
             />
           </div>
         </div>
 
         {/* Status Filters - Only show in 'tutti' tab */}
         {activeTab === 'tutti' && (
-          <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-slate-400 flex items-center gap-2">
-            <Filter size={16} />
+          <div className="flex items-center gap-1.5 flex-wrap w-full">
+          <span className="text-xs sm:text-sm text-slate-400 flex items-center gap-1.5 whitespace-nowrap">
+            <Filter size={14} />
             Filtri:
           </span>
           <button
             onClick={() => setFilterStatus('')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-2 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
               filterStatus === '' 
                 ? 'bg-rose-600 text-white' 
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -297,7 +298,7 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
           </button>
           <button
             onClick={() => setFilterStatus('attiva')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-2 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
               filterStatus === 'attiva' 
                 ? 'bg-emerald-600 text-white' 
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -307,7 +308,7 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
           </button>
           <button
             onClick={() => setFilterStatus('scaduta')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-2 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
               filterStatus === 'scaduta' 
                 ? 'bg-orange-600 text-white' 
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -317,101 +318,124 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
           </button>
           <button
             onClick={() => setFilterStatus('in_scadenza')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-2 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
               filterStatus === 'in_scadenza' 
                 ? 'bg-yellow-600 text-white' 
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
-            In Scadenza (7 giorni)
+            In Scadenza
           </button>
         </div>
         )}
       </div>
 
-      {/* Clients List */}
-      <div className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-slate-400">
-            Caricamento...
-          </div>
-        ) : filteredClients.length === 0 ? (
-          <div className="p-8 text-center text-slate-400">
-            {searchTerm || filterStatus ? 'Nessun cliente trovato' : 'Nessun cliente disponibile'}
-          </div>
-        ) : (
-          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
-            <table className="w-full min-w-[900px]">
-              <thead className="bg-slate-800">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300 min-w-[150px]">Nome</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300 min-w-[180px]">Email</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300 min-w-[120px]">Telefono</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-slate-300 min-w-[200px]">Scheda Allenamento</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-slate-300 min-w-[200px]">Scheda Alimentazione</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700">
-                {filteredClients.map((client) => {
-                  const allenamentoStatus = getStatusForCard(client.schedaAllenamento);
-                  const alimentazioneStatus = getStatusForCard(client.schedaAlimentazione);
-                  
-                  return (
-                    <tr key={client.id} className="hover:bg-slate-800/50 transition-colors">
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => setSelectedClientInfo(client)}
-                          className="text-slate-200 font-medium hover:text-rose-400 transition-colors underline decoration-slate-600 hover:decoration-rose-400"
-                        >
-                          {client.name}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3 text-slate-400 text-sm">{client.email || '-'}</td>
-                      <td className="px-4 py-3 text-slate-400 text-sm">{client.phone || '-'}</td>
-                      
-                      {/* Scheda Allenamento Status */}
-                      <td className="px-4 py-3">
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() => navigate(`/scheda-allenamento/${client.id}`)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity ${STATUS_COLORS[allenamentoStatus]}`}
-                          >
-                            {STATUS_ICONS[allenamentoStatus]}
-                            {STATUS_LABELS[allenamentoStatus]}
-                            {client.schedaAllenamento?.scadenza && allenamentoStatus !== 'mancante' && (
-                              <span className="ml-1 text-[10px] opacity-75">
-                                ({toDate(client.schedaAllenamento.scadenza)?.toLocaleDateString('it-IT')})
-                              </span>
-                            )}
-                          </button>
-                        </div>
-                      </td>
-                      
-                      {/* Scheda Alimentazione Status */}
-                      <td className="px-4 py-3">
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() => navigate(`/scheda-alimentazione/${client.id}`)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity ${STATUS_COLORS[alimentazioneStatus]}`}
-                          >
-                            {STATUS_ICONS[alimentazioneStatus]}
-                            {STATUS_LABELS[alimentazioneStatus]}
-                            {client.schedaAlimentazione?.scadenza && alimentazioneStatus !== 'mancante' && (
-                              <span className="ml-1 text-[10px] opacity-75">
-                                ({toDate(client.schedaAlimentazione.scadenza)?.toLocaleDateString('it-IT')})
-                              </span>
-                            )}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Clients Grid */}
+      {loading ? (
+        <div className="p-8 text-center text-slate-400">
+          Caricamento...
+        </div>
+      ) : filteredClients.length === 0 ? (
+        <div className="p-8 text-center text-slate-400">
+          {searchTerm || filterStatus ? 'Nessun cliente trovato' : 'Nessun cliente disponibile'}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1.5 w-full">
+          {filteredClients.map((client) => {
+            const allenamentoStatus = getStatusForCard(client.schedaAllenamento);
+            const alimentazioneStatus = getStatusForCard(client.schedaAlimentazione);
+            const allenamentoDays = getDaysUntilExpiry(client.schedaAllenamento?.scadenza);
+            const alimentazioneDays = getDaysUntilExpiry(client.schedaAlimentazione?.scadenza);
+            
+            return (
+              <motion.div
+                key={client.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-slate-800/50 border border-slate-700 rounded-lg p-1.5 hover:border-slate-600 transition-all w-full"
+              >
+                {/* Header ultra-compatto */}
+                <div className="flex items-center justify-between mb-1 gap-0.5">
+                  <button
+                    onClick={() => setSelectedClientInfo(client)}
+                    className="text-[10px] font-bold text-slate-100 hover:text-rose-400 transition-colors text-left truncate flex-1 min-w-0"
+                  >
+                    {client.name}
+                  </button>
+                  <button
+                    onClick={() => navigate(`/client-detail/${client.id}`)}
+                    className="p-0.5 hover:bg-slate-700 rounded transition-colors text-slate-400 hover:text-slate-200 flex-shrink-0"
+                    title="Dettagli"
+                  >
+                    <ExternalLink size={10} />
+                  </button>
+                </div>
+
+                {/* Schede inline */}
+                <div className="space-y-0.5">
+                  {/* Allenamento */}
+                  <div className="flex items-center justify-between bg-slate-900/50 rounded px-1 py-0.5 border border-slate-700">
+                    <div className="flex items-center gap-0.5 min-w-0 flex-1">
+                      <span className={`inline-flex items-center p-0.5 rounded border ${STATUS_COLORS[allenamentoStatus]}`}>
+                        {STATUS_ICONS[allenamentoStatus]}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[8px] text-slate-400 truncate">Allena</p>
+                        {client.schedaAllenamento?.scadenza ? (
+                          <p className={`text-[8px] font-medium truncate ${
+                            allenamentoDays < 0 ? 'text-red-400' : 
+                            allenamentoDays <= 7 ? 'text-orange-400' : 
+                            'text-emerald-400'
+                          }`}>
+                            {allenamentoDays < 0 ? `-${Math.abs(allenamentoDays)}gg` : `${allenamentoDays}gg`}
+                          </p>
+                        ) : (
+                          <p className="text-[8px] text-slate-500">-</p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/scheda-allenamento/${client.id}`)}
+                      className="text-[8px] px-1 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors flex-shrink-0"
+                    >
+                      Vai
+                    </button>
+                  </div>
+
+                  {/* Alimentazione */}
+                  <div className="flex items-center justify-between bg-slate-900/50 rounded px-1 py-0.5 border border-slate-700">
+                    <div className="flex items-center gap-0.5 min-w-0 flex-1">
+                      <span className={`inline-flex items-center p-0.5 rounded border ${STATUS_COLORS[alimentazioneStatus]}`}>
+                        {STATUS_ICONS[alimentazioneStatus]}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[8px] text-slate-400 truncate">Dieta</p>
+                        {client.schedaAlimentazione?.scadenza ? (
+                          <p className={`text-[8px] font-medium truncate ${
+                            alimentazioneDays < 0 ? 'text-red-400' : 
+                            alimentazioneDays <= 7 ? 'text-orange-400' : 
+                            'text-emerald-400'
+                          }`}>
+                            {alimentazioneDays < 0 ? `-${Math.abs(alimentazioneDays)}gg` : `${alimentazioneDays}gg`}
+                          </p>
+                        ) : (
+                          <p className="text-[8px] text-slate-500">-</p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/scheda-alimentazione/${client.id}`)}
+                      className="text-[8px] px-1 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors flex-shrink-0"
+                    >
+                      Vai
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Client Info Modal */}
       <AnimatePresence>
@@ -528,9 +552,10 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
               </motion.div>
             </motion.div>
           </>
-        )}
-      </AnimatePresence>
-    </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </div>
   );
 };
 

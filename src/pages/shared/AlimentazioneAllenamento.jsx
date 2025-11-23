@@ -144,8 +144,8 @@ const AlimentazioneAllenamento = () => {
   };
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-slate-900 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

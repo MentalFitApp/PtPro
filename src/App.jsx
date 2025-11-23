@@ -36,6 +36,7 @@ const CourseAdmin = React.lazy(() => import('./pages/admin/CourseAdmin'));
 const CourseContentManager = React.lazy(() => import('./pages/admin/CourseContentManager'));
 const SuperAdminSettings = React.lazy(() => import('./pages/admin/SuperAdminSettings'));
 const TenantBranding = React.lazy(() => import('./pages/admin/TenantBranding'));
+const LandingEditor = React.lazy(() => import('./pages/admin/LandingEditor'));
 
 // Platform CEO Pages
 const CEOPlatformDashboard = React.lazy(() => import('./pages/platform/CEOPlatformDashboard'));
@@ -78,6 +79,9 @@ const Community = React.lazy(() => import('./pages/community/Community'));
 const CourseDashboard = React.lazy(() => import('./components/courses/CourseDashboard'));
 const CourseDetail = React.lazy(() => import('./components/courses/CourseDetail'));
 const LessonPlayer = React.lazy(() => import('./components/courses/LessonPlayer'));
+
+// Public Pages
+const LandingPage = React.lazy(() => import('./pages/public/LandingPage'));
 
 // Spinner
 const PageSpinner = () => (
@@ -154,6 +158,22 @@ export default function App() {
               isAdmin: false,
               isCollaboratore: false,
               isPlatformCEO: true,
+              error: null
+            });
+            return;
+          }
+
+          // Se sta navigando verso /site/*, permettilo (landing page pubblica)
+          if (location.pathname.startsWith('/site')) {
+            // Non fare nulla, lascia che la route pubblica venga gestita
+            setAuthInfo({
+              isLoading: false,
+              user: currentUser,
+              isClient: false,
+              isCoach: false,
+              isAdmin: false,
+              isCollaboratore: false,
+              isPlatformCEO: isPlatformCEO,
               error: null
             });
             return;
@@ -288,8 +308,8 @@ export default function App() {
             error: null
           });
 
-          const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId', '/platform-login', '/platform-dashboard'];
-          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/') || location.pathname.startsWith('/platform'));
+          const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId', '/platform-login', '/platform-dashboard', '/site'];
+          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/') || location.pathname.startsWith('/platform') || location.pathname.startsWith('/site'));
           if (!isPublic && !initialAuthComplete) {
             const target = '/login';
             if (lastNavigated !== target) {
@@ -325,6 +345,8 @@ export default function App() {
         <GlobalUploadBar />
         <Routes>
         {/* === ROTTE PUBBLICHE === */}
+        <Route path="/site" element={<LandingPage />} />
+        <Route path="/site/:slug" element={<LandingPage />} />
         <Route element={<GuidaLayout />}>
           <Route path="/guida" element={<GuidaMentalFit />} />
         </Route>
@@ -355,6 +377,7 @@ export default function App() {
           <Route path="/business-history" element={<BusinessHistory />} />
           <Route path="/admin/dipendenti" element={<Dipendenti />} />
           <Route path="/admin/branding" element={<TenantBranding />} />
+          <Route path="/admin/landing" element={<LandingEditor />} />
           <Route path="/statistiche" element={<Statistiche />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/notifications" element={<Notifications />} />

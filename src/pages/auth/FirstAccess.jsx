@@ -114,9 +114,9 @@ const FirstAccess = () => {
       // Aggiorna password
       await updatePassword(user, newPassword);
 
-      // Aggiorna documento corretto
+      // Aggiorna documento corretto nella struttura multi-tenant
       const collectionName = userType === 'client' ? 'clients' : 'collaboratori';
-      const userDocRef = doc(db, collectionName, user.uid);
+      const userDocRef = getTenantDoc(db, collectionName, user.uid);
       await updateDoc(userDocRef, { firstLogin: false });
 
       console.log(`Campo firstLogin aggiornato a false per ${userType}:`, user.uid);
