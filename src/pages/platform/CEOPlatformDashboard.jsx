@@ -376,7 +376,115 @@ export default function CEOPlatformDashboard() {
       await signOut(auth);
       navigate('/platform-login');
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error('Logout error:', error);
+    }
+  };
+
+  // Gestione editing landing page
+  const handleEditLanding = async (tenant) => {
+    try {
+      const landingDoc = await getDoc(doc(db, 'tenants', tenant.id, 'settings', 'landing'));
+      setEditingLanding({
+        tenantId: tenant.id,
+        tenantName: tenant.name || tenant.id,
+        config: landingDoc.exists() ? landingDoc.data() : {
+          hero: { title: '', subtitle: '', ctaPrimary: 'Inizia Ora', ctaSecondary: 'Scopri di più' },
+          branding: { appName: tenant.name || 'FitFlow', logoUrl: '/logo192.PNG' },
+          siteSlug: tenant.siteSlug || tenant.id,
+          enabled: true
+        }
+      });
+    } catch (error) {
+      console.error('Error loading landing config:', error);
+      alert('Errore nel caricamento della configurazione');
+    }
+  };
+
+  // Salva modifiche landing page
+  const handleSaveLanding = async () => {
+    try {
+      const { tenantId, config } = editingLanding;
+      
+      // Salva configurazione landing
+      await setDoc(doc(db, 'tenants', tenantId, 'settings', 'landing'), config, { merge: true });
+      
+      // Aggiorna siteSlug nel tenant principale
+      if (config.siteSlug) {
+        await updateDoc(doc(db, 'tenants', tenantId), { siteSlug: config.siteSlug });
+      }
+      
+      // Ricarica tenant
+      await loadTenants();
+      setEditingLanding(null);
+      alert('✅ Landing page aggiornata con successo!');
+    } catch (error) {
+      console.error('Error saving landing:', error);
+      alert('❌ Errore nel salvataggio');
+    }
+  };
+
+  // Cambia status sito (pubblicato/bozza)
+  const handleToggleStatus = async (tenant) => {
+    try {
+      const newStatus = tenant.status === 'active' ? 'draft' : 'active';
+      await updateDoc(doc(db, 'tenants', tenant.id), { status: newStatus });
+      await loadTenants();
+      alert(`✅ Sito ${newStatus === 'active' ? 'pubblicato' : 'messo in bozza'}!`);
+    } catch (error) {
+      console.error('Error toggling status:', error);
+      alert('❌ Errore nel cambio di status');
+    }
+  };
+
+  // Elimina tenant
+  const handleDeleteTenant = async (tenant) => {
+    if (!confirm(`⚠️ Sei sicuro di voler eliminare il tenant "${tenant.name || tenant.id}"? Questa azione è irreversibile!`)) {
+      return;
+    }
+    
+    try {
+      await deleteDoc(doc(db, 'tenants', tenant.id));
+      await loadTenants();
+      alert('✅ Tenant eliminato con successo');
+    } catch (error) {
+      console.error('Error deleting tenant:', error);
+      alert('❌ Errore nell\'eliminazione del tenant');
+    }
+  };
+
+  // Gestione branding
+  const handleEditBranding = async (tenant) => {
+    try {
+      const brandingDoc = await getDoc(doc(db, 'tenants', tenant.id, 'settings', 'branding'));
+      setEditingBranding({
+        tenantId: tenant.id,
+        tenantName: tenant.name || tenant.id,
+        config: brandingDoc.exists() ? brandingDoc.data() : {
+          appName: tenant.name || 'FitFlow',
+          adminAreaName: 'Area Personale',
+          clientAreaName: 'Area Cliente',
+          coachAreaName: 'Area Coach',
+          logoUrl: null,
+          primaryColor: '#3b82f6',
+          accentColor: '#60a5fa'
+        }
+      });
+    } catch (error) {
+      console.error('Error loading branding:', error);
+      alert('Errore nel caricamento del branding');
+    }
+  };
+
+  // Salva branding
+  const handleSaveBranding = async () => {
+    try {
+      const { tenantId, config } = editingBranding;
+      await setDoc(doc(db, 'tenants', tenantId, 'settings', 'branding'), config, { merge: true });
+      setEditingBranding(null);
+      alert('✅ Branding aggiornato con successo!');
+    } catch (error) {
+      console.error('Error saving branding:', error);
+      alert('❌ Errore nel salvataggio del branding');
     }
   };
 
@@ -700,15 +808,41 @@ export default function CEOPlatformDashboard() {
                               <button
                                 onClick={() => window.open(`/site/${tenant.siteSlug || tenant.id}`, '_blank')}
                                 className="p-2 hover:bg-slate-700 rounded-lg transition-colors group"
-                                title="Visualizza"
+                                title="Visualizza Sito"
                               >
                                 <Eye className="w-4 h-4 text-slate-400 group-hover:text-blue-400" />
                               </button>
                               <button
+                                onClick={() => handleEditLanding(tenant)}
                                 className="p-2 hover:bg-slate-700 rounded-lg transition-colors group"
-                                title="Modifica"
+                                title="Modifica Landing"
                               >
                                 <Edit3 className="w-4 h-4 text-slate-400 group-hover:text-purple-400" />
+                              </button>
+                              <button
+                                onClick={() => handleEditBranding(tenant)}
+                                className="p-2 hover:bg-slate-700 rounded-lg transition-colors group"
+                                title="Modifica Branding"
+                              >
+                                <Settings className="w-4 h-4 text-slate-400 group-hover:text-yellow-400" />
+                              </button>
+                              <button
+                                onClick={() => handleToggleStatus(tenant)}
+                                className="p-2 hover:bg-slate-700 rounded-lg transition-colors group"
+                                title={tenant.status === 'active' ? 'Metti in Bozza' : 'Pubblica'}
+                              >
+                                {tenant.status === 'active' ? (
+                                  <Lock className="w-4 h-4 text-slate-400 group-hover:text-orange-400" />
+                                ) : (
+                                  <Unlock className="w-4 h-4 text-slate-400 group-hover:text-green-400" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTenant(tenant)}
+                                className="p-2 hover:bg-red-900/30 rounded-lg transition-colors group"
+                                title="Elimina Tenant"
+                              >
+                                <Trash2 className="w-4 h-4 text-slate-400 group-hover:text-red-400" />
                               </button>
                             </div>
                           </td>
@@ -794,6 +928,330 @@ export default function CEOPlatformDashboard() {
 
         </div>
       </div>
+
+      {/* Landing Page Editor Modal */}
+      <AnimatePresence>
+        {editingLanding && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+            onClick={() => setEditingLanding(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-800 rounded-2xl p-6 max-w-4xl w-full border border-slate-700 my-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Editor Landing Page</h2>
+                  <p className="text-slate-400">{editingLanding.tenantName}</p>
+                </div>
+                <button
+                  onClick={() => setEditingLanding(null)}
+                  className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+                {/* Slug Sito */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Slug Sito (URL)</label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400 text-sm">/site/</span>
+                    <input
+                      type="text"
+                      value={editingLanding.config.siteSlug || ''}
+                      onChange={(e) => setEditingLanding({
+                        ...editingLanding,
+                        config: { ...editingLanding.config, siteSlug: e.target.value }
+                      })}
+                      className="flex-1 px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="nome-sito"
+                    />
+                  </div>
+                </div>
+
+                {/* Hero Title */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Titolo Hero</label>
+                  <input
+                    type="text"
+                    value={editingLanding.config.hero?.title || ''}
+                    onChange={(e) => setEditingLanding({
+                      ...editingLanding,
+                      config: {
+                        ...editingLanding.config,
+                        hero: { ...editingLanding.config.hero, title: e.target.value }
+                      }
+                    })}
+                    className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Trasforma il Tuo Business Fitness"
+                  />
+                </div>
+
+                {/* Hero Subtitle */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Sottotitolo Hero</label>
+                  <textarea
+                    value={editingLanding.config.hero?.subtitle || ''}
+                    onChange={(e) => setEditingLanding({
+                      ...editingLanding,
+                      config: {
+                        ...editingLanding.config,
+                        hero: { ...editingLanding.config.hero, subtitle: e.target.value }
+                      }
+                    })}
+                    rows={3}
+                    className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Descrizione del servizio..."
+                  />
+                </div>
+
+                {/* CTA Buttons */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">CTA Primario</label>
+                    <input
+                      type="text"
+                      value={editingLanding.config.hero?.ctaPrimary || ''}
+                      onChange={(e) => setEditingLanding({
+                        ...editingLanding,
+                        config: {
+                          ...editingLanding.config,
+                          hero: { ...editingLanding.config.hero, ctaPrimary: e.target.value }
+                        }
+                      })}
+                      className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="Inizia Ora"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">CTA Secondario</label>
+                    <input
+                      type="text"
+                      value={editingLanding.config.hero?.ctaSecondary || ''}
+                      onChange={(e) => setEditingLanding({
+                        ...editingLanding,
+                        config: {
+                          ...editingLanding.config,
+                          hero: { ...editingLanding.config.hero, ctaSecondary: e.target.value }
+                        }
+                      })}
+                      className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="Scopri di più"
+                    />
+                  </div>
+                </div>
+
+                {/* App Name & Logo */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Nome App</label>
+                    <input
+                      type="text"
+                      value={editingLanding.config.branding?.appName || ''}
+                      onChange={(e) => setEditingLanding({
+                        ...editingLanding,
+                        config: {
+                          ...editingLanding.config,
+                          branding: { ...editingLanding.config.branding, appName: e.target.value }
+                        }
+                      })}
+                      className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="FitFlow"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">URL Logo</label>
+                    <input
+                      type="text"
+                      value={editingLanding.config.branding?.logoUrl || ''}
+                      onChange={(e) => setEditingLanding({
+                        ...editingLanding,
+                        config: {
+                          ...editingLanding.config,
+                          branding: { ...editingLanding.config.branding, logoUrl: e.target.value }
+                        }
+                      })}
+                      className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="/logo192.PNG"
+                    />
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="enabled"
+                    checked={editingLanding.config.enabled !== false}
+                    onChange={(e) => setEditingLanding({
+                      ...editingLanding,
+                      config: { ...editingLanding.config, enabled: e.target.checked }
+                    })}
+                    className="w-4 h-4 text-purple-600 bg-slate-700 border-slate-600 rounded focus:ring-purple-500"
+                  />
+                  <label htmlFor="enabled" className="text-slate-300">Landing Page Abilitata</label>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6 pt-6 border-t border-slate-700">
+                <button
+                  onClick={handleSaveLanding}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white font-medium transition-all flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  Salva Modifiche
+                </button>
+                <button
+                  onClick={() => setEditingLanding(null)}
+                  className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors"
+                >
+                  Annulla
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Branding Editor Modal */}
+      <AnimatePresence>
+        {editingBranding && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setEditingBranding(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-800 rounded-2xl p-6 max-w-2xl w-full border border-slate-700"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Editor Branding</h2>
+                  <p className="text-slate-400">{editingBranding.tenantName}</p>
+                </div>
+                <button
+                  onClick={() => setEditingBranding(null)}
+                  className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Nome App</label>
+                  <input
+                    type="text"
+                    value={editingBranding.config.appName || ''}
+                    onChange={(e) => setEditingBranding({
+                      ...editingBranding,
+                      config: { ...editingBranding.config, appName: e.target.value }
+                    })}
+                    className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Area Admin</label>
+                    <input
+                      type="text"
+                      value={editingBranding.config.adminAreaName || ''}
+                      onChange={(e) => setEditingBranding({
+                        ...editingBranding,
+                        config: { ...editingBranding.config, adminAreaName: e.target.value }
+                      })}
+                      className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Area Cliente</label>
+                    <input
+                      type="text"
+                      value={editingBranding.config.clientAreaName || ''}
+                      onChange={(e) => setEditingBranding({
+                        ...editingBranding,
+                        config: { ...editingBranding.config, clientAreaName: e.target.value }
+                      })}
+                      className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">URL Logo</label>
+                  <input
+                    type="text"
+                    value={editingBranding.config.logoUrl || ''}
+                    onChange={(e) => setEditingBranding({
+                      ...editingBranding,
+                      config: { ...editingBranding.config, logoUrl: e.target.value }
+                    })}
+                    className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Colore Primario</label>
+                    <input
+                      type="color"
+                      value={editingBranding.config.primaryColor || '#3b82f6'}
+                      onChange={(e) => setEditingBranding({
+                        ...editingBranding,
+                        config: { ...editingBranding.config, primaryColor: e.target.value }
+                      })}
+                      className="w-full h-10 rounded-lg cursor-pointer"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Colore Accento</label>
+                    <input
+                      type="color"
+                      value={editingBranding.config.accentColor || '#60a5fa'}
+                      onChange={(e) => setEditingBranding({
+                        ...editingBranding,
+                        config: { ...editingBranding.config, accentColor: e.target.value }
+                      })}
+                      className="w-full h-10 rounded-lg cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleSaveBranding}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 rounded-lg text-white font-medium transition-all"
+                >
+                  Salva Branding
+                </button>
+                <button
+                  onClick={() => setEditingBranding(null)}
+                  className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors"
+                >
+                  Annulla
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Tenant Details Modal */}
       <AnimatePresence>

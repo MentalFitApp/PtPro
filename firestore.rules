@@ -66,13 +66,16 @@ service cloud.firestore {
 
     // ==================== TENANTS (METADATA) ====================
     match /tenants/{tenantId} {
-      // Platform CEO può vedere e gestire tutti i tenants
-      allow read, list: if isPlatformCEO();
+      // Lettura pubblica per routing landing pages (solo campi pubblici: name, siteSlug, customDomain, status)
+      allow read: if true;
+      
+      // Platform CEO può vedere, creare e gestire tutti i tenants
+      allow list: if isPlatformCEO();
       allow create, update: if isPlatformCEO();
       allow delete: if isPlatformCEO();
       
-      // SuperAdmin del tenant può solo leggere il proprio metadata
-      allow read: if isTenantSuperAdmin(tenantId);
+      // SuperAdmin del tenant può aggiornare il proprio metadata
+      allow update: if isTenantSuperAdmin(tenantId);
     }
 
     // ==================== TENANT DATA ====================
@@ -213,11 +216,27 @@ service cloud.firestore {
         allow create, update, delete: if isTenantAdmin(tenantId) || isTenantCoach(tenantId) || isTenantCollaboratore(tenantId, request.auth.uid);
       }
       
+      // --- CALENDAR NOTES/TASKS ---
+      match /calendarNotes/{noteId} {
+        allow read, list: if isTenantAdmin(tenantId) || isTenantCoach(tenantId) || isTenantCollaboratore(tenantId, request.auth.uid);
+        // Utenti possono creare, modificare ed eliminare solo le proprie note
+        allow create: if request.auth != null && 
+                        (isTenantAdmin(tenantId) || isTenantCoach(tenantId) || isTenantCollaboratore(tenantId, request.auth.uid)) &&
+                        request.resource.data.createdBy == request.auth.uid;
+        allow update: if request.auth != null && 
+                        (isTenantAdmin(tenantId) || resource.data.createdBy == request.auth.uid);
+        allow delete: if request.auth != null && 
+                        (isTenantAdmin(tenantId) || resource.data.createdBy == request.auth.uid);
+      }
+      
       // --- LEADS ---
       match /leads/{leadId} {
         allow read, list: if isTenantAdmin(tenantId) || isTenantCollaboratore(tenantId, request.auth.uid);
         allow create, update: if isTenantAdmin(tenantId) || isTenantCollaboratore(tenantId, request.auth.uid);
-        allow delete: if isTenantAdmin(tenantId) || isTenantCollaboratore(tenantId, request.auth.uid);
+        // Collaboratori possono eliminare solo i propri leads
+        allow delete: if isTenantAdmin(tenantId) || 
+                         (isTenantCollaboratore(tenantId, request.auth.uid) && 
+                          resource.data.assignedTo == request.auth.uid);
       }
       
       // --- GUIDE LEADS ---
@@ -235,7 +254,25 @@ service cloud.firestore {
       // --- SETTINGS ---
       match /settings/{docId} {
         allow read: if request.auth != null;
-        allow write: if isTenantAdmin(tenantId);
+        allow write: if isTenantAdmin(tenantId) || isPlatformCEO();
+      }
+      
+      // --- LANDING PAGE CONFIG ---
+      match /settings/landing {
+        allow read: if true; // Pubblico per visualizzazione siti
+        allow write: if isTenantAdmin(tenantId) || isPlatformCEO();
+      }
+      
+      // --- BRANDING CONFIG ---
+      match /settings/branding {
+        allow read: if request.auth != null;
+        allow write: if isTenantAdmin(tenantId) || isPlatformCEO();
+      }
+      
+      // --- SITE CUSTOMIZATION ---
+      match /settings/site_customization {
+        allow read: if request.auth != null;
+        allow write: if isTenantAdmin(tenantId) || isPlatformCEO();
       }
       
       // --- APP DATA ---
@@ -277,6 +314,20 @@ service cloud.firestore {
       match /dipendenti_provvigioni/{docId} {
         allow read, list: if isTenantAdmin(tenantId);
         allow create, update, delete: if isTenantAdmin(tenantId);
+      }
+      
+      // --- LANDING ANALYTICS ---
+      match /landing_analytics/{docId} {
+        allow read: if isTenantAdmin(tenantId) || isPlatformCEO();
+        allow create: if true; // Pubblico per tracking visite
+        allow update, delete: if isTenantAdmin(tenantId) || isPlatformCEO();
+      }
+      
+      // --- SITE VISITS & CONVERSIONS ---
+      match /site_visits/{visitId} {
+        allow read: if isTenantAdmin(tenantId) || isPlatformCEO();
+        allow create: if true; // Tracking pubblico
+        allow update, delete: if isPlatformCEO();
       }
       
       match /pagamenti_dipendenti/{docId} {
@@ -397,6 +448,24 @@ service cloud.firestore {
     // --- PLATFORM BACKUPS (global, solo CEO) ---
     match /platform_backups/{backupId} {
       allow read, write: if isPlatformCEO();
+    }
+    
+    // --- CUSTOM DOMAINS (global, gestito da CEO) ---
+    match /custom_domains/{domainId} {
+      allow read: if isPlatformCEO();
+      allow create, update, delete: if isPlatformCEO();
+    }
+    
+    // --- SITE TEMPLATES (global, gestito da CEO) ---
+    match /site_templates/{templateId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isPlatformCEO();
+    }
+    
+    // --- LANDING PAGE ANALYTICS AGGREGATED (global) ---
+    match /landing_stats_aggregated/{statId} {
+      allow read: if isPlatformCEO();
+      allow write: if isPlatformCEO();
     }
 
     // ==================== BLOCCA TUTTO IL RESTO ====================

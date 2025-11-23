@@ -6,6 +6,7 @@ import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../..
 import { ChevronLeft, ChevronRight, Plus, X, Phone, Users, Trash2, Edit, Save, Bell, BellOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { requestNotificationPermission, checkNotificationPermission, scheduleEventNotifications, setupForegroundMessageListener } from '../../utils/notifications';
+import CalendarNotesPanel from '../../components/calendar/CalendarNotesPanel';
 
 export default function CalendarPage() {
   const navigate = useNavigate();
@@ -1266,6 +1267,13 @@ export default function CalendarPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Pannello Note/Tasks per la data selezionata */}
+      {selectedDate && (
+        <div className="mt-6">
+          <CalendarNotesPanel selectedDate={formatDate(selectedDate)} />
+        </div>
+      )}
     </div>
   );
 }

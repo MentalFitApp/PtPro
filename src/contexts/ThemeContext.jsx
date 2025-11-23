@@ -11,24 +11,24 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState('light');
-
-  // Carica tema dalle preferenze utente
-  useEffect(() => {
+  // Inizializza il tema immediatamente dal localStorage o system preference
+  const getInitialTheme = () => {
     const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) return savedTheme;
+    
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return prefersDark ? 'dark' : 'light';
+  };
 
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else if (prefersDark) {
-      setTheme('dark');
-    }
-  }, []);
+  const [theme, setTheme] = useState(getInitialTheme);
 
-  // Applica tema al documento
+  // Applica tema al documento ogni volta che cambia
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    document.body.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
+    
+    console.log('Theme applied:', theme);
   }, [theme]);
 
   const toggleTheme = () => {
