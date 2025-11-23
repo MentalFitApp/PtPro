@@ -61,12 +61,12 @@ export default function CheckForm({ clientId, onSuccess }) {
   };
 
   // --- 2. STILI AGGIORNATI ---
-  const inputStyle = "w-full p-2.5 bg-slate-800/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
+  const inputStyle = "w-full p-2.5 bg-slate-800/70 border border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-slate-200 placeholder:text-slate-500";
   const labelStyle = "block mb-1 text-sm font-medium text-slate-300";
 
   return (
     <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-700 p-6">
-      <h3 className="text-xl font-semibold mb-4 text-rose-300 flex items-center gap-2">
+      <h3 className="text-xl font-semibold mb-4 text-blue-300 flex items-center gap-2">
         <UploadCloud size={20} /> Nuovo Check
       </h3>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -94,7 +94,7 @@ export default function CheckForm({ clientId, onSuccess }) {
             multiple
             accept="image/png, image/jpeg, image/webp"
             {...register('photos', { required: "Le foto sono obbligatorie." })}
-            className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-rose-600/20 file:text-rose-300 hover:file:bg-rose-600/30 cursor-pointer"
+            className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600/20 file:text-blue-300 hover:file:bg-blue-600/30 cursor-pointer"
           />
           {errors.photos && <p className="text-red-400 text-xs mt-1">{errors.photos.message}</p>}
         </div>
@@ -102,7 +102,7 @@ export default function CheckForm({ clientId, onSuccess }) {
         {isUploading && (
           <div className="w-full bg-slate-700 rounded-full h-2.5">
             <motion.div 
-              className="bg-rose-500 h-2.5 rounded-full" 
+              className="bg-blue-500 h-2.5 rounded-full" 
               initial={{ width: 0 }}
               animate={{ width: `${uploadProgress}%` }}
             />
@@ -115,7 +115,7 @@ export default function CheckForm({ clientId, onSuccess }) {
           <button
             type="submit"
             disabled={isUploading}
-            className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition disabled:opacity-50 font-semibold"
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:opacity-50 font-semibold shadow-lg shadow-blue-500/20"
           >
             {isUploading ? `Caricamento... ${Math.round(uploadProgress)}%` : 'Salva Check'}
           </button>

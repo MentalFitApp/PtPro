@@ -21,14 +21,36 @@ const AnimatedStars = () => {
     container.className = 'stars';
     document.body.appendChild(container);
 
-    // Crea 50 stelle con stile CEO dashboard premium
-    for (let i = 0; i < 50; i++) {
+    // Crea 30 stelle distribuite su tutta la schermata
+    for (let i = 0; i < 30; i++) {
       const star = document.createElement('div');
       star.className = 'star';
 
-      // Posizionamento random
-      star.style.top = `${Math.random() * 100}%`;
-      star.style.left = `${Math.random() * 100}%`;
+      // Distribuzione più ampia e uniforme
+      const minDistance = 8; // Distanza minima tra stelle in %
+      let top, left, tooClose;
+      
+      do {
+        top = Math.random() * 100;
+        left = Math.random() * 100;
+        tooClose = false;
+        
+        // Verifica distanza dalle altre stelle già create
+        for (let j = 0; j < container.children.length; j++) {
+          const existingStar = container.children[j];
+          const existingTop = parseFloat(existingStar.style.top);
+          const existingLeft = parseFloat(existingStar.style.left);
+          const distance = Math.sqrt(Math.pow(top - existingTop, 2) + Math.pow(left - existingLeft, 2));
+          
+          if (distance < minDistance) {
+            tooClose = true;
+            break;
+          }
+        }
+      } while (tooClose && container.children.length > 0);
+      
+      star.style.top = `${top}%`;
+      star.style.left = `${left}%`;
 
       container.appendChild(star);
     }
@@ -137,10 +159,10 @@ const BottomNav = ({ isCoach, isCollaboratore, isClient, userIsSuperAdmin }) => 
               }}
               className={`flex flex-col items-center justify-center min-w-[56px] max-w-[64px] h-14 px-2 rounded-xl transition-all snap-center flex-shrink-0 ${
                 location.pathname === link.to || location.pathname.startsWith(link.to + '/')
-                  ? 'text-rose-500 bg-rose-600/10 border border-rose-600/30'
+                  ? 'text-blue-400 bg-blue-600/20 border border-blue-500/40'
                   : link.isSubmenu
-                    ? 'text-slate-300 hover:text-rose-400 bg-slate-800/50'
-                    : 'text-slate-400 hover:text-rose-400'
+                    ? 'text-slate-300 hover:text-blue-400 bg-slate-800/50'
+                    : 'text-slate-400 hover:text-blue-400'
               }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -215,8 +237,8 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       hasActiveSubmenu
-                        ? 'bg-rose-600/20 text-rose-400 border border-rose-600/30'
-                        : 'text-slate-300 hover:bg-white/5 hover:text-rose-400'
+                        ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40'
+                        : 'text-slate-300 hover:bg-white/5 hover:text-blue-400'
                     }`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -260,8 +282,8 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
                               onClick={() => navigate(sub.to)}
                               className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                                 location.pathname === sub.to || location.pathname.startsWith(sub.to + '/')
-                                  ? 'bg-rose-600/15 text-rose-400 border border-rose-600/20'
-                                  : 'text-slate-400 hover:bg-white/5 hover:text-rose-400'
+                                  ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30'
+                                  : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
                               }`}
                               whileHover={{ scale: 1.01 }}
                               whileTap={{ scale: 0.99 }}
@@ -298,8 +320,8 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   location.pathname === link.to || location.pathname.startsWith(link.to + '/')
-                    ? 'bg-rose-600/20 text-rose-400 border border-rose-600/30'
-                    : 'text-slate-300 hover:bg-white/5 hover:text-rose-400'
+                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40'
+                    : 'text-slate-300 hover:bg-white/5 hover:text-blue-400'
                 }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

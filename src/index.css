@@ -18,7 +18,9 @@
   }
 
   body {
-    @apply bg-slate-900 text-slate-200 font-sans;
+    background: linear-gradient(135deg, #0a0e1a 0%, #0f172a 50%, #0a0e1a 100%);
+    color: #f8fafc;
+    @apply font-sans;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
@@ -91,12 +93,12 @@
 }
 
 .star.gold {
-  --star-color: #ef4444;
-  filter: drop-shadow(0 0 6px #ef4444);
+  --star-color: #fbbf24;
+  filter: drop-shadow(0 0 8px #fbbf24);
 }
 
 .star.gold::after {
-  background: linear-gradient(to left, rgba(239, 68, 68, 0.6), transparent);
+  background: linear-gradient(to left, rgba(251, 191, 36, 0.7), transparent);
 }
 
 /* ========================================
@@ -159,15 +161,16 @@
   pointer-events: none;
   z-index: 0;
   overflow: hidden;
-  background: radial-gradient(ellipse at bottom, #1b273550 0%, #090a0f00 100%);
+  background: radial-gradient(ellipse at bottom, #1e293b30 0%, #0a0e1a00 100%);
 }
 
 .stars {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
 }
 
 .star {
@@ -178,12 +181,12 @@
     float 15s ease-in-out infinite;
 }
 
-/* Stelle blu standard (piccole) */
+/* Stelle blu premium (piccole) */
 .star:not(:nth-child(6n)) {
-  background: #60a5fa;
+  background: #3b82f6;
   box-shadow: 
-    0 0 5px #60a5fa,
-    0 0 10px #60a5fa80;
+    0 0 6px #3b82f6,
+    0 0 12px #3b82f680;
 }
 
 /* Stelle di dimensione variabile */
@@ -260,18 +263,18 @@
    - 2 linee, una in senso orario, una antiorario
    ======================================== */
 
-/* LINEA 1 – ORARIO */
+/* LINEA 1 – ORARIO (Blu Premium) */
 @keyframes glow-line-1 {
   0% {
     background-position: 0% 50%;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
   }
   50% {
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.8);
   }
   100% {
     background-position: 100% 50%;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
   }
 }
 
@@ -279,8 +282,8 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    #ef4444 48%,
-    #ef4444 52%,
+    #3b82f6 48%,
+    #3b82f6 52%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -291,21 +294,21 @@
     linear-gradient(#fff 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: destination-out;
-  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.3));
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
 }
 
-/* LINEA 2 – ANTIORARIO */
+/* LINEA 2 – ANTIORARIO (Blu Premium) */
 @keyframes glow-line-2 {
   0% {
     background-position: 100% 50%;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
   }
   50% {
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.8);
   }
   100% {
     background-position: 0% 50%;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
   }
 }
 
@@ -313,8 +316,8 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    #ef4444 48%,
-    #ef4444 52%,
+    #3b82f6 48%,
+    #3b82f6 52%,
     transparent 100%
   );
   background-size: 200% 100%;
@@ -325,7 +328,7 @@
     linear-gradient(#fff 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: destination-out;
-  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.3));
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
 }
 
 /* ========================================
@@ -380,7 +383,7 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    scrollbar-color: rgba(239, 68, 68, 0.5) rgba(15, 23, 42, 0.3);
+    scrollbar-color: rgba(59, 130, 246, 0.6) rgba(30, 41, 59, 0.4);
   }
 
   .mobile-table-wrapper::-webkit-scrollbar {
@@ -388,17 +391,17 @@
   }
 
   .mobile-table-wrapper::-webkit-scrollbar-track {
-    background: rgba(15, 23, 42, 0.3);
+    background: rgba(30, 41, 59, 0.4);
     border-radius: 4px;
   }
 
   .mobile-table-wrapper::-webkit-scrollbar-thumb {
-    background: rgba(239, 68, 68, 0.5);
+    background: rgba(59, 130, 246, 0.6);
     border-radius: 4px;
   }
 
   .mobile-table-wrapper::-webkit-scrollbar-thumb:hover {
-    background: rgba(239, 68, 68, 0.7);
+    background: rgba(59, 130, 246, 0.8);
   }
 
   /* Scroll indicator */

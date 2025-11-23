@@ -29,10 +29,10 @@ export default function AnamnesiForm({ clientId, onSave }) {
   };
 
   // --- 2. STILI AGGIORNATI ---
-  const inputStyle = "w-full p-2.5 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
+  const inputStyle = "w-full p-2.5 bg-slate-800/50 border border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-slate-200 placeholder:text-slate-500";
   const labelStyle = "block mb-1 text-sm font-medium text-slate-300";
   const sectionStyle = "bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6";
-  const headingStyle = "font-bold mb-4 text-lg text-rose-300 border-b border-rose-400/20 pb-2";
+  const headingStyle = "font-bold mb-4 text-lg text-blue-300 border-b border-blue-400/30 pb-2";
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -84,8 +84,8 @@ export default function AnamnesiForm({ clientId, onSave }) {
           </div>
         </div>
         
-        <div className="bg-rose-900/50 p-4 rounded-lg border border-rose-500/30 text-center">
-            <p className="text-sm text-rose-300">Ricorda di richiedere al cliente le 4 foto per il check iniziale.</p>
+        <div className="bg-blue-900/30 p-4 rounded-lg border border-blue-500/40 text-center">
+            <p className="text-sm text-blue-300">Ricorda di richiedere al cliente le 4 foto per il check iniziale.</p>
         </div>
 
         {message && (
@@ -96,7 +96,7 @@ export default function AnamnesiForm({ clientId, onSave }) {
         )}
 
         <div className="flex justify-end pt-2">
-          <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition disabled:opacity-50 font-semibold">
+          <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:opacity-50 font-semibold shadow-lg shadow-blue-500/20">
             <Save size={16} /> {isSubmitting ? 'Salvataggio...' : 'Salva Anamnesi'}
           </button>
         </div>

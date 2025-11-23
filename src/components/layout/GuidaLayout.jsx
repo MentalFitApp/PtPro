@@ -26,14 +26,36 @@ const AnimatedBackground = () => {
         starsContainer.innerHTML = '';
     }
 
-    // Crea 50 stelle con stile CEO dashboard premium
-    for (let i = 0; i < 50; i++) {
+    // Crea 30 stelle distribuite su tutta la schermata
+    for (let i = 0; i < 30; i++) {
       const star = document.createElement('div');
       star.className = 'star';
       
-      // Posizionamento random
-      star.style.top = `${Math.random() * 100}%`;
-      star.style.left = `${Math.random() * 100}%`;
+      // Distribuzione più ampia e uniforme
+      const minDistance = 8; // Distanza minima tra stelle in %
+      let top, left, tooClose;
+      
+      do {
+        top = Math.random() * 100;
+        left = Math.random() * 100;
+        tooClose = false;
+        
+        // Verifica distanza dalle altre stelle già create
+        for (let j = 0; j < starsContainer.children.length; j++) {
+          const existingStar = starsContainer.children[j];
+          const existingTop = parseFloat(existingStar.style.top);
+          const existingLeft = parseFloat(existingStar.style.left);
+          const distance = Math.sqrt(Math.pow(top - existingTop, 2) + Math.pow(left - existingLeft, 2));
+          
+          if (distance < minDistance) {
+            tooClose = true;
+            break;
+          }
+        }
+      } while (tooClose && starsContainer.children.length > 0);
+      
+      star.style.top = `${top}%`;
+      star.style.left = `${left}%`;
       
       starsContainer.appendChild(star);
     }

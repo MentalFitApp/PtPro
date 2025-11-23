@@ -13,8 +13,8 @@ import { components, colors, animations } from '../../config/designSystem';
 const roleConfigs = {
   admin: {
     name: 'Admin',
-    color: 'rose',
-    gradient: 'from-rose-500 to-pink-500',
+    color: 'blue',
+    gradient: 'from-blue-500 to-cyan-500',
     icon: Shield,
     menu: [
       { icon: Home, label: 'Dashboard', path: '/dashboard' },
