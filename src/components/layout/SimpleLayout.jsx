@@ -43,35 +43,43 @@ const BottomNav = () => {
   );
 };
 
-// Sidebar for desktop
+// Sidebar for desktop (Stile Premium CEO Dashboard)
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
   const links = [
-    { to: '/client/dashboard', icon: <Home size={18} />, label: 'Dashboard' },
-    { to: '/client/scheda-alimentazione', icon: <Apple size={18} />, label: 'Alimentazione' },
-    { to: '/client/scheda-allenamento', icon: <Dumbbell size={18} />, label: 'Allenamento' },
-    { to: '/client/community', icon: <UsersRound size={18} />, label: 'Community' },
+    { to: '/client/dashboard', icon: <Home size={20} />, label: 'Dashboard' },
+    { to: '/client/scheda-alimentazione', icon: <Apple size={20} />, label: 'Alimentazione' },
+    { to: '/client/scheda-allenamento', icon: <Dumbbell size={20} />, label: 'Allenamento' },
+    { to: '/client/community', icon: <UsersRound size={20} />, label: 'Community' },
   ];
 
   return (
-    <aside className="hidden md:flex fixed left-0 top-0 h-screen w-60 bg-slate-900/90 backdrop-blur-xl border-r border-white/10 z-40 flex-col transition-all duration-300">
-      <div className="p-4 flex items-center justify-between border-b border-white/5">
-        <h1 className="text-xl font-bold text-slate-100">Menu Cliente</h1>
+    <aside className="hidden md:flex fixed left-0 top-0 h-screen w-72 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-40 flex-col transition-all duration-300 shadow-2xl">
+      <div className="p-6 border-b border-slate-700/50">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <UsersRound className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-white">FitFlow Pro</h1>
+            <p className="text-xs text-slate-400">Client Area</p>
+          </div>
+        </div>
       </div>
 
-      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {links.map(link => (
           <motion.button
             key={link.to}
             onClick={() => navigate(link.to)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
               location.pathname === link.to || location.pathname.startsWith(link.to + '/')
-                ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40'
-                : 'text-slate-300 hover:bg-white/5 hover:text-blue-400'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
-            whileHover={{ x: 4 }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             {link.icon}
@@ -142,7 +150,7 @@ export default function SimpleLayout() {
         <Sidebar />
 
         {/* CONTENUTO PRINCIPALE */}
-        <div className="flex-1 transition-all duration-300 md:ml-60">
+        <div className="flex-1 transition-all duration-300 md:ml-72">
           <main className="min-h-screen">
             <Outlet />
           </main>

@@ -181,7 +181,7 @@ const BottomNav = ({ isCoach, isCollaboratore, isClient, userIsSuperAdmin }) => 
   );
 };
 
-// === SIDEBAR COLLASSABILE ===
+// === SIDEBAR COLLASSABILE (Stile Premium CEO Dashboard) ===
 const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollapsed, userIsSuperAdmin }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -191,27 +191,43 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
   return (
     <motion.aside
       initial={false}
-      animate={{ width: isCollapsed ? 64 : 240 }}
-      className="hidden lg:flex fixed left-0 top-0 h-screen bg-slate-900/90 backdrop-blur-xl border-r border-white/10 z-40 flex-col transition-all duration-300 data-[theme='dark']:bg-slate-900 data-[theme='dark']:border-slate-700"
+      animate={{ width: isCollapsed ? 80 : 280 }}
+      className="hidden lg:flex fixed left-0 top-0 h-screen bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-40 flex-col transition-all duration-300 shadow-2xl"
     >
-      <div className="p-4 flex items-center justify-between border-b border-white/5">
-        <AnimatePresence>
-          {!isCollapsed && (
-            <motion.h1
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-xl font-bold text-slate-100"
-            >
-              FitFlow Pro
-            </motion.h1>
+      {/* Header con logo premium */}
+      <div className="p-6 border-b border-slate-700/50">
+        <div className="flex items-center justify-between">
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                  <Activity className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-white">FitFlow Pro</h1>
+                  <p className="text-xs text-slate-400">
+                    {isCoach ? 'Coach Panel' : isCollaboratore ? 'Collaboratore' : isClient ? 'Client Area' : 'Admin Panel'}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {isCollapsed && (
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30">
+              <Activity className="w-5 h-5 text-white" />
+            </div>
           )}
-        </AnimatePresence>
-        <div className="flex items-center gap-2">
+        </div>
+        <div className="flex items-center gap-2 mt-3">
           <ThemeToggle />
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-slate-400"
+            className="p-2 rounded-lg hover:bg-slate-800 transition-colors text-slate-400"
           >
             {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
@@ -235,12 +251,12 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
                         [link.label]: !prev[link.label]
                       }));
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                       hasActiveSubmenu
-                        ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40'
-                        : 'text-slate-300 hover:bg-white/5 hover:text-blue-400'
+                        ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ scale: isCollapsed ? 1 : 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex-shrink-0">
@@ -282,11 +298,11 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
                               onClick={() => navigate(sub.to)}
                               className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                                 location.pathname === sub.to || location.pathname.startsWith(sub.to + '/')
-                                  ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30'
-                                  : 'text-slate-400 hover:bg-white/5 hover:text-blue-400'
+                                  ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-400 border border-blue-500/30'
+                                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
                               }`}
-                              whileHover={{ scale: 1.01 }}
-                              whileTap={{ scale: 0.99 }}
+                              whileHover={{ scale: 1.02, x: 4 }}
+                              whileTap={{ scale: 0.98 }}
                             >
                               <div className="flex-shrink-0">
                                 {React.cloneElement(sub.icon, { size: 14 })}
@@ -318,12 +334,12 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
                 onClick={() => {
                   navigate(link.to);
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                   location.pathname === link.to || location.pathname.startsWith(link.to + '/')
-                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40'
-                    : 'text-slate-300 hover:bg-white/5 hover:text-blue-400'
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: isCollapsed ? 1 : 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex-shrink-0">
@@ -450,10 +466,10 @@ export default function MainLayout() {
           />
         )}
 
-        {/* CONTENUTO PRINCIPALE - LARGHEZZA MASSIMA DESKTOP */}
+        {/* CONTENUTO PRINCIPALE - LARGHEZZA MASSIMA DESKTOP CON STILE PREMIUM */}
         <div className={`flex-1 transition-all duration-300 ${
           showSidebar
-            ? (isSidebarCollapsed ? 'lg:ml-16 xl:ml-16' : 'lg:ml-60 xl:ml-60')
+            ? (isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-[280px]')
             : 'ml-0'
         }`}>
           <main className={`min-h-screen ${

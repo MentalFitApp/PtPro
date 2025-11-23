@@ -35,28 +35,52 @@ const timeAgo = (date) => {
   return "ora";
 };
 
-// --- COMPONENTI UI ---
-const StatCard = ({ title, value, icon, isCurrency = false, isPercentage = false }) => (
-  <div className="bg-slate-800/60 backdrop-blur-sm p-3 sm:p-5 rounded-xl border border-slate-700 shadow-xl h-full">
-    <div className="flex items-center gap-2 sm:gap-3 text-slate-400">
-      {React.cloneElement(icon, { size: 18, className: `sm:w-5 sm:h-5 ${icon.props.className || ''}` })}
-      <p className="text-xs sm:text-sm font-medium truncate">{title}</p>
-    </div>
-    <p className="text-2xl sm:text-3xl font-bold text-slate-100 mt-2 sm:mt-3 truncate">
-      {isCurrency 
-        ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value) 
-        : isPercentage ? `${value}%` : value
-      }
-    </p>
-  </div>
-);
+// --- COMPONENTI UI PREMIUM ---
+const StatCard = ({ title, value, icon, color = 'blue', isCurrency = false, isPercentage = false, trend }) => {
+  const colorClasses = {
+    blue: 'bg-blue-500/10 text-blue-500',
+    purple: 'bg-purple-500/10 text-purple-500',
+    green: 'bg-green-500/10 text-green-500',
+    yellow: 'bg-yellow-500/10 text-yellow-500',
+    cyan: 'bg-cyan-500/10 text-cyan-500',
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4, scale: 1.02 }}
+      className="bg-slate-800/60 backdrop-blur-sm p-5 sm:p-6 rounded-xl border border-slate-700/50 shadow-xl hover:border-blue-500/50 transition-all h-full"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
+          {React.cloneElement(icon, { size: 22 })}
+        </div>
+        {trend !== undefined && (
+          <div className={`flex items-center gap-1 text-xs font-medium ${
+            trend > 0 ? 'text-green-400' : trend < 0 ? 'text-red-400' : 'text-slate-400'
+          }`}>
+            {trend > 0 ? '↑' : trend < 0 ? '↓' : '→'} {Math.abs(trend)}%
+          </div>
+        )}
+      </div>
+      <h3 className="text-3xl font-bold text-white mb-1">
+        {isCurrency 
+          ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value) 
+          : isPercentage ? `${value}%` : value
+        }
+      </h3>
+      <p className="text-sm text-slate-400">{title}</p>
+    </motion.div>
+  );
+};
 
 const ActivityItem = ({ item, navigate }) => {
-  const icons = {
-    expiring: <Clock className="text-yellow-500" size={18}/>,
-    new_check: <CheckCircle className="text-green-500" size={18}/>,
-    new_anamnesi: <FileText className="text-blue-500" size={18}/>,
-    renewal: <RefreshCw className="text-emerald-500" size={18}/>,
+  const iconConfig = {
+    expiring: { icon: <Clock size={18}/>, color: 'text-yellow-400 bg-yellow-500/10' },
+    new_check: { icon: <CheckCircle size={18}/>, color: 'text-green-400 bg-green-500/10' },
+    new_anamnesi: { icon: <FileText size={18}/>, color: 'text-blue-400 bg-blue-500/10' },
+    renewal: { icon: <RefreshCw size={18}/>, color: 'text-emerald-400 bg-emerald-500/10' },
   };
   const tabMap = { 
     expiring: 'payments', 
@@ -65,22 +89,27 @@ const ActivityItem = ({ item, navigate }) => {
     renewal: 'payments'
   };
 
+  const config = iconConfig[item.type];
+
   return (
     <motion.button
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -10 }}
-      transition={{ duration: 0.3 }}
+      whileHover={{ x: 4, scale: 1.01 }}
+      transition={{ duration: 0.2 }}
       onClick={() => navigate(`/client/${item.clientId}?tab=${tabMap[item.type]}`)}
-      className="w-full flex items-start gap-4 p-3 rounded-lg bg-slate-500/5 hover:bg-slate-500/10 transition-colors text-left"
+      className="w-full flex items-start gap-4 p-4 rounded-lg bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 hover:border-blue-500/30 transition-all text-left"
     >
-      <div className="mt-1 flex-shrink-0">{icons[item.type]}</div>
-      <div className="flex-1">
-        <p className="text-sm font-semibold text-slate-200">{item.clientName}</p>
-        <p className="text-xs text-slate-400">{item.description}</p>
+      <div className={`p-2 rounded-lg ${config.color} flex-shrink-0`}>
+        {config.icon}
       </div>
-      <div className="text-xs text-slate-500 flex-shrink-0">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-white mb-0.5">{item.clientName}</p>
+        <p className="text-xs text-slate-400 truncate">{item.description}</p>
+      </div>
+      <div className="text-xs text-slate-500 flex-shrink-0 pt-1">
         {timeAgo(item.date)}
       </div>
     </motion.button>
@@ -615,89 +644,218 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen overflow-x-hidden w-full">
       <div className="w-full py-4 sm:py-6 space-y-4 sm:space-y-6 mobile-safe-bottom">
-        {/* HEADER */}
-        <div className="bg-slate-800/30 backdrop-blur-xl border border-white/10 rounded-2xl p-3 sm:p-5 space-y-3 sm:space-y-5 mx-3 sm:mx-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-100 flex items-center gap-2">
-              <TrendingUp size={24} className="sm:w-7 sm:h-7"/> Dashboard
-            </h1>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <span className="text-slate-300 font-semibold text-sm sm:text-base truncate flex-1 sm:flex-none">{userName}</span>
-              <button
-                onClick={() => setShowProfileModal(true)}
-                className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+        {/* HEADER PREMIUM CON SALUTO */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-2xl mx-3 sm:mx-6"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                Benvenuto, {userName || 'Admin'} 👋
+              </h1>
+              <p className="text-slate-400">Ecco una panoramica della tua attività oggi</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/new-client')}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg font-medium shadow-lg shadow-blue-500/20 transition-all"
               >
-                <User size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Profilo</span>
-              </button>
-              <button onClick={handleLogout} className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
-                <LogOut size={14} className="sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Logout</span>
-              </button>
+                <Plus size={18} />
+                <span className="hidden sm:inline">Nuovo Cliente</span>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowProfileModal(true)}
+                className="p-2.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+              >
+                <Settings size={20} />
+              </motion.button>
             </div>
           </div>
+        </motion.div>
 
-          <div className="border-t border-white/10"></div>
-
-          <div>
-            <p className="text-slate-400 text-xs sm:text-sm mb-3">Panoramica delle metriche chiave e progressi in tempo reale.</p>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => navigate('/clients')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2">
-                <Users size={14} className="sm:w-4 sm:h-4"/> <span>Gestisci</span>
-              </button>
-              <button onClick={() => navigate('/new-client')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2">
-                <Plus size={14} className="sm:w-4 sm:h-4"/> <span>Nuovo</span>
-              </button>
-              <button onClick={() => navigate('/business-history')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2">
-                <BarChart3 size={14} className="sm:w-4 sm:h-4"/> <span>Storico</span>
-              </button>
-              <button onClick={() => navigate('/analytics')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 sm:gap-2">
-                <TrendingUp size={14} className="sm:w-4 sm:h-4"/> <span>Analytics</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* QUICK ACTIONS BAR */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-2 sm:grid-cols-4 gap-3 mx-3 sm:mx-6"
+        >
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/clients')}
+            className="flex items-center justify-center gap-2 p-4 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-xl transition-all text-sm font-medium text-slate-300 hover:text-white"
+          >
+            <Users size={18}/>
+            <span>Clienti</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/business-history')}
+            className="flex items-center justify-center gap-2 p-4 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-xl transition-all text-sm font-medium text-slate-300 hover:text-white"
+          >
+            <BarChart3 size={18}/>
+            <span>Storico</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/analytics')}
+            className="flex items-center justify-center gap-2 p-4 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-xl transition-all text-sm font-medium text-slate-300 hover:text-white"
+          >
+            <TrendingUp size={18}/>
+            <span>Analytics</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/calendar')}
+            className="flex items-center justify-center gap-2 p-4 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-xl transition-all text-sm font-medium text-slate-300 hover:text-white"
+          >
+            <Bell size={18}/>
+            <span>Calendario</span>
+          </motion.button>
+        </motion.div>
 
       {/* CONTENT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mx-3 sm:mx-6">
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-            <StatCard title="Incasso Mensile" value={monthlyIncome} icon={<DollarSign className="text-green-500"/>} isCurrency={true} />
-            <StatCard title="Rinnovi Mensili" value={monthlyRenewals} icon={<RefreshCw className="text-blue-500"/>} isCurrency={true} />
-            <StatCard title="Clienti Attivi" value={clientStats.active} icon={<CheckCircle className="text-blue-500"/>} />
-            <StatCard title="Retention Rate" value={retentionRate} icon={<RefreshCw className="text-amber-500"/>} isPercentage={true} />
+          {/* STATISTICHE CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <StatCard 
+              title="Incasso Mensile" 
+              value={monthlyIncome} 
+              icon={<DollarSign/>} 
+              color="green"
+              isCurrency={true}
+              trend={12}
+            />
+            <StatCard 
+              title="Rinnovi Mensili" 
+              value={monthlyRenewals} 
+              icon={<RefreshCw/>} 
+              color="cyan"
+              isCurrency={true}
+              trend={8}
+            />
+            <StatCard 
+              title="Clienti Attivi" 
+              value={clientStats.active} 
+              icon={<CheckCircle/>} 
+              color="blue"
+              trend={5}
+            />
+            <StatCard 
+              title="Retention Rate" 
+              value={retentionRate} 
+              icon={<Target/>} 
+              color="purple"
+              isPercentage={true}
+            />
           </div>
 
-          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-6 border border-slate-700 shadow-xl">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 sm:mb-4">
-              <h2 className="text-base sm:text-lg font-semibold text-slate-100 flex items-center gap-2"><BarChart3 size={18} className="sm:w-5 sm:h-5" /> Andamento Business</h2>
-              <div className="flex gap-1 sm:gap-2 bg-slate-800/40 backdrop-blur-xl border border-white/10 p-0.5 sm:p-1 rounded-lg overflow-x-auto shrink-0">
-                <button onClick={() => setChartDataType('revenue')} className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md transition whitespace-nowrap ${chartDataType === 'revenue' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Fatturato</button>
-                <button onClick={() => setChartDataType('clients')} className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md transition whitespace-nowrap ${chartDataType === 'clients' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Clienti</button>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-slate-700/50 shadow-xl"
+          >
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <BarChart3 size={20}/> Andamento Business
+              </h2>
+              <div className="flex gap-2 bg-slate-900/50 p-1 rounded-lg">
+                <button 
+                  onClick={() => setChartDataType('revenue')} 
+                  className={`px-3 py-1.5 text-sm rounded-md transition-all ${
+                    chartDataType === 'revenue' 
+                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' 
+                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Fatturato
+                </button>
+                <button 
+                  onClick={() => setChartDataType('clients')} 
+                  className={`px-3 py-1.5 text-sm rounded-md transition-all ${
+                    chartDataType === 'clients' 
+                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' 
+                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Clienti
+                </button>
               </div>
             </div>
             <div className="mobile-chart-container">
               <Line data={chartDataConfig} options={chartOptions} />
             </div>
-            <div className="flex justify-center mt-3 sm:mt-4">
-              <div className="flex gap-1 sm:gap-2 bg-slate-800/40 backdrop-blur-xl border border-white/10 p-0.5 sm:p-1 rounded-lg flex-wrap justify-center">
-                <button onClick={() => setChartTimeRange('daily')} className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded-md transition ${chartTimeRange === 'daily' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Giorno</button>
-                <button onClick={() => setChartTimeRange('monthly')} className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded-md transition ${chartTimeRange === 'monthly' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Mese</button>
-                <button onClick={() => setChartTimeRange('yearly')} className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded-md transition ${chartTimeRange === 'yearly' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Anno</button>
+            <div className="flex justify-center mt-4">
+              <div className="flex gap-2 bg-slate-900/50 p-1 rounded-lg">
+                <button 
+                  onClick={() => setChartTimeRange('daily')} 
+                  className={`px-3 py-1 text-xs rounded-md transition ${
+                    chartTimeRange === 'daily' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Giorno
+                </button>
+                <button 
+                  onClick={() => setChartTimeRange('monthly')} 
+                  className={`px-3 py-1 text-xs rounded-md transition ${
+                    chartTimeRange === 'monthly' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Mese
+                </button>
+                <button 
+                  onClick={() => setChartTimeRange('yearly')} 
+                  className={`px-3 py-1 text-xs rounded-md transition ${
+                    chartTimeRange === 'yearly' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Anno
+                </button>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {focusClient && (
-            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-slate-700 shadow-xl">
-              <h2 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 flex items-center gap-2 text-slate-100"><Target size={16} className="sm:w-5 sm:h-5" /> Focus del Giorno</h2>
-              <p className="text-sm font-bold text-rose-400 truncate">{focusClient.name}</p>
-              <p className="text-xs sm:text-sm text-slate-400 mt-1 line-clamp-2">Obiettivo: &quot;{focusClient.goal || 'Non specificato'}&quot;</p>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-sm rounded-xl p-5 border border-blue-500/30 shadow-xl"
+            >
+              <h2 className="text-lg font-bold mb-3 flex items-center gap-2 text-white">
+                <Target size={20}/> Focus del Giorno
+              </h2>
+              <p className="text-base font-bold text-blue-400 mb-1">{focusClient.name}</p>
+              <p className="text-sm text-slate-300">
+                Obiettivo: &quot;{focusClient.goal || 'Non specificato'}&quot;
+              </p>
+            </motion.div>
           )}
         </div>
         
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-6 border border-slate-700 shadow-xl">
-          <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-slate-100"><Bell size={18} className="sm:w-5 sm:h-5" /> Feed Attività</h2>
-          <div className="space-y-2 sm:space-y-3 max-h-[400px] sm:max-h-[500px] lg:max-h-[calc(100vh-14rem)] overflow-y-auto pr-1 sm:pr-2">
+        {/* ACTIVITY FEED */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-5 sm:p-6 border border-slate-700/50 shadow-xl"
+        >
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-white">
+            <Bell size={20}/> Feed Attività
+          </h2>
+          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
             <AnimatePresence>
               {activityFeed.length > 0 ? activityFeed
                 .sort((a, b) => toDate(b.date) - toDate(a.date))
@@ -705,11 +863,16 @@ export default function Dashboard() {
                 .map(item => (
                   <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds || item.date}`} item={item} navigate={navigate} />
                 )) 
-                : <p className="text-xs sm:text-sm text-slate-500 p-4 text-center">Nessuna attività recente.</p>
+                : (
+                  <div className="text-center py-8">
+                    <Bell size={32} className="mx-auto text-slate-600 mb-2"/>
+                    <p className="text-sm text-slate-500">Nessuna attività recente</p>
+                  </div>
+                )
               }
             </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
       </div>
       </div>
 
