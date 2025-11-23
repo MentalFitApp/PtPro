@@ -587,7 +587,7 @@ export default function Collaboratori() {
   const totalPages = Math.ceil(filteredLeads.length / leadsPerPage);
   const paginatedLeads = filteredLeads.slice((currentPage - 1) * leadsPerPage, currentPage * leadsPerPage);
 
-  if (loading) return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div></div>;
+  if (loading) return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div></div>;
   if (error) return <div className="min-h-screen flex flex-col items-center justify-center text-red-500 p-4"><p>{error}</p><button onClick={() => navigate('/')} className="mt-4 px-4 py-2 bg-rose-600 text-white rounded-lg">Torna</button></div>;
   if (!isAdmin) return null;
 
@@ -619,14 +619,14 @@ export default function Collaboratori() {
                 <File size={14} /> <span className="hidden sm:inline">Fonti</span>
               </motion.button>
             )}
-            <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@esempio.com" className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-xs w-full sm:max-w-[160px]" />
-            <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-xs w-full sm:w-24">
+            <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@esempio.com" className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs w-full sm:max-w-[160px]" />
+            <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs w-full sm:w-24">
               <option>Setter</option>
               <option>Marketing</option>
               <option>Vendita</option>
             </select>
-            <motion.button onClick={handleAddCollaboratore} className="flex items-center justify-center gap-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs w-full sm:w-auto whitespace-nowrap" whileHover={{ scale: 1.05 }}>
-              <Plus size={14} /> Aggiungi
+            <motion.button onClick={handleAddCollaboratore} className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg text-[10px] sm:text-xs font-medium w-full sm:w-auto whitespace-nowrap shadow-lg" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Plus size={12} className="sm:w-[14px] sm:h-[14px]" /> Aggiungi
             </motion.button>
           </div>
         </motion.header>
@@ -664,16 +664,16 @@ export default function Collaboratori() {
         <ReportStatus collaboratori={collaboratori} />
 
         {/* 3 TABS LEADS */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6 mx-3 sm:mx-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-3 sm:mb-6 mx-3 sm:mx-6">
           {[
             { label: 'Oggi', leads: stats.leadsToday },
-            { label: 'Settimana', leads: stats.leadsWeek },
+            { label: 'Sett.', leads: stats.leadsWeek },
             { label: 'Mese', leads: stats.leadsMonth },
           ].map((stat, i) => (
-            <motion.div key={i} className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700 min-w-0">
-              <h3 className="text-[10px] sm:text-sm font-semibold text-slate-200">{stat.label}</h3>
-              <p className="text-xl sm:text-3xl font-bold text-green-500 mt-0.5 sm:mt-1">{stat.leads}</p>
-              <p className="text-[9px] sm:text-xs text-slate-400">Leads</p>
+            <motion.div key={i} whileHover={{ y: -2, scale: 1.02 }} className="bg-slate-800/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-4 border border-slate-700/50 shadow-xl min-w-0">
+              <h3 className="text-[9px] sm:text-sm font-semibold text-slate-400 mb-0.5">{stat.label}</h3>
+              <p className="text-lg sm:text-3xl font-bold text-green-400 mb-0">{stat.leads}</p>
+              <p className="text-[8px] sm:text-xs text-slate-500">Leads</p>
             </motion.div>
           ))}
         </div>
@@ -692,12 +692,12 @@ export default function Collaboratori() {
         </div>
 
         {/* REPORT SETTING & VENDITA */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 mx-3 sm:mx-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mx-3 sm:mx-6">
           {/* SETTING */}
-          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-xs sm:text-sm font-semibold text-cyan-400">Report Setting</h2>
-              <button onClick={() => setShowPastSetting(!showPastSetting)} className="text-[10px] sm:text-xs flex items-center gap-0.5 sm:gap-1 text-cyan-300 hover:text-cyan-100"><Eye size={10} className="sm:hidden" /><Eye size={12} className="hidden sm:block" /> Storico</button>
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-700/50 shadow-xl">
+            <div className="flex justify-between items-center mb-2 sm:mb-3">
+              <h2 className="text-sm sm:text-base font-semibold text-cyan-400">Report Setting</h2>
+              <button onClick={() => setShowPastSetting(!showPastSetting)} className="text-[10px] sm:text-xs flex items-center gap-1 text-cyan-300 hover:text-cyan-100 px-2 py-1 rounded hover:bg-slate-700/50"><Eye size={12} className="sm:w-[14px] sm:h-[14px]" /> Storico</button>
             </div>
             {showPastSetting && (
               <div className="mb-2 sm:mb-3 p-1.5 sm:p-2 bg-slate-900/50 border border-cyan-800/30 rounded max-h-24 sm:max-h-32 overflow-y-auto text-[10px] sm:text-xs">

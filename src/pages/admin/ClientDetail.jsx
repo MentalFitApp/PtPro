@@ -499,7 +499,10 @@ export default function ClientDetail() {
   };
 
   const copyCredentialsToClipboard = () => {
-    const text = `Ciao ${client.name},\n\nLink: https://MentalFitApp.github.io/PtPro/#/login\nEmail: ${client.email}\nPassword: ${client.tempPassword || 'Contatta admin'}`;
+    const loginLink = process.env.NODE_ENV === 'production' 
+      ? 'https://www.flowfitpro.it/login'
+      : `${window.location.origin}/login`;
+    const text = `Ciao ${client.name},\n\nLink: ${loginLink}\nEmail: ${client.email}\nPassword: ${client.tempPassword || 'Contatta admin'}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);

@@ -582,7 +582,7 @@ export default function Clients() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#1b2735] to-[#090a0f]">
-      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
     </div>
   );
 
@@ -914,7 +914,7 @@ export default function Clients() {
 
         {/* VISTA CARD */}
         {viewMode === 'card' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mx-3 sm:mx-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 sm:gap-6 mx-3 sm:mx-6 max-w-[1800px]">
             {filteredAndSortedClients.map((c) => {
               const expiry = toDate(c.scadenza);
               const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;

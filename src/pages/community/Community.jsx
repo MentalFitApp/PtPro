@@ -977,7 +977,7 @@ export default function Community() {
         className="relative"
       >
         <div className="w-20 h-20 border-4 border-rose-500/20 rounded-full"></div>
-        <div className="absolute top-0 w-20 h-20 border-4 border-transparent border-t-rose-500 rounded-full animate-spin"></div>
+        <div className="absolute top-0 w-20 h-20 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
         <div className="absolute inset-2 bg-gradient-to-br from-rose-500 to-cyan-500 rounded-full opacity-20 animate-pulse"></div>
       </motion.div>
     </div>

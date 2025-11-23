@@ -6,6 +6,7 @@ import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../..
 import { signOut } from 'firebase/auth';
 import { CheckCircle, Clock, FileText, Users, LogOut, Bell, MessageSquare, PlusCircle, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTenantBranding } from '../../hooks/useTenantBranding';
 
 // Helper per calcolare il tempo trascorso
 const timeAgo = (date) => {
@@ -29,43 +30,70 @@ const timeAgo = (date) => {
   }
 };
 
-const StatCard = ({ title, value, icon, isPercentage = false, variants }) => (
-  <motion.div variants={variants} className="bg-slate-800/60 backdrop-blur-sm p-4 rounded-xl border border-slate-700 h-full">
-    <div className="flex items-center gap-3 text-slate-400">
-      {icon}
-      <p className="text-sm">{title}</p>
-    </div>
-    <p className="text-3xl font-bold text-slate-50 mt-2">
-      {isPercentage ? `${value}%` : value}
-    </p>
-  </motion.div>
-);
+const StatCard = ({ title, value, icon, color = 'blue', isPercentage = false, trend, variants }) => {
+  const colorClasses = {
+    blue: 'bg-blue-500/10 text-blue-500',
+    purple: 'bg-purple-500/10 text-purple-500',
+    green: 'bg-green-500/10 text-green-500',
+    cyan: 'bg-cyan-500/10 text-cyan-500',
+  };
+
+  return (
+    <motion.div 
+      variants={variants}
+      whileHover={{ y: -4, scale: 1.02 }}
+      className="bg-slate-800/60 backdrop-blur-sm p-3 sm:p-5 rounded-lg sm:rounded-xl border border-slate-700/50 shadow-xl hover:border-blue-500/50 transition-all h-full"
+    >
+      <div className="flex items-start justify-between mb-2 sm:mb-3">
+        <div className={`p-2 sm:p-3 rounded-lg ${colorClasses[color]}`}>
+          {React.cloneElement(icon, { size: 18, className: 'sm:w-[22px] sm:h-[22px]' })}
+        </div>
+        {trend !== undefined && (
+          <div className={`flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-medium ${
+            trend > 0 ? 'text-green-400' : trend < 0 ? 'text-red-400' : 'text-slate-400'
+          }`}>
+            {trend > 0 ? '↑' : trend < 0 ? '↓' : '→'} {Math.abs(trend)}%
+          </div>
+        )}
+      </div>
+      <h3 className="text-xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">
+        {isPercentage ? `${value}%` : value}
+      </h3>
+      <p className="text-xs sm:text-sm text-slate-400">{title}</p>
+    </motion.div>
+  );
+};
 
 const QuickAction = ({ to, title, icon, variants }) => (
-  <motion.div variants={variants}>
+  <motion.div 
+    variants={variants}
+    whileHover={{ scale: 1.02, y: -2 }}
+    whileTap={{ scale: 0.98 }}
+  >
     <button
       onClick={to}
-      className="group bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg p-4 flex items-center gap-4 transition-all duration-300 w-full"
+      className="group bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-xl p-4 flex items-center gap-4 transition-all w-full shadow-lg hover:shadow-xl hover:border-blue-500/30"
     >
-      <div className="bg-slate-700/70 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-white p-3 rounded-lg transition-colors duration-300">
+      <div className="bg-blue-500/10 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 text-blue-400 group-hover:text-white p-3 rounded-lg transition-all duration-300">
         {icon}
       </div>
-      <div className="flex-1">
-        <h4 className="font-bold text-slate-200">{title}</h4>
+      <div className="flex-1 text-left">
+        <h4 className="font-bold text-white">{title}</h4>
       </div>
-      <ChevronRight className="text-slate-500 group-hover:text-white transition-colors duration-300" />
+      <ChevronRight className="text-slate-500 group-hover:text-blue-400 transition-colors duration-300" />
     </button>
   </motion.div>
 );
 
 const ActivityItem = ({ item, navigate, variants }) => {
-  const icons = {
-    expiring: <Clock className="text-yellow-500" size={18}/>,
-    new_check: <CheckCircle className="text-green-500" size={18}/>,
-    new_anamnesi: <FileText className="text-blue-500" size={18}/>,
-    new_message: <MessageSquare className="text-rose-500" size={18}/>,
+  const iconConfig = {
+    expiring: { icon: <Clock size={18}/>, color: 'text-yellow-400 bg-yellow-500/10' },
+    new_check: { icon: <CheckCircle size={18}/>, color: 'text-green-400 bg-green-500/10' },
+    new_anamnesi: { icon: <FileText size={18}/>, color: 'text-blue-400 bg-blue-500/10' },
+    new_message: { icon: <MessageSquare size={18}/>, color: 'text-rose-400 bg-rose-500/10' },
   };
   const tabMap = { expiring: 'info', new_check: 'checks', new_anamnesi: 'anamnesi', new_message: 'chat' };
+  const config = iconConfig[item.type];
 
   return (
     <motion.button
@@ -74,16 +102,19 @@ const ActivityItem = ({ item, navigate, variants }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -10 }}
-      transition={{ duration: 0.3 }}
+      whileHover={{ x: 4, scale: 1.01 }}
+      transition={{ duration: 0.2 }}
       onClick={() => navigate(`/coach/client/${item.clientId}?tab=${tabMap[item.type]}`)}
-      className="w-full flex items-start gap-4 p-3 rounded-lg bg-slate-500/5 hover:bg-slate-500/10 transition-colors text-left"
+      className="w-full flex items-start gap-4 p-4 rounded-lg bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 hover:border-blue-500/30 transition-all text-left shadow-lg"
     >
-      <div className="mt-1 flex-shrink-0">{icons[item.type]}</div>
-      <div className="flex-1">
-        <p className="text-sm font-semibold text-slate-200">{item.clientName}</p>
-        <p className="text-xs text-slate-400">{item.description}</p>
+      <div className={`p-2 rounded-lg ${config.color} flex-shrink-0`}>
+        {config.icon}
       </div>
-      <div className="text-xs text-slate-500 flex-shrink-0">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-white mb-0.5">{item.clientName}</p>
+        <p className="text-xs text-slate-400 truncate">{item.description}</p>
+      </div>
+      <div className="text-xs text-slate-500 flex-shrink-0 pt-1">
         {timeAgo(item.date)}
       </div>
     </motion.button>
@@ -92,6 +123,7 @@ const ActivityItem = ({ item, navigate, variants }) => {
 
 export default function CoachDashboard() {
   const navigate = useNavigate();
+  const { branding } = useTenantBranding();
   const [clients, setClients] = useState([]);
   const [activityFeed, setActivityFeed] = useState([]);
   const [userName, setUserName] = useState('');
@@ -274,9 +306,6 @@ export default function CoachDashboard() {
     });
 
     return () => {
-      unsubChecks();
-      unsubAnamnesi();
-      unsubChats();
       unsubClients();
     };
   }, []);
@@ -325,63 +354,100 @@ export default function CoachDashboard() {
 
   return (
     <div className="min-h-screen text-slate-200 relative overflow-x-hidden w-full">
-      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full py-4 sm:py-6 mobile-safe-bottom">
-        <motion.header variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700 mx-3 sm:mx-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2"><Users size={28}/> Coach Dashboard</h1>
-            <div className="flex items-center gap-4">
-              <span className="text-slate-300 font-semibold">{userName}</span>
-              <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg transition-colors">
-                <LogOut size={16} /> Logout
-              </button>
+      <motion.div initial="hidden" animate="visible" variants={containerVariants} className="w-full py-4 sm:py-6 space-y-6 px-3 sm:px-6">
+        {/* HEADER PREMIUM */}
+        <motion.div 
+          variants={itemVariants}
+          className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-2xl"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                {branding.coachAreaName} - Benvenuto, {userName} 👋
+              </h1>
+              <p className="text-slate-400">Gestisci i tuoi clienti e monitora le loro attività</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/coach/clients')}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg font-medium shadow-lg shadow-blue-500/20 transition-all"
+              >
+                <Users size={18} />
+                <span className="hidden sm:inline">Tutti i Clienti</span>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleLogout}
+                className="p-2.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+              >
+                <LogOut size={20} />
+              </motion.button>
             </div>
           </div>
-          <p className="text-slate-400 mb-4">Gestisci i tuoi clienti e monitora le loro attività.</p>
-        </motion.header>
+        </motion.div>
 
-        <main className="mt-6 mx-3 sm:mx-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+        <main className="space-y-4 sm:space-y-6">
+          {/* STATISTICHE */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             <StatCard 
               title="Clienti Attivi" 
               value={clientStats.active} 
-              icon={<CheckCircle className="text-blue-500"/>}
+              icon={<CheckCircle/>}
+              color="blue"
+              trend={5}
               variants={itemVariants}
             />
             <StatCard 
               title="Scadenze Prossime" 
               value={clientStats.expiring} 
-              icon={<Clock className="text-yellow-500"/>}
+              icon={<Clock/>}
+              color="yellow"
               variants={itemVariants}
             />
             <StatCard 
               title="Totale Clienti" 
               value={clients.length} 
-              icon={<Users className="text-cyan-500"/>}
+              icon={<Users/>}
+              color="cyan"
+              trend={8}
               variants={itemVariants}
             />
           </div>
-          <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Aggiornamenti Recenti</h2>
-            <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
+
+          {/* QUICK ACTIONS */}
+          <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700/50 shadow-xl">
+            <h2 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 text-white flex items-center gap-2">
+              <PlusCircle size={18} className="sm:w-5 sm:h-5"/> Azioni Rapide
+            </h2>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              <QuickAction to={() => navigate('/coach/clients')} title="Gestisci Clienti" icon={<Users size={20} />} variants={itemVariants} />
+              <QuickAction to={() => navigate('/coach/chat')} title="Chat" icon={<MessageSquare size={20} />} variants={itemVariants} />
+              <QuickAction to={() => navigate('/coach/anamnesi')} title="Anamnesi" icon={<FileText size={20} />} variants={itemVariants} />
+              <QuickAction to={() => navigate('/coach/updates')} title="Aggiornamenti" icon={<Bell size={20} />} variants={itemVariants} />
+            </div>
+          </motion.div>
+
+          {/* ACTIVITY FEED */}
+          <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-5 sm:p-6 rounded-xl border border-slate-700/50 shadow-xl">
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-white">
+              <Bell size={20}/> Feed Attività
+            </h2>
+            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
               <AnimatePresence>
                 {activityFeed.length > 0 ? (
                   activityFeed.map(item => (
                     <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds || item.date}`} item={item} navigate={navigate} variants={itemVariants} />
                   ))
                 ) : (
-                  <p className="text-slate-400 text-center p-4">Nessun aggiornamento recente.</p>
+                  <div className="text-center py-8">
+                    <Bell size={32} className="mx-auto text-slate-600 mb-2"/>
+                    <p className="text-sm text-slate-500">Nessuna attività recente</p>
+                  </div>
                 )}
               </AnimatePresence>
-            </div>
-          </motion.div>
-          <motion.div variants={itemVariants} className="mt-8 bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700">
-            <h2 className="text-lg font-semibold mb-4 text-slate-200">Funzioni Utili</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <QuickAction to={() => navigate('/coach/clients')} title="Gestisci Clienti" icon={<Users size={22} />} variants={itemVariants} />
-              <QuickAction to={() => navigate('/new')} title="Aggiungi Nuovo Cliente" icon={<PlusCircle size={22} />} variants={itemVariants} />
-              <QuickAction to={() => navigate('/coach/chat')} title="Invia Messaggio" icon={<MessageSquare size={22} />} variants={itemVariants} />
-              <QuickAction to={() => navigate('/coach/anamnesi')} title="Visualizza Anamnesi" icon={<FileText size={22} />} variants={itemVariants} />
-              <QuickAction to={() => navigate('/coach/updates')} title="Aggiornamenti" icon={<Bell size={22} />} variants={itemVariants} />
             </div>
           </motion.div>
         </main>

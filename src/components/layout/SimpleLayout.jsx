@@ -98,6 +98,13 @@ export default function SimpleLayout() {
   useEffect(() => {
     if (initialized) return;
 
+    // Verifica se esiste già un container stelle
+    const existingContainer = document.querySelector('.stars');
+    if (existingContainer) {
+      setInitialized(true);
+      return;
+    }
+
     // Crea container stelle
     const container = document.createElement('div');
     container.className = 'stars';

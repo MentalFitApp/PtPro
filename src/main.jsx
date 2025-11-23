@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import App from './App.jsx';
 import './index.css';
+import './styles/animations.css';
 
 // Registra il service worker per le notifiche push (solo in produzione)
 if ('serviceWorker' in navigator && import.meta.env.PROD) {

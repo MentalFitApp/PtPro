@@ -8,6 +8,13 @@ const AnimatedStars = () => {
   useEffect(() => {
     if (initialized) return;
 
+    // Verifica se esiste già un container stelle
+    const existingContainer = document.querySelector('.stars');
+    if (existingContainer) {
+      setInitialized(true);
+      return;
+    }
+
     const container = document.createElement('div');
     container.className = 'stars';
     document.body.appendChild(container);

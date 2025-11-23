@@ -49,7 +49,7 @@ export default function CoachSchede() {
     return arr;
   }, [clients, search, sortField, sortDir]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-12 w-12 rounded-full border-t-2 border-b-2 border-rose-500"/></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-12 w-12 rounded-full border-t-2 border-b-2 border-blue-500"/></div>;
 
   return (
     <div className="min-h-screen">

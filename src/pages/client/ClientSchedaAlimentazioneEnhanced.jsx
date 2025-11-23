@@ -160,7 +160,7 @@ export default function ClientSchedaAlimentazioneEnhanced() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
@@ -344,7 +344,7 @@ export default function ClientSchedaAlimentazioneEnhanced() {
       {saving && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
             <p className="text-slate-200 mt-4">Salvataggio in corso...</p>
           </div>
         </div>

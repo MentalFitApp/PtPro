@@ -35,6 +35,7 @@ const Analytics = React.lazy(() => import('./pages/admin/Analytics'));
 const CourseAdmin = React.lazy(() => import('./pages/admin/CourseAdmin'));
 const CourseContentManager = React.lazy(() => import('./pages/admin/CourseContentManager'));
 const SuperAdminSettings = React.lazy(() => import('./pages/admin/SuperAdminSettings'));
+const TenantBranding = React.lazy(() => import('./pages/admin/TenantBranding'));
 
 // Platform CEO Pages
 const CEOPlatformDashboard = React.lazy(() => import('./pages/platform/CEOPlatformDashboard'));
@@ -81,13 +82,13 @@ const LessonPlayer = React.lazy(() => import('./components/courses/LessonPlayer'
 // Spinner
 const PageSpinner = () => (
   <div className="flex justify-center items-center h-screen w-full bg-slate-900">
-    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
   </div>
 );
 
 const AuthSpinner = () => (
   <div className="flex flex-col justify-center items-center min-h-screen bg-slate-900 text-slate-200">
-    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
     <p className="mt-4 text-sm">Verifica autenticazione...</p>
   </div>
 );
@@ -104,6 +105,7 @@ export default function App() {
     error: null,
   });
   const [lastNavigated, setLastNavigated] = useState(null);
+  const [initialAuthComplete, setInitialAuthComplete] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -133,6 +135,10 @@ export default function App() {
 
       try {
         if (currentUser) {
+          // Se l'auth iniziale è già completa e l'utente naviga tra pagine valide, non fare redirect
+          if (initialAuthComplete && authInfo.user?.uid === currentUser.uid) {
+            return;
+          }
           // PRIMA: Verifica se è Platform CEO (livello root, non tenant)
           const platformAdminRef = doc(db, 'platform_admins', 'superadmins');
           const platformAdminDoc = await getDoc(platformAdminRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) }));
@@ -265,6 +271,10 @@ export default function App() {
             isPlatformCEO: false,
             error: null
           });
+          
+          if (!initialAuthComplete) {
+            setInitialAuthComplete(true);
+          }
         } else {
           sessionStorage.removeItem('app_role');
           setAuthInfo({
@@ -280,13 +290,15 @@ export default function App() {
 
           const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId', '/platform-login', '/platform-dashboard'];
           const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/') || location.pathname.startsWith('/platform'));
-          if (!isPublic) {
+          if (!isPublic && !initialAuthComplete) {
             const target = '/login';
             if (lastNavigated !== target) {
               setLastNavigated(target);
               navigate(target, { replace: true });
             }
           }
+          
+          setInitialAuthComplete(false);
         }
       } catch (error) {
         console.error('Errore verifica ruolo:', error);
@@ -342,6 +354,7 @@ export default function App() {
           <Route path="/calendar-report/:date" element={<CalendarReport />} />
           <Route path="/business-history" element={<BusinessHistory />} />
           <Route path="/admin/dipendenti" element={<Dipendenti />} />
+          <Route path="/admin/branding" element={<TenantBranding />} />
           <Route path="/statistiche" element={<Statistiche />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/notifications" element={<Notifications />} />
@@ -380,7 +393,7 @@ export default function App() {
         </Route>
 
         {/* === ROTTE CLIENTI === */}
-        <Route element={authInfo.isClient ? <SimpleLayout /> : <Navigate to="/login" replace />}>
+        <Route element={authInfo.isClient ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route path="/client/onboarding" element={<Onboarding />} />
           <Route path="/client/first-access" element={<FirstAccess />} />
           <Route path="/client/dashboard" element={<ClientDashboard />} />

@@ -242,7 +242,7 @@ export default function CoachClients() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#1b2735] to-[#090a0f]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#1b2735] to-[#090a0f]"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div></div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1b2735] to-[#090a0f]">
@@ -254,12 +254,12 @@ export default function CoachClients() {
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
-                <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 pl-10 w-48 outline-none focus:ring-2 focus:ring-rose-500 text-sm text-slate-200" placeholder="Cerca..."/>
+                <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 pl-10 w-48 outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200" placeholder="Cerca..."/>
               </div>
-              <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg"><LogOut size={16}/> Logout</button>
+              <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm font-medium rounded-lg shadow-lg shadow-blue-500/20"><LogOut size={16}/> Logout</button>
               <div className="flex gap-1 bg-slate-700/50 border border-slate-600 rounded-lg p-1">
-                <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-rose-600 text-white' : 'text-slate-400'}`}><List size={16}/></button>
-                <button onClick={() => setViewMode('card')} className={`p-2 rounded-md ${viewMode === 'card' ? 'bg-rose-600 text-white' : 'text-slate-400'}`}><LayoutGrid size={16}/></button>
+                <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}><List size={16}/></button>
+                <button onClick={() => setViewMode('card')} className={`p-2 rounded-md ${viewMode === 'card' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}><LayoutGrid size={16}/></button>
               </div>
             </div>
           </div>
@@ -269,19 +269,19 @@ export default function CoachClients() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
         <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-3 mb-4">
           <div className="flex flex-wrap gap-2 items-center">
-            <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm rounded-lg ${filter === 'all' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Tutti</button>
+            <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm rounded-lg ${filter === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Tutti</button>
             <button onClick={() => setFilter('active')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'active' ? 'bg-emerald-600 text-white' : 'text-emerald-400 hover:bg-emerald-900/30'}`}><CheckCircle size={14}/> Attivi</button>
             <button onClick={() => setFilter('expiring')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'expiring' ? 'bg-amber-600 text-white' : 'text-amber-400 hover:bg-amber-900/30'}`}><Clock size={14}/> In Scadenza</button>
             <button onClick={() => setFilter('expired')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'expired' ? 'bg-red-600 text-white' : 'text-red-400 hover:bg-red-900/30'}`}><AlertCircle size={14}/> Scaduti</button>
             <button onClick={() => setFilter('has-check')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'has-check' ? 'bg-cyan-600 text-white' : 'text-cyan-400 hover:bg-cyan-900/30'}`}><CheckCircle size={14}/> Con Anamnesi</button>
             <button onClick={() => setFilter('no-check')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'no-check' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:bg-gray-900/30'}`}><XCircle size={14}/> Senza Anamnesi</button>
             <div className="ml-auto flex gap-2">
-              <button onClick={() => setShowCalendar(prev => !prev)} className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg ${showCalendar ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-300'}`}>
+              <button onClick={() => setShowCalendar(prev => !prev)} className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg ${showCalendar ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}>
                 <Calendar size={14}/> Calendario
               </button>
               {showCalendar && (
                 <div className="flex gap-1 bg-slate-700/50 rounded-lg p-0.5">
-                  <button onClick={() => setCalendarType('iscrizioni')} className={`px-2 py-1 text-xs rounded ${calendarType === 'iscrizioni' ? 'bg-rose-600 text-white' : 'text-slate-300'}`}>Iscrizioni</button>
+                  <button onClick={() => setCalendarType('iscrizioni')} className={`px-2 py-1 text-xs rounded ${calendarType === 'iscrizioni' ? 'bg-blue-600 text-white' : 'text-slate-300'}`}>Iscrizioni</button>
                   <button onClick={() => setCalendarType('scadenze')} className={`px-2 py-1 text-xs rounded ${calendarType === 'scadenze' ? 'bg-amber-600 text-white' : 'text-slate-300'}`}>Scadenze</button>
                 </div>
               )}
@@ -289,10 +289,10 @@ export default function CoachClients() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 mb-6">
-          <button onClick={() => toggleSort('name')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'name' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Nome {getSortIcon('name')}</button>
-          <button onClick={() => toggleSort('startDate')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'startDate' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Inizio {getSortIcon('startDate')}</button>
-          <button onClick={() => toggleSort('expiry')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'expiry' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Scadenza {getSortIcon('expiry')}</button>
-          <button onClick={() => toggleSort('lastCheck')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'lastCheck' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Anamnesi {getSortIcon('lastCheck')}</button>
+          <button onClick={() => toggleSort('name')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'name' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Nome {getSortIcon('name')}</button>
+          <button onClick={() => toggleSort('startDate')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'startDate' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Inizio {getSortIcon('startDate')}</button>
+          <button onClick={() => toggleSort('expiry')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'expiry' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Scadenza {getSortIcon('expiry')}</button>
+          <button onClick={() => toggleSort('lastCheck')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'lastCheck' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Anamnesi {getSortIcon('lastCheck')}</button>
         </div>
       </div>
 
@@ -323,10 +323,10 @@ export default function CoachClients() {
                 const showingExpiries = (filter === 'expiring' || filter === 'expired' || calendarType === 'scadenze');
                 const bgColor = showingExpiries
                   ? (clientiGiorno.length > 0 ? 'bg-amber-900/40 border-amber-600 hover:bg-amber-900/60' : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/70')
-                  : (clientiGiorno.length > 0 ? 'bg-rose-900/40 border-rose-600 hover:bg-rose-900/60' : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/70');
-                const cardBg = showingExpiries ? 'from-amber-600/30 to-orange-600/30' : 'from-rose-600/30 to-purple-600/30';
-                const textColor = showingExpiries ? 'text-amber-300' : 'text-rose-300';
-                const dotColor = showingExpiries ? 'bg-amber-500' : 'bg-rose-500';
+                  : (clientiGiorno.length > 0 ? 'bg-blue-900/40 border-blue-600 hover:bg-blue-900/60' : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/70');
+                const cardBg = showingExpiries ? 'from-amber-600/30 to-orange-600/30' : 'from-blue-600/30 to-cyan-600/30';
+                const textColor = showingExpiries ? 'text-amber-300' : 'text-blue-300';
+                const dotColor = showingExpiries ? 'bg-amber-500' : 'bg-blue-500';
                 
                 return (
                   <div
@@ -411,7 +411,7 @@ export default function CoachClients() {
               const expiry = toDate(c.scadenza);
               const days = expiry ? Math.ceil((expiry - new Date()) / 86400000) : null;
               return (
-                <motion.div key={c.id} whileHover={{scale:1.02}} onClick={() => navigate(`/coach/client/${c.id}`)} className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-4 cursor-pointer hover:border-rose-500/50">
+                <motion.div key={c.id} whileHover={{scale:1.02}} onClick={() => navigate(`/coach/client/${c.id}`)} className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-4 cursor-pointer hover:border-blue-500/50 shadow-lg">
                   <h3 className="text-lg font-semibold text-white mb-2">{c.name || '-'}</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between"><span className="text-slate-400">Email:</span><span className="text-slate-200">{c.email || '-'}</span></div>
@@ -453,7 +453,7 @@ export default function CoachClients() {
                             <p className="text-xs text-amber-300 mt-1">Scade: {toDate(c.scadenza)?.toLocaleDateString('it-IT')}</p>
                           )}
                           {calendarType === 'iscrizioni' && (
-                            <p className="text-xs text-rose-300 mt-1">Iscritto: {(toDate(c.startDate) || toDate(c.createdAt))?.toLocaleDateString('it-IT')}</p>
+                            <p className="text-xs text-blue-300 mt-1">Iscritto: {(toDate(c.startDate) || toDate(c.createdAt))?.toLocaleDateString('it-IT')}</p>
                           )}
                         </div>
                         <div className="flex gap-2">
@@ -482,7 +482,7 @@ export default function CoachClients() {
               </div>
               <h3 className="text-lg font-bold text-slate-100">Conferma Eliminazione</h3>
               <p className="text-sm text-slate-400 mt-2">
-                Sei sicuro di voler eliminare il cliente <strong className="text-rose-400">{clientToDelete.name}</strong>?
+                Sei sicuro di voler eliminare il cliente <strong className="text-cyan-400">{clientToDelete.name}</strong>?
               </p>
               <div className="mt-6 flex justify-center gap-4">
                 <button onClick={() => setClientToDelete(null)} className="px-6 py-2 text-sm font-semibold text-slate-300 bg-slate-700/50 hover:bg-slate-700/70 rounded-lg transition-colors border border-slate-600">

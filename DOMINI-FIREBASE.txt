@@ -1,0 +1,26 @@
+# 🔥 Domini Firebase da Configurare
+
+## Vai su Firebase Console
+https://console.firebase.google.com → **PtPro** → **Authentication** → **Settings** → **Authorized domains**
+
+## Aggiungi questi domini:
+
+### Produzione
+```
+flowfitpro.it
+www.flowfitpro.it
+```
+
+### Sviluppo
+```
+localhost
+127.0.0.1
+*.app.github.dev
+```
+
+### Opzionali (se userai sottodomini per tenant)
+```
+*.flowfitpro.it
+```
+
+## ✅ Clicca "Add domain" per ognuno e salva

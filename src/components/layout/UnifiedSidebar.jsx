@@ -127,7 +127,7 @@ export const UnifiedSidebar = ({ role = 'admin', userName = 'User', userEmail = 
                   <RoleIcon size={20} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-50 text-sm">MentalFit</h3>
+                  <h3 className="font-bold text-slate-50 text-sm">FitFlow</h3>
                   <p className={`text-xs text-${config.color}-400`}>{config.name}</p>
                 </div>
               </motion.div>

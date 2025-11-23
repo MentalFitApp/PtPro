@@ -29,8 +29,8 @@ const timeAgo = (date) => {
 };
 
 const LoadingSpinner = () => (
-  <div className="min-h-screen flex justify-center items-center relative">
-    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
+  <div className="min-h-screen flex justify-center items-center relative bg-slate-900">
+    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
   </div>
 );
 
@@ -218,8 +218,6 @@ export default function CoachUpdates() {
     });
 
     return () => {
-      unsubChecks();
-      unsubAnamnesi();
       unsubChats();
       unsubClients();
     };

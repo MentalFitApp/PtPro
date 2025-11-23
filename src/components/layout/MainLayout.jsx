@@ -3,12 +3,23 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   Home, Users, MessageSquare, FileText, Bell,
   Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing,
-  UserCheck, BookOpen, Target, Activity, GraduationCap, Plus
+  UserCheck, BookOpen, Target, Activity, GraduationCap, Plus, Menu, X, Palette
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isSuperAdmin } from '../../utils/superadmin';
-import { auth } from '../../firebase';
+import { auth, db } from '../../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import ThemeToggle from '../ui/ThemeToggle';
+import { defaultBranding } from '../../config/tenantBranding';
+import { 
+  pageVariants, 
+  fadeVariants, 
+  sidebarVariants, 
+  mobileMenuVariants,
+  springs,
+  durations,
+  easings
+} from '../../config/motionConfig';
 
 // === STELLE DI SFONDO (50, stile CEO Dashboard Premium) ===
 const AnimatedStars = () => {
@@ -16,6 +27,13 @@ const AnimatedStars = () => {
 
   useEffect(() => {
     if (initialized) return;
+
+    // Verifica se esiste già un container stelle
+    const existingContainer = document.querySelector('.stars');
+    if (existingContainer) {
+      setInitialized(true);
+      return;
+    }
 
     const container = document.createElement('div');
     container.className = 'stars';
@@ -64,22 +82,66 @@ const AnimatedStars = () => {
 // === LINKS NAVIGAZIONE CON SOTTOMENU ===
 const adminNavLinks = [
   { to: '/', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
-
-  { to: '/clients', icon: <Users size={18} />, label: 'Clienti' },
-  { to: '/new-client', icon: <Plus size={18} />, label: 'Nuovo Cliente' },
   { to: '/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/updates', icon: <BellRing size={18} />, label: 'Novità' },
-  { to: '/collaboratori', icon: <UserCheck size={18} />, label: 'Collaboratori' },
-  { to: '/business-history', icon: <BarChart3 size={18} />, label: 'Storico Business' },
-  { to: '/admin/dipendenti', icon: <Users size={18} />, label: 'Dipendenti' },
   { to: '/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
-  { to: '/statistiche', icon: <Activity size={18} />, label: 'Statistiche' },
-  { to: '/analytics', icon: <Target size={18} />, label: 'Analytics' },
-  { to: '/courses', icon: <BookOpen size={18} />, label: 'Corsi' },
-  { to: '/community', icon: <Users size={18} />, label: 'Community' },
-  { to: '/course-admin', icon: <GraduationCap size={18} />, label: 'Corsi Admin' },
-  { to: '/notifications', icon: <BellRing size={18} />, label: 'Notifiche' },
-  { to: '/alimentazione-allenamento', icon: <FileText size={18} />, label: 'Schede' },
+  
+  // Sezione Clienti
+  { 
+    label: 'Clienti', 
+    icon: <Users size={18} />, 
+    isSection: true,
+    children: [
+      { to: '/clients', icon: <Users size={18} />, label: 'Lista Clienti' },
+      { to: '/new-client', icon: <Plus size={18} />, label: 'Nuovo Cliente' },
+    ]
+  },
+  
+  // Sezione Schede
+  { 
+    label: 'Schede', 
+    icon: <Target size={18} />, 
+    isSection: true,
+    children: [
+      { to: '/alimentazione-allenamento', icon: <Target size={18} />, label: 'Allenamento & Alimentazione' },
+    ]
+  },
+  
+  // Sezione Team
+  { 
+    label: 'Team', 
+    icon: <UserCheck size={18} />, 
+    isSection: true,
+    children: [
+      { to: '/collaboratori', icon: <UserCheck size={18} />, label: 'Collaboratori' },
+      { to: '/admin/dipendenti', icon: <Users size={18} />, label: 'Dipendenti' },
+    ]
+  },
+  
+  // Sezione Analytics
+  { 
+    label: 'Analytics', 
+    icon: <BarChart3 size={18} />, 
+    isSection: true,
+    children: [
+      { to: '/business-history', icon: <BarChart3 size={18} />, label: 'Business History' },
+      { to: '/statistiche', icon: <Activity size={18} />, label: 'Statistiche' },
+      { to: '/analytics', icon: <BarChart3 size={18} />, label: 'Analytics Avanzate' },
+    ]
+  },
+  
+  // Sezione Contenuti
+  { 
+    label: 'Contenuti', 
+    icon: <BookOpen size={18} />, 
+    isSection: true,
+    children: [
+      { to: '/courses', icon: <BookOpen size={18} />, label: 'Corsi' },
+      { to: '/community', icon: <Users size={18} />, label: 'Community' },
+    ]
+  },
+  
+  { to: '/admin/branding', icon: <Palette size={18} />, label: 'Personalizzazione' },
 
   { to: '/superadmin', icon: <Settings size={18} />, label: 'Super Admin', isSuperAdmin: true },
 ];
@@ -113,75 +175,195 @@ const collaboratoreNavLinks = [
 // === PAGINE AUTH (NASCONDI SIDEBAR E NAV) ===
 const AUTH_PAGES = ['/login', '/register', '/reset-password'];
 
-// === BOTTOM NAV MOBILE ===
-const BottomNav = ({ isCoach, isCollaboratore, isClient, userIsSuperAdmin }) => {
+// === MOBILE HAMBURGER MENU ===
+const MobileMenu = ({ isOpen, setIsOpen, isCoach, isCollaboratore, isClient, userIsSuperAdmin }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : (isClient ? clientNavLinks : adminNavLinks));
   const [expandedMenus, setExpandedMenus] = useState({});
 
-  const toggleMenu = (menuKey) => {
-    setExpandedMenus(prev => ({
-      ...prev,
-      [menuKey]: !prev[menuKey]
-    }));
-  };
-
-  const allLinks = [];
-  links
-    .filter(link => !link.isSuperAdmin || userIsSuperAdmin)
-    .forEach(link => {
-      allLinks.push(link);
-      if (link.submenu && expandedMenus[link.key]) {
-        link.submenu.forEach(sub => {
-          allLinks.push({
-            ...sub,
-            isSubmenu: true,
-            parentKey: link.key
-          });
-        });
-      }
-    });
-
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-2xl border-t border-white/10 z-50 md:hidden safe-area-bottom">
-      <div className="px-2 py-2">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hidden snap-x snap-mandatory pb-1">
-          {allLinks.map(link => (
-            <motion.button
-              key={link.isSubmenu ? `${link.parentKey}-${link.to}` : link.to}
-              onClick={() => {
-                if (link.submenu) {
-                  toggleMenu(link.key);
-                } else {
-                  navigate(link.to);
-                }
-              }}
-              className={`flex flex-col items-center justify-center min-w-[56px] max-w-[64px] h-14 px-2 rounded-xl transition-all snap-center flex-shrink-0 ${
-                location.pathname === link.to || location.pathname.startsWith(link.to + '/')
-                  ? 'text-blue-400 bg-blue-600/20 border border-blue-500/40'
-                  : link.isSubmenu
-                    ? 'text-slate-300 hover:text-blue-400 bg-slate-800/50'
-                    : 'text-slate-400 hover:text-blue-400'
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <div className="flex-shrink-0">
-                {React.cloneElement(link.icon, { size: link.isSubmenu ? 16 : 18 })}
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Overlay */}
+          <motion.div
+            variants={fadeVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] lg:hidden"
+          />
+          
+          {/* Sidebar mobile */}
+          <motion.aside
+            variants={mobileMenuVariants}
+            initial="closed"
+            animate="open"
+            exit="closed"
+            className="fixed left-0 top-0 h-screen w-72 bg-slate-900/98 backdrop-blur-xl border-r border-slate-700/50 z-[70] flex flex-col shadow-2xl lg:hidden overflow-y-auto"
+          >
+            {/* Header */}
+            <div className="p-4 border-b border-slate-700/50 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/30">
+                  <img 
+                    src="/logo192.PNG" 
+                    alt="FitFlow"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-white">FitFlow</h1>
+                  <p className="text-xs text-slate-400">
+                    {isCoach ? 'Coach Panel' : isCollaboratore ? 'Collaboratore' : isClient ? 'Client Area' : 'Admin Panel'}
+                  </p>
+                </div>
               </div>
-              <span className={`mt-0.5 truncate w-full text-center leading-tight ${link.isSubmenu ? 'text-[8px]' : 'text-[9px]'}`}>
-                {link.label}
-              </span>
-            </motion.button>
-          ))}
-        </div>
-      </div>
-    </div>
+            </div>
+
+            {/* Navigation */}
+            <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+              {links
+                .filter(link => !link.isSuperAdmin || userIsSuperAdmin)
+                .map((link) => {
+                  const isActive = location.pathname === link.to || location.pathname.startsWith(link.to + '/');
+                  
+                  // Gestione sezioni collassabili
+                  if (link.isSection && link.children) {
+                    const isExpanded = expandedMenus[link.label];
+                    const hasActiveChild = link.children.some(child => 
+                      location.pathname === child.to || location.pathname.startsWith(child.to + '/')
+                    );
+                    
+                    return (
+                      <div key={link.label}>
+                        <button
+                          onClick={() => setExpandedMenus(prev => ({ ...prev, [link.label]: !prev[link.label] }))}
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                            hasActiveChild
+                              ? 'bg-slate-800 text-blue-400'
+                              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                          }`}
+                        >
+                          {link.icon}
+                          <span className="flex-1 text-left">{link.label}</span>
+                          <ChevronRight className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`} size={16} />
+                        </button>
+                        {isExpanded && (
+                          <div className="ml-6 mt-1 space-y-1">
+                            {link.children.map(child => {
+                              const isChildActive = location.pathname === child.to || location.pathname.startsWith(child.to + '/');
+                              return (
+                                <button
+                                  key={child.to}
+                                  onClick={() => { navigate(child.to); setIsOpen(false); }}
+                                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                                    isChildActive
+                                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20'
+                                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                                  }`}
+                                >
+                                  {child.icon}
+                                  <span>{child.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                  
+                  // Link normale
+                  return (
+                    <button
+                      key={link.to}
+                      onClick={() => { navigate(link.to); setIsOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                        isActive
+                          ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      {link.icon}
+                      <span>{link.label}</span>
+                    </button>
+                  );
+                })}
+            </nav>
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
   );
 };
 
-// === SIDEBAR COLLASSABILE (Stile Premium CEO Dashboard) ===
+// === COMPONENTE LOGO SIDEBAR ===
+const SidebarLogo = ({ isCollapsed }) => {
+  const [branding, setBranding] = useState(defaultBranding);
+
+  useEffect(() => {
+    const loadBranding = async () => {
+      try {
+        const tid = localStorage.getItem('tenantId');
+        if (!tid) return;
+
+        const brandingDoc = await getDoc(doc(db, 'tenants', tid, 'settings', 'branding'));
+        if (brandingDoc.exists()) {
+          setBranding({ ...defaultBranding, ...brandingDoc.data() });
+        }
+      } catch (error) {
+        console.debug('Could not load sidebar branding:', error);
+      }
+    };
+
+    loadBranding();
+  }, []);
+
+  if (isCollapsed) {
+    return branding.logoUrl ? (
+      <img 
+        src={branding.logoUrl} 
+        alt={branding.appName}
+        className="h-10 max-w-[60px] object-contain mx-auto"
+      />
+    ) : (
+      <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 mx-auto shadow-lg shadow-blue-500/30">
+        <img 
+          src="/logo192.PNG" 
+          alt="FitFlow"
+          className="w-full h-full object-cover"
+        />
+      </div>
+    );
+  }
+
+  return branding.logoUrl ? (
+    <img 
+      src={branding.logoUrl} 
+      alt={branding.appName}
+      className="h-12 max-w-full object-contain"
+    />
+  ) : (
+    <>
+      <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/30">
+        <img 
+          src="/logo192.PNG" 
+          alt="FitFlow"
+          className="w-full h-full object-cover"
+        />
+      </div>
+      <div>
+        <h1 className="text-lg font-bold text-white">{branding.appName}</h1>
+        <p className="text-xs text-slate-400">Gestione Completa</p>
+      </div>
+    </>
+  );
+};
+
+// === SIDEBAR DESKTOP COLLASSABILE (Stile Premium CEO Dashboard) ===
 const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollapsed, userIsSuperAdmin }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -203,24 +385,15 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex items-center gap-3"
+                className="flex items-center gap-3 w-full"
               >
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                  <Activity className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-white">FitFlow Pro</h1>
-                  <p className="text-xs text-slate-400">
-                    {isCoach ? 'Coach Panel' : isCollaboratore ? 'Collaboratore' : isClient ? 'Client Area' : 'Admin Panel'}
-                  </p>
-                </div>
+                {/* Mostra logo personalizzato se disponibile, altrimenti design predefinito */}
+                <SidebarLogo isCollapsed={false} />
               </motion.div>
             )}
           </AnimatePresence>
           {isCollapsed && (
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30">
-              <Activity className="w-5 h-5 text-white" />
-            </div>
+            <SidebarLogo isCollapsed={true} />
           )}
         </div>
         <div className="flex items-center gap-2 mt-3">
@@ -238,22 +411,28 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
         {links
           .filter(link => !link.isSuperAdmin || userIsSuperAdmin)
           .map((link) => {
-            if (link.isExpandable) {
+            // Gestione sezioni collassabili
+            if (link.isSection && link.children) {
               const isExpanded = expandedMenus[link.label];
-              const hasActiveSubmenu = link.submenu?.some(sub => location.pathname === sub.to || location.pathname.startsWith(sub.to + '/'));
+              const hasActiveChild = link.children.some(child => 
+                location.pathname === child.to || location.pathname.startsWith(child.to + '/')
+              );
 
               return (
                 <div key={link.label}>
                   <motion.button
                     onClick={() => {
+                      if (isCollapsed) {
+                        setIsCollapsed(false);
+                      }
                       setExpandedMenus(prev => ({
                         ...prev,
                         [link.label]: !prev[link.label]
                       }));
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                      hasActiveSubmenu
-                        ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20'
+                      hasActiveChild
+                        ? 'bg-slate-800 text-blue-400'
                         : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                     whileHover={{ scale: isCollapsed ? 1 : 1.02 }}
@@ -264,40 +443,42 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
                     </div>
                     <AnimatePresence>
                       {!isCollapsed && (
-                        <motion.span
-                          initial={{ opacity: 0, width: 0 }}
-                          animate={{ opacity: 1, width: 'auto' }}
-                          exit={{ opacity: 0, width: 0 }}
-                          className="truncate"
-                        >
-                          {link.label}
-                        </motion.span>
+                        <>
+                          <motion.span
+                            initial={{ opacity: 0, width: 0 }}
+                            animate={{ opacity: 1, width: 'auto' }}
+                            exit={{ opacity: 0, width: 0 }}
+                            className="flex-1 truncate"
+                          >
+                            {link.label}
+                          </motion.span>
+                          <motion.div
+                            animate={{ rotate: isExpanded ? 90 : 0 }}
+                            className="flex-shrink-0"
+                          >
+                            <ChevronRight size={14} />
+                          </motion.div>
+                        </>
                       )}
                     </AnimatePresence>
-                    <motion.div
-                      animate={{ rotate: isExpanded ? 90 : 0 }}
-                      className="ml-auto flex-shrink-0"
-                    >
-                      <ChevronRight size={14} />
-                    </motion.div>
                   </motion.button>
 
                   <AnimatePresence>
-                    {isExpanded && (
+                    {isExpanded && !isCollapsed && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         className="ml-6 mt-1 space-y-1 overflow-hidden"
                       >
-                        {link.submenu
-                          .filter(sub => !sub.isSuperAdmin || userIsSuperAdmin)
-                          .map(sub => (
+                        {link.children.map(child => {
+                          const isChildActive = location.pathname === child.to || location.pathname.startsWith(child.to + '/');
+                          return (
                             <motion.button
-                              key={sub.to}
-                              onClick={() => navigate(sub.to)}
+                              key={child.to}
+                              onClick={() => navigate(child.to)}
                               className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                                location.pathname === sub.to || location.pathname.startsWith(sub.to + '/')
+                                isChildActive
                                   ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-400 border border-blue-500/30'
                                   : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
                               }`}
@@ -305,22 +486,14 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
                               whileTap={{ scale: 0.98 }}
                             >
                               <div className="flex-shrink-0">
-                                {React.cloneElement(sub.icon, { size: 14 })}
+                                {React.cloneElement(child.icon, { size: 14 })}
                               </div>
-                              <AnimatePresence>
-                                {!isCollapsed && (
-                                  <motion.span
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="truncate"
-                                  >
-                                    {sub.label}
-                                  </motion.span>
-                                )}
-                              </AnimatePresence>
+                              <motion.span className="truncate">
+                                {child.label}
+                              </motion.span>
                             </motion.button>
-                          ))}
+                          );
+                        })}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -328,6 +501,7 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
               );
             }
 
+            // Link normale
             return (
               <motion.button
                 key={link.to}
@@ -379,14 +553,15 @@ export default function MainLayout() {
     }
   });
   const [isMobile, setIsMobile] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userIsSuperAdmin, setUserIsSuperAdmin] = useState(false);
+  const [branding, setBranding] = useState(defaultBranding);
 
   // Determina se è pagina auth o chat
   const isAuthPage = AUTH_PAGES.includes(location.pathname);
   const isChatPage = location.pathname === '/chat' || location.pathname === '/coach/chat' || location.pathname === '/client/chat' || location.pathname === '/community';
   const [isChatSelected, setIsChatSelected] = useState(false);
   const showSidebar = !isAuthPage && auth.currentUser;
-  const showBottomNav = !isAuthPage && isMobile && !(isChatPage && isChatSelected);
 
   useEffect(() => {
     setIsCoach(location.pathname.startsWith('/coach'));
@@ -403,7 +578,7 @@ export default function MainLayout() {
     }
   }, [isSidebarCollapsed]);
 
-  // Verifica se l'utente è SuperAdmin
+  // Verifica se l'utente è SuperAdmin e carica branding
   useEffect(() => {
     const checkSuperAdmin = async () => {
       const user = auth.currentUser;
@@ -415,14 +590,57 @@ export default function MainLayout() {
       }
     };
 
+    const loadBranding = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        // Ottieni tenantId dal localStorage (più affidabile)
+        const storedTenantId = localStorage.getItem('tenantId');
+        
+        let tenantId = storedTenantId;
+        
+        // Se non c'è nel localStorage, prova a recuperarlo
+        if (!tenantId) {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+              tenantId = userDoc.data()?.tenantId;
+              if (tenantId) {
+                localStorage.setItem('tenantId', tenantId);
+              }
+            }
+          } catch (err) {
+            console.debug('Could not access users collection for branding');
+          }
+        }
+
+        if (tenantId) {
+          try {
+            const brandingDoc = await getDoc(doc(db, 'tenants', tenantId, 'settings', 'branding'));
+            if (brandingDoc.exists()) {
+              setBranding({ ...defaultBranding, ...brandingDoc.data() });
+            }
+          } catch (brandingError) {
+            console.debug('Could not load branding, using defaults');
+          }
+        }
+      } catch (error) {
+        console.debug('Error loading branding:', error.message);
+      }
+    };
+
     checkSuperAdmin();
+    loadBranding();
     
     // Ricontrolla quando cambia l'utente
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         checkSuperAdmin();
+        loadBranding();
       } else {
         setUserIsSuperAdmin(false);
+        setBranding(defaultBranding);
       }
     });
 
@@ -454,7 +672,7 @@ export default function MainLayout() {
       <AnimatedStars />
 
       <div className="relative min-h-screen flex w-full">
-        {/* SIDEBAR: SOLO SU PAGINE PROTETTE */}
+        {/* SIDEBAR DESKTOP: SOLO SU PAGINE PROTETTE */}
         {showSidebar && (
           <Sidebar 
             isCoach={isCoach}
@@ -466,12 +684,82 @@ export default function MainLayout() {
           />
         )}
 
+        {/* MOBILE MENU */}
+        {showSidebar && isMobile && (
+          <MobileMenu 
+            isOpen={isMobileMenuOpen}
+            setIsOpen={setIsMobileMenuOpen}
+            isCoach={isCoach}
+            isCollaboratore={isCollaboratore}
+            isClient={isClient}
+            userIsSuperAdmin={userIsSuperAdmin}
+          />
+        )}
+
+        {/* HEADER MOBILE CON HAMBURGER - FIXED PER RIMANERE SEMPRE VISIBILE */}
+        {showSidebar && isMobile && !isAuthPage && (
+          <motion.div
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: durations.normal, ease: easings.smooth }}
+            className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 shadow-xl will-change-transform"
+            style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          >
+            <div className="flex items-center justify-between px-4 py-3 safe-area-top">
+              <div className="flex items-center gap-3">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <div className="space-y-1.5">
+                    <span className="block w-5 h-0.5 bg-blue-400 rounded-full" />
+                    <span className="block w-5 h-0.5 bg-blue-400 rounded-full" />
+                    <span className="block w-5 h-0.5 bg-blue-400 rounded-full" />
+                  </div>
+                </motion.button>
+                <div className="flex items-center gap-2">
+                  {branding.logoUrl ? (
+                    // Logo personalizzato
+                    <img 
+                      src={branding.logoUrl} 
+                      alt={branding.appName}
+                      className="h-8 max-w-[120px] object-contain"
+                    />
+                  ) : (
+                    // Fallback al design predefinito
+                    <>
+                      <div className="w-8 h-8 rounded-lg overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/30">
+                        <img 
+                          src="/logo192.PNG" 
+                          alt="FitFlow"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <h1 className="text-sm font-bold text-white">{branding.appName}</h1>
+                        <p className="text-[10px] text-slate-400">
+                          {isCoach ? branding.coachAreaName.replace('Area ', '') : 
+                           isCollaboratore ? branding.collaboratoreAreaName.replace('Area ', '') : 
+                           isClient ? branding.clientAreaName.replace('Area ', '') : 
+                           branding.adminAreaName.replace('Area ', '')}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+              <ThemeToggle />
+            </div>
+          </motion.div>
+        )}
+
         {/* CONTENUTO PRINCIPALE - LARGHEZZA MASSIMA DESKTOP CON STILE PREMIUM */}
         <div className={`flex-1 transition-all duration-300 ${
           showSidebar
             ? (isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-[280px]')
             : 'ml-0'
-        }`}>
+        } ${showSidebar && isMobile && !isAuthPage ? 'pt-16' : ''}`}>
           <main className={`min-h-screen ${
             isChatPage ? 'p-0' : 'p-2 xs:p-4 sm:p-6 md:p-8 lg:p-10'
           }`}>
@@ -487,9 +775,6 @@ export default function MainLayout() {
               </motion.div>
             </div>
           </main>
-
-          {/* BOTTOM NAV: SOLO SU MOBILE */}
-          {showBottomNav && <BottomNav isCoach={isCoach} isCollaboratore={isCollaboratore} isClient={isClient} userIsSuperAdmin={userIsSuperAdmin} />}
         </div>
 
         {/* SCROLLBAR NASCOSTA */}

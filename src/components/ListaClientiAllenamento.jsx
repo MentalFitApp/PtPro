@@ -204,10 +204,10 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
 
       {/* Tabs */}
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-6">
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
           <button
             onClick={() => setActiveTab('tutti')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
               activeTab === 'tutti'
                 ? 'bg-rose-600 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -218,40 +218,40 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
           </button>
           <button
             onClick={() => setActiveTab('nuovi')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
               activeTab === 'nuovi'
                 ? 'bg-blue-600 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
             }`}
           >
             <UserPlus size={16} />
-            Nuovi Clienti (7gg)
+            Nuovi (7gg)
           </button>
           <button
             onClick={() => setActiveTab('alimentazione_scade')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
               activeTab === 'alimentazione_scade'
                 ? 'bg-yellow-600 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
             }`}
           >
             <Clock size={16} />
-            Alimentazione in Scadenza
+            Alimentazione ⇣
           </button>
           <button
             onClick={() => setActiveTab('allenamento_scade')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
               activeTab === 'allenamento_scade'
                 ? 'bg-yellow-600 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
             }`}
           >
             <Clock size={16} />
-            Allenamento in Scadenza
+            Allenamento ⇣
           </button>
           <button
             onClick={() => setActiveTab('scaduti')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
               activeTab === 'scaduti'
                 ? 'bg-red-600 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -340,15 +340,15 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
             {searchTerm || filterStatus ? 'Nessun cliente trovato' : 'Nessun cliente disponibile'}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
+            <table className="w-full min-w-[900px]">
               <thead className="bg-slate-800">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Nome</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Email</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Telefono</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-slate-300">Scheda Allenamento</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-slate-300">Scheda Alimentazione</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300 min-w-[150px]">Nome</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300 min-w-[180px]">Email</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300 min-w-[120px]">Telefono</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-slate-300 min-w-[200px]">Scheda Allenamento</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-slate-300 min-w-[200px]">Scheda Alimentazione</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700">

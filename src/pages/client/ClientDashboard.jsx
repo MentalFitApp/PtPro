@@ -7,6 +7,7 @@ import { getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
+import { useTenantBranding } from '../../hooks/useTenantBranding';
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-slate-900 flex justify-center items-center">
@@ -14,33 +15,53 @@ const LoadingSpinner = () => (
   </div>
 );
 
-const DashboardCard = ({ title, value, subtext, icon, variants }) => (
-  <motion.div variants={variants} className="bg-slate-800 rounded-xl sm:rounded-2xl border border-slate-700 p-4 sm:p-6 shadow-lg">
-    <div className="flex items-center justify-between">
-      <h3 className="text-sm sm:text-lg font-semibold text-slate-300">{title}</h3>
-      <div className="text-cyan-300">{icon}</div>
-    </div>
-    <p className="text-2xl sm:text-3xl font-bold text-slate-50 mt-2">{value}</p>
-    <p className="text-xs sm:text-sm text-slate-400 mt-1">{subtext}</p>
-  </motion.div>
-);
+const DashboardCard = ({ title, value, subtext, icon, color = 'cyan', variants }) => {
+  const colorClasses = {
+    cyan: 'bg-cyan-500/10 text-cyan-500',
+    blue: 'bg-blue-500/10 text-blue-500',
+    green: 'bg-green-500/10 text-green-500',
+    purple: 'bg-purple-500/10 text-purple-500',
+  };
+
+  return (
+    <motion.div 
+      variants={variants}
+      whileHover={{ y: -4, scale: 1.02 }}
+      className="bg-slate-800/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-5 border border-slate-700/50 shadow-xl hover:border-blue-500/50 transition-all"
+    >
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
+        <div className={`p-2 sm:p-3 rounded-lg ${colorClasses[color]}`}>
+          {React.cloneElement(icon, { size: 18, className: 'sm:w-[24px] sm:h-[24px]' })}
+        </div>
+      </div>
+      <p className="text-xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">{value}</p>
+      <h3 className="text-xs sm:text-sm text-slate-400 mb-0.5 sm:mb-1">{title}</h3>
+      <p className="text-[10px] sm:text-xs text-slate-500">{subtext}</p>
+    </motion.div>
+  );
+};
 
 const ActionLink = ({ to, title, description, icon, variants }) => (
-  <motion.div variants={variants}>
-    <Link to={to} className="group bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg p-3 sm:p-4 flex items-center gap-3 sm:gap-4 transition-all duration-200">
-      <div className="bg-slate-700 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-white p-2 sm:p-3 rounded-lg transition-colors duration-300 flex-shrink-0">
-        {icon}
+  <motion.div 
+    variants={variants}
+    whileHover={{ scale: 1.02, y: -2 }}
+    whileTap={{ scale: 0.98 }}
+  >
+    <Link to={to} className="group bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg sm:rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3 transition-all shadow-lg hover:shadow-xl hover:border-blue-500/30">
+      <div className="bg-blue-500/10 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 text-blue-400 group-hover:text-white p-2 sm:p-3 rounded-lg transition-all duration-300 flex-shrink-0">
+        {React.cloneElement(icon, { size: 18, className: 'sm:w-[22px] sm:h-[22px]' })}
       </div>
       <div className="flex-1 min-w-0">
-        <h4 className="font-bold text-slate-200 text-sm sm:text-base">{title}</h4>
-        <p className="text-xs sm:text-sm text-slate-400 truncate">{description}</p>
+        <h4 className="font-bold text-white text-xs sm:text-base mb-0.5">{title}</h4>
+        <p className="text-[10px] sm:text-sm text-slate-400 truncate">{description}</p>
       </div>
-      <ChevronRight className="text-slate-500 group-hover:text-white transition-colors duration-300 flex-shrink-0" size={18} />
+      <ChevronRight className="text-slate-500 group-hover:text-blue-400 transition-colors duration-300 flex-shrink-0" size={16} />
     </Link>
   </motion.div>
 );
 
 const ClientDashboard = () => {
+  const { branding } = useTenantBranding();
   const [clientData, setClientData] = useState(null);
   const [lastCheckDate, setLastCheckDate] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -214,19 +235,25 @@ const ClientDashboard = () => {
         initial="hidden" 
         animate="visible" 
         variants={containerVariants} 
-        className="w-full max-w-6xl mx-auto px-3 sm:px-6 pb-20 sm:pb-6 mobile-safe-bottom"
-        style={{ paddingTop: 'max(3rem, env(safe-area-inset-top) + 3rem)' }}
+        className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6"
       >
-        <motion.header variants={itemVariants} className="flex flex-col gap-4 mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full">
-            <NotificationPanel userType="client" />
-            <button onClick={handleLogout} className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600/80 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap self-end sm:self-auto">
-              <LogOut size={16} /><span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-50">Ciao, {clientData.name}!</h1>
-            <p className="text-sm sm:text-base text-slate-300">Benvenuto nella tua area personale.</p>
+        <motion.header variants={itemVariants} className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-4 sm:p-6 border border-slate-700/50 shadow-xl mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 sm:mb-4">
+            <div className="flex-1">
+              <h1 className="text-xl sm:text-3xl font-bold text-white mb-1">{branding.clientAreaName} - Ciao, {clientData.name}! 👋</h1>
+              <p className="text-xs sm:text-base text-slate-400">Bentornato nella tua area personale</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <NotificationPanel userType="client" />
+              <motion.button 
+                onClick={handleLogout} 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <LogOut size={16} /><span className="hidden sm:inline">Logout</span>
+              </motion.button>
+            </div>
           </div>
         </motion.header>
 
@@ -262,12 +289,13 @@ const ClientDashboard = () => {
         )}
 
         <main className="w-full">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-8">
             <DashboardCard 
               title="Scadenza Percorso" 
               value={`${giorniRimanenti} giorni`} 
               subtext={`Scade il: ${dataScadenzaFormatted}`}
               icon={<Calendar size={24} />}
+              color="blue"
               variants={itemVariants}
             />
             <DashboardCard 
@@ -275,6 +303,7 @@ const ClientDashboard = () => {
               value={clientData.planType ? clientData.planType.charAt(0).toUpperCase() + clientData.planType.slice(1) : 'Non specificato'}
               subtext="Il tuo piano attuale"
               icon={<Briefcase size={24} />}
+              color="purple"
               variants={itemVariants}
             />
             <DashboardCard 
@@ -282,12 +311,21 @@ const ClientDashboard = () => {
               value={nextCheckText}
               subtext={nextCheckSubtext}
               icon={<CheckSquare size={24} />}
+              color="green"
               variants={itemVariants}
             />
           </div>
           
-          <motion.div variants={itemVariants} className="bg-slate-800 rounded-xl sm:rounded-2xl border border-slate-700 p-4 sm:p-6 shadow-lg">
-            <h3 className="text-xl sm:text-2xl font-bold mb-4 text-white">Cosa vuoi fare?</h3>
+          <motion.div 
+            variants={itemVariants} 
+            className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 shadow-xl"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <User className="text-blue-400" size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-white">Azioni Rapide</h3>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <ActionLink to="/client/anamnesi" title="La mia Anamnesi" description="Visualizza o aggiorna i tuoi dati" icon={<User size={22} />} variants={itemVariants}/>
               <ActionLink to="/client/checks" title="I miei Check" description="Carica i tuoi progressi periodici" icon={<CheckSquare size={22} />} variants={itemVariants}/>
