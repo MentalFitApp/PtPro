@@ -26,13 +26,15 @@ const AnimatedBackground = () => {
         starsContainer.innerHTML = '';
     }
 
-    for (let i = 0; i < 30; i++) {
+    // Crea 50 stelle con stile CEO dashboard premium
+    for (let i = 0; i < 50; i++) {
       const star = document.createElement('div');
       star.className = 'star';
-      star.style.setProperty('--top-offset', `${Math.random() * 100}vh`);
-      star.style.setProperty('--fall-duration', `${8 + Math.random() * 6}s`);
-      star.style.setProperty('--fall-delay', `${Math.random() * 5}s`);
-      star.style.setProperty('--star-width', `${1 + Math.random() * 2}px`);
+      
+      // Posizionamento random
+      star.style.top = `${Math.random() * 100}%`;
+      star.style.left = `${Math.random() * 100}%`;
+      
       starsContainer.appendChild(star);
     }
 

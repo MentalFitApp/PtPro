@@ -95,18 +95,14 @@ export default function SimpleLayout() {
     container.className = 'stars';
     document.body.appendChild(container);
 
-    // Crea 25 stelle (5 dorate)
-    for (let i = 0; i < 25; i++) {
+    // Crea 50 stelle con stile CEO dashboard premium
+    for (let i = 0; i < 50; i++) {
       const star = document.createElement('div');
       star.className = 'star';
 
-      const size = i % 5 === 0 ? 1 : i % 3 === 0 ? 2 : 3;
-      star.style.setProperty('--star-width', `${size}px`);
-      star.style.setProperty('--top-offset', `${Math.random() * 100}vh`);
-      star.style.setProperty('--fall-duration', `${10 + Math.random() * 10}s`);
-      star.style.setProperty('--fall-delay', `${Math.random() * 8}s`);
-
-      if (i % 5 === 0) star.classList.add('gold');
+      // Posizionamento random
+      star.style.top = `${Math.random() * 100}%`;
+      star.style.left = `${Math.random() * 100}%`;
 
       container.appendChild(star);
     }
