@@ -1,5 +1,6 @@
 const { onCall } = require('firebase-functions/v2/https');
-const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onDocumentCreated, onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const admin = require('firebase-admin');
 
@@ -167,3 +168,205 @@ exports.sendPushNotification = onDocumentCreated('notifications/{notificationId}
     return null;
   }
 });
+
+// ============================================================
+// AGGREGAZIONE STATISTICHE TENANTS
+// ============================================================
+
+/**
+ * Funzione per aggregare le statistiche di un singolo tenant
+ */
+async function aggregateTenantStats(tenantId) {
+  console.log(`📊 Aggregando stats per tenant: ${tenantId}`);
+  
+  try {
+    const tenantRef = db.collection('tenants').doc(tenantId);
+    
+    // Query parallele per conteggi
+    const [
+      usersCount,
+      clientsCount,
+      collaboratoriCount,
+      anamnesisCount
+    ] = await Promise.all([
+      db.collection('tenants').doc(tenantId).collection('users').count().get(),
+      db.collection('tenants').doc(tenantId).collection('clients').count().get(),
+      db.collection('tenants').doc(tenantId).collection('collaboratori').count().get(),
+      db.collection('tenants').doc(tenantId).collection('anamnesis').count().get()
+    ]);
+    
+    const totalUsers = usersCount.data().count;
+    const totalClients = clientsCount.data().count;
+    const totalCollaboratori = collaboratoriCount.data().count;
+    const totalAnamnesi = anamnesisCount.data().count;
+    
+    // Stima revenue (€50 per cliente)
+    const totalRevenue = totalClients * 50;
+    
+    const stats = {
+      totalUsers,
+      totalClients,
+      totalCollaboratori,
+      totalAnamnesi,
+      totalRevenue,
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    // Salva stats nel documento tenant
+    await tenantRef.set({ stats }, { merge: true });
+    
+    console.log(`✅ Stats aggiornate per ${tenantId}:`, stats);
+    return stats;
+  } catch (error) {
+    console.error(`❌ Errore aggregazione ${tenantId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Cloud Function schedulata: esegue ogni ora
+ * Aggrega le statistiche di tutti i tenant
+ */
+exports.aggregateAllTenantsStats = onSchedule(
+  {
+    schedule: 'every 1 hours',
+    timeZone: 'Europe/Rome',
+    memory: '256MiB',
+    timeoutSeconds: 540 // 9 minuti
+  },
+  async (event) => {
+    console.log('🕐 CRON JOB: Aggregazione statistiche tenant avviata');
+    
+    try {
+      const tenantsSnapshot = await db.collection('tenants').get();
+      const tenants = tenantsSnapshot.docs;
+      
+      console.log(`📋 Trovati ${tenants.length} tenant da processare`);
+      
+      // Processa tutti i tenant in parallelo
+      const results = await Promise.allSettled(
+        tenants.map(doc => aggregateTenantStats(doc.id))
+      );
+      
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      console.log(`✅ Aggregazione completata: ${successful} successi, ${failed} fallimenti`);
+      
+      return {
+        total: tenants.length,
+        successful,
+        failed,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ Errore durante aggregazione schedulata:', error);
+      throw error;
+    }
+  }
+);
+
+/**
+ * Trigger real-time: aggiorna stats quando viene creato/modificato un client
+ */
+exports.updateStatsOnClientChange = onDocumentWritten(
+  'tenants/{tenantId}/clients/{clientId}',
+  async (event) => {
+    const tenantId = event.params.tenantId;
+    console.log(`🔄 Trigger: Client modificato in tenant ${tenantId}`);
+    
+    // Debounce: aspetta 30 secondi prima di riaggregare
+    // (evita troppe chiamate se vengono creati molti client insieme)
+    await new Promise(resolve => setTimeout(resolve, 30000));
+    
+    try {
+      await aggregateTenantStats(tenantId);
+      return { success: true, tenantId };
+    } catch (error) {
+      console.error('❌ Errore update stats on client change:', error);
+      return { success: false, tenantId, error: error.message };
+    }
+  }
+);
+
+/**
+ * Trigger real-time: aggiorna stats quando viene creato/modificato un collaboratore
+ */
+exports.updateStatsOnCollaboratoreChange = onDocumentWritten(
+  'tenants/{tenantId}/collaboratori/{collaboratoreId}',
+  async (event) => {
+    const tenantId = event.params.tenantId;
+    console.log(`🔄 Trigger: Collaboratore modificato in tenant ${tenantId}`);
+    
+    await new Promise(resolve => setTimeout(resolve, 30000));
+    
+    try {
+      await aggregateTenantStats(tenantId);
+      return { success: true, tenantId };
+    } catch (error) {
+      console.error('❌ Errore update stats on collaboratore change:', error);
+      return { success: false, tenantId, error: error.message };
+    }
+  }
+);
+
+/**
+ * Trigger real-time: aggiorna stats quando viene creato/modificato un user
+ */
+exports.updateStatsOnUserChange = onDocumentWritten(
+  'tenants/{tenantId}/users/{userId}',
+  async (event) => {
+    const tenantId = event.params.tenantId;
+    console.log(`🔄 Trigger: User modificato in tenant ${tenantId}`);
+    
+    await new Promise(resolve => setTimeout(resolve, 30000));
+    
+    try {
+      await aggregateTenantStats(tenantId);
+      return { success: true, tenantId };
+    } catch (error) {
+      console.error('❌ Errore update stats on user change:', error);
+      return { success: false, tenantId, error: error.message };
+    }
+  }
+);
+
+/**
+ * Callable function: permette di triggare manualmente l'aggregazione
+ * Utile per testing o refresh immediato
+ */
+exports.triggerStatsAggregation = onCall(
+  { cors: true },
+  async (request) => {
+    const tenantId = request.data?.tenantId;
+    
+    console.log('🎯 Aggregazione manuale richiesta', tenantId ? `per tenant: ${tenantId}` : 'per tutti i tenant');
+    
+    try {
+      if (tenantId) {
+        // Aggrega un singolo tenant
+        const stats = await aggregateTenantStats(tenantId);
+        return { success: true, tenantId, stats };
+      } else {
+        // Aggrega tutti i tenant
+        const tenantsSnapshot = await db.collection('tenants').get();
+        const results = await Promise.allSettled(
+          tenantsSnapshot.docs.map(doc => aggregateTenantStats(doc.id))
+        );
+        
+        const successful = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
+        
+        return {
+          success: true,
+          total: tenantsSnapshot.size,
+          successful,
+          failed
+        };
+      }
+    } catch (error) {
+      console.error('❌ Errore aggregazione manuale:', error);
+      throw new Error(`Aggregazione fallita: ${error.message}`);
+    }
+  }
+);
