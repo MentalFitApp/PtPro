@@ -38,8 +38,8 @@ export default function OAuthButton({
     instagram: {
       name: 'Instagram',
       icon: '📷',
-      authUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
-      scopes: ['instagram_basic', 'instagram_manage_insights', 'instagram_manage_comments', 'pages_show_list', 'pages_read_engagement', 'business_management']
+      authUrl: 'https://api.instagram.com/oauth/authorize',
+      scopes: ['user_profile', 'user_media']
     }
   };
 

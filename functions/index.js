@@ -493,7 +493,7 @@ exports.exchangeOAuthToken = onCall(
           clientSecret: process.env.ZOOM_CLIENT_SECRET
         },
         instagram: {
-          tokenUrl: 'https://graph.facebook.com/v18.0/oauth/access_token',
+          tokenUrl: 'https://api.instagram.com/oauth/access_token',
           clientId: process.env.INSTAGRAM_CLIENT_ID,
           clientSecret: process.env.INSTAGRAM_CLIENT_SECRET
         }
@@ -527,34 +527,22 @@ exports.exchangeOAuthToken = onCall(
       const tokenData = await tokenResponse.json();
       console.log(`✅ Token ottenuto per ${provider}`);
 
-      // Per Instagram, ottieni anche il Business Account ID
-      let instagramBusinessAccountId = null;
+      // Per Instagram Basic Display, ottieni user_id
+      let instagramUserId = null;
       if (provider === 'instagram') {
         try {
-          // Ottieni le pagine Facebook dell'utente
-          const pagesResponse = await fetch(
-            `https://graph.facebook.com/v18.0/me/accounts?access_token=${tokenData.access_token}`
+          // Ottieni info utente Instagram
+          const userResponse = await fetch(
+            `https://graph.instagram.com/me?fields=id,username&access_token=${tokenData.access_token}`
           );
-          const pagesData = await pagesResponse.json();
+          const userData = await userResponse.json();
           
-          if (pagesData.data && pagesData.data.length > 0) {
-            // Prendi la prima pagina (o potresti chiedere all'utente di scegliere)
-            const pageId = pagesData.data[0].id;
-            const pageAccessToken = pagesData.data[0].access_token;
-            
-            // Ottieni l'Instagram Business Account collegato a questa pagina
-            const igResponse = await fetch(
-              `https://graph.facebook.com/v18.0/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`
-            );
-            const igData = await igResponse.json();
-            
-            if (igData.instagram_business_account) {
-              instagramBusinessAccountId = igData.instagram_business_account.id;
-              console.log(`✅ Instagram Business Account ID: ${instagramBusinessAccountId}`);
-            }
+          if (userData.id) {
+            instagramUserId = userData.id;
+            console.log(`✅ Instagram User ID: ${instagramUserId}, Username: ${userData.username}`);
           }
         } catch (igError) {
-          console.error('⚠️ Errore recupero Instagram Business Account:', igError);
+          console.error('⚠️ Errore recupero Instagram User:', igError);
           // Continua comunque, salva almeno il token
         }
       }
@@ -569,7 +557,7 @@ exports.exchangeOAuthToken = onCall(
           ? admin.firestore.Timestamp.fromMillis(Date.now() + (tokenData.expires_in * 1000))
           : null,
         scope: tokenData.scope || '',
-        instagram_business_account_id: instagramBusinessAccountId,
+        instagram_user_id: instagramUserId,
         connected_at: admin.firestore.FieldValue.serverTimestamp(),
         last_sync: null
       }, { merge: true });
@@ -613,19 +601,19 @@ exports.instagramProxy = onCall(
         throw new Error('Instagram non configurato o access token mancante');
       }
 
-      const { access_token, instagram_business_account_id } = integrationDoc.data();
+      const { access_token, instagram_user_id } = integrationDoc.data();
 
-      // Se l'endpoint è /me, sostituisci con l'ID reale dell'account business
+      // Se l'endpoint è /me, sostituisci con l'ID reale dell'utente
       let finalEndpoint = endpoint;
-      if (endpoint === '/me' && instagram_business_account_id) {
-        finalEndpoint = `/${instagram_business_account_id}`;
-        console.log(`📝 Endpoint /me sostituito con /${instagram_business_account_id}`);
-      } else if (endpoint.startsWith('/me/') && instagram_business_account_id) {
-        finalEndpoint = endpoint.replace('/me/', `/${instagram_business_account_id}/`);
+      if (endpoint === '/me' && instagram_user_id) {
+        finalEndpoint = `/${instagram_user_id}`;
+        console.log(`📝 Endpoint /me sostituito con /${instagram_user_id}`);
+      } else if (endpoint.startsWith('/me/') && instagram_user_id) {
+        finalEndpoint = endpoint.replace('/me/', `/${instagram_user_id}/`);
         console.log(`📝 Endpoint ${endpoint} sostituito con ${finalEndpoint}`);
       }
 
-      // Costruisci URL Instagram Graph API
+      // Costruisci URL Instagram Graph API (Basic Display usa graph.instagram.com)
       const baseUrl = 'https://graph.instagram.com';
       const fullUrl = `${baseUrl}${finalEndpoint}${params ? `?${params}&access_token=${access_token}` : `?access_token=${access_token}`}`;
 
