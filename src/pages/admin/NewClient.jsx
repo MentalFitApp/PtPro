@@ -5,7 +5,7 @@ import { db, firebaseConfig, auth } from '../../firebase.js';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc, collection } from 'firebase/firestore';
-import { getTenantDoc, getTenantCollection } from '../../config/tenant';
+import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { Save, ArrowLeft, DollarSign, Copy, Check, X, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
