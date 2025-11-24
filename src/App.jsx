@@ -169,8 +169,10 @@ export default function App() {
             return;
           }
 
-          // Se sta navigando verso /site/*, permettilo (landing page pubblica)
-          if (location.pathname.startsWith('/site')) {
+          // Se sta navigando verso pagine pubbliche, permettilo
+          if (location.pathname.startsWith('/site') || 
+              location.pathname === '/privacy' || 
+              location.pathname === '/terms') {
             // Non fare nulla, lascia che la route pubblica venga gestita
             setAuthInfo({
               isLoading: false,
@@ -314,8 +316,8 @@ export default function App() {
             error: null
           });
 
-          const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId', '/platform-login', '/platform-dashboard', '/site'];
-          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/') || location.pathname.startsWith('/platform') || location.pathname.startsWith('/site'));
+          const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId', '/platform-login', '/platform-dashboard', '/site', '/privacy', '/terms'];
+          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/') || location.pathname.startsWith('/platform') || location.pathname.startsWith('/site') || location.pathname === '/privacy' || location.pathname === '/terms');
           if (!isPublic && !initialAuthComplete) {
             const target = '/login';
             if (lastNavigated !== target) {
