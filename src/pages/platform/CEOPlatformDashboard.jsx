@@ -261,6 +261,8 @@ export default function CEOPlatformDashboard() {
   const [showPageBuilder, setShowPageBuilder] = useState(false);
   const [currentTenantForBuilder, setCurrentTenantForBuilder] = useState(null);
   const [currentLandingBlocks, setCurrentLandingBlocks] = useState([]);
+  const [editingLegalPage, setEditingLegalPage] = useState(null); // 'privacy' or 'terms'
+  const [legalPageContent, setLegalPageContent] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -727,26 +729,44 @@ export default function CEOPlatformDashboard() {
                   Landing Pages Management
                 </h2>
                 <div className="flex items-center gap-3">
-                  <a
-                    href="/privacy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-400 transition-all"
-                  >
-                    <Shield size={18} />
-                    <span>Privacy Policy</span>
-                    <ExternalLink size={14} />
-                  </a>
-                  <a
-                    href="/terms"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-400 transition-all"
-                  >
-                    <FileText size={18} />
-                    <span>Terms of Service</span>
-                    <ExternalLink size={14} />
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-400 transition-all"
+                    >
+                      <Shield size={18} />
+                      <span>Privacy Policy</span>
+                      <ExternalLink size={14} />
+                    </a>
+                    <button
+                      onClick={() => setEditingLegalPage('privacy')}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white transition-all"
+                    >
+                      <Edit3 size={18} />
+                      <span>Modifica</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-400 transition-all"
+                    >
+                      <FileText size={18} />
+                      <span>Terms of Service</span>
+                      <ExternalLink size={14} />
+                    </a>
+                    <button
+                      onClick={() => setEditingLegalPage('terms')}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition-all"
+                    >
+                      <Edit3 size={18} />
+                      <span>Modifica</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1387,6 +1407,136 @@ export default function CEOPlatformDashboard() {
                   <button className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors">
                     View Analytics
                   </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Legal Page Editor Modal */}
+      <AnimatePresence>
+        {editingLegalPage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6"
+            onClick={() => setEditingLegalPage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 max-w-4xl w-full max-h-[90vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 p-6 border-b border-slate-700">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {editingLegalPage === 'privacy' ? (
+                      <Shield className="w-8 h-8 text-blue-400" />
+                    ) : (
+                      <FileText className="w-8 h-8 text-purple-400" />
+                    )}
+                    <div>
+                      <h3 className="text-2xl font-bold text-white">
+                        {editingLegalPage === 'privacy' ? 'Modifica Privacy Policy' : 'Modifica Terms of Service'}
+                      </h3>
+                      <p className="text-sm text-slate-400 mt-1">
+                        Configura il contenuto della pagina legale
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setEditingLegalPage(null)}
+                    className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                  >
+                    <X className="w-6 h-6 text-slate-400" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                <div className="bg-blue-600/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+                  <p className="text-blue-400 text-sm flex items-center gap-2">
+                    <AlertCircle size={16} />
+                    <span>
+                      Per modificare il contenuto, apri Firebase Console → Firestore → platform → settings → landingPages → {editingLegalPage}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      URL della pagina
+                    </label>
+                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                      <code className="text-green-400 text-sm">
+                        https://tuo-dominio.com/{editingLegalPage}
+                      </code>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Path Firestore
+                    </label>
+                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                      <code className="text-purple-400 text-sm">
+                        platform/settings/landingPages/{editingLegalPage}
+                      </code>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-3">
+                      Struttura del documento
+                    </label>
+                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-2">
+                      <p className="text-slate-400 text-sm font-mono">
+                        content: &#123;<br/>
+                        &nbsp;&nbsp;title: string,<br/>
+                        &nbsp;&nbsp;subtitle: string,<br/>
+                        &nbsp;&nbsp;intro: string,<br/>
+                        &nbsp;&nbsp;sections: &#91;&#123;<br/>
+                        &nbsp;&nbsp;&nbsp;&nbsp;icon: string,<br/>
+                        &nbsp;&nbsp;&nbsp;&nbsp;title: string,<br/>
+                        &nbsp;&nbsp;&nbsp;&nbsp;content: string&#91;&#93;<br/>
+                        &nbsp;&nbsp;&#125;&#93;,<br/>
+                        &nbsp;&nbsp;contact: &#123;<br/>
+                        &nbsp;&nbsp;&nbsp;&nbsp;title: string,<br/>
+                        &nbsp;&nbsp;&nbsp;&nbsp;email: string,<br/>
+                        &nbsp;&nbsp;&nbsp;&nbsp;address: string<br/>
+                        &nbsp;&nbsp;&#125;<br/>
+                        &#125;
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <a
+                      href="https://console.firebase.google.com/project/flowfitpro/firestore/databases/-default-/data"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors"
+                    >
+                      <Database size={18} />
+                      Apri Firebase Console
+                    </a>
+                    <a
+                      href={`/${editingLegalPage}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors"
+                    >
+                      <Eye size={18} />
+                      Anteprima Pagina
+                    </a>
+                  </div>
                 </div>
               </div>
             </motion.div>

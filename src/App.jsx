@@ -86,8 +86,8 @@ const LessonPlayer = React.lazy(() => import('./components/courses/LessonPlayer'
 
 // Public Pages
 const LandingPage = React.lazy(() => import('./pages/public/LandingPage'));
-const PrivacyPolicy = React.lazy(() => import('./pages/public/PrivacyPolicy'));
-const TermsOfService = React.lazy(() => import('./pages/public/TermsOfService'));
+const PrivacyPolicy = React.lazy(() => import('./pages/public/PrivacyPolicyDynamic'));
+const TermsOfService = React.lazy(() => import('./pages/public/TermsOfServiceDynamic'));
 
 // Spinner
 const PageSpinner = () => (
