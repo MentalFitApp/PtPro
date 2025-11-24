@@ -275,6 +275,12 @@ service cloud.firestore {
         allow write: if isTenantAdmin(tenantId) || isPlatformCEO();
       }
       
+      // --- INTEGRATIONS (ManyChat, etc.) ---
+      match /integrations/{integrationId} {
+        allow read: if isTenantAdmin(tenantId);
+        allow write: if isTenantAdmin(tenantId);
+      }
+      
       // --- APP DATA ---
       match /app-data/{docId} {
         allow read: if request.auth != null;

@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   Home, Users, MessageSquare, FileText, Bell,
   Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing,
-  UserCheck, BookOpen, Target, Activity, GraduationCap, Plus, Menu, X, Palette, Globe
+  UserCheck, BookOpen, Target, Activity, GraduationCap, Plus, Menu, X, Palette, Globe, Instagram
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isSuperAdmin } from '../../utils/superadmin';
@@ -149,6 +149,7 @@ const adminNavLinks = [
     children: [
       { to: '/admin/branding', icon: <Palette size={18} />, label: 'Branding' },
       { to: '/admin/landing', icon: <Globe size={18} />, label: 'Sito Web' },
+      { to: '/instagram', icon: <Instagram size={18} />, label: 'Instagram' },
     ]
   },
 
@@ -675,12 +676,12 @@ export default function MainLayout() {
   }, [isChatPage, isMobile]);
 
   return (
-    <div className="overflow-x-hidden w-full">
+    <div className="overflow-x-hidden w-full bg-transparent">
       {/* SFONDO STELLATO GLOBALE */}
       <div className="starry-background"></div>
       <AnimatedStars />
 
-      <div className="relative min-h-screen flex w-full">
+      <div className="relative min-h-screen flex w-full bg-transparent">
         {/* SIDEBAR DESKTOP: SOLO SU PAGINE PROTETTE */}
         {showSidebar && (
           <Sidebar 
@@ -764,12 +765,12 @@ export default function MainLayout() {
         )}
 
         {/* CONTENUTO PRINCIPALE - LARGHEZZA MASSIMA DESKTOP CON STILE PREMIUM */}
-        <div className={`flex-1 transition-all duration-300 ${
+        <div className={`flex-1 transition-all duration-300 bg-transparent ${
           showSidebar
             ? (isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-[280px]')
             : 'ml-0'
         } ${showSidebar && isMobile && !isAuthPage ? 'pt-16' : ''}`}>
-          <main className={`min-h-screen ${
+          <main className={`min-h-screen bg-transparent ${
             isChatPage ? 'p-0' : 'p-2 xs:p-4 sm:p-6 md:p-8 lg:p-10'
           }`}>
             <div className="max-w-7xl mx-auto w-full">

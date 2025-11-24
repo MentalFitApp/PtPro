@@ -75,6 +75,10 @@ const Onboarding = React.lazy(() => import('./pages/shared/Onboarding'));
 const OnboardingFlow = React.lazy(() => import('./pages/shared/OnboardingFlow'));
 const Community = React.lazy(() => import('./pages/community/Community'));
 
+// Tenant Pages
+const InstagramHub = React.lazy(() => import('./pages/tenant/InstagramHub'));
+const OAuthCallback = React.lazy(() => import('./pages/OAuthCallback'));
+
 // Courses
 const CourseDashboard = React.lazy(() => import('./components/courses/CourseDashboard'));
 const CourseDetail = React.lazy(() => import('./components/courses/CourseDetail'));
@@ -388,6 +392,8 @@ export default function App() {
           <Route path="/courses/:courseId" element={<CourseDetail />} />
           <Route path="/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<LessonPlayer />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/instagram" element={<InstagramHub />} />
+          <Route path="/oauth/callback" element={<OAuthCallback />} />
 
         </Route>
 

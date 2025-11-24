@@ -14,9 +14,10 @@ import {
   Zap, Package, CreditCard, UserPlus, Eye, LogOut,
   Settings, Database, RefreshCw, ChevronLeft, ChevronRight,
   Home, Search, Filter, Download, Upload, Trash2, Edit3,
-  Bell, Moon, Sun, Menu, X, Server, Globe, Lock, Unlock
+  Bell, Moon, Sun, Menu, X, Server, Globe, Lock, Unlock, Layout
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import PageBuilder from '../../components/platform/PageBuilder';
 
 // === ANIMATED STARS BACKGROUND ===
 const AnimatedStars = () => {
@@ -254,6 +255,11 @@ export default function CEOPlatformDashboard() {
   });
 
   const [tenants, setTenants] = useState([]);
+  const [editingLanding, setEditingLanding] = useState(null);
+  const [editingBranding, setEditingBranding] = useState(null);
+  const [showPageBuilder, setShowPageBuilder] = useState(false);
+  const [currentTenantForBuilder, setCurrentTenantForBuilder] = useState(null);
+  const [currentLandingBlocks, setCurrentLandingBlocks] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -414,7 +420,7 @@ export default function CEOPlatformDashboard() {
       }
       
       // Ricarica tenant
-      await loadTenants();
+      await loadPlatformData();
       setEditingLanding(null);
       alert('✅ Landing page aggiornata con successo!');
     } catch (error) {
@@ -428,7 +434,7 @@ export default function CEOPlatformDashboard() {
     try {
       const newStatus = tenant.status === 'active' ? 'draft' : 'active';
       await updateDoc(doc(db, 'tenants', tenant.id), { status: newStatus });
-      await loadTenants();
+      await loadPlatformData();
       alert(`✅ Sito ${newStatus === 'active' ? 'pubblicato' : 'messo in bozza'}!`);
     } catch (error) {
       console.error('Error toggling status:', error);
@@ -444,11 +450,52 @@ export default function CEOPlatformDashboard() {
     
     try {
       await deleteDoc(doc(db, 'tenants', tenant.id));
-      await loadTenants();
+      await loadPlatformData();
       alert('✅ Tenant eliminato con successo');
     } catch (error) {
       console.error('Error deleting tenant:', error);
       alert('❌ Errore nell\'eliminazione del tenant');
+    }
+  };
+
+  // Apri Page Builder per tenant specifico
+  const handleOpenPageBuilder = async (tenant) => {
+    try {
+      setCurrentTenantForBuilder(tenant);
+      const landingDoc = await getDoc(doc(db, 'tenants', tenant.id, 'settings', 'landing'));
+      const blocks = landingDoc.exists() ? (landingDoc.data().blocks || []) : [];
+      setCurrentLandingBlocks(blocks);
+      setShowPageBuilder(true);
+    } catch (error) {
+      console.error('Error loading page builder:', error);
+      alert('❌ Errore nel caricamento del builder');
+    }
+  };
+
+  // Salva landing page da Page Builder
+  const handleSaveFromBuilder = async (blocks) => {
+    try {
+      if (!currentTenantForBuilder) return;
+      
+      await setDoc(
+        doc(db, 'tenants', currentTenantForBuilder.id, 'settings', 'landing'),
+        { 
+          blocks, 
+          updatedAt: serverTimestamp(),
+          lastEditedBy: auth.currentUser?.uid,
+          siteSlug: currentTenantForBuilder.siteSlug || currentTenantForBuilder.id
+        },
+        { merge: true }
+      );
+      
+      setShowPageBuilder(false);
+      setCurrentTenantForBuilder(null);
+      setCurrentLandingBlocks([]);
+      await loadPlatformData();
+      alert('✅ Landing page aggiornata con successo!');
+    } catch (error) {
+      console.error('Error saving from builder:', error);
+      alert('❌ Errore nel salvataggio');
     }
   };
 
@@ -813,11 +860,18 @@ export default function CEOPlatformDashboard() {
                                 <Eye className="w-4 h-4 text-slate-400 group-hover:text-blue-400" />
                               </button>
                               <button
+                                onClick={() => handleOpenPageBuilder(tenant)}
+                                className="p-2 hover:bg-slate-700 rounded-lg transition-colors group"
+                                title="Page Builder"
+                              >
+                                <Layout className="w-4 h-4 text-slate-400 group-hover:text-purple-400" />
+                              </button>
+                              <button
                                 onClick={() => handleEditLanding(tenant)}
                                 className="p-2 hover:bg-slate-700 rounded-lg transition-colors group"
-                                title="Modifica Landing"
+                                title="Modifica Landing (Old)"
                               >
-                                <Edit3 className="w-4 h-4 text-slate-400 group-hover:text-purple-400" />
+                                <Edit3 className="w-4 h-4 text-slate-400 group-hover:text-blue-400" />
                               </button>
                               <button
                                 onClick={() => handleEditBranding(tenant)}
@@ -1316,6 +1370,19 @@ export default function CEOPlatformDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Page Builder Modal */}
+      {showPageBuilder && (
+        <PageBuilder
+          initialBlocks={currentLandingBlocks}
+          onSave={handleSaveFromBuilder}
+          onClose={() => {
+            setShowPageBuilder(false);
+            setCurrentTenantForBuilder(null);
+            setCurrentLandingBlocks([]);
+          }}
+        />
+      )}
 
       {/* CSS Styles */}
       <style>{`

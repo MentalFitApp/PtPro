@@ -370,3 +370,582 @@ exports.triggerStatsAggregation = onCall(
     }
   }
 );
+
+// Cloud Function per interagire con ManyChat API
+exports.manychatProxy = onCall(
+  {
+    region: 'europe-west1',
+    cors: true
+  },
+  async (request) => {
+    const { tenantId, endpoint, method = 'GET', body } = request.data;
+  
+  if (!tenantId) {
+    throw new Error('tenantId è richiesto');
+  }
+
+  try {
+    // Recupera configurazione ManyChat dal tenant
+    const configRef = db.doc(`tenants/${tenantId}/integrations/manychat`);
+    const configSnap = await configRef.get();
+    
+    if (!configSnap.exists) {
+      throw new Error('Configurazione ManyChat non trovata');
+    }
+
+    const { apiKey, pageId } = configSnap.data();
+    
+    if (!apiKey) {
+      throw new Error('API Key ManyChat non configurata');
+    }
+
+    // Costruisci URL e body
+    const baseUrl = 'https://api.manychat.com/fb';
+    const url = `${baseUrl}${endpoint}`;
+    
+    // Per POST, il page_id va nel body; per GET, nell'URL
+    let finalUrl = url;
+    let finalBody = body || {};
+    
+    if (method === 'POST') {
+      finalBody = { ...finalBody, page_id: parseInt(pageId) };
+    } else {
+      finalUrl = url.includes('?') 
+        ? `${url}&page_id=${pageId}`
+        : `${url}?page_id=${pageId}`;
+    }
+
+    console.log('🔗 ManyChat API Call:', method, finalUrl);
+
+    // Fai la richiesta a ManyChat
+    const response = await fetch(finalUrl, {
+      method,
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: method === 'POST' ? JSON.stringify(finalBody) : undefined
+    });
+
+    // Ottieni il testo della risposta per debug
+    const responseText = await response.text();
+    console.log('📥 Response Status:', response.status);
+    console.log('📥 Response Text:', responseText.substring(0, 500));
+
+    // Prova a parsare come JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ Impossibile parsare risposta come JSON');
+      throw new Error(`ManyChat API ha restituito una risposta non valida. Status: ${response.status}`);
+    }
+
+    if (!response.ok) {
+      console.error('❌ ManyChat API Error:', data);
+      throw new Error(data.message || 'Errore API ManyChat');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('❌ Errore manychatProxy:', error);
+    throw new Error(error.message || 'Errore comunicazione con ManyChat');
+  }
+}
+);
+
+// OAuth Token Exchange - Gestisce lo scambio code->token per tutti i provider
+exports.exchangeOAuthToken = onCall(
+  {
+    region: 'europe-west1',
+    secrets: ['INSTAGRAM_CLIENT_ID', 'INSTAGRAM_CLIENT_SECRET']
+  },
+  async (request) => {
+    try {
+      const { provider, code, tenantId, redirectUri } = request.data;
+
+      if (!provider || !code || !tenantId) {
+        throw new Error('Parametri mancanti');
+      }
+
+      console.log(`🔐 OAuth exchange per ${provider}, tenant: ${tenantId}`);
+
+      // Configurazioni provider
+      const providerConfigs = {
+        google: {
+          tokenUrl: 'https://oauth2.googleapis.com/token',
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET
+        },
+        stripe: {
+          tokenUrl: 'https://connect.stripe.com/oauth/token',
+          clientId: process.env.STRIPE_CLIENT_ID,
+          clientSecret: process.env.STRIPE_CLIENT_SECRET
+        },
+        calendly: {
+          tokenUrl: 'https://auth.calendly.com/oauth/token',
+          clientId: process.env.CALENDLY_CLIENT_ID,
+          clientSecret: process.env.CALENDLY_CLIENT_SECRET
+        },
+        zoom: {
+          tokenUrl: 'https://zoom.us/oauth/token',
+          clientId: process.env.ZOOM_CLIENT_ID,
+          clientSecret: process.env.ZOOM_CLIENT_SECRET
+        },
+        instagram: {
+          tokenUrl: 'https://api.instagram.com/oauth/access_token',
+          clientId: process.env.INSTAGRAM_CLIENT_ID,
+          clientSecret: process.env.INSTAGRAM_CLIENT_SECRET
+        }
+      };
+
+      const config = providerConfigs[provider];
+      if (!config) {
+        throw new Error(`Provider ${provider} non supportato`);
+      }
+
+      // Scambia code con access_token
+      const tokenResponse = await fetch(config.tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          code,
+          client_id: config.clientId,
+          client_secret: config.clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code'
+        })
+      });
+
+      if (!tokenResponse.ok) {
+        const errorData = await tokenResponse.text();
+        throw new Error(`Token exchange failed: ${errorData}`);
+      }
+
+      const tokenData = await tokenResponse.json();
+      console.log(`✅ Token ottenuto per ${provider}`);
+
+      // Salva token in Firestore
+      await db.doc(`tenants/${tenantId}/integrations/${provider}`).set({
+        enabled: true,
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token || null,
+        token_type: tokenData.token_type || 'Bearer',
+        expires_at: tokenData.expires_in 
+          ? admin.firestore.Timestamp.fromMillis(Date.now() + (tokenData.expires_in * 1000))
+          : null,
+        scope: tokenData.scope || '',
+        connected_at: admin.firestore.FieldValue.serverTimestamp(),
+        last_sync: null
+      }, { merge: true });
+
+      console.log(`💾 Token salvato per ${provider} - tenant ${tenantId}`);
+
+      return {
+        success: true,
+        provider,
+        message: 'OAuth completato con successo'
+      };
+
+    } catch (error) {
+      console.error('❌ Errore OAuth exchange:', error);
+      throw new Error(error.message);
+    }
+  }
+);
+
+// Instagram Proxy - Proxy per chiamate API Instagram Graph
+exports.instagramProxy = onCall(
+  {
+    region: 'europe-west1'
+  },
+  async (request) => {
+    try {
+      const { tenantId, endpoint, params } = request.data;
+
+      if (!tenantId || !endpoint) {
+        throw new Error('tenantId ed endpoint sono richiesti');
+      }
+
+      console.log(`📞 Instagram API call: ${endpoint} per tenant ${tenantId}`);
+
+      // Leggi access token da Firestore
+      const integrationDoc = await db
+        .doc(`tenants/${tenantId}/integrations/instagram`)
+        .get();
+
+      if (!integrationDoc.exists || !integrationDoc.data().access_token) {
+        throw new Error('Instagram non configurato o access token mancante');
+      }
+
+      const { access_token } = integrationDoc.data();
+
+      // Costruisci URL Instagram Graph API
+      const baseUrl = 'https://graph.instagram.com';
+      const fullUrl = `${baseUrl}${endpoint}${params ? `?${params}&access_token=${access_token}` : `?access_token=${access_token}`}`;
+
+      console.log(`🔗 Chiamata Instagram: ${fullUrl.replace(access_token, 'HIDDEN')}`);
+
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Instagram API error: ${response.status}`, errorText);
+        throw new Error(`Instagram API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`✅ Instagram API response ricevuta`);
+
+      return data;
+
+    } catch (error) {
+      console.error('❌ Errore instagramProxy:', error);
+      throw new Error(error.message);
+    }
+  }
+);
+
+// Sincronizzazione manuale Instagram (singolo tenant)
+exports.manualSyncInstagram = onCall(
+  {
+    region: 'europe-west1'
+  },
+  async (request) => {
+    try {
+      const tenantId = request.auth?.token?.tenantId || request.data?.tenantId;
+      
+      if (!tenantId) {
+        throw new Error('Tenant ID non trovato');
+      }
+
+      console.log(`🔄 Sync manuale Instagram per tenant: ${tenantId}`);
+
+      // Leggi configurazione Instagram
+      const integrationDoc = await db
+        .doc(`tenants/${tenantId}/integrations/instagram`)
+        .get();
+      
+      if (!integrationDoc.exists || !integrationDoc.data().enabled) {
+        throw new Error('Instagram non configurato per questo tenant');
+      }
+
+      const { access_token } = integrationDoc.data();
+      if (!access_token) {
+        throw new Error('Access token mancante');
+      }
+
+      // Chiama Instagram Graph API per profilo
+      const profileUrl = 'https://graph.instagram.com/me?fields=id,username,account_type,media_count,followers_count,follows_count&access_token=' + access_token;
+      const profileResponse = await fetch(profileUrl);
+      
+      if (!profileResponse.ok) {
+        throw new Error(`Instagram API error: ${profileResponse.status}`);
+      }
+
+      const profileData = await profileResponse.json();
+
+      // Salva stats
+      await db.doc(`tenants/${tenantId}/instagram_data/profile`).set({
+        username: profileData.username,
+        account_type: profileData.account_type,
+        followers_count: profileData.followers_count,
+        follows_count: profileData.follows_count,
+        media_count: profileData.media_count,
+        last_sync: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log(`✅ Sync completata per tenant ${tenantId}`);
+
+      return {
+        success: true,
+        profile: profileData
+      };
+
+    } catch (error) {
+      console.error(`❌ Errore sync Instagram:`, error);
+      throw new Error(error.message);
+    }
+  }
+);
+
+// Funzione callable per sincronizzazione manuale (singolo tenant)
+exports.manualSyncManyChat = onCall(
+  {
+    region: 'europe-west1'
+  },
+  async (request) => {
+    try {
+      const tenantId = request.auth?.token?.tenantId || request.data?.tenantId;
+      
+      if (!tenantId) {
+        throw new Error('Tenant ID non trovato');
+      }
+
+      console.log(`🔄 Sync manuale per tenant: ${tenantId}`);
+
+      // Leggi configurazione ManyChat
+      const integrationDoc = await db
+        .doc(`tenants/${tenantId}/integrations/manychat`)
+        .get();
+      
+      if (!integrationDoc.exists || !integrationDoc.data().enabled) {
+        throw new Error('ManyChat non configurato per questo tenant');
+      }
+
+      const { apiKey, pageId } = integrationDoc.data();
+      if (!apiKey || !pageId) {
+        throw new Error('API key o Page ID mancanti');
+      }
+
+      // Chiama ManyChat API
+      const pageInfoUrl = `https://api.manychat.com/fb/page/getInfo?page_id=${pageId}`;
+      const pageInfoResponse = await fetch(pageInfoUrl, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!pageInfoResponse.ok) {
+        throw new Error(`ManyChat API error: ${pageInfoResponse.status}`);
+      }
+
+      const pageInfoData = await pageInfoResponse.json();
+
+      // Salva stats
+      await db.doc(`tenants/${tenantId}/stats/manychat`).set({
+        page_name: pageInfoData.data?.name || '',
+        page_id: pageId,
+        is_pro: pageInfoData.data?.is_pro || false,
+        timezone: pageInfoData.data?.timezone || '',
+        last_sync: admin.firestore.FieldValue.serverTimestamp(),
+        sync_status: 'success',
+        sync_type: 'manual'
+      }, { merge: true });
+
+      console.log(`✅ Sync manuale completato per ${tenantId}`);
+      return { success: true, tenant: tenantId };
+
+    } catch (error) {
+      console.error('❌ Errore sync manuale:', error);
+      throw new Error(error.message);
+    }
+  }
+);
+
+// Scheduled function per sincronizzare dati ManyChat di tutti i tenant
+// Esegue ogni 15 minuti
+exports.syncManyChatData = onSchedule(
+  {
+    schedule: 'every 15 minutes',
+    region: 'europe-west1',
+    timeoutSeconds: 540,
+    memory: '512MiB'
+  },
+  async (event) => {
+    try {
+      console.log('🔄 Inizio sincronizzazione ManyChat per tutti i tenant');
+
+      // Trova tutti i tenant con ManyChat configurato
+      const tenantsSnapshot = await db.collection('tenants').get();
+      let processedTenants = 0;
+
+      for (const tenantDoc of tenantsSnapshot.docs) {
+        const tenantId = tenantDoc.id;
+        
+        // Controlla se ha ManyChat configurato
+        const integrationDoc = await db
+          .doc(`tenants/${tenantId}/integrations/manychat`)
+          .get();
+        
+        if (!integrationDoc.exists || !integrationDoc.data().enabled) {
+          continue;
+        }
+
+        const { apiKey, pageId } = integrationDoc.data();
+        if (!apiKey || !pageId) {
+          console.warn(`⚠️ Tenant ${tenantId}: API key o Page ID mancanti`);
+          continue;
+        }
+
+        console.log(`📊 Sincronizzazione tenant: ${tenantId}`);
+
+        try {
+          // Chiama ManyChat API per ottenere info pagina
+          const pageInfoUrl = `https://api.manychat.com/fb/page/getInfo?page_id=${pageId}`;
+          const pageInfoResponse = await fetch(pageInfoUrl, {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (!pageInfoResponse.ok) {
+            throw new Error(`Page Info failed: ${pageInfoResponse.status}`);
+          }
+
+          const pageInfoData = await pageInfoResponse.json();
+          console.log(`✅ ${tenantId}: Page info ottenuto`);
+
+          // Salva stats base
+          await db.doc(`tenants/${tenantId}/stats/manychat`).set({
+            page_name: pageInfoData.data?.name || '',
+            page_id: pageId,
+            is_pro: pageInfoData.data?.is_pro || false,
+            timezone: pageInfoData.data?.timezone || '',
+            last_sync: admin.firestore.FieldValue.serverTimestamp(),
+            sync_status: 'success'
+          }, { merge: true });
+
+          processedTenants++;
+          console.log(`✅ ${tenantId}: Sincronizzazione completata`);
+
+        } catch (error) {
+          console.error(`❌ Errore sincronizzazione ${tenantId}:`, error.message);
+          
+          // Salva errore
+          await db.doc(`tenants/${tenantId}/stats/manychat`).set({
+            last_sync: admin.firestore.FieldValue.serverTimestamp(),
+            sync_status: 'error',
+            sync_error: error.message
+          }, { merge: true });
+        }
+      }
+
+      console.log(`✅ Sincronizzazione completata: ${processedTenants} tenant processati`);
+      return { success: true, tenants_processed: processedTenants };
+
+    } catch (error) {
+      console.error('❌ Errore sync ManyChat:', error);
+      throw error;
+    }
+  }
+);
+
+// Webhook endpoint per ricevere eventi da ManyChat
+// URL: https://europe-west1-biondo-fitness-coach.cloudfunctions.net/manychatWebhook
+const { onRequest } = require('firebase-functions/v2/https');
+
+exports.manychatWebhook = onRequest(
+  {
+    region: 'europe-west1',
+    cors: true
+  },
+  async (req, res) => {
+    try {
+      // ManyChat invia POST con i dati dell'evento
+      if (req.method !== 'POST') {
+        res.status(405).send('Method Not Allowed');
+        return;
+      }
+
+      const webhookData = req.body;
+      console.log('📥 Webhook ManyChat ricevuto:', JSON.stringify(webhookData, null, 2));
+
+      // Estrai dati importanti
+      const {
+        event_type,
+        page_id,
+        subscriber,
+        timestamp
+      } = webhookData;
+
+      if (!page_id) {
+        console.error('❌ page_id mancante nel webhook');
+        res.status(400).send('Missing page_id');
+        return;
+      }
+
+      // Trova il tenant associato a questo page_id
+      const tenantsSnapshot = await db.collection('tenants').get();
+      let tenantId = null;
+
+      for (const tenantDoc of tenantsSnapshot.docs) {
+        const integrationDoc = await db
+          .doc(`tenants/${tenantDoc.id}/integrations/manychat`)
+          .get();
+        
+        if (integrationDoc.exists && integrationDoc.data().pageId === page_id.toString()) {
+          tenantId = tenantDoc.id;
+          break;
+        }
+      }
+
+      if (!tenantId) {
+        console.warn('⚠️ Nessun tenant trovato per page_id:', page_id);
+        res.status(404).send('Tenant not found');
+        return;
+      }
+
+      console.log('✅ Tenant identificato:', tenantId);
+
+      // Salva l'evento in Firestore
+      const eventRef = db.collection(`tenants/${tenantId}/manychat_events`).doc();
+      await eventRef.set({
+        event_type,
+        page_id,
+        subscriber: subscriber || null,
+        timestamp: timestamp || admin.firestore.FieldValue.serverTimestamp(),
+        raw_data: webhookData,
+        created_at: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log('💾 Evento salvato:', eventRef.id);
+
+      // Se è un nuovo subscriber, salvalo nella collezione subscribers
+      if (event_type === 'user_subscribed' && subscriber) {
+        const subscriberRef = db
+          .doc(`tenants/${tenantId}/manychat_subscribers/${subscriber.id}`);
+        
+        await subscriberRef.set({
+          subscriber_id: subscriber.id,
+          first_name: subscriber.first_name || '',
+          last_name: subscriber.last_name || '',
+          name: subscriber.name || `${subscriber.first_name || ''} ${subscriber.last_name || ''}`.trim(),
+          profile_pic: subscriber.profile_pic || null,
+          locale: subscriber.locale || '',
+          gender: subscriber.gender || '',
+          timezone: subscriber.timezone || '',
+          subscribed_at: subscriber.subscribed_at ? new Date(subscriber.subscribed_at * 1000) : admin.firestore.FieldValue.serverTimestamp(),
+          last_interaction: admin.firestore.FieldValue.serverTimestamp(),
+          tags: subscriber.tags || [],
+          custom_fields: subscriber.custom_fields || {},
+          status: 'active',
+          updated_at: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        console.log('👤 Subscriber salvato/aggiornato:', subscriber.id);
+
+        // Aggiorna contatore subscribers nel tenant
+        const statsRef = db.doc(`tenants/${tenantId}/stats/manychat`);
+        await statsRef.set({
+          total_subscribers: admin.firestore.FieldValue.increment(1),
+          last_updated: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      }
+
+      // Aggiorna ultima interazione se c'è un subscriber
+      if (subscriber && subscriber.id) {
+        const subscriberRef = db
+          .doc(`tenants/${tenantId}/manychat_subscribers/${subscriber.id}`);
+        
+        await subscriberRef.set({
+          last_interaction: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      }
+
+      res.status(200).json({ success: true, event_id: eventRef.id });
+    } catch (error) {
+      console.error('❌ Errore webhook ManyChat:', error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
