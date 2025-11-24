@@ -20,7 +20,9 @@ const PRIORITY_COLORS = {
   urgent: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', label: 'Urgente' }
 };
 
-export default function CalendarNotesPanel({ selectedDate }) {
+export default function CalendarNotesPanel({ currentDate }) {
+  // Converti currentDate in formato string YYYY-MM-DD
+  const selectedDate = currentDate ? currentDate.toISOString().split('T')[0] : null;
   const [notes, setNotes] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingNote, setEditingNote] = useState(null);

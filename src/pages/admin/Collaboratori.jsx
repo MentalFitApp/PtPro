@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Calendar from '../Calendar';
+import LeadsTable from '../../components/leads/LeadsTable';
 
 const ReportStatus = ({ collaboratori }) => {
   const today = new Date().toISOString().split('T')[0];
@@ -56,6 +57,16 @@ export default function Collaboratori() {
   const [collaboratori, setCollaboratori] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [leads, setLeads] = useState([]);
+  const [leadStatuses, setLeadStatuses] = useState([]);
+  const [leadColumns, setLeadColumns] = useState([
+    { id: 'name', label: 'Nome', visible: true, locked: true },
+    { id: 'number', label: 'Telefono', visible: true, locked: false },
+    { id: 'email', label: 'Email', visible: true, locked: false },
+    { id: 'dataPrenotazione', label: 'Data', visible: true, locked: false },
+    { id: 'source', label: 'Fonte', visible: true, locked: false },
+    { id: 'dialed', label: 'Dialed', visible: true, locked: false },
+    { id: 'note', label: 'Note', visible: true, locked: false },
+  ]);
   const [newEmail, setNewEmail] = useState('');
   const [newUid, setNewUid] = useState('');
   const [newRole, setNewRole] = useState('Setter');
@@ -64,6 +75,7 @@ export default function Collaboratori() {
   const [success, setSuccess] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState({ leadsToday: 0, leadsWeek: 0, leadsMonth: 0 });
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // EDIT EMAIL
   const [editingCollab, setEditingCollab] = useState(null);
@@ -210,6 +222,48 @@ export default function Collaboratori() {
     };
 
     checkAdmin();
+
+    // Carica lead statuses
+    const loadStatuses = async () => {
+      try {
+        const configDoc = await getDoc(getTenantDoc(db, 'settings', 'leadStatuses'));
+        if (configDoc.exists()) {
+          const data = configDoc.data();
+          if (data.statuses) {
+            setLeadStatuses(data.statuses.filter(s => s.enabled));
+          } else {
+            setLeadStatuses([
+              { id: 'showUp', label: 'Show Up', color: 'green', enabled: true },
+              { id: 'chiuso', label: 'Chiuso', color: 'rose', enabled: true },
+            ]);
+          }
+        } else {
+          setLeadStatuses([
+            { id: 'showUp', label: 'Show Up', color: 'green', enabled: true },
+            { id: 'chiuso', label: 'Chiuso', color: 'rose', enabled: true },
+          ]);
+        }
+      } catch (error) {
+        console.error('Errore caricamento lead statuses:', error);
+      }
+    };
+    loadStatuses();
+    
+    // Carica lead columns
+    const loadColumns = async () => {
+      try {
+        const configDoc = await getDoc(getTenantDoc(db, 'settings', 'leadColumns'));
+        if (configDoc.exists()) {
+          const data = configDoc.data();
+          if (data.columns && Array.isArray(data.columns)) {
+            setLeadColumns(data.columns);
+          }
+        }
+      } catch (error) {
+        console.error('Errore caricamento lead columns:', error);
+      }
+    };
+    loadColumns();
 
     const collabQuery = query(getTenantCollection(db, 'collaboratori'), orderBy('nome'));
     const unsubCollab = onSnapshot(collabQuery, snap => {
@@ -794,7 +848,29 @@ export default function Collaboratori() {
           </div>
         </div>
 
-        {/* TABELLA LEADS */}
+        {/* TABELLA LEADS CON STATUS DINAMICI */}
+        <div className="mx-3 sm:mx-6">
+          <LeadsTable 
+            key={refreshKey}
+            leads={paginatedLeads} 
+            leadStatuses={leadStatuses}
+            columns={leadColumns}
+            onRefresh={() => setRefreshKey(prev => prev + 1)}
+            showConfig={true}
+          />
+          
+          {/* Paginazione */}
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-3 mt-4 text-xs">
+              <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"><ChevronLeft size={14} /></button>
+              <span className="text-slate-300 self-center">Pag {currentPage} di {totalPages}</span>
+              <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"><ChevronRight size={14} /></button>
+            </div>
+          )}
+        </div>
+
+        {/* VECCHIA TABELLA COMMENTATA PER BACKUP */}
+        {false && (
         <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700 mx-3 sm:mx-6">
           <div className="mobile-table-wrapper relative">
             <div className="inline-block min-w-full align-middle">
@@ -918,15 +994,9 @@ export default function Collaboratori() {
               </table>
             </div>
           </div>
-
-          {totalPages > 1 && (
-            <div className="flex justify-center gap-3 mt-4 text-xs">
-              <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"><ChevronLeft size={14} /></button>
-              <span className="text-slate-300 self-center">Pag {currentPage} di {totalPages}</span>
-              <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"><ChevronRight size={14} /></button>
-            </div>
-          )}
         </div>
+        )}
+        {/* FINE VECCHIA TABELLA */}
 
         {/* LEAD PER FONTE */}
         <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">

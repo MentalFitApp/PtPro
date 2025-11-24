@@ -253,6 +253,18 @@ service cloud.firestore {
       
       // --- SETTINGS ---
       match /settings/{docId} {
+        // DashboardLayout per-user (tutti gli utenti autenticati possono salvare il proprio layout)
+        allow read, write: if request.auth != null && docId.matches('dashboardLayout_.*');
+        
+        // LeadStatuses configurabili da admin
+        allow read: if request.auth != null && docId == 'leadStatuses';
+        allow write: if (isTenantAdmin(tenantId) || isPlatformCEO()) && docId == 'leadStatuses';
+        
+        // LeadColumns configurabili da admin
+        allow read: if request.auth != null && docId == 'leadColumns';
+        allow write: if (isTenantAdmin(tenantId) || isPlatformCEO()) && docId == 'leadColumns';
+        
+        // Tutti gli altri settings - solo admin
         allow read: if request.auth != null;
         allow write: if isTenantAdmin(tenantId) || isPlatformCEO();
       }

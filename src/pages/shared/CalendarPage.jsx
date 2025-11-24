@@ -28,6 +28,36 @@ export default function CalendarPage() {
   const [editingLeadDetails, setEditingLeadDetails] = useState(false);
   const [leadForm, setLeadForm] = useState({ name: '', number: '', email: '', source: '', note: '', date: '', time: '' });
   const [modalShowDayEvents, setModalShowDayEvents] = useState(true);
+  const dayViewRef = React.useRef(null);
+  const [leadStatuses, setLeadStatuses] = useState([]);
+
+  // Carica status lead dinamici
+  useEffect(() => {
+    const loadStatuses = async () => {
+      try {
+        const configDoc = await getDoc(getTenantDoc(db, 'settings', 'leadStatuses'));
+        if (configDoc.exists()) {
+          const data = configDoc.data();
+          if (data.statuses) {
+            setLeadStatuses(data.statuses.filter(s => s.enabled));
+          } else {
+            setLeadStatuses([
+              { id: 'showUp', label: 'Show Up', color: 'green', enabled: true },
+              { id: 'chiuso', label: 'Chiuso', color: 'rose', enabled: true },
+            ]);
+          }
+        } else {
+          setLeadStatuses([
+            { id: 'showUp', label: 'Show Up', color: 'green', enabled: true },
+            { id: 'chiuso', label: 'Chiuso', color: 'rose', enabled: true },
+          ]);
+        }
+      } catch (error) {
+        console.error('Errore caricamento lead statuses:', error);
+      }
+    };
+    loadStatuses();
+  }, []);
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -92,6 +122,26 @@ export default function CalendarPage() {
       if (unsubscribeMessages) unsubscribeMessages();
     };
   }, [navigate]);
+
+  // Auto-scroll alla ora corrente nella vista giornaliera
+  useEffect(() => {
+    if (view === 'day' && dayViewRef.current) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      // Scroll all'ora corrente - 2 ore (per avere margine sopra)
+      const targetHour = Math.max(0, currentHour - 2);
+      // Ogni ora è ~120px (min-h-[120px])
+      const scrollPosition = targetHour * 120;
+      
+      // Piccolo ritardo per assicurarsi che il DOM sia renderizzato
+      setTimeout(() => {
+        dayViewRef.current?.scrollTo({
+          top: scrollPosition,
+          behavior: 'smooth'
+        });
+      }, 100);
+    }
+  }, [view]);
 
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
@@ -468,18 +518,20 @@ export default function CalendarPage() {
 
       {/* Calendario - Vista Mese */}
       {view === 'month' && (
-      <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-slate-700">
-        {/* Intestazione giorni settimana */}
-        <div className="grid grid-cols-7 gap-2 mb-4">
-          {['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'].map(day => (
-            <div key={day} className="text-center text-slate-400 font-semibold text-[11px] sm:text-sm py-2">
-              {day}
-            </div>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        {/* Calendario Mensile */}
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-slate-700">
+          {/* Intestazione giorni settimana */}
+          <div className="grid grid-cols-7 gap-2 mb-4">
+            {['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'].map(day => (
+              <div key={day} className="text-center text-slate-400 font-semibold text-[11px] sm:text-sm py-2">
+                {day}
+              </div>
+            ))}
+          </div>
 
-        {/* Giorni del mese */}
-        <div className="grid grid-cols-7 gap-2">
+          {/* Giorni del mese */}
+          <div className="grid grid-cols-7 gap-2">
           {days.map((day, index) => {
             const dateStr = day ? formatDate(day) : '';
             const dayEvents = day ? getEventsForDay(day) : [];
@@ -530,7 +582,11 @@ export default function CalendarPage() {
               </motion.div>
             );
           })}
+          </div>
         </div>
+
+        {/* Note/Tasks Panel per Vista Mensile */}
+        <CalendarNotesPanel currentDate={currentDate} />
       </div>
       )}
 
@@ -574,15 +630,18 @@ export default function CalendarPage() {
 
       {/* Calendario - Vista Giorno */}
       {view === 'day' && (
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-slate-700">
-          <div className="mb-4">
-            <div className="text-slate-300 text-sm">{currentDate.toLocaleDateString('it-IT', { weekday: 'long' })}</div>
-            <div className="text-2xl font-bold text-slate-100">{currentDate.toLocaleDateString('it-IT')}</div>
-            <div className="text-xs text-slate-400 mt-1">📅 Vista giornaliera: ore 8:00 - 20:00</div>
-          </div>
-          {/* Vista ad ore con selezione a 15' */}
-          <div
-            className="relative max-h-[50vh] sm:max-h-[60vh] overflow-auto rounded-lg border border-slate-700 select-none"
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr,350px] gap-6">
+          {/* Colonna principale calendario */}
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-slate-700">
+            <div className="mb-4">
+              <div className="text-slate-300 text-sm">{currentDate.toLocaleDateString('it-IT', { weekday: 'long' })}</div>
+              <div className="text-2xl font-bold text-slate-100">{currentDate.toLocaleDateString('it-IT')}</div>
+              <div className="text-xs text-slate-400 mt-1">📅 Vista giornaliera: 00:00 - 23:45 (tutte le ore)</div>
+            </div>
+            {/* Vista ad ore con selezione a 15' - FULL DAY */}
+            <div
+              ref={dayViewRef}
+              className="relative h-[70vh] overflow-auto rounded-lg border border-slate-700 select-none"
             onMouseUp={() => {
               if (!isSelecting || selectStartMin === null || selectEndMin === null) return;
               const start = Math.min(selectStartMin, selectEndMin);
@@ -624,17 +683,26 @@ export default function CalendarPage() {
                 startMin: (()=>{ const [h,m]=(ev.time||'00:00').split(':').map(Number); return h*60+m; })(),
                 dur: ev.durationMinutes || 30,
               }));
-              const hours = Array.from({ length: 13 }, (_,h)=>h+8); // Ore 8:00-20:00 (13 ore)
+              const hours = Array.from({ length: 24 }, (_,h)=>h); // Ore 00:00-23:00 (24 ore)
+              
+              // Calcola posizione ora corrente
+              const now = new Date();
+              const isToday = now.getDate() === currentDate.getDate() && 
+                             now.getMonth() === currentDate.getMonth() && 
+                             now.getFullYear() === currentDate.getFullYear();
+              const currentMinutes = now.getHours() * 60 + now.getMinutes();
+              const currentTimePosition = (currentMinutes / 60) * 120; // 120px per ora
+              
               return (
-                <div>
+                <div className="relative">
                   {hours.map(hh => {
                     const hourLabel = String(hh).padStart(2,'0') + ':00';
                     const baseMin = hh*60;
                     const quarters = [0,15,30,45];
                     return (
-                      <div key={hh} className="grid grid-cols-[70px,1fr] border-b border-slate-700/60">
+                      <div key={hh} className="grid grid-cols-[80px,1fr] border-b border-slate-700/60 min-h-[120px]">
                         <div
-                          className="px-1 sm:px-2 py-1 sm:py-2 text-xs text-slate-400 font-mono select-none cursor-pointer hover:text-slate-200"
+                          className="px-2 py-3 text-sm text-slate-400 font-mono select-none cursor-pointer hover:text-slate-200 flex items-start font-bold"
                           onClick={() => {
                             // Click sull'ora: seleziona 60 minuti
                             const start = baseMin;
@@ -672,7 +740,7 @@ export default function CalendarPage() {
                               return (
                                 <div
                                   key={q}
-                                  className={`relative rounded ${inSelection ? 'bg-rose-500/20' : 'bg-slate-900/20'} border border-slate-800/50 h-6 sm:h-8`}
+                                  className={`relative rounded ${inSelection ? 'bg-rose-500/20' : 'bg-slate-900/20'} border border-slate-800/50 h-[28px]`}
                                   onMouseDown={() => { setIsSelecting(true); setSelectStartMin(min); setSelectEndMin(min); }}
                                   onMouseEnter={() => { if (isSelecting) setSelectEndMin(min); }}
                                   onMouseUp={() => {
@@ -696,14 +764,14 @@ export default function CalendarPage() {
                                   }}
                                 >
                                   {eventsInThisSlot.length > 0 ? (
-                                    <div className="absolute inset-0 m-0.5 flex gap-0.5 overflow-hidden">
+                                    <div className="absolute inset-0 m-0.5 flex gap-0.5 overflow-visible">
                                       {eventsInThisSlot.map((starter) => (
                                         <div 
                                           key={starter.id}
-                                          className={`flex-1 p-1.5 rounded-lg text-[10px] sm:text-xs shadow cursor-pointer ${
-                                            starter.type === 'lead' ? 'bg-emerald-600/80 text-emerald-100 hover:bg-emerald-600/90' : 
-                                            starter.type === 'call' ? 'bg-blue-600/80 text-blue-100 hover:bg-blue-600/90' : 
-                                            'bg-purple-600/80 text-purple-100 hover:bg-purple-600/90'
+                                          className={`flex-1 p-1 rounded text-[10px] shadow cursor-pointer overflow-hidden ${
+                                            starter.type === 'lead' ? 'bg-emerald-600/90 text-emerald-100 hover:bg-emerald-600' : 
+                                            starter.type === 'call' ? 'bg-blue-600/90 text-blue-100 hover:bg-blue-600' : 
+                                            'bg-purple-600/90 text-purple-100 hover:bg-purple-600'
                                           }`}
                                           style={{ minWidth: eventsInThisSlot.length > 1 ? `${100 / eventsInThisSlot.length}%` : '100%' }}
                                           onClick={(e)=>{ 
@@ -718,8 +786,11 @@ export default function CalendarPage() {
                                             } 
                                           }}
                                         >
-                                          <div className="font-semibold truncate">{starter.title}</div>
-                                          <div className="text-[9px] opacity-90 font-mono mt-0.5">{starter.time}</div>
+                                          <div className="font-medium truncate leading-tight">{starter.title}</div>
+                                          <div className="text-[9px] opacity-90 font-mono">{starter.time}</div>
+                                          {starter.clientName && (
+                                            <div className="text-[9px] opacity-80 truncate">{starter.clientName}</div>
+                                          )}
                                         </div>
                                       ))}
                                     </div>
@@ -734,10 +805,30 @@ export default function CalendarPage() {
                       </div>
                     );
                   })}
+                  
+                  {/* Indicatore ora corrente */}
+                  {isToday && (
+                    <div 
+                      className="absolute left-0 right-0 pointer-events-none z-10"
+                      style={{ top: `${currentTimePosition}px` }}
+                    >
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-rose-500 ml-2 shadow-lg shadow-rose-500/50" />
+                        <div className="flex-1 h-0.5 bg-rose-500 shadow-lg shadow-rose-500/50" />
+                      </div>
+                      <div className="absolute left-16 -top-2 text-xs font-bold text-rose-500 bg-slate-900/90 px-2 py-0.5 rounded shadow-lg">
+                        {now.getHours().toString().padStart(2, '0')}:{now.getMinutes().toString().padStart(2, '0')}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
           </div>
+        </div>
+
+          {/* Colonna laterale Note/Tasks */}
+          <CalendarNotesPanel currentDate={currentDate} />
         </div>
       )}
 
@@ -1193,18 +1284,50 @@ export default function CalendarPage() {
                         <label className="block text-xs text-slate-400 mb-1">Mesi</label>
                         <input type="number" min="0" className="w-full p-3 bg-slate-800/60 border border-slate-700 rounded-lg text-slate-100" value={leadForm.mesi ?? ''} onChange={(e)=>setLeadForm({...leadForm, mesi: e.target.value === '' ? '' : parseInt(e.target.value,10)})} />
                       </div>
-                      <div className="grid grid-cols-2 gap-3 items-center">
-                        <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.offer} onChange={(e)=>setLeadForm({...leadForm, offer: e.target.checked})} /> Warm</label>
-                        <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.showUp} onChange={(e)=>setLeadForm({...leadForm, showUp: e.target.checked})} /> Show Up</label>
+                      <div className="flex items-center">
+                        <label className="flex items-center gap-2 text-slate-200">
+                          <input type="checkbox" checked={!!leadForm.offer} onChange={(e)=>setLeadForm({...leadForm, offer: e.target.checked})} /> 
+                          Warm
+                        </label>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.chiuso} onChange={(e)=>setLeadForm({...leadForm, chiuso: e.target.checked})} /> Chiuso</label>
-                      <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.riprenotato} onChange={(e)=>setLeadForm({...leadForm, riprenotato: e.target.checked})} /> Riprenotato</label>
-                      <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.settingCall} onChange={(e)=>setLeadForm({...leadForm, settingCall: e.target.checked})} /> Setting Call</label>
-                    </div>
+                    
+                    {/* Status Lead Dinamici */}
                     <div>
-                      <label className="flex items-center gap-2 text-slate-200"><input type="checkbox" checked={!!leadForm.target} onChange={(e)=>setLeadForm({...leadForm, target: e.target.checked})} /> Target</label>
+                      <label className="block text-xs text-slate-400 mb-2">Status Lead</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {leadStatuses.map(status => (
+                          <label key={status.id} className="flex items-center gap-2 text-slate-200 p-2 rounded-lg bg-slate-800/40 border border-slate-700/50 hover:bg-slate-700/40 transition-colors cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={!!leadForm[status.id]} 
+                              onChange={(e)=>setLeadForm({...leadForm, [status.id]: e.target.checked})}
+                              className="accent-blue-600"
+                            />
+                            <span className={`w-2 h-2 rounded-full bg-${status.color}-500`} />
+                            <span className="text-sm">{status.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Altri checkboxes statici */}
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-2">Altri Flag</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <label className="flex items-center gap-2 text-slate-200 p-2 rounded-lg bg-slate-800/40 border border-slate-700/50 hover:bg-slate-700/40 transition-colors cursor-pointer">
+                          <input type="checkbox" checked={!!leadForm.riprenotato} onChange={(e)=>setLeadForm({...leadForm, riprenotato: e.target.checked})} className="accent-blue-600" />
+                          <span className="text-sm">Riprenotato</span>
+                        </label>
+                        <label className="flex items-center gap-2 text-slate-200 p-2 rounded-lg bg-slate-800/40 border border-slate-700/50 hover:bg-slate-700/40 transition-colors cursor-pointer">
+                          <input type="checkbox" checked={!!leadForm.settingCall} onChange={(e)=>setLeadForm({...leadForm, settingCall: e.target.checked})} className="accent-blue-600" />
+                          <span className="text-sm">Setting Call</span>
+                        </label>
+                        <label className="flex items-center gap-2 text-slate-200 p-2 rounded-lg bg-slate-800/40 border border-slate-700/50 hover:bg-slate-700/40 transition-colors cursor-pointer">
+                          <input type="checkbox" checked={!!leadForm.target} onChange={(e)=>setLeadForm({...leadForm, target: e.target.checked})} className="accent-blue-600" />
+                          <span className="text-sm">Target</span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-3">
@@ -1217,8 +1340,8 @@ export default function CalendarPage() {
                             alert('Lead non collegato (leadId mancante).');
                             return;
                           }
-                          // Aggiorna lead
-                          await updateDoc(getTenantDoc(db, 'leads', selectedLead.leadId), {
+                          // Aggiorna lead con status dinamici
+                          const leadUpdateData = {
                             name: leadForm.name,
                             number: leadForm.number,
                             email: leadForm.email,
@@ -1229,13 +1352,18 @@ export default function CalendarPage() {
                             dialed: leadForm.dialed ?? 0,
                             amount: leadForm.amount === '' ? null : leadForm.amount,
                             mesi: leadForm.mesi === '' ? null : leadForm.mesi,
-                            chiuso: !!leadForm.chiuso,
-                            showUp: !!leadForm.showUp,
                             offer: !!leadForm.offer,
                             riprenotato: !!leadForm.riprenotato,
                             target: !!leadForm.target,
                             settingCall: !!leadForm.settingCall
+                          };
+                          
+                          // Aggiungi tutti gli status dinamici
+                          leadStatuses.forEach(status => {
+                            leadUpdateData[status.id] = !!leadForm[status.id];
                           });
+                          
+                          await updateDoc(getTenantDoc(db, 'leads', selectedLead.leadId), leadUpdateData);
                           // Aggiorna evento calendario
                           await updateDoc(getTenantDoc(db, 'calendarEvents', selectedLead.id), {
                             title: `📞 ${leadForm.name}`,
@@ -1267,13 +1395,6 @@ export default function CalendarPage() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Pannello Note/Tasks per la data selezionata */}
-      {selectedDate && (
-        <div className="mt-6">
-          <CalendarNotesPanel selectedDate={formatDate(selectedDate)} />
-        </div>
-      )}
     </div>
   );
 }

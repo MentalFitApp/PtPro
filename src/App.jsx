@@ -31,6 +31,7 @@ const Collaboratori = React.lazy(() => import('./pages/admin/Collaboratori'));
 const CollaboratoreDetail = React.lazy(() => import('./pages/admin/CollaboratoreDetail'));
 const Dipendenti = React.lazy(() => import('./pages/admin/Dipendenti'));
 const Statistiche = React.lazy(() => import('./pages/admin/Statistiche'));
+const StatisticheDashboard = React.lazy(() => import('./pages/admin/StatisticheDashboard'));
 const Analytics = React.lazy(() => import('./pages/admin/Analytics'));
 const CourseAdmin = React.lazy(() => import('./pages/admin/CourseAdmin'));
 const CourseContentManager = React.lazy(() => import('./pages/admin/CourseContentManager'));
@@ -388,7 +389,8 @@ export default function App() {
           <Route path="/admin/dipendenti" element={<Dipendenti />} />
           <Route path="/admin/branding" element={<TenantBranding />} />
           <Route path="/admin/landing" element={<LandingEditor />} />
-          <Route path="/statistiche" element={<Statistiche />} />
+          <Route path="/statistiche" element={<StatisticheDashboard />} />
+          <Route path="/statistiche/legacy" element={<Statistiche />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/alimentazione-allenamento" element={<AlimentazioneAllenamento />} />
