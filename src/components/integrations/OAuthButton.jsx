@@ -38,8 +38,8 @@ export default function OAuthButton({
     instagram: {
       name: 'Instagram',
       icon: '📷',
-      authUrl: 'https://api.instagram.com/oauth/authorize',
-      scopes: ['user_profile', 'user_media']
+      authUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
+      scopes: ['instagram_basic', 'instagram_manage_insights', 'instagram_manage_comments', 'pages_show_list', 'pages_read_engagement', 'business_management']
     }
   };
 
@@ -66,16 +66,20 @@ export default function OAuthButton({
         timestamp: Date.now()
       }));
 
-      // Costruisci URL OAuth
+      // Costruisci URL OAuth - Parametri base
       const params = new URLSearchParams({
         client_id: import.meta.env[`VITE_${provider.toUpperCase()}_CLIENT_ID`],
         redirect_uri: `${window.location.origin}/oauth/callback`,
         response_type: 'code',
-        scope: config.scopes.join(' '),
-        state,
-        access_type: 'offline', // Per refresh token
-        prompt: 'consent' // Forza consenso per refresh token
+        scope: config.scopes.join(','), // Facebook/Instagram usa virgola
+        state
       });
+
+      // Parametri aggiuntivi solo per Google
+      if (provider === 'google') {
+        params.append('access_type', 'offline');
+        params.append('prompt', 'consent');
+      }
 
       // Salva stato in localStorage per verifica
       localStorage.setItem('oauth_state', state);
