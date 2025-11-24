@@ -4,10 +4,13 @@ import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/fi
 import { db } from '../../firebase.js';
 import { useNavigate, Link } from 'react-router-dom';
 import { getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone } from 'lucide-react';
+import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone, TrendingUp, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
 import { useTenantBranding } from '../../hooks/useTenantBranding';
+import HabitTracker from '../../components/client/HabitTracker';
+import WorkoutStreak from '../../components/client/WorkoutStreak';
+import CelebrationMoments from '../../components/client/CelebrationMoments';
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-slate-900 flex justify-center items-center">
@@ -288,8 +291,9 @@ const ClientDashboard = () => {
           </motion.div>
         )}
 
-        <main className="w-full">
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-8">
+        <main className="w-full space-y-6">
+          {/* Stats Cards Row */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <DashboardCard 
               title="Scadenza Percorso" 
               value={`${giorniRimanenti} giorni`} 
@@ -314,26 +318,51 @@ const ClientDashboard = () => {
               color="green"
               variants={itemVariants}
             />
+            <DashboardCard 
+              title="Progressi" 
+              value="In Corso"
+              subtext="Continua così!"
+              icon={<TrendingUp size={24} />}
+              color="cyan"
+              variants={itemVariants}
+            />
           </div>
-          
-          <motion.div 
-            variants={itemVariants} 
-            className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 shadow-xl"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <User className="text-blue-400" size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-white">Azioni Rapide</h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <ActionLink to="/client/anamnesi" title="La mia Anamnesi" description="Visualizza o aggiorna i tuoi dati" icon={<User size={22} />} variants={itemVariants}/>
-              <ActionLink to="/client/checks" title="I miei Check" description="Carica i tuoi progressi periodici" icon={<CheckSquare size={22} />} variants={itemVariants}/>
-              <ActionLink to="/client/payments" title="I miei Pagamenti" description="Visualizza lo storico dei pagamenti" icon={<BarChart2 size={22} />} variants={itemVariants}/>
-              <ActionLink to="/client/chat" title="Chat con il Coach" description="Invia un messaggio diretto" icon={<MessageSquare size={22} />} variants={itemVariants}/>
-            </div>
+
+          {/* Workout Streak - Highlight Section */}
+          <motion.div variants={itemVariants}>
+            <WorkoutStreak compact />
           </motion.div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Habit Tracker */}
+            <motion.div variants={itemVariants}>
+              <HabitTracker />
+            </motion.div>
+
+            {/* Quick Actions */}
+            <motion.div 
+              variants={itemVariants} 
+              className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 shadow-xl"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <Target className="text-blue-400" size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-white">Azioni Rapide</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                <ActionLink to="/client/anamnesi" title="La mia Anamnesi" description="Visualizza o aggiorna i tuoi dati" icon={<User size={22} />} variants={itemVariants}/>
+                <ActionLink to="/client/checks" title="I miei Check" description="Carica i tuoi progressi periodici" icon={<CheckSquare size={22} />} variants={itemVariants}/>
+                <ActionLink to="/client/payments" title="I miei Pagamenti" description="Visualizza lo storico dei pagamenti" icon={<BarChart2 size={22} />} variants={itemVariants}/>
+                <ActionLink to="/client/chat" title="Chat con il Coach" description="Invia un messaggio diretto" icon={<MessageSquare size={22} />} variants={itemVariants}/>
+              </div>
+            </motion.div>
+          </div>
         </main>
+
+        {/* Celebration Overlay */}
+        <CelebrationMoments />
       </motion.div>
     </div>
   );
