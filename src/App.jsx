@@ -86,6 +86,8 @@ const LessonPlayer = React.lazy(() => import('./components/courses/LessonPlayer'
 
 // Public Pages
 const LandingPage = React.lazy(() => import('./pages/public/LandingPage'));
+const PrivacyPolicy = React.lazy(() => import('./pages/public/PrivacyPolicy'));
+const TermsOfService = React.lazy(() => import('./pages/public/TermsOfService'));
 
 // Spinner
 const PageSpinner = () => (
@@ -351,6 +353,8 @@ export default function App() {
         {/* === ROTTE PUBBLICHE === */}
         <Route path="/site" element={<LandingPage />} />
         <Route path="/site/:slug" element={<LandingPage />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
         <Route element={<GuidaLayout />}>
           <Route path="/guida" element={<GuidaMentalFit />} />
         </Route>

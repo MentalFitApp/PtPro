@@ -14,7 +14,8 @@ import {
   Zap, Package, CreditCard, UserPlus, Eye, LogOut,
   Settings, Database, RefreshCw, ChevronLeft, ChevronRight,
   Home, Search, Filter, Download, Upload, Trash2, Edit3,
-  Bell, Moon, Sun, Menu, X, Server, Globe, Lock, Unlock, Layout
+  Bell, Moon, Sun, Menu, X, Server, Globe, Lock, Unlock, Layout,
+  FileText, ExternalLink
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageBuilder from '../../components/platform/PageBuilder';
@@ -725,6 +726,28 @@ export default function CEOPlatformDashboard() {
                   <Globe className="w-8 h-8 text-purple-500" />
                   Landing Pages Management
                 </h2>
+                <div className="flex items-center gap-3">
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-400 transition-all"
+                  >
+                    <Shield size={18} />
+                    <span>Privacy Policy</span>
+                    <ExternalLink size={14} />
+                  </a>
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg text-purple-400 transition-all"
+                  >
+                    <FileText size={18} />
+                    <span>Terms of Service</span>
+                    <ExternalLink size={14} />
+                  </a>
+                </div>
               </div>
 
               {/* Stats Cards */}
