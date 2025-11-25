@@ -21,18 +21,28 @@ const PRIORITY_COLORS = {
 };
 
 export default function CalendarNotesPanel({ currentDate }) {
-  // Converti currentDate in formato string YYYY-MM-DD
-  const selectedDate = currentDate ? currentDate.toISOString().split('T')[0] : null;
+  // Converti currentDate in formato string YYYY-MM-DD (fix fuso orario)
+  const getDateString = (date) => {
+    if (!date) return null;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  const initialDate = currentDate ? getDateString(currentDate) : getDateString(new Date());
+  
   const [notes, setNotes] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(initialDate);
   
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     priority: 'medium',
-    date: selectedDate || new Date().toISOString().split('T')[0],
+    date: initialDate,
     completed: false
   });
 
@@ -61,7 +71,16 @@ export default function CalendarNotesPanel({ currentDate }) {
     ? notes.filter(note => note.date === selectedDate)
     : notes;
 
-  // Reset form quando cambia data
+  // Aggiorna selectedDate quando cambia currentDate dal calendario
+  useEffect(() => {
+    if (currentDate) {
+      const newDateString = getDateString(currentDate);
+      setSelectedDate(newDateString);
+      setFormData(prev => ({ ...prev, date: newDateString }));
+    }
+  }, [currentDate]);
+  
+  // Reset form quando cambia selectedDate manualmente
   useEffect(() => {
     if (selectedDate) {
       setFormData(prev => ({ ...prev, date: selectedDate }));
@@ -164,37 +183,52 @@ export default function CalendarNotesPanel({ currentDate }) {
       className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden"
     >
       {/* Header */}
-      <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-purple-500/10 rounded-lg">
-            <StickyNote className="w-5 h-5 text-purple-400" />
-          </div>
-          <div>
+      <div className="p-4 border-b border-slate-700/50">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-500/10 rounded-lg">
+              <StickyNote className="w-5 h-5 text-purple-400" />
+            </div>
             <h3 className="text-lg font-bold text-white">Note & Tasks</h3>
-            <p className="text-xs text-slate-400">
-              {selectedDate 
-                ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
-                : 'Tutte le note'}
-            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
+              title="Aggiungi nota"
+            >
+              <Plus className="w-5 h-5 text-purple-400" />
+            </button>
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
+            >
+              {collapsed ? (
+                <ChevronDown className="w-5 h-5 text-slate-400" />
+              ) : (
+                <ChevronUp className="w-5 h-5 text-slate-400" />
+              )}
+            </button>
           </div>
         </div>
+        
+        {/* Selettore data indipendente */}
         <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-slate-400" />
+          <input
+            type="date"
+            value={selectedDate || ''}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="flex-1 bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+          />
           <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
-            title="Aggiungi nota"
+            onClick={() => {
+              const today = getDateString(new Date());
+              setSelectedDate(today);
+            }}
+            className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-lg text-xs text-purple-400 transition-colors"
           >
-            <Plus className="w-5 h-5 text-purple-400" />
-          </button>
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors"
-          >
-            {collapsed ? (
-              <ChevronDown className="w-5 h-5 text-slate-400" />
-            ) : (
-              <ChevronUp className="w-5 h-5 text-slate-400" />
-            )}
+            Oggi
           </button>
         </div>
       </div>

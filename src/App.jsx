@@ -24,7 +24,7 @@ const ForgotPassword = React.lazy(() => import('./pages/auth/ForgotPassword'));
 const FirstAccess = React.lazy(() => import('./pages/auth/FirstAccess'));
 
 // Admin Pages
-const Dashboard = React.lazy(() => import('./pages/admin/Dashboard'));
+const AdminDashboard = React.lazy(() => import('./pages/admin/DashboardNew'));
 const Clients = React.lazy(() => import('./pages/admin/Clients'));
 const ClientDetail = React.lazy(() => import('./pages/admin/ClientDetail'));
 const EditClient = React.lazy(() => import('./pages/admin/EditClient'));
@@ -58,7 +58,7 @@ const ClientSchedaAlimentazioneEnhanced = React.lazy(() => import('./pages/clien
 const ClientSchedaAllenamento = React.lazy(() => import('./pages/client/ClientSchedaAllenamento'));
 
 // Coach Pages
-const CoachDashboard = React.lazy(() => import('./pages/coach/CoachDashboard'));
+const CoachDashboard = React.lazy(() => import('./pages/coach/CoachDashboardNew'));
 const CoachAnamnesi = React.lazy(() => import('./pages/coach/CoachAnamnesi'));
 const CoachUpdates = React.lazy(() => import('./pages/coach/CoachUpdates'));
 const CoachClients = React.lazy(() => import('./pages/coach/CoachClients'));
@@ -382,7 +382,7 @@ export default function App() {
         {/* === ROTTE ADMIN (SOLO ADMIN) === */}
 
         <Route element={authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<AdminDashboard />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/new-client" element={<NewClient />} />
           <Route path="/client/:clientId" element={<ClientDetail />} />
