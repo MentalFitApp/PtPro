@@ -10,11 +10,80 @@ import { signOut, updateProfile } from "firebase/auth";
 import { uploadPhoto } from "../../cloudflareStorage";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTenantBranding } from '../../hooks/useTenantBranding';
+import { useCountUp } from '../../hooks/useCountUp';
 import {
   TrendingUp, Users, DollarSign, Calendar, Target, Eye, EyeOff,
   ChevronDown, Settings, BarChart3, Clock, CheckCircle, AlertCircle,
   Plus, LogOut, User, X, FileText, RefreshCw, Bell
 } from "lucide-react";
+
+// Componente MetricCard con animazione
+function AnimatedMetricCard({ value, label, icon: Icon, gradientFrom, gradientTo, borderColor, iconColor, textColor, suffix = '', prefix = '', badge = null }) {
+  const numericValue = parseFloat(value) || 0;
+  const isPercentage = suffix === '%';
+  const isCurrency = suffix === '€';
+  const animatedValue = useCountUp(numericValue, 800);
+  const [isComplete, setIsComplete] = React.useState(false);
+  
+  React.useEffect(() => {
+    if (animatedValue === numericValue && numericValue > 0) {
+      setIsComplete(true);
+      const timer = setTimeout(() => setIsComplete(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [animatedValue, numericValue]);
+  
+  const displayValue = isCurrency 
+    ? `${animatedValue}${suffix}`
+    : isPercentage
+    ? `${animatedValue}${suffix}`
+    : `${animatedValue}`;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ 
+        opacity: 1, 
+        y: 0,
+        scale: isComplete ? [1, 1.05, 1] : 1
+      }}
+      transition={{ 
+        duration: 0.4,
+        scale: { duration: 0.4 }
+      }}
+      className={`relative bg-gradient-to-br ${gradientFrom} ${gradientTo} backdrop-blur-sm border ${borderColor} rounded-lg p-1.5 sm:p-3 overflow-hidden`}
+    >
+      {/* Effetto shine quando completa */}
+      {isComplete && (
+        <motion.div
+          initial={{ x: '-100%', opacity: 0 }}
+          animate={{ x: '100%', opacity: [0, 1, 0] }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+          style={{ pointerEvents: 'none' }}
+        />
+      )}
+      
+      {/* Pulse ring effect */}
+      {isComplete && (
+        <motion.div
+          initial={{ scale: 1, opacity: 0.5 }}
+          animate={{ scale: 1.5, opacity: 0 }}
+          transition={{ duration: 0.6 }}
+          className={`absolute inset-0 border-2 ${borderColor} rounded-lg`}
+          style={{ pointerEvents: 'none' }}
+        />
+      )}
+      
+      <div className="flex items-center justify-between mb-0.5 relative z-10">
+        <Icon className={iconColor} size={12} />
+        {badge}
+      </div>
+      <p className="text-base sm:text-2xl font-bold text-white truncate relative z-10">{displayValue}</p>
+      <p className={`text-[9px] sm:text-xs ${textColor} truncate relative z-10`}>{label}</p>
+    </motion.div>
+  );
+}
 
 export default function DashboardNew() {
   const navigate = useNavigate();
@@ -608,79 +677,104 @@ export default function DashboardNew() {
           </motion.div>
         )}
 
-        {/* METRICHE COMPATTE - INLINE */}
+        {/* METRICHE COMPATTE - INLINE CON ANIMAZIONE */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1 sm:gap-3 mx-1.5 sm:mx-4">
           {visibleMetrics.revenue && (
-            <div className="bg-gradient-to-br from-emerald-900/40 to-emerald-800/20 backdrop-blur-sm border border-emerald-500/30 rounded-lg p-1.5 sm:p-3">
-              <div className="flex items-center justify-between mb-0.5">
-                <DollarSign className="text-emerald-400" size={12} />
-                <TrendingUp className="text-emerald-400" size={10} />
-              </div>
-              <p className="text-base sm:text-2xl font-bold text-white truncate">{metrics.revenue.toFixed(0)}€</p>
-              <p className="text-[9px] sm:text-xs text-emerald-300 truncate">Fatturato</p>
-            </div>
+            <AnimatedMetricCard
+              value={metrics.revenue}
+              label="Fatturato"
+              icon={DollarSign}
+              gradientFrom="from-emerald-900/40"
+              gradientTo="to-emerald-800/20"
+              borderColor="border-emerald-500/30"
+              iconColor="text-emerald-400"
+              textColor="text-emerald-300"
+              suffix="€"
+              badge={<TrendingUp className="text-emerald-400" size={10} />}
+            />
           )}
 
           {visibleMetrics.renewalsRevenue && (
-            <div className="bg-gradient-to-br from-green-900/40 to-green-800/20 backdrop-blur-sm border border-green-500/30 rounded-lg p-1.5 sm:p-3">
-              <div className="flex items-center justify-between mb-0.5">
-                <RefreshCw className="text-green-400" size={12} />
-                <TrendingUp className="text-green-400" size={10} />
-              </div>
-              <p className="text-base sm:text-2xl font-bold text-white truncate">{metrics.renewalsRevenue.toFixed(0)}€</p>
-              <p className="text-[9px] sm:text-xs text-green-300 truncate">Rinnovi</p>
-            </div>
+            <AnimatedMetricCard
+              value={metrics.renewalsRevenue}
+              label="Rinnovi"
+              icon={RefreshCw}
+              gradientFrom="from-green-900/40"
+              gradientTo="to-green-800/20"
+              borderColor="border-green-500/30"
+              iconColor="text-green-400"
+              textColor="text-green-300"
+              suffix="€"
+              badge={<TrendingUp className="text-green-400" size={10} />}
+            />
           )}
 
           {visibleMetrics.clients && (
-            <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 backdrop-blur-sm border border-blue-500/30 rounded-lg p-1.5 sm:p-3">
-              <div className="flex items-center justify-between mb-0.5">
-                <Users className="text-blue-400" size={12} />
-                <span className="text-[8px] sm:text-xs text-blue-300">{metrics.activeClients}/{metrics.totalClients}</span>
-              </div>
-              <p className="text-base sm:text-2xl font-bold text-white">{metrics.newClients}</p>
-              <p className="text-[9px] sm:text-xs text-blue-300 truncate">Nuovi</p>
-            </div>
+            <AnimatedMetricCard
+              value={metrics.newClients}
+              label="Nuovi"
+              icon={Users}
+              gradientFrom="from-blue-900/40"
+              gradientTo="to-blue-800/20"
+              borderColor="border-blue-500/30"
+              iconColor="text-blue-400"
+              textColor="text-blue-300"
+              badge={<span className="text-[8px] sm:text-xs text-blue-300">{metrics.activeClients}/{metrics.totalClients}</span>}
+            />
           )}
 
           {visibleMetrics.renewals && (
-            <div className="bg-gradient-to-br from-purple-900/40 to-purple-800/20 backdrop-blur-sm border border-purple-500/30 rounded-lg p-1.5 sm:p-3">
-              <div className="flex items-center justify-between mb-0.5">
-                <CheckCircle className="text-purple-400" size={12} />
-              </div>
-              <p className="text-base sm:text-2xl font-bold text-white">{metrics.renewals}</p>
-              <p className="text-[9px] sm:text-xs text-purple-300 truncate">Rinnovi</p>
-            </div>
+            <AnimatedMetricCard
+              value={metrics.renewals}
+              label="Rinnovi"
+              icon={CheckCircle}
+              gradientFrom="from-purple-900/40"
+              gradientTo="to-purple-800/20"
+              borderColor="border-purple-500/30"
+              iconColor="text-purple-400"
+              textColor="text-purple-300"
+            />
           )}
 
           {visibleMetrics.leads && (
-            <div className="bg-gradient-to-br from-amber-900/40 to-amber-800/20 backdrop-blur-sm border border-amber-500/30 rounded-lg p-1.5 sm:p-3">
-              <div className="flex items-center justify-between mb-0.5">
-                <Target className="text-amber-400" size={12} />
-              </div>
-              <p className="text-base sm:text-2xl font-bold text-white">{metrics.leads}</p>
-              <p className="text-[9px] sm:text-xs text-amber-300 truncate">Lead</p>
-            </div>
+            <AnimatedMetricCard
+              value={metrics.leads}
+              label="Lead"
+              icon={Target}
+              gradientFrom="from-amber-900/40"
+              gradientTo="to-amber-800/20"
+              borderColor="border-amber-500/30"
+              iconColor="text-amber-400"
+              textColor="text-amber-300"
+            />
           )}
 
           {visibleMetrics.retention && (
-            <div className="bg-gradient-to-br from-cyan-900/40 to-cyan-800/20 backdrop-blur-sm border border-cyan-500/30 rounded-lg p-1.5 sm:p-3">
-              <div className="flex items-center justify-between mb-0.5">
-                <TrendingUp className="text-cyan-400" size={12} />
-              </div>
-              <p className="text-base sm:text-2xl font-bold text-white">{metrics.retention}%</p>
-              <p className="text-[9px] sm:text-xs text-cyan-300 truncate">Retention</p>
-            </div>
+            <AnimatedMetricCard
+              value={metrics.retention}
+              label="Retention"
+              icon={TrendingUp}
+              gradientFrom="from-cyan-900/40"
+              gradientTo="to-cyan-800/20"
+              borderColor="border-cyan-500/30"
+              iconColor="text-cyan-400"
+              textColor="text-cyan-300"
+              suffix="%"
+            />
           )}
 
           {visibleMetrics.avgValue && (
-            <div className="bg-gradient-to-br from-rose-900/40 to-rose-800/20 backdrop-blur-sm border border-rose-500/30 rounded-lg p-1.5 sm:p-3">
-              <div className="flex items-center justify-between mb-0.5">
-                <DollarSign className="text-rose-400" size={12} />
-              </div>
-              <p className="text-base sm:text-2xl font-bold text-white">{metrics.avgValue}€</p>
-              <p className="text-[9px] sm:text-xs text-rose-300 truncate">Medio</p>
-            </div>
+            <AnimatedMetricCard
+              value={metrics.avgValue}
+              label="Medio"
+              icon={DollarSign}
+              gradientFrom="from-rose-900/40"
+              gradientTo="to-rose-800/20"
+              borderColor="border-rose-500/30"
+              iconColor="text-rose-400"
+              textColor="text-rose-300"
+              suffix="€"
+            />
           )}
         </div>
 
