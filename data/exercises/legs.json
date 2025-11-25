@@ -1,0 +1,530 @@
+[
+  {
+    "id": "squat_barbell",
+    "nome": "Squat con Bilanciere",
+    "nameEn": "Barbell Back Squat",
+    "category": "legs",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Gambe",
+    "primaryMuscles": ["Quadricipiti", "Glutei"],
+    "secondaryMuscles": ["Femorali", "Core"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/ultWZbUMPL8",
+    "gifUrl": "https://v2.exercisedb.io/image/lQbE8sNaLOqfzB",
+    "descrizione": "Esercizio fondamentale per lo sviluppo della forza e massa delle gambe. Posiziona il bilanciere sui trapezi, scendi controllato fino a 90° e risali spingendo sui talloni.",
+    "instructions": [
+      "Posiziona bilanciere su trapezi alti",
+      "Piedi larghezza spalle, punte leggermente extra-ruotate",
+      "Inspira e scendi controllato a 90°",
+      "Ginocchia allineate alle punte dei piedi",
+      "Risali espirando, spingendo sui talloni"
+    ],
+    "tips": [
+      "Mantieni core sempre contratto",
+      "Sguardo avanti e leggermente in alto",
+      "Non sollevare i talloni",
+      "Scendi almeno fino a cosce parallele al pavimento"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "leg_press",
+    "nome": "Leg Press",
+    "nameEn": "Leg Press",
+    "category": "legs",
+    "attrezzo": "Macchina",
+    "gruppoMuscolare": "Gambe",
+    "primaryMuscles": ["Quadricipiti", "Glutei"],
+    "secondaryMuscles": ["Femorali"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/IZxyjW7MPJQ",
+    "descrizione": "Ottimo esercizio per isolare le gambe senza sovraccaricare la schiena. Perfetto per principianti o per finisher ad alto volume.",
+    "instructions": [
+      "Schiena ben appoggiata allo schienale",
+      "Piedi larghezza spalle sulla pedana",
+      "Sblocca i fermi e scendi controllato",
+      "Ginocchia verso il petto senza sollevare i glutei",
+      "Spingi con forza estendendo le gambe"
+    ],
+    "tips": [
+      "Non bloccare completamente le ginocchia in alto",
+      "Mantieni zona lombare sempre appoggiata",
+      "Piedi più in alto = più glutei, più in basso = più quadricipiti"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "romanian_deadlift",
+    "nome": "Stacco Rumeno",
+    "nameEn": "Romanian Deadlift",
+    "category": "legs",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Femorali",
+    "primaryMuscles": ["Femorali", "Glutei"],
+    "secondaryMuscles": ["Lombari", "Trapezio"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/2SHsk9AzdjA",
+    "descrizione": "Esercizio mirato per femorali e glutei. Movimento di cerniera dell'anca con focus sull'allungamento eccentrico.",
+    "instructions": [
+      "Afferra bilanciere con presa prona",
+      "Gambe semi-piegate, piedi larghezza anche",
+      "Spingi indietro i glutei mantenendo schiena dritta",
+      "Scendi fino a sentire stretch nei femorali",
+      "Risali contraendo glutei e femorali"
+    ],
+    "tips": [
+      "NON è uno stacco classico - ginocchia sempre semi-piegate",
+      "Focus su hip hinge (cerniera dell'anca)",
+      "Bilanciere scivola vicino alle gambe"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "leg_curl",
+    "nome": "Leg Curl",
+    "nameEn": "Lying Leg Curl",
+    "category": "legs",
+    "attrezzo": "Macchina",
+    "gruppoMuscolare": "Femorali",
+    "primaryMuscles": ["Femorali"],
+    "secondaryMuscles": ["Polpacci"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/ELOCsoDSmrg",
+    "descrizione": "Isolamento diretto dei femorali. Essenziale per equilibrare lo sviluppo tra quadricipiti e posteriori della coscia.",
+    "instructions": [
+      "Sdraiato prono, ginocchia fuori dal bordo",
+      "Caviglie sotto i rulli",
+      "Fletti le ginocchia portando talloni verso glutei",
+      "Contrai in alto per 1 secondo",
+      "Torna giù controllato"
+    ],
+    "tips": [
+      "Mantieni bacino appoggiato",
+      "Non inarcare la schiena",
+      "Movimento fluido, no slanci"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "leg_extension",
+    "nome": "Leg Extension",
+    "nameEn": "Leg Extension",
+    "category": "legs",
+    "attrezzo": "Macchina",
+    "gruppoMuscolare": "Quadricipiti",
+    "primaryMuscles": ["Quadricipiti"],
+    "secondaryMuscles": [],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/YyvSfVjQeL0",
+    "descrizione": "Isolamento totale del quadricipite. Ottimo per pre-affaticamento o pompaggio finale.",
+    "instructions": [
+      "Seduto, schiena appoggiata",
+      "Caviglie sotto rullo inferiore",
+      "Estendi le gambe fino a quasi bloccare",
+      "Contrai quadricipiti in alto",
+      "Scendi controllato"
+    ],
+    "tips": [
+      "Non bloccare completamente le ginocchia",
+      "Usa peso controllabile per evitare stress articolare",
+      "Punte piedi dritte per quad completo"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "bulgarian_split_squat",
+    "nome": "Bulgarian Split Squat",
+    "nameEn": "Bulgarian Split Squat",
+    "category": "legs",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Gambe",
+    "primaryMuscles": ["Quadricipiti", "Glutei"],
+    "secondaryMuscles": ["Femorali", "Core"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/2C-uNgKwPLE",
+    "descrizione": "Squat unilaterale con piede posteriore rialzato. Eccellente per forza, equilibrio e simmetria muscolare.",
+    "instructions": [
+      "Piede posteriore su panca/rialzo",
+      "Manubri ai lati o bilanciere su spalle",
+      "Scendi verticalmente piegando ginocchio anteriore",
+      "Busto eretto, core contratto",
+      "Risali spingendo sul tallone anteriore"
+    ],
+    "tips": [
+      "Ginocchio anteriore non deve superare la punta",
+      "Focus su gamba davanti, non su quella dietro",
+      "Ottimo per correggere asimmetrie"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "walking_lunges",
+    "nome": "Affondi Camminati",
+    "nameEn": "Walking Lunges",
+    "category": "legs",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Gambe",
+    "primaryMuscles": ["Quadricipiti", "Glutei"],
+    "secondaryMuscles": ["Femorali", "Core"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/L8fvypPrzzs",
+    "descrizione": "Affondi in movimento. Lavoro funzionale su forza, equilibrio e coordinazione.",
+    "instructions": [
+      "Manubri ai lati del corpo",
+      "Passo avanti lungo",
+      "Scendi fino a ginocchio posteriore vicino a terra",
+      "Busto eretto",
+      "Spingi con gamba anteriore e porta avanti l'altra"
+    ],
+    "tips": [
+      "Passi ampi per enfatizzare glutei",
+      "Ginocchia sempre allineate",
+      "Sguardo avanti per equilibrio"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "goblet_squat",
+    "nome": "Goblet Squat",
+    "nameEn": "Goblet Squat",
+    "category": "legs",
+    "attrezzo": "Kettlebell",
+    "gruppoMuscolare": "Gambe",
+    "primaryMuscles": ["Quadricipiti", "Glutei"],
+    "secondaryMuscles": ["Core"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/MeHQ-2uKa7w",
+    "descrizione": "Squat con peso frontale tenuto al petto. Perfetto per principianti per imparare la meccanica dello squat.",
+    "instructions": [
+      "Tieni kettlebell/manubrio al petto",
+      "Gomiti puntano in basso",
+      "Piedi leggermente più larghi delle spalle",
+      "Scendi profondo, gomiti tra le ginocchia",
+      "Risali mantenendo petto alto"
+    ],
+    "tips": [
+      "Peso aiuta a mantenere busto eretto",
+      "Ottimo per mobilità caviglie",
+      "Scendi il più profondo possibile"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "calf_raise_standing",
+    "nome": "Calf Raise in Piedi",
+    "nameEn": "Standing Calf Raise",
+    "category": "legs",
+    "attrezzo": "Macchina",
+    "gruppoMuscolare": "Polpacci",
+    "primaryMuscles": ["Gastrocnemio"],
+    "secondaryMuscles": ["Soleo"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/JLHYJRYzPRk",
+    "descrizione": "Esercizio base per i polpacci. Focus sul gastrocnemio (parte alta del polpaccio).",
+    "instructions": [
+      "Avampiedi su gradino, talloni nel vuoto",
+      "Spalle sotto i cuscinetti",
+      "Scendi con talloni verso il basso per stretch",
+      "Spingi verso l'alto sulle punte",
+      "Contrai in alto per 1 secondo"
+    ],
+    "tips": [
+      "ROM completo essenziale",
+      "Non rimbalzare, movimento controllato",
+      "Ginocchia leggermente piegate"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "sumo_squat",
+    "nome": "Sumo Squat",
+    "nameEn": "Sumo Squat",
+    "category": "legs",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Gambe",
+    "primaryMuscles": ["Glutei", "Adduttori"],
+    "secondaryMuscles": ["Quadricipiti"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/0ry7E1B91UQ",
+    "descrizione": "Squat a stance larga che enfatizza glutei e interno coscia.",
+    "instructions": [
+      "Piedi molto più larghi delle spalle",
+      "Punte dei piedi extra-ruotate (45°)",
+      "Manubrio tenuto verticalmente tra le gambe",
+      "Scendi mantenendo busto eretto",
+      "Spingi ginocchia verso esterno"
+    ],
+    "tips": [
+      "Focus su glutei e adduttori",
+      "Ginocchia sempre allineate alle punte",
+      "Ottimo per donne che vogliono enfatizzare glutei"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "front_squat",
+    "nome": "Front Squat",
+    "nameEn": "Front Squat",
+    "category": "legs",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Gambe",
+    "primaryMuscles": ["Quadricipiti"],
+    "secondaryMuscles": ["Core", "Glutei"],
+    "difficulty": "advanced",
+    "videoUrl": "https://www.youtube.com/embed/uYumuL_G_V0",
+    "descrizione": "Squat con bilanciere frontale. Maggior enfasi sui quadricipiti e minor stress sulla schiena.",
+    "instructions": [
+      "Bilanciere appoggiato su deltoidi anteriori",
+      "Gomiti alti, paralleli al pavimento",
+      "Busto più eretto rispetto a back squat",
+      "Scendi profondo mantenendo petto alto",
+      "Gomiti devono rimanere sempre alti"
+    ],
+    "tips": [
+      "Richiede buona mobilità polsi e spalle",
+      "Core dev'essere fortissimo",
+      "Peso inferiore rispetto a back squat"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "hack_squat",
+    "nome": "Hack Squat",
+    "nameEn": "Hack Squat Machine",
+    "category": "legs",
+    "attrezzo": "Macchina",
+    "gruppoMuscolare": "Quadricipiti",
+    "primaryMuscles": ["Quadricipiti"],
+    "secondaryMuscles": ["Glutei"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/0tn5K9NlCfo",
+    "descrizione": "Macchina che isola i quadricipiti riducendo coinvolgimento della schiena.",
+    "instructions": [
+      "Schiena e spalle appoggiate ai cuscinetti",
+      "Piedi sulla pedana, larghezza spalle",
+      "Sblocca i fermi",
+      "Scendi controllato fino a 90°",
+      "Spingi attraverso i talloni"
+    ],
+    "tips": [
+      "Ottimo per quadricipiti senza affaticare schiena",
+      "Piedi bassi = più quadricipiti",
+      "Non bloccare ginocchia in alto"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "good_morning",
+    "nome": "Good Morning",
+    "nameEn": "Good Morning",
+    "category": "legs",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Femorali",
+    "primaryMuscles": ["Femorali", "Glutei", "Lombari"],
+    "secondaryMuscles": [],
+    "difficulty": "advanced",
+    "videoUrl": "https://www.youtube.com/embed/YA-h3n90ZjQ",
+    "descrizione": "Esercizio di hip hinge con bilanciere su spalle. Forte lavoro su catena posteriore.",
+    "instructions": [
+      "Bilanciere su trapezi come per squat",
+      "Gambe semi-piegate",
+      "Spingi indietro i glutei",
+      "Piega busto in avanti mantenendo schiena dritta",
+      "Risali contraendo glutei e femorali"
+    ],
+    "tips": [
+      "Usa pesi leggeri all'inizio",
+      "Richiede buona tecnica e flessibilità",
+      "NON flettere la schiena"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "glute_bridge",
+    "nome": "Ponte Glutei",
+    "nameEn": "Glute Bridge",
+    "category": "legs",
+    "attrezzo": "Corpo libero",
+    "gruppoMuscolare": "Glutei",
+    "primaryMuscles": ["Glutei"],
+    "secondaryMuscles": ["Femorali", "Core"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/wPM8icPu6H8",
+    "descrizione": "Isolamento glutei da terra. Ottimo per attivazione e connessione mente-muscolo.",
+    "instructions": [
+      "Sdraiato supino, piedi a terra vicino ai glutei",
+      "Braccia lungo i fianchi",
+      "Spingi sui talloni sollevando bacino",
+      "Contrai glutei in alto per 2 secondi",
+      "Scendi controllato senza toccare"
+    ],
+    "tips": [
+      "Focus totale su glutei, non su femorali",
+      "Puoi aggiungere peso su anche per progressione",
+      "Ottimo per riscaldamento o finisher"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "hip_thrust",
+    "nome": "Hip Thrust",
+    "nameEn": "Barbell Hip Thrust",
+    "category": "legs",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Glutei",
+    "primaryMuscles": ["Glutei"],
+    "secondaryMuscles": ["Femorali"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/xDmFkJxPzeM",
+    "descrizione": "Il miglior esercizio per lo sviluppo dei glutei. Maggior attivazione rispetto a squat.",
+    "instructions": [
+      "Spalle appoggiate su panca",
+      "Bilanciere su anche (usa pad)",
+      "Piedi larghezza spalle",
+      "Spingi anche verso l'alto",
+      "Contrai glutei in alto per 1-2 secondi"
+    ],
+    "tips": [
+      "Ginocchia a 90° in posizione alta",
+      "Mento verso petto",
+      "Puoi usare carichi molto alti"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "sissy_squat",
+    "nome": "Sissy Squat",
+    "nameEn": "Sissy Squat",
+    "category": "legs",
+    "attrezzo": "Corpo libero",
+    "gruppoMuscolare": "Quadricipiti",
+    "primaryMuscles": ["Quadricipiti"],
+    "secondaryMuscles": [],
+    "difficulty": "advanced",
+    "videoUrl": "https://www.youtube.com/embed/V0XhT4DsAFY",
+    "descrizione": "Esercizio avanzato per isolamento estremo del quadricipite.",
+    "instructions": [
+      "Tieni un supporto per equilibrio",
+      "Ginocchia avanti, busto indietro",
+      "Scendi piegando ginocchia mantenendo corpo dritto",
+      "Quadricipiti in massimo allungamento",
+      "Risali con forza del quadricipite"
+    ],
+    "tips": [
+      "Molto intenso, progressione graduale",
+      "Focus eccentrica controllata",
+      "Ottimo per dettaglio quad"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "step_up",
+    "nome": "Step Up",
+    "nameEn": "Step Up",
+    "category": "legs",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Gambe",
+    "primaryMuscles": ["Quadricipiti", "Glutei"],
+    "secondaryMuscles": ["Femorali"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/dQqApCGd5Ss",
+    "descrizione": "Salita unilaterale su rialzo. Funzionale e ottimo per equilibrio.",
+    "instructions": [
+      "Piede su panca/box stabile",
+      "Manubri ai lati",
+      "Spingi con gamba sopra per salire",
+      "Ginocchio alto",
+      "Scendi controllato con stessa gamba"
+    ],
+    "tips": [
+      "Box più alto = più glutei",
+      "Non spingere con gamba a terra",
+      "Alterna le gambe"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "lying_leg_curl",
+    "nome": "Leg Curl Prono",
+    "nameEn": "Lying Leg Curl",
+    "category": "legs",
+    "attrezzo": "Macchina",
+    "gruppoMuscolare": "Femorali",
+    "primaryMuscles": ["Femorali"],
+    "secondaryMuscles": [],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/ELOCsoDSmrg",
+    "descrizione": "Variante prona del leg curl per isolamento femorali.",
+    "instructions": [
+      "Sdraiato prono sulla macchina",
+      "Ginocchia sul bordo",
+      "Fletti ginocchia portando talloni ai glutei",
+      "Pausa in contrazione",
+      "Scendi controllato"
+    ],
+    "tips": [
+      "Mantieni anche sulla panca",
+      "Evita compensi con schiena"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "seated_calf_raise",
+    "nome": "Calf Raise Seduto",
+    "nameEn": "Seated Calf Raise",
+    "category": "legs",
+    "attrezzo": "Macchina",
+    "gruppoMuscolare": "Polpacci",
+    "primaryMuscles": ["Soleo"],
+    "secondaryMuscles": [],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/JbyjNymZt4E",
+    "descrizione": "Isola il soleo (parte bassa del polpaccio) con ginocchia piegate.",
+    "instructions": [
+      "Seduto, ginocchia sotto cuscinetti",
+      "Avampiedi su gradino",
+      "Scendi con talloni verso basso",
+      "Spingi su con avampiedi",
+      "Contrazione in alto"
+    ],
+    "tips": [
+      "Complementare al calf in piedi",
+      "Focus su ROM completo",
+      "Alti volumi per polpacci"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "box_squat",
+    "nome": "Box Squat",
+    "nameEn": "Box Squat",
+    "category": "legs",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Gambe",
+    "primaryMuscles": ["Quadricipiti", "Glutei"],
+    "secondaryMuscles": ["Femorali"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/hxVUW2GVVM0",
+    "descrizione": "Squat con box dietro per controllare profondità e costruire forza esplosiva.",
+    "instructions": [
+      "Box/panca dietro all'altezza desiderata",
+      "Squat normale fino a toccare box",
+      "Sedersi leggermente",
+      "Esplodere verso l'alto",
+      "Ripetere"
+    ],
+    "tips": [
+      "Ottimo per powerlifting",
+      "Insegna la profondità corretta",
+      "Pausa sul box sviluppa esplosività"
+    ],
+    "isGlobal": true
+  }
+]

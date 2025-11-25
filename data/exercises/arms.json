@@ -1,0 +1,321 @@
+[
+  {
+    "id": "barbell_curl",
+    "nome": "Curl con Bilanciere",
+    "nameEn": "Barbell Curl",
+    "category": "arms",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Bicipiti",
+    "primaryMuscles": ["Bicipiti"],
+    "secondaryMuscles": ["Avambracci"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/kwG2ipFRgfo",
+    "descrizione": "Esercizio base per bicipiti. Permette di caricare pesante.",
+    "instructions": [
+      "In piedi, bilanciere con presa supina",
+      "Gomiti fissi ai fianchi",
+      "Curl verso le spalle",
+      "Contrai bicipiti in alto",
+      "Scendi controllato"
+    ],
+    "tips": [
+      "Non oscillare",
+      "Gomiti sempre fermi",
+      "ROM completo"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "dumbbell_curl",
+    "nome": "Curl con Manubri",
+    "nameEn": "Dumbbell Curl",
+    "category": "arms",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Bicipiti",
+    "primaryMuscles": ["Bicipiti"],
+    "secondaryMuscles": ["Avambracci"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/ykJmrZ5v0Oo",
+    "descrizione": "Curl classico con manubri. Permette supinazione naturale.",
+    "instructions": [
+      "Manubri ai lati",
+      "Curl alternato o simultaneo",
+      "Supina mentre sali (ruota polso)",
+      "Contrai in alto",
+      "Scendi controllato"
+    ],
+    "tips": [
+      "Supinazione aumenta contrazione",
+      "Varia l'alternanza",
+      "Focus su picco contrazione"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "hammer_curl",
+    "nome": "Hammer Curl",
+    "nameEn": "Hammer Curl",
+    "category": "arms",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Bicipiti",
+    "primaryMuscles": ["Brachiale", "Brachioradiale"],
+    "secondaryMuscles": ["Bicipiti"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/zC3nLlEvin4",
+    "descrizione": "Curl con presa neutra. Target su brachiale per spessore braccio.",
+    "instructions": [
+      "Manubri con presa neutra (martello)",
+      "Gomiti fissi",
+      "Curl verso spalle",
+      "Mantieni presa neutra",
+      "Scendi controllato"
+    ],
+    "tips": [
+      "Sviluppa spessore braccio",
+      "Meno stress su polsi",
+      "Complementare a curl supini"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "preacher_curl",
+    "nome": "Curl alla Panca Scott",
+    "nameEn": "Preacher Curl",
+    "category": "arms",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Bicipiti",
+    "primaryMuscles": ["Bicipiti"],
+    "secondaryMuscles": [],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/fIWP-FRFNU0",
+    "descrizione": "Isolamento totale bicipiti. Elimina compensi.",
+    "instructions": [
+      "Braccia appoggiate su panca Scott",
+      "Bilanciere o manubri",
+      "Curl verso le spalle",
+      "Gomiti sempre sulla panca",
+      "Stretch completo in basso"
+    ],
+    "tips": [
+      "Impossibile barare",
+      "Focus su fase eccentrica",
+      "Non estendere completamente (tensione costante)"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "cable_curl",
+    "nome": "Curl ai Cavi",
+    "nameEn": "Cable Curl",
+    "category": "arms",
+    "attrezzo": "Cavi",
+    "gruppoMuscolare": "Bicipiti",
+    "primaryMuscles": ["Bicipiti"],
+    "secondaryMuscles": [],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/wjLm182Elec",
+    "descrizione": "Tensione costante sul bicipite. Ottimo per pompaggio.",
+    "instructions": [
+      "Cavo basso con barra",
+      "Gomiti fissi",
+      "Curl verso spalle",
+      "Tensione costante",
+      "Scendi controllato"
+    ],
+    "tips": [
+      "Tensione continua = pompaggio",
+      "Ottimo per finisher",
+      "Varia impugnature"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "tricep_dips",
+    "nome": "Dip per Tricipiti",
+    "nameEn": "Tricep Dips",
+    "category": "arms",
+    "attrezzo": "Corpo libero",
+    "gruppoMuscolare": "Tricipiti",
+    "primaryMuscles": ["Tricipiti"],
+    "secondaryMuscles": ["Pettorali", "Deltoidi"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/6kALZikXxLc",
+    "descrizione": "Esercizio fondamentale per tricipiti. Costruisce massa e forza.",
+    "instructions": [
+      "Alle parallele",
+      "Busto eretto (non inclinato)",
+      "Scendi piegando gomiti indietro",
+      "Fermati a 90°",
+      "Risali estendendo tricipiti"
+    ],
+    "tips": [
+      "Busto eretto = tricipiti",
+      "Inclinato avanti = petto",
+      "Aggiungi zavorra per progressione"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "close_grip_bench",
+    "nome": "Panca Presa Stretta",
+    "nameEn": "Close Grip Bench Press",
+    "category": "arms",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Tricipiti",
+    "primaryMuscles": ["Tricipiti"],
+    "secondaryMuscles": ["Pettorali"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/_0fuAQa7F14",
+    "descrizione": "Variante di panca per tricipiti. Permette carichi pesanti.",
+    "instructions": [
+      "Presa più stretta larghezza spalle",
+      "Scendi verso petto basso",
+      "Gomiti vicini al corpo",
+      "Spingi con focus su tricipiti",
+      "Blocca in alto"
+    ],
+    "tips": [
+      "Non troppo stretta (stress polsi)",
+      "Ottimo per forza tricipiti",
+      "Complementare a dip"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "overhead_tricep_extension",
+    "nome": "French Press",
+    "nameEn": "Overhead Tricep Extension",
+    "category": "arms",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Tricipiti",
+    "primaryMuscles": ["Tricipiti (capo lungo)"],
+    "secondaryMuscles": [],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/-Vyt2QdsR7E",
+    "descrizione": "Isolamento capo lungo del tricipite. Massimo stretch.",
+    "instructions": [
+      "Manubrio sopra la testa",
+      "Gomiti stretti e fissi",
+      "Scendi dietro la testa",
+      "Stretch profondo",
+      "Estendi verso l'alto"
+    ],
+    "tips": [
+      "Enfatizza capo lungo",
+      "Gomiti sempre fermi e stretti",
+      "Stretch controllato"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "tricep_pushdown",
+    "nome": "Pushdown ai Cavi",
+    "nameEn": "Cable Tricep Pushdown",
+    "category": "arms",
+    "attrezzo": "Cavi",
+    "gruppoMuscolare": "Tricipiti",
+    "primaryMuscles": ["Tricipiti"],
+    "secondaryMuscles": [],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/2-LAMcpzODU",
+    "descrizione": "Isolamento tricipiti ai cavi. Ottimo per pompaggio e definizione.",
+    "instructions": [
+      "Cavo alto con barra o corda",
+      "Gomiti fissi ai fianchi",
+      "Spingi giù estendendo completamente",
+      "Contrai tricipiti in basso",
+      "Torna controllato"
+    ],
+    "tips": [
+      "Gomiti sempre fermi",
+      "Estensione completa critica",
+      "Varia impugnature (barra/corda)"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "skull_crushers",
+    "nome": "Skull Crusher",
+    "nameEn": "Lying Tricep Extension",
+    "category": "arms",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Tricipiti",
+    "primaryMuscles": ["Tricipiti"],
+    "secondaryMuscles": [],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/d_KZxkY_0cM",
+    "descrizione": "Estensioni sdraiate. Ottimo per massa tricipiti.",
+    "instructions": [
+      "Sdraiato su panca",
+      "Bilanciere sopra il petto",
+      "Gomiti fissi",
+      "Scendi verso fronte/dietro testa",
+      "Estendi verso l'alto"
+    ],
+    "tips": [
+      "Controlla il peso",
+      "Gomiti non si aprono",
+      "Puoi usare barra EZ per comfort polsi"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "concentration_curl",
+    "nome": "Curl Concentrato",
+    "nameEn": "Concentration Curl",
+    "category": "arms",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Bicipiti",
+    "primaryMuscles": ["Bicipiti"],
+    "secondaryMuscles": [],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/Jvj2wV0zTo0",
+    "descrizione": "Isolamento totale bicipite. Ottimo per picco.",
+    "instructions": [
+      "Seduto, gomito appoggiato a coscia",
+      "Curl verso la spalla",
+      "Focus totale sul bicipite",
+      "Contrai forte in alto",
+      "Scendi controllato"
+    ],
+    "tips": [
+      "Elimina ogni compenso",
+      "Focus su connessione mente-muscolo",
+      "Ottimo per definizione"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "diamond_pushups",
+    "nome": "Piegamenti Diamante",
+    "nameEn": "Diamond Push Ups",
+    "category": "arms",
+    "attrezzo": "Corpo libero",
+    "gruppoMuscolare": "Tricipiti",
+    "primaryMuscles": ["Tricipiti"],
+    "secondaryMuscles": ["Pettorali"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/J0DnG1_S92I",
+    "descrizione": "Piegamenti con mani a diamante. Intensi per tricipiti.",
+    "instructions": [
+      "Mani vicine formando diamante con pollici e indici",
+      "Corpo dritto",
+      "Scendi verso le mani",
+      "Gomiti indietro",
+      "Spingi su"
+    ],
+    "tips": [
+      "Molto intenso",
+      "Focus su tricipiti",
+      "Progressione piegamenti normali"
+    ],
+    "isGlobal": true
+  }
+]

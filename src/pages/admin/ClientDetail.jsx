@@ -207,6 +207,140 @@ const EditClientModal = ({ isOpen, onClose, client, onSave }) => {
   );
 };
 
+// MODALE MODIFICA PAGAMENTO
+const EditPaymentModal = ({ isOpen, onClose, payment, paymentIndex, client, onSave }) => {
+  const [form, setForm] = useState({
+    amount: 0,
+    duration: '',
+    paymentMethod: 'bonifico',
+    paymentDate: new Date()
+  });
+  const [customMethod, setCustomMethod] = useState('');
+
+  // Aggiorna form quando payment cambia
+  React.useEffect(() => {
+    if (payment) {
+      setForm({
+        amount: payment.amount || 0,
+        duration: payment.duration || '',
+        paymentMethod: payment.paymentMethod || 'bonifico',
+        paymentDate: payment.paymentDate || new Date()
+      });
+      if (payment.paymentMethod === 'altro') {
+        setCustomMethod(payment.paymentMethod);
+      }
+    }
+  }, [payment]);
+
+  const handleSave = async () => {
+    try {
+      const updatedPayments = [...(client.payments || [])];
+      const paymentMethod = form.paymentMethod === 'altro' ? customMethod : form.paymentMethod;
+      
+      updatedPayments[paymentIndex] = {
+        ...updatedPayments[paymentIndex],
+        amount: parseFloat(form.amount) || 0,
+        duration: form.duration,
+        paymentMethod,
+        paymentDate: form.paymentDate
+      };
+
+      const clientRef = getTenantDoc(db, 'clients', client.id);
+      await updateDoc(clientRef, {
+        payments: updatedPayments
+      });
+
+      onSave();
+      onClose();
+    } catch (err) {
+      console.error('Errore modifica pagamento:', err);
+      alert('Errore durante la modifica del pagamento');
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }} 
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+    >
+      <motion.div 
+        initial={{ scale: 0.9 }} 
+        animate={{ scale: 1 }} 
+        exit={{ scale: 0.9 }} 
+        className="bg-slate-800/95 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 w-full max-w-md"
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-white">Modifica Pagamento</h3>
+          <button onClick={onClose} className="text-white hover:text-rose-400">
+            <X size={24} />
+          </button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">Importo (€)</label>
+            <input 
+              type="number" 
+              value={form.amount} 
+              onChange={e => setForm({ ...form, amount: e.target.value })} 
+              placeholder="es. 150" 
+              className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" 
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">Durata</label>
+            <input 
+              type="text" 
+              value={form.duration} 
+              onChange={e => setForm({ ...form, duration: e.target.value })} 
+              placeholder="es. 3 mesi" 
+              className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" 
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">Metodo Pagamento</label>
+            <select 
+              value={form.paymentMethod} 
+              onChange={e => setForm({ ...form, paymentMethod: e.target.value })} 
+              className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white"
+            >
+              <option value="bonifico">Bonifico</option>
+              <option value="klarna">Klarna 3 rate</option>
+              <option value="paypal">PayPal</option>
+              <option value="cash">Contanti</option>
+              <option value="rateizzato">Rateizzato</option>
+              <option value="altro">Altro</option>
+            </select>
+            {form.paymentMethod === 'altro' && (
+              <input 
+                type="text" 
+                value={customMethod} 
+                onChange={e => setCustomMethod(e.target.value)} 
+                placeholder="Specifica metodo" 
+                className="w-full p-2 mt-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" 
+              />
+            )}
+          </div>
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+            <p className="text-xs text-blue-300">
+              💡 L'importo modificato verrà considerato come incasso del mese di pagamento originale.
+            </p>
+          </div>
+          <button 
+            onClick={handleSave} 
+            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold"
+          >
+            Salva Modifiche
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 // NUOVO MODALE: PROLUNGA SCADENZA
 const ExtendExpiryModal = ({ isOpen, onClose, client, onSave }) => {
   const [days, setDays] = useState(7);
@@ -393,6 +527,14 @@ export default function ClientDetail() {
   const [rates, setRates] = useState([]);
   const [canEditRates, setCanEditRates] = useState(false);
   const [isRateizzato, setIsRateizzato] = useState(false);
+  const [showEditPayment, setShowEditPayment] = useState(false);
+  const [editingPaymentIndex, setEditingPaymentIndex] = useState(null);
+  const [editPaymentData, setEditPaymentData] = useState({
+    amount: 0,
+    duration: '',
+    paymentMethod: 'bonifico',
+    paymentDate: new Date()
+  });
 
   // Recupera ruolo utente da localStorage o sessione (adatta se hai un contesto globale)
   let userRole = null;
@@ -693,12 +835,36 @@ export default function ClientDetail() {
                 </div>
               </div>
               {/* Pagamenti legacy */}
-              {payments.length > 0 ? payments.map(p => (
-                <div key={p.id} className="p-4 bg-slate-700/50 rounded-lg border border-slate-600">
-                  <p className="text-sm text-slate-400">Data: {toDate(p.paymentDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
-                  <p className="text-sm text-slate-200">Importo: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(p.amount || 0)}</p>
-                  <p className="text-sm text-slate-200">Durata: {p.duration}</p>
-                  <p className="text-sm text-slate-200">Metodo: {p.paymentMethod}</p>
+              <h3 className="text-lg font-semibold text-slate-200 mb-3 flex items-center gap-2">
+                <DollarSign size={18} />
+                Storico Pagamenti
+              </h3>
+              {payments.length > 0 ? payments.map((p, index) => (
+                <div key={p.id} className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 relative group">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <p className="text-sm text-slate-400">Data: {toDate(p.paymentDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
+                      <p className="text-sm text-slate-200">Importo: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(p.amount || 0)}</p>
+                      <p className="text-sm text-slate-200">Durata: {p.duration}</p>
+                      <p className="text-sm text-slate-200">Metodo: {p.paymentMethod}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditingPaymentIndex(index);
+                        setEditPaymentData({
+                          amount: p.amount || 0,
+                          duration: p.duration || '',
+                          paymentMethod: p.paymentMethod || 'bonifico',
+                          paymentDate: p.paymentDate || new Date()
+                        });
+                        setShowEditPayment(true);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"
+                      title="Modifica pagamento"
+                    >
+                      <Edit size={16} />
+                    </button>
+                  </div>
                 </div>
               )) : <p className="text-center text-slate-400">Nessun pagamento.</p>}
             </div>
@@ -815,6 +981,17 @@ export default function ClientDetail() {
         <RenewalModal isOpen={showRenewal} onClose={() => setShowRenewal(false)} client={client} onSave={handleRenewalSaved} />
         <EditClientModal isOpen={showEdit} onClose={() => setShowEdit(false)} client={client} onSave={handleEditSaved} />
         <ExtendExpiryModal isOpen={showExtend} onClose={() => setShowExtend(false)} client={client} onSave={handleExtendSaved} />
+        <EditPaymentModal 
+          isOpen={showEditPayment} 
+          onClose={() => {
+            setShowEditPayment(false);
+            setEditingPaymentIndex(null);
+          }} 
+          payment={editingPaymentIndex !== null ? payments[editingPaymentIndex] : null}
+          paymentIndex={editingPaymentIndex}
+          client={client} 
+          onSave={handleRenewalSaved} 
+        />
         <PhotoZoomModal 
           isOpen={zoomPhoto.open} 
           onClose={() => setZoomPhoto({ open: false, url: '', alt: '' })} 

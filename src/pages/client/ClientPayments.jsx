@@ -48,7 +48,12 @@ const ClientPayments = () => {
     return () => unsubscribe();
   }, [user, navigate]);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return (
+    <div className="min-h-screen p-4 sm:p-8">
+      <div className="mb-8 h-12 w-64 bg-slate-700/50 rounded-lg animate-pulse" />
+      <SkeletonList count={4} />
+    </div>
+  );
 
   return (
     <div className="min-h-screen text-slate-200 p-4 sm:p-8 relative">

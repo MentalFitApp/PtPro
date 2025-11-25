@@ -36,14 +36,22 @@
     <!-- MANIFEST DINAMICO -->
     <script src="/manifest-generator.js"></script>
 
-    <!-- SERVICE WORKER -->
+    <!-- SERVICE WORKER - Temporaneamente disabilitato -->
     <script>
+      // Unregister tutti i service workers per evitare problemi
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js')
-            .then(reg => console.log('SW registrato:', reg.scope))
-            .catch(err => console.log('Errore SW:', err));
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(reg => {
+            reg.unregister();
+            console.log('Service Worker rimosso');
+          });
         });
+        // Pulisci cache
+        if ('caches' in window) {
+          caches.keys().then(names => {
+            names.forEach(name => caches.delete(name));
+          });
+        }
       }
     </script>
   </body>

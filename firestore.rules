@@ -400,7 +400,23 @@ service cloud.firestore {
         allow delete: if isTenantAdmin(tenantId);
       }
       
-      // --- ESERCIZI ---
+      // --- ESERCIZI CUSTOM (per tenant) ---
+      match /exercises/{exerciseId} {
+        allow read: if request.auth != null && (
+          isTenantClient(tenantId, request.auth.uid) ||
+          isTenantCoach(tenantId) ||
+          isTenantAdmin(tenantId)
+        );
+        allow create, update, delete: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
+      }
+
+      // --- EXERCISE SETTINGS (configurazione database globale) ---
+      match /exercise_settings/{docId} {
+        allow read: if request.auth != null;
+        allow write: if isTenantAdmin(tenantId);
+      }
+      
+      // --- ESERCIZI VECCHIA COLLECTION (deprecated, mantieni per retrocompatibilità) ---
       match /esercizi/{exerciseId} {
         allow read: if request.auth != null;
         allow create, update, delete: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
@@ -491,6 +507,12 @@ service cloud.firestore {
     match /landing_stats_aggregated/{statId} {
       allow read: if isPlatformCEO();
       allow write: if isPlatformCEO();
+    }
+
+    // --- PLATFORM EXERCISES (database globale esercizi) ---
+    match /platform_exercises/{exerciseId} {
+      allow read: if request.auth != null; // Tutti gli utenti autenticati possono leggere
+      allow create, update, delete: if isPlatformCEO(); // Solo platform CEO può modificare
     }
 
     // ==================== BLOCCA TUTTO IL RESTO ====================

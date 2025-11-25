@@ -175,6 +175,7 @@ const clientNavLinks = [
   { to: '/client/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
   { to: '/client/checks', icon: <Activity size={18} />, label: 'Check' },
   { to: '/client/payments', icon: <Target size={18} />, label: 'Pagamenti' },
+  { to: '/client/settings', icon: <Settings size={18} />, label: 'Impostazioni' },
 ];
 
 const collaboratoreNavLinks = [

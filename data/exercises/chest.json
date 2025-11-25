@@ -1,0 +1,398 @@
+[
+  {
+    "id": "bench_press_barbell",
+    "nome": "Panca Piana con Bilanciere",
+    "nameEn": "Barbell Bench Press",
+    "category": "chest",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali"],
+    "secondaryMuscles": ["Tricipiti", "Deltoidi anteriori"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/rT7DgCr-3pg",
+    "descrizione": "Re degli esercizi per il petto. Sviluppo massa e forza del pettorale.",
+    "instructions": [
+      "Sdraiato su panca, piedi a terra",
+      "Impugnatura poco più larga delle spalle",
+      "Scapole retratte e depresse",
+      "Scendi controllato fino al petto",
+      "Spingi esplosivo verso l'alto"
+    ],
+    "tips": [
+      "Arco naturale nella schiena",
+      "Gomiti a 45° rispetto al busto",
+      "Bilanciere tocca linea capezzoli"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "incline_bench_press",
+    "nome": "Panca Inclinata",
+    "nameEn": "Incline Bench Press",
+    "category": "chest",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali superiori"],
+    "secondaryMuscles": ["Deltoidi anteriori", "Tricipiti"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/DbFgADa2IWE",
+    "descrizione": "Enfatizza la parte alta del pettorale. Essenziale per petto completo.",
+    "instructions": [
+      "Panca inclinata 30-45°",
+      "Impugnatura media-larga",
+      "Scendi verso parte alta del petto",
+      "Mantieni controllo",
+      "Spingi verso l'alto"
+    ],
+    "tips": [
+      "30° ottimo per petto alto",
+      "Oltre 45° troppo deltoidi",
+      "Peso inferiore rispetto a piana"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "decline_bench_press",
+    "nome": "Panca Declinata",
+    "nameEn": "Decline Bench Press",
+    "category": "chest",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali inferiori"],
+    "secondaryMuscles": ["Tricipiti"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/LfyQBUKR8SE",
+    "descrizione": "Target sul pettorale basso. Spesso trascurato ma importante per petto completo.",
+    "instructions": [
+      "Panca declinata 15-30°",
+      "Gambe bloccate",
+      "Scendi controllato",
+      "Spingi verso l'alto",
+      "Focus su pettorale basso"
+    ],
+    "tips": [
+      "Minor ROM rispetto a piana",
+      "Puoi usare più carico",
+      "Ottimo per definizione bassa"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "dumbbell_press",
+    "nome": "Panca con Manubri",
+    "nameEn": "Dumbbell Bench Press",
+    "category": "chest",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali"],
+    "secondaryMuscles": ["Tricipiti", "Deltoidi"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/VmB1G1K7v94",
+    "descrizione": "Maggior ROM rispetto a bilanciere. Ottimo per simmetria e controllo.",
+    "instructions": [
+      "Manubri ai lati del petto",
+      "Palmi avanti",
+      "Spingi verso l'alto convergendo leggermente",
+      "Scendi ampio controllato",
+      "Stretch profondo in basso"
+    ],
+    "tips": [
+      "ROM superiore al bilanciere",
+      "Corregge asimmetrie",
+      "Più sicuro per allenarsi da solo"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "push_ups",
+    "nome": "Piegamenti",
+    "nameEn": "Push Ups",
+    "category": "chest",
+    "attrezzo": "Corpo libero",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali"],
+    "secondaryMuscles": ["Tricipiti", "Core", "Deltoidi"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/IODxDxX7oi4",
+    "descrizione": "Esercizio base a corpo libero. Funzionale e sempre efficace.",
+    "instructions": [
+      "Mani poco più larghe delle spalle",
+      "Corpo dritto dalla testa ai piedi",
+      "Scendi fino a petto vicino a terra",
+      "Gomiti a 45°",
+      "Spingi esplosivo verso l'alto"
+    ],
+    "tips": [
+      "Core sempre contratto",
+      "Non abbassare bacino",
+      "Progressione: inclinate → normali → declinate → con peso"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "cable_crossover",
+    "nome": "Croci ai Cavi",
+    "nameEn": "Cable Crossover",
+    "category": "chest",
+    "attrezzo": "Cavi",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali"],
+    "secondaryMuscles": [],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/taI4XduLpTk",
+    "descrizione": "Isolamento del petto con tensione costante. Ottimo per pompaggio e definizione.",
+    "instructions": [
+      "Cavi alti in posizione centrale",
+      "Un piede avanti per stabilità",
+      "Braccia semi-piegate",
+      "Porta mani davanti al petto convergendo",
+      "Contrai e torna controllato"
+    ],
+    "tips": [
+      "Tensione continua sul muscolo",
+      "Focus su squeeze in contrazione",
+      "Cambia altezza cavi per variare target"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "dumbbell_flyes",
+    "nome": "Croci con Manubri",
+    "nameEn": "Dumbbell Flyes",
+    "category": "chest",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali"],
+    "secondaryMuscles": [],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/eozdVDA78K0",
+    "descrizione": "Isolamento classico del petto. Massimo stretch e contrazione.",
+    "instructions": [
+      "Sdraiato su panca",
+      "Manubri sopra il petto, palmi frontali",
+      "Gomiti leggermente piegati (fissi)",
+      "Apri braccia lateralmente stretch profondo",
+      "Torna su convergendo"
+    ],
+    "tips": [
+      "NON raddrizzare gomiti",
+      "Usa peso controllabile",
+      "Focus su stretch, non su carico"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "chest_dips",
+    "nome": "Dip per Petto",
+    "nameEn": "Chest Dips",
+    "category": "chest",
+    "attrezzo": "Corpo libero",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali inferiori"],
+    "secondaryMuscles": ["Tricipiti", "Deltoidi anteriori"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/2z8JmcrW-As",
+    "descrizione": "Eccellente per pettorale basso e forza funzionale.",
+    "instructions": [
+      "Alle parallele, braccia tese",
+      "Busto inclinato avanti 30°",
+      "Scendi piegando gomiti verso esterno",
+      "Gomiti larghi per enfatizzare petto",
+      "Risali spingendo con petto"
+    ],
+    "tips": [
+      "Più ti inclini avanti = più petto",
+      "Busto eretto = più tricipiti",
+      "Aggiungi peso per progressione"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "pec_deck",
+    "nome": "Pectoral Machine",
+    "nameEn": "Pec Deck",
+    "category": "chest",
+    "attrezzo": "Macchina",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali"],
+    "secondaryMuscles": [],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/Z71vBak8WaY",
+    "descrizione": "Isolamento totale del petto su macchina. Ottimo per finisher e pompaggio.",
+    "instructions": [
+      "Seduto, schiena appoggiata",
+      "Avambracci sui cuscinetti",
+      "Porta cuscinetti avanti chiudendo",
+      "Squeeze in contrazione massima",
+      "Torna controllato sentendo stretch"
+    ],
+    "tips": [
+      "Focus su connessione mente-muscolo",
+      "Ottimo per pre-affaticamento",
+      "Sicuro anche ad alte ripetizioni"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "landmine_press",
+    "nome": "Landmine Press",
+    "nameEn": "Landmine Press",
+    "category": "chest",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali superiori"],
+    "secondaryMuscles": ["Deltoidi", "Core"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/FWszMD3H1WQ",
+    "descrizione": "Variante angolata che enfatizza petto alto e core.",
+    "instructions": [
+      "Bilanciere bloccato a terra (landmine)",
+      "Afferra l'estremità",
+      "Posizione sfalsata",
+      "Spingi diagonalmente verso l'alto",
+      "Torna controllato al petto"
+    ],
+    "tips": [
+      "Ottimo per spalle con problemi",
+      "Movimento più naturale",
+      "Core coinvolto per stabilizzazione"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "svend_press",
+    "nome": "Svend Press",
+    "nameEn": "Svend Press",
+    "category": "chest",
+    "attrezzo": "Palla medica",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali interni"],
+    "secondaryMuscles": [],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/sP_4vybjXkc",
+    "descrizione": "Isometria per linea centrale del petto. Brucia incredibilmente.",
+    "instructions": [
+      "Stringi dischi/palla tra le mani al petto",
+      "Squeeze costante",
+      "Estendi braccia davanti",
+      "Mantieni squeeze per 2-3 secondi",
+      "Torna al petto mantenendo tensione"
+    ],
+    "tips": [
+      "Focus totale su squeeze",
+      "Ottimo per finisher",
+      "Tensione costante essenziale"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "incline_dumbbell_flyes",
+    "nome": "Croci Inclinata Manubri",
+    "nameEn": "Incline Dumbbell Flyes",
+    "category": "chest",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali superiori"],
+    "secondaryMuscles": [],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/0G2_XV7slIg",
+    "descrizione": "Isolamento su petto alto. Complemento perfetto a panca inclinata.",
+    "instructions": [
+      "Panca inclinata 30-45°",
+      "Manubri sopra petto",
+      "Gomiti fissi leggermente piegati",
+      "Apri lateralmente",
+      "Chiudi convergendo sopra"
+    ],
+    "tips": [
+      "Stretch profondo in basso",
+      "Focus su petto alto",
+      "Peso moderato"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "plate_press",
+    "nome": "Plate Press",
+    "nameEn": "Plate Press",
+    "category": "chest",
+    "attrezzo": "Palla medica",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali"],
+    "secondaryMuscles": ["Tricipiti"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/qPc3F-uP7DQ",
+    "descrizione": "Variante di pressa con disco. Contrazione isometrica costante.",
+    "instructions": [
+      "Sdraiato su panca",
+      "Disco stretto tra le mani",
+      "Squeeze forte contro il disco",
+      "Pressa normale mantenendo squeeze",
+      "Movimento controllato"
+    ],
+    "tips": [
+      "Tensione costante critica",
+      "Ottimo per varietà",
+      "Focus interno petto"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "low_cable_flyes",
+    "nome": "Croci Cavi Bassi",
+    "nameEn": "Low Cable Flyes",
+    "category": "chest",
+    "attrezzo": "Cavi",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali superiori"],
+    "secondaryMuscles": [],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/69kBDcphoenE",
+    "descrizione": "Cavi bassi per enfatizzare petto alto.",
+    "instructions": [
+      "Cavi bassi ai lati",
+      "Impugnature in mano",
+      "Posizione centrale, piede avanti",
+      "Porta mani verso l'alto convergendo",
+      "Focus su petto alto"
+    ],
+    "tips": [
+      "Traiettoria dal basso verso alto",
+      "Squeeze in contrazione",
+      "Complementare a cable crossover alti"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "machine_press",
+    "nome": "Chest Press Machine",
+    "nameEn": "Machine Chest Press",
+    "category": "chest",
+    "attrezzo": "Macchina",
+    "gruppoMuscolare": "Petto",
+    "primaryMuscles": ["Pettorali"],
+    "secondaryMuscles": ["Tricipiti"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/xUm0BiZCWlQ",
+    "descrizione": "Macchina guidata per petto. Sicura per principianti e per serie intensive.",
+    "instructions": [
+      "Seduto, schiena appoggiata",
+      "Impugnature all'altezza petto",
+      "Spingi in avanti",
+      "Estensione completa",
+      "Torna controllato"
+    ],
+    "tips": [
+      "Ottimo per dropset",
+      "Movimento guidato sicuro",
+      "Perfetto per finisher"
+    ],
+    "isGlobal": true
+  }
+]

@@ -10,6 +10,8 @@ import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircl
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadPhoto } from '../../storageUtils.js';
 import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
+import { SkeletonList } from '../../components/ui/SkeletonLoader';
+import { EmptyChecks } from '../../components/ui/EmptyState';
 
 // Stili personalizzati per il calendario
 const calendarStyles = `
@@ -440,7 +442,11 @@ export default function ClientChecks() {
       if (checkOnDate) {
         return <CheckDetails check={checkOnDate} handleEditClick={handleEditClick} />;
       }
-      return <p className="text-center text-slate-400 p-8">Nessun check previsto o registrato per questa data.</p>;
+      return (
+        <div className="text-center p-8">
+          <EmptyChecks onAddCheck={() => setFormState({ id: null, notes: '', weight: '', photos: {}, photoPreviews: {} })} />
+        </div>
+      );
     } catch (err) {
       console.error("Errore renderContentForDate:", err);
       return <p className="text-center text-red-400 p-8">Errore nel caricamento del contenuto.</p>;
@@ -448,7 +454,12 @@ export default function ClientChecks() {
   };
 
   if (error) return <div className="min-h-screen text-red-400 flex justify-center items-center p-4">{error}</div>;
-  if (loading) return <LoadingSpinner />;
+  if (loading) return (
+    <div className="min-h-screen p-4 sm:p-8">
+      <div className="mb-8 h-12 w-48 bg-slate-700/50 rounded-lg animate-pulse" />
+      <SkeletonList count={3} />
+    </div>
+  );
 
   return (
     <>

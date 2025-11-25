@@ -18,6 +18,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 export default function CourseContentManager() {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const [course, setCourse] = useState(null);
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -121,7 +122,7 @@ export default function CourseContentManager() {
 
   const handleCreateModule = async () => {
     if (!moduleData.title.trim()) {
-      alert('Inserisci un titolo per il modulo');
+      toast.error('Inserisci un titolo per il modulo');
       return;
     }
 
@@ -139,7 +140,7 @@ export default function CourseContentManager() {
       alert('Modulo creato con successo!');
     } catch (error) {
       console.error('Error creating module:', error);
-      alert('Errore nella creazione del modulo: ' + error.message);
+      toast.error('Errore nella creazione del modulo: ' + error.message);
     }
   };
 
@@ -162,7 +163,7 @@ export default function CourseContentManager() {
       alert('Modulo aggiornato con successo!');
     } catch (error) {
       console.error('Error updating module:', error);
-      alert('Errore nell\'aggiornamento del modulo: ' + error.message);
+      toast.error('Errore nell\'aggiornamento del modulo: ' + error.message);
     }
   };
 
@@ -311,10 +312,10 @@ export default function CourseContentManager() {
       await deleteDoc(
         doc(db, 'courses', courseId, 'modules', moduleId, 'lessons', lessonId)
       );
-      alert('Lezione eliminata con successo');
+      toast.success('Lezione eliminata con successo');
     } catch (error) {
       console.error('Error deleting lesson:', error);
-      alert('Errore nell\'eliminazione della lezione: ' + error.message);
+      toast.error('Errore nell\'eliminazione della lezione: ' + error.message);
     }
   };
 

@@ -1,10 +1,14 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import GlobalUploadBar from './components/ui/GlobalUploadBar';
+import ErrorBoundary from './components/ErrorBoundary';
+import PrivacyBanner from './components/PrivacyBanner';
+// import OfflineIndicator from './components/OfflineIndicator'; // Temporaneamente disabilitato
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { getTenantDoc } from './config/tenant';
 
 // Import dinamici dei layout
@@ -48,6 +52,7 @@ const ClientDashboard = React.lazy(() => import('./pages/client/ClientDashboard'
 const ClientAnamnesi = React.lazy(() => import('./pages/client/ClientAnamnesi'));
 const ClientChecks = React.lazy(() => import('./pages/client/ClientChecks'));
 const ClientPayments = React.lazy(() => import('./pages/client/ClientPayments'));
+const ClientSettings = React.lazy(() => import('./pages/client/ClientSettings'));
 const ClientSchedaAlimentazione = React.lazy(() => import('./pages/client/ClientSchedaAlimentazione'));
 const ClientSchedaAlimentazioneEnhanced = React.lazy(() => import('./pages/client/ClientSchedaAlimentazioneEnhanced'));
 const ClientSchedaAllenamento = React.lazy(() => import('./pages/client/ClientSchedaAllenamento'));
@@ -349,9 +354,13 @@ export default function App() {
   if (authInfo.error) return <div className="text-red-500 text-center p-4">{authInfo.error}</div>;
 
   return (
+    <ErrorBoundary>
+    <ToastProvider>
     <ThemeProvider>
       <Suspense fallback={<PageSpinner />}>
         <GlobalUploadBar />
+        <PrivacyBanner />
+        {/* <OfflineIndicator /> */}
         <Routes>
         {/* === ROTTE PUBBLICHE === */}
         <Route path="/site" element={<LandingPage />} />
@@ -446,6 +455,7 @@ export default function App() {
           <Route path="/client/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<LessonPlayer />} />
           <Route path="/client/onboarding" element={<OnboardingFlow />} />
           <Route path="/client/community" element={<Community />} />
+          <Route path="/client/settings" element={<ClientSettings />} />
         </Route>
 
         {/* === ROTTE COLLABORATORI === */}
@@ -472,5 +482,7 @@ export default function App() {
       </Routes>
     </Suspense>
     </ThemeProvider>
+    </ToastProvider>
+    </ErrorBoundary>
   );
 }

@@ -4,8 +4,10 @@ import { db } from '../../firebase';
 import { Trash2, Edit, X, Check, Copy, Plus, Archive, ExternalLink, Search, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function GuideManager() {
+  const toast = useToast();
   const [guides, setGuides] = useState([]);
   const [leads, setLeads] = useState([]);
   const [showAddGuide, setShowAddGuide] = useState(false);
@@ -46,7 +48,7 @@ export default function GuideManager() {
 
   const handleAddGuide = async () => {
     if (!newGuide.id || !newGuide.name || !newGuide.redirectUrl) {
-      return alert('Tutti i campi sono obbligatori');
+      return toast.error('Tutti i campi sono obbligatori');
     }
 
     await setDoc(getTenantDoc(db, 'guides', newGuide.id), {
@@ -60,7 +62,7 @@ export default function GuideManager() {
 
     setShowAddGuide(false);
     setNewGuide({ id: '', name: '', redirectUrl: '' });
-    alert('Guida aggiunta!');
+    toast.success('Guida aggiunta con successo!');
   };
 
   const archiveGuide = async (id) => {
@@ -69,7 +71,7 @@ export default function GuideManager() {
 
   const copyLink = (id) => {
     navigator.clipboard.writeText(`${window.location.origin}/guida/${id}`);
-    alert('Link copiato!');
+    toast.success('Link copiato negli appunti!');
   };
 
   // --- LEAD EDIT ---
@@ -96,7 +98,7 @@ export default function GuideManager() {
       setEditingLead(null);
       setEditForm({});
     } catch (err) {
-      alert('Errore aggiornamento');
+      toast.error('Errore durante l\'aggiornamento');
     }
   };
 

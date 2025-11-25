@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, X, Save, Filter, Video, Upload } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Save, Filter, Video, Upload, Settings, Globe, User } from 'lucide-react';
 import { db, auth } from '../firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, or } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, or, getDoc, setDoc } from 'firebase/firestore';
 import { getTenantCollection, getTenantDoc } from '../config/tenant';
 import { uploadToR2 } from '../cloudflareStorage';
 
@@ -44,7 +44,7 @@ const ListaEsercizi = ({ onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAttrezzo, setSelectedAttrezzo] = useState('');
   const [selectedGruppo, setSelectedGruppo] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all'); // 'all', 'global', 'personal'
+  const [categoryFilter, setCategoryFilter] = useState('all'); // 'all', 'global', 'custom'
   const [isAddingExercise, setIsAddingExercise] = useState(false);
   const [editingExercise, setEditingExercise] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -52,37 +52,93 @@ const ListaEsercizi = ({ onBack }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedVideoFile, setSelectedVideoFile] = useState(null);
   const videoInputRef = useRef(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [useGlobalDatabase, setUseGlobalDatabase] = useState(true);
+  const [globalExercises, setGlobalExercises] = useState([]);
+  const [customExercises, setCustomExercises] = useState([]);
   const [formData, setFormData] = useState({
     nome: '',
     attrezzo: '',
     gruppoMuscolare: '',
     descrizione: '',
     videoUrl: '',
-    isGlobal: true // true = Esercizi Maurizio, false = Personale
+    isCustom: false // true = custom del tenant, false = va nel database globale (se permesso)
   });
 
   useEffect(() => {
     loadExercises();
   }, []);
 
+  const handleToggleGlobalDatabase = async (enabled) => {
+    try {
+      const settingsRef = getTenantDoc(db, 'exercise_settings', 'config');
+      await setDoc(settingsRef, {
+        useGlobalDatabase: enabled,
+        updatedAt: new Date(),
+        updatedBy: auth.currentUser.uid
+      }, { merge: true });
+      setUseGlobalDatabase(enabled);
+      loadExercises(); // Ricarica con nuove impostazioni
+    } catch (error) {
+      console.error('Errore salvataggio settings:', error);
+      alert('Errore nel salvataggio delle impostazioni');
+    }
+  };
+
   const loadExercises = async () => {
     setLoading(true);
     try {
-      const exercisesRef = getTenantCollection(db, 'esercizi');
-      const currentUserId = auth.currentUser?.uid;
+      // 1. Carica settings per vedere se usare database globale
+      const settingsRef = getTenantDoc(db, 'exercise_settings', 'config');
+      const settingsSnap = await getDoc(settingsRef);
+      const settings = settingsSnap.exists() ? settingsSnap.data() : { useGlobalDatabase: true };
+      setUseGlobalDatabase(settings.useGlobalDatabase);
+
+      let globalExercisesData = [];
+      let customExercisesData = [];
+
+      // 2. Carica esercizi globali (se abilitato)
+      if (settings.useGlobalDatabase) {
+        const globalRef = collection(db, 'platform_exercises');
+        const globalSnap = await getDocs(globalRef);
+        globalExercisesData = globalSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          source: 'global',
+          editable: false
+        }));
+      }
+
+      // 3. Carica esercizi custom del tenant
+      const customRef = getTenantCollection(db, 'exercises');
+      const customSnap = await getDocs(customRef);
+      customExercisesData = customSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        source: 'custom',
+        editable: true
+      }));
+
+      // 4. Merge (custom override global se ha campo overridesGlobal)
+      const exerciseMap = new Map();
       
-      // Query per caricare esercizi globali (categoria: 'maurizio') E esercizi personali dell'utente
-      const q = query(
-        exercisesRef,
-        or(
-          where('category', '==', 'maurizio'),
-          where('userId', '==', currentUserId)
-        )
-      );
+      globalExercisesData.forEach(ex => {
+        exerciseMap.set(ex.id, ex);
+      });
       
-      const snapshot = await getDocs(q);
-      const exercisesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setExercises(exercisesData);
+      customExercisesData.forEach(ex => {
+        if (ex.overridesGlobal) {
+          // Override: sostituisce esercizio globale
+          exerciseMap.set(ex.overridesGlobal, ex);
+        } else {
+          // Nuovo esercizio custom
+          exerciseMap.set(ex.id, ex);
+        }
+      });
+
+      setGlobalExercises(globalExercisesData);
+      setCustomExercises(customExercisesData);
+      setExercises(Array.from(exerciseMap.values()));
     } catch (error) {
       console.error('Errore nel caricamento degli esercizi:', error);
     }
@@ -140,12 +196,17 @@ const ListaEsercizi = ({ onBack }) => {
         }
       }
 
-      const exercisesRef = getTenantCollection(db, 'esercizi');
-      const { isGlobal, ...exerciseData } = formData;
+      const { isCustom, ...exerciseData } = formData;
+      
+      // Se custom, salva in tenant exercises, altrimenti in platform_exercises (root)
+      const exercisesRef = isCustom 
+        ? getTenantCollection(db, 'exercises')
+        : collection(db, 'platform_exercises');
+      
       await addDoc(exercisesRef, {
         ...exerciseData,
         videoUrl,
-        category: isGlobal ? 'maurizio' : 'personal', // Categoria globale o personale
+        isCustom,
         userId: auth.currentUser.uid,
         createdBy: auth.currentUser.displayName || 'Admin',
         createdAt: new Date()
@@ -192,12 +253,15 @@ const ListaEsercizi = ({ onBack }) => {
         }
       }
 
-      const exerciseRef = getTenantDoc(db, 'esercizi', editingExercise.id);
-      const { isGlobal, ...exerciseData } = formData;
+      // Determina collection da source dell'esercizio
+      const exerciseRef = editingExercise.source === 'global'
+        ? doc(db, 'platform_exercises', editingExercise.id)
+        : getTenantDoc(db, 'exercises', editingExercise.id);
+      
+      const { isCustom, ...exerciseData } = formData;
       await updateDoc(exerciseRef, {
         ...exerciseData,
         videoUrl,
-        category: isGlobal ? 'maurizio' : 'personal',
         updatedAt: new Date(),
         updatedBy: auth.currentUser.displayName || 'Admin'
       });
@@ -213,11 +277,13 @@ const ListaEsercizi = ({ onBack }) => {
     }
   };
 
-  const handleDeleteExercise = async (exerciseId) => {
+  const handleDeleteExercise = async (exercise) => {
     if (!confirm('Sei sicuro di voler eliminare questo esercizio?')) return;
 
     try {
-      const exerciseRef = getTenantDoc(db, 'esercizi', exerciseId);
+      const exerciseRef = exercise.source === 'global'
+        ? doc(db, 'platform_exercises', exercise.id)
+        : getTenantDoc(db, 'exercises', exercise.id);
       await deleteDoc(exerciseRef);
       loadExercises();
     } catch (error) {
@@ -233,7 +299,7 @@ const ListaEsercizi = ({ onBack }) => {
       gruppoMuscolare: '',
       descrizione: '',
       videoUrl: '',
-      isGlobal: true
+      isCustom: false
     });
     setSelectedVideoFile(null);
     setUploadingVideo(false);
@@ -253,7 +319,7 @@ const ListaEsercizi = ({ onBack }) => {
       gruppoMuscolare: exercise.gruppoMuscolare,
       descrizione: exercise.descrizione || '',
       videoUrl: exercise.videoUrl || '',
-      isGlobal: exercise.category === 'maurizio'
+      isCustom: exercise.source === 'custom'
     });
   };
 
@@ -262,8 +328,8 @@ const ListaEsercizi = ({ onBack }) => {
     const matchesAttrezzo = !selectedAttrezzo || exercise.attrezzo === selectedAttrezzo;
     const matchesGruppo = !selectedGruppo || exercise.gruppoMuscolare === selectedGruppo;
     const matchesCategory = categoryFilter === 'all' || 
-      (categoryFilter === 'global' && exercise.category === 'maurizio') ||
-      (categoryFilter === 'personal' && exercise.category === 'personal' && exercise.userId === auth.currentUser?.uid);
+      (categoryFilter === 'global' && exercise.source === 'global') ||
+      (categoryFilter === 'custom' && exercise.source === 'custom');
     return matchesSearch && matchesAttrezzo && matchesGruppo && matchesCategory;
   });
 
@@ -304,10 +370,17 @@ const ListaEsercizi = ({ onBack }) => {
             className="px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
           >
             <option value="all">Tutti gli Esercizi</option>
-            <option value="global">🌍 Esercizi Maurizio</option>
-            <option value="personal">👤 I Miei Esercizi</option>
+            <option value="global">🌍 Database Globale</option>
+            <option value="custom">⭐ Esercizi Custom</option>
           </select>
           
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Settings size={18} />
+            Impostazioni
+          </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors flex items-center gap-2"
@@ -323,6 +396,72 @@ const ListaEsercizi = ({ onBack }) => {
             Aggiungi Esercizio
           </button>
         </div>
+
+        {/* Settings Panel */}
+        <AnimatePresence>
+          {showSettings && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-600/30 rounded-lg p-6"
+            >
+              <h3 className="text-lg font-semibold text-purple-200 mb-4 flex items-center gap-2">
+                <Settings size={20} />
+                Configurazione Database Esercizi
+              </h3>
+              
+              <div className="space-y-4">
+                {/* Toggle Database Globale */}
+                <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Globe className="text-blue-400" size={20} />
+                        <label className="text-sm font-medium text-slate-200">
+                          Usa Database Globale
+                        </label>
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        Accedi a 150+ esercizi professionali con video e GIF animati.
+                        Puoi comunque aggiungere i tuoi esercizi personalizzati.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleGlobalDatabase(!useGlobalDatabase)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        useGlobalDatabase ? 'bg-blue-600' : 'bg-slate-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          useGlobalDatabase ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-blue-300">{globalExercises.length}</div>
+                    <div className="text-xs text-slate-400 mt-1">Esercizi Globali</div>
+                  </div>
+                  <div className="bg-purple-900/20 border border-purple-600/30 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-purple-300">{customExercises.length}</div>
+                    <div className="text-xs text-slate-400 mt-1">Esercizi Custom</div>
+                  </div>
+                  <div className="bg-emerald-900/20 border border-emerald-600/30 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-emerald-300">{exercises.length}</div>
+                    <div className="text-xs text-slate-400 mt-1">Totale Disponibili</div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Filters */}
         <AnimatePresence>
@@ -396,25 +535,25 @@ const ListaEsercizi = ({ onBack }) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="text-sm font-medium text-slate-300 block mb-1">
-                      Categoria Esercizio
+                      Tipo Esercizio
                     </label>
                     <p className="text-xs text-slate-500">
-                      {formData.isGlobal 
-                        ? '🌍 Esercizio globale - Visibile a tutti gli utenti'
-                        : '👤 Esercizio personale - Visibile solo a te'
+                      {formData.isCustom 
+                        ? '⭐ Esercizio Custom - Con i tuoi video personalizzati'
+                        : '🌍 Database Globale - Esercizio con video professionale'
                       }
                     </p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, isGlobal: !formData.isGlobal })}
+                    onClick={() => setFormData({ ...formData, isCustom: !formData.isCustom })}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      formData.isGlobal ? 'bg-yellow-600' : 'bg-cyan-600'
+                      formData.isCustom ? 'bg-purple-600' : 'bg-blue-600'
                     }`}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        formData.isGlobal ? 'translate-x-6' : 'translate-x-1'
+                        formData.isCustom ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>
@@ -615,13 +754,15 @@ const ListaEsercizi = ({ onBack }) => {
                       {exercise.nome}
                     </td>
                     <td className="px-4 py-3">
-                      {exercise.category === 'maurizio' ? (
-                        <span className="px-2 py-1 bg-yellow-900/30 border border-yellow-600/30 text-yellow-300 rounded text-xs flex items-center gap-1 w-fit">
-                          🌍 Maurizio
+                      {exercise.source === 'global' ? (
+                        <span className="px-2 py-1 bg-blue-900/30 border border-blue-600/30 text-blue-300 rounded text-xs flex items-center gap-1 w-fit">
+                          <Globe size={12} />
+                          Database Globale
                         </span>
                       ) : (
-                        <span className="px-2 py-1 bg-cyan-900/30 border border-cyan-600/30 text-cyan-300 rounded text-xs flex items-center gap-1 w-fit">
-                          👤 Personale
+                        <span className="px-2 py-1 bg-purple-900/30 border border-purple-600/30 text-purple-300 rounded text-xs flex items-center gap-1 w-fit">
+                          <User size={12} />
+                          Custom
                         </span>
                       )}
                     </td>
@@ -658,9 +799,10 @@ const ListaEsercizi = ({ onBack }) => {
                           <Edit2 size={16} />
                         </button>
                         <button
-                          onClick={() => handleDeleteExercise(exercise.id)}
+                          onClick={() => handleDeleteExercise(exercise)}
                           className="p-2 text-red-400 hover:bg-red-600/20 rounded-lg transition-colors"
                           title="Elimina"
+                          disabled={!exercise.editable}
                         >
                           <Trash2 size={16} />
                         </button>

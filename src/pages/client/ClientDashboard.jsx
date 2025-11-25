@@ -291,73 +291,81 @@ const ClientDashboard = () => {
           </motion.div>
         )}
 
-        <main className="w-full space-y-6">
-          {/* Stats Cards Row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <DashboardCard 
-              title="Scadenza Percorso" 
-              value={`${giorniRimanenti} giorni`} 
-              subtext={`Scade il: ${dataScadenzaFormatted}`}
-              icon={<Calendar size={24} />}
-              color="blue"
-              variants={itemVariants}
-            />
-            <DashboardCard 
-              title="Tipo Percorso" 
-              value={clientData.planType ? clientData.planType.charAt(0).toUpperCase() + clientData.planType.slice(1) : 'Non specificato'}
-              subtext="Il tuo piano attuale"
-              icon={<Briefcase size={24} />}
-              color="purple"
-              variants={itemVariants}
-            />
-            <DashboardCard 
-              title="Prossimo Check" 
-              value={nextCheckText}
-              subtext={nextCheckSubtext}
-              icon={<CheckSquare size={24} />}
-              color="green"
-              variants={itemVariants}
-            />
-            <DashboardCard 
-              title="Progressi" 
-              value="In Corso"
-              subtext="Continua così!"
-              icon={<TrendingUp size={24} />}
-              color="cyan"
-              variants={itemVariants}
-            />
-          </div>
-
-          {/* Workout Streak - Highlight Section */}
-          <motion.div variants={itemVariants}>
+        <main className="w-full space-y-4">
+          {/* Hero Section - Streak in primo piano */}
+          <motion.div variants={itemVariants} className="lg:col-span-2">
             <WorkoutStreak compact />
           </motion.div>
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Habit Tracker */}
-            <motion.div variants={itemVariants}>
+          {/* Main Grid - 2 colonne su desktop */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Colonna Sinistra (2/3) - Habit Tracker */}
+            <motion.div variants={itemVariants} className="lg:col-span-2">
               <HabitTracker />
             </motion.div>
 
-            {/* Quick Actions */}
-            <motion.div 
-              variants={itemVariants} 
-              className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 shadow-xl"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <Target className="text-blue-400" size={24} />
+            {/* Colonna Destra (1/3) - Info & Actions */}
+            <div className="space-y-4">
+              {/* Quick Stats Compact */}
+              <motion.div 
+                variants={itemVariants}
+                className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 shadow-xl space-y-3"
+              >
+                <h3 className="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                  <BarChart2 size={16} />
+                  Il tuo Percorso
+                </h3>
+                
+                {/* Scadenza - Priorità 1 */}
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-400">Scadenza</span>
+                    <Calendar className="text-blue-400" size={16} />
+                  </div>
+                  <div className="text-2xl font-bold text-blue-400">{giorniRimanenti}</div>
+                  <div className="text-xs text-slate-400">giorni rimanenti</div>
+                  <div className="text-[10px] text-slate-500 mt-1">{dataScadenzaFormatted}</div>
                 </div>
-                <h3 className="text-xl font-bold text-white">Azioni Rapide</h3>
-              </div>
-              <div className="grid grid-cols-1 gap-3">
-                <ActionLink to="/client/anamnesi" title="La mia Anamnesi" description="Visualizza o aggiorna i tuoi dati" icon={<User size={22} />} variants={itemVariants}/>
-                <ActionLink to="/client/checks" title="I miei Check" description="Carica i tuoi progressi periodici" icon={<CheckSquare size={22} />} variants={itemVariants}/>
-                <ActionLink to="/client/payments" title="I miei Pagamenti" description="Visualizza lo storico dei pagamenti" icon={<BarChart2 size={22} />} variants={itemVariants}/>
-                <ActionLink to="/client/chat" title="Chat con il Coach" description="Invia un messaggio diretto" icon={<MessageSquare size={22} />} variants={itemVariants}/>
-              </div>
-            </motion.div>
+
+                {/* Prossimo Check - Priorità 2 */}
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-400">Prossimo Check</span>
+                    <CheckSquare className="text-emerald-400" size={16} />
+                  </div>
+                  <div className="text-xl font-bold text-emerald-400">{nextCheckText}</div>
+                  <div className="text-[10px] text-slate-500 mt-1">{nextCheckSubtext}</div>
+                </div>
+
+                {/* Piano - Info secondaria */}
+                <div className="flex items-center justify-between px-3 py-2 bg-slate-900/40 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Briefcase size={14} className="text-purple-400" />
+                    <span className="text-xs text-slate-400">Piano</span>
+                  </div>
+                  <span className="text-xs font-medium text-slate-200">
+                    {clientData.planType ? clientData.planType.charAt(0).toUpperCase() + clientData.planType.slice(1) : 'Non specificato'}
+                  </span>
+                </div>
+              </motion.div>
+
+              {/* Quick Actions Compact */}
+              <motion.div 
+                variants={itemVariants}
+                className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 shadow-xl"
+              >
+                <h3 className="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                  <Target size={16} />
+                  Azioni Rapide
+                </h3>
+                <div className="space-y-2">
+                  <ActionLink to="/client/checks" title="I miei Check" description="Foto progressi" icon={<CheckSquare size={18} />} variants={itemVariants}/>
+                  <ActionLink to="/client/chat" title="Chat Coach" description="Messaggio diretto" icon={<MessageSquare size={18} />} variants={itemVariants}/>
+                  <ActionLink to="/client/anamnesi" title="Anamnesi" description="I tuoi dati" icon={<User size={18} />} variants={itemVariants}/>
+                  <ActionLink to="/client/payments" title="Pagamenti" description="Storico" icon={<BarChart2 size={18} />} variants={itemVariants}/>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </main>
 

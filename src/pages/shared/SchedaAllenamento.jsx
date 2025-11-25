@@ -63,11 +63,37 @@ const SchedaAllenamento = () => {
         setClientName(clientSnap.data().name || 'N/D');
       }
 
-      // Load available exercises
-      const exercisesRef = getTenantCollection(db, 'esercizi');
-      const exercisesSnap = await getDocs(exercisesRef);
-      const exercisesData = exercisesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAvailableExercises(exercisesData);
+      // Load available exercises (global + custom)
+      // 1. Check settings
+      const settingsRef = getTenantDoc(db, 'exercise_settings', 'config');
+      const settingsSnap = await getDoc(settingsRef);
+      const settings = settingsSnap.exists() ? settingsSnap.data() : { useGlobalDatabase: true };
+
+      let allExercises = [];
+
+      // 2. Load global exercises if enabled
+      if (settings.useGlobalDatabase) {
+        const globalRef = collection(db, 'platform_exercises');
+        const globalSnap = await getDocs(globalRef);
+        const globalExercises = globalSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          source: 'global'
+        }));
+        allExercises = [...allExercises, ...globalExercises];
+      }
+
+      // 3. Load custom exercises
+      const customRef = getTenantCollection(db, 'exercises');
+      const customSnap = await getDocs(customRef);
+      const customExercises = customSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        source: 'custom'
+      }));
+      allExercises = [...allExercises, ...customExercises];
+
+      setAvailableExercises(allExercises);
 
       // Load scheda allenamento if exists
       const schedaRef = getTenantDoc(db, 'schede_allenamento', clientId);
@@ -970,34 +996,107 @@ const AddEsercizioModal = ({ availableExercises, onAdd, onCancel }) => {
           className="w-full px-4 py-2 mb-4 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
         />
 
-        <div className="space-y-2 mb-4 max-h-96 overflow-y-auto">
-          {filteredExercises.map((exercise) => (
-            <button
-              key={exercise.id}
-              onClick={() => setSelectedExercise(exercise)}
-              className={`w-full p-4 rounded-lg text-left transition-colors ${
-                selectedExercise?.id === exercise.id
-                  ? 'bg-blue-600 border-2 border-blue-400'
-                  : 'bg-slate-700 border-2 border-transparent hover:border-slate-600'
-              }`}
-            >
-              <div className="font-semibold text-slate-100 mb-1">{exercise.nome}</div>
-              <div className="flex gap-2 text-sm">
-                <span className="px-2 py-0.5 bg-blue-900/30 border border-blue-600/30 text-blue-300 rounded">
-                  {exercise.attrezzo}
-                </span>
-                <span className="px-2 py-0.5 bg-purple-900/30 border border-purple-600/30 text-purple-300 rounded">
-                  {exercise.gruppoMuscolare}
-                </span>
-                {exercise.videoUrl && (
-                  <span className="px-2 py-0.5 bg-emerald-900/30 border border-emerald-600/30 text-emerald-300 rounded flex items-center gap-1">
-                    <Play size={12} />
-                    Video
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {/* Lista esercizi */}
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {filteredExercises.map((exercise) => (
+              <button
+                key={exercise.id}
+                onClick={() => setSelectedExercise(exercise)}
+                className={`w-full p-4 rounded-lg text-left transition-colors ${
+                  selectedExercise?.id === exercise.id
+                    ? 'bg-blue-600 border-2 border-blue-400'
+                    : 'bg-slate-700 border-2 border-transparent hover:border-slate-600'
+                }`}
+              >
+                <div className="font-semibold text-slate-100 mb-1">{exercise.nome}</div>
+                <div className="flex flex-wrap gap-2 text-sm">
+                  {exercise.source && (
+                    <span className={`px-2 py-0.5 rounded flex items-center gap-1 ${
+                      exercise.source === 'global' 
+                        ? 'bg-blue-900/30 border border-blue-600/30 text-blue-300'
+                        : 'bg-purple-900/30 border border-purple-600/30 text-purple-300'
+                    }`}>
+                      {exercise.source === 'global' ? '🌍 Globale' : '⭐ Custom'}
+                    </span>
+                  )}
+                  <span className="px-2 py-0.5 bg-blue-900/30 border border-blue-600/30 text-blue-300 rounded">
+                    {exercise.attrezzo}
                   </span>
+                  <span className="px-2 py-0.5 bg-purple-900/30 border border-purple-600/30 text-purple-300 rounded">
+                    {exercise.gruppoMuscolare}
+                  </span>
+                  {exercise.videoUrl && (
+                    <span className="px-2 py-0.5 bg-emerald-900/30 border border-emerald-600/30 text-emerald-300 rounded flex items-center gap-1">
+                      <Play size={12} />
+                      Video
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Preview video */}
+          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+            {selectedExercise ? (
+              <div className="space-y-3">
+                <h4 className="font-bold text-slate-100 text-lg">{selectedExercise.nome}</h4>
+                
+                {selectedExercise.videoUrl ? (
+                  <div className="aspect-video bg-slate-800 rounded-lg overflow-hidden">
+                    {selectedExercise.videoUrl.includes('youtube.com') || selectedExercise.videoUrl.includes('youtu.be') ? (
+                      <iframe
+                        src={selectedExercise.videoUrl}
+                        className="w-full h-full"
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      />
+                    ) : (
+                      <video
+                        src={selectedExercise.videoUrl}
+                        controls
+                        className="w-full h-full object-contain"
+                        preload="metadata"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="aspect-video bg-slate-800 rounded-lg flex items-center justify-center border-2 border-dashed border-slate-600">
+                    <div className="text-center text-slate-500">
+                      <Play size={48} className="mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">Nessun video disponibile</p>
+                    </div>
+                  </div>
                 )}
+
+                {selectedExercise.descrizione && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400 mb-1">Descrizione:</p>
+                    <p className="text-sm text-slate-300">{selectedExercise.descrizione}</p>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  <div className="flex-1">
+                    <p className="text-xs text-slate-500">Attrezzo</p>
+                    <p className="text-sm text-slate-200 font-medium">{selectedExercise.attrezzo}</p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-slate-500">Gruppo</p>
+                    <p className="text-sm text-slate-200 font-medium">{selectedExercise.gruppoMuscolare}</p>
+                  </div>
+                </div>
               </div>
-            </button>
-          ))}
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-500 text-center">
+                <div>
+                  <Play size={48} className="mx-auto mb-3 opacity-20" />
+                  <p>Seleziona un esercizio per vedere l'anteprima</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-3">

@@ -12,6 +12,11 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import Papa from 'papaparse';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths } from "date-fns";
+import QuickActions from '../../components/admin/QuickActions';
+import SavedFilters from '../../components/admin/SavedFilters';
+import MessageTemplates from '../../components/admin/MessageTemplates';
+import BulkOperations from '../../components/admin/BulkOperations';
+import { useToast } from '../../contexts/ToastContext';
 
 // --- COMPONENTI UI ---
 const Notification = ({ message, type, onDismiss }) => (
@@ -215,6 +220,30 @@ export default function Clients() {
   const [dayModalDate, setDayModalDate] = useState(null);
   const [dayModalClients, setDayModalClients] = useState([]);
   const [stats, setStats] = useState({ total: 0, expiring: 0, expired: 0 });
+  const [selectedClients, setSelectedClients] = useState([]);
+  const toast = useToast();
+
+  // --- SELEZIONE MULTIPLA ---
+  const toggleClientSelection = (clientId) => {
+    setSelectedClients(prev => 
+      prev.includes(clientId) 
+        ? prev.filter(id => id !== clientId)
+        : [...prev, clientId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedClients.length === filteredAndSortedClients.length) {
+      setSelectedClients([]);
+    } else {
+      setSelectedClients(filteredAndSortedClients.map(c => c.id));
+    }
+  };
+
+  const handleBulkOperationComplete = () => {
+    setSelectedClients([]);
+    toast.success('Operazione completata con successo!');
+  };
 
   const openDayModal = (giorno) => {
     let clientsForDay;
@@ -537,6 +566,18 @@ export default function Clients() {
       <button onClick={() => exportToCSV(clients)} className="flex items-center gap-2 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors">
         <Download size={16} /> CSV
       </button>
+      <SavedFilters
+        currentFilters={{ searchQuery, filter, sortField, sortDirection }}
+        onApplyFilter={(savedFilter) => {
+          setSearchQuery(savedFilter.searchQuery || '');
+          setFilter(savedFilter.filter || 'all');
+          setSortField(savedFilter.sortField || 'startDate');
+          setSortDirection(savedFilter.sortDirection || 'desc');
+        }}
+      />
+      <MessageTemplates
+        onSelectTemplate={(template) => console.log('Template:', template)}
+      />
       <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors">
         <LogOut size={16} /> Logout
       </button>
@@ -708,6 +749,28 @@ export default function Clients() {
           </div>
         </div>
 
+        {/* SELEZIONE MULTIPLA - Info Bar */}
+        {selectedClients.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-3 sm:mx-6 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <CheckCircle className="text-blue-400" size={20} />
+              <span className="text-blue-300 font-medium">
+                {selectedClients.length} client{selectedClients.length === 1 ? 'e' : 'i'} selezionat{selectedClients.length === 1 ? 'o' : 'i'}
+              </span>
+            </div>
+            <button
+              onClick={() => setSelectedClients([])}
+              className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
+            >
+              Deseleziona tutti
+            </button>
+          </motion.div>
+        )}
+
         {/* TOGGLE CALENDARIO MOBILE */}
         <div className="md:hidden mx-3">
           <button
@@ -819,6 +882,14 @@ export default function Clients() {
                 <table className="w-full min-w-[800px] text-xs md:text-sm text-left text-slate-300">
                 <thead className="text-slate-400 uppercase text-[10px] md:text-xs">
                   <tr>
+                    <th className="p-2 md:p-4 w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedClients.length === filteredAndSortedClients.length && filteredAndSortedClients.length > 0}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
+                      />
+                    </th>
                     <th className="p-2 md:p-4 min-w-[150px] md:min-w-[180px] font-bold sticky left-0 bg-slate-800/95 z-10">Nome</th>
                     <th className="p-2 md:p-4 min-w-[100px] md:min-w-[140px] font-bold">Inizio</th>
                     <th className="p-2 md:p-4 min-w-[120px] md:min-w-[160px] font-bold">Scadenza</th>
@@ -833,7 +904,15 @@ export default function Clients() {
                     const totalPayments = paymentsTotals[c.id] ?? 0;
 
                     return (
-                      <tr key={c.id} className="border-t border-white/10 hover:bg-white/10 transition-all">
+                      <tr key={c.id} className={`border-t border-white/10 hover:bg-white/10 transition-all ${selectedClients.includes(c.id) ? 'bg-blue-500/5' : ''}`}>
+                        <td className="p-2 md:p-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedClients.includes(c.id)}
+                            onChange={() => toggleClientSelection(c.id)}
+                            className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
+                          />
+                        </td>
                         <td className="p-2 md:p-4 font-medium min-w-[150px] md:min-w-[180px] sticky left-0 bg-slate-800/95">
                           <div className="flex items-center justify-between gap-2 md:gap-3">
                             <button onClick={() => navigate(`/client/${c.id}`)} className="text-left hover:text-rose-400 transition-colors truncate">
@@ -895,11 +974,8 @@ export default function Clients() {
                   })}
                   {filteredAndSortedClients.length === 0 && (
                     <tr>
-                      <td colSpan="5" className="text-center py-12 text-slate-500">
-                        <div className="flex flex-col items-center">
-                          <Search size={48} className="mb-3 opacity-50" />
-                          <p className="text-sm">Nessun cliente trovato</p>
-                        </div>
+                      <td colSpan="5" className="py-12">
+                        <EmptyClients onAddClient={() => navigate('/new-client')} />
                       </td>
                     </tr>
                   )}
@@ -1029,13 +1105,15 @@ export default function Clients() {
         )}
       </AnimatePresence>
 
-      {/* PULSANTE NUOVO CLIENTE - Desktop only (mobile ha pulsante in header) */}
-      <button
-        onClick={() => navigate("/new-client")}
-        className="hidden md:flex fixed bottom-6 right-6 w-14 h-14 bg-rose-600 text-white rounded-full shadow-lg hover:bg-rose-700 transition items-center justify-center text-3xl font-bold z-40"
-      >
-        +
-      </button>
+      {/* Quick Actions Floating Button */}
+      <QuickActions position="bottom-right" />
+
+      {/* Bulk Operations Toolbar */}
+      <BulkOperations
+        selectedClients={selectedClients.map(id => clients.find(c => c.id === id)).filter(Boolean)}
+        onClearSelection={() => setSelectedClients([])}
+        onOperationComplete={handleBulkOperationComplete}
+      />
     </div>
   );
 }

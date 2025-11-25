@@ -12,12 +12,16 @@ import {
   DollarSign, CheckCircle, RefreshCw, BarChart3, Bell, Target,
   Plus, Clock, FileText, TrendingUp, Users, LogOut, User, Settings, X
 } from "lucide-react";
-import { Line } from "react-chartjs-2";
-import { Chart as ChartJS, LineElement, PointElement, LinearScale, CategoryScale, Title, Tooltip, Legend, Filler } from "chart.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTenantBranding } from '../../hooks/useTenantBranding';
-
-ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Title, Tooltip, Legend, Filler);
+import QuickActions from '../../components/admin/QuickActions';
+import AdminKPI from '../../components/admin/AdminKPI';
+import DashboardWidgets from '../../components/admin/DashboardWidgets';
+import AnimatedChart from '../../components/admin/AnimatedChart';
+import ActivityFeed from '../../components/admin/ActivityFeed';
+import DashboardLayout from '../../components/admin/DashboardLayout';
+import ResizableCard from '../../components/admin/ResizableCard';
+import GlobalCustomize from '../../components/admin/GlobalCustomize';
 
 // --- HELPERS ---
 const timeAgo = (date) => {
@@ -36,86 +40,7 @@ const timeAgo = (date) => {
   return "ora";
 };
 
-// --- COMPONENTI UI PREMIUM ---
-const StatCard = ({ title, value, icon, color = 'blue', isCurrency = false, isPercentage = false, trend }) => {
-  const colorClasses = {
-    blue: 'bg-blue-500/10 text-blue-500',
-    purple: 'bg-purple-500/10 text-purple-500',
-    green: 'bg-green-500/10 text-green-500',
-    yellow: 'bg-yellow-500/10 text-yellow-500',
-    cyan: 'bg-cyan-500/10 text-cyan-500',
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4, scale: 1.02 }}
-      className="bg-slate-800/60 backdrop-blur-sm p-3 sm:p-5 rounded-lg sm:rounded-xl border border-slate-700/50 shadow-xl hover:border-blue-500/50 transition-all h-full"
-    >
-      <div className="flex items-start justify-between mb-2 sm:mb-3">
-        <div className={`p-2 sm:p-3 rounded-lg ${colorClasses[color]}`}>
-          {React.cloneElement(icon, { size: 18, className: 'sm:w-[22px] sm:h-[22px]' })}
-        </div>
-        {trend !== undefined && (
-          <div className={`flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-medium ${
-            trend > 0 ? 'text-green-400' : trend < 0 ? 'text-red-400' : 'text-slate-400'
-          }`}>
-            {trend > 0 ? '↑' : trend < 0 ? '↓' : '→'} {Math.abs(trend)}%
-          </div>
-        )}
-      </div>
-      <h3 className="text-xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">
-        {isCurrency 
-          ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value) 
-          : isPercentage ? `${value}%` : value
-        }
-      </h3>
-      <p className="text-xs sm:text-sm text-slate-400">{title}</p>
-    </motion.div>
-  );
-};
-
-const ActivityItem = ({ item, navigate }) => {
-  const iconConfig = {
-    expiring: { icon: <Clock size={18}/>, color: 'text-yellow-400 bg-yellow-500/10' },
-    new_check: { icon: <CheckCircle size={18}/>, color: 'text-green-400 bg-green-500/10' },
-    new_anamnesi: { icon: <FileText size={18}/>, color: 'text-blue-400 bg-blue-500/10' },
-    renewal: { icon: <RefreshCw size={18}/>, color: 'text-emerald-400 bg-emerald-500/10' },
-  };
-  const tabMap = { 
-    expiring: 'payments', 
-    new_check: 'check', 
-    new_anamnesi: 'anamnesi',
-    renewal: 'payments'
-  };
-
-  const config = iconConfig[item.type];
-
-  return (
-    <motion.button
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: -10 }}
-      whileHover={{ x: 4, scale: 1.01 }}
-      transition={{ duration: 0.2 }}
-      onClick={() => navigate(`/client/${item.clientId}?tab=${tabMap[item.type]}`)}
-      className="w-full flex items-start gap-2 sm:gap-3 p-2.5 sm:p-4 rounded-lg bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 hover:border-blue-500/30 transition-all text-left"
-    >
-      <div className={`p-1.5 sm:p-2 rounded-lg ${config.color} flex-shrink-0`}>
-        {React.cloneElement(config.icon, { size: 16, className: 'sm:w-[18px] sm:h-[18px]' })}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs sm:text-sm font-semibold text-white mb-0.5">{item.clientName}</p>
-        <p className="text-[10px] sm:text-xs text-slate-400 truncate">{item.description}</p>
-      </div>
-      <div className="text-[10px] sm:text-xs text-slate-500 flex-shrink-0 pt-0.5 sm:pt-1">
-        {timeAgo(item.date)}
-      </div>
-    </motion.button>
-  );
-};
+// Componenti rimossi - ora usati da AnimatedChart e ActivityFeed
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -136,6 +61,39 @@ export default function Dashboard() {
   const [selectedPhotoFile, setSelectedPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [currentPhotoURL, setCurrentPhotoURL] = useState(null);
+
+  // Stati per personalizzazione globale
+  const [kpiPeriod, setKpiPeriod] = useState('30days');
+  const [visibleKPIs, setVisibleKPIs] = useState(['revenue', 'renewals', 'clients', 'activeClients', 'retention', 'avgValue']);
+  const [dashboardSections, setDashboardSections] = useState([
+    { id: 'kpi', label: 'KPI Dashboard', defaultVisible: true },
+    { id: 'chart', label: 'Grafico Andamento', defaultVisible: true },
+    { id: 'focus', label: 'Focus del Giorno', defaultVisible: true },
+  ]);
+  const [hiddenSections, setHiddenSections] = useState(new Set());
+  const [chartSettings, setChartSettings] = useState({ type: 'line', timeRange: 'monthly', showAnimation: true });
+  const [feedSettings, setFeedSettings] = useState({ limit: 10, showTimestamps: true, autoRefresh: false });
+  const [showCustomize, setShowCustomize] = useState(false);
+
+  // Carica personalizzazioni salvate
+  useEffect(() => {
+    const savedKPIs = localStorage.getItem('visible_kpis');
+    if (savedKPIs) {
+      setVisibleKPIs(JSON.parse(savedKPIs));
+    }
+    const savedHidden = localStorage.getItem('dashboard_hidden');
+    if (savedHidden) {
+      setHiddenSections(new Set(JSON.parse(savedHidden)));
+    }
+    const savedChart = localStorage.getItem('chart_settings');
+    if (savedChart) {
+      setChartSettings(JSON.parse(savedChart));
+    }
+    const savedFeed = localStorage.getItem('feed_settings');
+    if (savedFeed) {
+      setFeedSettings(JSON.parse(savedFeed));
+    }
+  }, []);
 
   // --- Gestione foto profilo ---
   const handlePhotoSelect = (event) => {
@@ -274,11 +232,13 @@ export default function Dashboard() {
             const paymentData = paymentDoc.data();
             const paymentDate = toDate(paymentData.paymentDate);
             if (paymentDate && paymentDate >= currentMonthStart && !paymentData.isPast) {
+              const duration = paymentData.duration || 'abbonamento';
+              const amount = paymentData.amount || 0;
               newRenewals.push({
                 type: 'renewal',
                 clientId: clientDoc.id,
-                clientName: clientData.name || 'Cliente',
-                description: `Rinnovo di ${paymentData.duration} per ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(paymentData.amount || 0)}`,
+                clientName: clientData.name || clientData.email?.split('@')[0] || 'Cliente',
+                description: `Ha rinnovato ${duration} (${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(amount)})`,
                 date: paymentData.paymentDate
               });
             }
@@ -295,76 +255,111 @@ export default function Dashboard() {
     
     setupRenewalsListener();
 
-    // --- CHECK ---
-    // Carica tutti i clients e poi ascolta i loro checks
-    const loadChecksActivity = async () => {
+    // --- CHECK (REAL-TIME) ---
+    const setupChecksListener = async () => {
       try {
         const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
-        const newChecks = [];
         
-        for (const clientDoc of clientsSnap.docs) {
-          const checksSnap = await getDocs(
-            query(
-              getTenantSubcollection(db, 'clients', clientDoc.id, 'checks'),
-              orderBy('createdAt', 'desc')
-            )
+        clientsSnap.forEach(clientDoc => {
+          const clientData = clientDoc.data();
+          if (clientData.isOldClient) return; // Salta clienti vecchi
+          
+          // Usa getTenantSubcollection per path corretto multi-tenant
+          const checksQuery = query(
+            getTenantSubcollection(db, 'clients', clientDoc.id, 'checks'),
+            orderBy('createdAt', 'desc')
           );
           
-          checksSnap.docs.forEach(checkDoc => {
-            const createdAt = toDate(checkDoc.data().createdAt);
-            if (createdAt > toDate(lastViewed)) {
-              newChecks.push({
-                type: 'new_check',
-                clientId: clientDoc.id,
-                clientName: clientDoc.data().name || 'Cliente',
-                description: 'Ha inviato un nuovo check-in',
-                date: checkDoc.data().createdAt
+          const unsubCheck = onSnapshot(
+            checksQuery, 
+            (checksSnap) => {
+              const newChecks = [];
+              checksSnap.docs.forEach(checkDoc => {
+                const checkData = checkDoc.data();
+                const createdAt = toDate(checkData.createdAt);
+                // Verifica che sia dopo lastViewed
+                if (createdAt && lastViewed && createdAt > toDate(lastViewed)) {
+                  newChecks.push({
+                    type: 'new_check',
+                    clientId: clientDoc.id,
+                    clientName: clientData.name || clientData.email?.split('@')[0] || 'Cliente',
+                    description: 'Nuovo check-in inviato',
+                    date: checkData.createdAt
+                  });
+                }
               });
+              
+              setActivityFeed(prev => {
+                const filtered = prev.filter(i => i.type !== 'new_check' || i.clientId !== clientDoc.id);
+                return [...filtered, ...newChecks];
+              });
+            },
+            (error) => {
+              console.error(`Errore listener checks cliente ${clientDoc.id}:`, error);
             }
-          });
-        }
-        
-        setActivityFeed(prev => [...prev.filter(i => i.type !== 'new_check'), ...newChecks]);
+          );
+          
+          unsubs.push(unsubCheck);
+        });
       } catch (error) {
-        console.error("Errore caricamento checks:", error);
+        console.error("Errore setup checks listener:", error);
       }
     };
     
-    loadChecksActivity();
+    setupChecksListener();
 
-    // --- ANAMNESI ---
-    // Carica anamnesi dal tenant corrente
-    const loadAnamnesiActivity = async () => {
+    // --- ANAMNESI (REAL-TIME) ---
+    const setupAnamnesiListener = async () => {
       try {
         const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
-        const newAnamnesi = [];
         
-        for (const clientDoc of clientsSnap.docs) {
-          const anamnesiSnap = await getDocs(
-            getTenantSubcollection(db, 'clients', clientDoc.id, 'anamnesi')
+        clientsSnap.forEach(clientDoc => {
+          const clientData = clientDoc.data();
+          if (clientData.isOldClient) return; // Salta clienti vecchi
+          
+          // Usa getTenantSubcollection per path corretto multi-tenant
+          const anamnesiQuery = query(
+            getTenantSubcollection(db, 'clients', clientDoc.id, 'anamnesi'),
+            orderBy('submittedAt', 'desc')
           );
           
-          anamnesiSnap.docs.forEach(anamnesiDoc => {
-            const submittedAt = toDate(anamnesiDoc.data().submittedAt);
-            if (submittedAt && submittedAt > toDate(lastViewed)) {
-              newAnamnesi.push({
-                type: 'new_anamnesi',
-                clientId: clientDoc.id,
-                clientName: clientDoc.data().name || 'Cliente',
-                description: 'Ha compilato l\'anamnesi iniziale',
-                date: anamnesiDoc.data().submittedAt
+          const unsubAnamnesi = onSnapshot(
+            anamnesiQuery, 
+            (anamnesiSnap) => {
+              const newAnamnesi = [];
+              anamnesiSnap.docs.forEach(anamnesiDoc => {
+                const anamnesiData = anamnesiDoc.data();
+                const submittedAt = toDate(anamnesiData.submittedAt);
+                // Verifica che sia dopo lastViewed
+                if (submittedAt && lastViewed && submittedAt > toDate(lastViewed)) {
+                  newAnamnesi.push({
+                    type: 'new_anamnesi',
+                    clientId: clientDoc.id,
+                    clientName: clientData.name || clientData.email?.split('@')[0] || 'Cliente',
+                    description: 'Anamnesi completata',
+                    date: anamnesiData.submittedAt
+                  });
+                }
               });
+              
+              setActivityFeed(prev => {
+                const filtered = prev.filter(i => i.type !== 'new_anamnesi' || i.clientId !== clientDoc.id);
+                return [...filtered, ...newAnamnesi];
+              });
+            },
+            (error) => {
+              console.error(`Errore listener anamnesi cliente ${clientDoc.id}:`, error);
             }
-          });
-        }
-        
-        setActivityFeed(prev => [...prev.filter(i => i.type !== 'new_anamnesi'), ...newAnamnesi]);
+          );
+          
+          unsubs.push(unsubAnamnesi);
+        });
       } catch (error) {
-        console.error("Errore caricamento anamnesi:", error);
+        console.error("Errore setup anamnesi listener:", error);
       }
     };
     
-    loadAnamnesiActivity();
+    setupAnamnesiListener();
 
     // --- SCADENZE ---
     const clientsQuery = query(getTenantCollection(db, 'clients'));
@@ -373,18 +368,22 @@ export default function Dashboard() {
         const expiring = snap.docs
           .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
           .filter(c => {
+            if (c.isOldClient) return false; // Salta clienti vecchi
             const expiry = toDate(c.scadenza);
             if (!expiry) return false;
             const daysLeft = (expiry - new Date()) / (1000 * 60 * 60 * 24);
             return daysLeft <= 15 && daysLeft > 0;
           })
-          .map(c => ({
-            type: 'expiring',
-            clientId: c.id,
-            clientName: c.name,
-            description: `Abbonamento in scadenza tra ${Math.ceil((toDate(c.scadenza) - new Date()) / (1000 * 60 * 60 * 24))} giorni`,
-            date: c.scadenza
-          }));
+          .map(c => {
+            const daysLeft = Math.ceil((toDate(c.scadenza) - new Date()) / (1000 * 60 * 60 * 24));
+            return {
+              type: 'expiring',
+              clientId: c.id,
+              clientName: c.name || c.email?.split('@')[0] || 'Cliente',
+              description: `Scadenza abbonamento tra ${daysLeft} ${daysLeft === 1 ? 'giorno' : 'giorni'}`,
+              date: c.scadenza
+            };
+          });
         setActivityFeed(prev => [...prev.filter(i => i.type !== 'expiring'), ...expiring]);
       } catch (error) {
         console.error("Errore snapshot clienti:", error);
@@ -594,36 +593,7 @@ export default function Dashboard() {
     };
   }, [chartDataType, chartTimeRange]);
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      x: { grid: { display: false }, ticks: { color: "#e2e8f0", font: { size: 11 } } },
-      y: { grid: { color: "rgba(255, 255, 255, 0.1)" }, ticks: { color: "#e2e8f0", font: { size: 11 } } }
-    },
-    plugins: {
-      legend: { position: "top", labels: { font: { size: 12 }, color: "#e2e8f0" } },
-      tooltip: { 
-        callbacks: { 
-          label: (item) => `${item.dataset.label}: ${chartDataType === 'revenue' ? `€${item.raw}` : item.raw}` 
-        } 
-      }
-    }
-  };
-
-  const chartDataConfig = {
-    labels: chartData.map(item => item.name),
-    datasets: [{
-      label: chartDataType === 'revenue' ? 'Fatturato (€)' : 'Nuovi Clienti',
-      data: chartData.map(item => item.value),
-      borderColor: chartDataType === 'revenue' ? '#22c55e' : '#6366f1',
-      backgroundColor: chartDataType === 'revenue' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(99, 102, 241, 0.2)',
-      fill: true,
-      tension: 0.4,
-      pointRadius: 4,
-      pointHoverRadius: 6
-    }]
-  };
+  // Configurazioni chart rimosse - ora gestite da AnimatedChart component
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -742,155 +712,148 @@ export default function Dashboard() {
           </motion.button>
         </motion.div>
 
-      {/* CONTENT */}
+      {/* PERSONALIZZAZIONE GLOBALE */}
+      <GlobalCustomize
+        isOpen={showCustomize}
+        onOpenChange={setShowCustomize}
+        availableKPIs={[
+          { id: 'revenue', label: 'Fatturato Totale', icon: <DollarSign size={20} />, color: 'from-green-500 to-emerald-600', description: 'Incassi totali del periodo' },
+          { id: 'renewals', label: 'Rinnovi', icon: <RefreshCw size={20} />, color: 'from-emerald-500 to-green-600', description: 'Incassi da rinnovi' },
+          { id: 'clients', label: 'Nuovi Clienti', icon: <Users size={20} />, color: 'from-blue-500 to-cyan-600', description: 'Clienti acquisiti nel periodo' },
+          { id: 'activeClients', label: 'Clienti Attivi', icon: <CheckCircle size={20} />, color: 'from-cyan-500 to-blue-600', description: 'Clienti con percorso attivo' },
+          { id: 'retention', label: 'Retention Rate', icon: <Target size={20} />, color: 'from-purple-500 to-pink-600', description: 'Percentuale di rinnovi' },
+          { id: 'avgValue', label: 'Valore Medio', icon: <TrendingUp size={20} />, color: 'from-amber-500 to-orange-600', description: 'Fatturato medio per cliente' },
+          { id: 'expiringClients', label: 'In Scadenza', icon: <Clock size={20} />, color: 'from-amber-500 to-red-600', description: 'Clienti in scadenza (15 giorni)' },
+          { id: 'pendingAnamnesi', label: 'Anamnesi Mancanti', icon: <FileText size={20} />, color: 'from-red-500 to-pink-600', description: 'Clienti senza anamnesi' }
+        ]}
+        visibleKPIs={visibleKPIs}
+        onKPIsChange={(newKPIs) => {
+          setVisibleKPIs(newKPIs);
+          localStorage.setItem('visible_kpis', JSON.stringify(newKPIs));
+        }}
+        sections={dashboardSections}
+        hiddenSections={hiddenSections}
+        onSectionToggle={(sectionId) => {
+          const newHidden = new Set(hiddenSections);
+          if (newHidden.has(sectionId)) {
+            newHidden.delete(sectionId);
+          } else {
+            newHidden.add(sectionId);
+          }
+          setHiddenSections(newHidden);
+          localStorage.setItem('dashboard_hidden', JSON.stringify([...newHidden]));
+        }}
+        onLayoutReset={() => {
+          setVisibleKPIs(['revenue', 'renewals', 'clients', 'activeClients', 'retention', 'avgValue']);
+          setHiddenSections(new Set());
+          localStorage.removeItem('dashboard_layout');
+          localStorage.removeItem('dashboard_hidden');
+          localStorage.removeItem('visible_kpis');
+        }}
+        chartSettings={chartSettings}
+        onChartSettingsChange={(newSettings) => {
+          setChartSettings(newSettings);
+          localStorage.setItem('chart_settings', JSON.stringify(newSettings));
+        }}
+        feedSettings={feedSettings}
+        onFeedSettingsChange={(newSettings) => {
+          setFeedSettings(newSettings);
+          localStorage.setItem('feed_settings', JSON.stringify(newSettings));
+        }}
+      />
+
+      {/* KPI DASHBOARD */}
+      <div className="mx-3 sm:mx-6 mb-6">
+        <AdminKPI
+          data={{
+            revenue: { current: monthlyIncome + monthlyRenewals, previous: (monthlyIncome + monthlyRenewals) * 0.85 },
+            renewals: { current: monthlyRenewals, previous: monthlyRenewals * 0.90 },
+            clients: { current: clients.filter(c => {
+              const created = toDate(c.createdAt);
+              const thirtyDaysAgo = new Date();
+              thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+              return created && created > thirtyDaysAgo;
+            }).length, previous: Math.floor(clients.length * 0.1) },
+            activeClients: { current: clientStats.active, previous: Math.floor(clientStats.active * 0.95) },
+            retention: { current: retentionRate, previous: Math.floor(retentionRate * 0.97) },
+            conversion: { current: 35, previous: 31 },
+            avgValue: { current: clientStats.active > 0 ? Math.floor((monthlyIncome + monthlyRenewals) / clientStats.active) : 0, previous: 0 },
+            expiringClients: { current: clients.filter(c => {
+              const expiry = toDate(c.scadenza);
+              if (!expiry) return false;
+              const daysToExpiry = Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24));
+              return daysToExpiry <= 15 && daysToExpiry > 0;
+            }).length, previous: 5 },
+            pendingAnamnesi: { current: clients.filter(c => !c.hasAnamnesi).length, previous: Math.ceil(clients.length * 0.15) },
+          }}
+          period={kpiPeriod}
+          onPeriodChange={setKpiPeriod}
+          showComparison={true}
+          visibleKPIs={visibleKPIs}
+        />
+      </div>
+
+      {/* DASHBOARD LAYOUT CON DRAG & DROP */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6 mx-3 sm:mx-6">
-        <div className="lg:col-span-2 space-y-3 sm:space-y-6">
-          {/* STATISTICHE CARDS */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-            <StatCard 
-              title="Incasso Mensile" 
-              value={monthlyIncome} 
-              icon={<DollarSign/>} 
-              color="green"
-              isCurrency={true}
-              trend={12}
-            />
-            <StatCard 
-              title="Rinnovi Mensili" 
-              value={monthlyRenewals} 
-              icon={<RefreshCw/>} 
-              color="cyan"
-              isCurrency={true}
-              trend={8}
-            />
-            <StatCard 
-              title="Clienti Attivi" 
-              value={clientStats.active} 
-              icon={<CheckCircle/>} 
-              color="blue"
-              trend={5}
-            />
-            <StatCard 
-              title="Retention Rate" 
-              value={retentionRate} 
-              icon={<Target/>} 
-              color="purple"
-              isPercentage={true}
-            />
-          </div>
+        <div className="lg:col-span-2">
+          <DashboardLayout isCustomizing={false}>
+            {/* GRAFICO ANIMATO AVANZATO - RIDIMENSIONABILE */}
+            <div data-section-id="chart">
+              <ResizableCard
+                minWidth={400}
+                minHeight={400}
+                maxWidth={1400}
+                maxHeight={900}
+                defaultWidth={800}
+                defaultHeight={500}
+                storageKey="dashboard_chart"
+                isCustomizing={showCustomize}
+              >
+                <AnimatedChart
+                  data={chartData}
+                  type={chartDataType}
+                  timeRange={chartTimeRange}
+                  onTypeChange={setChartDataType}
+                  onTimeRangeChange={setChartTimeRange}
+                />
+              </ResizableCard>
+            </div>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-slate-700/50 shadow-xl"
-          >
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <BarChart3 size={20}/> Andamento Business
-              </h2>
-              <div className="flex gap-2 bg-slate-900/50 p-1 rounded-lg">
-                <button 
-                  onClick={() => setChartDataType('revenue')} 
-                  className={`px-3 py-1.5 text-sm rounded-md transition-all ${
-                    chartDataType === 'revenue' 
-                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' 
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
+            {/* FOCUS DEL GIORNO */}
+            {focusClient && (
+              <div data-section-id="focus" className="mt-6">
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-sm rounded-xl p-5 border border-blue-500/30 shadow-xl"
                 >
-                  Fatturato
-                </button>
-                <button 
-                  onClick={() => setChartDataType('clients')} 
-                  className={`px-3 py-1.5 text-sm rounded-md transition-all ${
-                    chartDataType === 'clients' 
-                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' 
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Clienti
-                </button>
+                  <h2 className="text-lg font-bold mb-3 flex items-center gap-2 text-white">
+                    <Target size={20}/> Focus del Giorno
+                  </h2>
+                  <p className="text-base font-bold text-blue-400 mb-1">{focusClient.name}</p>
+                  <p className="text-sm text-slate-300">
+                    Obiettivo: &quot;{focusClient.goal || 'Non specificato'}&quot;
+                  </p>
+                </motion.div>
               </div>
-            </div>
-            <div className="mobile-chart-container">
-              <Line data={chartDataConfig} options={chartOptions} />
-            </div>
-            <div className="flex justify-center mt-4">
-              <div className="flex gap-2 bg-slate-900/50 p-1 rounded-lg">
-                <button 
-                  onClick={() => setChartTimeRange('daily')} 
-                  className={`px-3 py-1 text-xs rounded-md transition ${
-                    chartTimeRange === 'daily' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Giorno
-                </button>
-                <button 
-                  onClick={() => setChartTimeRange('monthly')} 
-                  className={`px-3 py-1 text-xs rounded-md transition ${
-                    chartTimeRange === 'monthly' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Mese
-                </button>
-                <button 
-                  onClick={() => setChartTimeRange('yearly')} 
-                  className={`px-3 py-1 text-xs rounded-md transition ${
-                    chartTimeRange === 'yearly' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Anno
-                </button>
-              </div>
-            </div>
-          </motion.div>
-
-          {focusClient && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-sm rounded-xl p-5 border border-blue-500/30 shadow-xl"
-            >
-              <h2 className="text-lg font-bold mb-3 flex items-center gap-2 text-white">
-                <Target size={20}/> Focus del Giorno
-              </h2>
-              <p className="text-base font-bold text-blue-400 mb-1">{focusClient.name}</p>
-              <p className="text-sm text-slate-300">
-                Obiettivo: &quot;{focusClient.goal || 'Non specificato'}&quot;
-              </p>
-            </motion.div>
-          )}
+            )}
+          </DashboardLayout>
         </div>
         
-        {/* ACTIVITY FEED */}
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-5 sm:p-6 border border-slate-700/50 shadow-xl"
-        >
-          <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-white">
-            <Bell size={20}/> Feed Attività
-          </h2>
-          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-            <AnimatePresence>
-              {activityFeed.length > 0 ? activityFeed
-                .sort((a, b) => toDate(b.date) - toDate(a.date))
-                .slice(0, 20)
-                .map(item => (
-                  <ActivityItem key={`${item.type}-${item.clientId}-${item.date?.seconds || item.date}`} item={item} navigate={navigate} />
-                )) 
-                : (
-                  <div className="text-center py-8">
-                    <Bell size={32} className="mx-auto text-slate-600 mb-2"/>
-                    <p className="text-sm text-slate-500">Nessuna attività recente</p>
-                  </div>
-                )
-              }
-            </AnimatePresence>
-          </div>
-        </motion.div>
+        {/* ACTIVITY FEED AVANZATO (FISSO - non drag & drop) */}
+        <ActivityFeed
+          activities={activityFeed.sort((a, b) => {
+            const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+            const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+            return dateB - dateA;
+          })}
+          clients={clients}
+          onActivityClick={(item) => navigate(`/client/${item.clientId}?tab=${
+            item.type === 'renewal' || item.type === 'expiring' ? 'payments' :
+            item.type === 'new_check' ? 'check' : 'anamnesi'
+          }`)}
+        />
       </div>
       </div>
 
@@ -1044,6 +1007,9 @@ export default function Dashboard() {
           </motion.div>
         </div>
       )}
+
+      {/* Quick Actions Floating Button */}
+      <QuickActions position="bottom-right" />
     </div>
   );
 }

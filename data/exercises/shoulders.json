@@ -1,0 +1,319 @@
+[
+  {
+    "id": "overhead_press",
+    "nome": "Military Press",
+    "nameEn": "Overhead Barbell Press",
+    "category": "shoulders",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Spalle",
+    "primaryMuscles": ["Deltoidi anteriori", "Deltoidi medi"],
+    "secondaryMuscles": ["Tricipiti", "Core"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/2yjwXTZQDDI",
+    "descrizione": "Esercizio fondamentale per lo sviluppo delle spalle e forza overhead.",
+    "instructions": [
+      "Bilanciere all'altezza spalle",
+      "Presa poco più larga delle spalle",
+      "Core contratto",
+      "Spingi verso l'alto oltre la testa",
+      "Scendi controllato alle spalle"
+    ],
+    "tips": [
+      "Non inarcare eccessivamente la schiena",
+      "Bilanciere sale dritto davanti al viso",
+      "Blocca completamente in alto"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "dumbbell_shoulder_press",
+    "nome": "Shoulder Press con Manubri",
+    "nameEn": "Dumbbell Shoulder Press",
+    "category": "shoulders",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Spalle",
+    "primaryMuscles": ["Deltoidi"],
+    "secondaryMuscles": ["Tricipiti"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/qEwKCR5JCog",
+    "descrizione": "Pressa per spalle con manubri. Maggior ROM e lavoro stabilizzatori.",
+    "instructions": [
+      "Seduto con schienale 90°",
+      "Manubri all'altezza spalle",
+      "Palmi avanti",
+      "Spingi verso l'alto convergendo",
+      "Scendi fino a manubri alle orecchie"
+    ],
+    "tips": [
+      "Non inarcare la schiena",
+      "ROM completo",
+      "Corregge asimmetrie"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "lateral_raises",
+    "nome": "Alzate Laterali",
+    "nameEn": "Dumbbell Lateral Raises",
+    "category": "shoulders",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Spalle",
+    "primaryMuscles": ["Deltoidi medi"],
+    "secondaryMuscles": [],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/3VcKaXpzqRo",
+    "descrizione": "Isolamento deltoide medio. Essenziale per larghezza spalle.",
+    "instructions": [
+      "In piedi, manubri ai lati",
+      "Gomiti leggermente piegati",
+      "Alza lateralmente fino a spalle",
+      "Mignolo leggermente più alto del pollice",
+      "Scendi controllato"
+    ],
+    "tips": [
+      "Peso leggero, tecnica perfetta",
+      "Non oscillare",
+      "Focus su deltoide medio"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "front_raises",
+    "nome": "Alzate Frontali",
+    "nameEn": "Front Raises",
+    "category": "shoulders",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Spalle",
+    "primaryMuscles": ["Deltoidi anteriori"],
+    "secondaryMuscles": [],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/SPuWf-7s_-o",
+    "descrizione": "Isolamento deltoide anteriore.",
+    "instructions": [
+      "Manubri davanti alle cosce",
+      "Braccia tese o leggermente piegate",
+      "Alza un manubrio alla volta o entrambi",
+      "Fermati all'altezza spalle",
+      "Scendi controllato"
+    ],
+    "tips": [
+      "Spesso deltoidi anteriori già stimolati da panca",
+      "Usa con moderazione",
+      "Evita slanci"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "rear_delt_flyes",
+    "nome": "Alzate Posteriori",
+    "nameEn": "Rear Delt Flyes",
+    "category": "shoulders",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Spalle",
+    "primaryMuscles": ["Deltoidi posteriori"],
+    "secondaryMuscles": ["Trapezio medio"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/EA7u4Q_8HQ0",
+    "descrizione": "Isolamento deltoide posteriore. Cruciale per spalle bilanciate e postura.",
+    "instructions": [
+      "Busto inclinato 90°",
+      "Manubri sotto le spalle",
+      "Gomiti leggermente piegati",
+      "Alza lateralmente indietro",
+      "Squeeze scapole insieme"
+    ],
+    "tips": [
+      "Spesso trascurato",
+      "Peso molto leggero",
+      "Essenziale per salute spalle"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "arnold_press",
+    "nome": "Arnold Press",
+    "nameEn": "Arnold Press",
+    "category": "shoulders",
+    "attrezzo": "Manubri",
+    "gruppoMuscolare": "Spalle",
+    "primaryMuscles": ["Deltoidi"],
+    "secondaryMuscles": ["Tricipiti"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/6Z15_WdXmVw",
+    "descrizione": "Variante di shoulder press inventata da Arnold. Rotazione durante il movimento.",
+    "instructions": [
+      "Manubri all'altezza spalle, palmi verso te",
+      "Spingi su mentre ruoti i palmi verso fuori",
+      "Finisci con palmi avanti",
+      "Ritorna ruotando al contrario",
+      "Movimento fluido"
+    ],
+    "tips": [
+      "Maggior ROM rispetto a press normale",
+      "Coinvolge tutti e tre i capi",
+      "Inventato da Arnold Schwarzenegger"
+    ],
+    "isGlobal": true,
+    "featured": true
+  },
+  {
+    "id": "upright_row",
+    "nome": "Tirate al Mento",
+    "nameEn": "Upright Row",
+    "category": "shoulders",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Spalle",
+    "primaryMuscles": ["Deltoidi medi", "Trapezio"],
+    "secondaryMuscles": [],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/kNLrqJbBuYw",
+    "descrizione": "Esercizio per spalle e trapezio. Controverso per alcuni.",
+    "instructions": [
+      "Bilanciere con presa stretta-media",
+      "Tira verso il mento",
+      "Gomiti alti e larghi",
+      "Fermati a clavicole",
+      "Scendi controllato"
+    ],
+    "tips": [
+      "Evita se hai problemi alle spalle",
+      "Presa larga riduce stress",
+      "Alternative: cable upright row"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "cable_lateral_raises",
+    "nome": "Alzate Laterali ai Cavi",
+    "nameEn": "Cable Lateral Raises",
+    "category": "shoulders",
+    "attrezzo": "Cavi",
+    "gruppoMuscolare": "Spalle",
+    "primaryMuscles": ["Deltoidi medi"],
+    "secondaryMuscles": [],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/PPrzBWZDOhA",
+    "descrizione": "Alzate laterali con tensione costante. Ottimo per pompaggio.",
+    "instructions": [
+      "Cavo basso dal lato opposto",
+      "Afferra impugnatura",
+      "Alza lateralmente",
+      "Tensione costante",
+      "Scendi controllato"
+    ],
+    "tips": [
+      "Tensione continua sul muscolo",
+      "Ottimo per finisher",
+      "Varia angoli"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "seated_behind_neck_press",
+    "nome": "Lento Dietro",
+    "nameEn": "Behind The Neck Press",
+    "category": "shoulders",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Spalle",
+    "primaryMuscles": ["Deltoidi"],
+    "secondaryMuscles": ["Tricipiti", "Trapezio"],
+    "difficulty": "advanced",
+    "videoUrl": "https://www.youtube.com/embed/uzl5271Y05E",
+    "descrizione": "Pressa dietro la nuca. Richiede ottima mobilità spalle.",
+    "instructions": [
+      "Seduto, bilanciere dietro la nuca",
+      "Spingi verso l'alto",
+      "ROM controllato",
+      "Scendi fino a orecchie",
+      "Non scendere troppo"
+    ],
+    "tips": [
+      "Solo se hai mobilità spalle perfetta",
+      "Rischio infortuni se fatto male",
+      "Alternative più sicure disponibili"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "landmine_press_shoulder",
+    "nome": "Landmine Shoulder Press",
+    "nameEn": "Landmine Shoulder Press",
+    "category": "shoulders",
+    "attrezzo": "Bilanciere",
+    "gruppoMuscolare": "Spalle",
+    "primaryMuscles": ["Deltoidi"],
+    "secondaryMuscles": ["Core"],
+    "difficulty": "intermediate",
+    "videoUrl": "https://www.youtube.com/embed/QP8cX66CQDA",
+    "descrizione": "Pressa angolata più sicura per le spalle.",
+    "instructions": [
+      "Bilanciere bloccato a terra",
+      "Afferra estremità",
+      "Spingi diagonalmente verso l'alto",
+      "Core contratto",
+      "Traiettoria naturale"
+    ],
+    "tips": [
+      "Meno stress articolare",
+      "Ottimo per problemi spalle",
+      "Movimento più naturale"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "plate_raises_front",
+    "nome": "Alzate Frontali con Disco",
+    "nameEn": "Plate Front Raises",
+    "category": "shoulders",
+    "attrezzo": "Palla medica",
+    "gruppoMuscolare": "Spalle",
+    "primaryMuscles": ["Deltoidi anteriori"],
+    "secondaryMuscles": ["Core"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/9V83nMP05X0",
+    "descrizione": "Alzate frontali con disco. Variante classica.",
+    "instructions": [
+      "Afferra disco ai lati",
+      "Braccia tese",
+      "Alza davanti fino a spalle",
+      "Scendi controllato",
+      "No oscillazioni"
+    ],
+    "tips": [
+      "Variante alle alzate con manubri",
+      "Presa neutra",
+      "Focus controllo"
+    ],
+    "isGlobal": true
+  },
+  {
+    "id": "reverse_pec_deck",
+    "nome": "Reverse Pec Deck",
+    "nameEn": "Reverse Pec Deck",
+    "category": "shoulders",
+    "attrezzo": "Macchina",
+    "gruppoMuscolare": "Spalle",
+    "primaryMuscles": ["Deltoidi posteriori"],
+    "secondaryMuscles": ["Trapezio medio"],
+    "difficulty": "beginner",
+    "videoUrl": "https://www.youtube.com/embed/T7nzZP7ekA8",
+    "descrizione": "Macchina per isolamento deltoide posteriore.",
+    "instructions": [
+      "Seduto fronte alla macchina",
+      "Petto contro lo schienale",
+      "Afferra le maniglie",
+      "Apri indietro",
+      "Squeeze in contrazione"
+    ],
+    "tips": [
+      "Ottimo per principianti",
+      "Isolamento sicuro",
+      "Focus su posteriori"
+    ],
+    "isGlobal": true
+  }
+]
