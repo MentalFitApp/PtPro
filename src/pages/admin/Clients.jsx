@@ -193,7 +193,7 @@ const MainLayout = ({ children, title, actions, filters, sortButtons, viewToggle
       </div>
 
       {/* CONTENUTO */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
         {children}
       </main>
     </div>
@@ -556,15 +556,15 @@ export default function Clients() {
         <input
           value={searchQuery} 
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 pl-10 w-full min-w-48 outline-none focus:ring-2 focus:ring-rose-500 text-sm text-slate-200 placeholder:text-slate-500"
+          className="bg-slate-700/50 border border-slate-600 rounded-lg px-2 py-1.5 pl-9 w-full min-w-48 outline-none focus:ring-2 focus:ring-rose-500 text-xs sm:text-sm text-slate-200 placeholder:text-slate-500"
           placeholder="Cerca..."
         />
       </div>
-      <button onClick={() => navigate("/new-client")} className="flex items-center gap-2 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors">
-        <UserPlus size={16} /> Nuovo
+      <button onClick={() => navigate("/new-client")} className="flex items-center gap-1.5 px-2 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors">
+        <UserPlus size={14} /> Nuovo
       </button>
-      <button onClick={() => exportToCSV(clients)} className="flex items-center gap-2 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-lg transition-colors">
-        <Download size={16} /> CSV
+      <button onClick={() => exportToCSV(clients)} className="flex items-center gap-1.5 px-2 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors">
+        <Download size={14} /> CSV
       </button>
       <SavedFilters
         currentFilters={{ searchQuery, filter, sortField, sortDirection }}
@@ -578,8 +578,8 @@ export default function Clients() {
       <MessageTemplates
         onSelectTemplate={(template) => console.log('Template:', template)}
       />
-      <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors">
-        <LogOut size={16} /> Logout
+      <button onClick={handleLogout} className="flex items-center gap-1.5 px-2 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors">
+        <LogOut size={14} /> Logout
       </button>
       <div className="flex gap-2 ml-2">
         {calendarToggle}
@@ -591,13 +591,13 @@ export default function Clients() {
   // --- FILTRO BARRA ---
   const filters = (
     <>
-      <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${filter === 'all' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Tutti</button>
-      <button onClick={() => setFilter('active')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'active' ? 'bg-emerald-600 text-white' : 'text-emerald-400 hover:bg-emerald-900/30'}`}><CheckCircle size={14} /> Attivi</button>
-      <button onClick={() => setFilter('expiring')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'expiring' ? 'bg-amber-600 text-white' : 'text-amber-400 hover:bg-amber-900/30'}`}><Clock size={14} /> In Scadenza</button>
-      <button onClick={() => setFilter('expired')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'expired' ? 'bg-red-600 text-white' : 'text-red-400 hover:bg-red-900/30'}`}><AlertCircle size={14} /> Scaduti</button>
-      <button onClick={() => setFilter('has-check')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'has-check' ? 'bg-cyan-600 text-white' : 'text-cyan-400 hover:bg-cyan-900/30'}`}><CheckCircle size={14} /> Con Anamnesi</button>
-      <button onClick={() => setFilter('no-check')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'no-check' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:bg-gray-900/30'}`}><XCircle size={14} /> Senza Anamnesi</button>
-      <button onClick={() => { setFilter('recent'); setSortField('recent'); setSortDirection('desc'); }} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'recent' ? 'bg-purple-600 text-white' : 'text-purple-400 hover:bg-purple-900/30'}`}><Calendar size={14} /> Più Recenti</button>
+      <button onClick={() => setFilter('all')} className={`px-2 py-1 text-xs sm:text-sm rounded-lg transition-colors ${filter === 'all' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Tutti</button>
+      <button onClick={() => setFilter('active')} className={`px-2 py-1 text-xs sm:text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'active' ? 'bg-emerald-600 text-white' : 'text-emerald-400 hover:bg-emerald-900/30'}`}><CheckCircle size={12} /> Attivi</button>
+      <button onClick={() => setFilter('expiring')} className={`px-2 py-1 text-xs sm:text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'expiring' ? 'bg-amber-600 text-white' : 'text-amber-400 hover:bg-amber-900/30'}`}><Clock size={12} /> In Scadenza</button>
+      <button onClick={() => setFilter('expired')} className={`px-2 py-1 text-xs sm:text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'expired' ? 'bg-red-600 text-white' : 'text-red-400 hover:bg-red-900/30'}`}><AlertCircle size={12} /> Scaduti</button>
+      <button onClick={() => setFilter('has-check')} className={`px-2 py-1 text-xs sm:text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'has-check' ? 'bg-cyan-600 text-white' : 'text-cyan-400 hover:bg-cyan-900/30'}`}><CheckCircle size={12} /> Con Anamnesi</button>
+      <button onClick={() => setFilter('no-check')} className={`px-2 py-1 text-xs sm:text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'no-check' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:bg-gray-900/30'}`}><XCircle size={12} /> Senza Anamnesi</button>
+      <button onClick={() => { setFilter('recent'); setSortField('recent'); setSortDirection('desc'); }} className={`px-2 py-1 text-xs sm:text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'recent' ? 'bg-purple-600 text-white' : 'text-purple-400 hover:bg-purple-900/30'}`}><Calendar size={12} /> Più Recenti</button>
     </>
   );
 

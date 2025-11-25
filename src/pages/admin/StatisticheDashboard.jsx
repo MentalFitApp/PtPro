@@ -454,6 +454,7 @@ export default function StatisticheDashboard() {
               <div className="text-center">
                 <p className="text-3xl font-bold text-blue-400">{totalLeads}</p>
                 <p className="text-xs text-slate-400 mt-1">Totale Lead</p>
+                <p className="text-[9px] text-slate-500 italic mt-1">Contatti generati dalle setter</p>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {leadStatuses.map(status => {
@@ -480,6 +481,9 @@ export default function StatisticheDashboard() {
             onRemove={isEditMode ? () => handleRemoveWidget(widgetId) : null}
             onConfig={isEditMode ? () => handleConfigWidget(widgetId) : null}
           >
+            <div className="mb-2 text-[9px] text-slate-500 italic">
+              Chiamate calendario venditori (include follow-up e re-booking)
+            </div>
             <div className="grid grid-cols-2 gap-2 text-center">
               <div>
                 <p className="text-xl font-bold text-blue-400">{salesStats.fissate}</p>
@@ -790,27 +794,27 @@ export default function StatisticheDashboard() {
   const availableWidgets = [...standardWidgets, ...customWidgetsAvailable];
 
   return (
-    <div className="p-3 sm:p-6 max-w-[1800px] mx-auto space-y-6 mobile-safe-bottom">
+    <div className="p-2 sm:p-3 max-w-[1800px] mx-auto space-y-2 sm:space-y-3 mobile-safe-bottom">
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-100 flex items-center gap-3">
-          <Layout size={28} /> Dashboard Statistiche
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 sm:gap-2">
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-100 flex items-center gap-2">
+          <Layout size={20} /> Dashboard Statistiche
         </h1>
         
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
           {/* Date filters */}
           <input 
             type="date" 
             value={startDate} 
             onChange={e => setStartDate(e.target.value)}
-            className="px-3 py-2 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-sm"
+            className="px-2 py-1.5 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-xs sm:text-sm"
           />
-          <span className="text-slate-400">→</span>
+          <span className="text-slate-400 text-xs">→</span>
           <input 
             type="date" 
             value={endDate} 
             onChange={e => setEndDate(e.target.value)}
-            className="px-3 py-2 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-sm"
+            className="px-2 py-1.5 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-xs sm:text-sm"
           />
           
           <button 
@@ -819,7 +823,7 @@ export default function StatisticheDashboard() {
               setStartDate(d.toISOString().split('T')[0]);
               setEndDate(new Date().toISOString().split('T')[0]);
             }}
-            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm whitespace-nowrap"
+            className="px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm whitespace-nowrap"
           >
             Ultimi 7 giorni
           </button>
@@ -829,29 +833,29 @@ export default function StatisticheDashboard() {
           {/* Layout controls */}
           <button
             onClick={() => setShowStatusConfig(true)}
-            className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm flex items-center gap-2"
+            className="px-2 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs sm:text-sm flex items-center gap-1.5"
           >
-            <Settings size={18} />
+            <Settings size={14} />
             <span className="hidden sm:inline">Config Status</span>
           </button>
           
           <button
             onClick={() => setShowCustomWidgetCreator(true)}
-            className="px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 text-sm flex items-center gap-2"
+            className="px-2 py-1.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 text-xs sm:text-sm flex items-center gap-1.5"
           >
-            <Plus size={18} />
+            <Plus size={14} />
             <span className="hidden sm:inline">Crea Widget</span>
           </button>
           
           <button
             onClick={() => setIsEditMode(!isEditMode)}
-            className={`px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
+            className={`px-2 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-1.5 ${
               isEditMode 
                 ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
                 : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
             }`}
           >
-            <Layout size={18} />
+            <Layout size={14} />
             {isEditMode ? 'Fine Modifica' : 'Modifica Layout'}
           </button>
           
@@ -859,16 +863,16 @@ export default function StatisticheDashboard() {
             <>
               <button
                 onClick={saveLayout}
-                className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2"
+                className="px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm flex items-center gap-1.5"
               >
-                <Save size={18} />
+                <Save size={14} />
                 Salva
               </button>
               <button
                 onClick={resetLayout}
-                className="px-3 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 text-sm flex items-center gap-2"
+                className="px-2 py-1.5 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 text-xs sm:text-sm flex items-center gap-1.5"
               >
-                <RotateCcw size={18} />
+                <RotateCcw size={14} />
                 Reset
               </button>
             </>
@@ -878,8 +882,8 @@ export default function StatisticheDashboard() {
 
       {/* Edit mode info */}
       {isEditMode && (
-        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-          <p className="text-sm text-blue-300">
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2">
+          <p className="text-xs sm:text-sm text-blue-300">
             🎨 <strong>Modalità modifica attiva:</strong> Trascina i widget per riorganizzarli, ridimensionali dagli angoli, o rimuovili con la X.
           </p>
         </div>
@@ -887,19 +891,19 @@ export default function StatisticheDashboard() {
 
       {/* Add widget buttons */}
       {isEditMode && availableWidgets.length > 0 && (
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-4">
-          <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-            <Plus size={18} />
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-2 sm:p-3">
+          <h3 className="text-xs sm:text-sm font-semibold text-slate-300 mb-2 flex items-center gap-1.5">
+            <Plus size={14} />
             Aggiungi Widget
           </h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {availableWidgets.map(widget => (
               <button
                 key={widget.id}
                 onClick={() => handleAddWidget(widget.id)}
-                className="px-3 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 text-sm flex items-center gap-2"
+                className="px-2 py-1.5 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 text-xs sm:text-sm flex items-center gap-1.5"
               >
-                <Plus size={16} />
+                <Plus size={12} />
                 {widget.name}
               </button>
             ))}

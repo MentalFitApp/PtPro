@@ -5,7 +5,7 @@ import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } fro
 import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
 import { db, toDate, updateStatoPercorso } from '../../firebase'
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check, X, Plus, ZoomIn, CalendarDays } from 'lucide-react';
+import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check, X, Plus, ZoomIn, CalendarDays, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
 
@@ -430,7 +430,7 @@ const AnamnesiField = ({ label, value }) => (
 );
 
 // COMPONENTE TABELLA RATE
-const RateTable = ({ rates, canEdit, onAdd, onUpdate, onDelete }) => {
+const RateTable = ({ rates, canEdit, onAdd, onUpdate, onDelete, showAmounts }) => {
   const [newRate, setNewRate] = useState({ amount: '', dueDate: '', paid: false });
   const [editIdx, setEditIdx] = useState(null);
   const [editRate, setEditRate] = useState({ amount: '', dueDate: '' });
@@ -455,7 +455,7 @@ const RateTable = ({ rates, canEdit, onAdd, onUpdate, onDelete }) => {
               <td className="px-2 py-2">
                 {canEdit && editIdx === idx ? (
                   <input type="number" value={editRate.amount} onChange={e => setEditRate({ ...editRate, amount: e.target.value })} className="p-1 rounded bg-slate-700/50 border border-slate-600 text-white w-20" />
-                ) : `€${rate.amount}`}
+                ) : (showAmounts ? `€${rate.amount}` : '€ •••')}
               </td>
               <td className="px-2 py-2">
                 {canEdit && editIdx === idx ? (
@@ -535,6 +535,7 @@ export default function ClientDetail() {
     paymentMethod: 'bonifico',
     paymentDate: new Date()
   });
+  const [showAmounts, setShowAmounts] = useState(false); // Stato per nascondere/mostrare importi
 
   // Recupera ruolo utente da localStorage o sessione (adatta se hai un contesto globale)
   let userRole = null;
@@ -700,7 +701,7 @@ export default function ClientDetail() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-slate-900 overflow-x-hidden">
+      <div className="min-h-screen overflow-x-hidden">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
           <button onClick={() => navigate('/clients')} className="flex items-center gap-2 text-slate-400 hover:text-rose-400 mb-6">
             <ArrowLeft size={18} /> Torna ai Clienti
@@ -819,32 +820,45 @@ export default function ClientDetail() {
                       canEdit={true} 
                       onAdd={handleAddRate} 
                       onUpdate={handleUpdateRate} 
-                      onDelete={handleDeleteRate} 
+                      onDelete={handleDeleteRate}
+                      showAmounts={showAmounts}
                     />
                   </div>
                   <div className="flex flex-col gap-2 min-w-[180px]">
                     <div className="text-sm text-slate-300">Totale rate pagate:</div>
                     <div className="text-lg font-bold text-emerald-400">
-                      €{rates.filter(r => r.paid).reduce((sum, r) => sum + Number(r.amount || 0), 0)}
+                      {showAmounts ? `€${rates.filter(r => r.paid).reduce((sum, r) => sum + Number(r.amount || 0), 0)}` : '€ •••'}
                     </div>
                     <div className="text-sm text-slate-300 mt-4">Totale da pagare:</div>
                     <div className="text-lg font-bold text-rose-400">
-                      €{rates.reduce((sum, r) => sum + Number(r.amount || 0), 0)}
+                      {showAmounts ? `€${rates.reduce((sum, r) => sum + Number(r.amount || 0), 0)}` : '€ •••'}
                     </div>
                   </div>
                 </div>
               </div>
               {/* Pagamenti legacy */}
-              <h3 className="text-lg font-semibold text-slate-200 mb-3 flex items-center gap-2">
-                <DollarSign size={18} />
-                Storico Pagamenti
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
+                  <DollarSign size={18} />
+                  Storico Pagamenti
+                </h3>
+                <button
+                  onClick={() => setShowAmounts(!showAmounts)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs transition-colors"
+                  title={showAmounts ? "Nascondi importi" : "Mostra importi"}
+                >
+                  {showAmounts ? <EyeOff size={14} /> : <Eye size={14} />}
+                  {showAmounts ? 'Nascondi' : 'Mostra'}
+                </button>
+              </div>
               {payments.length > 0 ? payments.map((p, index) => (
                 <div key={p.id} className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 relative group">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <p className="text-sm text-slate-400">Data: {toDate(p.paymentDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
-                      <p className="text-sm text-slate-200">Importo: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(p.amount || 0)}</p>
+                      <p className="text-sm text-slate-200">
+                        Importo: {showAmounts ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(p.amount || 0) : '€ •••'}
+                      </p>
                       <p className="text-sm text-slate-200">Durata: {p.duration}</p>
                       <p className="text-sm text-slate-200">Metodo: {p.paymentMethod}</p>
                     </div>

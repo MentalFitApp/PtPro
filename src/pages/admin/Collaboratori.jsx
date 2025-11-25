@@ -647,14 +647,14 @@ export default function Collaboratori() {
 
   return (
     <div className="mobile-container mobile-safe-bottom">
-      <div className="py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <div className="py-2 sm:py-3 space-y-2 sm:space-y-3">
 
         {/* HEADER */}
-        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full min-w-0 mx-3 sm:mx-6">
-          <h1 className="text-2xl font-bold text-slate-50 flex items-center gap-2">
-            <Users size={24} /> Gestione
+        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 w-full min-w-0 mx-2 sm:mx-3">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-50 flex items-center gap-2">
+            <Users size={20} /> Gestione
           </h1>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-1.5 w-full sm:w-auto">
             <motion.button
               onClick={handleSyncLeadsToCalendar}
               className="flex items-center justify-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs w-full sm:w-auto"

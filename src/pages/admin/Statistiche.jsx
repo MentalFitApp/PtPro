@@ -220,8 +220,24 @@ export default function Statistiche() {
     };
   }, [settingReports]);
 
-  // --- LEAD TOTALI ---
-  const totalLeads = leads.length;
+  // --- LEAD TOTALI (aggregati da tutte le fonti) ---
+  const totalLeads = useMemo(() => {
+    // Leads dalla collezione leads
+    const leadsFromCollection = leads.length;
+    
+    // Leads dai report setter (callPrenotate)
+    const leadsFromSetters = settingReports.reduce((acc, r) => 
+      acc + (parseInt(r.chiamatePrenotate) || 0), 0
+    );
+    
+    // Leads dai report venditori (callFissate)
+    const leadsFromSales = salesReports.reduce((acc, r) => 
+      acc + (parseInt(r.callFissate) || 0), 0
+    );
+    
+    return leadsFromCollection + leadsFromSetters + leadsFromSales;
+  }, [leads, settingReports, salesReports]);
+  
   const showUpTotal = leads.filter(l => l.showUp).length;
   const chiusoTotal = leads.filter(l => l.chiuso).length;
 
@@ -229,24 +245,24 @@ export default function Statistiche() {
   if (!isAdmin) return null;
 
   return (
-    <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-6 sm:space-y-10 mobile-safe-bottom">
+    <div className="p-2 sm:p-3 max-w-7xl mx-auto space-y-2 sm:space-y-3 mobile-safe-bottom">
 
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-100 flex items-center gap-2 sm:gap-3">
-          <BarChart3 size={24} className="sm:w-7 sm:h-7 lg:w-8 lg:h-8" /> Statistiche Complete
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <h1 className="text-lg sm:text-xl font-bold text-slate-100 flex items-center gap-2">
+          <BarChart3 size={20} /> Statistiche Complete
         </h1>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-            className="px-2 sm:px-4 py-1.5 sm:py-2 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-xs sm:text-sm flex-1 sm:flex-none" />
-          <span className="text-slate-400 text-xs sm:text-base">→</span>
+            className="px-2 py-1.5 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-xs flex-1 sm:flex-none" />
+          <span className="text-slate-400 text-xs">→</span>
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-            className="px-2 sm:px-4 py-1.5 sm:py-2 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-xs sm:text-sm flex-1 sm:flex-none" />
+            className="px-2 py-1.5 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-xs flex-1 sm:flex-none" />
           <button onClick={() => {
             const d = new Date(); d.setDate(d.getDate() - 6);
             setStartDate(d.toISOString().split('T')[0]);
             setEndDate(new Date().toISOString().split('T')[0]);
-          }} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm whitespace-nowrap">
+          }} className="px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs whitespace-nowrap">
             Ultimi 7 giorni
           </button>
         </div>

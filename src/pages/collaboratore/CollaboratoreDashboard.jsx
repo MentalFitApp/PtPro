@@ -6,7 +6,7 @@ import {
 } from 'firebase/firestore';
 import { updatePassword } from 'firebase/auth';
 import { db, auth } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection, CURRENT_TENANT_ID } from '../../config/tenant';
 import { uploadPhoto } from '../../storageUtils.js';
 import { 
   CheckCircle, FileText, Save, Phone, TrendingUp, BarChart3, 
@@ -16,6 +16,7 @@ import {
 import NotificationPanel from '../../components/notifications/NotificationPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTenantBranding } from '../../hooks/useTenantBranding';
+import RadialCollaboratorChart from '../../components/charts/RadialCollaboratorChart';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,10 +25,23 @@ import {
   Title,
   Tooltip,
   Legend,
+  LineElement,
+  PointElement,
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
+
+// Cache per le immagini dei collaboratori
+const imageCache = new Map();
+
+// Funzione helper per ottenere la data locale nel formato YYYY-MM-DD
+const getLocalDateString = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export default function CollaboratoreDashboard() {
   const navigate = useNavigate();
@@ -116,11 +130,7 @@ export default function CollaboratoreDashboard() {
         });
 
         // Usa data locale per il confronto
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const todayStr = `${year}-${month}-${day}`;
+        const todayStr = getLocalDateString();
 
         const todayR = data.dailyReports?.find(r => r.date === todayStr);
         setTodayReport(todayR || null);
@@ -210,14 +220,38 @@ export default function CollaboratoreDashboard() {
     };
   }, [collaboratore, loading]); // Dipende da collaboratore e loading
 
-  // --- FETCH TUTTI I SETTER ---
+  // --- FETCH TUTTI I COLLABORATORI ---
   useEffect(() => {
-    const q = query(getTenantCollection(db, 'collaboratori'), where('role', '==', 'Setter'));
-    const unsub = onSnapshot(q, (snap) => {
-      const collabs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      console.log('📊 Collaboratori caricati:', collabs.length);
-      console.log('📊 Primo collaboratore:', collabs[0]);
+    console.log('🔄 Caricamento tutti i collaboratori...');
+    console.log('🔍 Tenant path:', `tenants/${CURRENT_TENANT_ID}/collaboratori`);
+    
+    const collRef = getTenantCollection(db, 'collaboratori');
+    console.log('🔍 Collection path:', collRef.path);
+    
+    const unsub = onSnapshot(collRef, (snap) => {
+      console.log('📊 Snapshot ricevuto - dimensione:', snap.size);
+      console.log('📊 Snapshot vuoto?', snap.empty);
+      
+      const collabs = snap.docs.map(d => {
+        const data = d.data();
+        console.log('👤 Collaboratore:', { id: d.id, name: data.name, role: data.role });
+        return { id: d.id, ...data };
+      });
+      
+      console.log('📊 Totale collaboratori caricati:', collabs.length);
+      console.log('📊 Lista completa:', collabs.map(c => ({ 
+        id: c.id,
+        name: c.name, 
+        role: c.role, 
+        hasReports: !!c.dailyReports,
+        reportsCount: c.dailyReports?.length || 0
+      })));
+      
       setAllCollaboratori(collabs);
+    }, (error) => {
+      console.error('❌ Errore caricamento collaboratori:', error);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error message:', error.message);
     });
     return () => unsub();
   }, []);
@@ -231,11 +265,7 @@ export default function CollaboratoreDashboard() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         // Usa data locale per il confronto
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const todayStr = `${year}-${month}-${day}`;
+        const todayStr = getLocalDateString();
         const todayR = data.dailyReports?.find(r => r.date === todayStr);
         setTodayReport(todayR || null);
         
@@ -280,11 +310,7 @@ export default function CollaboratoreDashboard() {
     try {
       const collabRef = getTenantDoc(db, 'collaboratori', auth.currentUser.uid);
       // Usa la data locale corrente, non UTC
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const todayStr = `${year}-${month}-${day}`;
+      const todayStr = getLocalDateString();
 
       const updatedReports = (collaboratore?.dailyReports || []).filter(r => r.date !== todayStr);
       updatedReports.push({
@@ -431,11 +457,8 @@ export default function CollaboratoreDashboard() {
 
   // --- CHIAMATE OGGI + CLASSIFICA + TOTALE MESE ---
   const todayCalls = allCollaboratori.map(c => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     const todayR = c.dailyReports?.find(r => r.date === todayStr);
-    
-    console.log(`📞 ${c.name} - Today report:`, todayR);
-    console.log(`📞 ${c.name} - Tracker:`, todayR?.tracker);
     
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
@@ -475,35 +498,30 @@ export default function CollaboratoreDashboard() {
 
     console.log('📊 Generazione chart - allCollaboratori:', allCollaboratori.length);
     
-    const datasets = allCollaboratori.map((c, i) => {
+    // Prepara dati per il grafico radiale
+    const radialData = allCollaboratori.map((c, i) => {
       const weekCalls = days.map((_, j) => {
         const date = new Date(start);
         date.setDate(date.getDate() + j);
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = getLocalDateString(date);
         const report = c.dailyReports?.find(r => r.date === dateStr);
-        // Converti sempre in numero per evitare stringhe
-        const calls = parseInt(report?.tracker?.callPrenotate) || 0;
-        return calls;
+        return parseInt(report?.tracker?.callPrenotate) || 0;
       });
       
-      console.log(`📊 Dataset ${c.name}:`, weekCalls);
-      
-      return { 
-        label: c.name, 
-        data: weekCalls, 
-        backgroundColor: `hsl(${i * 60}, 70%, 55%)`,
-        borderColor: `hsl(${i * 60}, 70%, 45%)`,
-        borderWidth: 1,
+      return {
+        name: c.name,
+        photoURL: c.photoURL || '/default-avatar.png',
+        weekCalls
       };
     });
 
     const period = `${start.getDate()} - ${end.getDate()} ${start.toLocaleDateString('it-IT', { month: 'short' })} ${start.getFullYear()}`;
 
-    return { labels: days, datasets, period };
+    return { radialData, period };
   };
 
   const weekData = useMemo(() => getWeekData(), [allCollaboratori, weekOffset]);
-  const { labels, datasets, period } = weekData;
+  const { radialData, period } = weekData;
 
   const fonti = [
     'Info Storie Prima e Dopo', 'Info Storie Promo', 'Info Reel', 'Inizio Reel',
@@ -514,18 +532,18 @@ export default function CollaboratoreDashboard() {
 
   // --- REPORT PASSATI (solo tracker) ---
   const pastReports = (collaboratore?.dailyReports || [])
-    .filter(r => r.date !== new Date().toISOString().split('T')[0])
+    .filter(r => r.date !== getLocalDateString())
     .sort((a, b) => b.date.localeCompare(a.date));
 
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900">
+    <div className="min-h-screen flex flex-col items-center justify-center">
       <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mb-4"></div>
       <p className="text-slate-400 text-sm">Caricamento dashboard...</p>
     </div>
   );
 
   if (error) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-6 max-w-md">
         <p className="text-red-400 text-center mb-4">{error}</p>
         <button 
@@ -539,10 +557,10 @@ export default function CollaboratoreDashboard() {
   );
 
   return (
-    <div className="overflow-x-hidden w-full min-h-screen bg-slate-900">
+    <div className="overflow-x-hidden w-full min-h-screen">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
         {/* HEADER */}
-        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 w-full bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-slate-700/50 shadow-xl">
+        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 w-full backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-slate-700/50 shadow-xl">
         <div className="flex items-center gap-4">
           <img 
             src={profile.photoURL || '/default-avatar.png'} 
@@ -582,149 +600,27 @@ export default function CollaboratoreDashboard() {
         </div>
       </motion.header>
 
-      <motion.div className="bg-slate-800/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-6 space-y-4 sm:space-y-6 border border-white/10 w-full">
-        {/* CHIAMATE GIORNALIERE */}
-        <div>
-          <h3 className="text-xs sm:text-sm font-semibold text-slate-400 mb-2">Chiamate giornaliere</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
-            {todayCalls.map((s, i) => (
-              <motion.div 
-                key={i} 
-                className="bg-slate-800/60 backdrop-blur-sm p-3 rounded-lg border border-slate-700/50 text-center min-w-0 shadow-lg hover:shadow-xl hover:border-blue-500/30 transition-all"
-                whileHover={{ scale: 1.05, y: -4 }}
-              >
-                <div className="relative mb-2">
-                  <img 
-                    src={s.photoURL || '/default-avatar.png'} 
-                    alt={s.name} 
-                    className="w-10 h-10 rounded-full mx-auto border-2 border-blue-500/30"
-                  />
-                </div>
-                <p className="text-xs text-slate-400 truncate mb-1">{s.name}</p>
-                <p className="text-xl font-bold text-white">{s.calls}</p>
-                <div className="mt-1 px-2 py-0.5 bg-emerald-500/10 rounded text-[10px] text-emerald-400 font-medium">
-                  Mese: {s.monthTotal}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* GRAFICO SETTIMANA */}
-        <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50 shadow-xl">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <BarChart3 className="text-blue-400" size={20} />
-              </div>
-              <h3 className="text-lg font-semibold text-white">Chiamate prenotate</h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <motion.button 
-                onClick={() => setWeekOffset(prev => prev - 1)} 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
-              >
-                <ChevronLeft size={18} />
-              </motion.button>
-              <span className="text-sm text-slate-300 font-medium px-3 py-1 bg-slate-700/50 rounded-lg">{period}</span>
-              <motion.button 
-                onClick={() => setWeekOffset(prev => prev + 1)} 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
-              >
-                <ChevronRight size={18} />
-              </motion.button>
-            </div>
-          </div>
-          <div className="h-48">
-            <Bar 
-              data={{ labels, datasets }} 
-              options={{ 
-                responsive: true, 
-                maintainAspectRatio: false,
-                animation: { duration: 800 },
-                plugins: { 
-                  legend: { position: 'bottom', labels: { font: { size: 10 }, color: '#e2e8f0', padding: 12 } },
-                  tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#60a5fa', bodyColor: '#e2e8f0', cornerRadius: 6, displayColors: true }
-                },
-                scales: {
-                  y: { beginAtZero: true, ticks: { font: { size: 10 }, color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                  x: { ticks: { font: { size: 10 }, color: '#94a3b8' }, grid: { display: false } }
-                }
-              }} 
-            />
-          </div>
-        </div>
-
-        {/* STATISTICHE PERSONALI */}
-        {isSetter && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-            <motion.div 
-              whileHover={{ y: -4, scale: 1.02 }}
-              className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 backdrop-blur-sm p-3 sm:p-5 rounded-lg sm:rounded-xl border border-blue-500/30 shadow-xl"
-            >
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg">
-                  <Plus className="text-blue-400" size={16} />
-                </div>
-              </div>
-              <p className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">{totalLeads}</p>
-              <h3 className="text-xs sm:text-sm text-blue-300 font-medium">Leads Aggiunti</h3>
-            </motion.div>
-            <motion.div 
-              whileHover={{ y: -4, scale: 1.02 }}
-              className="bg-gradient-to-br from-yellow-900/40 to-yellow-800/20 backdrop-blur-sm p-3 sm:p-5 rounded-lg sm:rounded-xl border border-yellow-500/30 shadow-xl"
-            >
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <div className="p-1.5 sm:p-2 bg-yellow-500/10 rounded-lg">
-                  <Phone className="text-yellow-400" size={16} />
-                </div>
-              </div>
-              <p className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">{callPrenotate}</p>
-              <h3 className="text-xs sm:text-sm text-yellow-300 font-medium">Chiamate Prenotate</h3>
-            </motion.div>
-            <motion.div 
-              whileHover={{ y: -4, scale: 1.02 }}
-              className="bg-gradient-to-br from-cyan-900/40 to-cyan-800/20 backdrop-blur-sm p-3 sm:p-5 rounded-lg sm:rounded-xl border border-cyan-500/30 shadow-xl"
-            >
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <div className="p-1.5 sm:p-2 bg-cyan-500/10 rounded-lg">
-                  <TrendingUp className="text-cyan-400" size={16} />
-                </div>
-              </div>
-              <p className="text-2xl sm:text-3xl font-bold text-white mb-0.5 sm:mb-1">{tassoShowUp}%</p>
-              <h3 className="text-xs sm:text-sm text-cyan-300 font-medium">Tasso Show-up</h3>
-            </motion.div>
-          </div>
-        )}
-
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="p-2 sm:p-3 space-y-2 sm:space-y-3 w-full relative z-10"
+      >
         {/* AZIONI RAPIDE */}
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-4 sm:p-6 border border-slate-700/50 shadow-xl">
-          <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-              <CheckCircle className="text-blue-400 w-[18px] h-[18px] sm:w-5 sm:h-5" />
-            </div>
-            <h3 className="text-base sm:text-lg font-bold text-white">Azioni Rapide</h3>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <div className="backdrop-blur-md rounded-lg p-2 border border-slate-700/30 shadow-xl">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
             <motion.div 
               onClick={() => setShowTracker(true)} 
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              className="group bg-slate-800/60 hover:bg-slate-800 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-slate-700/50 cursor-pointer hover:border-blue-500/30 transition-all shadow-lg"
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              className="group bg-slate-800/50 hover:bg-slate-700/60 p-2 rounded-lg border border-slate-700/50 cursor-pointer hover:border-blue-500/50 transition-all"
             >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="p-1.5 sm:p-2 bg-blue-500/10 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 rounded-lg transition-all">
-                    <FileText size={16} className="sm:w-5 sm:h-5 text-blue-400 group-hover:text-white" />
-                  </div>
-                  <h4 className="text-sm sm:text-base font-semibold text-white">Tracker DMS</h4>
+              <div className="flex flex-col items-center text-center gap-0.5">
+                <div className="p-1.5 bg-blue-500/10 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 rounded-lg transition-all">
+                  <FileText className="w-4 h-4 text-blue-400 group-hover:text-white" />
                 </div>
-                <span className={`text-[10px] sm:text-xs px-2 py-1 rounded-lg font-medium ${trackerSent ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                  {trackerSent ? 'Inviato' : 'Mancante'}
+                <h4 className="text-[10px] font-semibold text-white">Tracker</h4>
+                <span className={`text-[8px] px-1 py-0.5 rounded font-medium ${trackerSent ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                  {trackerSent ? '✓' : '✗'}
                 </span>
               </div>
             </motion.div>
@@ -732,46 +628,161 @@ export default function CollaboratoreDashboard() {
               <>
                 <motion.div 
                   onClick={() => setShowNewLead(true)} 
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="group bg-slate-800/60 hover:bg-slate-800 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-slate-700/50 cursor-pointer hover:border-blue-500/30 transition-all shadow-lg"
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="group bg-slate-800/50 hover:bg-slate-700/60 p-2 rounded-lg border border-slate-700/50 cursor-pointer hover:border-blue-500/50 transition-all"
                 >
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="p-1.5 sm:p-2 bg-blue-500/10 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 rounded-lg transition-all">
-                      <Phone size={16} className="sm:w-5 sm:h-5 text-blue-400 group-hover:text-white" />
+                  <div className="flex flex-col items-center text-center gap-0.5">
+                    <div className="p-1.5 bg-blue-500/10 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 rounded-lg transition-all">
+                      <Phone className="w-4 h-4 text-blue-400 group-hover:text-white" />
                     </div>
-                    <h4 className="text-sm sm:text-base font-semibold text-white">Nuovo Lead</h4>
+                    <h4 className="text-[10px] font-semibold text-white">Nuovo</h4>
                   </div>
                 </motion.div>
                 <motion.div 
                   onClick={() => setShowMyLeads(true)} 
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="group bg-slate-800/60 hover:bg-slate-800 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-slate-700/50 cursor-pointer hover:border-blue-500/30 transition-all shadow-lg"
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="group bg-slate-800/50 hover:bg-slate-700/60 p-2 rounded-lg border border-slate-700/50 cursor-pointer hover:border-blue-500/50 transition-all"
                 >
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="p-1.5 sm:p-2 bg-blue-500/10 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 rounded-lg transition-all">
-                      <Eye size={16} className="sm:w-5 sm:h-5 text-blue-400 group-hover:text-white" />
+                  <div className="flex flex-col items-center text-center gap-0.5">
+                    <div className="p-1.5 bg-blue-500/10 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 rounded-lg transition-all">
+                      <Eye className="w-4 h-4 text-blue-400 group-hover:text-white" />
                     </div>
-                    <h4 className="text-sm sm:text-base font-semibold text-white">I miei Lead</h4>
+                    <h4 className="text-[10px] font-semibold text-white">Leads</h4>
                   </div>
                 </motion.div>
                 <motion.div 
                   onClick={() => setShowPastReports(true)} 
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="group bg-slate-800/60 hover:bg-slate-800 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-slate-700/50 cursor-pointer hover:border-blue-500/30 transition-all shadow-lg"
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="group bg-slate-800/50 hover:bg-slate-700/60 p-2 rounded-lg border border-slate-700/50 cursor-pointer hover:border-blue-500/50 transition-all"
                 >
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="p-1.5 sm:p-2 bg-blue-500/10 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 rounded-lg transition-all">
-                      <BarChart3 size={16} className="sm:w-5 sm:h-5 text-blue-400 group-hover:text-white" />
+                  <div className="flex flex-col items-center text-center gap-0.5">
+                    <div className="p-1.5 bg-blue-500/10 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 rounded-lg transition-all">
+                      <BarChart3 className="w-4 h-4 text-blue-400 group-hover:text-white" />
                     </div>
-                    <h4 className="text-sm sm:text-base font-semibold text-white">Report Passati</h4>
+                    <h4 className="text-[10px] font-semibold text-white">Report</h4>
                   </div>
                 </motion.div>
               </>
             )}
           </div>
+        </div>
+
+        {/* STATISTICHE PERSONALI */}
+        {isSetter && (
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+            <motion.div 
+              whileHover={{ y: -2, scale: 1.02 }}
+              className="bg-gradient-to-br from-blue-900/30 to-blue-800/10 backdrop-blur-md p-2 rounded-lg border border-blue-500/20 shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="p-1 bg-blue-500/10 rounded">
+                  <Plus className="text-blue-400" size={12} />
+                </div>
+              </div>
+              <p className="text-xl font-bold text-white mb-0.5">{totalLeads}</p>
+              <h3 className="text-[10px] text-blue-300 font-medium leading-tight">Leads</h3>
+            </motion.div>
+            <motion.div 
+              whileHover={{ y: -2, scale: 1.02 }}
+              className="bg-gradient-to-br from-yellow-900/30 to-yellow-800/10 backdrop-blur-md p-2 rounded-lg border border-yellow-500/20 shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="p-1 bg-yellow-500/10 rounded">
+                  <Phone className="text-yellow-400" size={12} />
+                </div>
+              </div>
+              <p className="text-xl font-bold text-white mb-0.5">{callPrenotate}</p>
+              <h3 className="text-[10px] text-yellow-300 font-medium leading-tight">Chiamate</h3>
+            </motion.div>
+            <motion.div 
+              whileHover={{ y: -2, scale: 1.02 }}
+              className="bg-gradient-to-br from-cyan-900/30 to-cyan-800/10 backdrop-blur-md p-2 rounded-lg border border-cyan-500/20 shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="p-1 bg-cyan-500/10 rounded">
+                  <TrendingUp className="text-cyan-400" size={12} />
+                </div>
+              </div>
+              <p className="text-xl font-bold text-white mb-0.5">{tassoShowUp}%</p>
+              <h3 className="text-[10px] text-cyan-300 font-medium leading-tight">Show-up</h3>
+            </motion.div>
+          </div>
+        )}
+
+        {/* CHIAMATE GIORNALIERE */}
+        <div>
+          <h3 className="text-xs font-semibold text-slate-400 mb-1.5">Chiamate giornaliere</h3>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-1.5 sm:gap-2">
+            {todayCalls.map((s, i) => (
+              <motion.div 
+                key={i} 
+                className="bg-slate-800/40 backdrop-blur-md p-2 rounded-lg border border-slate-700/30 text-center min-w-0 shadow-lg hover:shadow-xl hover:border-blue-500/30 transition-all"
+                whileHover={{ scale: 1.05, y: -2 }}
+              >
+                <div className="relative mb-1">
+                  <img 
+                    src={s.photoURL || '/default-avatar.png'} 
+                    alt={s.name} 
+                    className="w-8 h-8 rounded-full mx-auto border border-blue-500/30"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 truncate mb-0.5">{s.name}</p>
+                <p className="text-lg font-bold text-white">{s.calls}</p>
+                <div className="mt-0.5 px-1.5 py-0.5 bg-emerald-500/10 rounded text-[9px] text-emerald-400 font-medium">
+                  M: {s.monthTotal}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* GRAFICO SETTIMANA */}
+        <div className="bg-slate-800/40 backdrop-blur-md p-3 rounded-xl border border-slate-700/30 shadow-2xl">
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                <BarChart3 className="text-blue-400" size={16} />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white">Performance Team</h3>
+                <p className="text-[10px] text-slate-400">Chiamate settimana</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <motion.button 
+                onClick={() => setWeekOffset(prev => prev - 1)} 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="p-2 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+              >
+                <ChevronLeft size={20} />
+              </motion.button>
+              <span className="text-sm text-slate-200 font-medium px-4 py-2 bg-slate-700/50 rounded-lg border border-slate-600/30">{period}</span>
+              <motion.button 
+                onClick={() => setWeekOffset(prev => prev + 1)} 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="p-2 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+              >
+                <ChevronRight size={20} />
+              </motion.button>
+            </div>
+          </div>
+
+          {allCollaboratori.length === 0 ? (
+            <div className="h-96 flex items-center justify-center">
+              <div className="text-center">
+                <BarChart3 className="text-slate-600 w-16 h-16 mx-auto mb-4" />
+                <p className="text-slate-400 text-base font-medium">Nessun collaboratore trovato</p>
+                <p className="text-slate-500 text-sm mt-2">I dati del grafico appariranno qui</p>
+              </div>
+            </div>
+          ) : (
+            <RadialCollaboratorChart collaboratori={radialData} />
+          )}
         </div>
 
         {success && <p className="text-green-500 text-center">{success}</p>}
