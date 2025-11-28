@@ -575,7 +575,8 @@ const SchedaAllenamento = () => {
                 <RotateCcw size={16} />
                 Reset giorno
               </button>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Exercises for Selected Day */}
