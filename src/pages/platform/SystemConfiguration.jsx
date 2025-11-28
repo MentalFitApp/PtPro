@@ -242,7 +242,7 @@ export default function SystemConfiguration() {
               disabled={!hasChanges || saving}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg transition-colors ${
                 hasChanges 
-                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  ? 'bg-green-600 hover:bg-green-700 text-white preserve-white' 
                   : 'bg-slate-700 text-slate-500 cursor-not-allowed'
               }`}
             >

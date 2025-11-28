@@ -104,6 +104,14 @@ export default function NewClient() {
       return;
     }
 
+    console.log('🔍 DEBUG - Inizio creazione cliente:', {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      isMobile: /Mobi|Android/i.test(navigator.userAgent),
+      currentUserId: auth.currentUser.uid,
+      currentUserEmail: auth.currentUser.email
+    });
+
     const tempPassword = generatePassword();
     const tempApp = initializeApp(firebaseConfig, `user-creation-${Date.now()}`);
     const tempAuth = getAuth(tempApp);
@@ -172,8 +180,16 @@ export default function NewClient() {
         assignedCoaches: [auth.currentUser.uid],
         statoPercorso: 'Attivo'
       };
+      
+      console.log('🔍 DEBUG - Tentativo scrittura documento cliente:', {
+        path: newClientRef.path,
+        userId: newUserId,
+        currentUser: auth.currentUser.uid,
+        dataKeys: Object.keys(clientData)
+      });
+      
       await setDoc(newClientRef, clientData);
-      console.log('Documento cliente creato:', newClientRef.path);
+      console.log('✅ Documento cliente creato:', newClientRef.path);
 
       if (data.paymentAmount) {
         const paymentRef = doc(getTenantSubcollection(db, 'clients', newUserId, 'payments'));
@@ -194,13 +210,21 @@ export default function NewClient() {
       showNotification('Cliente creato con successo!', 'success');
       reset();
     } catch (error) {
-      console.error("Errore nella creazione del cliente:", error.code, error.message, { data });
+      console.error("❌ Errore nella creazione del cliente:", {
+        code: error.code,
+        message: error.message,
+        stack: error.stack,
+        data,
+        isMobile: /Mobi|Android/i.test(navigator.userAgent),
+        userAgent: navigator.userAgent
+      });
+      
       if (error.code === 'permission-denied') {
-        showNotification("Permessi insufficienti. Verifica che il tuo UID sia nei documenti /roles/admins o /roles/coaches.", 'error');
+        showNotification(`Permessi insufficienti per creare il cliente. Errore: ${error.message}. Verifica i tuoi ruoli in Firestore.`, 'error');
       } else if (error.code === 'auth/email-already-in-use') {
         showNotification('Questa email è già in uso da un altro utente.', 'error');
       } else {
-        showNotification('Si è verificato un errore imprevisto: ' + error.message, 'error');
+        showNotification(`Errore: ${error.code || 'unknown'} - ${error.message}`, 'error');
       }
     } finally {
       await deleteApp(tempApp);
@@ -211,11 +235,21 @@ export default function NewClient() {
     const loginLink = process.env.NODE_ENV === 'production' 
       ? 'https://www.flowfitpro.it/login'
       : `${window.location.origin}/login`;
-    const text = `Ciao ${newClientCredentials.name},\n\nBenvenuto in PT Manager, la tua area personale per monitorare i progressi e comunicare con il tuo coach!\n\nEcco le credenziali per il tuo primo accesso:\n\nLink: ${loginLink}\nEmail: ${newClientCredentials.email}\nPassword Temporanea: ${newClientCredentials.password}\n\nAl primo accesso ti verrà chiesto di impostare una password personale.\nA presto!`;
+    const text = `Ciao ${newClientCredentials.name},\n\nBenvenuto in PT Manager, la tua area personale per monitorare i progressi e comunicare con il tuo coach!\n\nEcco le credenziali per il tuo primo accesso:\n\nLink: ${loginLink}\nEmail: ${newClientCredentials.email}\nPassword Temporanea: ${newClientCredentials.password}\n\n⚠️ IMPORTANTE: Copia e incolla la password ESATTAMENTE come appare, senza spazi prima o dopo.\n\nAl primo accesso ti verrà chiesto di impostare una password personale.\nA presto!`;
     
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const copyPasswordOnly = () => {
+    navigator.clipboard.writeText(newClientCredentials.password);
+    showNotification('Password copiata negli appunti!', 'success');
+  };
+
+  const copyEmailOnly = () => {
+    navigator.clipboard.writeText(newClientCredentials.email);
+    showNotification('Email copiata negli appunti!', 'success');
   };
 
   const handleCloseModal = () => {
@@ -469,14 +503,37 @@ export default function NewClient() {
             >
               <h2 className="text-xl font-bold text-slate-50">Cliente Creato!</h2>
               <p className="text-slate-400 text-sm mt-2">Copia e invia le credenziali al cliente.</p>
+              <div className="mt-3 p-2 bg-amber-900/30 border border-amber-500/30 rounded-lg">
+                <p className="text-xs text-amber-300">
+                  💡 <strong>Importante:</strong> La password è lunga {newClientCredentials?.password?.length || 0} caratteri. 
+                  Assicurati che il cliente la copi ESATTAMENTE senza spazi.
+                </p>
+              </div>
               <div className="my-6 space-y-3 text-left">
                 <div className="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
-                  <p className="text-xs text-slate-400">Email (Username)</p>
-                  <p className="font-mono text-slate-200">{newClientCredentials.email}</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-slate-400">Email (Username)</p>
+                    <button
+                      onClick={copyEmailOnly}
+                      className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                    >
+                      <Copy size={12} /> Copia
+                    </button>
+                  </div>
+                  <p className="font-mono text-slate-200 break-all">{newClientCredentials.email}</p>
                 </div>
                 <div className="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
-                  <p className="text-xs text-slate-400">Password Temporanea</p>
-                  <p className="font-mono text-slate-200">{newClientCredentials.password}</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-slate-400">Password Temporanea</p>
+                    <button
+                      onClick={copyPasswordOnly}
+                      className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                    >
+                      <Copy size={12} /> Copia
+                    </button>
+                  </div>
+                  <p className="font-mono text-slate-200 break-all select-all">{newClientCredentials.password}</p>
+                  <p className="text-[10px] text-amber-400 mt-2">⚠️ Attenzione agli spazi! Copia esattamente</p>
                 </div>
               </div>
               <motion.button

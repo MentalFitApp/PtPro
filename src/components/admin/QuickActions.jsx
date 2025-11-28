@@ -82,7 +82,7 @@ export default function QuickActions({ onClose, position = 'bottom-right' }) {
         onClick={() => setIsOpen(!isOpen)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className={`fixed ${positionClasses[position]} z-40 w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 shadow-lg shadow-blue-500/50 flex items-center justify-center text-white hover:shadow-xl transition-all`}
+        className={`fixed ${positionClasses[position]} z-40 w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 shadow-lg shadow-blue-500/50 flex items-center justify-center text-white preserve-white hover:shadow-xl transition-all`}
       >
         <AnimatePresence mode="wait">
           {isOpen ? (
@@ -152,7 +152,7 @@ export default function QuickActions({ onClose, position = 'bottom-right' }) {
                       
                       {/* Content */}
                       <div className="relative z-10 flex flex-col gap-2">
-                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${action.color} flex items-center justify-center text-white shadow-lg`}>
+                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${action.color} flex items-center justify-center text-white preserve-white shadow-lg`}>
                           {action.icon}
                         </div>
                         <span className="text-xs font-medium text-slate-200 leading-tight">

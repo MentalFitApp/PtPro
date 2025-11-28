@@ -442,7 +442,7 @@ export default function TenantDeepDive() {
             
             <button
               onClick={handleExportData}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white preserve-white rounded-lg transition-colors"
             >
               <Download size={18} />
               <span>Export</span>
@@ -458,7 +458,7 @@ export default function TenantDeepDive() {
             {tenant?.status === 'active' ? (
               <button
                 onClick={handleSuspendTenant}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white preserve-white rounded-lg transition-colors"
               >
                 <Ban size={18} />
                 <span>Suspend</span>
@@ -466,7 +466,7 @@ export default function TenantDeepDive() {
             ) : (
               <button
                 onClick={handleActivateTenant}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white preserve-white rounded-lg transition-colors"
               >
                 <CheckCircle size={18} />
                 <span>Activate</span>

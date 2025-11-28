@@ -206,25 +206,25 @@ export default function HabitTracker() {
   const last7Days = getLast7DaysCompletion();
 
   return (
-    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6 space-y-6">
+    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-3 sm:p-4 space-y-3 sm:space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <Calendar className="text-blue-400" size={24} />
+          <h2 className="text-sm sm:text-base font-bold text-slate-100 flex items-center gap-1.5 sm:gap-2">
+            <Calendar className="text-blue-400" size={16} />
             Abitudini Quotidiane
           </h2>
         </div>
         <button
           onClick={() => setShowHistory(!showHistory)}
-          className="text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
+          className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
         >
-          {showHistory ? 'Nascondi Storico' : 'Mostra Storico'}
+          {showHistory ? 'Nascondi' : 'Storico'}
         </button>
       </div>
 
       {/* Date Slider */}
-      <div className="bg-slate-900/40 rounded-lg p-4 mb-4">
+      <div className="bg-slate-900/40 rounded-lg p-2.5 sm:p-3">
         <div className="flex items-center justify-between mb-3">
           <button
             onClick={() => changeDate(-1)}

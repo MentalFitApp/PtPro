@@ -388,8 +388,20 @@ service cloud.firestore {
           isTenantAdmin(tenantId) ||
           isTenantCoach(tenantId)
         );
-        allow create, update: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
+        allow create: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
+        allow update: if request.auth.uid == userId || isTenantAdmin(tenantId) || isTenantCoach(tenantId);
         allow delete: if isTenantAdmin(tenantId);
+        
+        // Storico schede alimentazione (subcollection)
+        match /history/{historyId} {
+          allow read, list: if request.auth != null && (
+            request.auth.uid == userId ||
+            isTenantAdmin(tenantId) ||
+            isTenantCoach(tenantId)
+          );
+          allow create: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
+          allow delete: if isTenantAdmin(tenantId);
+        }
       }
       
       // --- SCHEDE ALLENAMENTO ---
@@ -399,7 +411,8 @@ service cloud.firestore {
           isTenantAdmin(tenantId) ||
           isTenantCoach(tenantId)
         );
-        allow create, update: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
+        allow create: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
+        allow update: if request.auth.uid == userId || isTenantAdmin(tenantId) || isTenantCoach(tenantId);
         allow delete: if isTenantAdmin(tenantId);
       }
       
@@ -514,6 +527,12 @@ service cloud.firestore {
 
     // --- PLATFORM EXERCISES (database globale esercizi) ---
     match /platform_exercises/{exerciseId} {
+      allow read: if request.auth != null; // Tutti gli utenti autenticati possono leggere
+      allow create, update, delete: if isPlatformCEO(); // Solo platform CEO può modificare
+    }
+
+    // --- PLATFORM FOODS (database globale alimenti) ---
+    match /platform_foods/{foodId} {
       allow read: if request.auth != null; // Tutti gli utenti autenticati possono leggere
       allow create, update, delete: if isPlatformCEO(); // Solo platform CEO può modificare
     }

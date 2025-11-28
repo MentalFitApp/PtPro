@@ -128,7 +128,7 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
           <button
             type="submit"
             disabled={isUploading}
-            className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition font-semibold disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white preserve-white rounded-lg transition font-semibold disabled:opacity-50"
           >
             <Send size={16} />
             {isUploading ? `Caricamento ${uploadProgress}%` : (formState.id ? 'Salva Modifiche' : 'Invia Check')}
@@ -158,7 +158,7 @@ const ImageModal = ({ isOpen, imageUrl, onClose }) => (
         >
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full z-10 transition-colors"
+            className="absolute top-4 right-4 p-2 bg-slate-800/80 hover:bg-slate-700 text-white preserve-white rounded-full z-10 transition-colors"
           >
             <X size={24} />
           </button>

@@ -275,7 +275,7 @@ export default function LandingPage() {
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 flex items-center justify-center text-white">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 flex items-center justify-center text-white preserve-white">
         <div className="text-center">
           <h1 className="text-4xl font-bold mb-4">404 - Sito Non Trovato</h1>
           <p className="text-slate-400 mb-8">Il sito che stai cercando non esiste.</p>
@@ -291,7 +291,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white preserve-white overflow-x-hidden">
       <AnimatedStars count={100} />
       
       {/* Navbar */}

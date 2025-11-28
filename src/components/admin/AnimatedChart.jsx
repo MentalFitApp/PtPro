@@ -292,7 +292,7 @@ export default function AnimatedChart({
               onClick={() => onTypeChange?.('revenue')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
                 type === 'revenue'
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg'
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white preserve-white shadow-lg'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -305,7 +305,7 @@ export default function AnimatedChart({
               onClick={() => onTypeChange?.('clients')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
                 type === 'clients'
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white preserve-white shadow-lg'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -321,7 +321,7 @@ export default function AnimatedChart({
               whileTap={{ scale: 0.95 }}
               onClick={() => setChartType('line')}
               className={`p-2 rounded-md transition-all ${
-                chartType === 'line' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+                chartType === 'line' ? 'bg-slate-700 text-white preserve-white' : 'text-slate-400 hover:text-white'
               }`}
               title="Grafico a Linea"
             >
@@ -332,7 +332,7 @@ export default function AnimatedChart({
               whileTap={{ scale: 0.95 }}
               onClick={() => setChartType('bar')}
               className={`p-2 rounded-md transition-all ${
-                chartType === 'bar' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+                chartType === 'bar' ? 'bg-slate-700 text-white preserve-white' : 'text-slate-400 hover:text-white'
               }`}
               title="Grafico a Barre"
             >
@@ -397,7 +397,7 @@ export default function AnimatedChart({
               onClick={() => onTimeRangeChange?.(range)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
                 timeRange === range
-                  ? 'bg-slate-700 text-white'
+                  ? 'bg-slate-700 text-white preserve-white'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >

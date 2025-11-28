@@ -165,7 +165,7 @@ export default function GuideManager() {
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <h1 className="text-xl sm:text-2xl font-bold text-white">Gestione Guide & Lead</h1>
-        <button onClick={() => setShowAddGuide(true)} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+        <button onClick={() => setShowAddGuide(true)} className="bg-rose-600 hover:bg-rose-700 text-white preserve-white px-4 py-2 rounded-lg flex items-center gap-2">
           <Plus size={18} /> Aggiungi Guida
         </button>
       </div>
@@ -206,13 +206,13 @@ export default function GuideManager() {
               )}
 
               <div className="flex gap-2 mt-3">
-                <button onClick={() => copyLink(g.id)} className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white text-xs py-1 rounded flex items-center justify-center gap-1">
+                <button onClick={() => copyLink(g.id)} className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white preserve-white text-xs py-1 rounded flex items-center justify-center gap-1">
                   <Copy size={14} /> Copia
                 </button>
-                <a href={g.redirectUrl} target="_blank" rel="noopener noreferrer" className="bg-emerald-600 hover:bg-emerald-700 text-white p-1 rounded">
+                <a href={g.redirectUrl} target="_blank" rel="noopener noreferrer" className="bg-emerald-600 hover:bg-emerald-700 text-white preserve-white p-1 rounded">
                   <ExternalLink size={14} />
                 </a>
-                <button onClick={() => archiveGuide(g.id)} className="bg-yellow-600 hover:bg-yellow-700 text-white p-1 rounded">
+                <button onClick={() => archiveGuide(g.id)} className="bg-yellow-600 hover:bg-yellow-700 text-white preserve-white p-1 rounded">
                   <Archive size={14} />
                 </button>
               </div>
@@ -348,7 +348,7 @@ export default function GuideManager() {
             <input placeholder="Nome guida" value={newGuide.name} onChange={e => setNewGuide({...newGuide, name: e.target.value})} className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white mb-3" />
             <input placeholder="Link guida" value={newGuide.redirectUrl} onChange={e => setNewGuide({...newGuide, redirectUrl: e.target.value})} className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white mb-4" />
             <div className="flex gap-3">
-              <button onClick={handleAddGuide} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">Aggiungi</button>
+              <button onClick={handleAddGuide} className="flex-1 bg-green-600 hover:bg-green-700 text-white preserve-white py-2 rounded-lg">Aggiungi</button>
               <button onClick={() => setShowAddGuide(false)} className="flex-1 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white py-2 rounded-lg">Annulla</button>
             </div>
           </div>
@@ -395,7 +395,7 @@ export default function GuideManager() {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <button onClick={handleSaveGuideEdit} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">Salva</button>
+              <button onClick={handleSaveGuideEdit} className="flex-1 bg-green-600 hover:bg-green-700 text-white preserve-white py-2 rounded-lg">Salva</button>
               <button onClick={() => setEditingGuide(null)} className="flex-1 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white py-2 rounded-lg">Annulla</button>
             </div>
           </div>
@@ -409,7 +409,7 @@ export default function GuideManager() {
             <h3 className="text-xl font-bold text-white mb-4">Chiudi vendita</h3>
             <input type="number" placeholder="Importo (€)" value={importo} onChange={e => setImporto(e.target.value)} className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white mb-4" />
             <div className="flex gap-3">
-              <button onClick={addToClients} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">Conferma</button>
+              <button onClick={addToClients} className="flex-1 bg-green-600 hover:bg-green-700 text-white preserve-white py-2 rounded-lg">Conferma</button>
               <button onClick={() => { setShowAddClient(null); setImporto(''); }} className="flex-1 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white py-2 rounded-lg">Annulla</button>
             </div>
           </div>

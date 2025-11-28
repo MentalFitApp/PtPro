@@ -8,12 +8,12 @@ import {
   setDoc,
   serverTimestamp,
   query,
-
+  getDocs,
   orderBy,
   getDoc,
   deleteDoc,
 } from "firebase/firestore";
-import { getTenantCollection, getTenantDoc } from "../../config/tenant";
+import { getTenantCollection, getTenantDoc, getTenantSubcollection } from "../../config/tenant";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths } from "date-fns";
 import { formatCurrency } from "../../utils/formatters";
 import { Edit2, Trash2, Calendar, TrendingUp, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';

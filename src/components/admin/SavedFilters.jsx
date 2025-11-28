@@ -126,7 +126,7 @@ export default function SavedFilters({
           <Filter size={16} />
           <span className="text-sm font-medium">Filtri Salvati</span>
           {savedFilters.length > 0 && (
-            <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+            <span className="bg-blue-500 text-white preserve-white text-xs px-2 py-0.5 rounded-full">
               {savedFilters.length}
             </span>
           )}
@@ -191,7 +191,7 @@ export default function SavedFilters({
                 <div className="space-y-3">
                   <button
                     onClick={() => setShowSaveDialog(!showSaveDialog)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all font-medium"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white preserve-white rounded-lg transition-all font-medium"
                   >
                     <Plus size={18} />
                     Salva Filtro Corrente
@@ -217,7 +217,7 @@ export default function SavedFilters({
                           <button
                             onClick={handleSaveFilter}
                             disabled={!filterName.trim()}
-                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg transition-all text-sm"
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white preserve-white rounded-lg transition-all text-sm"
                           >
                             <Check size={16} />
                             Salva
@@ -227,7 +227,7 @@ export default function SavedFilters({
                               setShowSaveDialog(false);
                               setFilterName('');
                             }}
-                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all text-sm"
+                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white preserve-white rounded-lg transition-all text-sm"
                           >
                             Annulla
                           </button>

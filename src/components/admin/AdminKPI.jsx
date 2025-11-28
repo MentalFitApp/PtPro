@@ -221,7 +221,7 @@ export default function AdminKPI({
             onClick={() => onPeriodChange?.(p.value)}
             className={`px-3 py-2 text-sm rounded-lg transition-all ${
               period === p.value
-                ? 'bg-blue-600 text-white'
+                ? 'bg-blue-600 text-white preserve-white'
                 : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
             }`}
           >

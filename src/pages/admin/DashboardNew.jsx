@@ -548,7 +548,7 @@ export default function DashboardNew() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/new-client')}
-                className="flex items-center gap-1 px-2 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg font-medium shadow-lg text-[10px] sm:text-sm"
+                className="flex items-center gap-1 px-2 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white preserve-white rounded-lg font-medium shadow-lg text-[10px] sm:text-sm"
               >
                 <Plus size={14} />
                 <span className="hidden sm:inline">Nuovo Cliente</span>
@@ -558,7 +558,7 @@ export default function DashboardNew() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowProfileModal(true)}
-                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"
+                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white preserve-white"
               >
                 <Settings size={16} />
               </motion.button>
@@ -588,7 +588,7 @@ export default function DashboardNew() {
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/clients')}
-            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white"
+            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white preserve-white"
           >
             <Users size={12} />
             <span>Clienti</span>
@@ -597,7 +597,7 @@ export default function DashboardNew() {
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/business-history')}
-            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white"
+            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white preserve-white"
           >
             <BarChart3 size={12} />
             <span>Storico</span>
@@ -606,7 +606,7 @@ export default function DashboardNew() {
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/analytics')}
-            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white"
+            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white preserve-white"
           >
             <TrendingUp size={12} />
             <span>Analytics</span>
@@ -615,7 +615,7 @@ export default function DashboardNew() {
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/calendar')}
-            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white"
+            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white preserve-white"
           >
             <Bell size={12} />
             <span>Calendario</span>
@@ -632,7 +632,7 @@ export default function DashboardNew() {
             <select 
               value={timeRange} 
               onChange={e => setTimeRange(e.target.value)}
-              className="px-2 py-1 bg-slate-800 text-white rounded-lg border border-slate-700 text-[10px] flex-1 sm:flex-none"
+              className="px-2 py-1 bg-slate-800 text-white preserve-white rounded-lg border border-slate-700 text-[10px] flex-1 sm:flex-none"
             >
               <option value="7">Ultimi 7 giorni</option>
               <option value="30">Ultimi 30 giorni</option>
@@ -642,7 +642,7 @@ export default function DashboardNew() {
             
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-slate-700 flex-shrink-0"
+              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-white preserve-white rounded-lg border border-slate-700 flex-shrink-0"
             >
               <Eye size={14} />
             </button>
@@ -665,7 +665,7 @@ export default function DashboardNew() {
                   onClick={() => toggleMetric(key)}
                   className={`px-2 py-1 text-xs rounded flex items-center gap-1 transition-colors ${
                     visibleMetrics[key]
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-blue-600 text-white preserve-white'
                       : 'bg-slate-700 text-slate-400'
                   }`}
                 >
@@ -786,7 +786,7 @@ export default function DashboardNew() {
               onClick={() => setActiveTab(tab)}
               className={`px-2 py-1 text-[10px] sm:text-xs rounded whitespace-nowrap transition-colors flex-shrink-0 ${
                 activeTab === tab
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-blue-600 text-white preserve-white'
                   : 'text-slate-400 hover:bg-slate-800'
               }`}
             >
@@ -837,7 +837,7 @@ export default function DashboardNew() {
                       className="flex items-center justify-between p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white preserve-white text-[10px] font-bold flex-shrink-0">
                           {client.name?.charAt(0)?.toUpperCase()}
                         </div>
                         <span className="text-xs text-white truncate">{client.name}</span>
@@ -1198,7 +1198,7 @@ export default function DashboardNew() {
                       alert('Errore durante aggiornamento profilo');
                     }
                   }}
-                  className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                  className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white preserve-white rounded-lg transition-colors text-sm"
                 >
                   Salva
                 </button>

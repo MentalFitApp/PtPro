@@ -91,7 +91,7 @@ const GDPRSettings = () => {
             <button
               onClick={handleExportData}
               disabled={isExporting}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white preserve-white font-medium rounded-lg transition-colors flex items-center gap-2"
             >
               {isExporting ? (
                 <>
@@ -130,7 +130,7 @@ const GDPRSettings = () => {
             {!showDeleteConfirm ? (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+                className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white preserve-white font-medium rounded-lg transition-colors flex items-center gap-2"
               >
                 <Trash2 size={20} />
                 Elimina Account

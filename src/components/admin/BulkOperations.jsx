@@ -276,7 +276,7 @@ export default function BulkOperations({
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowConfirmDialog(false)}
-                    className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all font-medium"
+                    className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white preserve-white rounded-lg transition-all font-medium"
                   >
                     Annulla
                   </button>

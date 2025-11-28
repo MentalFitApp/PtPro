@@ -86,7 +86,15 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
   };
 
   const getStatusForCard = (scheda) => {
-    if (!scheda || !scheda.scadenza) return 'mancante';
+    if (!scheda) return 'mancante';
+    
+    // Se è stata consegnata ma non ha scadenza, è comunque attiva
+    if (scheda.consegnata && !scheda.scadenza) return 'consegnata';
+    
+    // Se non ha né consegnata né scadenza, è mancante
+    if (!scheda.scadenza) return 'mancante';
+    
+    // Altrimenti calcola lo stato in base alla scadenza
     return calculateCardStatus(toDate(scheda.scadenza));
   };
 
@@ -141,7 +149,7 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
       const alimentazioneStatus = getStatusForCard(client.schedaAlimentazione);
 
       if (filterStatus === 'attiva') {
-        return allenamentoStatus === 'consegnata' && alimentazioneStatus === 'consegnata';
+        return allenamentoStatus === 'consegnata' || alimentazioneStatus === 'consegnata';
       } else if (filterStatus === 'scaduta') {
         return allenamentoStatus === 'scaduta' || alimentazioneStatus === 'scaduta';
       } else if (filterStatus === 'in_scadenza') {
@@ -352,82 +360,99 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
                 key={client.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-slate-800/50 border border-slate-700 rounded-lg p-1.5 hover:border-slate-600 transition-all w-full"
+                className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 hover:border-rose-600/50 hover:shadow-lg hover:shadow-rose-600/10 transition-all w-full group"
               >
-                {/* Header ultra-compatto */}
-                <div className="flex items-center justify-between mb-1 gap-0.5">
-                  <button
-                    onClick={() => setSelectedClientInfo(client)}
-                    className="text-[10px] font-bold text-slate-100 hover:text-rose-400 transition-colors text-left truncate flex-1 min-w-0"
-                  >
-                    {client.name}
-                  </button>
+                {/* Header con più info */}
+                <div className="flex items-start justify-between mb-3 gap-2">
+                  <div className="flex-1 min-w-0">
+                    <button
+                      onClick={() => setSelectedClientInfo(client)}
+                      className="text-sm sm:text-base font-bold text-slate-100 hover:text-rose-400 transition-colors text-left truncate block w-full group-hover:text-rose-300"
+                    >
+                      {client.name}
+                    </button>
+                    {client.email && (
+                      <p className="text-xs text-slate-400 truncate mt-0.5">{client.email}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {client.age && (
+                        <span className="text-xs px-2 py-0.5 bg-slate-700/50 text-slate-300 rounded">
+                          {client.age} anni
+                        </span>
+                      )}
+                      {client.goal && (
+                        <span className="text-xs px-2 py-0.5 bg-blue-900/30 border border-blue-600/30 text-blue-300 rounded">
+                          {client.goal}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                   <button
                     onClick={() => navigate(`/client-detail/${client.id}`)}
-                    className="p-0.5 hover:bg-slate-700 rounded transition-colors text-slate-400 hover:text-slate-200 flex-shrink-0"
-                    title="Dettagli"
+                    className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-slate-200 flex-shrink-0"
+                    title="Dettagli completi"
                   >
-                    <ExternalLink size={10} />
+                    <ExternalLink size={14} />
                   </button>
                 </div>
 
-                {/* Schede inline */}
-                <div className="space-y-0.5">
+                {/* Schede con più spazio */}
+                <div className="space-y-2">
                   {/* Allenamento */}
-                  <div className="flex items-center justify-between bg-slate-900/50 rounded px-1 py-0.5 border border-slate-700">
-                    <div className="flex items-center gap-0.5 min-w-0 flex-1">
-                      <span className={`inline-flex items-center p-0.5 rounded border ${STATUS_COLORS[allenamentoStatus]}`}>
+                  <div className="flex items-center justify-between bg-slate-900/50 rounded-lg px-3 py-2 border border-slate-700 hover:border-blue-600/50 transition-colors">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className={`inline-flex items-center p-1 rounded border ${STATUS_COLORS[allenamentoStatus]}`}>
                         {STATUS_ICONS[allenamentoStatus]}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] text-slate-400 truncate">Allena</p>
+                        <p className="text-xs text-slate-400">Allenamento</p>
                         {client.schedaAllenamento?.scadenza ? (
-                          <p className={`text-[8px] font-medium truncate ${
+                          <p className={`text-sm font-semibold ${
                             allenamentoDays < 0 ? 'text-red-400' : 
                             allenamentoDays <= 7 ? 'text-orange-400' : 
                             'text-emerald-400'
                           }`}>
-                            {allenamentoDays < 0 ? `-${Math.abs(allenamentoDays)}gg` : `${allenamentoDays}gg`}
+                            {allenamentoDays < 0 ? `Scaduta ${Math.abs(allenamentoDays)}gg fa` : `${allenamentoDays} giorni`}
                           </p>
                         ) : (
-                          <p className="text-[8px] text-slate-500">-</p>
+                          <p className="text-sm text-slate-500">Non assegnata</p>
                         )}
                       </div>
                     </div>
                     <button
                       onClick={() => navigate(`/scheda-allenamento/${client.id}`)}
-                      className="text-[8px] px-1 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors flex-shrink-0"
+                      className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex-shrink-0 font-medium"
                     >
-                      Vai
+                      Apri
                     </button>
                   </div>
 
                   {/* Alimentazione */}
-                  <div className="flex items-center justify-between bg-slate-900/50 rounded px-1 py-0.5 border border-slate-700">
-                    <div className="flex items-center gap-0.5 min-w-0 flex-1">
-                      <span className={`inline-flex items-center p-0.5 rounded border ${STATUS_COLORS[alimentazioneStatus]}`}>
+                  <div className="flex items-center justify-between bg-slate-900/50 rounded-lg px-3 py-2 border border-slate-700 hover:border-emerald-600/50 transition-colors">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className={`inline-flex items-center p-1 rounded border ${STATUS_COLORS[alimentazioneStatus]}`}>
                         {STATUS_ICONS[alimentazioneStatus]}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[8px] text-slate-400 truncate">Dieta</p>
+                        <p className="text-xs text-slate-400">Alimentazione</p>
                         {client.schedaAlimentazione?.scadenza ? (
-                          <p className={`text-[8px] font-medium truncate ${
+                          <p className={`text-sm font-semibold ${
                             alimentazioneDays < 0 ? 'text-red-400' : 
                             alimentazioneDays <= 7 ? 'text-orange-400' : 
                             'text-emerald-400'
                           }`}>
-                            {alimentazioneDays < 0 ? `-${Math.abs(alimentazioneDays)}gg` : `${alimentazioneDays}gg`}
+                            {alimentazioneDays < 0 ? `Scaduta ${Math.abs(alimentazioneDays)}gg fa` : `${alimentazioneDays} giorni`}
                           </p>
                         ) : (
-                          <p className="text-[8px] text-slate-500">-</p>
+                          <p className="text-sm text-slate-500">Non assegnata</p>
                         )}
                       </div>
                     </div>
                     <button
                       onClick={() => navigate(`/scheda-alimentazione/${client.id}`)}
-                      className="text-[8px] px-1 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors flex-shrink-0"
+                      className="text-xs px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex-shrink-0 font-medium"
                     >
-                      Vai
+                      Apri
                     </button>
                   </div>
                 </div>

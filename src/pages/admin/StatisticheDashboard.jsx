@@ -823,7 +823,7 @@ export default function StatisticheDashboard() {
               setStartDate(d.toISOString().split('T')[0]);
               setEndDate(new Date().toISOString().split('T')[0]);
             }}
-            className="px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm whitespace-nowrap"
+            className="px-2 py-1.5 bg-blue-600 text-white preserve-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm whitespace-nowrap"
           >
             Ultimi 7 giorni
           </button>
@@ -833,7 +833,7 @@ export default function StatisticheDashboard() {
           {/* Layout controls */}
           <button
             onClick={() => setShowStatusConfig(true)}
-            className="px-2 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs sm:text-sm flex items-center gap-1.5"
+            className="px-2 py-1.5 bg-purple-600 text-white preserve-white rounded-lg hover:bg-purple-700 text-xs sm:text-sm flex items-center gap-1.5"
           >
             <Settings size={14} />
             <span className="hidden sm:inline">Config Status</span>
@@ -841,7 +841,7 @@ export default function StatisticheDashboard() {
           
           <button
             onClick={() => setShowCustomWidgetCreator(true)}
-            className="px-2 py-1.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 text-xs sm:text-sm flex items-center gap-1.5"
+            className="px-2 py-1.5 bg-cyan-600 text-white preserve-white rounded-lg hover:bg-cyan-700 text-xs sm:text-sm flex items-center gap-1.5"
           >
             <Plus size={14} />
             <span className="hidden sm:inline">Crea Widget</span>
@@ -851,7 +851,7 @@ export default function StatisticheDashboard() {
             onClick={() => setIsEditMode(!isEditMode)}
             className={`px-2 py-1.5 rounded-lg text-xs sm:text-sm flex items-center gap-1.5 ${
               isEditMode 
-                ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
+                ? 'bg-emerald-600 text-white preserve-white hover:bg-emerald-700' 
                 : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
             }`}
           >
@@ -863,7 +863,7 @@ export default function StatisticheDashboard() {
             <>
               <button
                 onClick={saveLayout}
-                className="px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm flex items-center gap-1.5"
+                className="px-2 py-1.5 bg-blue-600 text-white preserve-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm flex items-center gap-1.5"
               >
                 <Save size={14} />
                 Salva

@@ -350,7 +350,7 @@ export default function GlobalUserManagement() {
             
             <button
               onClick={handleExportUsers}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white preserve-white rounded-lg transition-colors"
             >
               <Download size={18} />
               <span>Export CSV</span>
@@ -451,7 +451,7 @@ export default function GlobalUserManagement() {
                 </span>
                 <button
                   onClick={() => setShowBulkActions(!showBulkActions)}
-                  className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm transition-colors"
+                  className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white preserve-white rounded-lg text-sm transition-colors"
                 >
                   Bulk Actions
                 </button>
@@ -478,13 +478,13 @@ export default function GlobalUserManagement() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleBulkAction('suspend')}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white preserve-white rounded-lg text-sm transition-colors"
               >
                 Suspend Selected
               </button>
               <button
                 onClick={() => handleBulkAction('activate')}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white preserve-white rounded-lg text-sm transition-colors"
               >
                 Activate Selected
               </button>
@@ -493,7 +493,7 @@ export default function GlobalUserManagement() {
                   setSelectedUsers([]);
                   setShowBulkActions(false);
                 }}
-                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors"
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white preserve-white rounded-lg text-sm transition-colors"
               >
                 Cancel
               </button>

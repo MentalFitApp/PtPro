@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ArrowLeft, Plus, Trash2, Copy, RotateCcw, X, ChevronUp, ChevronDown, Play, Download, Upload, History, FileText } from 'lucide-react';
+import { Save, ArrowLeft, Plus, Trash2, Copy, RotateCcw, X, ChevronUp, ChevronDown, Play, Download, Upload, History, FileText, Sparkles } from 'lucide-react';
 import { db } from '../../firebase';
 import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore';
@@ -18,6 +18,10 @@ const SchedaAllenamento = () => {
   const [saving, setSaving] = useState(false);
   const [clientName, setClientName] = useState('');
   const [availableExercises, setAvailableExercises] = useState([]);
+  
+  // View/Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [schedaExists, setSchedaExists] = useState(false);
   
   const [schedaData, setSchedaData] = useState({
     obiettivo: '',
@@ -101,6 +105,10 @@ const SchedaAllenamento = () => {
       
       if (schedaSnap.exists()) {
         setSchedaData(schedaSnap.data());
+        setSchedaExists(true);
+        setIsEditMode(false); // Default to view mode for existing schedas
+      } else {
+        setIsEditMode(true); // Default to edit mode for new schedas
       }
     } catch (error) {
       console.error('Errore caricamento:', error);
@@ -121,18 +129,31 @@ const SchedaAllenamento = () => {
       // Save to history
       await saveToHistory();
 
-      // Update client with expiry date
+      // Update client with expiry date and mark as delivered
       if (schedaData.durataSettimane) {
         const clientRef = getTenantDoc(db, 'clients', clientId);
         const scadenza = new Date();
         scadenza.setDate(scadenza.getDate() + (parseInt(schedaData.durataSettimane) * 7));
         
         await updateDoc(clientRef, {
-          'schedaAllenamento.scadenza': scadenza
+          'schedaAllenamento.scadenza': scadenza,
+          'schedaAllenamento.consegnata': true,
+          'schedaAllenamento.dataConsegna': new Date()
+        });
+      } else {
+        // Anche senza durata, marca come consegnata
+        const clientRef = getTenantDoc(db, 'clients', clientId);
+        await updateDoc(clientRef, {
+          'schedaAllenamento.consegnata': true,
+          'schedaAllenamento.dataConsegna': new Date()
         });
       }
 
       alert('Scheda salvata con successo!');
+      
+      // Switch to view mode after saving
+      setSchedaExists(true);
+      setIsEditMode(false);
     } catch (error) {
       console.error('Errore salvataggio:', error);
       alert('Errore nel salvataggio della scheda');
@@ -361,14 +382,27 @@ const SchedaAllenamento = () => {
               <ArrowLeft size={20} />
               Torna indietro
             </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white rounded-lg transition-colors"
-            >
-              <Save size={18} />
-              {saving ? 'Salvataggio...' : 'Salva Scheda'}
-            </button>
+            <div className="flex gap-2">
+              {schedaExists && !isEditMode && (
+                <button
+                  onClick={() => setIsEditMode(true)}
+                  className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                >
+                  <Sparkles size={18} />
+                  Modifica Scheda
+                </button>
+              )}
+              {isEditMode && (
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white rounded-lg transition-colors"
+                >
+                  <Save size={18} />
+                  {saving ? 'Salvataggio...' : 'Salva Scheda'}
+                </button>
+              )}
+            </div>
           </div>
           
           {/* Action Buttons */}
@@ -380,35 +414,39 @@ const SchedaAllenamento = () => {
               <Download size={16} />
               Scarica PDF
             </button>
-            <button
-              onClick={() => {
-                setShowSavePresetModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
-            >
-              <FileText size={16} />
-              Salva come Preset
-            </button>
-            <button
-              onClick={() => {
-                loadPresets();
-                setShowImportPresetModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
-            >
-              <Upload size={16} />
-              Importa Preset
-            </button>
-            <button
-              onClick={() => {
-                loadPreviousCard();
-                setShowCopyPreviousModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-lg transition-colors"
-            >
-              <Copy size={16} />
-              Copia Precedente
-            </button>
+            {isEditMode && (
+              <>
+                <button
+                  onClick={() => {
+                    setShowSavePresetModal(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                >
+                  <FileText size={16} />
+                  Salva come Preset
+                </button>
+                <button
+                  onClick={() => {
+                    loadPresets();
+                    setShowImportPresetModal(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
+                >
+                  <Upload size={16} />
+                  Importa Preset
+                </button>
+                <button
+                  onClick={() => {
+                    loadPreviousCard();
+                    setShowCopyPreviousModal(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-lg transition-colors"
+                >
+                  <Copy size={16} />
+                  Copia Precedente
+                </button>
+              </>
+            )}
             <button
               onClick={() => {
                 loadCardHistory();
@@ -440,7 +478,8 @@ const SchedaAllenamento = () => {
               <select
                 value={schedaData.obiettivo}
                 onChange={(e) => setSchedaData({ ...schedaData, obiettivo: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
+                disabled={!isEditMode}
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <option value="">Seleziona obiettivo</option>
                 {OBIETTIVI.map(obj => (
@@ -456,7 +495,8 @@ const SchedaAllenamento = () => {
               <select
                 value={schedaData.livello}
                 onChange={(e) => setSchedaData({ ...schedaData, livello: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
+                disabled={!isEditMode}
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <option value="">Seleziona livello</option>
                 {LIVELLI.map(liv => (
@@ -473,7 +513,8 @@ const SchedaAllenamento = () => {
                 type="number"
                 value={schedaData.durataSettimane}
                 onChange={(e) => setSchedaData({ ...schedaData, durataSettimane: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
+                disabled={!isEditMode}
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                 placeholder="Es. 12"
               />
             </div>
@@ -486,7 +527,8 @@ const SchedaAllenamento = () => {
                 type="text"
                 value={schedaData.note}
                 onChange={(e) => setSchedaData({ ...schedaData, note: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
+                disabled={!isEditMode}
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                 placeholder="Note generali..."
               />
             </div>
@@ -500,37 +542,39 @@ const SchedaAllenamento = () => {
               <button
                 key={giorno}
                 onClick={() => setSelectedDay(giorno)}
+                disabled={!isEditMode}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
                   selectedDay === giorno
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
+                } disabled:opacity-60 disabled:cursor-not-allowed`}
               >
                 {giorno}
               </button>
             ))}
           </div>
           
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={() => {
-                const others = GIORNI_SETTIMANA.filter(d => d !== selectedDay);
-                if (confirm(`Duplicare ${selectedDay} su tutti gli altri giorni?`)) {
-                  duplicateDayToOthers(others);
-                }
-              }}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2"
-            >
-              <Copy size={16} />
-              Duplica su altri giorni
-            </button>
-            <button
-              onClick={resetDay}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2"
-            >
-              <RotateCcw size={16} />
-              Reset giorno
-            </button>
+          {isEditMode && (
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => {
+                  const others = GIORNI_SETTIMANA.filter(d => d !== selectedDay);
+                  if (confirm(`Duplicare ${selectedDay} su tutti gli altri giorni?`)) {
+                    duplicateDayToOthers(others);
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2"
+              >
+                <Copy size={16} />
+                Duplica su altri giorni
+              </button>
+              <button
+                onClick={resetDay}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2"
+              >
+                <RotateCcw size={16} />
+                Reset giorno
+              </button>
           </div>
         </div>
 
@@ -542,7 +586,6 @@ const SchedaAllenamento = () => {
             </div>
           ) : (
             schedaData.giorni[selectedDay].esercizi.map((item, esercizioIndex) => {
-              // Superset/Circuit markers
               if (item.isMarker) {
                 const isCircuit = item.type.includes('circuit');
                 const isStart = item.type.includes('start');
@@ -559,12 +602,14 @@ const SchedaAllenamento = () => {
                       {label}
                     </div>
                     <div className={`flex-1 h-px ${colorClass}`}></div>
-                    <button
-                      onClick={() => removeEsercizio(esercizioIndex)}
-                      className="p-2 text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {isEditMode && (
+                      <button
+                        onClick={() => removeEsercizio(esercizioIndex)}
+                        className="p-2 text-red-400 hover:text-red-300"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 );
               }
@@ -603,28 +648,30 @@ const SchedaAllenamento = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => moveEsercizioUp(esercizioIndex)}
-                        disabled={esercizioIndex === 0}
-                        className="p-2 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        <ChevronUp size={18} />
-                      </button>
-                      <button
-                        onClick={() => moveEsercizioDown(esercizioIndex)}
-                        disabled={esercizioIndex === schedaData.giorni[selectedDay].esercizi.length - 1}
-                        className="p-2 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        <ChevronDown size={18} />
-                      </button>
-                      <button
-                        onClick={() => removeEsercizio(esercizioIndex)}
-                        className="p-2 text-red-400 hover:text-red-300"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+                    {isEditMode && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => moveEsercizioUp(esercizioIndex)}
+                          disabled={esercizioIndex === 0}
+                          className="p-2 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ChevronUp size={18} />
+                        </button>
+                        <button
+                          onClick={() => moveEsercizioDown(esercizioIndex)}
+                          disabled={esercizioIndex === schedaData.giorni[selectedDay].esercizi.length - 1}
+                          className="p-2 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <ChevronDown size={18} />
+                        </button>
+                        <button
+                          onClick={() => removeEsercizio(esercizioIndex)}
+                          className="p-2 text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -634,7 +681,8 @@ const SchedaAllenamento = () => {
                         type="number"
                         value={item.serie || ''}
                         onChange={(e) => updateEsercizio(esercizioIndex, 'serie', e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
+                        disabled={!isEditMode}
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                         placeholder="Es. 3"
                       />
                     </div>
@@ -644,7 +692,8 @@ const SchedaAllenamento = () => {
                         type="text"
                         value={item.ripetizioni || ''}
                         onChange={(e) => updateEsercizio(esercizioIndex, 'ripetizioni', e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
+                        disabled={!isEditMode}
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                         placeholder="Es. 8-12"
                       />
                     </div>
@@ -654,7 +703,8 @@ const SchedaAllenamento = () => {
                         type="number"
                         value={item.recupero || ''}
                         onChange={(e) => updateEsercizio(esercizioIndex, 'recupero', e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
+                        disabled={!isEditMode}
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                         placeholder="Es. 60"
                       />
                     </div>
@@ -665,8 +715,9 @@ const SchedaAllenamento = () => {
                     <textarea
                       value={item.noteEsercizio || ''}
                       onChange={(e) => updateEsercizio(esercizioIndex, 'noteEsercizio', e.target.value)}
+                      disabled={!isEditMode}
                       rows="2"
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                       placeholder="Note tecniche, varianti..."
                     />
                   </div>
@@ -679,45 +730,49 @@ const SchedaAllenamento = () => {
         </div>
 
         {/* Add Exercise and Markers Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <button
-            onClick={() => setShowAddEsercizio(true)}
-            className="md:col-span-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors flex items-center justify-center gap-2 font-semibold"
-          >
-            <Plus size={20} />
-            Aggiungi Esercizio
-          </button>
-          
-          <button
-            onClick={() => addMarkerAtEnd('superset-start')}
-            className="px-4 py-3 bg-purple-600/20 hover:bg-purple-600/30 border-2 border-purple-500/50 text-purple-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium text-sm"
-          >
-            Inizio Superserie
-          </button>
-          
-          <button
-            onClick={() => addMarkerAtEnd('superset-end')}
-            className="px-4 py-3 bg-purple-600/20 hover:bg-purple-600/30 border-2 border-purple-500/50 text-purple-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium text-sm"
-          >
-            Fine Superserie
-          </button>
-        </div>
+        {isEditMode && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <button
+                onClick={() => setShowAddEsercizio(true)}
+                className="md:col-span-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors flex items-center justify-center gap-2 font-semibold"
+              >
+                <Plus size={20} />
+                Aggiungi Esercizio
+              </button>
+              
+              <button
+                onClick={() => addMarkerAtEnd('superset-start')}
+                className="px-4 py-3 bg-purple-600/20 hover:bg-purple-600/30 border-2 border-purple-500/50 text-purple-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+              >
+                Inizio Superserie
+              </button>
+              
+              <button
+                onClick={() => addMarkerAtEnd('superset-end')}
+                className="px-4 py-3 bg-purple-600/20 hover:bg-purple-600/30 border-2 border-purple-500/50 text-purple-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+              >
+                Fine Superserie
+              </button>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <button
-            onClick={() => addMarkerAtEnd('circuit-start')}
-            className="px-4 py-3 bg-cyan-600/20 hover:bg-cyan-600/30 border-2 border-cyan-500/50 text-cyan-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium"
-          >
-            Inizio Circuito
-          </button>
-          
-          <button
-            onClick={() => addMarkerAtEnd('circuit-end')}
-            className="px-4 py-3 bg-cyan-600/20 hover:bg-cyan-600/30 border-2 border-cyan-500/50 text-cyan-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium"
-          >
-            Fine Circuito
-          </button>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <button
+                onClick={() => addMarkerAtEnd('circuit-start')}
+                className="px-4 py-3 bg-cyan-600/20 hover:bg-cyan-600/30 border-2 border-cyan-500/50 text-cyan-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium"
+              >
+                Inizio Circuito
+              </button>
+              
+              <button
+                onClick={() => addMarkerAtEnd('circuit-end')}
+                className="px-4 py-3 bg-cyan-600/20 hover:bg-cyan-600/30 border-2 border-cyan-500/50 text-cyan-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium"
+              >
+                Fine Circuito
+              </button>
+            </div>
+          </> 
+        )}
 
         {/* Add Exercise Modal */}
         <AnimatePresence>

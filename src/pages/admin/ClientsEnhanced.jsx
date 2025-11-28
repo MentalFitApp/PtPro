@@ -158,7 +158,7 @@ export default function ClientsEnhanced() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/admin/new-client')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white preserve-white rounded-lg transition-all"
           >
             <UserPlus size={18} />
             Nuovo Cliente
@@ -166,7 +166,7 @@ export default function ClientsEnhanced() {
 
           <button
             onClick={() => exportToCSV(filteredAndSortedClients)}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white preserve-white rounded-lg transition-all"
           >
             <Download size={18} />
             Esporta
@@ -196,7 +196,7 @@ export default function ClientsEnhanced() {
               onClick={() => setFilter(f)}
               className={`px-4 py-2 rounded-lg text-sm transition-all ${
                 filter === f
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-blue-600 text-white preserve-white'
                   : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
               }`}
             >
@@ -225,7 +225,7 @@ export default function ClientsEnhanced() {
           <button
             onClick={() => setViewMode('list')}
             className={`p-2 rounded transition-all ${
-              viewMode === 'list' ? 'bg-slate-700 text-white' : 'text-slate-400'
+              viewMode === 'list' ? 'bg-slate-700 text-white preserve-white' : 'text-slate-400'
             }`}
           >
             <List size={18} />
@@ -233,7 +233,7 @@ export default function ClientsEnhanced() {
           <button
             onClick={() => setViewMode('card')}
             className={`p-2 rounded transition-all ${
-              viewMode === 'card' ? 'bg-slate-700 text-white' : 'text-slate-400'
+              viewMode === 'card' ? 'bg-slate-700 text-white preserve-white' : 'text-slate-400'
             }`}
           >
             <LayoutGrid size={18} />

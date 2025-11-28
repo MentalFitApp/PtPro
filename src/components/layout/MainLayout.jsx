@@ -3,7 +3,8 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   Home, Users, MessageSquare, FileText, Bell,
   Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing,
-  UserCheck, BookOpen, Target, Activity, GraduationCap, Plus, Menu, X, Palette, Globe, Instagram
+  UserCheck, BookOpen, Target, Activity, GraduationCap, Plus, Menu, X, Palette, Globe, Instagram,
+  Dumbbell, Utensils
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isSuperAdmin } from '../../utils/superadmin';
@@ -40,7 +41,7 @@ const AnimatedStars = () => {
     document.body.appendChild(container);
 
     // Crea 30 stelle distribuite su tutta la schermata
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 35; i++) {
       const star = document.createElement('div');
       star.className = 'star';
 
@@ -168,7 +169,8 @@ const coachNavLinks = [
 
 const clientNavLinks = [
   { to: '/client/dashboard', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
-
+  { to: '/client/scheda-allenamento', icon: <Dumbbell size={18} />, label: 'Allenamento' },
+  { to: '/client/scheda-alimentazione', icon: <Utensils size={18} />, label: 'Alimentazione' },
   { to: '/client/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/client/courses', icon: <BookOpen size={18} />, label: 'Corsi' },
   { to: '/client/community', icon: <Users size={18} />, label: 'Community' },

@@ -39,8 +39,8 @@
   --text-primary-rgb: 15 23 42;
   --text-secondary-rgb: 71 85 105;
 }
-
-[data-theme="dark"] {
+/* Ensure dark variables apply when attribute is on html/body or :root */
+:root[data-theme="dark"], html[data-theme="dark"], body[data-theme="dark"], [data-theme="dark"] {
   /* Dark theme colors */
   --bg-primary: #0a0e1a;
   --bg-secondary: #0f172a;
@@ -81,8 +81,8 @@
   }
 
   body {
-    background: linear-gradient(135deg, #0a0e1a 0%, #0f172a 50%, #0a0e1a 100%);
-    color: #f8fafc;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    color: var(--text-primary);
     @apply font-sans;
     margin: 0;
     padding: 0;
@@ -1116,6 +1116,62 @@
     background-color: #ffffff !important;
     border-color: #e2e8f0 !important;
   }
+
+  /* Ensure text inside previously-dark containers is readable in light theme
+     Many components use classes like `bg-slate-800` and children with `text-white`.
+     When switching to light theme we convert the container background to light,
+     so force descendant text to the theme text color to keep contrast. */
+  [data-theme="light"] .bg-slate-800,
+  [data-theme="light"] .bg-slate-800\/60,
+  [data-theme="light"] .bg-slate-800\/40,
+  [data-theme="light"] .bg-slate-900,
+  [data-theme="light"] .bg-slate-900\/95,
+  [data-theme="light"] .bg-slate-900\/98 {
+    background-color: rgba(255, 255, 255, 0.96) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.06) !important;
+  }
+
+  [data-theme="light"] .bg-slate-800 *,
+  [data-theme="light"] .bg-slate-800\/60 *,
+  [data-theme="light"] .bg-slate-800\/40 *,
+  [data-theme="light"] .bg-slate-900 * {
+    color: var(--text-primary) !important;
+  }
+
+  /* Slightly de-emphasize secondary text inside converted cards */
+  [data-theme="light"] .bg-slate-800 .text-slate-400,
+  [data-theme="light"] .bg-slate-800 .text-slate-300 {
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+  }
+
+  /* Convert explicit white text inside converted slate containers to theme text
+     This avoids many components having `text-white` on light backgrounds while
+     preserving intentional white text elsewhere (e.g. colored buttons). */
+  [data-theme="light"] .bg-slate-800 .text-white,
+  [data-theme="light"] .bg-slate-800 \.text-white,
+  [data-theme="light"] .bg-slate-800 \.text-white\/:not\(\),
+  [data-theme="light"] .bg-slate-800 \\:not\(\),
+  [data-theme="light"] .bg-slate-800 \\* {
+    color: var(--text-primary) !important;
+  }
+
+  /* Safer and simpler selector set (fallback) - target commonly used slate containers */
+  [data-theme="light"] .bg-slate-800 .text-white,
+  [data-theme="light"] .bg-slate-800\/60 .text-white,
+  [data-theme="light"] .bg-slate-800\/40 .text-white,
+  [data-theme="light"] .bg-slate-900 .text-white,
+  [data-theme="light"] .bg-slate-900\/95 .text-white,
+  [data-theme="light"] .bg-slate-900\/98 .text-white {
+    color: var(--text-primary) !important;
+  }
+
+  /* Provide an escape hatch for elements that must remain white (gradients, badges) */
+  [data-theme="light"] .preserve-white,
+  [data-theme="light"] .preserve-white * {
+    color: white !important;
+  }
 }
 
 /* ========================================
@@ -1133,6 +1189,72 @@
     radial-gradient(circle at 75% 25%, rgba(245, 158, 11, 0.08) 0%, transparent 35%);
   animation: float-gradient-light 25s ease-in-out infinite;
   pointer-events: none;
+}
+
+/* Light-theme visual tweaks: make animated background more subtle and boost contrast */
+:root[data-theme="light"], html[data-theme="light"], body[data-theme="light"], [data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --card-bg: #ffffff;
+  --text-primary: #0b1220;
+  --text-secondary: #475569;
+  --border-color: #e6eef8;
+}
+
+[data-theme="light"] .starry-background::before {
+  opacity: 0.65;
+  filter: blur(6px) saturate(105%);
+}
+
+[data-theme="light"] .star {
+  opacity: 0.6;
+}
+
+/* Light-theme: stronger, more visible animated background */
+[data-theme="light"] {
+  --light-star-opacity: 0.95;
+  --light-star-scale: 1.2;
+}
+
+/* Light theme - make stars more visible and punchy (no aurora) */
+[data-theme="light"] .star {
+  opacity: var(--light-star-opacity);
+  transform: scale(var(--light-star-scale));
+  filter: drop-shadow(0 0 16px rgba(59,130,246,0.35)) saturate(130%);
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,1), rgba(59,130,246,0.95));
+  box-shadow: 0 0 14px rgba(59,130,246,0.28), 0 0 24px rgba(139,92,246,0.12);
+  /* make twinkle faster and more pronounced in light theme */
+  animation: fall var(--fall-duration, 15s) var(--fall-delay, 0s) linear infinite, twinkle 2.2s ease-in-out infinite;
+}
+
+/* Make larger stars even more prominent in light theme */
+[data-theme="light"] .star:nth-child(6n),
+[data-theme="light"] .star:nth-child(18n) {
+  transform: scale(1.45);
+  opacity: 1;
+  box-shadow: 0 0 22px rgba(59,130,246,0.45), 0 0 36px rgba(139,92,246,0.25);
+}
+
+/* Preserve white text for common accent buttons even when inside converted slate containers */
+[data-theme="light"] .bg-slate-800 .bg-blue-600.text-white,
+[data-theme="light"] .bg-slate-800 .bg-blue-500.text-white,
+[data-theme="light"] .bg-slate-800 .bg-emerald-600.text-white,
+[data-theme="light"] .bg-slate-800 .bg-rose-600.text-white,
+[data-theme="light"] .bg-slate-800 .bg-purple-600.text-white,
+[data-theme="light"] .bg-slate-800 .bg-yellow-500.text-white,
+[data-theme="light"] .bg-slate-800 .bg-orange-500.text-white {
+  color: white !important;
+}
+
+/* And if the accent is on the same element as the slate container (rare), keep the accent */
+[data-theme="light"] .bg-blue-600.text-white,
+[data-theme="light"] .bg-blue-500.text-white,
+[data-theme="light"] .bg-emerald-600.text-white,
+[data-theme="light"] .bg-rose-600.text-white,
+[data-theme="light"] .bg-purple-600.text-white,
+[data-theme="light"] .bg-yellow-500.text-white,
+[data-theme="light"] .bg-orange-500.text-white {
+  color: white !important;
 }
 
 @keyframes float-gradient-light {

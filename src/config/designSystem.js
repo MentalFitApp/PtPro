@@ -151,11 +151,11 @@ export const components = {
   
   // Buttons
   button: {
-    primary: `bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-2.5 px-6 rounded-lg ${transitions.default} hover:from-cyan-600 hover:to-blue-600 ${shadows.glow} ${shadows.glowHover}`,
+    primary: `bg-gradient-to-r from-cyan-500 to-blue-500 text-white preserve-white font-semibold py-2.5 px-6 rounded-lg ${transitions.default} hover:from-cyan-600 hover:to-blue-600 ${shadows.glow} ${shadows.glowHover}`,
     secondary: `bg-slate-700/50 text-slate-200 font-semibold py-2.5 px-6 rounded-lg border ${colors.border.default} ${transitions.default} hover:bg-slate-700 ${colors.border.hover}`,
     ghost: `text-slate-400 font-semibold py-2 px-4 rounded-lg ${transitions.default} hover:bg-slate-800/50 hover:text-slate-200`,
-    danger: `bg-gradient-to-r from-rose-500 to-red-500 text-white font-semibold py-2.5 px-6 rounded-lg ${transitions.default} hover:from-rose-600 hover:to-red-600`,
-    success: `bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-2.5 px-6 rounded-lg ${transitions.default} hover:from-emerald-600 hover:to-teal-600`,
+    danger: `bg-gradient-to-r from-rose-500 to-red-500 text-white preserve-white font-semibold py-2.5 px-6 rounded-lg ${transitions.default} hover:from-rose-600 hover:to-red-600`,
+    success: `bg-gradient-to-r from-emerald-500 to-teal-500 text-white preserve-white font-semibold py-2.5 px-6 rounded-lg ${transitions.default} hover:from-emerald-600 hover:to-teal-600`,
     icon: `p-2.5 rounded-lg ${colors.bg.card} ${colors.border.default} ${transitions.default} hover:bg-slate-700/70`,
   },
   

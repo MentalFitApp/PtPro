@@ -21,10 +21,10 @@ export const LoadingButton = ({
   ...props
 }) => {
   const variants = {
-    primary: 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white',
+    primary: 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white preserve-white',
     secondary: 'bg-slate-700 hover:bg-slate-600 text-slate-200',
-    success: 'bg-green-600 hover:bg-green-700 text-white',
-    danger: 'bg-red-600 hover:bg-red-700 text-white',
+    success: 'bg-green-600 hover:bg-green-700 text-white preserve-white',
+    danger: 'bg-red-600 hover:bg-red-700 text-white preserve-white',
   };
 
   const baseClasses = 'px-6 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';

@@ -51,7 +51,7 @@ function AnimatedMetricCard({ value, label, icon: Icon, gradientFrom, gradientTo
         duration: 0.4,
         scale: { duration: 0.4 }
       }}
-      className={`relative bg-gradient-to-br ${gradientFrom} ${gradientTo} backdrop-blur-sm border ${borderColor} rounded-lg p-1.5 sm:p-3 overflow-hidden`}
+      className={`relative bg-gradient-to-br ${gradientFrom} ${gradientTo} backdrop-blur-sm border ${borderColor} rounded-lg p-1.5 sm:p-3 overflow-hidden preserve-white`}
     >
       {/* Effetto shine quando completa */}
       {isComplete && (
@@ -363,7 +363,7 @@ export default function CoachDashboardNew() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/new-client')}
-                className="flex items-center gap-1 px-2 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg font-medium shadow-lg text-[10px] sm:text-sm"
+                className="flex items-center gap-1 px-2 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg font-medium shadow-lg text-[10px] sm:text-sm preserve-white"
               >
                 <Plus size={14} />
                 <span className="hidden sm:inline">Nuovo Cliente</span>
@@ -373,7 +373,7 @@ export default function CoachDashboardNew() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowProfileModal(true)}
-                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"
+                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white preserve-white"
               >
                 <Settings size={16} />
               </motion.button>
@@ -403,7 +403,7 @@ export default function CoachDashboardNew() {
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/clients')}
-            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white"
+            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white preserve-white"
           >
             <Users size={12} />
             <span>Clienti</span>
@@ -412,7 +412,7 @@ export default function CoachDashboardNew() {
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/calendar')}
-            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white"
+            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white preserve-white"
           >
             <Calendar size={12} />
             <span>Calendario</span>
@@ -421,7 +421,7 @@ export default function CoachDashboardNew() {
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setActiveTab('checks')}
-            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white"
+            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white preserve-white"
           >
             <CheckCircle size={12} />
             <span>Check-in</span>
@@ -430,7 +430,7 @@ export default function CoachDashboardNew() {
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setActiveTab('anamnesi')}
-            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white"
+            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white preserve-white"
           >
             <FileText size={12} />
             <span>Anamnesi</span>
@@ -447,7 +447,7 @@ export default function CoachDashboardNew() {
             <select 
               value={timeRange} 
               onChange={e => setTimeRange(e.target.value)}
-              className="px-2 py-1 bg-slate-800 text-white rounded-lg border border-slate-700 text-[10px] flex-1 sm:flex-none"
+              className="px-2 py-1 bg-slate-800 text-white preserve-white rounded-lg border border-slate-700 text-[10px] flex-1 sm:flex-none"
             >
               <option value="7">Ultimi 7 giorni</option>
               <option value="30">Mese corrente</option>
@@ -456,7 +456,7 @@ export default function CoachDashboardNew() {
             
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg border border-slate-700 flex-shrink-0"
+              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-white preserve-white rounded-lg border border-slate-700 flex-shrink-0"
             >
               <Eye size={14} />
             </button>
@@ -479,7 +479,7 @@ export default function CoachDashboardNew() {
                   onClick={() => toggleMetric(key)}
                   className={`px-2 py-1 text-xs rounded flex items-center gap-1 transition-colors ${
                     visibleMetrics[key]
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-blue-600 text-white preserve-white'
                       : 'bg-slate-700 text-slate-400'
                   }`}
                 >
@@ -581,7 +581,7 @@ export default function CoachDashboardNew() {
               onClick={() => setActiveTab(tab)}
               className={`px-2 py-1 text-[10px] sm:text-xs rounded whitespace-nowrap transition-colors flex-shrink-0 ${
                 activeTab === tab
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-blue-600 text-white preserve-white'
                   : 'text-slate-400 hover:bg-slate-800'
               }`}
             >
@@ -991,7 +991,7 @@ export default function CoachDashboardNew() {
                       alert('Errore durante aggiornamento profilo');
                     }
                   }}
-                  className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                  className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm preserve-white"
                 >
                   Salva
                 </button>

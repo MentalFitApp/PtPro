@@ -6,6 +6,7 @@ import { getTenantSubcollection } from '../../config/tenant';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, DollarSign, History } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { SkeletonList } from '../../components/ui/SkeletonLoader';
 
 const LoadingSpinner = () => (
   <div className="min-h-screen flex justify-center items-center relative">

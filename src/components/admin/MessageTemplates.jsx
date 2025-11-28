@@ -298,7 +298,7 @@ export default function MessageTemplates({
             disabled={!formData.name || !formData.body}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg transition-all font-medium"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white preserve-white rounded-lg transition-all font-medium"
           >
             <Save size={18} />
             Salva Template
@@ -308,7 +308,7 @@ export default function MessageTemplates({
               setShowEditor(false);
               setEditingTemplate(null);
             }}
-            className="px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all"
+            className="px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white preserve-white rounded-lg transition-all"
           >
             Annulla
           </button>
@@ -328,7 +328,7 @@ export default function MessageTemplates({
             onClick={() => setSelectedCategory(cat.id)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
               selectedCategory === cat.id
-                ? 'bg-blue-600 text-white'
+                ? 'bg-blue-600 text-white preserve-white'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
@@ -436,7 +436,7 @@ export default function MessageTemplates({
             onClick={() => setShowEditor(true)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all font-medium"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white preserve-white rounded-lg transition-all font-medium"
           >
             <Plus size={18} />
             Nuovo Template

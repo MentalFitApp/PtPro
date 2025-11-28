@@ -60,8 +60,8 @@ export default function GlobalCustomize({
         onClick={() => onOpenChange?.(!isOpen)}
         className={`fixed top-24 right-4 sm:right-6 z-50 flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-medium shadow-2xl transition-all text-sm sm:text-base ${
           isOpen 
-            ? 'bg-rose-600 text-white border-2 border-rose-400' 
-            : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white border border-cyan-400/30 hover:from-cyan-500 hover:to-blue-500'
+            ? 'bg-rose-600 text-white preserve-white border-2 border-rose-400' 
+            : 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white preserve-white border border-cyan-400/30 hover:from-cyan-500 hover:to-blue-500'
         }`}
       >
         {isOpen ? (
@@ -127,7 +127,7 @@ export default function GlobalCustomize({
                       onClick={() => setActivePanel(tab.id)}
                       className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                         activePanel === tab.id
-                          ? 'bg-white/20 text-white border border-white/30'
+                          ? 'bg-white/20 text-white preserve-white border border-white/30'
                           : 'text-slate-300 hover:bg-white/10'
                       }`}
                     >

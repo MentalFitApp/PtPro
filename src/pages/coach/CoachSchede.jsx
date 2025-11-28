@@ -65,9 +65,9 @@ export default function CoachSchede() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        <button onClick={()=>toggleSort('name')} className={`px-3 py-1.5 text-xs rounded-lg flex items-center gap-1 ${sortField==='name'?'bg-rose-600 text-white':'text-slate-400 hover:bg-white/10'}`}>Nome {getIcon('name')}</button>
-        <button onClick={()=>toggleSort('email')} className={`px-3 py-1.5 text-xs rounded-lg flex items-center gap-1 ${sortField==='email'?'bg-rose-600 text-white':'text-slate-400 hover:bg-white/10'}`}>Email {getIcon('email')}</button>
-      </div>
+            <button onClick={()=>toggleSort('name')} className={`px-3 py-1.5 text-xs rounded-lg flex items-center gap-1 ${sortField==='name'?'bg-rose-600 text-white preserve-white':'text-slate-400 hover:bg-white/10'}`}>Nome {getIcon('name')}</button>
+            <button onClick={()=>toggleSort('email')} className={`px-3 py-1.5 text-xs rounded-lg flex items-center gap-1 ${sortField==='email'?'bg-rose-600 text-white preserve-white':'text-slate-400 hover:bg-white/10'}`}>Email {getIcon('email')}</button>
+          </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map(c => {
@@ -81,10 +81,10 @@ export default function CoachSchede() {
                 {anamnesiStatus[c.id] ? <span className="px-2 py-1 text-[10px] rounded-full bg-emerald-900/40 text-emerald-300 border border-emerald-600/40">Anamnesi</span> : <span className="px-2 py-1 text-[10px] rounded-full bg-slate-700 text-slate-300 border border-slate-600">No Anamnesi</span>}
               </div>
               <div className="flex gap-2 mt-auto">
-                <button onClick={()=>navigate(`/scheda-alimentazione/${c.id}`)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs rounded-lg">
+                <button onClick={()=>navigate(`/scheda-alimentazione/${c.id}`)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs rounded-lg preserve-white">
                   <FileText size={14}/> Alimentazione
                 </button>
-                <button onClick={()=>navigate(`/scheda-allenamento/${c.id}`)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded-lg">
+                <button onClick={()=>navigate(`/scheda-allenamento/${c.id}`)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded-lg preserve-white">
                   <Dumbbell size={14}/> Allenamento
                 </button>
               </div>

@@ -199,7 +199,7 @@ export default function DashboardWidgets({ data, storageKey = 'admin_dashboard_l
             whileTap={{ scale: 0.95 }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
               isCustomizing 
-                ? 'bg-blue-600 text-white' 
+                ? 'bg-blue-600 text-white preserve-white' 
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
             }`}
           >

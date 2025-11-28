@@ -256,10 +256,10 @@ export default function CoachClients() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
                 <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 pl-10 w-48 outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-200" placeholder="Cerca..."/>
               </div>
-              <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm font-medium rounded-lg shadow-lg shadow-blue-500/20"><LogOut size={16}/> Logout</button>
+              <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm font-medium rounded-lg shadow-lg shadow-blue-500/20 preserve-white"><LogOut size={16}/> Logout</button>
               <div className="flex gap-1 bg-slate-700/50 border border-slate-600 rounded-lg p-1">
-                <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}><List size={16}/></button>
-                <button onClick={() => setViewMode('card')} className={`p-2 rounded-md ${viewMode === 'card' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}><LayoutGrid size={16}/></button>
+                <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-blue-600 text-white preserve-white' : 'text-slate-400'}`}><List size={16}/></button>
+                <button onClick={() => setViewMode('card')} className={`p-2 rounded-md ${viewMode === 'card' ? 'bg-blue-600 text-white preserve-white' : 'text-slate-400'}`}><LayoutGrid size={16}/></button>
               </div>
             </div>
           </div>
@@ -269,30 +269,30 @@ export default function CoachClients() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
         <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-3 mb-4">
           <div className="flex flex-wrap gap-2 items-center">
-            <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm rounded-lg ${filter === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Tutti</button>
-            <button onClick={() => setFilter('active')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'active' ? 'bg-emerald-600 text-white' : 'text-emerald-400 hover:bg-emerald-900/30'}`}><CheckCircle size={14}/> Attivi</button>
-            <button onClick={() => setFilter('expiring')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'expiring' ? 'bg-amber-600 text-white' : 'text-amber-400 hover:bg-amber-900/30'}`}><Clock size={14}/> In Scadenza</button>
-            <button onClick={() => setFilter('expired')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'expired' ? 'bg-red-600 text-white' : 'text-red-400 hover:bg-red-900/30'}`}><AlertCircle size={14}/> Scaduti</button>
-            <button onClick={() => setFilter('has-check')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'has-check' ? 'bg-cyan-600 text-white' : 'text-cyan-400 hover:bg-cyan-900/30'}`}><CheckCircle size={14}/> Con Anamnesi</button>
-            <button onClick={() => setFilter('no-check')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'no-check' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:bg-gray-900/30'}`}><XCircle size={14}/> Senza Anamnesi</button>
+            <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm rounded-lg ${filter === 'all' ? 'bg-blue-600 text-white preserve-white' : 'text-slate-400 hover:bg-white/10'}`}>Tutti</button>
+            <button onClick={() => setFilter('active')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'active' ? 'bg-emerald-600 text-white preserve-white' : 'text-emerald-400 hover:bg-emerald-900/30'}`}><CheckCircle size={14}/> Attivi</button>
+            <button onClick={() => setFilter('expiring')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'expiring' ? 'bg-amber-600 text-white preserve-white' : 'text-amber-400 hover:bg-amber-900/30'}`}><Clock size={14}/> In Scadenza</button>
+            <button onClick={() => setFilter('expired')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'expired' ? 'bg-red-600 text-white preserve-white' : 'text-red-400 hover:bg-red-900/30'}`}><AlertCircle size={14}/> Scaduti</button>
+            <button onClick={() => setFilter('has-check')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'has-check' ? 'bg-cyan-600 text-white preserve-white' : 'text-cyan-400 hover:bg-cyan-900/30'}`}><CheckCircle size={14}/> Con Anamnesi</button>
+            <button onClick={() => setFilter('no-check')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'no-check' ? 'bg-gray-600 text-white preserve-white' : 'text-gray-400 hover:bg-gray-900/30'}`}><XCircle size={14}/> Senza Anamnesi</button>
             <div className="ml-auto flex gap-2">
-              <button onClick={() => setShowCalendar(prev => !prev)} className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg ${showCalendar ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}>
+                  <button onClick={() => setShowCalendar(prev => !prev)} className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg ${showCalendar ? 'bg-blue-600 text-white preserve-white' : 'bg-slate-700 text-slate-300'}`}>
                 <Calendar size={14}/> Calendario
               </button>
               {showCalendar && (
                 <div className="flex gap-1 bg-slate-700/50 rounded-lg p-0.5">
-                  <button onClick={() => setCalendarType('iscrizioni')} className={`px-2 py-1 text-xs rounded ${calendarType === 'iscrizioni' ? 'bg-blue-600 text-white' : 'text-slate-300'}`}>Iscrizioni</button>
-                  <button onClick={() => setCalendarType('scadenze')} className={`px-2 py-1 text-xs rounded ${calendarType === 'scadenze' ? 'bg-amber-600 text-white' : 'text-slate-300'}`}>Scadenze</button>
+                  <button onClick={() => setCalendarType('iscrizioni')} className={`px-2 py-1 text-xs rounded ${calendarType === 'iscrizioni' ? 'bg-blue-600 text-white preserve-white' : 'text-slate-300'}`}>Iscrizioni</button>
+                  <button onClick={() => setCalendarType('scadenze')} className={`px-2 py-1 text-xs rounded ${calendarType === 'scadenze' ? 'bg-amber-600 text-white preserve-white' : 'text-slate-300'}`}>Scadenze</button>
                 </div>
               )}
             </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 mb-6">
-          <button onClick={() => toggleSort('name')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'name' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Nome {getSortIcon('name')}</button>
-          <button onClick={() => toggleSort('startDate')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'startDate' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Inizio {getSortIcon('startDate')}</button>
-          <button onClick={() => toggleSort('expiry')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'expiry' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Scadenza {getSortIcon('expiry')}</button>
-          <button onClick={() => toggleSort('lastCheck')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'lastCheck' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}>Anamnesi {getSortIcon('lastCheck')}</button>
+          <button onClick={() => toggleSort('name')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'name' ? 'bg-blue-600 text-white preserve-white' : 'text-slate-400 hover:bg-white/10'}`}>Nome {getSortIcon('name')}</button>
+            <button onClick={() => toggleSort('startDate')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'startDate' ? 'bg-blue-600 text-white preserve-white' : 'text-slate-400 hover:bg-white/10'}`}>Inizio {getSortIcon('startDate')}</button>
+            <button onClick={() => toggleSort('expiry')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'expiry' ? 'bg-blue-600 text-white preserve-white' : 'text-slate-400 hover:bg-white/10'}`}>Scadenza {getSortIcon('expiry')}</button>
+            <button onClick={() => toggleSort('lastCheck')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${sortField === 'lastCheck' ? 'bg-blue-600 text-white preserve-white' : 'text-slate-400 hover:bg-white/10'}`}>Anamnesi {getSortIcon('lastCheck')}</button>
         </div>
       </div>
 
@@ -488,7 +488,7 @@ export default function CoachClients() {
                 <button onClick={() => setClientToDelete(null)} className="px-6 py-2 text-sm font-semibold text-slate-300 bg-slate-700/50 hover:bg-slate-700/70 rounded-lg transition-colors border border-slate-600">
                   Annulla
                 </button>
-                <button onClick={handleDelete} className="px-6 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors">
+                <button onClick={handleDelete} className="px-6 py-2 text-sm font-semibold text-white preserve-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors">
                   Elimina
                 </button>
               </div>

@@ -82,7 +82,7 @@ const ForgotPassword = () => {
                             <button 
                                 type="submit" 
                                 disabled={loading}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors disabled:bg-cyan-900 disabled:cursor-not-allowed"
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3 font-bold text-white preserve-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors disabled:bg-cyan-900 disabled:cursor-not-allowed"
                             >
                                 <Send size={18} />
                                 {loading ? 'Invio in corso...' : 'Invia Link di Recupero'}

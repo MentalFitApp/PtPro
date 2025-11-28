@@ -45,10 +45,70 @@ const ListaAlimenti = ({ onBack }) => {
     if (!selectedCategory) return;
     setLoading(true);
     try {
+      // Carica alimenti tenant-specific
       const foodsRef = getTenantSubcollection(db, 'alimenti', selectedCategory, 'items');
       const snapshot = await getDocs(foodsRef);
-      const foodsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setFoods(foodsData);
+      const tenantFoods = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data(),
+        source: 'tenant' 
+      }));
+
+      // Carica alimenti globali dalla collezione platform_foods
+      const globalFoodsRef = collection(db, 'platform_foods');
+      const globalSnapshot = await getDocs(globalFoodsRef);
+      const globalFoods = globalSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          nome: doc.data().name,
+          kcal: doc.data().calories,
+          proteine: doc.data().protein,
+          carboidrati: doc.data().carbs,
+          grassi: doc.data().fat,
+          category: doc.data().category,
+          categoryName: doc.data().categoryName,
+          source: 'global'
+        }))
+        .filter(food => {
+          // Mappa le categorie globali a quelle locali (14 categorie globali → 18 categorie locali)
+          const categoryMap = {
+            'carni-bianche': ['Carne', 'Secondi'],
+            'carni-rosse': ['Carne', 'Secondi'],
+            'pesce': ['Pesce', 'Secondi'],
+            'frutti-mare': ['Pesce', 'Secondi'],
+            'salumi': ['Salumi', 'Antipasti'],
+            'uova-latticini': ['Latte', 'Formaggi', 'Uova'],
+            'cereali-pasta': ['Pasta', 'Pane', 'Primi'],
+            'legumi': ['Primi', 'Secondi'],
+            'frutta-fresca': ['Frutta'],
+            'frutta-secca': ['Frutta'],
+            'verdure': ['Verdura', 'Antipasti'],
+            'patate-tuberi': ['Verdura', 'Primi'],
+            'grassi-condimenti': ['Condimenti'],
+            'integratori-snack': ['Integratori'],
+            'antipasti': ['Antipasti'],
+            'primi': ['Primi'],
+            'dolci': ['Dolci'],
+            'pizze': ['Pizze', 'Primi'],
+            'bevande': ['Bevande'],
+            'condimenti': ['Condimenti'],
+            'formaggi': ['Formaggi'],
+            'latte': ['Latte'],
+            'pane': ['Pane', 'Primi'],
+            'uova': ['Uova', 'Secondi']
+          };
+
+          // Trova le categorie locali corrispondenti
+          const mappedCategories = categoryMap[food.category] || [];
+          return mappedCategories.includes(selectedCategory);
+        });
+
+      // Combina gli alimenti tenant e globali
+      const allFoods = [...tenantFoods, ...globalFoods].sort((a, b) => 
+        a.nome.localeCompare(b.nome)
+      );
+      
+      setFoods(allFoods);
     } catch (error) {
       console.error('Errore nel caricamento degli alimenti:', error);
     }
@@ -171,6 +231,24 @@ const ListaAlimenti = ({ onBack }) => {
           <h2 className="text-2xl font-bold text-slate-100">{selectedCategory}</h2>
         </div>
 
+        {/* Stats */}
+        {foods.length > 0 && (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+              <div className="text-xs text-slate-400">Totali</div>
+              <div className="text-xl font-bold text-slate-200">{foods.length}</div>
+            </div>
+            <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-3">
+              <div className="text-xs text-blue-300">Globali</div>
+              <div className="text-xl font-bold text-blue-400">{foods.filter(f => f.source === 'global').length}</div>
+            </div>
+            <div className="bg-emerald-900/20 border border-emerald-600/30 rounded-lg p-3">
+              <div className="text-xs text-emerald-300">Tuoi</div>
+              <div className="text-xl font-bold text-emerald-400">{foods.filter(f => f.source === 'tenant').length}</div>
+            </div>
+          </div>
+        )}
+
         {/* Search and Add */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
@@ -185,7 +263,7 @@ const ListaAlimenti = ({ onBack }) => {
           </div>
           <button
             onClick={() => setIsAddingFood(true)}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white preserve-white rounded-lg transition-colors flex items-center gap-2"
           >
             <Plus size={18} />
             Aggiungi Alimento
@@ -324,26 +402,43 @@ const ListaAlimenti = ({ onBack }) => {
                 </thead>
                 <tbody className="divide-y divide-slate-700">
                   {filteredFoods.map((food) => (
-                    <tr key={food.id} className="hover:bg-slate-800/50 transition-colors">
-                      <td className="px-4 py-3 text-slate-200">{food.nome}</td>
+                    <tr key={food.id} className={`hover:bg-slate-800/50 transition-colors ${food.source === 'global' ? 'bg-blue-900/5' : ''}`}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-200">{food.nome}</span>
+                          {food.source === 'global' && (
+                            <span className="px-2 py-0.5 bg-blue-600/20 border border-blue-500/30 text-blue-300 text-xs rounded">
+                              Globale
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-slate-300">{food.kcal}</td>
                       <td className="px-4 py-3 text-slate-300">{food.proteine}g</td>
                       <td className="px-4 py-3 text-slate-300">{food.carboidrati}g</td>
                       <td className="px-4 py-3 text-slate-300">{food.grassi}g</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => startEdit(food)}
-                            className="p-2 text-blue-400 hover:bg-blue-600/20 rounded-lg transition-colors"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteFood(food.id)}
-                            className="p-2 text-red-400 hover:bg-red-600/20 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {food.source === 'tenant' ? (
+                            <>
+                              <button
+                                onClick={() => startEdit(food)}
+                                className="p-2 text-blue-400 hover:bg-blue-600/20 rounded-lg transition-colors"
+                                title="Modifica"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteFood(food.id)}
+                                className="p-2 text-red-400 hover:bg-red-600/20 rounded-lg transition-colors"
+                                title="Elimina"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-xs text-slate-500 italic">Solo lettura</span>
+                          )}
                         </div>
                       </td>
                     </tr>

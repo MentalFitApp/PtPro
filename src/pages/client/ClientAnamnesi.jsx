@@ -362,7 +362,7 @@ const ClientAnamnesi = () => {
               <motion.button
                 type="submit"
                 disabled={isSubmitting || loading}
-                className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-semibold disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white preserve-white rounded-lg font-semibold disabled:opacity-50"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -372,7 +372,7 @@ const ClientAnamnesi = () => {
                 type="button"
                 onClick={handleCancel}
                 disabled={isSubmitting || loading}
-                className="flex items-center gap-2 px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 text-white rounded-lg font-semibold border border-slate-600"
+                className="flex items-center gap-2 px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 text-white preserve-white rounded-lg font-semibold border border-slate-600"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >

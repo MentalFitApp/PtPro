@@ -77,7 +77,7 @@ export default function CelebrationTest() {
               <button
                 key={index}
                 onClick={() => celebrate(celebration)}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white p-6 rounded-xl text-left transition-all hover:scale-105 shadow-lg"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white p-6 rounded-xl text-left transition-all hover:scale-105 shadow-lg preserve-white"
               >
                 <div className="flex items-start gap-3">
                   <div className="text-4xl">{celebration.emoji}</div>
@@ -112,7 +112,7 @@ export default function CelebrationTest() {
                 message: 'Ottimo lavoro oggi!',
                 emoji: '🎯',
               })}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-lg transition-colors"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-lg transition-colors preserve-white"
             >
               <Target className="mx-auto mb-2" size={24} />
               <span className="text-sm font-medium">Workout</span>
@@ -125,7 +125,7 @@ export default function CelebrationTest() {
                 message: 'Mantieni la catena!',
                 emoji: '🔥',
               })}
-              className="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg transition-colors"
+                className="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg transition-colors preserve-white"
             >
               <Flame className="mx-auto mb-2" size={24} />
               <span className="text-sm font-medium">Streak</span>
@@ -138,7 +138,7 @@ export default function CelebrationTest() {
                 message: 'Traguardo raggiunto!',
                 emoji: '🏆',
               })}
-              className="bg-yellow-600 hover:bg-yellow-700 text-white p-4 rounded-lg transition-colors"
+                className="bg-yellow-600 hover:bg-yellow-700 text-white p-4 rounded-lg transition-colors preserve-white"
             >
               <Trophy className="mx-auto mb-2" size={24} />
               <span className="text-sm font-medium">Milestone</span>
@@ -151,7 +151,7 @@ export default function CelebrationTest() {
                 message: 'Badge sbloccato!',
                 emoji: '⭐',
               })}
-              className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg transition-colors"
+                className="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg transition-colors preserve-white"
             >
               <Star className="mx-auto mb-2" size={24} />
               <span className="text-sm font-medium">Achievement</span>

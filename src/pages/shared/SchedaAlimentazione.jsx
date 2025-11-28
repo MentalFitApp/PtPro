@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Copy, RotateCcw, X, Download, Upload, History, FileText } from 'lucide-react';
+import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Copy, RotateCcw, X, Download, Upload, History, FileText, Sparkles } from 'lucide-react';
 import { db } from '../../firebase';
 import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore';
 import { exportNutritionCardToPDF } from '../../utils/pdfExport';
+import AINutritionAssistant from '../../components/AINutritionAssistant';
+import { saveFeedback, saveDoNotShowPreference, shouldShowFeedbackPopup } from '../../services/aiFeedbackService';
+import { auth } from '../../firebase';
 
 const OBIETTIVI = ['Definizione', 'Massa', 'Mantenimento', 'Dimagrimento', 'Sportivo'];
 const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
@@ -17,6 +20,8 @@ const SchedaAlimentazione = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [clientName, setClientName] = useState('');
+  const [clientData, setClientData] = useState(null);
+  const [anamnesisData, setAnamnesisData] = useState(null);
   
   const [schedaData, setSchedaData] = useState({
     obiettivo: '',
@@ -50,6 +55,18 @@ const SchedaAlimentazione = () => {
   // History functionality
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [cardHistory, setCardHistory] = useState([]);
+  
+  // AI Feedback tracking
+  const [appliedSuggestions, setAppliedSuggestions] = useState([]);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  
+  // Duplicate day modal
+  const [showDuplicateDayModal, setShowDuplicateDayModal] = useState(false);
+  const [selectedDaysForDuplication, setSelectedDaysForDuplication] = useState([]);
+  
+  // Edit mode (view vs edit)
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [schedaExists, setSchedaExists] = useState(false);
 
   useEffect(() => {
     loadClientAndScheda();
@@ -62,7 +79,20 @@ const SchedaAlimentazione = () => {
       const clientSnap = await getDoc(clientRef);
       
       if (clientSnap.exists()) {
-        setClientName(clientSnap.data().name || 'N/D');
+        const client = clientSnap.data();
+        setClientName(client.name || 'N/D');
+        setClientData(client);
+        console.log('✅ Client data loaded:', client);
+        
+        // Load anamnesis
+        const anamnesisRef = getTenantDoc(db, 'anamnesis', clientId);
+        const anamnesisSnap = await getDoc(anamnesisRef);
+        if (anamnesisSnap.exists()) {
+          setAnamnesisData(anamnesisSnap.data());
+          console.log('✅ Anamnesis data loaded:', anamnesisSnap.data());
+        } else {
+          console.log('⚠️ Nessuna anamnesi trovata per questo cliente');
+        }
         
         // Load scheda alimentazione if exists
         const schedaRef = getTenantDoc(db, 'schede_alimentazione', clientId);
@@ -70,6 +100,10 @@ const SchedaAlimentazione = () => {
         
         if (schedaSnap.exists()) {
           setSchedaData(schedaSnap.data());
+          setSchedaExists(true);
+          setIsEditMode(false); // Modalità visualizzazione per schede esistenti
+        } else {
+          setIsEditMode(true); // Modalità modifica per nuove schede
         }
       }
     } catch (error) {
@@ -91,18 +125,39 @@ const SchedaAlimentazione = () => {
       // Save to history
       await saveToHistory();
 
-      // Update client with expiry date
+      // Update client with expiry date and mark as delivered
       if (schedaData.durataSettimane) {
         const clientRef = getTenantDoc(db, 'clients', clientId);
         const scadenza = new Date();
         scadenza.setDate(scadenza.getDate() + (parseInt(schedaData.durataSettimane) * 7));
         
         await updateDoc(clientRef, {
-          'schedaAlimentazione.scadenza': scadenza
+          'schedaAlimentazione.scadenza': scadenza,
+          'schedaAlimentazione.consegnata': true,
+          'schedaAlimentazione.dataConsegna': new Date()
+        });
+      } else {
+        // Anche senza durata, marca come consegnata
+        const clientRef = getTenantDoc(db, 'clients', clientId);
+        await updateDoc(clientRef, {
+          'schedaAlimentazione.consegnata': true,
+          'schedaAlimentazione.dataConsegna': new Date()
         });
       }
 
       alert('Scheda salvata con successo!');
+      
+      // Passa in modalità visualizzazione dopo il salvataggio
+      setSchedaExists(true);
+      setIsEditMode(false);
+      
+      // Mostra modal feedback se ci sono suggerimenti applicati E l'utente non ha disabilitato
+      if (appliedSuggestions.length > 0 && auth.currentUser) {
+        const shouldShow = await shouldShowFeedbackPopup(auth.currentUser.uid);
+        if (shouldShow) {
+          setShowFeedbackModal(true);
+        }
+      }
     } catch (error) {
       console.error('Errore salvataggio:', error);
       alert('Errore nel salvataggio della scheda');
@@ -116,6 +171,173 @@ const SchedaAlimentazione = () => {
       newData.giorni[selectedDay].pasti[pastoIndex].alimenti.push(alimento);
       return newData;
     });
+  };
+
+  const handleApplyCompleteSchedule = (aiResult) => {
+    if (!aiResult.schedaCompleta) {
+      alert('Errore: nessuna scheda generata dall\'AI');
+      return;
+    }
+
+    console.log('📋 Applico scheda completa AI:', aiResult);
+
+    // Applica la scheda completa di 7 giorni
+    setSchedaData(prev => ({
+      ...prev,
+      giorni: aiResult.schedaCompleta,
+      note: prev.note 
+        ? `${prev.note}\n\n🤖 AI Generated: ${aiResult.note || 'Scheda ottimizzata per obiettivo'}` 
+        : `🤖 AI Generated: ${aiResult.note || 'Scheda ottimizzata per obiettivo'}`
+    }));
+
+    // Cambia al primo giorno per vedere i risultati
+    setSelectedDay('Lunedì');
+    
+    alert(`✅ Scheda completa di 7 giorni generata!\n\n📊 Macros giornalieri:\n• Calorie: ${aiResult.macrosTotaliGiornalieri?.calorie || 'N/D'}\n• Proteine: ${aiResult.macrosTotaliGiornalieri?.proteine || 'N/D'}g\n• Carboidrati: ${aiResult.macrosTotaliGiornalieri?.carboidrati || 'N/D'}g\n• Grassi: ${aiResult.macrosTotaliGiornalieri?.grassi || 'N/D'}g\n\nRicordati di salvare la scheda!`);
+  };
+
+  const handleApplyAISuggestion = (suggestion) => {
+    if (!suggestion.azione) {
+      alert('Nessuna azione specificata in questo suggerimento');
+      return;
+    }
+    
+    const { tipo, dati } = suggestion.azione;
+    console.log('🤖 Applico suggerimento AI:', tipo, dati);
+    
+    // Trova l'indice del pasto target
+    const findPastoIndex = (pastoNome) => {
+      const pasti = schedaData.giorni[selectedDay].pasti;
+      return pasti.findIndex(p => p.nome.toLowerCase().includes(pastoNome.toLowerCase()));
+    };
+    
+    switch (tipo) {
+      case 'add_food': {
+        // Aggiungi alimento a un pasto specifico
+        const pastoIndex = dati.pastoNome ? findPastoIndex(dati.pastoNome) : 0;
+        if (pastoIndex === -1) {
+          alert(`Pasto "${dati.pastoNome}" non trovato`);
+          return;
+        }
+        
+        if (dati.alimentoDaAggiungere) {
+          const nuovoAlimento = {
+            nome: dati.alimentoDaAggiungere.nome,
+            quantita: dati.alimentoDaAggiungere.quantita || 100,
+            kcal: dati.alimentoDaAggiungere.kcal || 0,
+            proteine: dati.alimentoDaAggiungere.proteine || 0,
+            carboidrati: dati.alimentoDaAggiungere.carboidrati || 0,
+            grassi: dati.alimentoDaAggiungere.grassi || 0,
+            fonte: 'AI'
+          };
+          
+          addAlimento(pastoIndex, nuovoAlimento);
+          
+          // Traccia suggerimento applicato
+          setAppliedSuggestions(prev => [...prev, {
+            ...suggestion,
+            appliedAt: new Date(),
+            tipo: 'add_food'
+          }]);
+          
+          alert(`✅ Alimento "${nuovoAlimento.nome}" aggiunto a ${schedaData.giorni[selectedDay].pasti[pastoIndex].nome}`);
+        }
+        break;
+      }
+      
+      case 'replace_food': {
+        // Sostituisci un alimento con un altro
+        const pastoIndex = dati.pastoNome ? findPastoIndex(dati.pastoNome) : -1;
+        if (pastoIndex === -1) {
+          alert(`Pasto "${dati.pastoNome}" non trovato`);
+          return;
+        }
+        
+        setSchedaData(prev => {
+          const newData = { ...prev };
+          const pasto = newData.giorni[selectedDay].pasti[pastoIndex];
+          
+          // Trova l'alimento da sostituire
+          const alimentoIndex = pasto.alimenti.findIndex(a => 
+            a.nome.toLowerCase().includes(dati.alimentoDaRimuovere?.toLowerCase())
+          );
+          
+          if (alimentoIndex !== -1) {
+            // Rimuovi vecchio alimento
+            pasto.alimenti.splice(alimentoIndex, 1);
+          }
+          
+          // Aggiungi nuovo alimento
+          if (dati.alimentoDaAggiungere) {
+            pasto.alimenti.push({
+              nome: dati.alimentoDaAggiungere.nome,
+              quantita: dati.alimentoDaAggiungere.quantita || 100,
+              kcal: dati.alimentoDaAggiungere.kcal || 0,
+              proteine: dati.alimentoDaAggiungere.proteine || 0,
+              carboidrati: dati.alimentoDaAggiungere.carboidrati || 0,
+              grassi: dati.alimentoDaAggiungere.grassi || 0,
+              fonte: 'AI'
+            });
+          }
+          
+          return newData;
+        });
+        
+        // Traccia suggerimento applicato
+        setAppliedSuggestions(prev => [...prev, {
+          ...suggestion,
+          appliedAt: new Date(),
+          tipo: 'replace_food'
+        }]);
+        
+        alert(`✅ Sostituito "${dati.alimentoDaRimuovere}" con "${dati.alimentoDaAggiungere?.nome}" nel ${dati.pastoNome}`);
+        break;
+      }
+      
+      case 'remove_food': {
+        // Rimuovi un alimento
+        const pastoIndex = dati.pastoNome ? findPastoIndex(dati.pastoNome) : -1;
+        if (pastoIndex === -1) {
+          alert(`Pasto "${dati.pastoNome}" non trovato`);
+          return;
+        }
+        
+        setSchedaData(prev => {
+          const newData = { ...prev };
+          const pasto = newData.giorni[selectedDay].pasti[pastoIndex];
+          const alimentoIndex = pasto.alimenti.findIndex(a => 
+            a.nome.toLowerCase().includes(dati.alimentoDaRimuovere?.toLowerCase())
+          );
+          
+          if (alimentoIndex !== -1) {
+            pasto.alimenti.splice(alimentoIndex, 1);
+            alert(`✅ Rimosso "${dati.alimentoDaRimuovere}" dal ${dati.pastoNome}`);
+          } else {
+            alert(`Alimento "${dati.alimentoDaRimuovere}" non trovato`);
+          }
+          
+          return newData;
+        });
+        break;
+      }
+      
+      case 'add_supplement': {
+        // Aggiungi integratore alla sezione integrazione
+        const integratore = dati.alimentoDaAggiungere?.nome || dati.integratore || suggestion.descrizione;
+        setSchedaData(prev => ({
+          ...prev,
+          integrazione: prev.integrazione 
+            ? `${prev.integrazione}\n\n• ${integratore}` 
+            : `• ${integratore}`
+        }));
+        alert(`✅ Integratore aggiunto: ${integratore}`);
+        break;
+      }
+        
+      default:
+        console.warn('Tipo di azione non riconosciuto:', tipo);
+        alert(`Azione "${tipo}" non supportata`);
+    }
   };
 
   const removeAlimento = (pastoIndex, alimentoIndex) => {
@@ -301,8 +523,9 @@ const SchedaAlimentazione = () => {
   // Card History
   const loadCardHistory = async () => {
     try {
-      const historyRef = collection(db, 'schede_alimentazione_storico', clientId, 'history');
-      const q = query(historyRef, orderBy('savedAt', 'desc'));
+      // Usa la struttura tenant per lo storico
+      const historyCollectionRef = getTenantSubcollection(db, 'schede_alimentazione', clientId, 'history');
+      const q = query(historyCollectionRef, orderBy('savedAt', 'desc'), limit(10));
       const snapshot = await getDocs(q);
       
       const history = [];
@@ -310,20 +533,25 @@ const SchedaAlimentazione = () => {
         history.push({ id: doc.id, ...doc.data() });
       });
       setCardHistory(history);
+      console.log(`✅ Caricati ${history.length} elementi dallo storico`);
     } catch (error) {
-      console.error('Errore caricamento storico:', error);
+      console.error('⚠️ Errore caricamento storico:', error);
+      // Non bloccante, lo storico è opzionale
     }
   };
 
   const saveToHistory = async () => {
     try {
-      const historyRef = collection(db, 'schede_alimentazione_storico', clientId, 'history');
-      await addDoc(historyRef, {
+      // Usa la struttura tenant per lo storico
+      const historyCollectionRef = getTenantSubcollection(db, 'schede_alimentazione', clientId, 'history');
+      await addDoc(historyCollectionRef, {
         ...schedaData,
         savedAt: new Date()
       });
+      console.log('✅ Scheda salvata nello storico');
     } catch (error) {
-      console.error('Errore salvataggio storico:', error);
+      console.error('⚠️ Errore salvataggio storico (non bloccante):', error);
+      // Non bloccare il salvataggio principale se lo storico fallisce
     }
   };
 
@@ -360,60 +588,77 @@ const SchedaAlimentazione = () => {
               <ArrowLeft size={20} />
               Torna indietro
             </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 text-white rounded-lg transition-colors"
-            >
-              <Save size={18} />
-              {saving ? 'Salvataggio...' : 'Salva Scheda'}
-            </button>
+            <div className="flex items-center gap-3">
+              {schedaExists && !isEditMode && (
+                <button
+                  onClick={() => setIsEditMode(true)}
+                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white preserve-white rounded-lg transition-colors"
+                >
+                  <Sparkles size={18} />
+                  Modifica Scheda
+                </button>
+              )}
+              {isEditMode && (
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 text-white preserve-white rounded-lg transition-colors"
+                >
+                  <Save size={18} />
+                  {saving ? 'Salvataggio...' : 'Salva Scheda'}
+                </button>
+              )}
+            </div>
           </div>
           
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2">
             <button
               onClick={handleExportPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white preserve-white text-sm rounded-lg transition-colors"
             >
               <Download size={16} />
               Scarica PDF
             </button>
-            <button
-              onClick={() => {
-                setShowSavePresetModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
-            >
-              <FileText size={16} />
-              Salva come Preset
-            </button>
-            <button
-              onClick={() => {
-                loadPresets();
-                setShowImportPresetModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
-            >
-              <Upload size={16} />
-              Importa Preset
-            </button>
-            <button
-              onClick={() => {
-                loadPreviousCard();
-                setShowCopyPreviousModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-lg transition-colors"
-            >
-              <Copy size={16} />
-              Copia Precedente
-            </button>
+            {isEditMode && (
+              <>
+                <button
+                  onClick={() => {
+                    setShowSavePresetModal(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white preserve-white text-sm rounded-lg transition-colors"
+                >
+                  <FileText size={16} />
+                  Salva come Preset
+                </button>
+                <button
+                  onClick={() => {
+                    loadPresets();
+                    setShowImportPresetModal(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white preserve-white text-sm rounded-lg transition-colors"
+                >
+                  <Upload size={16} />
+                  Importa Preset
+                </button>
+                <button
+                  onClick={() => {
+                    loadPreviousCard();
+                    setShowCopyPreviousModal(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white preserve-white text-sm rounded-lg transition-colors"
+                >
+                  <Copy size={16} />
+                  Copia Precedente
+                </button>
+              </>
+            )}
             <button
               onClick={() => {
                 loadCardHistory();
                 setShowHistoryModal(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white preserve-white text-sm rounded-lg transition-colors"
             >
               <History size={16} />
               Storico Schede
@@ -439,7 +684,8 @@ const SchedaAlimentazione = () => {
               <select
                 value={schedaData.obiettivo}
                 onChange={(e) => setSchedaData({ ...schedaData, obiettivo: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-emerald-500"
+                disabled={!isEditMode}
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <option value="">Seleziona obiettivo</option>
                 {OBIETTIVI.map(obj => (
@@ -456,7 +702,8 @@ const SchedaAlimentazione = () => {
                 type="number"
                 value={schedaData.durataSettimane}
                 onChange={(e) => setSchedaData({ ...schedaData, durataSettimane: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-emerald-500"
+                disabled={!isEditMode}
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed"
                 placeholder="Es. 12"
               />
             </div>
@@ -469,7 +716,8 @@ const SchedaAlimentazione = () => {
                 type="text"
                 value={schedaData.note}
                 onChange={(e) => setSchedaData({ ...schedaData, note: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-emerald-500"
+                disabled={!isEditMode}
+                className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed"
                 placeholder="Note generali..."
               />
             </div>
@@ -483,38 +731,39 @@ const SchedaAlimentazione = () => {
               <button
                 key={giorno}
                 onClick={() => setSelectedDay(giorno)}
+                disabled={!isEditMode}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
                   selectedDay === giorno
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-emerald-600 text-white preserve-white'
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
+                } disabled:opacity-60 disabled:cursor-not-allowed`}
               >
                 {giorno}
               </button>
             ))}
           </div>
           
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={() => {
-                const others = GIORNI_SETTIMANA.filter(d => d !== selectedDay);
-                if (confirm(`Duplicare ${selectedDay} su tutti gli altri giorni?`)) {
-                  duplicateDayToOthers(others);
-                }
-              }}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2"
-            >
-              <Copy size={16} />
-              Duplica su altri giorni
-            </button>
-            <button
-              onClick={resetDay}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2"
-            >
-              <RotateCcw size={16} />
-              Reset giorno
-            </button>
-          </div>
+          {isEditMode && (
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => {
+                  setSelectedDaysForDuplication([]);
+                  setShowDuplicateDayModal(true);
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white preserve-white rounded-lg transition-colors text-sm flex items-center gap-2"
+              >
+                <Copy size={16} />
+                Duplica su altri giorni
+              </button>
+              <button
+                onClick={resetDay}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white preserve-white rounded-lg transition-colors text-sm flex items-center gap-2"
+              >
+                <RotateCcw size={16} />
+                Reset giorno
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Meals for Selected Day */}
@@ -531,28 +780,30 @@ const SchedaAlimentazione = () => {
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-slate-100">{pasto.nome}</h3>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => movePastoUp(pastoIndex)}
-                      disabled={pastoIndex === 0}
-                      className="p-2 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <ChevronUp size={18} />
-                    </button>
-                    <button
-                      onClick={() => movePastoDown(pastoIndex)}
-                      disabled={pastoIndex === schedaData.giorni[selectedDay].pasti.length - 1}
-                      className="p-2 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <ChevronDown size={18} />
-                    </button>
-                    <button
-                      onClick={() => duplicatePasto(pastoIndex)}
-                      className="p-2 text-blue-400 hover:text-blue-300"
-                    >
-                      <Copy size={18} />
-                    </button>
-                  </div>
+                  {isEditMode && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => movePastoUp(pastoIndex)}
+                        disabled={pastoIndex === 0}
+                        className="p-2 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <ChevronUp size={18} />
+                      </button>
+                      <button
+                        onClick={() => movePastoDown(pastoIndex)}
+                        disabled={pastoIndex === schedaData.giorni[selectedDay].pasti.length - 1}
+                        className="p-2 text-slate-400 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <ChevronDown size={18} />
+                      </button>
+                      <button
+                        onClick={() => duplicatePasto(pastoIndex)}
+                        className="p-2 text-blue-400 hover:text-blue-300"
+                      >
+                        <Copy size={18} />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Alimenti List */}
@@ -576,18 +827,37 @@ const SchedaAlimentazione = () => {
                           return (
                             <tr key={alimentoIndex}>
                               <td className="px-3 py-2 text-slate-200">{alimento.nome}</td>
-                              <td className="px-3 py-2 text-slate-300">{alimento.quantita}g</td>
-                              <td className="px-3 py-2 text-slate-300">{((alimento.kcal || 0) * factor).toFixed(0)}</td>
-                              <td className="px-3 py-2 text-slate-300">{((alimento.proteine || 0) * factor).toFixed(1)}g</td>
-                              <td className="px-3 py-2 text-slate-300">{((alimento.carboidrati || 0) * factor).toFixed(1)}g</td>
-                              <td className="px-3 py-2 text-slate-300">{((alimento.grassi || 0) * factor).toFixed(1)}g</td>
                               <td className="px-3 py-2">
-                                <button
-                                  onClick={() => removeAlimento(pastoIndex, alimentoIndex)}
-                                  className="p-1 text-red-400 hover:text-red-300"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
+                                <input
+                                  type="number"
+                                  value={alimento.quantita}
+                                  onChange={(e) => {
+                                    const newQuantita = parseFloat(e.target.value) || 0;
+                                    setSchedaData(prev => {
+                                      // Deep clone per assicurare che React rilevi il cambiamento
+                                      const newData = JSON.parse(JSON.stringify(prev));
+                                      newData.giorni[selectedDay].pasti[pastoIndex].alimenti[alimentoIndex].quantita = newQuantita;
+                                      return newData;
+                                    });
+                                  }}
+                                  disabled={!isEditMode}
+                                  className="w-20 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:border-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                                />
+                                <span className="text-slate-400 text-xs ml-1">g</span>
+                              </td>
+                              <td className="px-3 py-2 text-emerald-400 font-medium">{((alimento.kcal || 0) * factor).toFixed(0)}</td>
+                              <td className="px-3 py-2 text-blue-400">{((alimento.proteine || 0) * factor).toFixed(1)}g</td>
+                              <td className="px-3 py-2 text-yellow-400">{((alimento.carboidrati || 0) * factor).toFixed(1)}g</td>
+                              <td className="px-3 py-2 text-orange-400">{((alimento.grassi || 0) * factor).toFixed(1)}g</td>
+                              <td className="px-3 py-2">
+                                {isEditMode && (
+                                  <button
+                                    onClick={() => removeAlimento(pastoIndex, alimentoIndex)}
+                                    className="p-1 text-red-400 hover:text-red-300"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           );
@@ -606,13 +876,15 @@ const SchedaAlimentazione = () => {
                   </div>
                 )}
 
-                <button
-                  onClick={() => setShowAddAlimento({ pastoIndex })}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2"
-                >
-                  <Plus size={16} />
-                  Aggiungi Alimento
-                </button>
+                {isEditMode && (
+                  <button
+                    onClick={() => setShowAddAlimento({ pastoIndex })}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm flex items-center gap-2"
+                  >
+                    <Plus size={16} />
+                    Aggiungi Alimento
+                  </button>
+                )}
 
                 {/* Add Alimento Form */}
                 <AnimatePresence>
@@ -660,12 +932,82 @@ const SchedaAlimentazione = () => {
 
         {/* Integrazione Section */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-slate-100 mb-4">Integrazione</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-100">Integrazione</h3>
+            {isEditMode && (
+              <button
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    const { generateSupplementSuggestions } = await import('../../services/aiNutritionAssistant');
+                    const suggestions = await generateSupplementSuggestions({
+                      clientData: { name: clientName, age: clientData?.age, gender: clientData?.gender, ...clientData },
+                      anamnesisData: anamnesisData || {},
+                      schedaData
+                    });
+                    
+                    // Formatta il protocollo in testo leggibile
+                    let protocolloText = `🤖 PROTOCOLLO AI INTEGRATORI\n\n`;
+                    
+                    // Integratori consigliati
+                    protocolloText += `📋 INTEGRATORI CONSIGLIATI:\n\n`;
+                    suggestions.integratori.forEach(int => {
+                      protocolloText += `✅ ${int.nome}\n`;
+                      protocolloText += `   Dosaggio: ${int.dosaggio}\n`;
+                      protocolloText += `   Timing: ${int.timing}\n`;
+                      protocolloText += `   Perché: ${int.motivazione}\n`;
+                      protocolloText += `   Priorità: ${int.priorita.toUpperCase()}\n\n`;
+                    });
+                    
+                    // Protocollo giornaliero
+                    if (suggestions.protocolloGiornaliero) {
+                      protocolloText += `⏰ PROTOCOLLO GIORNALIERO:\n\n`;
+                      Object.entries(suggestions.protocolloGiornaliero).forEach(([momento, integratori]) => {
+                        protocolloText += `${momento}:\n`;
+                        integratori.forEach(int => {
+                          protocolloText += `  • ${int}\n`;
+                        });
+                        protocolloText += `\n`;
+                      });
+                    }
+                    
+                    // Note e costo
+                    if (suggestions.note) {
+                      protocolloText += `📝 NOTE:\n${suggestions.note}\n\n`;
+                    }
+                    
+                    if (suggestions.costo_mensile_stimato) {
+                      protocolloText += `💰 Costo mensile stimato: ${suggestions.costo_mensile_stimato}\n`;
+                    }
+                    
+                    // Aggiungi al campo integrazione
+                    setSchedaData(prev => ({
+                      ...prev,
+                      integrazione: prev.integrazione 
+                        ? `${prev.integrazione}\n\n${protocolloText}` 
+                        : protocolloText
+                    }));
+                    
+                    setLoading(false);
+                  } catch (error) {
+                    console.error('Errore AI Integratori:', error);
+                    alert('Errore generazione consigli integratori: ' + error.message);
+                    setLoading(false);
+                  }
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm rounded-lg transition-all flex items-center gap-2"
+              >
+                <span>🤖</span>
+                AI Integratori
+              </button>
+            )}
+          </div>
           <textarea
             value={schedaData.integrazione}
             onChange={(e) => setSchedaData({ ...schedaData, integrazione: e.target.value })}
-            rows="5"
-            className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-emerald-500"
+            disabled={!isEditMode}
+            rows="8"
+            className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-emerald-500 font-mono text-sm disabled:opacity-60 disabled:cursor-not-allowed"
             placeholder="Tips sull'integrazione, consigli, note..."
           />
         </div>
@@ -872,6 +1214,351 @@ const SchedaAlimentazione = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* AI Feedback Modal */}
+        <AnimatePresence>
+          {showFeedbackModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-purple-500/30 rounded-2xl p-8 max-w-2xl w-full shadow-2xl"
+              >
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Sparkles className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-100 mb-2">
+                    Come ti sei trovato con i suggerimenti AI?
+                  </h3>
+                  <p className="text-slate-400">
+                    Il tuo feedback ci aiuta a migliorare i suggerimenti futuri
+                  </p>
+                </div>
+
+                <div className="bg-slate-700/30 rounded-xl p-4 mb-6">
+                  <p className="text-sm text-slate-300 mb-2">
+                    Hai applicato <span className="font-bold text-purple-400">{appliedSuggestions.length}</span> suggeriment{appliedSuggestions.length === 1 ? 'o' : 'i'}:
+                  </p>
+                  <ul className="space-y-1 text-sm text-slate-400">
+                    {appliedSuggestions.slice(0, 3).map((sugg, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-emerald-400 mt-0.5">•</span>
+                        <span>{sugg.titolo || sugg.tipo}</span>
+                      </li>
+                    ))}
+                    {appliedSuggestions.length > 3 && (
+                      <li className="text-slate-500">... e altri {appliedSuggestions.length - 3}</li>
+                    )}
+                  </ul>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 mb-4">
+                  <button
+                    onClick={async () => {
+                      // Salva tutti come positivi
+                      for (const sugg of appliedSuggestions) {
+                        await saveFeedback({
+                          suggestionType: sugg.tipo,
+                          suggestionTitle: sugg.titolo,
+                          suggestionData: sugg.azione?.dati,
+                          isPositive: true,
+                          clientId,
+                          obiettivo: schedaData.obiettivo,
+                          coachId: currentUser?.uid
+                        });
+                      }
+                      setAppliedSuggestions([]);
+                      setShowFeedbackModal(false);
+                      alert('✅ Grazie! I tuoi feedback aiuteranno a migliorare i suggerimenti futuri');
+                    }}
+                    className="px-6 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white preserve-white rounded-xl font-medium transition-all flex items-center justify-center gap-3 shadow-lg"
+                  >
+                    <span className="text-2xl">👍</span>
+                    <div className="text-left">
+                      <div className="font-bold">Molto utili!</div>
+                      <div className="text-xs opacity-90">I suggerimenti sono stati ottimi</div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      // Salva tutti come negativi
+                      for (const sugg of appliedSuggestions) {
+                        await saveFeedback({
+                          suggestionType: sugg.tipo,
+                          suggestionTitle: sugg.titolo,
+                          suggestionData: sugg.azione?.dati,
+                          isPositive: false,
+                          clientId,
+                          obiettivo: schedaData.obiettivo,
+                          coachId: currentUser?.uid
+                        });
+                      }
+                      setAppliedSuggestions([]);
+                      setShowFeedbackModal(false);
+                      alert('📝 Grazie per il feedback! Lavoreremo per migliorare');
+                    }}
+                    className="px-6 py-4 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl font-medium transition-all flex items-center justify-center gap-3"
+                  >
+                    <span className="text-2xl">👎</span>
+                    <div className="text-left">
+                      <div className="font-bold">Non molto utili</div>
+                      <div className="text-xs opacity-70">I suggerimenti non erano adatti</div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      // Salva preferenza "non mostrare più"
+                      for (const sugg of appliedSuggestions) {
+                        await saveDoNotShowPreference({
+                          suggestionType: sugg.tipo,
+                          obiettivo: schedaData.obiettivo,
+                          coachId: currentUser?.uid,
+                          reason: 'User requested not to show this type'
+                        });
+                      }
+                      setAppliedSuggestions([]);
+                      setShowFeedbackModal(false);
+                      alert('🚫 Questi tipi di suggerimenti non verranno più mostrati');
+                    }}
+                    className="px-6 py-4 bg-red-600/20 hover:bg-red-600/30 text-red-300 border border-red-500/30 rounded-xl font-medium transition-all flex items-center justify-center gap-3"
+                  >
+                    <X className="w-5 h-5" />
+                    <div className="text-left">
+                      <div className="font-bold">Non mostrare più</div>
+                      <div className="text-xs opacity-70">Questi suggerimenti non mi interessano</div>
+                    </div>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setAppliedSuggestions([]);
+                    setShowFeedbackModal(false);
+                  }}
+                  className="w-full px-4 py-2 text-slate-400 hover:text-slate-200 text-sm transition-colors"
+                >
+                  Salta
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* AI Nutrition Assistant */}
+        {isEditMode && clientData && (
+          <AINutritionAssistant
+            clientData={{
+              name: clientName,
+              id: clientId,
+              ...clientData
+            }}
+            anamnesisData={anamnesisData || {}}
+            schedaData={schedaData}
+            onApplySuggestion={handleApplyAISuggestion}
+            onApplyCompleteSchedule={handleApplyCompleteSchedule}
+            contextType="general"
+          />
+        )}
+
+        {/* Duplicate Day Selection Modal */}
+        <AnimatePresence>
+          {showDuplicateDayModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => setShowDuplicateDayModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full"
+              >
+                <h3 className="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+                  <Copy size={20} className="text-blue-400" />
+                  Duplica {selectedDay}
+                </h3>
+                
+                <p className="text-slate-300 text-sm mb-4">
+                  Seleziona i giorni in cui vuoi copiare la programmazione di {selectedDay}:
+                </p>
+
+                <div className="space-y-2 mb-6">
+                  {GIORNI_SETTIMANA.filter(d => d !== selectedDay).map(giorno => (
+                    <label
+                      key={giorno}
+                      className="flex items-center gap-3 p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedDaysForDuplication.includes(giorno)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedDaysForDuplication([...selectedDaysForDuplication, giorno]);
+                          } else {
+                            setSelectedDaysForDuplication(selectedDaysForDuplication.filter(d => d !== giorno));
+                          }
+                        }}
+                        className="w-4 h-4 accent-blue-500"
+                      />
+                      <span className="text-slate-200">{giorno}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      if (selectedDaysForDuplication.length === 0) {
+                        alert('Seleziona almeno un giorno!');
+                        return;
+                      }
+                      duplicateDayToOthers(selectedDaysForDuplication);
+                      setShowDuplicateDayModal(false);
+                      setSelectedDaysForDuplication([]);
+                    }}
+                    disabled={selectedDaysForDuplication.length === 0}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
+                  >
+                    Duplica ({selectedDaysForDuplication.length})
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDuplicateDayModal(false);
+                      setSelectedDaysForDuplication([]);
+                    }}
+                    className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+                  >
+                    Annulla
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* AI Feedback Modal */}
+        <AnimatePresence>
+          {showFeedbackModal && appliedSuggestions.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800 border border-purple-500/30 rounded-2xl p-8 max-w-md w-full shadow-2xl"
+              >
+                <div className="text-center space-y-6">
+                  {/* Header */}
+                  <div className="space-y-2">
+                    <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center mx-auto">
+                      <span className="text-3xl">🤖</span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white preserve-white">
+                      Come ti sei trovato con l'AI Assistant?
+                    </h3>
+                    <p className="text-slate-300 text-sm">
+                      Hai applicato {appliedSuggestions.length} suggeriment{appliedSuggestions.length > 1 ? 'i' : 'o'} AI
+                    </p>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="space-y-3">
+                    <button
+                      onClick={async () => {
+                        // Salva feedback positivo per tutti i suggerimenti applicati
+                        if (auth.currentUser) {
+                          for (const suggestion of appliedSuggestions) {
+                            await saveFeedback({
+                              userId: auth.currentUser.uid,
+                              suggestion,
+                              wasHelpful: true,
+                              context: {
+                                obiettivo: schedaData.obiettivo,
+                                clientAge: anamnesisData?.age,
+                                clientGender: anamnesisData?.sesso,
+                                clientWeight: anamnesisData?.peso,
+                                clientHeight: anamnesisData?.altezza,
+                                hasPhotos: !!(anamnesisData?.photos?.length || anamnesisData?.photoFront)
+                              }
+                            });
+                          }
+                        }
+                        setShowFeedbackModal(false);
+                        setAppliedSuggestions([]);
+                      }}
+                      className="w-full px-6 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white preserve-white rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+                    >
+                      <span className="text-xl">👍</span>
+                      Ottimi suggerimenti!
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        // Salva feedback negativo
+                        if (auth.currentUser) {
+                          for (const suggestion of appliedSuggestions) {
+                            await saveFeedback({
+                              userId: auth.currentUser.uid,
+                              suggestion,
+                              wasHelpful: false,
+                              context: {
+                                obiettivo: schedaData.obiettivo,
+                                clientAge: anamnesisData?.age,
+                                clientGender: anamnesisData?.sesso,
+                                clientWeight: anamnesisData?.peso,
+                                clientHeight: anamnesisData?.altezza,
+                                hasPhotos: !!(anamnesisData?.photos?.length || anamnesisData?.photoFront)
+                              }
+                            });
+                          }
+                        }
+                        setShowFeedbackModal(false);
+                        setAppliedSuggestions([]);
+                      }}
+                      className="w-full px-6 py-4 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                    >
+                      <span className="text-xl">👎</span>
+                      Non utili
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        // Salva preferenza "non mostrare più"
+                        if (auth.currentUser) {
+                          await saveDoNotShowPreference(auth.currentUser.uid);
+                        }
+                        setShowFeedbackModal(false);
+                        setAppliedSuggestions([]);
+                      }}
+                      className="w-full px-4 py-2 text-slate-400 hover:text-slate-200 text-sm transition-colors"
+                    >
+                      Non mostrare più questo messaggio
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -879,6 +1566,15 @@ const SchedaAlimentazione = () => {
 
 // Add Alimento Form Component
 const AddAlimentoForm = ({ onAdd, onCancel }) => {
+  const CATEGORIES = ['Antipasti', 'Primi', 'Secondi', 'Dolci', 'Pizze', 'Bevande', 'Carne', 'Condimenti', 'Formaggi', 'Frutta', 'Integratori', 'Latte', 'Pane', 'Pasta', 'Pesce', 'Salumi', 'Uova', 'Verdura'];
+  
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [categoryFoods, setCategoryFoods] = useState([]); // Alimenti della categoria selezionata
+  const [allFoods, setAllFoods] = useState([]); // Tutti gli alimenti per ricerca globale
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [loadingCategory, setLoadingCategory] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
     quantita: '',
@@ -887,6 +1583,161 @@ const AddAlimentoForm = ({ onAdd, onCancel }) => {
     carboidrati: '',
     grassi: ''
   });
+
+  // Carica tutti gli alimenti all'apertura del form (per ricerca globale)
+  useEffect(() => {
+    loadAllFoods();
+  }, []);
+
+  // Carica alimenti per categoria selezionata
+  useEffect(() => {
+    if (selectedCategory) {
+      loadFoodsForCategory(selectedCategory);
+    } else {
+      setCategoryFoods([]);
+    }
+  }, [selectedCategory]);
+
+  // Gestisci ricerca globale
+  useEffect(() => {
+    if (searchTerm.length >= 2) {
+      const filtered = allFoods.filter(food =>
+        food.nome.toLowerCase().includes(searchTerm.toLowerCase())
+      ).slice(0, 15);
+      setSearchResults(filtered);
+      setShowSearchResults(filtered.length > 0);
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+  }, [searchTerm, allFoods]);
+
+  const loadAllFoods = async () => {
+    try {
+      const foods = [];
+      
+      // Carica tutti gli alimenti tenant da tutte le categorie
+      for (const category of CATEGORIES) {
+        const tenantRef = getTenantSubcollection(db, 'alimenti', category, 'items');
+        const tenantSnap = await getDocs(tenantRef);
+        tenantSnap.docs.forEach(doc => {
+          foods.push({
+            id: doc.id,
+            nome: doc.data().nome,
+            kcal: doc.data().kcal,
+            proteine: doc.data().proteine,
+            carboidrati: doc.data().carboidrati,
+            grassi: doc.data().grassi,
+            category: category,
+            source: 'tenant'
+          });
+        });
+      }
+
+      // Carica tutti gli alimenti globali
+      const globalRef = collection(db, 'platform_foods');
+      const globalSnap = await getDocs(globalRef);
+      globalSnap.docs.forEach(doc => {
+        const data = doc.data();
+        foods.push({
+          id: doc.id,
+          nome: data.name,
+          kcal: data.calories,
+          proteine: data.protein,
+          carboidrati: data.carbs,
+          grassi: data.fat,
+          category: data.categoryName,
+          source: 'global'
+        });
+      });
+
+      setAllFoods(foods.sort((a, b) => a.nome.localeCompare(b.nome)));
+    } catch (error) {
+      console.error('Errore caricamento alimenti globali:', error);
+    }
+  };
+
+  const loadFoodsForCategory = async (category) => {
+    setLoadingCategory(true);
+    try {
+      const foods = [];
+      
+      // Carica alimenti tenant
+      const tenantRef = getTenantSubcollection(db, 'alimenti', category, 'items');
+      const tenantSnap = await getDocs(tenantRef);
+      tenantSnap.docs.forEach(doc => {
+        foods.push({
+          id: doc.id,
+          nome: doc.data().nome,
+          kcal: doc.data().kcal,
+          proteine: doc.data().proteine,
+          carboidrati: doc.data().carboidrati,
+          grassi: doc.data().grassi,
+          source: 'tenant'
+        });
+      });
+
+      // Carica alimenti globali
+      const globalRef = collection(db, 'platform_foods');
+      const globalSnap = await getDocs(globalRef);
+      
+      const categoryMap = {
+        'Antipasti': ['antipasti', 'salumi', 'verdure'],
+        'Primi': ['primi', 'cereali-pasta', 'legumi', 'pizze', 'pane', 'patate-tuberi'],
+        'Secondi': ['carni-bianche', 'carni-rosse', 'pesce', 'frutti-mare', 'legumi', 'uova'],
+        'Dolci': ['dolci'],
+        'Pizze': ['pizze'],
+        'Bevande': ['bevande'],
+        'Carne': ['carni-bianche', 'carni-rosse'],
+        'Condimenti': ['condimenti', 'grassi-condimenti'],
+        'Formaggi': ['formaggi', 'uova-latticini'],
+        'Frutta': ['frutta-fresca', 'frutta-secca'],
+        'Integratori': ['integratori-snack'],
+        'Latte': ['latte', 'uova-latticini'],
+        'Pane': ['pane', 'cereali-pasta'],
+        'Pasta': ['cereali-pasta'],
+        'Pesce': ['pesce', 'frutti-mare'],
+        'Salumi': ['salumi'],
+        'Uova': ['uova', 'uova-latticini'],
+        'Verdura': ['verdure', 'patate-tuberi']
+      };
+
+      const globalCategories = categoryMap[category] || [];
+      globalSnap.docs.forEach(doc => {
+        const data = doc.data();
+        if (globalCategories.includes(data.category)) {
+          foods.push({
+            id: doc.id,
+            nome: data.name,
+            kcal: data.calories,
+            proteine: data.protein,
+            carboidrati: data.carbs,
+            grassi: data.fat,
+            source: 'global'
+          });
+        }
+      });
+
+      setCategoryFoods(foods.sort((a, b) => a.nome.localeCompare(b.nome)));
+    } catch (error) {
+      console.error('Errore caricamento alimenti categoria:', error);
+    }
+    setLoadingCategory(false);
+  };
+
+  const selectFood = (food) => {
+    setFormData({
+      nome: food.nome,
+      quantita: '100',
+      kcal: food.kcal.toString(),
+      proteine: food.proteine.toString(),
+      carboidrati: food.carboidrati.toString(),
+      grassi: food.grassi.toString()
+    });
+    setSearchTerm(food.nome);
+    setShowSearchResults(false);
+    setSelectedCategory(''); // Reset categoria dopo selezione
+  };
 
   const handleSubmit = () => {
     if (!formData.nome || !formData.quantita) {
@@ -901,6 +1752,9 @@ const AddAlimentoForm = ({ onAdd, onCancel }) => {
       carboidrati: parseFloat(formData.carboidrati) || 0,
       grassi: parseFloat(formData.grassi) || 0
     });
+    setFormData({ nome: '', quantita: '', kcal: '', proteine: '', carboidrati: '', grassi: '' });
+    setSearchTerm('');
+    setSelectedCategory('');
   };
 
   return (
@@ -916,15 +1770,113 @@ const AddAlimentoForm = ({ onAdd, onCancel }) => {
           <X size={20} />
         </button>
       </div>
+
+      {/* Categoria Selector */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-slate-300 mb-2">
+          Categoria (opzionale)
+        </label>
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
+        >
+          <option value="">-- Seleziona una categoria --</option>
+          {CATEGORIES.map(cat => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Lista Alimenti della Categoria */}
+      {selectedCategory && (
+        <div className="mb-4 bg-slate-700/50 rounded-lg p-3 max-h-64 overflow-y-auto">
+          <div className="flex items-center justify-between mb-2">
+            <h5 className="text-sm font-semibold text-emerald-400">
+              Alimenti in {selectedCategory}
+            </h5>
+            <span className="text-xs text-slate-400">
+              {loadingCategory ? 'Caricamento...' : `${categoryFoods.length} alimenti`}
+            </span>
+          </div>
+          {loadingCategory ? (
+            <div className="text-center py-4 text-slate-400">Caricamento...</div>
+          ) : categoryFoods.length === 0 ? (
+            <div className="text-center py-4 text-slate-400 text-sm">Nessun alimento in questa categoria</div>
+          ) : (
+            <div className="space-y-1">
+              {categoryFoods.map((food, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => selectFood(food)}
+                  className="w-full px-3 py-2 text-left hover:bg-slate-600 rounded transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-slate-200">{food.nome}</div>
+                    <span className={`px-1.5 py-0.5 rounded text-xs ${food.source === 'global' ? 'bg-blue-500/20 text-blue-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                      {food.source === 'global' ? 'Globale' : 'Tenant'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    {food.kcal} kcal | P: {food.proteine}g | C: {food.carboidrati}g | G: {food.grassi}g
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       
+      {/* Campi form */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <input
-          type="text"
-          placeholder="Nome alimento"
-          value={formData.nome}
-          onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-          className="px-3 py-2 bg-slate-700 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
-        />
+        {/* Nome con ricerca globale integrata */}
+        <div className="relative md:col-span-2">
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Nome Alimento
+          </label>
+          <input
+            type="text"
+            placeholder="Cerca o digita nome alimento..."
+            value={searchTerm || formData.nome}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setFormData({ ...formData, nome: e.target.value });
+            }}
+            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
+          />
+          
+          {/* Search Results Dropdown */}
+          {showSearchResults && searchResults.length > 0 && (
+            <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+              <div className="sticky top-0 bg-slate-700 px-3 py-2 text-xs text-slate-300 border-b border-slate-600">
+                {searchResults.length} risultati trovati
+              </div>
+              {searchResults.map((food, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => selectFood(food)}
+                  className="w-full px-3 py-2 text-left hover:bg-slate-700 transition-colors border-b border-slate-700 last:border-0"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-slate-200">{food.nome}</div>
+                    <div className="flex gap-1">
+                      <span className={`px-1.5 py-0.5 rounded text-xs ${food.source === 'global' ? 'bg-blue-500/20 text-blue-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                        {food.source === 'global' ? 'Globale' : 'Tenant'}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded text-xs bg-purple-500/20 text-purple-300">
+                        {food.category}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1">
+                    {food.kcal} kcal | P: {food.proteine}g | C: {food.carboidrati}g | G: {food.grassi}g
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <input
           type="number"
           placeholder="Quantità (g)"
@@ -965,13 +1917,13 @@ const AddAlimentoForm = ({ onAdd, onCancel }) => {
       <div className="mt-3 flex gap-2">
         <button
           onClick={handleSubmit}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-sm transition-colors"
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white preserve-white rounded text-sm transition-colors"
         >
           Aggiungi
         </button>
         <button
           onClick={onCancel}
-          className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm transition-colors"
+          className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white preserve-white rounded text-sm transition-colors"
         >
           Annulla
         </button>

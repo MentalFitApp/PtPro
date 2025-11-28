@@ -340,8 +340,8 @@ export default function ActivityFeed({ activities = [], onActivityClick, clients
             onClick={() => setFilter(filterOption.value)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
               filter === filterOption.value
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-900/70 text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-blue-600 text-white preserve-white'
+                : 'bg-slate-900/70 text-slate-400 hover:text-white hover:bg-slate-800 preserve-white'
             }`}
           >
             {filterOption.icon}

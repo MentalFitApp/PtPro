@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Apple, Dumbbell, ChevronRight, UserPlus, Clock, AlertTriangle } from 'lucide-react';
+import { Users, Apple, Dumbbell, ChevronRight, UserPlus, Clock, AlertTriangle, BarChart3 } from 'lucide-react';
 import ListaClientiAllenamento from '../../components/ListaClientiAllenamento';
 import ListaAlimenti from '../../components/ListaAlimenti';
 import ListaEsercizi from '../../components/ListaEsercizi';
+import FoodAnalytics from './FoodAnalytics';
 import { db, toDate } from '../../firebase'
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { collection, getDocs } from 'firebase/firestore';
@@ -82,7 +83,7 @@ const AlimentazioneAllenamento = () => {
     {
       id: 'alimenti',
       title: 'Lista Alimenti',
-      description: 'Database completo di alimenti con valori nutrizionali',
+      description: 'Database con alimenti globali + personalizzati (493 alimenti in 24 categorie)',
       icon: <Apple size={32} />,
       color: 'emerald',
     },
@@ -92,6 +93,13 @@ const AlimentazioneAllenamento = () => {
       description: 'Catalogo esercizi con attrezzi e gruppi muscolari',
       icon: <Dumbbell size={32} />,
       color: 'blue',
+    },
+    {
+      id: 'analytics-food',
+      title: 'Analytics Alimentazione',
+      description: 'Statistiche uso alimenti: più usati, meno usati, mai utilizzati',
+      icon: <BarChart3 size={32} />,
+      color: 'purple',
     },
   ];
 
@@ -144,7 +152,7 @@ const AlimentazioneAllenamento = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
         {/* Header */}
         <motion.div
@@ -223,12 +231,14 @@ const AlimentazioneAllenamento = () => {
                     ${section.color === 'rose' ? 'bg-rose-900/10 border-rose-600/30 hover:bg-rose-900/20 hover:border-rose-500/50' : ''}
                     ${section.color === 'emerald' ? 'bg-emerald-900/10 border-emerald-600/30 hover:bg-emerald-900/20 hover:border-emerald-500/50' : ''}
                     ${section.color === 'blue' ? 'bg-blue-900/10 border-blue-600/30 hover:bg-blue-900/20 hover:border-blue-500/50' : ''}
+                    ${section.color === 'purple' ? 'bg-purple-900/10 border-purple-600/30 hover:bg-purple-900/20 hover:border-purple-500/50' : ''}
                   `}
                 >
                   <div className={`mb-4 
                     ${section.color === 'rose' ? 'text-rose-400' : ''}
                     ${section.color === 'emerald' ? 'text-emerald-400' : ''}
                     ${section.color === 'blue' ? 'text-blue-400' : ''}
+                    ${section.color === 'purple' ? 'text-purple-400' : ''}
                   `}>
                     {section.icon}
                   </div>
@@ -238,11 +248,12 @@ const AlimentazioneAllenamento = () => {
                   <p className="text-slate-400 text-sm mb-4">
                     {section.description}
                   </p>
-                  <div className="flex items-center text-sm font-medium group-hover:translate-x-1 transition-transform
+                  <div className={`flex items-center text-sm font-medium group-hover:translate-x-1 transition-transform
                     ${section.color === 'rose' ? 'text-rose-400' : ''}
                     ${section.color === 'emerald' ? 'text-emerald-400' : ''}
                     ${section.color === 'blue' ? 'text-blue-400' : ''}
-                  ">
+                    ${section.color === 'purple' ? 'text-purple-400' : ''}
+                  `}>
                     Apri <ChevronRight size={16} className="ml-1" />
                   </div>
                 </motion.button>
@@ -268,6 +279,14 @@ const AlimentazioneAllenamento = () => {
 
         {activeSection === 'esercizi' && (
           <ListaEsercizi onBack={() => setActiveSection(null)} />
+        )}
+
+        {activeSection === 'analytics-food' && (
+          <FoodAnalytics onBack={() => setActiveSection(null)} />
+        )}
+
+        {activeSection === 'analytics-food' && (
+          <FoodAnalytics onBack={() => setActiveSection(null)} />
         )}
       </div>
     </div>

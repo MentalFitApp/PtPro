@@ -20,7 +20,7 @@ const AnimatedStars = () => {
     document.body.appendChild(container);
 
     // Crea 30 stelle distribuite su tutta la schermata
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 35; i++) {
       const star = document.createElement('div');
       star.className = 'star';
 

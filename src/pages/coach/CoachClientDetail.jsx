@@ -44,7 +44,7 @@ const ImageModal = ({ src, onClose }) => (
         />
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-white bg-slate-700/70 rounded-full p-2 hover:bg-slate-700"
+          className="absolute top-4 right-4 text-white preserve-white bg-slate-700/70 rounded-full p-2 hover:bg-slate-700"
         >
           <X size={24} />
         </button>
@@ -152,7 +152,7 @@ const CheckItem = ({ check, onImageClick, variants }) => {
           <div className="flex items-center gap-2 mb-2">
             <button
               onClick={() => setShowPhotos(v => !v)}
-              className="bg-slate-700 text-white px-2 py-1 rounded hover:bg-slate-700 transition"
+              className="bg-slate-700 text-white preserve-white px-2 py-1 rounded hover:bg-slate-700 transition"
               title={showPhotos ? "Restringi sezione foto" : "Espandi sezione foto"}
             >
               {showPhotos ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -317,19 +317,19 @@ export default function CoachClientDetail() {
           <div className="flex flex-wrap gap-2 mb-6 bg-slate-800/70 p-1 rounded-lg border border-white/10">
             <button
               onClick={() => setActiveTab('info')}
-              className={`px-4 py-2 text-sm rounded-md ${activeTab === 'info' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+              className={`px-4 py-2 text-sm rounded-md ${activeTab === 'info' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400 hover:bg-white/10'}`}
             >
               Info
             </button>
             <button
               onClick={() => setActiveTab('check')}
-              className={`px-4 py-2 text-sm rounded-md ${activeTab === 'check' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+              className={`px-4 py-2 text-sm rounded-md ${activeTab === 'check' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400 hover:bg-white/10'}`}
             >
               Check ({checks.length})
             </button>
             <button
               onClick={() => setActiveTab('anamnesi')}
-              className={`px-4 py-2 text-sm rounded-md ${activeTab === 'anamnesi' ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+              className={`px-4 py-2 text-sm rounded-md ${activeTab === 'anamnesi' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400 hover:bg-white/10'}`}
             >
               Anamnesi
             </button>

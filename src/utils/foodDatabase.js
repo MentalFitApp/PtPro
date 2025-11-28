@@ -11,6 +11,7 @@ export const FOOD_CATEGORIES = {
   VEGETABLES: 'Verdure',
   FRUITS: 'Frutta',
   DAIRY: 'Latticini',
+  SUPPLEMENTS: 'Integratori',
 };
 
 // Macros structure: { calories, proteins, carbs, fats } per 100g
@@ -95,6 +96,38 @@ export const FOOD_DATABASE = [
   { id: 'pera', name: 'Pera', category: 'FRUITS', macros: { calories: 57, proteins: 0.4, carbs: 15, fats: 0.1 } },
   { id: 'pesca', name: 'Pesca', category: 'FRUITS', macros: { calories: 39, proteins: 0.9, carbs: 10, fats: 0.3 } },
   { id: 'ananas', name: 'Ananas', category: 'FRUITS', macros: { calories: 50, proteins: 0.5, carbs: 13, fats: 0.1 } },
+  
+  // INTEGRATORI
+  { id: 'whey_isolate', name: 'Whey Isolate', category: 'SUPPLEMENTS', macros: { calories: 370, proteins: 90, carbs: 2, fats: 1 } },
+  { id: 'whey_concentrate', name: 'Whey Concentrate', category: 'SUPPLEMENTS', macros: { calories: 400, proteins: 80, carbs: 8, fats: 6 } },
+  { id: 'caseina', name: 'Caseina Micellare', category: 'SUPPLEMENTS', macros: { calories: 360, proteins: 80, carbs: 6, fats: 2 } },
+  { id: 'proteine_vegane', name: 'Proteine Vegane', category: 'SUPPLEMENTS', macros: { calories: 380, proteins: 75, carbs: 10, fats: 6 } },
+  { id: 'proteine_soia', name: 'Proteine di Soia', category: 'SUPPLEMENTS', macros: { calories: 370, proteins: 80, carbs: 7, fats: 5 } },
+  { id: 'proteine_manzo', name: 'Proteine di Manzo', category: 'SUPPLEMENTS', macros: { calories: 360, proteins: 85, carbs: 2, fats: 3 } },
+  { id: 'bcaa', name: 'BCAA in polvere', category: 'SUPPLEMENTS', macros: { calories: 0, proteins: 100, carbs: 0, fats: 0 } },
+  { id: 'eaa', name: 'EAA (Aminoacidi Essenziali)', category: 'SUPPLEMENTS', macros: { calories: 0, proteins: 100, carbs: 0, fats: 0 } },
+  { id: 'creatina', name: 'Creatina Monoidrato', category: 'SUPPLEMENTS', macros: { calories: 0, proteins: 0, carbs: 0, fats: 0 } },
+  { id: 'maltodestrine', name: 'Maltodestrine', category: 'SUPPLEMENTS', macros: { calories: 380, proteins: 0, carbs: 95, fats: 0 } },
+  { id: 'vitargo', name: 'Vitargo', category: 'SUPPLEMENTS', macros: { calories: 385, proteins: 0, carbs: 96, fats: 0 } },
+  { id: 'destrosio', name: 'Destrosio', category: 'SUPPLEMENTS', macros: { calories: 380, proteins: 0, carbs: 95, fats: 0 } },
+  { id: 'ciclodestrine', name: 'Ciclodestrine', category: 'SUPPLEMENTS', macros: { calories: 370, proteins: 0, carbs: 92, fats: 0 } },
+  { id: 'barretta_proteica', name: 'Barretta Proteica', category: 'SUPPLEMENTS', macros: { calories: 350, proteins: 20, carbs: 35, fats: 10 } },
+  { id: 'barretta_energetica', name: 'Barretta Energetica', category: 'SUPPLEMENTS', macros: { calories: 380, proteins: 7, carbs: 68, fats: 7 } },
+  { id: 'pancake_proteici', name: 'Pancake Proteici (mix)', category: 'SUPPLEMENTS', macros: { calories: 360, proteins: 40, carbs: 30, fats: 6 } },
+  { id: 'yogurt_proteico', name: 'Yogurt Proteico', category: 'SUPPLEMENTS', macros: { calories: 90, proteins: 10, carbs: 6, fats: 2 } },
+  { id: 'pudding_proteico', name: 'Pudding Proteico', category: 'SUPPLEMENTS', macros: { calories: 110, proteins: 12, carbs: 8, fats: 2.5 } },
+  { id: 'gelato_proteico', name: 'Gelato Proteico', category: 'SUPPLEMENTS', macros: { calories: 140, proteins: 8, carbs: 18, fats: 4 } },
+  { id: 'cioccolato_proteico', name: 'Cioccolato Proteico', category: 'SUPPLEMENTS', macros: { calories: 450, proteins: 15, carbs: 50, fats: 20 } },
+  { id: 'burro_arachidi_proteico', name: 'Burro Arachidi Proteico', category: 'SUPPLEMENTS', macros: { calories: 520, proteins: 30, carbs: 18, fats: 40 } },
+  { id: 'wafer_proteici', name: 'Wafer Proteici', category: 'SUPPLEMENTS', macros: { calories: 380, proteins: 25, carbs: 42, fats: 12 } },
+  { id: 'cookie_proteici', name: 'Cookie Proteici', category: 'SUPPLEMENTS', macros: { calories: 400, proteins: 20, carbs: 45, fats: 14 } },
+  { id: 'chips_proteiche', name: 'Chips Proteiche', category: 'SUPPLEMENTS', macros: { calories: 360, proteins: 35, carbs: 30, fats: 10 } },
+  { id: 'drink_proteico', name: 'Drink Proteico Pronto', category: 'SUPPLEMENTS', macros: { calories: 80, proteins: 15, carbs: 2, fats: 1.5 } },
+  { id: 'gel_energetico', name: 'Gel Energetico', category: 'SUPPLEMENTS', macros: { calories: 250, proteins: 0, carbs: 60, fats: 0 } },
+  { id: 'omega3', name: 'Omega 3 (softgel)', category: 'SUPPLEMENTS', macros: { calories: 10, proteins: 0, carbs: 0, fats: 1 } },
+  { id: 'mct_oil', name: 'Olio MCT', category: 'SUPPLEMENTS', macros: { calories: 840, proteins: 0, carbs: 0, fats: 100 } },
+  { id: 'collagene', name: 'Collagene in polvere', category: 'SUPPLEMENTS', macros: { calories: 340, proteins: 85, carbs: 0, fats: 0 } },
+  { id: 'gainers', name: 'Mass Gainer', category: 'SUPPLEMENTS', macros: { calories: 380, proteins: 15, carbs: 75, fats: 3 } },
 ];
 
 /**

@@ -118,7 +118,7 @@ const ClientSchedaAlimentazione = () => {
             </h1>
             <button
               onClick={() => exportNutritionCardToPDF(schedaData, clientName)}
-              className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white preserve-white text-sm rounded-lg transition-colors"
             >
               <Download size={16} />
               <span className="hidden sm:inline">PDF</span>
@@ -143,7 +143,7 @@ const ClientSchedaAlimentazione = () => {
                 onClick={() => setSelectedDay(giorno)}
                 className={`px-3 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ${
                   selectedDay === giorno
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-emerald-600 text-white preserve-white'
                     : 'bg-slate-700 text-slate-300'
                 }`}
               >

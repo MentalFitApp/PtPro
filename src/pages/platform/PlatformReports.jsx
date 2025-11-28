@@ -371,7 +371,7 @@ export default function PlatformReports() {
             
             <button
               onClick={handleExportCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white preserve-white rounded-lg transition-colors"
             >
               <Download size={18} />
               <span>Export CSV</span>
@@ -379,7 +379,7 @@ export default function PlatformReports() {
             
             <button
               onClick={handleExportReport}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white preserve-white rounded-lg transition-colors"
             >
               <Download size={18} />
               <span>Export JSON</span>
@@ -665,7 +665,7 @@ export default function PlatformReports() {
             <h2 className="text-2xl font-bold text-white">Scheduled Reports</h2>
             <button
               onClick={() => setShowScheduleModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white preserve-white rounded-lg transition-colors"
             >
               <Calendar size={18} />
               <span>Schedule New Report</span>

@@ -300,7 +300,7 @@ export default function BackupRecovery() {
             <button
               onClick={() => handleCreateBackup('quick')}
               disabled={isBackingUp}
-              className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white preserve-white rounded-lg transition-colors disabled:opacity-50"
             >
               <Download size={18} />
               <span>Quick Backup</span>
@@ -309,7 +309,7 @@ export default function BackupRecovery() {
             <button
               onClick={() => handleCreateBackup('full')}
               disabled={isBackingUp}
-              className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white preserve-white rounded-lg transition-colors disabled:opacity-50"
             >
               <Database size={18} />
               <span>Full Backup</span>
@@ -506,7 +506,7 @@ export default function BackupRecovery() {
                   onClick={handleToggleSchedule}
                   className={`px-6 py-2 rounded-lg font-medium transition-colors ${
                     scheduleConfig.enabled
-                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      ? 'bg-green-600 hover:bg-green-700 text-white preserve-white'
                       : 'bg-slate-700 hover:bg-slate-600 text-slate-400'
                   }`}
                 >
@@ -656,7 +656,7 @@ export default function BackupRecovery() {
                     <button
                       onClick={() => handleRestoreBackup(backup)}
                       disabled={isRestoring}
-                      className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                      className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white preserve-white rounded-lg font-medium transition-colors disabled:opacity-50"
                     >
                       {isRestoring ? 'Restoring...' : 'Restore'}
                     </button>

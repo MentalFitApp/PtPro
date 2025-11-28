@@ -548,7 +548,7 @@ export default function CollaboratoreDashboard() {
         <p className="text-red-400 text-center mb-4">{error}</p>
         <button 
           onClick={() => navigate('/login')}
-          className="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-lg"
+          className="w-full bg-rose-600 hover:bg-rose-700 text-white preserve-white py-2 rounded-lg"
         >
           Torna al Login
         </button>
@@ -584,7 +584,7 @@ export default function CollaboratoreDashboard() {
             onClick={() => setShowProfile(true)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg"
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white preserve-white rounded-lg flex items-center gap-2 text-sm font-medium shadow-lg"
           >
             <User size={16} />
             <span>Profilo</span>
@@ -593,7 +593,7 @@ export default function CollaboratoreDashboard() {
             onClick={() => auth.signOut().then(() => navigate('/login'))} 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium shadow-lg"
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white preserve-white rounded-lg text-sm font-medium shadow-lg"
           >
             Esci
           </motion.button>
@@ -675,7 +675,7 @@ export default function CollaboratoreDashboard() {
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
             <motion.div 
               whileHover={{ y: -2, scale: 1.02 }}
-              className="bg-gradient-to-br from-blue-900/30 to-blue-800/10 backdrop-blur-md p-2 rounded-lg border border-blue-500/20 shadow-xl"
+              className="bg-gradient-to-br from-blue-900/30 to-blue-800/10 backdrop-blur-md p-2 rounded-lg border border-blue-500/20 shadow-xl preserve-white"
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="p-1 bg-blue-500/10 rounded">
@@ -687,7 +687,7 @@ export default function CollaboratoreDashboard() {
             </motion.div>
             <motion.div 
               whileHover={{ y: -2, scale: 1.02 }}
-              className="bg-gradient-to-br from-yellow-900/30 to-yellow-800/10 backdrop-blur-md p-2 rounded-lg border border-yellow-500/20 shadow-xl"
+              className="bg-gradient-to-br from-yellow-900/30 to-yellow-800/10 backdrop-blur-md p-2 rounded-lg border border-yellow-500/20 shadow-xl preserve-white"
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="p-1 bg-yellow-500/10 rounded">
@@ -699,7 +699,7 @@ export default function CollaboratoreDashboard() {
             </motion.div>
             <motion.div 
               whileHover={{ y: -2, scale: 1.02 }}
-              className="bg-gradient-to-br from-cyan-900/30 to-cyan-800/10 backdrop-blur-md p-2 rounded-lg border border-cyan-500/20 shadow-xl"
+              className="bg-gradient-to-br from-cyan-900/30 to-cyan-800/10 backdrop-blur-md p-2 rounded-lg border border-cyan-500/20 shadow-xl preserve-white"
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="p-1 bg-cyan-500/10 rounded">
@@ -823,7 +823,7 @@ export default function CollaboratoreDashboard() {
                     Femmina
                   </label>
                 </div>
-                <button onClick={handleSaveProfile} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center gap-2">
+                <button onClick={handleSaveProfile} className="w-full bg-blue-600 hover:bg-blue-700 text-white preserve-white py-2 rounded-lg flex items-center justify-center gap-2">
                   <Save size={16} /> Salva Profilo
                 </button>
                 <div className="border-t border-white/10 pt-4">
@@ -831,7 +831,7 @@ export default function CollaboratoreDashboard() {
                   <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Password Attuale" className="p-2 bg-slate-800/70 border border-white/10 rounded w-full mb-2 text-white" />
                   <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Nuova Password" className="p-2 bg-slate-800/70 border border-white/10 rounded w-full mb-2 text-white" />
                   <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Conferma Password" className="p-2 bg-slate-800/70 border border-white/10 rounded w-full mb-2 text-white" />
-                  <button onClick={handleResetPassword} className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg flex items-center justify-center gap-2">
+                  <button onClick={handleResetPassword} className="w-full bg-red-600 hover:bg-red-700 text-white preserve-white py-2 rounded-lg flex items-center justify-center gap-2">
                     <Key size={16} /> Reimposta
                   </button>
                 </div>
@@ -857,7 +857,7 @@ export default function CollaboratoreDashboard() {
                 <input type="number" value={tracker.callPrenotate} onChange={e => setTracker({ ...tracker, callPrenotate: e.target.value })} placeholder="Call Prenotate" className="p-3 bg-slate-800/70 border border-white/10 rounded-lg text-white w-full" />
               </div>
               <div className="flex justify-end mt-4">
-                <motion.button onClick={handleSaveTracker} className="flex items-center gap-2 px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <motion.button onClick={handleSaveTracker} className="flex items-center gap-2 px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white preserve-white font-semibold rounded-lg" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Save size={20} /> Salva Tracker
                 </motion.button>
               </div>
@@ -889,7 +889,7 @@ export default function CollaboratoreDashboard() {
                 <input type="date" value={newLead.dataPrenotazione} onChange={e => setNewLead({ ...newLead, dataPrenotazione: e.target.value })} className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white" />
                 <input type="time" value={newLead.oraPrenotazione} onChange={e => setNewLead({ ...newLead, oraPrenotazione: e.target.value })} className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white" />
                 <textarea value={newLead.note} onChange={e => setNewLead({ ...newLead, note: e.target.value })} placeholder="Note" className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white col-span-2" rows="2" />
-                <motion.button onClick={handleSaveLead} className="col-span-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg flex items-center justify-center gap-2" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <motion.button onClick={handleSaveLead} className="col-span-2 bg-green-600 hover:bg-green-700 text-white preserve-white py-3 rounded-lg flex items-center justify-center gap-2" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Save size={20} /> Salva Lead
                 </motion.button>
               </div>
@@ -927,7 +927,7 @@ export default function CollaboratoreDashboard() {
                         <td className="px-3 sm:px-4 py-2">{lead.number}</td>
                         <td className="px-3 sm:px-4 py-2 whitespace-nowrap">{lead.dataPrenotazione} {lead.oraPrenotazione}</td>
                         <td className="px-3 sm:px-4 py-2 text-center">
-                          <span className={`px-2 py-0.5 rounded text-[10px] sm:text-xs ${lead.showUp ? 'bg-green-600 text-white' : 'bg-yellow-600 text-white'}`}>
+                          <span className={`px-2 py-0.5 rounded text-[10px] sm:text-xs ${lead.showUp ? 'bg-green-600 text-white preserve-white' : 'bg-yellow-600 text-white preserve-white'}`}>
                             {lead.showUp ? 'Sì' : 'No'}
                           </span>
                         </td>
@@ -995,7 +995,7 @@ export default function CollaboratoreDashboard() {
                 <button onClick={() => setLeadToDelete(null)} className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white rounded-lg">
                   Annulla
                 </button>
-                <button onClick={handleDeleteLead} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">
+                <button onClick={handleDeleteLead} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white preserve-white rounded-lg">
                   Elimina
                 </button>
               </div>

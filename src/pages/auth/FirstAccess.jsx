@@ -246,7 +246,7 @@ const FirstAccess = () => {
             <div>
               <button
                 type="submit"
-                className="w-full px-4 py-2.5 font-bold text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 disabled:opacity-50 transition-colors"
+                className="w-full px-4 py-2.5 font-bold text-white preserve-white bg-cyan-600 rounded-lg hover:bg-cyan-700 disabled:opacity-50 transition-colors"
                 disabled={isSubmitting || !!success}
               >
                 {success ? 'Reindirizzamento...' : isSubmitting ? 'Salvataggio...' : 'Imposta Nuova Password'}

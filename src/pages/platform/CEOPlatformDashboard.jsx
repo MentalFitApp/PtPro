@@ -30,8 +30,8 @@ const AnimatedStars = () => {
     container.className = 'platform-stars fixed inset-0 pointer-events-none z-0';
     document.body.appendChild(container);
 
-    // Crea 50 stelle con effetto premium
-    for (let i = 0; i < 50; i++) {
+    // Crea 55 stelle con effetto premium
+    for (let i = 0; i < 55; i++) {
       const star = document.createElement('div');
       star.className = 'absolute rounded-full';
       
@@ -106,12 +106,12 @@ const Sidebar = ({ collapsed, setCollapsed, activePage, setActivePage, handleLog
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {navItems.map((item) => (
-          <button
+            <button
             key={item.id}
             onClick={() => setActivePage(item.id)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
               activePage === item.id
-                ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white preserve-white shadow-lg'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
@@ -138,7 +138,7 @@ const Sidebar = ({ collapsed, setCollapsed, activePage, setActivePage, handleLog
               <p className="text-xs text-slate-400">Platform Administrator</p>
             </div>
           )}
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center flex-shrink-0 preserve-white">
             <Crown className="w-5 h-5 text-white" />
           </div>
         </div>
@@ -700,7 +700,7 @@ export default function CEOPlatformDashboard() {
                       className="w-full pl-10 pr-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
-                  <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors flex items-center gap-2">
+                  <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white preserve-white font-medium transition-colors flex items-center gap-2">
                     <Filter size={18} />
                     Filter
                   </button>
@@ -742,7 +742,7 @@ export default function CEOPlatformDashboard() {
                     </a>
                     <button
                       onClick={() => setEditingLegalPage('privacy')}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white transition-all"
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white preserve-white transition-all"
                     >
                       <Edit3 size={18} />
                       <span>Modifica</span>
@@ -761,7 +761,7 @@ export default function CEOPlatformDashboard() {
                     </a>
                     <button
                       onClick={() => setEditingLegalPage('terms')}
-                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition-all"
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white preserve-white transition-all"
                     >
                       <Edit3 size={18} />
                       <span>Modifica</span>
@@ -774,7 +774,7 @@ export default function CEOPlatformDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="bg-gradient-to-br from-purple-600/20 to-purple-900/20 p-6 rounded-xl border border-purple-500/30 backdrop-blur-sm"
+                  className="bg-gradient-to-br from-purple-600/20 to-purple-900/20 p-6 rounded-xl border border-purple-500/30 backdrop-blur-sm preserve-white"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <Globe className="w-8 h-8 text-purple-400" />
@@ -785,7 +785,7 @@ export default function CEOPlatformDashboard() {
 
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 p-6 rounded-xl border border-blue-500/30 backdrop-blur-sm"
+                  className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 p-6 rounded-xl border border-blue-500/30 backdrop-blur-sm preserve-white"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <Eye className="w-8 h-8 text-blue-400" />
@@ -796,7 +796,7 @@ export default function CEOPlatformDashboard() {
 
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="bg-gradient-to-br from-green-600/20 to-green-900/20 p-6 rounded-xl border border-green-500/30 backdrop-blur-sm"
+                  className="bg-gradient-to-br from-green-600/20 to-green-900/20 p-6 rounded-xl border border-green-500/30 backdrop-blur-sm preserve-white"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <CheckCircle className="w-8 h-8 text-green-400" />
@@ -807,7 +807,7 @@ export default function CEOPlatformDashboard() {
 
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="bg-gradient-to-br from-yellow-600/20 to-yellow-900/20 p-6 rounded-xl border border-yellow-500/30 backdrop-blur-sm"
+                  className="bg-gradient-to-br from-yellow-600/20 to-yellow-900/20 p-6 rounded-xl border border-yellow-500/30 backdrop-blur-sm preserve-white"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <Server className="w-8 h-8 text-yellow-400" />
@@ -856,7 +856,7 @@ export default function CEOPlatformDashboard() {
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+                              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center preserve-white">
                                 <span className="text-white font-bold text-sm">
                                   {tenant.name?.charAt(0) || 'T'}
                                 </span>
@@ -1202,14 +1202,14 @@ export default function CEOPlatformDashboard() {
               <div className="flex gap-3 mt-6 pt-6 border-t border-slate-700">
                 <button
                   onClick={handleSaveLanding}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white font-medium transition-all flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white preserve-white font-medium transition-all flex items-center justify-center gap-2"
                 >
                   <CheckCircle className="w-5 h-5" />
                   Salva Modifiche
                 </button>
                 <button
                   onClick={() => setEditingLanding(null)}
-                  className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors"
+                  className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-white preserve-white font-medium transition-colors"
                 >
                   Annulla
                 </button>
@@ -1334,13 +1334,13 @@ export default function CEOPlatformDashboard() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={handleSaveBranding}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 rounded-lg text-white font-medium transition-all"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 rounded-lg text-white preserve-white font-medium transition-all"
                 >
                   Salva Branding
                 </button>
                 <button
                   onClick={() => setEditingBranding(null)}
-                  className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors"
+                  className="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-white preserve-white font-medium transition-colors"
                 >
                   Annulla
                 </button>
@@ -1401,7 +1401,7 @@ export default function CEOPlatformDashboard() {
                 </div>
 
                 <div className="flex gap-3">
-                  <button className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors">
+                  <button className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white preserve-white font-medium transition-colors">
                     Manage Tenant
                   </button>
                   <button className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors">
@@ -1522,7 +1522,7 @@ export default function CEOPlatformDashboard() {
                       href="https://console.firebase.google.com/project/flowfitpro/firestore/databases/-default-/data"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white preserve-white font-medium transition-colors"
                     >
                       <Database size={18} />
                       Apri Firebase Console
@@ -1531,7 +1531,7 @@ export default function CEOPlatformDashboard() {
                       href={`/${editingLegalPage}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white preserve-white font-medium transition-colors"
                     >
                       <Eye size={18} />
                       Anteprima Pagina

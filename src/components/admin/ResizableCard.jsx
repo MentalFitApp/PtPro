@@ -161,7 +161,7 @@ export default function ResizableCard({
         <motion.button
           initial={{ opacity: 0 }}
           whileHover={{ opacity: 1 }}
-          className="absolute top-4 right-4 p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg text-slate-300 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-10"
+          className="absolute top-4 right-4 p-2 bg-slate-800/80 hover:bg-slate-700 rounded-lg text-slate-300 hover:text-white preserve-white transition-all opacity-0 group-hover:opacity-100 z-10"
           onClick={toggleFullscreen}
           title={size.width === maxWidth ? 'Ripristina' : 'Schermo intero'}
         >
@@ -197,7 +197,7 @@ export default function ResizableCard({
           animate={{ opacity: 1 }}
           className="absolute inset-0 border-2 border-blue-500 border-dashed rounded-xl pointer-events-none bg-blue-500/5 z-30"
         >
-          <div className="absolute bottom-2 right-2 px-2 py-1 bg-blue-600 text-white text-xs font-mono rounded">
+          <div className="absolute bottom-2 right-2 px-2 py-1 bg-blue-600 text-white preserve-white text-xs font-mono rounded">
             {Math.round(size.width)} × {Math.round(size.height)}
           </div>
         </motion.div>

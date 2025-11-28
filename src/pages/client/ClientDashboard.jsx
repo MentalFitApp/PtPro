@@ -4,7 +4,7 @@ import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/fi
 import { db } from '../../firebase.js';
 import { useNavigate, Link } from 'react-router-dom';
 import { getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone, TrendingUp, Target } from 'lucide-react';
+import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone, TrendingUp, Target, Dumbbell, Utensils } from 'lucide-react';
 import { motion } from 'framer-motion';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
 import { useTenantBranding } from '../../hooks/useTenantBranding';
@@ -47,18 +47,14 @@ const DashboardCard = ({ title, value, subtext, icon, color = 'cyan', variants }
 const ActionLink = ({ to, title, description, icon, variants }) => (
   <motion.div 
     variants={variants}
-    whileHover={{ scale: 1.02, y: -2 }}
-    whileTap={{ scale: 0.98 }}
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
   >
-    <Link to={to} className="group bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg sm:rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3 transition-all shadow-lg hover:shadow-xl hover:border-blue-500/30">
-      <div className="bg-blue-500/10 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 text-blue-400 group-hover:text-white p-2 sm:p-3 rounded-lg transition-all duration-300 flex-shrink-0">
-        {React.cloneElement(icon, { size: 18, className: 'sm:w-[22px] sm:h-[22px]' })}
+    <Link to={to} className="group bg-slate-800/40 hover:bg-slate-700/60 border border-slate-700/30 hover:border-blue-500/50 rounded-lg p-1.5 sm:p-2 flex flex-col items-center gap-1 transition-all">
+      <div className="bg-blue-500/10 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-600 text-blue-400 group-hover:text-white preserve-white p-1.5 sm:p-2 rounded-lg transition-all duration-300">
+        {React.cloneElement(icon, { size: 14, className: 'sm:w-4 sm:h-4' })}
       </div>
-      <div className="flex-1 min-w-0">
-        <h4 className="font-bold text-white text-xs sm:text-base mb-0.5">{title}</h4>
-        <p className="text-[10px] sm:text-sm text-slate-400 truncate">{description}</p>
-      </div>
-      <ChevronRight className="text-slate-500 group-hover:text-blue-400 transition-colors duration-300 flex-shrink-0" size={16} />
+      <h4 className="font-semibold text-white text-[9px] sm:text-[10px] truncate w-full text-center leading-tight">{title}</h4>
     </Link>
   </motion.div>
 );
@@ -238,135 +234,129 @@ const ClientDashboard = () => {
         initial="hidden" 
         animate="visible" 
         variants={containerVariants} 
-        className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6"
+        className="w-full max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 relative z-10"
       >
-        <motion.header variants={itemVariants} className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-4 sm:p-6 border border-slate-700/50 shadow-xl mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3 sm:mb-4">
-            <div className="flex-1">
-              <h1 className="text-xl sm:text-3xl font-bold text-white mb-1">{branding.clientAreaName} - Ciao, {clientData.name}! 👋</h1>
-              <p className="text-xs sm:text-base text-slate-400">Bentornato nella tua area personale</p>
+        {/* Header Compatto */}
+        <motion.header variants={itemVariants} className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-slate-700/50 shadow-xl mb-3 sm:mb-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base sm:text-2xl font-bold text-white truncate">Ciao, {clientData.name}! 👋</h1>
+              <p className="text-[10px] sm:text-sm text-slate-400 truncate">{branding.clientAreaName}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
               <NotificationPanel userType="client" />
               <motion.button 
                 onClick={handleLogout} 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center justify-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors"
+                className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-slate-700 hover:bg-slate-600 text-white preserve-white text-xs sm:text-sm font-medium rounded-lg transition-colors"
               >
-                <LogOut size={16} /><span className="hidden sm:inline">Logout</span>
+                <LogOut size={14} className="sm:w-4 sm:h-4" /><span className="hidden sm:inline">Logout</span>
               </motion.button>
             </div>
           </div>
         </motion.header>
 
-        {/* PULSANTI PWA - SOLO SU MOBILE */}
+        {/* PULSANTI PWA - Versione Compatta */}
         {showPWAInstall && (
-          <motion.div variants={itemVariants} className="mb-4 sm:mb-6 space-y-3">
+          <motion.div variants={itemVariants} className="mb-3 sm:mb-4">
             {isAndroid && (
-              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-4 rounded-xl flex items-center justify-between shadow-lg">
-                <div className="flex items-center gap-3">
-                  <Smartphone size={20} />
-                  <div>
-                    <p className="font-semibold">Aggiungi alla Schermata Home</p>
-                    <p className="text-xs opacity-90">Tocca <strong>⋮ Menu → Aggiungi alla schermata home</strong></p>
-                  </div>
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white preserve-white p-3 sm:p-4 rounded-lg flex items-center gap-2 sm:gap-3 shadow-lg">
+                <Smartphone size={16} className="sm:w-5 sm:h-5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-xs sm:text-sm">Aggiungi alla Home</p>
+                  <p className="text-[10px] sm:text-xs opacity-90 truncate">⋮ Menu → Aggiungi alla schermata home</p>
                 </div>
-                <Download size={18} />
+                <Download size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
               </div>
             )}
 
             {isIOS && (
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-xl flex items-center justify-between shadow-lg">
-                <div className="flex items-center gap-3">
-                  <Smartphone size={20} />
-                  <div>
-                    <p className="font-semibold">Aggiungi alla Schermata Home</p>
-                    <p className="text-xs opacity-90">Tocca <strong>Condividi → Aggiungi alla schermata Home</strong></p>
-                  </div>
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white preserve-white p-3 sm:p-4 rounded-lg flex items-center gap-2 sm:gap-3 shadow-lg">
+                <Smartphone size={16} className="sm:w-5 sm:h-5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-xs sm:text-sm">Aggiungi alla Home</p>
+                  <p className="text-[10px] sm:text-xs opacity-90 truncate">Condividi → Aggiungi alla Home</p>
                 </div>
-                <Download size={18} />
+                <Download size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
               </div>
             )}
           </motion.div>
         )}
 
-        <main className="w-full space-y-4">
-          {/* Hero Section - Streak in primo piano */}
-          <motion.div variants={itemVariants} className="lg:col-span-2">
+        <main className="w-full space-y-3 sm:space-y-4">
+          {/* Stats Compatte in Grid - Mobile: 2 colonne, Desktop: 4 colonne */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            {/* Scadenza */}
+            <motion.div variants={itemVariants} className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 sm:p-2.5">
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[9px] sm:text-xs text-slate-400 truncate">Scadenza</span>
+                <Calendar className="text-blue-400 flex-shrink-0" size={12} />
+              </div>
+              <div className="text-base sm:text-xl font-bold text-blue-400">{giorniRimanenti}</div>
+              <div className="text-[9px] sm:text-xs text-slate-400 truncate">giorni</div>
+            </motion.div>
+
+            {/* Prossimo Check */}
+            <motion.div variants={itemVariants} className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-2 sm:p-2.5">
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[9px] sm:text-xs text-slate-400 truncate">Prossimo Check</span>
+                <CheckSquare className="text-emerald-400 flex-shrink-0" size={12} />
+              </div>
+              <div className="text-base sm:text-lg font-bold text-emerald-400 truncate">{nextCheckText}</div>
+              <div className="text-[9px] sm:text-xs text-slate-400 truncate">da ultimo</div>
+            </motion.div>
+
+            {/* Piano */}
+            <motion.div variants={itemVariants} className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-2 sm:p-2.5 col-span-2 lg:col-span-1">
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[9px] sm:text-xs text-slate-400 truncate">Piano</span>
+                <Briefcase className="text-purple-400 flex-shrink-0" size={12} />
+              </div>
+              <div className="text-xs sm:text-sm font-bold text-purple-400 truncate">
+                {clientData.planType ? clientData.planType.charAt(0).toUpperCase() + clientData.planType.slice(1) : 'Non specificato'}
+              </div>
+              <div className="text-[9px] sm:text-xs text-slate-400 truncate">attivo</div>
+            </motion.div>
+
+            {/* Età (se disponibile) o altra stat */}
+            {clientData.age && (
+              <motion.div variants={itemVariants} className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-2 sm:p-2.5">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[9px] sm:text-xs text-slate-400 truncate">Età</span>
+                  <TrendingUp className="text-cyan-400 flex-shrink-0" size={12} />
+                </div>
+                <div className="text-base sm:text-xl font-bold text-cyan-400">{clientData.age}</div>
+                <div className="text-[9px] sm:text-xs text-slate-400">anni</div>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Workout Streak */}
+          <motion.div variants={itemVariants}>
             <WorkoutStreak compact />
           </motion.div>
 
-          {/* Main Grid - 2 colonne su desktop */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Colonna Sinistra (2/3) - Habit Tracker */}
-            <motion.div variants={itemVariants} className="lg:col-span-2">
-              <HabitTracker />
-            </motion.div>
-
-            {/* Colonna Destra (1/3) - Info & Actions */}
-            <div className="space-y-4">
-              {/* Quick Stats Compact */}
-              <motion.div 
-                variants={itemVariants}
-                className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 shadow-xl space-y-3"
-              >
-                <h3 className="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
-                  <BarChart2 size={16} />
-                  Il tuo Percorso
-                </h3>
-                
-                {/* Scadenza - Priorità 1 */}
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-400">Scadenza</span>
-                    <Calendar className="text-blue-400" size={16} />
-                  </div>
-                  <div className="text-2xl font-bold text-blue-400">{giorniRimanenti}</div>
-                  <div className="text-xs text-slate-400">giorni rimanenti</div>
-                  <div className="text-[10px] text-slate-500 mt-1">{dataScadenzaFormatted}</div>
-                </div>
-
-                {/* Prossimo Check - Priorità 2 */}
-                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-slate-400">Prossimo Check</span>
-                    <CheckSquare className="text-emerald-400" size={16} />
-                  </div>
-                  <div className="text-xl font-bold text-emerald-400">{nextCheckText}</div>
-                  <div className="text-[10px] text-slate-500 mt-1">{nextCheckSubtext}</div>
-                </div>
-
-                {/* Piano - Info secondaria */}
-                <div className="flex items-center justify-between px-3 py-2 bg-slate-900/40 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Briefcase size={14} className="text-purple-400" />
-                    <span className="text-xs text-slate-400">Piano</span>
-                  </div>
-                  <span className="text-xs font-medium text-slate-200">
-                    {clientData.planType ? clientData.planType.charAt(0).toUpperCase() + clientData.planType.slice(1) : 'Non specificato'}
-                  </span>
-                </div>
-              </motion.div>
-
-              {/* Quick Actions Compact */}
-              <motion.div 
-                variants={itemVariants}
-                className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 shadow-xl"
-              >
-                <h3 className="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
-                  <Target size={16} />
-                  Azioni Rapide
-                </h3>
-                <div className="space-y-2">
-                  <ActionLink to="/client/checks" title="I miei Check" description="Foto progressi" icon={<CheckSquare size={18} />} variants={itemVariants}/>
-                  <ActionLink to="/client/chat" title="Chat Coach" description="Messaggio diretto" icon={<MessageSquare size={18} />} variants={itemVariants}/>
-                  <ActionLink to="/client/anamnesi" title="Anamnesi" description="I tuoi dati" icon={<User size={18} />} variants={itemVariants}/>
-                  <ActionLink to="/client/payments" title="Pagamenti" description="Storico" icon={<BarChart2 size={18} />} variants={itemVariants}/>
-                </div>
-              </motion.div>
+          {/* Azioni Rapide - PRIMA delle abitudini */}
+          <motion.div variants={itemVariants} className="bg-slate-800/30 backdrop-blur-sm rounded-lg p-2.5 sm:p-3 border border-slate-700/50">
+            <h3 className="text-[10px] sm:text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
+              <Target size={12} className="sm:w-3.5 sm:h-3.5" />
+              Azioni Rapide
+            </h3>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2">
+              <ActionLink to="/client/scheda-allenamento" title="Allenamento" description="Scheda" icon={<Dumbbell size={14} />} variants={itemVariants}/>
+              <ActionLink to="/client/scheda-alimentazione" title="Alimentazione" description="Piano" icon={<Utensils size={14} />} variants={itemVariants}/>
+              <ActionLink to="/client/checks" title="Check" description="Progressi" icon={<CheckSquare size={14} />} variants={itemVariants}/>
+              <ActionLink to="/client/chat" title="Chat" description="Coach" icon={<MessageSquare size={14} />} variants={itemVariants}/>
+              <ActionLink to="/client/anamnesi" title="Anamnesi" description="Dati" icon={<User size={14} />} variants={itemVariants}/>
+              <ActionLink to="/client/payments" title="Pagamenti" description="Storico" icon={<BarChart2 size={14} />} variants={itemVariants}/>
             </div>
-          </div>
+          </motion.div>
+
+          {/* Habit Tracker - Più piccolo */}
+          <motion.div variants={itemVariants} className="scale-95">
+            <HabitTracker />
+          </motion.div>
         </main>
 
         {/* Celebration Overlay */}
