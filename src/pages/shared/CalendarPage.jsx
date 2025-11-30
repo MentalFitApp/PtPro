@@ -845,10 +845,11 @@ export default function CalendarPage() {
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
-              className="bg-slate-900/95 rounded-2xl border border-slate-700 p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              className="bg-slate-900/95 rounded-2xl border border-slate-700 w-full max-w-2xl max-h-[90vh] flex flex-col"
             >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-slate-100">
+              {/* Header fisso - non scrolla */}
+              <div className="flex justify-between items-center p-4 sm:p-6 border-b border-slate-700 flex-shrink-0">
+                <h3 className="text-lg sm:text-2xl font-bold text-slate-100">
                   {formatDate(selectedDate)} - {new Date(currentDate.getFullYear(), currentDate.getMonth(), selectedDate).toLocaleDateString('it-IT', { weekday: 'long' })}
                 </h3>
                 <button
@@ -856,11 +857,15 @@ export default function CalendarPage() {
                     setShowEventModal(false);
                     setEditingEvent(null);
                   }}
-                  className="text-slate-400 hover:text-rose-400"
+                  className="text-slate-400 hover:text-rose-400 hover:bg-slate-800 p-2 rounded-lg transition-all flex-shrink-0"
+                  aria-label="Chiudi"
                 >
                   <X size={24} />
                 </button>
               </div>
+
+              {/* Contenuto scrollabile */}
+              <div className="overflow-y-auto flex-1 p-4 sm:p-6">
 
               {/* Lista eventi del giorno (opzionale) */}
               {modalShowDayEvents && (
@@ -1081,6 +1086,7 @@ export default function CalendarPage() {
                   </button>
                 </div>
               </div>
+              {/* Fine contenuto scrollabile */}
             </motion.div>
           </motion.div>
         )}
