@@ -133,6 +133,10 @@ export default function Collaboratori() {
   const [showFontiModal, setShowFontiModal] = useState(false);
   const [editingFonte, setEditingFonte] = useState(null);
   const [newFonteName, setNewFonteName] = useState('');
+  
+  // POPUP CREDENZIALI COLLABORATORE
+  const [showCredentialsPopup, setShowCredentialsPopup] = useState(false);
+  const [newCredentials, setNewCredentials] = useState({ email: '', password: '' });
 
   // Funzioni per gestire le fonti
   const addFonte = () => {
@@ -358,10 +362,13 @@ export default function Collaboratori() {
         } else {
           console.log('🆕 Utente Firebase NON esiste, creo nuovo account...');
           const tempPassword = generateTempPassword();
-          console.log('🔑 Password temporanea generata');
+          console.log('🔑 Password temporanea generata:', tempPassword);
           const cred = await createUserWithEmailAndPassword(tempAuth, emailLower, tempPassword);
           uid = cred.user.uid;
           isNewUser = true;
+          
+          // Salva credenziali per mostrarle all'admin
+          setNewCredentials({ email: emailLower, password: tempPassword });
           console.log('✅ Nuovo account creato, UID:', uid);
         }
       }
@@ -383,11 +390,18 @@ export default function Collaboratori() {
       await setDoc(getTenantDoc(db, 'collaboratori', uid), collabData, { merge: true });
       console.log('✅ Collaboratore salvato');
 
-      console.log('📧 Invio email reset password...');
-      await sendPasswordResetEmail(tempAuth, emailLower);
-      console.log('✅ Email inviata');
-
-      setSuccess(isNewUser ? `Collaboratore creato! Email di reset inviata.` : `Collaboratore riaggiunto! Email di reset inviata.`);
+      if (isNewUser) {
+        // Mostra popup con credenziali
+        setShowCredentialsPopup(true);
+        setSuccess('Collaboratore creato! Copia le credenziali temporanee.');
+      } else {
+        // Per utenti esistenti, invia email reset
+        console.log('📧 Invio email reset password...');
+        await sendPasswordResetEmail(tempAuth, emailLower);
+        console.log('✅ Email inviata');
+        setSuccess('Collaboratore riaggiunto! Email di reset inviata.');
+      }
+      
       setNewEmail('');
       setError('');
     } catch (err) {
@@ -1118,6 +1132,116 @@ export default function Collaboratori() {
                   Crea Cliente
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* POPUP CREDENZIALI NUOVO COLLABORATORE */}
+        {showCredentialsPopup && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-md w-full border border-emerald-500"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-emerald-400 flex items-center gap-2">
+                  <CheckCircle size={24} /> Collaboratore Creato!
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowCredentialsPopup(false);
+                    setNewCredentials({ email: '', password: '' });
+                  }}
+                  className="text-slate-400 hover:text-slate-200"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <p className="text-sm text-slate-300 mb-4">
+                Copia queste credenziali temporanee e inviale al collaboratore:
+              </p>
+              
+              <div className="space-y-3 bg-slate-900/50 p-4 rounded-lg mb-4">
+                <div>
+                  <label className="text-xs font-semibold text-slate-400 uppercase">Email</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={newCredentials.email}
+                      readOnly
+                      className="flex-1 px-3 py-2 bg-slate-700/50 border border-slate-600 rounded text-sm font-mono"
+                    />
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(newCredentials.email);
+                        setSuccess('Email copiata!');
+                        setTimeout(() => setSuccess(''), 2000);
+                      }}
+                      className="px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded text-sm"
+                      title="Copia email"
+                    >
+                      📋
+                    </button>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-xs font-semibold text-slate-400 uppercase">Password Temporanea</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={newCredentials.password}
+                      readOnly
+                      className="flex-1 px-3 py-2 bg-slate-700/50 border border-slate-600 rounded text-sm font-mono"
+                    />
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(newCredentials.password);
+                        setSuccess('Password copiata!');
+                        setTimeout(() => setSuccess(''), 2000);
+                      }}
+                      className="px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded text-sm"
+                      title="Copia password"
+                    >
+                      📋
+                    </button>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`Email: ${newCredentials.email}\nPassword: ${newCredentials.password}`);
+                    setSuccess('Credenziali copiate!');
+                    setTimeout(() => setSuccess(''), 2000);
+                  }}
+                  className="w-full mt-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium"
+                >
+                  📋 Copia Tutte le Credenziali
+                </button>
+              </div>
+              
+              <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-3 mb-4">
+                <p className="text-xs text-blue-300">
+                  <strong>ℹ️ Importante:</strong> Il collaboratore dovrà:
+                </p>
+                <ol className="text-xs text-blue-200 mt-2 ml-4 space-y-1 list-decimal">
+                  <li>Accedere con queste credenziali</li>
+                  <li>Impostare una password permanente al primo accesso</li>
+                  <li>La password temporanea non funzionerà più dopo il cambio</li>
+                </ol>
+              </div>
+              
+              <button
+                onClick={() => {
+                  setShowCredentialsPopup(false);
+                  setNewCredentials({ email: '', password: '' });
+                }}
+                className="w-full px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-slate-300 rounded-lg text-sm font-medium"
+              >
+                Chiudi
+              </button>
             </motion.div>
           </div>
         )}
