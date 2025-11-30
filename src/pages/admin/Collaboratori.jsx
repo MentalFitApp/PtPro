@@ -68,7 +68,6 @@ export default function Collaboratori() {
     { id: 'note', label: 'Note', visible: true, locked: false },
   ]);
   const [newEmail, setNewEmail] = useState('');
-  const [newUid, setNewUid] = useState('');
   const [newRole, setNewRole] = useState('Setter');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -402,36 +401,7 @@ export default function Collaboratori() {
     }
   };
 
-  const handleAddByUid = async () => {
-    if (!newUid || newUid.length < 20) {
-      setError('UID non valido');
-      return;
-    }
 
-    try {
-      const collabDoc = getTenantDoc(db, 'collaboratori', newUid);
-      const snap = await getDoc(collabDoc);
-
-      if (snap.exists()) {
-        setEditingCollab(newUid);
-        setEditEmail(snap.data().email || '');
-        setSuccess('Modifica email');
-        return;
-      }
-
-      const email = `uid_${newUid.slice(0, 8)}@recupero.com`;
-      await setDoc(collabDoc, {
-        uid: newUid, email, nome: email.split('@')[0], ruolo: newRole,
-        firstLogin: true, assignedAdmin: [auth.currentUser.uid],
-        dailyReports: [], tracker: {}, personalPipeline: [],
-      });
-
-      setSuccess(`Aggiunto: ${email}`);
-      setNewUid('');
-    } catch (err) {
-      setError('Errore: ' + err.message);
-    }
-  };
 
   const handleUpdateEmailAndSendReset = async () => {
     if (!editingCollab || !editEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail)) {
@@ -725,33 +695,6 @@ export default function Collaboratori() {
 
         {success && <p className="text-green-500 text-center text-xs">{success}</p>}
         {error && <p className="text-red-500 text-center text-xs">{error}</p>}
-
-        {/* RIAGGIUNGI CON UID */}
-        <div className="p-2 sm:p-3 bg-gradient-to-r from-amber-900/20 to-orange-900/20 rounded-lg border border-amber-500/30 mx-3 sm:mx-6">
-          <p className="text-[10px] sm:text-xs font-bold text-amber-300 mb-2 text-center">RIAGGIUNGI CON UID + CAMBIA EMAIL</p>
-          {!editingCollab ? (
-            <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
-              <input type="text" value={newUid} onChange={e => setNewUid(e.target.value.trim())} placeholder="UID" className="flex-1 px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs font-mono" />
-              <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs w-full sm:w-24">
-                <option>Setter</option>
-                <option>Marketing</option>
-                <option>Vendita</option>
-              </select>
-              <motion.button onClick={handleAddByUid} className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded text-[10px] sm:text-xs font-bold whitespace-nowrap" whileHover={{ scale: 1.05 }}>
-                <Key size={12} className="sm:hidden" /><Key size={14} className="hidden sm:block" /> <span className="hidden sm:inline">Cerca</span> UID
-              </motion.button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1.5 sm:gap-2">
-              <p className="text-[10px] sm:text-xs text-amber-200">Modifica email per <strong className="break-all text-[9px] sm:text-[10px]">{editingCollab.slice(0, 8)}...</strong></p>
-              <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
-                <input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="nuova@email.it" className="flex-1 px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-amber-500/50 rounded text-[10px] sm:text-xs" />
-                <motion.button onClick={handleUpdateEmailAndSendReset} className="px-2 sm:px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-[10px] sm:text-xs font-bold whitespace-nowrap" whileHover={{ scale: 1.05 }}>Invia</motion.button>
-                <motion.button onClick={() => { setEditingCollab(null); setEditEmail(''); }} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white rounded text-[10px] sm:text-xs whitespace-nowrap" whileHover={{ scale: 1.05 }}>Annulla</motion.button>
-              </div>
-            </div>
-          )}
-        </div>
 
         <ReportStatus collaboratori={collaboratori} />
 
