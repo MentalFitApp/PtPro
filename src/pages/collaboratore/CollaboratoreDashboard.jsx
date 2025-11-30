@@ -360,7 +360,6 @@ export default function CollaboratoreDashboard() {
         leadData: {
           name: newLead.name,
           number: newLead.number,
-          email: newLead.email || '',
           source: newLead.source || '',
           note: newLead.note || ''
         },
@@ -371,7 +370,7 @@ export default function CollaboratoreDashboard() {
 
       setSuccess('Lead salvato e aggiunto al calendario!');
       setTimeout(() => setSuccess(''), 3000);
-      setNewLead({ name: '', source: '', number: '', email: '', note: '', dataPrenotazione: '', oraPrenotazione: '' });
+      setNewLead({ name: '', source: '', number: '', note: '', dataPrenotazione: '', oraPrenotazione: '' });
       setShowNewLead(false);
     } catch (err) {
       console.error('Errore salvataggio lead:', err);
@@ -872,26 +871,144 @@ export default function CollaboratoreDashboard() {
       {/* NUOVO LEAD */}
       <AnimatePresence>
         {showNewLead && isSetter && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-white">Nuovo Lead</h3>
-                <button onClick={() => setShowNewLead(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }} 
+              animate={{ scale: 1, y: 0 }} 
+              exit={{ scale: 0.9, y: 20 }} 
+              className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                    <Phone className="text-blue-400" size={24} />
+                    Nuovo Lead
+                  </h3>
+                  <p className="text-sm text-slate-400 mt-1">Compila i dati del nuovo contatto</p>
+                </div>
+                <button 
+                  onClick={() => setShowNewLead(false)} 
+                  className="text-slate-400 hover:text-white hover:bg-slate-700/50 p-2 rounded-lg transition-all"
+                >
+                  <X size={24} />
+                </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" value={newLead.name} onChange={e => setNewLead({ ...newLead, name: e.target.value })} placeholder="Nome Lead" className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white" />
-                <select value={newLead.source} onChange={e => setNewLead({ ...newLead, source: e.target.value })} className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white">
-                  <option value="">Seleziona Fonte</option>
-                  {fonti.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
-                <input type="text" value={newLead.number} onChange={e => setNewLead({ ...newLead, number: e.target.value })} placeholder="Numero" className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white" />
-                <input type="text" value={newLead.email} onChange={e => setNewLead({ ...newLead, email: e.target.value })} placeholder="Email" className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white" />
-                <input type="date" value={newLead.dataPrenotazione} onChange={e => setNewLead({ ...newLead, dataPrenotazione: e.target.value })} className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white" />
-                <input type="time" value={newLead.oraPrenotazione} onChange={e => setNewLead({ ...newLead, oraPrenotazione: e.target.value })} className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white" />
-                <textarea value={newLead.note} onChange={e => setNewLead({ ...newLead, note: e.target.value })} placeholder="Note" className="p-3 bg-slate-700/70 border border-white/10 rounded-lg text-white col-span-2" rows="2" />
-                <motion.button onClick={handleSaveLead} className="col-span-2 bg-green-600 hover:bg-green-700 text-white preserve-white py-3 rounded-lg flex items-center justify-center gap-2" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Save size={20} /> Salva Lead
-                </motion.button>
+              
+              <div className="space-y-4">
+                {/* Nome - Full width */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Nome Completo *
+                  </label>
+                  <input 
+                    type="text" 
+                    value={newLead.name} 
+                    onChange={e => setNewLead({ ...newLead, name: e.target.value })} 
+                    placeholder="Es: Mario Rossi" 
+                    className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    required
+                  />
+                </div>
+
+                {/* Fonte e Numero - 2 colonne su desktop */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Fonte *
+                    </label>
+                    <select 
+                      value={newLead.source} 
+                      onChange={e => setNewLead({ ...newLead, source: e.target.value })} 
+                      className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      required
+                    >
+                      <option value="">Seleziona fonte</option>
+                      {fonti.map(f => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Numero Telefono *
+                    </label>
+                    <input 
+                      type="tel" 
+                      value={newLead.number} 
+                      onChange={e => setNewLead({ ...newLead, number: e.target.value })} 
+                      placeholder="+39 123 456 7890" 
+                      className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Data e Ora - 2 colonne */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Data Appuntamento *
+                    </label>
+                    <input 
+                      type="date" 
+                      value={newLead.dataPrenotazione} 
+                      onChange={e => setNewLead({ ...newLead, dataPrenotazione: e.target.value })} 
+                      className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Ora Appuntamento *
+                    </label>
+                    <input 
+                      type="time" 
+                      value={newLead.oraPrenotazione} 
+                      onChange={e => setNewLead({ ...newLead, oraPrenotazione: e.target.value })} 
+                      className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Note - Full width */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Note (opzionale)
+                  </label>
+                  <textarea 
+                    value={newLead.note} 
+                    onChange={e => setNewLead({ ...newLead, note: e.target.value })} 
+                    placeholder="Aggiungi note o informazioni aggiuntive..." 
+                    className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none" 
+                    rows="3"
+                  />
+                </div>
+
+                {/* Pulsanti */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <motion.button 
+                    onClick={() => setShowNewLead(false)}
+                    className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-white py-3 sm:py-4 rounded-xl font-medium transition-all border border-slate-600/50"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Annulla
+                  </motion.button>
+                  <motion.button 
+                    onClick={handleSaveLead} 
+                    className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 sm:py-4 rounded-xl font-medium transition-all shadow-lg flex items-center justify-center gap-2"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Save size={20} />
+                    <span>Salva Lead</span>
+                  </motion.button>
+                </div>
+
+                <p className="text-xs text-slate-500 text-center mt-2">
+                  * Campi obbligatori
+                </p>
               </div>
             </motion.div>
           </motion.div>
