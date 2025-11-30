@@ -90,11 +90,6 @@ const FirstAccess = () => {
       setIsSubmitting(false);
       return;
     }
-    if (!currentPassword) {
-      setError("Inserisci la password temporanea ricevuta.");
-      setIsSubmitting(false);
-      return;
-    }
     if (newPassword.length < 6) {
       setError("La nuova password deve contenere almeno 6 caratteri.");
       setIsSubmitting(false);
@@ -107,12 +102,30 @@ const FirstAccess = () => {
     }
 
     try {
-      // Re-autentica l'utente con la password corrente prima di cambiarla
-      const credential = EmailAuthProvider.credential(user.email, currentPassword);
-      await reauthenticateWithCredential(user, credential);
+      // Prova prima senza re-autenticazione (se l'utente ha appena fatto login)
+      let needsReauth = false;
+      
+      try {
+        // Tenta di aggiornare direttamente la password
+        await updatePassword(user, newPassword);
+        console.log('✅ Password aggiornata senza re-autenticazione');
+      } catch (err) {
+        if (err.code === 'auth/requires-recent-login') {
+          console.log('⚠️ Richiesta re-autenticazione');
+          needsReauth = true;
+        } else {
+          throw err; // Altri errori vanno gestiti
+        }
+      }
 
-      // Aggiorna password
-      await updatePassword(user, newPassword);
+      // Se necessaria re-autenticazione, prova con la password temporanea
+      if (needsReauth) {
+        console.log('🔐 Re-autenticazione con password temporanea...');
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+        await reauthenticateWithCredential(user, credential);
+        await updatePassword(user, newPassword);
+        console.log('✅ Password aggiornata dopo re-autenticazione');
+      }
 
       // Aggiorna documento corretto nella struttura multi-tenant
       const collectionName = userType === 'client' ? 'clients' : 'collaboratori';
@@ -121,12 +134,22 @@ const FirstAccess = () => {
 
       console.log(`Campo firstLogin aggiornato a false per ${userType}:`, user.uid);
 
-      // Attendo 500ms per dare tempo a Firestore di propagare la modifica
+      // Attendo per propagare le modifiche
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      setSuccess("Password aggiornata! Sarai reindirizzato alla dashboard.");
-      setTimeout(() => {
-        navigate(userType === 'client' ? '/client/dashboard' : '/collaboratore/dashboard');
+      // IMPORTANTE: Forza logout e reindirizza a login per usare la nuova password
+      setSuccess("Password aggiornata! Effettua di nuovo il login con la nuova password.");
+      
+      // Logout e redirect dopo 2 secondi
+      setTimeout(async () => {
+        try {
+          await auth.signOut();
+          console.log('✅ Logout effettuato dopo cambio password');
+          navigate('/login', { replace: true });
+        } catch (logoutErr) {
+          console.error('Errore logout:', logoutErr);
+          navigate('/login', { replace: true });
+        }
       }, 2000);
     } catch (err) {
       console.error("Errore aggiornamento password:", err.code, err.message, { uid: user?.uid, userType });
@@ -139,6 +162,8 @@ const FirstAccess = () => {
       } else if (err.code === 'auth/requires-recent-login') {
         setError("Sessione scaduta. Effettua nuovamente il login e riprova.");
         setTimeout(() => navigate('/login'), 3000);
+      } else if (err.code === 'auth/weak-password') {
+        setError("La password è troppo debole. Usa almeno 6 caratteri con lettere e numeri.");
       } else {
         setError("Si è verificato un errore durante l'aggiornamento della password. " + (err.message || "Riprova."));
       }
@@ -173,20 +198,21 @@ const FirstAccess = () => {
           
           <form onSubmit={handleChangePassword} className="space-y-6">
             <div>
-              <label htmlFor="current-password" className={labelStyle}>Password Temporanea</label>
+              <label htmlFor="current-password" className={labelStyle}>Password Temporanea (se richiesta)</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input 
                   id="current-password" 
                   type="password" 
-                  required 
                   value={currentPassword} 
                   onChange={(e) => setCurrentPassword(e.target.value)} 
                   className={inputStyle}
-                  placeholder="Inserisci la password temporanea"
+                  placeholder="Lascia vuoto se hai appena fatto login"
                 />
               </div>
-              <p className="text-xs text-slate-500 mt-1">Usa la password temporanea che hai ricevuto via email</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Inserisci solo se il sistema ti chiede di re-autenticarti
+              </p>
             </div>
             <div>
               <label htmlFor="new-password" className={labelStyle}>Nuova Password</label>

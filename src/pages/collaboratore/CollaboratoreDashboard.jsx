@@ -443,7 +443,7 @@ export default function CollaboratoreDashboard() {
     }
   };
 
-  const isSetter = collaboratore?.role === 'Setter';
+  const isSetter = collaboratore?.ruolo === 'Setter' || collaboratore?.role === 'Setter';
 
   // --- STATISTICHE PERSONALI ---
   const totalLeads = myLeads.length;
