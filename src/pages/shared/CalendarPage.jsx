@@ -1087,6 +1087,7 @@ export default function CalendarPage() {
                 </div>
               </div>
               {/* Fine contenuto scrollabile */}
+              </div>
             </motion.div>
           </motion.div>
         )}

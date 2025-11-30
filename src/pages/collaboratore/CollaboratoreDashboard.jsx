@@ -11,7 +11,8 @@ import { uploadPhoto } from '../../storageUtils.js';
 import { 
   CheckCircle, FileText, Save, Phone, TrendingUp, BarChart3, 
   Plus, X, Eye, Check, AlertCircle, Trash2, Clock, User, 
-  Edit, Camera, Key, Trophy, ChevronLeft, ChevronRight 
+  Edit, Camera, Key, Trophy, ChevronLeft, ChevronRight, 
+  Calendar as CalendarIcon 
 } from 'lucide-react';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -55,9 +56,14 @@ export default function CollaboratoreDashboard() {
     callPrenotate: '',
   });
   const [newLead, setNewLead] = useState({
-    name: '', source: '', number: '', email: '', note: '',
+    name: '', source: '', number: '', note: '',
     dataPrenotazione: '', oraPrenotazione: '',
   });
+  const [showDateTimePicker, setShowDateTimePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [lastGeneratedDate, setLastGeneratedDate] = useState(null);
   const [profile, setProfile] = useState({ name: '', photoURL: '', gender: 'M' });
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -220,6 +226,33 @@ export default function CollaboratoreDashboard() {
     };
   }, [collaboratore, loading]); // Dipende da collaboratore e loading
 
+  // --- CARICA EVENTI CALENDARIO ---
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const eventsQuery = query(
+      getTenantCollection(db, 'calendarEvents'),
+      orderBy('date', 'asc')
+    );
+
+    const unsub = onSnapshot(eventsQuery, (snap) => {
+      const events = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log('📅 EVENTI CARICATI:', events.length);
+      console.table(events.map(e => ({
+        Titolo: e.title,
+        Data: e.date,
+        Ora: e.time,
+        Durata: e.durationMinutes + 'min',
+        Tipo: e.type
+      })));
+      setCalendarEvents(events);
+    }, (err) => {
+      console.error('❌ Errore caricamento eventi calendario:', err);
+    });
+
+    return () => unsub();
+  }, []);
+
   // --- FETCH TUTTI I COLLABORATORI ---
   useEffect(() => {
     console.log('🔄 Caricamento tutti i collaboratori...');
@@ -329,6 +362,83 @@ export default function CollaboratoreDashboard() {
     }
   };
 
+  // --- GENERA FASCE ORARIE ---
+  const generateTimeSlots = (dateStr) => {
+    console.log('\n🎯 === GENERAZIONE SLOT PER:', dateStr, '===');
+    setSelectedDate(dateStr);
+    
+    const slots = [];
+    // Genera slot ogni 30 minuti dalle 8:00 alle 22:00
+    for (let h = 8; h <= 21; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        slots.push(time);
+      }
+    }
+    // Aggiungi anche 22:00
+    slots.push('22:00');
+
+    const occupiedSlots = new Set();
+
+    // 1. Filtra da myLeads (lead già creati)
+    const leadsOnDate = myLeads.filter(lead => lead.dataPrenotazione === dateStr);
+    console.log('📋 Lead trovati:', leadsOnDate.length);
+    
+    leadsOnDate.forEach(lead => {
+      if (!lead.oraPrenotazione) return;
+      console.log('  📞', lead.name, 'alle', lead.oraPrenotazione);
+      
+      const [hours, minutes] = lead.oraPrenotazione.split(':').map(Number);
+      const duration = 30;
+      
+      // Arrotonda l'inizio al blocco di 30 minuti precedente
+      let totalMinutes = hours * 60 + minutes;
+      let startMinutes = Math.floor(totalMinutes / 30) * 30;
+      const endMinutes = totalMinutes + duration;
+      
+      while (startMinutes < endMinutes) {
+        const h = Math.floor(startMinutes / 60);
+        const m = startMinutes % 60;
+        const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        occupiedSlots.add(timeStr);
+        startMinutes += 30;
+      }
+    });
+
+    // 2. Filtra da calendarEvents (eventi aggiunti manualmente)
+    const eventsOnDate = calendarEvents.filter(e => e.date === dateStr);
+    console.log('📅 Eventi calendario:', eventsOnDate.length);
+    
+    eventsOnDate.forEach(event => {
+      if (!event.time) return;
+      console.log('  📆', event.title, 'alle', event.time);
+      
+      const [hours, minutes] = event.time.split(':').map(Number);
+      const duration = event.durationMinutes || 30;
+      
+      // Arrotonda l'inizio al blocco di 30 minuti precedente
+      let totalMinutes = hours * 60 + minutes;
+      let startMinutes = Math.floor(totalMinutes / 30) * 30;
+      const endMinutes = totalMinutes + duration;
+      
+      while (startMinutes < endMinutes) {
+        const h = Math.floor(startMinutes / 60);
+        const m = startMinutes % 60;
+        const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        occupiedSlots.add(timeStr);
+        startMinutes += 30;
+      }
+    });
+
+    console.log('🔒 Totale slot occupati:', occupiedSlots.size);
+
+    // Restituisce solo gli slot liberi
+    const freeSlots = slots.filter(slot => !occupiedSlots.has(slot));
+    console.log('✅ Slot liberi:', freeSlots.length, '/', slots.length);
+    
+    setAvailableSlots(freeSlots);
+  };
+
   // --- SALVA LEAD ---
   const handleSaveLead = async () => {
     if (!newLead.name || !newLead.number || !newLead.dataPrenotazione || !newLead.oraPrenotazione) {
@@ -371,6 +481,8 @@ export default function CollaboratoreDashboard() {
       setSuccess('Lead salvato e aggiunto al calendario!');
       setTimeout(() => setSuccess(''), 3000);
       setNewLead({ name: '', source: '', number: '', note: '', dataPrenotazione: '', oraPrenotazione: '' });
+      setSelectedDate(null);
+      setAvailableSlots([]);
       setShowNewLead(false);
     } catch (err) {
       console.error('Errore salvataggio lead:', err);
@@ -942,33 +1054,32 @@ export default function CollaboratoreDashboard() {
                   </div>
                 </div>
 
-                {/* Data e Ora - 2 colonne */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Data Appuntamento *
-                    </label>
-                    <input 
-                      type="date" 
-                      value={newLead.dataPrenotazione} 
-                      onChange={e => setNewLead({ ...newLead, dataPrenotazione: e.target.value })} 
-                      className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Ora Appuntamento *
-                    </label>
-                    <input 
-                      type="time" 
-                      value={newLead.oraPrenotazione} 
-                      onChange={e => setNewLead({ ...newLead, oraPrenotazione: e.target.value })} 
-                      className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    />
-                  </div>
+                {/* Data e Ora con Picker Visuale */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Data e Ora Appuntamento *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      console.log('📅 Apertura calendario picker, eventi caricati:', calendarEvents.length);
+                      setShowDateTimePicker(true);
+                    }}
+                    className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-left focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:bg-slate-700/60 flex items-center justify-between"
+                  >
+                    {newLead.dataPrenotazione && newLead.oraPrenotazione ? (
+                      <span className="text-white font-medium">
+                        📅 {new Date(newLead.dataPrenotazione).toLocaleDateString('it-IT', { 
+                          weekday: 'short', 
+                          day: 'numeric', 
+                          month: 'short' 
+                        })} alle {newLead.oraPrenotazione}
+                      </span>
+                    ) : (
+                      <span className="text-slate-500">Clicca per selezionare data e ora</span>
+                    )}
+                    <CalendarIcon size={20} className="text-blue-400" />
+                  </button>
                 </div>
 
                 {/* Note - Full width */}
@@ -1089,6 +1200,111 @@ export default function CollaboratoreDashboard() {
                 ))}
                 {pastReports.length === 0 && (
                   <p className="text-center text-slate-400 py-8">Nessun report passato</p>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* PICKER DATA E ORA */}
+      <AnimatePresence>
+        {showDateTimePicker && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 w-full max-w-lg flex flex-col max-h-[90vh]">
+              {/* Header Fisso */}
+              <div className="flex-shrink-0 flex justify-between items-center p-6 border-b border-white/10">
+                <h3 className="text-xl font-bold text-white">\ud83d\udcc5 Seleziona Data e Ora</h3>
+                <button onClick={() => setShowDateTimePicker(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
+              </div>
+              
+              {/* Contenuto Scrollabile */}
+              <div className="overflow-y-auto flex-1 p-6">
+                {/* Mini Calendario */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium text-slate-300 mb-3">Seleziona il giorno:</h4>
+                  <div className="grid grid-cols-7 gap-2">
+                    {(() => {
+                      const days = [];
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      
+                      for (let i = 0; i < 21; i++) {
+                        const date = new Date(today);
+                        date.setDate(today.getDate() + i);
+                        // Usa lo stesso formato di CalendarPage
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const dateStr = `${year}-${month}-${day}`;
+                        const isSelected = selectedDate === dateStr;
+                        
+                        days.push(
+                          <button
+                            key={dateStr}
+                            type="button"
+                            data-date={dateStr}
+                            onClick={(e) => {
+                              const clickedDate = e.currentTarget.getAttribute('data-date');
+                              console.log('🖱️ CLICK su data:', clickedDate);
+                              setSelectedDate(clickedDate);
+                              setLastGeneratedDate(null);
+                              generateTimeSlots(clickedDate);
+                            }}
+                            className={`p-2 rounded-lg text-center transition-all ${
+                              isSelected 
+                                ? 'bg-blue-600 text-white font-bold ring-2 ring-blue-400' 
+                                : 'bg-slate-800/60 text-slate-300 hover:bg-slate-700/60'
+                            }`}
+                          >
+                            <div className="text-xs">{date.toLocaleDateString('it-IT', { weekday: 'short' })}</div>
+                            <div className="text-lg font-bold">{date.getDate()}</div>
+                            <div className="text-xs">{date.toLocaleDateString('it-IT', { month: 'short' })}</div>
+                          </button>
+                        );
+                      }
+                      return days;
+                    })()}
+                  </div>
+                </div>
+
+                {/* Fasce Orarie */}
+                {selectedDate && (
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-300 mb-3">
+                      Seleziona l'orario: 
+                      {availableSlots.length > 0 && (
+                        <span className="ml-2 text-xs text-emerald-400">({availableSlots.length} slot liberi)</span>
+                      )}
+                    </h4>
+                    <div className="grid grid-cols-4 gap-2 max-h-[400px] overflow-y-auto">
+                      {availableSlots.map((slot, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setNewLead({ 
+                              ...newLead, 
+                              dataPrenotazione: selectedDate, 
+                              oraPrenotazione: slot 
+                            });
+                            setShowDateTimePicker(false);
+                            setSelectedDate(null);
+                          }}
+                          className="p-3 bg-emerald-600/20 border border-emerald-500/30 rounded-lg text-emerald-300 hover:bg-emerald-600/40 hover:border-emerald-400 transition-all font-medium"
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                      {availableSlots.length === 0 && (
+                        <div className="col-span-3 text-center py-6">
+                          <div className="text-amber-400 text-lg mb-2">⚠️</div>
+                          <p className="text-slate-300 font-medium">Nessuna fascia oraria disponibile</p>
+                          <p className="text-slate-400 text-sm mt-1">Tutti gli slot sono già occupati per questo giorno</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             </motion.div>
