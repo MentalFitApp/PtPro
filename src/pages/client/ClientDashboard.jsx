@@ -243,13 +243,15 @@ const ClientDashboard = () => {
               <h1 className="text-base sm:text-2xl font-bold text-white truncate">Ciao, {clientData.name}! 👋</h1>
               <p className="text-[10px] sm:text-sm text-slate-400 truncate">{branding.clientAreaName}</p>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-              <NotificationPanel userType="client" />
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <div className="relative z-50">
+                <NotificationPanel userType="client" />
+              </div>
               <motion.button 
                 onClick={handleLogout} 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-slate-700 hover:bg-slate-600 text-white preserve-white text-xs sm:text-sm font-medium rounded-lg transition-colors"
+                className="flex items-center justify-center gap-1.5 px-3 sm:px-3 py-1.5 sm:py-2 bg-slate-700 hover:bg-slate-600 text-white preserve-white text-xs sm:text-sm font-medium rounded-lg transition-colors min-w-[44px] sm:min-w-auto"
               >
                 <LogOut size={14} className="sm:w-4 sm:h-4" /><span className="hidden sm:inline">Logout</span>
               </motion.button>

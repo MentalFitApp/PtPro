@@ -311,56 +311,94 @@ export default function Collaboratori() {
   const generateTempPassword = () => Math.random().toString(36).slice(-8) + '!';
 
   const handleAddCollaboratore = async () => {
+    console.log('📧 Inizio aggiunta collaboratore, email:', newEmail, 'ruolo:', newRole);
+    
     if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      console.error('❌ Email non valida:', newEmail);
       setError('Email non valida.');
       return;
     }
 
+    const emailLower = newEmail.trim().toLowerCase();
+    console.log('✅ Email validata:', emailLower);
+
     const tempApp = initializeApp(firebaseConfig, `temp-${Date.now()}`);
     const tempAuth = getAuth(tempApp);
-    const functions = getFunctions();
+    const functions = getFunctions(undefined, 'europe-west1');
 
     try {
       let uid;
       let isNewUser = false;
 
-      const collabQuery = query(getTenantCollection(db, 'collaboratori'), where('email', '==', newEmail));
+      // 1. Controlla se esiste già in questo tenant
+      console.log('🔍 Controllo se collaboratore esiste già nel tenant...');
+      const collabQuery = query(getTenantCollection(db, 'collaboratori'), where('email', '==', emailLower));
       const collabSnap = await getDocs(collabQuery);
 
       if (!collabSnap.empty) {
+        console.log('⚠️ Collaboratore già presente nel tenant');
         uid = collabSnap.docs[0].id;
         if (!window.confirm(`Collaboratore già presente. Aggiornare?`)) {
           await deleteApp(tempApp);
           return;
         }
+        console.log('✅ Utente conferma aggiornamento, UID:', uid);
       } else {
+        console.log('✅ Collaboratore non presente, controllo se utente Firebase esiste...');
+        
+        // 2. Controlla se l'utente Firebase esiste
         const getUidByEmail = httpsCallable(functions, 'getUidByEmail');
-        const result = await getUidByEmail({ email: newEmail.trim().toLowerCase() });
+        console.log('📞 Chiamata Cloud Function getUidByEmail...');
+        const result = await getUidByEmail({ email: emailLower });
+        console.log('📥 Risposta Cloud Function:', result.data);
+        
         if (result.data.uid) {
+          console.log('✅ Utente Firebase esiste, UID:', result.data.uid);
           uid = result.data.uid;
           isNewUser = false;
         } else {
-          const cred = await createUserWithEmailAndPassword(tempAuth, newEmail, generateTempPassword());
+          console.log('🆕 Utente Firebase NON esiste, creo nuovo account...');
+          const tempPassword = generateTempPassword();
+          console.log('🔑 Password temporanea generata');
+          const cred = await createUserWithEmailAndPassword(tempAuth, emailLower, tempPassword);
           uid = cred.user.uid;
           isNewUser = true;
+          console.log('✅ Nuovo account creato, UID:', uid);
         }
       }
 
+      console.log('💾 Salvataggio collaboratore in Firestore...');
       const collabData = {
-        uid, email: newEmail, nome: newEmail.split('@')[0], ruolo: newRole,
-        firstLogin: isNewUser, assignedAdmin: [auth.currentUser.uid],
-        dailyReports: [], tracker: {}, personalPipeline: [],
+        uid, 
+        email: emailLower, 
+        nome: emailLower.split('@')[0], 
+        ruolo: newRole,
+        firstLogin: isNewUser, 
+        assignedAdmin: [auth.currentUser.uid],
+        dailyReports: [], 
+        tracker: {}, 
+        personalPipeline: [],
       };
+      console.log('📄 Dati collaboratore:', collabData);
 
       await setDoc(getTenantDoc(db, 'collaboratori', uid), collabData, { merge: true });
-      await sendPasswordResetEmail(tempAuth, newEmail);
+      console.log('✅ Collaboratore salvato');
 
-      setSuccess(isNewUser ? `Creato!` : `Riaggiunto!`);
+      console.log('📧 Invio email reset password...');
+      await sendPasswordResetEmail(tempAuth, emailLower);
+      console.log('✅ Email inviata');
+
+      setSuccess(isNewUser ? `Collaboratore creato! Email di reset inviata.` : `Collaboratore riaggiunto! Email di reset inviata.`);
       setNewEmail('');
+      setError('');
     } catch (err) {
+      console.error('❌ ERRORE:', err);
+      console.error('Dettagli errore:', err.message, err.code);
       setError('Errore: ' + err.message);
+      setSuccess('');
     } finally {
       await deleteApp(tempApp);
+      console.log('🧹 Cleanup completato');
     }
   };
 

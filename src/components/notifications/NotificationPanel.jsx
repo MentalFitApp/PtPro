@@ -163,11 +163,11 @@ export default function NotificationPanel({ userType = 'client' }) {
       {isNotificationsEnabled && (
         <button
           onClick={() => setShowPanel(!showPanel)}
-          className="relative p-2 hover:bg-white/10 rounded-lg transition-colors"
+          className="relative p-2 hover:bg-white/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
-          <Bell size={24} className="text-slate-300" />
+          <Bell size={20} className="sm:w-6 sm:h-6 text-slate-300" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+            <span className="absolute top-0 right-0 bg-rose-600 text-white text-[10px] sm:text-xs font-bold rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
               {unreadCount}
             </span>
           )}

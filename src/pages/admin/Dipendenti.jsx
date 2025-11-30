@@ -194,7 +194,7 @@ const Dipendenti = () => {
       note: formPagamento.note.trim(),
       updatedAt: serverTimestamp(),
     }, { merge: true });
-    setFormPagamento({ ...formPagamento, importoBase: "", percentualeDaPagare: 100, bonus: "", note: "" });
+    setFormPagamento({ dipId: "", importoBase: "", percentualeDaPagare: 100, bonus: "", data: format(new Date(), "yyyy-MM-dd"), note: "" });
     setEditingPagamento(null);
   };
 
@@ -400,13 +400,13 @@ const Dipendenti = () => {
               {!dip.archived && (
                 <div className="mt-4 space-y-3">
                   <div>
-                    <label className="text-xs text-slate-400">Paga il {formPagamento.percentualeDaPagare || 100}%</label>
+                    <label className="text-xs text-slate-400">Paga il {formPagamento.dipId === dip.id ? (formPagamento.percentualeDaPagare || 100) : 100}%</label>
                     <input
                       type="range"
                       min="0"
                       max="100"
                       step="25"
-                      value={formPagamento.percentualeDaPagare || 100}
+                      value={formPagamento.dipId === dip.id ? (formPagamento.percentualeDaPagare || 100) : 100}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
                         setFormPagamento({
@@ -424,15 +424,57 @@ const Dipendenti = () => {
                   </div>
 
                   <div className="flex gap-2">
-                    <input type="number" placeholder="Importo" value={formPagamento.importoBase || ""} readOnly className="flex-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600" />
-                    <input type="number" placeholder="Bonus" className="w-20 px-2 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500" onChange={(e) => setFormPagamento({ ...formPagamento, bonus: e.target.value })} />
+                    <input 
+                      type="number" 
+                      placeholder="Importo" 
+                      value={formPagamento.dipId === dip.id ? (formPagamento.importoBase || "") : (dip.tipo === "percentuale" ? provvigionePercentuale : totaleFissi)} 
+                      readOnly 
+                      className="flex-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600" 
+                    />
+                    <input 
+                      type="number" 
+                      placeholder="Bonus" 
+                      value={formPagamento.dipId === dip.id ? (formPagamento.bonus || "") : ""}
+                      className="w-20 px-2 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500" 
+                      onChange={(e) => setFormPagamento({ ...formPagamento, dipId: dip.id, importoBase: (dip.tipo === "percentuale" ? provvigionePercentuale : totaleFissi), bonus: e.target.value })} 
+                    />
                   </div>
 
-                  <input type="text" placeholder="Note" value={formPagamento.note} onChange={(e) => setFormPagamento({ ...formPagamento, note: e.target.value })} className="w-full px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500" />
+                  <input 
+                    type="text" 
+                    placeholder="Note" 
+                    value={formPagamento.dipId === dip.id ? formPagamento.note : ""} 
+                    onChange={(e) => setFormPagamento({ ...formPagamento, dipId: dip.id, importoBase: (dip.tipo === "percentuale" ? provvigionePercentuale : totaleFissi), note: e.target.value })} 
+                    className="w-full px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500" 
+                  />
 
                   <div className="flex gap-2">
-                    <input type="date" value={formPagamento.data} onChange={(e) => setFormPagamento({ ...formPagamento, data: e.target.value })} className="flex-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500" />
-                    <button onClick={salvaPagamento} className="px-3 py-1.5 text-xs bg-rose-600 text-white rounded hover:bg-rose-700 transition font-medium">Paga</button>
+                    <input 
+                      type="date" 
+                      value={formPagamento.dipId === dip.id ? formPagamento.data : format(new Date(), "yyyy-MM-dd")} 
+                      onChange={(e) => setFormPagamento({ ...formPagamento, dipId: dip.id, importoBase: (dip.tipo === "percentuale" ? provvigionePercentuale : totaleFissi), data: e.target.value })} 
+                      className="flex-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500" 
+                    />
+                    <button 
+                      onClick={() => {
+                        if (!formPagamento.dipId || formPagamento.dipId !== dip.id) {
+                          setFormPagamento({
+                            dipId: dip.id,
+                            importoBase: (dip.tipo === "percentuale" ? provvigionePercentuale : totaleFissi),
+                            percentualeDaPagare: 100,
+                            bonus: formPagamento.bonus || "",
+                            data: formPagamento.data || format(new Date(), "yyyy-MM-dd"),
+                            note: formPagamento.note || "",
+                          });
+                          setTimeout(() => salvaPagamento(), 100);
+                        } else {
+                          salvaPagamento();
+                        }
+                      }} 
+                      className="px-3 py-1.5 text-xs bg-rose-600 text-white rounded hover:bg-rose-700 transition font-medium"
+                    >
+                      Paga
+                    </button>
                   </div>
                 </div>
               )}
