@@ -16,6 +16,9 @@ const MainLayout = React.lazy(() => import('./components/layout/MainLayout'));
 const SimpleLayout = React.lazy(() => import('./components/layout/SimpleLayout'));
 const GuidaLayout = React.lazy(() => import('./components/layout/GuidaLayout'));
 
+// Import componente protezione permessi
+import { ProtectedClientRoute } from './components/ProtectedClientRoute';
+
 // Import dinamici delle pagine
 
 // Auth Pages
@@ -39,7 +42,7 @@ const StatisticheDashboard = React.lazy(() => import('./pages/admin/StatisticheD
 const Analytics = React.lazy(() => import('./pages/admin/Analytics'));
 const CourseAdmin = React.lazy(() => import('./pages/admin/CourseAdmin'));
 const CourseContentManager = React.lazy(() => import('./pages/admin/CourseContentManager'));
-const SuperAdminSettings = React.lazy(() => import('./pages/admin/SuperAdminSettings'));
+const PlatformSettings = React.lazy(() => import('./pages/admin/PlatformSettings'));
 const TenantBranding = React.lazy(() => import('./pages/admin/TenantBranding'));
 const LandingEditor = React.lazy(() => import('./pages/admin/LandingEditor'));
 
@@ -54,7 +57,6 @@ const ClientChecks = React.lazy(() => import('./pages/client/ClientChecks'));
 const ClientPayments = React.lazy(() => import('./pages/client/ClientPayments'));
 const ClientSettings = React.lazy(() => import('./pages/client/ClientSettings'));
 const ClientSchedaAlimentazione = React.lazy(() => import('./pages/client/ClientSchedaAlimentazione'));
-const ClientSchedaAlimentazioneEnhanced = React.lazy(() => import('./pages/client/ClientSchedaAlimentazioneEnhanced'));
 const ClientSchedaAllenamento = React.lazy(() => import('./pages/client/ClientSchedaAllenamento'));
 
 // Coach Pages
@@ -416,7 +418,7 @@ export default function App() {
 
         {/* === ROTTE SUPERADMIN (SOLO SUPERADMIN) === */}
         <Route element={authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
-          <Route path="/superadmin" element={<SuperAdminSettings />} />
+          <Route path="/platform-settings" element={<PlatformSettings />} />
 
           <Route path="/course-admin" element={<CourseAdmin />} />
           <Route path="/admin/course/:courseId/manage" element={<CourseContentManager />} />
@@ -442,20 +444,20 @@ export default function App() {
         <Route element={authInfo.isClient ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route path="/client/onboarding" element={<Onboarding />} />
           <Route path="/client/first-access" element={<FirstAccess />} />
-          <Route path="/client/dashboard" element={<ClientDashboard />} />
-          <Route path="/client/anamnesi" element={<ClientAnamnesi />} />
-          <Route path="/client/checks" element={<ClientChecks />} />
-          <Route path="/client/payments" element={<ClientPayments />} />
-          <Route path="/client/chat" element={<UnifiedChat />} />
-          <Route path="/client/scheda-alimentazione" element={<ClientSchedaAlimentazioneEnhanced />} />
-          <Route path="/client/scheda-allenamento" element={<ClientSchedaAllenamento />} />
+          <Route path="/client/dashboard" element={<ProtectedClientRoute requiredPermission="dashboard"><ClientDashboard /></ProtectedClientRoute>} />
+          <Route path="/client/anamnesi" element={<ProtectedClientRoute requiredPermission="anamnesi"><ClientAnamnesi /></ProtectedClientRoute>} />
+          <Route path="/client/checks" element={<ProtectedClientRoute requiredPermission="checks"><ClientChecks /></ProtectedClientRoute>} />
+          <Route path="/client/payments" element={<ProtectedClientRoute requiredPermission="payments"><ClientPayments /></ProtectedClientRoute>} />
+          <Route path="/client/chat" element={<ProtectedClientRoute requiredPermission="chat"><UnifiedChat /></ProtectedClientRoute>} />
+          <Route path="/client/scheda-alimentazione" element={<ProtectedClientRoute requiredPermission="scheda-alimentazione"><ClientSchedaAlimentazione /></ProtectedClientRoute>} />
+          <Route path="/client/scheda-allenamento" element={<ProtectedClientRoute requiredPermission="scheda-allenamento"><ClientSchedaAllenamento /></ProtectedClientRoute>} />
 
-          <Route path="/client/courses" element={<CourseDashboard />} />
-          <Route path="/client/courses/:courseId" element={<CourseDetail />} />
-          <Route path="/client/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<LessonPlayer />} />
+          <Route path="/client/courses" element={<ProtectedClientRoute requiredPermission="courses"><CourseDashboard /></ProtectedClientRoute>} />
+          <Route path="/client/courses/:courseId" element={<ProtectedClientRoute requiredPermission="courses"><CourseDetail /></ProtectedClientRoute>} />
+          <Route path="/client/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<ProtectedClientRoute requiredPermission="courses"><LessonPlayer /></ProtectedClientRoute>} />
           <Route path="/client/onboarding" element={<OnboardingFlow />} />
-          <Route path="/client/community" element={<Community />} />
-          <Route path="/client/settings" element={<ClientSettings />} />
+          <Route path="/client/community" element={<ProtectedClientRoute requiredPermission="community"><Community /></ProtectedClientRoute>} />
+          <Route path="/client/settings" element={<ProtectedClientRoute requiredPermission="settings"><ClientSettings /></ProtectedClientRoute>} />
         </Route>
 
         {/* === ROTTE COLLABORATORI === */}

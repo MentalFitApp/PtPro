@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw } from 'lucide-react';
 import { db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth } from '../../firebase';
+import { convertToGrams } from '../../utils/nutritionUnits';
 import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { exportNutritionCardToPDF } from '../../utils/pdfExport';
+import SmartFoodSwapEnhanced from '../../components/SmartFoodSwapEnhanced';
+import { useFeaturePermission } from '../../components/ProtectedClientRoute';
 
 const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
 
@@ -14,6 +17,11 @@ const ClientSchedaAlimentazione = () => {
   const [schedaData, setSchedaData] = useState(null);
   const [selectedDay, setSelectedDay] = useState('Lunedì');
   const [clientName, setClientName] = useState('');
+  const [swapModalData, setSwapModalData] = useState(null);
+  
+  // Controllo permessi features
+  const { hasPermission: canSwapFoods, disabledMessage: swapDisabledMessage } = useFeaturePermission('food-swap');
+  const { hasPermission: canExportPDF, disabledMessage: pdfDisabledMessage } = useFeaturePermission('pdf-export');
 
   useEffect(() => {
     loadScheda();
@@ -48,7 +56,8 @@ const ClientSchedaAlimentazione = () => {
     let totals = { kcal: 0, proteine: 0, carboidrati: 0, grassi: 0 };
     
     pasto.alimenti?.forEach(alimento => {
-      const factor = alimento.quantita / 100;
+      const quantitaInGrammi = convertToGrams(alimento.quantita, alimento.unitaMisura);
+      const factor = quantitaInGrammi / 100;
       totals.kcal += (alimento.kcal || 0) * factor;
       totals.proteine += (alimento.proteine || 0) * factor;
       totals.carboidrati += (alimento.carboidrati || 0) * factor;
@@ -68,16 +77,91 @@ const ClientSchedaAlimentazione = () => {
     
     pasti.forEach(pasto => {
       pasto.alimenti?.forEach(alimento => {
-        const factor = alimento.quantita / 100;
+        const quantitaInGrammi = convertToGrams(alimento.quantita, alimento.unitaMisura);
+        const factor = quantitaInGrammi / 100;
         totals.kcal += (alimento.kcal || 0) * factor;
         totals.proteine += (alimento.proteine || 0) * factor;
         totals.carboidrati += (alimento.carboidrati || 0) * factor;
         totals.grassi += (alimento.grassi || 0) * factor;
-        totals.quantita += alimento.quantita || 0;
+        totals.quantita += quantitaInGrammi;
       });
     });
 
     return totals;
+  };
+
+  const handleOpenSwap = (dayName, pastoIndex, alimentoIndex, alimento) => {
+    const pasto = schedaData.giorni[dayName].pasti[pastoIndex];
+    const quantitaInGrammi = convertToGrams(alimento.quantita, alimento.unitaMisura);
+    const factor = quantitaInGrammi / 100;
+    
+    const currentMacros = {
+      calories: Math.round((alimento.kcal || 0) * factor),
+      proteins: Math.round((alimento.proteine || 0) * factor * 10) / 10,
+      carbs: Math.round((alimento.carboidrati || 0) * factor * 10) / 10,
+      fats: Math.round((alimento.grassi || 0) * factor * 10) / 10,
+    };
+
+    setSwapModalData({
+      dayName,
+      pastoIndex,
+      alimentoIndex,
+      currentFood: alimento,
+      currentGrams: quantitaInGrammi,
+      currentMacros,
+      targetMacros: currentMacros, // Target = macros attuali impostati dal coach
+      mealDay: dayName,
+      mealName: pasto.nome,
+    });
+  };
+
+  const handleSwapConfirm = async (swapData) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const newSchedaData = { ...schedaData };
+      
+      const processSwap = (dayName) => {
+        const pasto = newSchedaData.giorni[dayName].pasti[swapModalData.pastoIndex];
+        const newAlimento = {
+          nome: swapData.foodName,
+          quantita: swapData.grams,
+          kcal: Math.round((swapData.macros.calories / swapData.grams) * 100),
+          proteine: Math.round(((swapData.macros.proteins / swapData.grams) * 100) * 10) / 10,
+          carboidrati: Math.round(((swapData.macros.carbs / swapData.grams) * 100) * 10) / 10,
+          grassi: Math.round(((swapData.macros.fats / swapData.grams) * 100) * 10) / 10,
+        };
+        
+        pasto.alimenti[swapModalData.alimentoIndex] = newAlimento;
+      };
+
+      if (swapData.applyToAllDays) {
+        // Applica a tutti i giorni
+        GIORNI_SETTIMANA.forEach(dayName => {
+          if (newSchedaData.giorni[dayName]?.pasti?.[swapModalData.pastoIndex]) {
+            processSwap(dayName);
+          }
+        });
+      } else {
+        // Applica solo al giorno corrente
+        processSwap(swapModalData.dayName);
+      }
+
+      // Salva su Firestore
+      const schedaRef = getTenantDoc(db, 'schede_alimentazione', user.uid);
+      await updateDoc(schedaRef, {
+        giorni: newSchedaData.giorni,
+        lastModified: new Date().toISOString(),
+        modifiedBy: 'client',
+      });
+
+      setSchedaData(newSchedaData);
+      setSwapModalData(null);
+    } catch (error) {
+      console.error('Errore nella sostituzione:', error);
+      alert('Errore durante la sostituzione dell\'alimento');
+    }
   };
 
   if (loading) {
@@ -104,162 +188,193 @@ const ClientSchedaAlimentazione = () => {
   const dayTotals = calculateDayTotals();
 
   return (
-    <div className="min-h-screen bg-slate-900 px-4 pt-8 pb-4">
-      <div className="max-w-4xl mx-auto space-y-4">
-        {/* Header */}
+    <div className="min-h-screen px-2 sm:px-4 lg:px-6 pt-4 sm:pt-6 pb-20">
+      <div className="max-w-6xl mx-auto space-y-2.5 sm:space-y-4">
+        {/* Header - Responsive */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-slate-800/50 border border-slate-700 rounded-xl p-4"
+          className="bg-gradient-to-br from-emerald-900/40 to-slate-800/40 border border-emerald-600/30 rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-xl"
         >
-          <div className="flex items-start justify-between mb-2">
-            <h1 className="text-xl md:text-2xl font-bold text-slate-100">
-              Piano Alimentazione
-            </h1>
-            <button
-              onClick={() => exportNutritionCardToPDF(schedaData, clientName)}
-              className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white preserve-white text-sm rounded-lg transition-colors"
-            >
-              <Download size={16} />
-              <span className="hidden sm:inline">PDF</span>
-            </button>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h1 className="text-lg sm:text-xl lg:text-3xl font-bold text-emerald-100">
+                Piano Alimentare
+              </h1>
+              {schedaData.obiettivo && (
+                <p className="text-emerald-300 text-xs sm:text-sm lg:text-base font-medium mt-1">
+                  🎯 {schedaData.obiettivo}
+                </p>
+              )}
+            </div>
+            {canExportPDF ? (
+              <button
+                onClick={() => exportNutritionCardToPDF(schedaData, clientName)}
+                className="flex items-center gap-1.5 lg:gap-2 px-2.5 lg:px-4 py-1.5 lg:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs lg:text-sm rounded-lg lg:rounded-xl transition-all shadow-lg"
+              >
+                <Download size={14} className="lg:hidden" />
+                <Download size={18} className="hidden lg:block" />
+                <span className="hidden sm:inline">Esporta PDF</span>
+              </button>
+            ) : pdfDisabledMessage ? (
+              <div className="px-3 py-2 bg-amber-900/30 border border-amber-600/30 rounded-lg text-xs text-amber-400 flex items-center gap-2">
+                🔒 {pdfDisabledMessage}
+              </div>
+            ) : null}
           </div>
-          {schedaData.obiettivo && (
-            <p className="text-emerald-400 text-sm md:text-base">
-              Obiettivo: {schedaData.obiettivo}
-            </p>
-          )}
-          {schedaData.note && (
-            <p className="text-slate-400 text-sm mt-1">{schedaData.note}</p>
-          )}
         </motion.div>
 
-        {/* Day Selector */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3">
-          <div className="flex gap-2 overflow-x-auto pb-2">
+        {/* Day Selector - Responsive */}
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl lg:rounded-2xl p-1.5 lg:p-2.5 shadow-lg">
+          <div className="flex gap-1 lg:gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
             {GIORNI_SETTIMANA.map(giorno => (
               <button
                 key={giorno}
                 onClick={() => setSelectedDay(giorno)}
-                className={`px-3 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ${
+                className={`px-2.5 lg:px-5 py-1.5 lg:py-2.5 rounded-lg lg:rounded-xl font-medium transition-all whitespace-nowrap text-xs lg:text-base shadow-md ${
                   selectedDay === giorno
-                    ? 'bg-emerald-600 text-white preserve-white'
-                    : 'bg-slate-700 text-slate-300'
+                    ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white scale-105 shadow-emerald-500/30'
+                    : 'bg-slate-700/70 text-slate-300 hover:bg-slate-600/70'
                 }`}
               >
-                {giorno}
+                <span className="lg:hidden">{giorno.slice(0, 3)}</span>
+                <span className="hidden lg:inline">{giorno}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Meals */}
-        {schedaData.giorni[selectedDay]?.pasti?.map((pasto, index) => {
-          if (!pasto.alimenti || pasto.alimenti.length === 0) return null;
-          
-          const pastoTotals = calculatePastoTotals(pasto);
-          
-          return (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-slate-800/50 border border-slate-700 rounded-xl p-4"
-            >
-              <h3 className="text-lg font-semibold text-slate-100 mb-3">{pasto.nome}</h3>
-              
-              <div className="space-y-2 mb-3">
-                {pasto.alimenti.map((alimento, aIndex) => {
-                  const factor = alimento.quantita / 100;
-                  return (
-                    <div key={aIndex} className="bg-slate-800 rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-slate-200">{alimento.nome}</span>
-                        <span className="text-slate-400 text-sm">{alimento.quantita}g</span>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2 text-xs">
-                        <div>
-                          <div className="text-slate-500">Kcal</div>
-                          <div className="text-slate-300">{((alimento.kcal || 0) * factor).toFixed(0)}</div>
-                        </div>
-                        <div>
-                          <div className="text-slate-500">Prot</div>
-                          <div className="text-slate-300">{((alimento.proteine || 0) * factor).toFixed(1)}g</div>
-                        </div>
-                        <div>
-                          <div className="text-slate-500">Carb</div>
-                          <div className="text-slate-300">{((alimento.carboidrati || 0) * factor).toFixed(1)}g</div>
-                        </div>
-                        <div>
-                          <div className="text-slate-500">Grassi</div>
-                          <div className="text-slate-300">{((alimento.grassi || 0) * factor).toFixed(1)}g</div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="bg-emerald-900/20 border border-emerald-600/30 rounded-lg p-3">
-                <div className="text-xs text-emerald-400 mb-1">Totale {pasto.nome}</div>
-                <div className="grid grid-cols-4 gap-2 text-sm">
-                  <div>
-                    <div className="text-emerald-300 font-semibold">{pastoTotals.kcal.toFixed(0)}</div>
-                    <div className="text-emerald-400 text-xs">Kcal</div>
-                  </div>
-                  <div>
-                    <div className="text-emerald-300 font-semibold">{pastoTotals.proteine.toFixed(1)}g</div>
-                    <div className="text-emerald-400 text-xs">Prot</div>
-                  </div>
-                  <div>
-                    <div className="text-emerald-300 font-semibold">{pastoTotals.carboidrati.toFixed(1)}g</div>
-                    <div className="text-emerald-400 text-xs">Carb</div>
-                  </div>
-                  <div>
-                    <div className="text-emerald-300 font-semibold">{pastoTotals.grassi.toFixed(1)}g</div>
-                    <div className="text-emerald-400 text-xs">Grassi</div>
+        {/* Meals Grid - 2 Columns on Desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 lg:gap-4">
+          {schedaData.giorni[selectedDay]?.pasti?.map((pasto, index) => {
+            if (!pasto.alimenti || pasto.alimenti.length === 0) return null;
+            
+            const pastoTotals = calculatePastoTotals(pasto);
+            
+            return (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+                className="bg-slate-800/40 border border-slate-700/50 rounded-xl lg:rounded-2xl p-2.5 lg:p-4 shadow-lg hover:border-emerald-600/30 transition-all"
+              >
+                {/* Header Pasto */}
+                <div className="flex items-center justify-between mb-2 lg:mb-3">
+                  <h3 className="text-sm lg:text-lg font-bold text-emerald-400">
+                    {pasto.nome}
+                  </h3>
+                  <div className="flex gap-1.5 lg:gap-2 text-[10px] lg:text-xs">
+                    <span className="text-slate-300 font-semibold">{pastoTotals.kcal.toFixed(0)} kcal</span>
+                    <span className="text-blue-400">P:{pastoTotals.proteine.toFixed(0)}</span>
+                    <span className="text-amber-400">C:{pastoTotals.carboidrati.toFixed(0)}</span>
+                    <span className="text-rose-400">F:{pastoTotals.grassi.toFixed(0)}</span>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          );
-        })}
+                
+                {/* Alimenti */}
+                <div className="space-y-1.5 lg:space-y-2">
+                  {pasto.alimenti.map((alimento, aIndex) => {
+                    const quantitaInGrammi = convertToGrams(alimento.quantita, alimento.unitaMisura);
+                    const factor = quantitaInGrammi / 100;
+                    return (
+                      <div key={aIndex} className="bg-gradient-to-r from-slate-900/60 to-slate-800/60 rounded-lg lg:rounded-xl p-2 lg:p-3 border border-slate-700/30 group hover:border-emerald-600/30 transition-all">
+                        <div className="flex justify-between items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-1.5 lg:gap-2">
+                              <span className="font-semibold text-slate-100 text-xs lg:text-base truncate">{alimento.nome}</span>
+                              <span className="text-emerald-400 text-[10px] lg:text-sm flex-shrink-0">
+                                {alimento.quantita}{alimento.unitaMisura || 'g'}
+                              </span>
+                            </div>
+                            <div className="flex gap-2 lg:gap-3 mt-0.5 lg:mt-1 text-[10px] lg:text-xs">
+                              <span className="text-slate-300">{((alimento.kcal || 0) * factor).toFixed(0)}</span>
+                              <span className="text-blue-400">P:{((alimento.proteine || 0) * factor).toFixed(1)}</span>
+                              <span className="text-amber-400">C:{((alimento.carboidrati || 0) * factor).toFixed(1)}</span>
+                              <span className="text-rose-400">F:{((alimento.grassi || 0) * factor).toFixed(1)}</span>
+                            </div>
+                          </div>
+                          {canSwapFoods ? (
+                            <button
+                              onClick={() => handleOpenSwap(selectedDay, index, aIndex, alimento)}
+                              className="p-1.5 lg:p-2 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 rounded-lg opacity-70 group-hover:opacity-100 transition-all shadow-md hover:shadow-rose-500/30 hover:scale-105 flex-shrink-0"
+                              title="Sostituisci"
+                            >
+                              <RefreshCw size={12} className="text-white lg:hidden" />
+                              <RefreshCw size={16} className="text-white hidden lg:block" />
+                            </button>
+                          ) : swapDisabledMessage ? (
+                            <div className="px-2 py-1 bg-amber-900/30 border border-amber-600/30 rounded text-xs text-amber-400 flex-shrink-0" title={swapDisabledMessage}>
+                              🔒
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
 
-        {/* Daily Totals */}
-        <div className="bg-emerald-900/30 border-2 border-emerald-600/50 rounded-xl p-4">
-          <h3 className="text-lg font-bold text-emerald-300 mb-3">Totali Giornalieri - {selectedDay}</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <div className="text-emerald-400 text-xs mb-1">Quantità</div>
-              <div className="text-emerald-300 font-bold text-lg">{dayTotals.quantita.toFixed(0)}g</div>
+        {/* Daily Totals - Sticky Bottom */}
+        <div className="bg-gradient-to-br from-emerald-900/50 to-slate-800/50 border-2 border-emerald-500/50 rounded-xl lg:rounded-2xl p-2.5 lg:p-5 shadow-2xl sticky bottom-2 lg:bottom-4">
+          <div className="flex items-center justify-between mb-1.5 lg:mb-3">
+            <h3 className="text-xs lg:text-xl font-bold text-emerald-300">
+              Totali Giornalieri - {selectedDay}
+            </h3>
+          </div>
+          <div className="grid grid-cols-5 gap-1.5 lg:gap-4">
+            <div className="bg-slate-900/60 rounded-lg lg:rounded-xl p-1.5 lg:p-4 border border-slate-700/50 text-center">
+              <div className="text-emerald-200 font-bold text-sm lg:text-2xl">{dayTotals.quantita.toFixed(0)}</div>
+              <div className="text-slate-400 text-[9px] lg:text-sm mt-0.5 lg:mt-1">Quantità (g)</div>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <div className="text-emerald-400 text-xs mb-1">Kcal</div>
-              <div className="text-emerald-300 font-bold text-lg">{dayTotals.kcal.toFixed(0)}</div>
+            <div className="bg-slate-900/60 rounded-lg lg:rounded-xl p-1.5 lg:p-4 border border-emerald-600/30 text-center">
+              <div className="text-emerald-200 font-bold text-sm lg:text-2xl">{dayTotals.kcal.toFixed(0)}</div>
+              <div className="text-emerald-400 text-[9px] lg:text-sm mt-0.5 lg:mt-1">Kcal</div>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <div className="text-emerald-400 text-xs mb-1">Proteine</div>
-              <div className="text-emerald-300 font-bold text-lg">{dayTotals.proteine.toFixed(1)}g</div>
+            <div className="bg-blue-900/20 rounded-lg lg:rounded-xl p-1.5 lg:p-4 border border-blue-600/30 text-center">
+              <div className="text-blue-200 font-bold text-sm lg:text-2xl">{dayTotals.proteine.toFixed(0)}</div>
+              <div className="text-blue-400 text-[9px] lg:text-sm mt-0.5 lg:mt-1">Proteine (g)</div>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <div className="text-emerald-400 text-xs mb-1">Carboidrati</div>
-              <div className="text-emerald-300 font-bold text-lg">{dayTotals.carboidrati.toFixed(1)}g</div>
+            <div className="bg-amber-900/20 rounded-lg lg:rounded-xl p-1.5 lg:p-4 border border-amber-600/30 text-center">
+              <div className="text-amber-200 font-bold text-sm lg:text-2xl">{dayTotals.carboidrati.toFixed(0)}</div>
+              <div className="text-amber-400 text-[9px] lg:text-sm mt-0.5 lg:mt-1">Carboidrati (g)</div>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <div className="text-emerald-400 text-xs mb-1">Grassi</div>
-              <div className="text-emerald-300 font-bold text-lg">{dayTotals.grassi.toFixed(1)}g</div>
+            <div className="bg-rose-900/20 rounded-lg lg:rounded-xl p-1.5 lg:p-4 border border-rose-600/30 text-center">
+              <div className="text-rose-200 font-bold text-sm lg:text-2xl">{dayTotals.grassi.toFixed(0)}</div>
+              <div className="text-rose-400 text-[9px] lg:text-sm mt-0.5 lg:mt-1">Grassi (g)</div>
             </div>
           </div>
         </div>
 
-        {/* Integration Notes */}
+        {/* Integration Notes - Responsive */}
         {schedaData.integrazione && (
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
-            <h3 className="text-lg font-semibold text-slate-100 mb-2">Integrazione</h3>
-            <p className="text-slate-300 text-sm whitespace-pre-wrap">{schedaData.integrazione}</p>
+          <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl lg:rounded-2xl p-2.5 lg:p-4 shadow-lg">
+            <h3 className="text-xs lg:text-lg font-bold text-slate-100 mb-1.5 lg:mb-2 flex items-center gap-1 lg:gap-2">
+              <span className="text-base lg:text-xl">💊</span>
+              Integrazione
+            </h3>
+            <p className="text-slate-300 text-[11px] lg:text-sm whitespace-pre-wrap bg-slate-900/40 rounded-lg p-2 lg:p-3">{schedaData.integrazione}</p>
           </div>
         )}
       </div>
+
+      {/* Swap Modal */}
+      {swapModalData && (
+        <SmartFoodSwapEnhanced
+          currentFood={swapModalData.currentFood}
+          currentGrams={swapModalData.currentGrams}
+          currentMacros={swapModalData.currentMacros}
+          targetMacros={swapModalData.targetMacros}
+          allowedVariance={0.10}
+          mealDay={swapModalData.mealDay}
+          mealName={swapModalData.mealName}
+          onSwap={handleSwapConfirm}
+          onCancel={() => setSwapModalData(null)}
+        />
+      )}
     </div>
   );
 };

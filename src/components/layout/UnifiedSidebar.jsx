@@ -24,6 +24,7 @@ const roleConfigs = {
       { icon: BarChart3, label: 'Analytics', path: '/analytics' },
       { icon: TrendingUp, label: 'Statistiche', path: '/statistiche' },
       { icon: BookOpen, label: 'Corsi', path: '/course-admin' },
+      { icon: Settings, label: 'Gestione Piattaforma', path: '/platform-settings' },
       { icon: Calendar, label: 'Calendario', path: '/calendar' },
       { icon: MessageSquare, label: 'Chat', path: '/chat' },
       { icon: Bell, label: 'Notifiche', path: '/notifications' },

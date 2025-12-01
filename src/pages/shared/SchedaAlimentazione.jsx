@@ -7,6 +7,7 @@ import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../..
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore';
 import { exportNutritionCardToPDF } from '../../utils/pdfExport';
 import AINutritionAssistant from '../../components/AINutritionAssistant';
+import { convertToGrams, inferUnitFromName } from '../../utils/nutritionUnits';
 import { saveFeedback, saveDoNotShowPreference, shouldShowFeedbackPopup } from '../../services/aiFeedbackService';
 import { auth } from '../../firebase';
 
@@ -813,7 +814,7 @@ const SchedaAlimentazione = () => {
                       <thead className="bg-slate-800">
                         <tr>
                           <th className="px-3 py-2 text-left text-slate-300">Alimento</th>
-                          <th className="px-3 py-2 text-left text-slate-300">Quantità (g)</th>
+                          <th className="px-3 py-2 text-left text-slate-300">Quantità</th>
                           <th className="px-3 py-2 text-left text-slate-300">Kcal</th>
                           <th className="px-3 py-2 text-left text-slate-300">Proteine</th>
                           <th className="px-3 py-2 text-left text-slate-300">Carb.</th>
@@ -823,27 +824,32 @@ const SchedaAlimentazione = () => {
                       </thead>
                       <tbody className="divide-y divide-slate-700">
                         {pasto.alimenti.map((alimento, alimentoIndex) => {
-                          const factor = alimento.quantita / 100;
+                          // Converti quantità in grammi per calcoli
+                          const unitaMisura = alimento.unitaMisura || 'g';
+                          const quantitaInGrammi = convertToGrams(alimento.quantita, unitaMisura);
+                          const factor = quantitaInGrammi / 100;
+                          
                           return (
                             <tr key={alimentoIndex}>
                               <td className="px-3 py-2 text-slate-200">{alimento.nome}</td>
                               <td className="px-3 py-2">
-                                <input
-                                  type="number"
-                                  value={alimento.quantita}
-                                  onChange={(e) => {
-                                    const newQuantita = parseFloat(e.target.value) || 0;
-                                    setSchedaData(prev => {
-                                      // Deep clone per assicurare che React rilevi il cambiamento
-                                      const newData = JSON.parse(JSON.stringify(prev));
-                                      newData.giorni[selectedDay].pasti[pastoIndex].alimenti[alimentoIndex].quantita = newQuantita;
-                                      return newData;
-                                    });
-                                  }}
-                                  disabled={!isEditMode}
-                                  className="w-20 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:border-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed"
-                                />
-                                <span className="text-slate-400 text-xs ml-1">g</span>
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="number"
+                                    value={alimento.quantita}
+                                    onChange={(e) => {
+                                      const newQuantita = parseFloat(e.target.value) || 0;
+                                      setSchedaData(prev => {
+                                        const newData = JSON.parse(JSON.stringify(prev));
+                                        newData.giorni[selectedDay].pasti[pastoIndex].alimenti[alimentoIndex].quantita = newQuantita;
+                                        return newData;
+                                      });
+                                    }}
+                                    disabled={!isEditMode}
+                                    className="w-16 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:border-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                                  />
+                                  <span className="text-slate-400 text-xs">{unitaMisura}</span>
+                                </div>
                               </td>
                               <td className="px-3 py-2 text-emerald-400 font-medium">{((alimento.kcal || 0) * factor).toFixed(0)}</td>
                               <td className="px-3 py-2 text-blue-400">{((alimento.proteine || 0) * factor).toFixed(1)}g</td>
@@ -1578,6 +1584,7 @@ const AddAlimentoForm = ({ onAdd, onCancel }) => {
   const [formData, setFormData] = useState({
     nome: '',
     quantita: '',
+    unitaMisura: 'g', // 'g', 'pz', 'ml', 'cucchiaio', 'cucchiaino'
     kcal: '',
     proteine: '',
     carboidrati: '',
@@ -1726,15 +1733,19 @@ const AddAlimentoForm = ({ onAdd, onCancel }) => {
   };
 
   const selectFood = (food) => {
+    // Inferisci unità di misura dal nome usando utility
+    const { unitaMisura, quantitaDefault } = inferUnitFromName(food.nome);
+    
     setFormData({
       nome: food.nome,
-      quantita: '100',
+      quantita: quantitaDefault,
+      unitaMisura: unitaMisura,
       kcal: food.kcal.toString(),
       proteine: food.proteine.toString(),
       carboidrati: food.carboidrati.toString(),
       grassi: food.grassi.toString()
     });
-    setSearchTerm(food.nome);
+    setSearchTerm('');
     setShowSearchResults(false);
     setSelectedCategory(''); // Reset categoria dopo selezione
   };
@@ -1747,12 +1758,13 @@ const AddAlimentoForm = ({ onAdd, onCancel }) => {
     onAdd({
       ...formData,
       quantita: parseFloat(formData.quantita),
+      unitaMisura: formData.unitaMisura,
       kcal: parseFloat(formData.kcal) || 0,
       proteine: parseFloat(formData.proteine) || 0,
       carboidrati: parseFloat(formData.carboidrati) || 0,
       grassi: parseFloat(formData.grassi) || 0
     });
-    setFormData({ nome: '', quantita: '', kcal: '', proteine: '', carboidrati: '', grassi: '' });
+    setFormData({ nome: '', quantita: '', unitaMisura: 'g', kcal: '', proteine: '', carboidrati: '', grassi: '' });
     setSearchTerm('');
     setSelectedCategory('');
   };
@@ -1806,21 +1818,37 @@ const AddAlimentoForm = ({ onAdd, onCancel }) => {
           ) : (
             <div className="space-y-1">
               {categoryFoods.map((food, idx) => (
-                <button
+                <div
                   key={idx}
-                  onClick={() => selectFood(food)}
-                  className="w-full px-3 py-2 text-left hover:bg-slate-600 rounded transition-colors"
+                  className="flex items-start gap-2 p-2 hover:bg-slate-600 rounded transition-colors"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-slate-200">{food.nome}</div>
-                    <span className={`px-1.5 py-0.5 rounded text-xs ${food.source === 'global' ? 'bg-blue-500/20 text-blue-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                      {food.source === 'global' ? 'Globale' : 'Tenant'}
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    {food.kcal} kcal | P: {food.proteine}g | C: {food.carboidrati}g | G: {food.grassi}g
-                  </div>
-                </button>
+                  <button
+                    onClick={() => selectFood(food)}
+                    className="flex-1 text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-slate-200">{food.nome}</div>
+                      <span className={`px-1.5 py-0.5 rounded text-xs ${food.source === 'global' ? 'bg-blue-500/20 text-blue-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                        {food.source === 'global' ? 'Globale' : 'Tenant'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-400 mt-0.5">
+                      {food.kcal} kcal | P: {food.proteine}g | C: {food.carboidrati}g | G: {food.grassi}g
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      selectFood(food);
+                      // Aggiungi automaticamente dopo 100ms per dare tempo al form di aggiornarsi
+                      setTimeout(() => handleSubmit(), 100);
+                    }}
+                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded flex items-center gap-1 flex-shrink-0"
+                    title="Aggiungi direttamente"
+                  >
+                    <Plus size={14} />
+                    Aggiungi
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -1852,38 +1880,70 @@ const AddAlimentoForm = ({ onAdd, onCancel }) => {
                 {searchResults.length} risultati trovati
               </div>
               {searchResults.map((food, idx) => (
-                <button
+                <div
                   key={idx}
-                  onClick={() => selectFood(food)}
-                  className="w-full px-3 py-2 text-left hover:bg-slate-700 transition-colors border-b border-slate-700 last:border-0"
+                  className="flex items-start gap-2 px-3 py-2 hover:bg-slate-700 transition-colors border-b border-slate-700 last:border-0"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-slate-200">{food.nome}</div>
-                    <div className="flex gap-1">
-                      <span className={`px-1.5 py-0.5 rounded text-xs ${food.source === 'global' ? 'bg-blue-500/20 text-blue-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                        {food.source === 'global' ? 'Globale' : 'Tenant'}
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded text-xs bg-purple-500/20 text-purple-300">
-                        {food.category}
-                      </span>
+                  <button
+                    onClick={() => selectFood(food)}
+                    className="flex-1 text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-slate-200">{food.nome}</div>
+                      <div className="flex gap-1">
+                        <span className={`px-1.5 py-0.5 rounded text-xs ${food.source === 'global' ? 'bg-blue-500/20 text-blue-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                          {food.source === 'global' ? 'Globale' : 'Tenant'}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-xs bg-purple-500/20 text-purple-300">
+                          {food.category}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-xs text-slate-400 mt-1">
-                    {food.kcal} kcal | P: {food.proteine}g | C: {food.carboidrati}g | G: {food.grassi}g
-                  </div>
-                </button>
+                    <div className="text-xs text-slate-400 mt-1">
+                      {food.kcal} kcal | P: {food.proteine}g | C: {food.carboidrati}g | G: {food.grassi}g
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      selectFood(food);
+                      setTimeout(() => handleSubmit(), 100);
+                    }}
+                    className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded flex items-center gap-1 flex-shrink-0"
+                    title="Aggiungi direttamente"
+                  >
+                    <Plus size={12} />
+                  </button>
+                </div>
               ))}
             </div>
           )}
         </div>
 
-        <input
-          type="number"
-          placeholder="Quantità (g)"
-          value={formData.quantita}
-          onChange={(e) => setFormData({ ...formData, quantita: e.target.value })}
-          className="px-3 py-2 bg-slate-700 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
-        />
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Quantità
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              placeholder="Quantità"
+              value={formData.quantita}
+              onChange={(e) => setFormData({ ...formData, quantita: e.target.value })}
+              className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
+            />
+            <select
+              value={formData.unitaMisura}
+              onChange={(e) => setFormData({ ...formData, unitaMisura: e.target.value })}
+              className="px-3 py-2 bg-slate-700 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:border-emerald-500"
+            >
+              <option value="g">g</option>
+              <option value="pz">pz</option>
+              <option value="ml">ml</option>
+              <option value="cucchiaio">cucchiaio</option>
+              <option value="cucchiaino">cucchiaino</option>
+            </select>
+          </div>
+        </div>
         <input
           type="number"
           placeholder="Kcal (per 100g)"

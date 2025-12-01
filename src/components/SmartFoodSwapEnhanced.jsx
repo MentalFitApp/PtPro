@@ -8,7 +8,224 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
  * Smart Food Swap Enhanced Component
  * Uses platform_foods database from Firestore
  * Validates macros within allowed range (±10%)
+ * Smart categorization: only shows foods of the same nutritional category
  */
+
+// Categorie nutrizionali intelligenti con regole precise
+const NUTRITIONAL_CATEGORIES = {
+  CARNI_BIANCHE: {
+    name: 'Carni Bianche',
+    categories: ['carni-bianche'],
+    keywords: ['pollo', 'tacchino', 'coniglio', 'vitello bianco'],
+    rules: { minProtein: 18, maxFat: 10, maxCarbs: 2 }
+  },
+  CARNI_ROSSE: {
+    name: 'Carni Rosse',
+    categories: ['carni-rosse'],
+    keywords: ['manzo', 'maiale', 'agnello', 'vitello', 'cavallo'],
+    rules: { minProtein: 15, maxCarbs: 2 }
+  },
+  PESCE_MAGRO: {
+    name: 'Pesce Magro',
+    categories: ['pesce'],
+    keywords: ['merluzzo', 'orata', 'branzino', 'sogliola', 'platessa', 'nasello'],
+    rules: { minProtein: 15, maxFat: 5, maxCarbs: 2 }
+  },
+  PESCE_GRASSO: {
+    name: 'Pesce Grasso',
+    categories: ['pesce'],
+    keywords: ['salmone', 'sgombro', 'tonno', 'aringa', 'sardine'],
+    rules: { minProtein: 15, minFat: 5, maxCarbs: 2 }
+  },
+  FRUTTI_MARE: {
+    name: 'Frutti di Mare',
+    categories: ['frutti-mare'],
+    keywords: ['gamberi', 'calamari', 'polpo', 'cozze', 'vongole', 'seppia'],
+    rules: { minProtein: 12, maxFat: 5, maxCarbs: 5 }
+  },
+  UOVA: {
+    name: 'Uova',
+    categories: ['uova'],
+    keywords: ['uova', 'uovo', 'albume', 'tuorlo'],
+    rules: { minProtein: 10, minFat: 8, maxCarbs: 2 }
+  },
+  LATTICINI_MAGRI: {
+    name: 'Latticini Magri',
+    categories: ['uova-latticini', 'latte'],
+    keywords: ['yogurt', 'latte scremato', 'skyr', 'kefir', 'latte magro'],
+    rules: { minProtein: 3, maxFat: 5, minCarbs: 3 }
+  },
+  FORMAGGI_FRESCHI: {
+    name: 'Formaggi Freschi',
+    categories: ['formaggi', 'uova-latticini'],
+    keywords: ['ricotta', 'fiocchi', 'cottage', 'mozzarella', 'stracchino', 'crescenza'],
+    rules: { minProtein: 8, minFat: 5, maxCarbs: 5 }
+  },
+  FORMAGGI_STAGIONATI: {
+    name: 'Formaggi Stagionati',
+    categories: ['formaggi'],
+    keywords: ['parmigiano', 'grana', 'pecorino', 'gorgonzola', 'emmental', 'provolone'],
+    rules: { minProtein: 20, minFat: 20, maxCarbs: 5 }
+  },
+  LEGUMI: {
+    name: 'Legumi',
+    categories: ['legumi'],
+    keywords: ['ceci', 'fagioli', 'lenticchie', 'piselli', 'fave', 'soia'],
+    rules: { minProtein: 6, minCarbs: 15 }
+  },
+  SALUMI_MAGRI: {
+    name: 'Salumi Magri',
+    categories: ['salumi'],
+    keywords: ['bresaola', 'prosciutto crudo', 'speck', 'fesa tacchino'],
+    rules: { minProtein: 20, maxFat: 8 }
+  },
+  SALUMI_GRASSI: {
+    name: 'Salumi Grassi',
+    categories: ['salumi'],
+    keywords: ['salame', 'mortadella', 'pancetta', 'salsiccia', 'coppa'],
+    rules: { minProtein: 12, minFat: 15 }
+  },
+  CEREALI_PASTA: {
+    name: 'Cereali e Pasta',
+    categories: ['cereali-pasta', 'pasta', 'primi'],
+    keywords: ['pasta', 'riso', 'farro', 'orzo', 'quinoa', 'couscous', 'bulgur'],
+    rules: { minCarbs: 60, maxProtein: 15, maxFat: 5 }
+  },
+  PANE: {
+    name: 'Pane e Prodotti da Forno',
+    categories: ['pane'],
+    keywords: ['pane', 'piadina', 'cracker', 'grissini', 'fette biscottate'],
+    rules: { minCarbs: 45, maxProtein: 12, maxFat: 10 }
+  },
+  PATATE_TUBERI: {
+    name: 'Patate e Tuberi',
+    categories: ['patate-tuberi'],
+    keywords: ['patate', 'patata dolce', 'topinambur', 'manioca'],
+    rules: { minCarbs: 15, maxCarbs: 25, maxProtein: 3, maxFat: 1 }
+  },
+  FRUTTA_FRESCA: {
+    name: 'Frutta Fresca',
+    categories: ['frutta-fresca', 'frutta'],
+    keywords: ['mela', 'banana', 'arancia', 'pera', 'fragola', 'kiwi', 'pesca', 'uva'],
+    rules: { minCarbs: 8, maxProtein: 2, maxFat: 1 }
+  },
+  FRUTTA_SECCA: {
+    name: 'Frutta Secca e Semi',
+    categories: ['frutta-secca'],
+    keywords: ['noci', 'mandorle', 'nocciole', 'pistacchi', 'anacardi', 'semi'],
+    rules: { minFat: 40, minProtein: 10 }
+  },
+  GRASSI_CONDIMENTI: {
+    name: 'Grassi e Condimenti',
+    categories: ['grassi-condimenti', 'condimenti'],
+    keywords: ['olio', 'burro', 'margarina', 'strutto', 'lardo'],
+    rules: { minFat: 80, maxProtein: 2, maxCarbs: 2 }
+  },
+  BURRI_CREME: {
+    name: 'Burri e Creme Spalmabili',
+    categories: ['grassi-condimenti', 'condimenti'],
+    keywords: ['burro arachidi', 'burro mandorle', 'tahini', 'crema nocciole'],
+    rules: { minFat: 40, minProtein: 15, maxCarbs: 20 }
+  },
+  VERDURE: {
+    name: 'Verdure',
+    categories: ['verdure'],
+    keywords: ['spinaci', 'broccoli', 'zucchine', 'pomodori', 'insalata', 'carote', 'peperoni'],
+    rules: { maxCalories: 50, maxFat: 1, maxProtein: 5 }
+  },
+  DOLCI: {
+    name: 'Dolci e Dessert',
+    categories: ['dolci'],
+    keywords: ['cioccolato', 'biscotti', 'torta', 'gelato', 'marmellata'],
+    rules: { minCarbs: 40, minCalories: 200 }
+  }
+};
+
+const determineNutritionalCategory = (food) => {
+  const foodName = (food.nome || '').toLowerCase();
+  const protein = food.proteine || 0;
+  const carbs = food.carboidrati || 0;
+  const fat = food.grassi || 0;
+  const calories = food.kcal || 0;
+
+  // Cerca match per keywords (più preciso)
+  for (const [key, catData] of Object.entries(NUTRITIONAL_CATEGORIES)) {
+    if (catData.keywords?.some(keyword => foodName.includes(keyword))) {
+      return key;
+    }
+  }
+
+  // Cerca match per categoria database
+  for (const [key, catData] of Object.entries(NUTRITIONAL_CATEGORIES)) {
+    if (catData.categories.includes(food.category)) {
+      // Verifica che rispetti le regole della categoria
+      const rules = catData.rules;
+      const matches = 
+        (!rules.minProtein || protein >= rules.minProtein) &&
+        (!rules.maxProtein || protein <= rules.maxProtein) &&
+        (!rules.minCarbs || carbs >= rules.minCarbs) &&
+        (!rules.maxCarbs || carbs <= rules.maxCarbs) &&
+        (!rules.minFat || fat >= rules.minFat) &&
+        (!rules.maxFat || fat <= rules.maxFat) &&
+        (!rules.minCalories || calories >= rules.minCalories) &&
+        (!rules.maxCalories || calories <= rules.maxCalories);
+      
+      if (matches) return key;
+    }
+  }
+
+  // Fallback: classificazione basata su macros dominanti con regole stringenti
+  
+  // Verdure (basse calorie, bassi grassi)
+  if (calories < 50 && protein < 5 && fat < 1) return 'VERDURE';
+  
+  // Grassi puri
+  if (fat > 80 && protein < 2 && carbs < 2) return 'GRASSI_CONDIMENTI';
+  
+  // Burri e creme
+  if (fat > 40 && protein > 15) return 'BURRI_CREME';
+  
+  // Frutta secca
+  if (fat > 40 && protein > 10 && carbs < 30) return 'FRUTTA_SECCA';
+  
+  // Cereali e pasta
+  if (carbs > 60 && protein < 15 && fat < 5) return 'CEREALI_PASTA';
+  
+  // Pane
+  if (carbs > 45 && carbs < 60 && protein < 12) return 'PANE';
+  
+  // Patate
+  if (carbs > 15 && carbs < 25 && protein < 3 && fat < 1) return 'PATATE_TUBERI';
+  
+  // Frutta
+  if (carbs > 8 && protein < 2 && fat < 1 && calories < 100) return 'FRUTTA_FRESCA';
+  
+  // Formaggi stagionati
+  if (protein > 20 && fat > 20 && carbs < 5) return 'FORMAGGI_STAGIONATI';
+  
+  // Formaggi freschi
+  if (protein > 8 && fat > 5 && carbs < 5) return 'FORMAGGI_FRESCHI';
+  
+  // Latticini magri
+  if (protein > 3 && fat < 5 && carbs > 3) return 'LATTICINI_MAGRI';
+  
+  // Legumi
+  if (protein > 6 && carbs > 15 && fat < 5) return 'LEGUMI';
+  
+  // Carni/Pesci
+  if (protein > 18 && carbs < 2) {
+    if (fat < 10) return 'CARNI_BIANCHE';
+    if (fat > 10) return 'CARNI_ROSSE';
+  }
+  
+  if (protein > 15 && carbs < 2) {
+    if (fat < 5) return 'PESCE_MAGRO';
+    if (fat > 5) return 'PESCE_GRASSO';
+  }
+
+  return 'ALTRO';
+};
+
 export default function SmartFoodSwapEnhanced({ 
   currentFood,
   currentGrams, 
@@ -30,6 +247,7 @@ export default function SmartFoodSwapEnhanced({
   const [selectedCategory, setSelectedCategory] = useState('');
   const [categories, setCategories] = useState([]);
   const [validationError, setValidationError] = useState(null);
+  const [suggestedAlternatives, setSuggestedAlternatives] = useState([]);
 
   useEffect(() => {
     loadFoods();
@@ -45,18 +263,49 @@ export default function SmartFoodSwapEnhanced({
       
       snapshot.forEach(doc => {
         const data = doc.data();
-        foodsList.push({
+        const foodData = {
           id: doc.id,
-          ...data
-        });
+          nome: data.name || data.nome,
+          kcal: data.calories || data.kcal,
+          proteine: data.protein || data.proteine,
+          carboidrati: data.carbs || data.carboidrati,
+          grassi: data.fat || data.grassi,
+          category: data.category,
+          categoryName: data.categoryName
+        };
+        foodsList.push(foodData);
         if (data.category) categoriesSet.add(data.category);
       });
       
-      setFoods(foodsList);
-      setCategories(Array.from(categoriesSet).sort());
+      // Determina la categoria nutrizionale dell'alimento corrente
+      const currentFoodData = {
+        nome: currentFood.nome,
+        kcal: currentFood.kcal,
+        proteine: currentFood.proteine,
+        carboidrati: currentFood.carboidrati,
+        grassi: currentFood.grassi,
+        category: currentFood.category
+      };
+      
+      const currentNutritionalCategory = determineNutritionalCategory(currentFoodData);
+      
+      // Filtra solo alimenti della stessa categoria nutrizionale
+      const compatibleFoods = foodsList.filter(food => {
+        const foodNutritionalCategory = determineNutritionalCategory(food);
+        return foodNutritionalCategory === currentNutritionalCategory;
+      });
+      
+      setFoods(compatibleFoods);
+      
+      // Estrai le categorie uniche dagli alimenti compatibili
+      const compatibleCategories = new Set();
+      compatibleFoods.forEach(food => {
+        if (food.category) compatibleCategories.add(food.category);
+      });
+      setCategories(Array.from(compatibleCategories).sort());
       
       // Pre-seleziona il cibo attuale
-      const current = foodsList.find(f => f.nome === currentFood.nome);
+      const current = compatibleFoods.find(f => f.nome === currentFood.nome);
       if (current) {
         setSelectedFood(current);
         setSelectedCategory(current.category || '');
@@ -124,6 +373,36 @@ export default function SmartFoodSwapEnhanced({
     };
   };
 
+  const findBestAlternatives = () => {
+    // Trova i 3 alimenti più vicini ai macros target
+    const alternatives = foods
+      .filter(f => f.id !== selectedFood?.id) // Escludi quello selezionato
+      .map(food => {
+        const { neededGrams, macros } = calculateNewGramsAndMacros(food);
+        const validation = validateMacrosInRange(macros);
+        
+        // Calcola "score" di vicinanza ai target
+        const caloriesDiff = Math.abs(macros.calories - targetMacros.calories);
+        const proteinsDiff = Math.abs(macros.proteins - targetMacros.proteins);
+        const carbsDiff = Math.abs(macros.carbs - targetMacros.carbs);
+        const fatsDiff = Math.abs(macros.fats - targetMacros.fats);
+        const totalDiff = caloriesDiff + proteinsDiff + carbsDiff + fatsDiff;
+        
+        return {
+          food,
+          grams: neededGrams,
+          macros,
+          isValid: validation.valid,
+          score: totalDiff
+        };
+      })
+      .filter(alt => alt.isValid) // Solo alternative valide
+      .sort((a, b) => a.score - b.score) // Ordina per vicinanza
+      .slice(0, 3); // Prendi i migliori 3
+    
+    return alternatives;
+  };
+
   const handleFoodChange = (food) => {
     const { neededGrams, macros } = calculateNewGramsAndMacros(food);
     const validation = validateMacrosInRange(macros);
@@ -132,6 +411,14 @@ export default function SmartFoodSwapEnhanced({
     setCalculatedGrams(neededGrams);
     setNewMacros(macros);
     setValidationError(validation.valid ? null : validation.errors);
+    
+    // Se non è valido, trova alternative
+    if (!validation.valid) {
+      const alternatives = findBestAlternatives();
+      setSuggestedAlternatives(alternatives);
+    } else {
+      setSuggestedAlternatives([]);
+    }
   };
 
   const handleConfirm = () => {
@@ -213,6 +500,9 @@ export default function SmartFoodSwapEnhanced({
               <div>
                 <p className="text-lg font-semibold text-slate-100">{currentFood.nome}</p>
                 <p className="text-sm text-slate-400">{currentGrams}g</p>
+                <p className="text-xs text-emerald-400 mt-1">
+                  Categoria: {NUTRITIONAL_CATEGORIES[determineNutritionalCategory(currentFood)]?.name || 'Generale'}
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-slate-500">Macros attuali:</p>
@@ -224,6 +514,15 @@ export default function SmartFoodSwapEnhanced({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Info sulla categorizzazione */}
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex items-start gap-2">
+            <Info size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-300">
+              Vengono mostrati solo alimenti compatibili della categoria "{NUTRITIONAL_CATEGORIES[determineNutritionalCategory(currentFood)]?.name}". 
+              Questo garantisce sostituzioni nutrizionalmente sensate.
+            </p>
           </div>
 
           {/* Search and Filter */}
@@ -341,14 +640,45 @@ export default function SmartFoodSwapEnhanced({
                   </div>
 
                   {validationError && (
-                    <div className="mt-3 space-y-1">
-                      <p className="text-sm font-medium text-red-400">⚠️ Errori di validazione:</p>
+                    <div className="mt-3 space-y-2">
+                      <p className="text-sm font-medium text-red-400">⚠️ Macros fuori range</p>
                       {validationError.map((err, idx) => (
                         <p key={idx} className="text-xs text-red-300">• {err}</p>
                       ))}
                       <p className="text-xs text-slate-400 mt-2">
                         Il tuo coach ha impostato un limite del ±{allowedVariance * 100}% sui macros
                       </p>
+                      
+                      {/* Suggested Alternatives */}
+                      {suggestedAlternatives.length > 0 && (
+                        <div className="mt-4 pt-3 border-t border-red-400/30">
+                          <p className="text-sm font-medium text-emerald-400 mb-2">💡 Consigliati invece:</p>
+                          <div className="space-y-2">
+                            {suggestedAlternatives.map((alt, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => handleFoodChange(alt.food)}
+                                className="w-full p-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg hover:bg-emerald-500/20 transition-colors text-left"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="text-sm font-medium text-slate-100">{alt.food.nome}</p>
+                                    <p className="text-xs text-slate-400">{alt.grams}g</p>
+                                  </div>
+                                  <div className="text-right text-xs">
+                                    <div className="flex gap-2">
+                                      <span className="text-slate-300">{alt.macros.calories}kcal</span>
+                                      <span className="text-blue-400">P:{alt.macros.proteins}g</span>
+                                      <span className="text-amber-400">C:{alt.macros.carbs}g</span>
+                                      <span className="text-rose-400">F:{alt.macros.fats}g</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
