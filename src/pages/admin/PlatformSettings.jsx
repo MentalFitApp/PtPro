@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createElement } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Shield, Search, Lock, Unlock, Eye, Settings as SettingsIcon,
@@ -360,16 +360,49 @@ export default function PlatformSettings() {
     );
   }
 
+  // Calcola statistiche per badge
+  const disabledFeaturesCount = globalSettings.disabledFeatures 
+    ? Object.values(globalSettings.disabledFeatures).filter(f => f.disabled).length 
+    : 0;
+
+  const tabs = [
+    {
+      id: 'clients',
+      label: 'Permessi Clienti',
+      icon: Users,
+      description: 'Gestisci accessi e permessi individuali',
+      badge: clients.length,
+      color: 'blue'
+    },
+    {
+      id: 'global',
+      label: 'Impostazioni Globali',
+      icon: Globe,
+      description: 'Configura registrazione e video di benvenuto',
+      color: 'emerald'
+    },
+    {
+      id: 'features',
+      label: 'Funzionalità',
+      icon: Layers,
+      description: 'Abilita/disabilita funzionalità della piattaforma',
+      badge: disabledFeaturesCount > 0 ? disabledFeaturesCount : null,
+      badgeColor: 'red',
+      color: 'purple'
+    }
+  ];
+
   return (
-    <div className="min-h-screen px-4 py-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl lg:text-3xl font-bold text-slate-100 flex items-center gap-3 mb-2">
-            <SettingsIcon className="text-blue-400" size={32} />
+    <div className="min-h-screen">
+      <div className="max-w-[1920px] mx-auto">
+        {/* Header Mobile */}
+        <div className="lg:hidden px-4 py-4 border-b border-slate-700/50 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
+          <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2 mb-1">
+            <SettingsIcon className="text-blue-400" size={24} />
             Gestione Piattaforma
           </h1>
-          <p className="text-slate-400 text-sm">
-            Configura funzionalità, permessi e impostazioni della piattaforma
+          <p className="text-slate-400 text-xs">
+            Configura funzionalità e permessi
           </p>
         </div>
 
@@ -379,55 +412,186 @@ export default function PlatformSettings() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className={`mb-4 p-4 rounded-xl border ${
+              className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-xl border shadow-2xl ${
                 notification.type === 'success'
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                  : 'bg-red-500/10 border-red-500/30 text-red-400'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 backdrop-blur-sm'
+                  : 'bg-red-500/10 border-red-500/30 text-red-400 backdrop-blur-sm'
               }`}
             >
-              {notification.message}
+              <div className="flex items-center gap-2">
+                {notification.type === 'success' ? <Check size={18} /> : <AlertCircle size={18} />}
+                {notification.message}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="flex gap-2 mb-6 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('clients')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
-              activeTab === 'clients'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-800/50 text-slate-400 hover:text-white'
-            }`}
-          >
-            <Users size={18} className="inline mr-2" />
-            Permessi Clienti
-          </button>
-          <button
-            onClick={() => setActiveTab('global')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
-              activeTab === 'global'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-800/50 text-slate-400 hover:text-white'
-            }`}
-          >
-            <Globe size={18} className="inline mr-2" />
-            Impostazioni Globali
-          </button>
-          <button
-            onClick={() => setActiveTab('features')}
-            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
-              activeTab === 'features'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-800/50 text-slate-400 hover:text-white'
-            }`}
-          >
-            <Layers size={18} className="inline mr-2" />
-            Funzionalità
-          </button>
-        </div>
+        {/* Layout Desktop/Mobile */}
+        <div className="flex flex-col lg:flex-row">
+          {/* Sidebar Desktop - Sticky */}
+          <aside className="hidden lg:block lg:w-72 xl:w-80 bg-slate-900/30 border-r border-slate-700/50 sticky top-0 h-screen overflow-y-auto">
+            {/* Header Sidebar */}
+            <div className="p-6 border-b border-slate-700/50">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-blue-600/20 rounded-lg">
+                  <SettingsIcon className="text-blue-400" size={24} />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-slate-100">
+                    Gestione Piattaforma
+                  </h1>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm">
+                Configura funzionalità, permessi e impostazioni
+              </p>
+            </div>
 
-        {activeTab === 'clients' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Navigation */}
+            <nav className="p-4 space-y-2">
+              {tabs.map(tab => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                
+                // Classi complete per Tailwind
+                const bgActiveClasses = {
+                  blue: 'bg-blue-600/20 border-2 border-blue-500/50',
+                  emerald: 'bg-emerald-600/20 border-2 border-emerald-500/50',
+                  purple: 'bg-purple-600/20 border-2 border-purple-500/50'
+                };
+                
+                const indicatorClasses = {
+                  blue: 'bg-blue-500',
+                  emerald: 'bg-emerald-500',
+                  purple: 'bg-purple-500'
+                };
+                
+                const iconActiveClasses = {
+                  blue: 'text-blue-400',
+                  emerald: 'text-emerald-400',
+                  purple: 'text-purple-400'
+                };
+                
+                const badgeClasses = {
+                  blue: 'bg-blue-500/20 text-blue-400',
+                  emerald: 'bg-emerald-500/20 text-emerald-400',
+                  purple: 'bg-purple-500/20 text-purple-400'
+                };
+                
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full text-left px-4 py-3.5 rounded-xl transition-all group relative ${
+                      isActive
+                        ? bgActiveClasses[tab.color]
+                        : 'bg-slate-800/30 border-2 border-transparent hover:border-slate-600/50 hover:bg-slate-800/50'
+                    }`}
+                  >
+                    {/* Indicatore attivo */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-12 rounded-r-full ${indicatorClasses[tab.color]}`}
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    
+                    <div className="flex items-center gap-3 mb-1">
+                      <Icon 
+                        size={22} 
+                        className={isActive ? iconActiveClasses[tab.color] : 'text-slate-400 group-hover:text-slate-300'} 
+                      />
+                      <span className={`font-semibold text-sm ${
+                        isActive ? 'text-slate-100' : 'text-slate-300 group-hover:text-slate-100'
+                      }`}>
+                        {tab.label}
+                      </span>
+                      {tab.badge !== null && tab.badge !== undefined && (
+                        <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-bold ${
+                          tab.badgeColor === 'red'
+                            ? 'bg-red-500/20 text-red-400'
+                            : badgeClasses[tab.color]
+                        }`}>
+                          {tab.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-xs ml-8 ${
+                      isActive ? 'text-slate-400' : 'text-slate-500 group-hover:text-slate-400'
+                    }`}>
+                      {tab.description}
+                    </p>
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+
+          {/* Mobile Tabs */}
+          <div className="lg:hidden flex gap-2 px-4 py-3 overflow-x-auto bg-slate-900/50 border-b border-slate-700/50">
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
+                    isActive
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-800/50 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Icon size={18} />
+                  {tab.label}
+                  {tab.badge !== null && tab.badge !== undefined && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                      isActive ? 'bg-white/20' : 'bg-slate-700'
+                    }`}>
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Main Content */}
+          <main className="flex-1 lg:h-screen lg:overflow-y-auto">
+            <div className="p-4 lg:p-6 xl:p-8 max-w-7xl">
+              {/* Breadcrumb / Section Header */}
+              <div className="mb-6 hidden lg:block">
+                <div className="flex items-center gap-3 mb-2">
+                  {(() => {
+                    const currentTab = tabs.find(t => t.id === activeTab);
+                    if (!currentTab) return null;
+                    
+                    const Icon = currentTab.icon;
+                    const iconClasses = {
+                      blue: 'text-blue-400',
+                      emerald: 'text-emerald-400',
+                      purple: 'text-purple-400'
+                    };
+                    
+                    return (
+                      <>
+                        <Icon size={28} className={iconClasses[currentTab.color]} />
+                        <h2 className="text-2xl font-bold text-slate-100">
+                          {currentTab.label}
+                        </h2>
+                      </>
+                    );
+                  })()}
+                </div>
+                <p className="text-slate-400 text-sm">
+                  {tabs.find(t => t.id === activeTab)?.description}
+                </p>
+              </div>
+
+              {activeTab === 'clients' && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-1 bg-slate-800/50 border border-slate-700/50 rounded-2xl p-4">
               <div className="mb-4">
                 <div className="relative">
@@ -1271,6 +1435,9 @@ export default function PlatformSettings() {
             })}
           </div>
         )}
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );

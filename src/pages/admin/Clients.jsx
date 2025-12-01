@@ -18,6 +18,8 @@ import MessageTemplates from '../../components/admin/MessageTemplates';
 import BulkOperations from '../../components/admin/BulkOperations';
 import { useToast } from '../../contexts/ToastContext';
 import { EmptyClients } from '../../components/ui/EmptyState';
+import FilterPanel, { FilterSection, FilterCheckbox, FilterDateRange } from '../../components/layout/FilterPanel';
+import KanbanBoard, { KanbanCard } from '../../components/layout/KanbanBoard';
 
 // --- COMPONENTI UI ---
 const Notification = ({ message, type, onDismiss }) => (
@@ -211,10 +213,10 @@ export default function Clients() {
   const [sortField, setSortField] = useState('startDate');
   const [sortDirection, setSortDirection] = useState('desc');
   const [anamnesiStatus, setAnamnesiStatus] = useState({});
-  const [viewMode, setViewMode] = useState('list'); // 'list' o 'card'
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'card', o 'kanban'
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [meseCalendario, setMeseCalendario] = useState(new Date());
-  const [showCalendar, setShowCalendar] = useState(true); // NUOVO
+  const [showCalendar, setShowCalendar] = useState(true);
   const [calendarType, setCalendarType] = useState('iscrizioni'); // 'iscrizioni' o 'scadenze'
   const [paymentsTotals, setPaymentsTotals] = useState({});
   const [dayModalOpen, setDayModalOpen] = useState(false);
@@ -223,6 +225,15 @@ export default function Clients() {
   const [stats, setStats] = useState({ total: 0, expiring: 0, expired: 0 });
   const [selectedClients, setSelectedClients] = useState([]);
   const toast = useToast();
+  
+  // --- NUOVI STATI PER FILTER PANEL E KANBAN ---
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    hasAnamnesi: null, // null = tutti, true = solo con, false = solo senza
+    paymentRange: { min: 0, max: 10000 },
+    dateRange: { start: '', end: '' },
+    states: { active: true, expiring: true, expired: true, renewed: true }
+  });
 
   // --- SELEZIONE MULTIPLA ---
   const toggleClientSelection = (clientId) => {
@@ -531,21 +542,43 @@ export default function Clients() {
 
   // --- TOGGLE VISTA ---
   const viewToggle = (
-    <div className="flex items-center gap-1 bg-slate-700/50 border border-slate-600 rounded-lg p-1">
+    <div className="flex items-center gap-2">
+      {/* Bottone Filtri Avanzati */}
       <button
-        onClick={() => setViewMode('list')}
-        className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400 hover:text-slate-200'}`}
-        title="Lista"
+        onClick={() => setFilterPanelOpen(true)}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+          filterPanelOpen ? 'bg-blue-600 text-white' : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+        }`}
+        title="Filtri Avanzati"
       >
-        <List size={16} />
+        <Filter size={16} />
+        <span className="hidden sm:inline text-sm">Filtri</span>
       </button>
-      <button
-        onClick={() => setViewMode('card')}
-        className={`p-2 rounded-md transition-colors ${viewMode === 'card' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400 hover:text-slate-200'}`}
-        title="Schede"
-      >
-        <LayoutGrid size={16} />
-      </button>
+      
+      {/* Toggle Visualizzazione */}
+      <div className="flex items-center gap-1 bg-slate-700/50 border border-slate-600 rounded-lg p-1">
+        <button
+          onClick={() => setViewMode('list')}
+          className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400 hover:text-slate-200'}`}
+          title="Vista Lista"
+        >
+          <List size={16} />
+        </button>
+        <button
+          onClick={() => setViewMode('card')}
+          className={`p-2 rounded-md transition-colors ${viewMode === 'card' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400 hover:text-slate-200'}`}
+          title="Vista Schede"
+        >
+          <LayoutGrid size={16} />
+        </button>
+        <button
+          onClick={() => setViewMode('kanban')}
+          className={`p-2 rounded-md transition-colors ${viewMode === 'kanban' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400 hover:text-slate-200'}`}
+          title="Vista Kanban"
+        >
+          <LayoutGrid size={16} className="rotate-90" />
+        </button>
+      </div>
     </div>
   );
 
@@ -632,6 +665,120 @@ export default function Clients() {
     <div className="overflow-x-hidden w-full">
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
       <ConfirmationModal isOpen={!!clientToDelete} onClose={() => setClientToDelete(null)} onConfirm={handleDelete} clientName={clientToDelete?.name} />
+      
+      {/* Filter Panel */}
+      <FilterPanel
+        isOpen={filterPanelOpen}
+        onClose={() => setFilterPanelOpen(false)}
+        title="Filtri Avanzati"
+        footer={
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setAdvancedFilters({
+                  hasAnamnesi: null,
+                  paymentRange: { min: 0, max: 10000 },
+                  dateRange: { start: '', end: '' },
+                  states: { active: true, expiring: true, expired: true, renewed: true }
+                });
+              }}
+              className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors"
+            >
+              Reset
+            </button>
+            <button
+              onClick={() => setFilterPanelOpen(false)}
+              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Applica
+            </button>
+          </div>
+        }
+      >
+        <FilterSection title="Stato Cliente" icon={CheckCircle} defaultOpen={true}>
+          <FilterCheckbox
+            label="Attivi"
+            checked={advancedFilters.states.active}
+            onChange={(e) => setAdvancedFilters(prev => ({
+              ...prev,
+              states: { ...prev.states, active: e.target.checked }
+            }))}
+            count={clients.filter(c => {
+              const expiry = toDate(c.scadenza);
+              return expiry && expiry > new Date();
+            }).length}
+          />
+          <FilterCheckbox
+            label="In Scadenza (15gg)"
+            checked={advancedFilters.states.expiring}
+            onChange={(e) => setAdvancedFilters(prev => ({
+              ...prev,
+              states: { ...prev.states, expiring: e.target.checked }
+            }))}
+            count={stats.expiring}
+          />
+          <FilterCheckbox
+            label="Scaduti"
+            checked={advancedFilters.states.expired}
+            onChange={(e) => setAdvancedFilters(prev => ({
+              ...prev,
+              states: { ...prev.states, expired: e.target.checked }
+            }))}
+            count={stats.expired}
+          />
+        </FilterSection>
+
+        <FilterSection title="Anamnesi" icon={FileText}>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 p-2 hover:bg-slate-800/30 rounded-lg cursor-pointer">
+              <input
+                type="radio"
+                name="anamnesi"
+                checked={advancedFilters.hasAnamnesi === null}
+                onChange={() => setAdvancedFilters(prev => ({ ...prev, hasAnamnesi: null }))}
+                className="accent-blue-500"
+              />
+              <span className="text-sm text-slate-300">Tutte</span>
+            </label>
+            <label className="flex items-center gap-2 p-2 hover:bg-slate-800/30 rounded-lg cursor-pointer">
+              <input
+                type="radio"
+                name="anamnesi"
+                checked={advancedFilters.hasAnamnesi === true}
+                onChange={() => setAdvancedFilters(prev => ({ ...prev, hasAnamnesi: true }))}
+                className="accent-blue-500"
+              />
+              <span className="text-sm text-slate-300">Solo con Anamnesi</span>
+            </label>
+            <label className="flex items-center gap-2 p-2 hover:bg-slate-800/30 rounded-lg cursor-pointer">
+              <input
+                type="radio"
+                name="anamnesi"
+                checked={advancedFilters.hasAnamnesi === false}
+                onChange={() => setAdvancedFilters(prev => ({ ...prev, hasAnamnesi: false }))}
+                className="accent-blue-500"
+              />
+              <span className="text-sm text-slate-300">Solo senza Anamnesi</span>
+            </label>
+          </div>
+        </FilterSection>
+
+        <FilterSection title="Range Date" icon={Calendar}>
+          <FilterDateRange
+            label="Periodo di Iscrizione"
+            startDate={advancedFilters.dateRange.start}
+            endDate={advancedFilters.dateRange.end}
+            onStartChange={(e) => setAdvancedFilters(prev => ({
+              ...prev,
+              dateRange: { ...prev.dateRange, start: e.target.value }
+            }))}
+            onEndChange={(e) => setAdvancedFilters(prev => ({
+              ...prev,
+              dateRange: { ...prev.dateRange, end: e.target.value }
+            }))}
+          />
+        </FilterSection>
+      </FilterPanel>
 
       <div className="mobile-container py-4 sm:py-6 space-y-4 sm:space-y-6 mobile-safe-bottom">
         {/* HEADER MOBILE */}
@@ -666,28 +813,37 @@ export default function Clients() {
           </div>
 
           {/* Action Buttons Mobile */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <button onClick={() => setFilterPanelOpen(true)} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
+              <Filter size={16} />
+            </button>
             <button onClick={() => navigate("/new-client")} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-rose-600 hover:bg-rose-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
-              <UserPlus size={16} /> Nuovo
+              <UserPlus size={16} />
             </button>
             <button onClick={() => exportToCSV(clients)} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
-              <Download size={16} /> CSV
+              <Download size={16} />
             </button>
           </div>
 
           {/* View Toggle Mobile */}
-          <div className="flex items-center justify-center gap-1 bg-slate-700/50 border border-slate-600 rounded-lg p-1 mb-3">
+          <div className="grid grid-cols-3 gap-1 bg-slate-700/50 border border-slate-600 rounded-lg p-1 mb-3">
             <button
               onClick={() => setViewMode('list')}
-              className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-md transition-colors text-xs ${viewMode === 'list' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400'}`}
+              className={`flex items-center justify-center gap-1.5 p-2 rounded-md transition-colors text-xs ${viewMode === 'list' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400'}`}
             >
               <List size={14} /> Lista
             </button>
             <button
               onClick={() => setViewMode('card')}
-              className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-md transition-colors text-xs ${viewMode === 'card' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400'}`}
+              className={`flex items-center justify-center gap-1.5 p-2 rounded-md transition-colors text-xs ${viewMode === 'card' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400'}`}
             >
-              <LayoutGrid size={14} /> Schede
+              <LayoutGrid size={14} /> Card
+            </button>
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={`flex items-center justify-center gap-1.5 p-2 rounded-md transition-colors text-xs ${viewMode === 'kanban' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400'}`}
+            >
+              <LayoutGrid size={14} className="rotate-90" /> Board
             </button>
           </div>
 
@@ -1045,6 +1201,119 @@ export default function Clients() {
                 <p className="text-sm">Nessun cliente trovato</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* VISTA KANBAN */}
+        {viewMode === 'kanban' && (
+          <div className="mx-3 sm:mx-6">
+            <KanbanBoard
+              columns={[
+                {
+                  id: 'active',
+                  title: 'Attivi',
+                  color: 'emerald',
+                  icon: CheckCircle,
+                  items: filteredAndSortedClients.filter(c => {
+                    const expiry = toDate(c.scadenza);
+                    const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                    return expiry && daysToExpiry > 15;
+                  })
+                },
+                {
+                  id: 'expiring',
+                  title: 'In Scadenza',
+                  color: 'amber',
+                  icon: Clock,
+                  items: filteredAndSortedClients.filter(c => {
+                    const expiry = toDate(c.scadenza);
+                    const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                    return expiry && daysToExpiry <= 15 && daysToExpiry > 0;
+                  })
+                },
+                {
+                  id: 'expired',
+                  title: 'Scaduti',
+                  color: 'red',
+                  icon: XCircle,
+                  items: filteredAndSortedClients.filter(c => {
+                    const expiry = toDate(c.scadenza);
+                    return expiry && expiry < new Date();
+                  })
+                },
+                {
+                  id: 'no-expiry',
+                  title: 'Senza Scadenza',
+                  color: 'slate',
+                  icon: AlertCircle,
+                  items: filteredAndSortedClients.filter(c => !toDate(c.scadenza))
+                }
+              ]}
+              onItemMove={(item, fromColumn, toColumn) => {
+                console.log('Move client:', item.name, 'from', fromColumn, 'to', toColumn);
+                // Qui puoi implementare la logica per aggiornare lo stato del cliente
+                toast.info(`Cliente ${item.name} spostato da ${fromColumn} a ${toColumn}`);
+              }}
+              renderCard={(client) => (
+                <KanbanCard
+                  title={client.name || 'N/D'}
+                  subtitle={client.email}
+                  badge={
+                    <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full text-xs font-bold">
+                      €{(paymentsTotals[client.id] || 0).toFixed(0)}
+                    </span>
+                  }
+                  onClick={() => navigate(`/client/${client.id}`)}
+                  actions={
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/edit/${client.id}`);
+                        }}
+                        className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+                        title="Modifica"
+                      >
+                        <FilePenLine size={14} className="text-blue-400" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setClientToDelete(client);
+                        }}
+                        className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+                        title="Elimina"
+                      >
+                        <Trash2 size={14} className="text-red-400" />
+                      </button>
+                    </>
+                  }
+                >
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400">Scadenza:</span>
+                    <span className={`font-medium ${
+                      (() => {
+                        const expiry = toDate(client.scadenza);
+                        if (!expiry) return 'text-slate-500';
+                        const daysToExpiry = Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24));
+                        if (daysToExpiry < 0) return 'text-red-400';
+                        if (daysToExpiry <= 15) return 'text-amber-400';
+                        return 'text-emerald-400';
+                      })()
+                    }`}>
+                      {toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}
+                    </span>
+                  </div>
+                  {anamnesiStatus[client.id] && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <FileText size={12} className="text-emerald-400" />
+                      <span className="text-xs text-emerald-400">Anamnesi</span>
+                    </div>
+                  )}
+                </KanbanCard>
+              )}
+              emptyState="Nessun cliente in questa categoria"
+            />
           </div>
         )}
       </div>
