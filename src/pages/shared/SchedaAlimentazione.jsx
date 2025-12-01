@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Copy, RotateCcw, X, Download, Upload, History, FileText, Sparkles } from 'lucide-react';
+import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Copy, RotateCcw, X, Download, Upload, History, FileText, Sparkles, Send, AlertTriangle } from 'lucide-react';
 import { db } from '../../firebase';
 import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit, deleteDoc } from 'firebase/firestore';
 import { exportNutritionCardToPDF } from '../../utils/pdfExport';
 import AINutritionAssistant from '../../components/AINutritionAssistant';
 import { convertToGrams, inferUnitFromName } from '../../utils/nutritionUnits';
@@ -68,10 +68,70 @@ const SchedaAlimentazione = () => {
   // Edit mode (view vs edit)
   const [isEditMode, setIsEditMode] = useState(false);
   const [schedaExists, setSchedaExists] = useState(false);
+  
+  // Delete modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadClientAndScheda();
   }, [clientId]);
+
+  // Carica dati salvati automaticamente da localStorage
+  useEffect(() => {
+    if (!clientId) return;
+    
+    const autosavedKey = `scheda_alimentazione_draft_${clientId}`;
+    const savedDraft = localStorage.getItem(autosavedKey);
+    
+    if (savedDraft) {
+      try {
+        const parsedDraft = JSON.parse(savedDraft);
+        const savedTime = new Date(parsedDraft.savedAt);
+        const now = new Date();
+        const hoursSinceSave = (now - savedTime) / (1000 * 60 * 60);
+        
+        // Mostra prompt solo se ci sono dati salvati nelle ultime 24 ore
+        if (hoursSinceSave < 24 && !schedaExists) {
+          const shouldRestore = confirm(
+            `Trovata bozza salvata automaticamente il ${savedTime.toLocaleString('it-IT')}. Vuoi ripristinarla?`
+          );
+          
+          if (shouldRestore) {
+            setSchedaData(parsedDraft.data);
+          } else {
+            // Rimuovi la bozza se l'utente non vuole ripristinarla
+            localStorage.removeItem(autosavedKey);
+          }
+        }
+      } catch (error) {
+        console.error('Errore ripristino bozza:', error);
+      }
+    }
+  }, [clientId, schedaExists]);
+
+  // Autosalvataggio in localStorage ogni volta che schedaData cambia
+  useEffect(() => {
+    if (!clientId || !isEditMode) return;
+    
+    // Debounce: salva solo dopo 2 secondi dall'ultima modifica
+    const timeoutId = setTimeout(() => {
+      const autosavedKey = `scheda_alimentazione_draft_${clientId}`;
+      const draftData = {
+        data: schedaData,
+        savedAt: new Date().toISOString()
+      };
+      
+      try {
+        localStorage.setItem(autosavedKey, JSON.stringify(draftData));
+        console.log('✅ Bozza salvata automaticamente');
+      } catch (error) {
+        console.error('⚠️ Errore salvataggio automatico:', error);
+      }
+    }, 2000);
+    
+    return () => clearTimeout(timeoutId);
+  }, [schedaData, clientId, isEditMode]);
 
   const loadClientAndScheda = async () => {
     try {
@@ -113,14 +173,82 @@ const SchedaAlimentazione = () => {
     setLoading(false);
   };
 
-  const handleSave = async () => {
+  const handleSaveDraft = () => {
+    try {
+      const autosavedKey = `scheda_alimentazione_draft_${clientId}`;
+      const draftData = {
+        data: schedaData,
+        savedAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem(autosavedKey, JSON.stringify(draftData));
+      alert('✅ Bozza salvata in locale!');
+    } catch (error) {
+      console.error('Errore salvataggio bozza:', error);
+      alert('Errore nel salvataggio della bozza');
+    }
+  };
+
+  const handleDeleteScheda = async () => {
+    setDeleting(true);
+    try {
+      // Elimina la scheda da Firestore
+      const schedaRef = getTenantDoc(db, 'schede_alimentazione', clientId);
+      await deleteDoc(schedaRef);
+      
+      // Aggiorna il cliente per rimuovere il flag di consegna
+      const clientRef = getTenantDoc(db, 'clients', clientId);
+      await updateDoc(clientRef, {
+        'schedaAlimentazione.consegnata': false,
+        'schedaAlimentazione.scadenza': null,
+        'schedaAlimentazione.dataConsegna': null
+      });
+      
+      // Rimuovi anche la bozza locale
+      const autosavedKey = `scheda_alimentazione_draft_${clientId}`;
+      localStorage.removeItem(autosavedKey);
+      
+      alert('🗑️ Scheda eliminata con successo!');
+      setShowDeleteModal(false);
+      
+      // Ricarica la pagina o torna indietro
+      navigate('/alimentazione-allenamento');
+    } catch (error) {
+      console.error('Errore eliminazione scheda:', error);
+      alert('Errore nell\'eliminazione della scheda');
+    }
+    setDeleting(false);
+  };
+
+  const handleSendToClient = async () => {
+    // Validazione
+    if (!schedaData.obiettivo) {
+      alert('⚠️ Seleziona un obiettivo prima di inviare la scheda');
+      return;
+    }
+    
+    // Controlla che ci sia almeno un pasto in un giorno
+    const hasContent = Object.values(schedaData.giorni).some(giorno => 
+      giorno.pasti.some(pasto => pasto.alimenti.length > 0)
+    );
+    
+    if (!hasContent) {
+      alert('⚠️ Aggiungi almeno un alimento prima di inviare la scheda');
+      return;
+    }
+    
+    if (!confirm('🚀 Confermi di voler inviare questa scheda al cliente? Sarà visibile nella sua area.')) {
+      return;
+    }
+    
     setSaving(true);
     try {
       // Save current card
       const schedaRef = getTenantDoc(db, 'schede_alimentazione', clientId);
       await setDoc(schedaRef, {
         ...schedaData,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        publishedAt: new Date()
       });
 
       // Save to history
@@ -146,7 +274,11 @@ const SchedaAlimentazione = () => {
         });
       }
 
-      alert('Scheda salvata con successo!');
+      // Rimuovi la bozza salvata automaticamente
+      const autosavedKey = `scheda_alimentazione_draft_${clientId}`;
+      localStorage.removeItem(autosavedKey);
+      
+      alert('📨 Scheda inviata con successo al cliente!');
       
       // Passa in modalità visualizzazione dopo il salvataggio
       setSchedaExists(true);
@@ -160,8 +292,8 @@ const SchedaAlimentazione = () => {
         }
       }
     } catch (error) {
-      console.error('Errore salvataggio:', error);
-      alert('Errore nel salvataggio della scheda');
+      console.error('Errore invio scheda:', error);
+      alert('Errore nell\'invio della scheda al cliente');
     }
     setSaving(false);
   };
@@ -590,6 +722,12 @@ const SchedaAlimentazione = () => {
               Torna indietro
             </button>
             <div className="flex items-center gap-3">
+              {isEditMode && (
+                <span className="text-xs text-emerald-400 flex items-center gap-1 px-3 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
+                  <span className="animate-pulse">●</span>
+                  Salvataggio automatico attivo
+                </span>
+              )}
               {schedaExists && !isEditMode && (
                 <button
                   onClick={() => setIsEditMode(true)}
@@ -600,14 +738,23 @@ const SchedaAlimentazione = () => {
                 </button>
               )}
               {isEditMode && (
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 text-white preserve-white rounded-lg transition-colors"
-                >
-                  <Save size={18} />
-                  {saving ? 'Salvataggio...' : 'Salva Scheda'}
-                </button>
+                <>
+                  <button
+                    onClick={handleSaveDraft}
+                    className="flex items-center gap-2 px-6 py-2 bg-slate-600 hover:bg-slate-700 text-white preserve-white rounded-lg transition-colors"
+                  >
+                    <Save size={18} />
+                    Salva Bozza
+                  </button>
+                  <button
+                    onClick={handleSendToClient}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-slate-600 disabled:to-slate-600 text-white preserve-white rounded-lg transition-colors font-semibold shadow-lg"
+                  >
+                    <Upload size={18} />
+                    {saving ? 'Invio...' : 'Invia al Cliente'}
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -621,6 +768,15 @@ const SchedaAlimentazione = () => {
               <Download size={16} />
               Scarica PDF
             </button>
+            {schedaExists && (
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white preserve-white text-sm rounded-lg transition-colors"
+              >
+                <Trash2 size={16} />
+                Elimina Scheda
+              </button>
+            )}
             {isEditMode && (
               <>
                 <button
@@ -1448,6 +1604,75 @@ const SchedaAlimentazione = () => {
                       setSelectedDaysForDuplication([]);
                     }}
                     className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+                  >
+                    Annulla
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Confirmation Modal */}
+        <AnimatePresence>
+          {showDeleteModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => setShowDeleteModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-800 border border-red-500/30 rounded-xl p-6 max-w-md w-full"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-red-600/20 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="text-red-400" size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-100">Elimina Scheda</h3>
+                    <p className="text-sm text-slate-400">Questa azione è irreversibile</p>
+                  </div>
+                </div>
+
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
+                  <p className="text-slate-200 text-sm mb-2">
+                    Stai per eliminare definitivamente questa scheda alimentazione per <strong>{clientName}</strong>.
+                  </p>
+                  <ul className="text-xs text-slate-400 space-y-1 ml-4 list-disc">
+                    <li>La scheda non sarà più visibile al cliente</li>
+                    <li>Tutti i dati verranno cancellati</li>
+                    <li>Lo storico delle versioni precedenti rimarrà conservato</li>
+                  </ul>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDeleteScheda}
+                    disabled={deleting}
+                    className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-600 text-white preserve-white rounded-lg transition-colors font-semibold flex items-center justify-center gap-2"
+                  >
+                    {deleting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                        Eliminazione...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 size={18} />
+                        Elimina Definitivamente
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    disabled={deleting}
+                    className="px-4 py-3 bg-slate-600 hover:bg-slate-500 text-white preserve-white rounded-lg transition-colors"
                   >
                     Annulla
                   </button>

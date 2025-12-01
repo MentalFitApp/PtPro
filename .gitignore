@@ -38,3 +38,4 @@ coverage/
 
 # Firebase Service Account (NEVER COMMIT THIS)
 service-account.json
+.env.vercel

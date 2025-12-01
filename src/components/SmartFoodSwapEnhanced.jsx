@@ -231,7 +231,7 @@ export default function SmartFoodSwapEnhanced({
   currentGrams, 
   currentMacros,
   targetMacros, // Macros obiettivo del coach
-  allowedVariance = 0.10, // ±10% di variazione consentita
+  allowedVariance = 0.15, // ±15% di variazione consentita
   mealDay,
   mealName,
   onSwap,

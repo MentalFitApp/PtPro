@@ -28,6 +28,7 @@ const Dipendenti = () => {
   const [incassoMensile, setIncassoMensile] = useState(0);
   const [showArchived, setShowArchived] = useState(false);
   const [meseCalendario, setMeseCalendario] = useState(new Date());
+  const [periodoRiferimento, setPeriodoRiferimento] = useState({ tipo: 'anno', anno: new Date().getFullYear(), mese: null });
 
   // Form
   const [formDip, setFormDip] = useState({ nome: "", nominativo: "", iban: "", tipo: "percentuale", percentuale: "", fissi: [], ruolo: "Setter" });
@@ -47,11 +48,25 @@ const Dipendenti = () => {
   // Filtro
   const [meseFiltro, setMeseFiltro] = useState(format(new Date(), "yyyy-MM"));
 
-  // === INCASSO MENSILE ===
+  // === INCASSO PERIODO ===
   useEffect(() => {
     const loadIncassoMensile = async () => {
       try {
-        const currentMonthStart = startOfMonth(new Date());
+        let periodStart, periodEnd;
+        
+        if (periodoRiferimento.tipo === 'anno') {
+          periodStart = new Date(periodoRiferimento.anno, 0, 1); // 1 gennaio
+          periodEnd = new Date(periodoRiferimento.anno, 11, 31, 23, 59, 59); // 31 dicembre
+        } else if (periodoRiferimento.tipo === 'mese') {
+          periodStart = new Date(periodoRiferimento.anno, periodoRiferimento.mese, 1);
+          periodEnd = new Date(periodoRiferimento.anno, periodoRiferimento.mese + 1, 0, 23, 59, 59);
+        } else if (periodoRiferimento.tipo === 'range') {
+          const [startYear, startMonth] = periodoRiferimento.meseInizio.split('-').map(Number);
+          const [endYear, endMonth] = periodoRiferimento.meseFine.split('-').map(Number);
+          periodStart = new Date(startYear, startMonth - 1, 1);
+          periodEnd = new Date(endYear, endMonth, 0, 23, 59, 59);
+        }
+        
         const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
         let income = 0;
         
@@ -65,7 +80,7 @@ const Dipendenti = () => {
             paymentsSnap.docs.forEach(paymentDoc => {
               const paymentData = paymentDoc.data();
               const paymentDate = paymentData.paymentDate?.toDate();
-              if (paymentDate && paymentDate >= currentMonthStart && !paymentData.isPast) {
+              if (paymentDate && paymentDate >= periodStart && paymentDate <= periodEnd && !paymentData.isPast) {
                 income += paymentData.amount || 0;
               }
             });
@@ -74,11 +89,11 @@ const Dipendenti = () => {
         
         setIncassoMensile(income);
       } catch (err) {
-        console.error('Errore caricamento incasso mensile:', err);
+        console.error('Errore caricamento incasso periodo:', err);
       }
     };
     loadIncassoMensile();
-  }, []);
+  }, [periodoRiferimento]);
 
   // === DIPENDENTI & PAGAMENTI ===
   useEffect(() => {
@@ -236,15 +251,9 @@ const Dipendenti = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">Dipendenti & Provvigioni</h1>
-        <div className="flex gap-3">
-          <input
-            type="month"
-            value={meseFiltro}
-            onChange={(e) => setMeseFiltro(e.target.value)}
-            className="px-4 py-2 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-rose-500 text-sm"
-          />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">Dipendenti & Provvigioni</h1>
           <button
             onClick={() => setShowArchived(!showArchived)}
             className={`px-4 py-2 text-sm rounded-lg transition ${showArchived ? 'bg-rose-600 text-white' : 'bg-slate-700 text-slate-300'}`}
@@ -252,12 +261,113 @@ const Dipendenti = () => {
             {showArchived ? 'Attivi' : 'Archiviati'}
           </button>
         </div>
+        
+        {/* SELETTORE PERIODO INCASSO */}
+        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPeriodoRiferimento({ tipo: 'anno', anno: new Date().getFullYear(), mese: null })}
+                className={`px-4 py-2 text-sm rounded-lg transition ${
+                  periodoRiferimento.tipo === 'anno' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Anno
+              </button>
+              <button
+                onClick={() => setPeriodoRiferimento({ tipo: 'mese', anno: new Date().getFullYear(), mese: new Date().getMonth() })}
+                className={`px-4 py-2 text-sm rounded-lg transition ${
+                  periodoRiferimento.tipo === 'mese' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Mese
+              </button>
+              <button
+                onClick={() => setPeriodoRiferimento({ tipo: 'range', meseInizio: format(new Date(), 'yyyy-MM'), meseFine: format(new Date(), 'yyyy-MM') })}
+                className={`px-4 py-2 text-sm rounded-lg transition ${
+                  periodoRiferimento.tipo === 'range' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Periodo
+              </button>
+            </div>
+            
+            {periodoRiferimento.tipo === 'anno' && (
+              <select
+                value={periodoRiferimento.anno}
+                onChange={(e) => setPeriodoRiferimento({ ...periodoRiferimento, anno: parseInt(e.target.value) })}
+                className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
+              >
+                {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            )}
+            
+            {periodoRiferimento.tipo === 'mese' && (
+              <div className="flex gap-2">
+                <select
+                  value={periodoRiferimento.mese}
+                  onChange={(e) => setPeriodoRiferimento({ ...periodoRiferimento, mese: parseInt(e.target.value) })}
+                  className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
+                >
+                  {['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'].map((m, i) => (
+                    <option key={i} value={i}>{m}</option>
+                  ))}
+                </select>
+                <select
+                  value={periodoRiferimento.anno}
+                  onChange={(e) => setPeriodoRiferimento({ ...periodoRiferimento, anno: parseInt(e.target.value) })}
+                  className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
+                >
+                  {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {periodoRiferimento.tipo === 'range' && (
+              <div className="flex flex-col sm:flex-row gap-2 items-center">
+                <input
+                  type="month"
+                  value={periodoRiferimento.meseInizio || format(new Date(), 'yyyy-MM')}
+                  onChange={(e) => setPeriodoRiferimento({ ...periodoRiferimento, meseInizio: e.target.value })}
+                  className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
+                />
+                <span className="text-slate-400 text-sm">→</span>
+                <input
+                  type="month"
+                  value={periodoRiferimento.meseFine || format(new Date(), 'yyyy-MM')}
+                  onChange={(e) => setPeriodoRiferimento({ ...periodoRiferimento, meseFine: e.target.value })}
+                  className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* FILTRO PAGAMENTI */}
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-slate-400">Pagamenti del mese:</label>
+          <input
+            type="month"
+            value={meseFiltro}
+            onChange={(e) => setMeseFiltro(e.target.value)}
+            className="px-4 py-2 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-rose-500 text-sm"
+          />
+        </div>
       </div>
 
       {/* STATISTICHE + UTILE NETTO */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-xl text-white shadow-lg">
-          <p className="text-sm opacity-90 flex items-center gap-1"><DollarSign size={16} /> Incasso Mese</p>
+          <p className="text-sm opacity-90 flex items-center gap-1">
+            <DollarSign size={16} /> 
+            {periodoRiferimento.tipo === 'anno' && `Fatturato ${periodoRiferimento.anno}`}
+            {periodoRiferimento.tipo === 'mese' && `Fatturato ${['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'][periodoRiferimento.mese]} ${periodoRiferimento.anno}`}
+            {periodoRiferimento.tipo === 'range' && `Fatturato ${periodoRiferimento.meseInizio} / ${periodoRiferimento.meseFine}`}
+          </p>
           <p className="text-2xl font-bold mt-1">{formatCurrency(incassoMensile)}</p>
         </div>
         <div className="bg-gradient-to-br from-purple-600 to-purple-800 p-6 rounded-xl text-white shadow-lg">
