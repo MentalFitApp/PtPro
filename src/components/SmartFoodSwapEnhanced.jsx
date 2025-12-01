@@ -248,6 +248,7 @@ export default function SmartFoodSwapEnhanced({
   const [categories, setCategories] = useState([]);
   const [validationError, setValidationError] = useState(null);
   const [suggestedAlternatives, setSuggestedAlternatives] = useState([]);
+  const [isValidSwap, setIsValidSwap] = useState(true);
 
   useEffect(() => {
     loadFoods();
@@ -434,6 +435,7 @@ export default function SmartFoodSwapEnhanced({
     setSelectedFood(food);
     setCalculatedGrams(neededGrams);
     setNewMacros(macros);
+    setIsValidSwap(validation.valid);
     
     // Mostra errori solo se non è valido, altrimenti mostra warnings se presenti
     if (!validation.valid) {
@@ -447,7 +449,8 @@ export default function SmartFoodSwapEnhanced({
   };
 
   const handleConfirm = () => {
-    if (validationError) {
+    // Blocca solo se la sostituzione NON è valida (errori veri)
+    if (!isValidSwap) {
       alert('Impossibile salvare: i macros sono fuori dal range consentito dal tuo coach.\n\n' + validationError.join('\n'));
       return;
     }
@@ -738,7 +741,7 @@ export default function SmartFoodSwapEnhanced({
           <div className="flex gap-3">
             <button
               onClick={handleConfirm}
-              disabled={!selectedFood || validationError}
+              disabled={!selectedFood || !isValidSwap}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2"
             >
               <Check size={18} />
