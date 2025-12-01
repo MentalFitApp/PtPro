@@ -337,39 +337,63 @@ export default function SmartFoodSwapEnhanced({
     if (!targetMacros) return { valid: true }; // Nessuna validazione se non ci sono target
     
     const errors = [];
+    const warnings = [];
     const tolerance = allowedVariance;
     
-    // Valida calorie
+    let validCount = 0;
+    let totalChecks = 4;
+    
+    // Valida calorie (priorità massima)
     const caloriesMin = targetMacros.calories * (1 - tolerance);
     const caloriesMax = targetMacros.calories * (1 + tolerance);
-    if (macros.calories < caloriesMin || macros.calories > caloriesMax) {
+    const caloriesValid = macros.calories >= caloriesMin && macros.calories <= caloriesMax;
+    if (caloriesValid) {
+      validCount++;
+    } else {
       errors.push(`Calorie fuori range: ${Math.round(caloriesMin)}-${Math.round(caloriesMax)} kcal`);
     }
     
     // Valida proteine
     const proteinsMin = targetMacros.proteins * (1 - tolerance);
     const proteinsMax = targetMacros.proteins * (1 + tolerance);
-    if (macros.proteins < proteinsMin || macros.proteins > proteinsMax) {
-      errors.push(`Proteine fuori range: ${Math.round(proteinsMin)}-${Math.round(proteinsMax)}g`);
+    const proteinsValid = macros.proteins >= proteinsMin && macros.proteins <= proteinsMax;
+    if (proteinsValid) {
+      validCount++;
+    } else {
+      warnings.push(`Proteine: ${Math.round(proteinsMin)}-${Math.round(proteinsMax)}g (attuale: ${Math.round(macros.proteins)}g)`);
     }
     
     // Valida carboidrati
     const carbsMin = targetMacros.carbs * (1 - tolerance);
     const carbsMax = targetMacros.carbs * (1 + tolerance);
-    if (macros.carbs < carbsMin || macros.carbs > carbsMax) {
-      errors.push(`Carboidrati fuori range: ${Math.round(carbsMin)}-${Math.round(carbsMax)}g`);
+    const carbsValid = macros.carbs >= carbsMin && macros.carbs <= carbsMax;
+    if (carbsValid) {
+      validCount++;
+    } else {
+      warnings.push(`Carboidrati: ${Math.round(carbsMin)}-${Math.round(carbsMax)}g (attuale: ${Math.round(macros.carbs)}g)`);
     }
     
     // Valida grassi
     const fatsMin = targetMacros.fats * (1 - tolerance);
     const fatsMax = targetMacros.fats * (1 + tolerance);
-    if (macros.fats < fatsMin || macros.fats > fatsMax) {
-      errors.push(`Grassi fuori range: ${Math.round(fatsMin)}-${Math.round(fatsMax)}g`);
+    const fatsValid = macros.fats >= fatsMin && macros.fats <= fatsMax;
+    if (fatsValid) {
+      validCount++;
+    } else {
+      warnings.push(`Grassi: ${Math.round(fatsMin)}-${Math.round(fatsMax)}g (attuale: ${Math.round(macros.fats)}g)`);
     }
     
+    // Sostituzione valida se:
+    // 1. Le calorie sono nel range (priorità), oppure
+    // 2. Almeno 3 su 4 macro sono nel range
+    const isValid = caloriesValid || validCount >= 3;
+    
     return {
-      valid: errors.length === 0,
-      errors
+      valid: isValid,
+      errors: isValid ? [] : errors,
+      warnings: isValid ? warnings : [], // Mostra warnings solo se valido
+      validCount,
+      totalChecks
     };
   };
 
@@ -410,13 +434,14 @@ export default function SmartFoodSwapEnhanced({
     setSelectedFood(food);
     setCalculatedGrams(neededGrams);
     setNewMacros(macros);
-    setValidationError(validation.valid ? null : validation.errors);
     
-    // Se non è valido, trova alternative
+    // Mostra errori solo se non è valido, altrimenti mostra warnings se presenti
     if (!validation.valid) {
+      setValidationError(validation.errors);
       const alternatives = findBestAlternatives();
       setSuggestedAlternatives(alternatives);
     } else {
+      setValidationError(validation.warnings.length > 0 ? validation.warnings : null);
       setSuggestedAlternatives([]);
     }
   };
@@ -640,14 +665,23 @@ export default function SmartFoodSwapEnhanced({
                   </div>
 
                   {validationError && (
-                    <div className="mt-3 space-y-2">
-                      <p className="text-sm font-medium text-red-400">⚠️ Macros fuori range</p>
-                      {validationError.map((err, idx) => (
-                        <p key={idx} className="text-xs text-red-300">• {err}</p>
-                      ))}
-                      <p className="text-xs text-slate-400 mt-2">
-                        Il tuo coach ha impostato un limite del ±{allowedVariance * 100}% sui macros
+                    <div className={`mt-3 space-y-2 ${suggestedAlternatives.length > 0 ? 'bg-red-500/10 border border-red-500/30' : 'bg-amber-500/10 border border-amber-500/30'} rounded-lg p-3`}>
+                      <p className={`text-sm font-medium ${suggestedAlternatives.length > 0 ? 'text-red-400' : 'text-amber-400'}`}>
+                        {suggestedAlternatives.length > 0 ? '⚠️ Macros fuori range' : 'ℹ️ Nota sui macros'}
                       </p>
+                      {validationError.map((err, idx) => (
+                        <p key={idx} className={`text-xs ${suggestedAlternatives.length > 0 ? 'text-red-300' : 'text-amber-300'}`}>• {err}</p>
+                      ))}
+                      {suggestedAlternatives.length === 0 && (
+                        <p className="text-xs text-slate-400 mt-2">
+                          ✅ Sostituzione valida, ma alcuni macro non sono perfettamente centrati (entro ±{allowedVariance * 100}%)
+                        </p>
+                      )}
+                      {suggestedAlternatives.length > 0 && (
+                        <p className="text-xs text-slate-400 mt-2">
+                          Il tuo coach ha impostato un limite del ±{allowedVariance * 100}% sui macros
+                        </p>
+                      )}
                       
                       {/* Suggested Alternatives */}
                       {suggestedAlternatives.length > 0 && (
