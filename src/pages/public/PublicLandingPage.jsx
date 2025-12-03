@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
-import { uploadToR2 } from '../../utils/cloudflareStorage';
+import { db } from '../../firebase';
+import { uploadToR2 } from '../../cloudflareStorage';
 import { Play, Upload, CheckCircle, XCircle } from 'lucide-react';
 import CountdownTimer from '../admin/landingPages/components/CountdownTimer';
 
