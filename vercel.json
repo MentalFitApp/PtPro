@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm run build",
-  "installCommand": "npm install && npm install fraction.js --save",
+  "installCommand": "npm install",
   "outputDirectory": "dist",
   "rewrites": [
     {
