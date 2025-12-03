@@ -30,6 +30,10 @@ export const getClients = async (db, options = {}) => {
       q = query(q, where('isActive', '==', filters.isActive));
     }
     
+    if (filters.isArchived !== undefined) {
+      q = query(q, where('isArchived', '==', filters.isArchived));
+    }
+    
     // Ordina per data creazione
     q = query(q, orderBy('createdAt', 'desc'));
     
@@ -132,6 +136,45 @@ export const deleteClient = async (db, clientId) => {
   } catch (error) {
     console.error('Errore deleteClient:', error);
     throw new Error('Impossibile eliminare il client: ' + error.message);
+  }
+};
+
+export const archiveClient = async (db, clientId, archiveSettings = {}) => {
+  try {
+    const clientRef = doc(getTenantCollection(db, 'clients'), clientId);
+    await updateDoc(clientRef, {
+      isArchived: true,
+      archivedAt: new Date(),
+      archiveSettings: {
+        blockAppAccess: archiveSettings.blockAppAccess || false,
+        blockedScreens: archiveSettings.blockedScreens || [],
+        customMessage: archiveSettings.customMessage || '',
+        ...archiveSettings
+      },
+      updatedAt: new Date()
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Errore archiveClient:', error);
+    throw new Error('Impossibile archiviare il client: ' + error.message);
+  }
+};
+
+export const unarchiveClient = async (db, clientId) => {
+  try {
+    const clientRef = doc(getTenantCollection(db, 'clients'), clientId);
+    await updateDoc(clientRef, {
+      isArchived: false,
+      archivedAt: null,
+      archiveSettings: null,
+      updatedAt: new Date()
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Errore unarchiveClient:', error);
+    throw new Error('Impossibile dearchiviare il client: ' + error.message);
   }
 };
 

@@ -4,9 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CheckSquare, Mail, Clock, Tag, Download, Trash2, 
   Users, Calendar, DollarSign, FileText, X, AlertTriangle,
-  Send, Bell, Archive, UserX, RefreshCw
+  Send, Bell, Archive, UserX, RefreshCw, Lock, Shield, MessageSquare
 } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import { db } from '../../firebase';
+import { archiveClient } from '../../services/clientService';
 
 /**
  * Operazioni Bulk su Clienti Selezionati
@@ -19,7 +21,13 @@ export default function BulkOperations({
 }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showArchiveSettings, setShowArchiveSettings] = useState(false);
   const [currentOperation, setCurrentOperation] = useState(null);
+  const [archiveSettings, setArchiveSettings] = useState({
+    blockAppAccess: false,
+    blockedScreens: [],
+    customMessage: ''
+  });
   const toast = useToast();
 
   const operations = [
@@ -91,7 +99,10 @@ export default function BulkOperations({
   ];
 
   const handleOperationClick = (operation) => {
-    if (operation.requiresConfirm) {
+    if (operation.id === 'archive') {
+      setCurrentOperation(operation);
+      setShowArchiveSettings(true);
+    } else if (operation.requiresConfirm) {
       setCurrentOperation(operation);
       setShowConfirmDialog(true);
     } else {
@@ -102,37 +113,56 @@ export default function BulkOperations({
   const executeBulkOperation = async (operation) => {
     setIsProcessing(true);
     setShowConfirmDialog(false);
+    setShowArchiveSettings(false);
 
     try {
-      // Simula operazione (sostituisci con logica reale)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
       switch (operation.id) {
         case 'send-email':
+          // Simula operazione
+          await new Promise(resolve => setTimeout(resolve, 1500));
           toast.success(`Email inviata a ${selectedClients.length} clienti`);
           break;
         case 'send-reminder':
+          await new Promise(resolve => setTimeout(resolve, 1500));
           toast.success(`Promemoria inviato a ${selectedClients.length} clienti`);
           break;
         case 'schedule-check':
+          await new Promise(resolve => setTimeout(resolve, 1500));
           toast.success(`Check programmato per ${selectedClients.length} clienti`);
           break;
         case 'add-tag':
+          await new Promise(resolve => setTimeout(resolve, 1500));
           toast.success(`Tag aggiunto a ${selectedClients.length} clienti`);
           break;
         case 'export':
+          await new Promise(resolve => setTimeout(resolve, 1500));
           toast.success(`Esportazione completata (${selectedClients.length} clienti)`);
           break;
         case 'archive':
+          // Archivia tutti i clienti selezionati con le impostazioni
+          await Promise.all(
+            selectedClients.map(client => 
+              archiveClient(db, client.id, archiveSettings)
+            )
+          );
           toast.success(`${selectedClients.length} clienti archiviati`);
+          // Reset archiveSettings
+          setArchiveSettings({
+            blockAppAccess: false,
+            blockedScreens: [],
+            customMessage: ''
+          });
           break;
         case 'update-status':
+          await new Promise(resolve => setTimeout(resolve, 1500));
           toast.success(`Stato aggiornato per ${selectedClients.length} clienti`);
           break;
         case 'delete':
+          await new Promise(resolve => setTimeout(resolve, 1500));
           toast.success(`${selectedClients.length} clienti eliminati`);
           break;
         default:
+          await new Promise(resolve => setTimeout(resolve, 1500));
           toast.info(`Operazione "${operation.label}" completata`);
       }
 
@@ -210,6 +240,150 @@ export default function BulkOperations({
           </div>
         )}
       </motion.div>
+
+      {/* Archive Settings Modal */}
+      <AnimatePresence>
+        {showArchiveSettings && currentOperation && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowArchiveSettings(false)}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-lg bg-slate-800/95 backdrop-blur-xl rounded-2xl border border-slate-700 shadow-2xl overflow-hidden"
+              >
+                {/* Header */}
+                <div className="p-6 border-b border-slate-700">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-slate-600/30 flex items-center justify-center">
+                      <Archive className="text-slate-300" size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white">Impostazioni Archivio</h3>
+                      <p className="text-xs text-slate-400">{selectedClients.length} clienti selezionati</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                  {/* Blocco accesso app */}
+                  <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={archiveSettings.blockAppAccess}
+                        onChange={(e) => setArchiveSettings({ ...archiveSettings, blockAppAccess: e.target.checked })}
+                        className="mt-1 w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Lock size={16} className="text-red-400" />
+                          <span className="font-medium text-white">Blocca Accesso all'App</span>
+                        </div>
+                        <p className="text-xs text-slate-400">Il cliente non potrà più accedere all'applicazione mobile</p>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Restrizioni schermate */}
+                  <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Shield size={16} className="text-yellow-400" />
+                      <span className="font-medium text-white">Limita Accesso Schermate</span>
+                    </div>
+                    <p className="text-xs text-slate-400 mb-3">Scegli quali sezioni dell'app bloccare:</p>
+                    
+                    <div className="space-y-2">
+                      {[
+                        { id: 'workouts', label: 'Allenamenti' },
+                        { id: 'nutrition', label: 'Alimentazione' },
+                        { id: 'checks', label: 'Check-in' },
+                        { id: 'payments', label: 'Pagamenti' },
+                        { id: 'messages', label: 'Messaggi' },
+                        { id: 'profile', label: 'Profilo' }
+                      ].map(screen => (
+                        <label key={screen.id} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={archiveSettings.blockedScreens.includes(screen.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setArchiveSettings({
+                                  ...archiveSettings,
+                                  blockedScreens: [...archiveSettings.blockedScreens, screen.id]
+                                });
+                              } else {
+                                setArchiveSettings({
+                                  ...archiveSettings,
+                                  blockedScreens: archiveSettings.blockedScreens.filter(s => s !== screen.id)
+                                });
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                            disabled={archiveSettings.blockAppAccess}
+                          />
+                          <span className={`text-sm ${archiveSettings.blockAppAccess ? 'text-slate-500' : 'text-slate-300'}`}>
+                            {screen.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Messaggio personalizzato */}
+                  <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <div className="flex items-center gap-2 mb-3">
+                      <MessageSquare size={16} className="text-blue-400" />
+                      <span className="font-medium text-white">Messaggio Personalizzato</span>
+                    </div>
+                    <p className="text-xs text-slate-400 mb-3">Questo messaggio verrà mostrato al cliente quando tenta di accedere</p>
+                    <textarea
+                      value={archiveSettings.customMessage}
+                      onChange={(e) => setArchiveSettings({ ...archiveSettings, customMessage: e.target.value })}
+                      placeholder="Es: Il tuo abbonamento è scaduto. Contatta la palestra per rinnovarlo."
+                      rows={3}
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="p-6 border-t border-slate-700 flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowArchiveSettings(false);
+                      setArchiveSettings({
+                        blockAppAccess: false,
+                        blockedScreens: [],
+                        customMessage: ''
+                      });
+                    }}
+                    className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white preserve-white rounded-lg transition-all font-medium"
+                  >
+                    Annulla
+                  </button>
+                  <motion.button
+                    onClick={() => executeBulkOperation(currentOperation)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex-1 px-4 py-3 bg-slate-600 hover:bg-slate-700 text-white preserve-white rounded-lg transition-all font-medium"
+                  >
+                    Archivia Clienti
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Confirm Dialog */}
       <AnimatePresence>

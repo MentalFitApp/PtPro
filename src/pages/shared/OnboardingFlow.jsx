@@ -16,22 +16,50 @@ const OnboardingFlow = () => {
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState('');
   const [presentationPost, setPresentationPost] = useState('');
-  const [onboardingVideoUrl, setOnboardingVideoUrl] = useState('/videos/welcome-founder.mp4');
+  const [onboardingVideoUrl, setOnboardingVideoUrl] = useState(null);
+  const [videoEnabled, setVideoEnabled] = useState(false);
+  const [videoTitle, setVideoTitle] = useState('Video di Benvenuto');
   const videoRef = useRef(null);
 
-  const steps = [
-    { id: 'video', title: 'Benvenuto!', icon: Play },
-    { id: 'photo', title: 'Foto Profilo', icon: Camera },
-    { id: 'presentation', title: 'Presentazione', icon: MessageSquare },
-    { id: 'questionnaire', title: 'Questionario', icon: FileText },
-  ];
+  const steps = videoEnabled 
+    ? [
+        { id: 'video', title: 'Benvenuto!', icon: Play },
+        { id: 'photo', title: 'Foto Profilo', icon: Camera },
+        { id: 'presentation', title: 'Presentazione', icon: MessageSquare },
+        { id: 'questionnaire', title: 'Questionario', icon: FileText },
+      ]
+    : [
+        { id: 'photo', title: 'Foto Profilo', icon: Camera },
+        { id: 'presentation', title: 'Presentazione', icon: MessageSquare },
+        { id: 'questionnaire', title: 'Questionario', icon: FileText },
+      ];
 
-  // Carica video onboarding personalizzato
+  // Carica video onboarding dalle impostazioni globali del tenant
   useEffect(() => {
-    const customVideo = localStorage.getItem('onboarding_video_url');
-    if (customVideo) {
-      setOnboardingVideoUrl(customVideo);
-    }
+    const loadOnboardingSettings = async () => {
+      try {
+        const settingsRef = getTenantDoc(db, 'settings', 'globalSettings');
+        const settingsSnap = await getDoc(settingsRef);
+        
+        if (settingsSnap.exists()) {
+          const settings = settingsSnap.data();
+          const welcomeVideo = settings.welcomeVideo || {};
+          
+          if (welcomeVideo.enabled && welcomeVideo.url) {
+            setVideoEnabled(true);
+            setOnboardingVideoUrl(welcomeVideo.url);
+            setVideoTitle(welcomeVideo.title || 'Video di Benvenuto');
+          } else {
+            setVideoEnabled(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading onboarding settings:', error);
+        setVideoEnabled(false);
+      }
+    };
+
+    loadOnboardingSettings();
   }, []);
 
   useEffect(() => {
@@ -50,17 +78,19 @@ const OnboardingFlow = () => {
 
           // Check onboarding progress
           if (userData.onboardingCompleted) {
-            navigate('/dashboard');
+            navigate('/client/dashboard');
             return;
           }
 
-          // Determine current step
-          if (!userData.photoURL) {
-            setCurrentStep(1); // Photo step
+          // Determine current step based on whether video is enabled
+          if (!userData.videoWatched && videoEnabled) {
+            setCurrentStep(0); // Video step (if enabled)
+          } else if (!userData.photoURL) {
+            setCurrentStep(videoEnabled ? 1 : 0); // Photo step
           } else if (!userData.presentationPosted) {
-            setCurrentStep(2); // Presentation step
+            setCurrentStep(videoEnabled ? 2 : 1); // Presentation step
           } else if (!userData.questionnaireCompleted) {
-            setCurrentStep(3); // Questionnaire step
+            setCurrentStep(videoEnabled ? 3 : 2); // Questionnaire step
           }
         }
       } catch (error) {
@@ -73,13 +103,34 @@ const OnboardingFlow = () => {
     checkOnboardingStatus();
   }, [navigate]);
 
-  const handleVideoEnd = () => {
+  const handleVideoEnd = async () => {
     setVideoWatched(true);
+    try {
+      const user = auth.currentUser;
+      await updateDoc(getTenantDoc(db, 'users', user.uid), {
+        videoWatched: true,
+        updatedAt: serverTimestamp(),
+      });
+      nextStep();
+    } catch (error) {
+      console.error('Error updating video watched status:', error);
+      nextStep();
+    }
   };
 
-  const handleSkipVideo = () => {
+  const handleSkipVideo = async () => {
     if (window.confirm('Sei sicuro di voler saltare il video di benvenuto?')) {
       setVideoWatched(true);
+      try {
+        const user = auth.currentUser;
+        await updateDoc(getTenantDoc(db, 'users', user.uid), {
+          videoWatched: true,
+          videoSkipped: true,
+          updatedAt: serverTimestamp(),
+        });
+      } catch (error) {
+        console.error('Error updating video status:', error);
+      }
       nextStep();
     }
   };
@@ -155,8 +206,8 @@ const OnboardingFlow = () => {
         updatedAt: serverTimestamp(),
       });
 
-      // Navigate to community
-      navigate('/community');
+      // Navigate to client dashboard
+      navigate('/client/dashboard');
     } catch (error) {
       console.error('Error completing onboarding:', error);
       alert('Errore nel completamento dell\'onboarding');

@@ -11,6 +11,7 @@ import { uploadPhoto } from "../../cloudflareStorage";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTenantBranding } from '../../hooks/useTenantBranding';
 import { useCountUp } from '../../hooks/useCountUp';
+import LinkAccountBanner from '../../components/LinkAccountBanner';
 import {
   TrendingUp, Users, DollarSign, Calendar, Target, Eye, EyeOff,
   ChevronDown, Settings, BarChart3, Clock, CheckCircle, AlertCircle,
@@ -97,11 +98,8 @@ export default function DashboardNew() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30'); // giorni
   const [showSettings, setShowSettings] = useState(false);
-  const [showProfileModal, setShowProfileModal] = useState(false);
   const [userName, setUserName] = useState('');
   const [currentPhotoURL, setCurrentPhotoURL] = useState(null);
-  const [selectedPhotoFile, setSelectedPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
   const [visibleMetrics, setVisibleMetrics] = useState({
     revenue: true,
     renewalsRevenue: true,
@@ -121,35 +119,48 @@ export default function DashboardNew() {
     }
   }, [navigate]);
 
-  // User profile
+  // User profile - carica da collection users in tempo reale
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
+    console.log('🔄 DashboardNew - useEffect montato');
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      console.log('👤 DashboardNew - onAuthStateChanged chiamato:', { user: user ? user.uid : 'null' });
       if (user) {
-        setUserName(user.displayName || user.email?.split('@')[0] || 'Admin');
-        setCurrentPhotoURL(user.photoURL);
+        // Listener in tempo reale per il profilo usando getTenantDoc
+        const userDocRef = getTenantDoc(db, 'users', user.uid);
+        console.log('📂 DashboardNew - Avvio listener su:', userDocRef.path);
+        
+        const unsubscribeUser = onSnapshot(userDocRef, (userDoc) => {
+          console.log('📊 DashboardNew - Caricamento profilo:', {
+            exists: userDoc.exists(),
+            data: userDoc.exists() ? userDoc.data() : null,
+            path: userDocRef.path
+          });
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            setUserName(data.displayName || user.displayName || user.email?.split('@')[0] || 'Admin');
+            setCurrentPhotoURL(data.photoURL || user.photoURL);
+          } else {
+            console.log('⚠️ DashboardNew - Documento non esiste, uso fallback');
+            setUserName(user.displayName || user.email?.split('@')[0] || 'Admin');
+            setCurrentPhotoURL(user.photoURL);
+          }
+        }, (error) => {
+          console.error('❌ DashboardNew - Errore caricamento profilo:', error);
+          setUserName(user.displayName || user.email?.split('@')[0] || 'Admin');
+          setCurrentPhotoURL(user.photoURL);
+        });
+        
+        return () => {
+          console.log('🛑 DashboardNew - Cleanup listener');
+          unsubscribeUser();
+        };
       }
     });
-    return () => unsubscribe();
+    return () => {
+      console.log('🛑 DashboardNew - Cleanup auth listener');
+      unsubscribe();
+    };
   }, []);
-
-  // Gestione foto profilo
-  const handlePhotoSelect = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        alert('Seleziona un file immagine valido');
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        alert("L'immagine non può superare i 5MB");
-        return;
-      }
-      setSelectedPhotoFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => setPhotoPreview(e.target.result);
-      reader.readAsDataURL(file);
-    }
-  };
 
   // Carica clienti
   useEffect(() => {
@@ -557,10 +568,11 @@ export default function DashboardNew() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setShowProfileModal(true)}
+                onClick={() => navigate('/profile')}
                 className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white preserve-white"
+                title="Modifica Profilo"
               >
-                <Settings size={16} />
+                <User size={16} />
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -621,6 +633,11 @@ export default function DashboardNew() {
             <span>Calendario</span>
           </motion.button>
         </motion.div>
+
+        {/* BANNER COLLEGAMENTO ACCOUNT - Multi-tenant */}
+        <div className="mx-2 sm:mx-4">
+          <LinkAccountBanner />
+        </div>
 
         {/* FILTRI DASHBOARD */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 mx-1.5 sm:mx-4">
@@ -1095,118 +1112,7 @@ export default function DashboardNew() {
         </div>
       </div>
 
-      {/* Profile Modal */}
-      <AnimatePresence>
-        {showProfileModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-slate-800 rounded-xl p-4 sm:p-6 border border-slate-700 shadow-2xl max-w-md w-full"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base sm:text-lg font-semibold text-slate-100 flex items-center gap-2">
-                  <User size={18} /> Profilo Admin
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowProfileModal(false);
-                    setSelectedPhotoFile(null);
-                    setPhotoPreview(null);
-                  }}
-                  className="text-slate-400 hover:text-slate-200 transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
 
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">Nome</label>
-                  <input
-                    type="text"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    placeholder="Inserisci il tuo nome"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">Foto Profilo</label>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-slate-600 rounded-full flex items-center justify-center overflow-hidden relative">
-                      {photoPreview ? (
-                        <img src={photoPreview} alt="Anteprima" className="w-full h-full object-cover" />
-                      ) : currentPhotoURL ? (
-                        <img src={currentPhotoURL} alt="Foto profilo" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-lg font-semibold text-slate-100">
-                          {userName?.charAt(0)?.toUpperCase() || 'A'}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoSelect}
-                        className="hidden"
-                        id="photo-upload"
-                      />
-                      <label
-                        htmlFor="photo-upload"
-                        className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-xs cursor-pointer inline-block text-center"
-                      >
-                        Cambia Foto
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => {
-                    setShowProfileModal(false);
-                    setSelectedPhotoFile(null);
-                    setPhotoPreview(null);
-                  }}
-                  className="flex-1 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-sm"
-                >
-                  Annulla
-                </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      const updateData = { displayName: userName };
-                      if (selectedPhotoFile) {
-                        const photoURL = await uploadPhoto(selectedPhotoFile, auth.currentUser.uid, 'profile_photos', null, true);
-                        updateData.photoURL = photoURL;
-                      }
-                      await updateProfile(auth.currentUser, updateData);
-                      if (selectedPhotoFile && updateData.photoURL) {
-                        setCurrentPhotoURL(updateData.photoURL + '?t=' + Date.now());
-                      }
-                      setSelectedPhotoFile(null);
-                      setPhotoPreview(null);
-                      setShowProfileModal(false);
-                      alert('Profilo aggiornato!');
-                    } catch (error) {
-                      console.error('Errore aggiornamento profilo:', error);
-                      alert('Errore durante aggiornamento profilo');
-                    }
-                  }}
-                  className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white preserve-white rounded-lg transition-colors text-sm"
-                >
-                  Salva
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

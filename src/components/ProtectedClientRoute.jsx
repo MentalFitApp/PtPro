@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { getTenantDoc } from '../config/tenant';
 import { Lock, AlertTriangle } from 'lucide-react';
+import BlockedAccess from './client/BlockedAccess';
 
 // Mapping tra path e permessi
 const PATH_TO_PERMISSION = {
@@ -45,6 +46,9 @@ export function ProtectedClientRoute({ children, requiredPermission }) {
   const [permissions, setPermissions] = useState(null);
   const [accessDenied, setAccessDenied] = useState(false);
   const [deniedMessage, setDeniedMessage] = useState('');
+  const [isArchiveBlocked, setIsArchiveBlocked] = useState(false);
+  const [archiveMessage, setArchiveMessage] = useState('');
+  const [blockedScreens, setBlockedScreens] = useState([]);
   const location = useLocation();
 
   useEffect(() => {
@@ -87,6 +91,36 @@ export function ProtectedClientRoute({ children, requiredPermission }) {
       }
 
       const clientData = clientDoc.data();
+
+      // Verifica stato archivio e blocco selettivo per screen
+      if (clientData.isArchived && clientData.archiveSettings) {
+        const { blockAppAccess, blockedScreens: blocked, customMessage } = clientData.archiveSettings;
+        
+        // Se blockAppAccess è true, l'accesso generale è già bloccato in ClientDashboard
+        // Qui gestiamo solo il blocco selettivo per screen specifici
+        if (!blockAppAccess && blocked && blocked.length > 0) {
+          // Mappa tra requiredPermission e nome screen in archiveSettings
+          const permissionToScreen = {
+            'scheda-allenamento': 'workouts',
+            'scheda-alimentazione': 'nutrition',
+            'checks': 'checks',
+            'payments': 'payments',
+            'chat': 'messages',
+            'settings': 'profile'
+          };
+
+          const screenName = permissionToScreen[requiredPermission];
+          
+          if (screenName && blocked.includes(screenName)) {
+            setIsArchiveBlocked(true);
+            setArchiveMessage(customMessage || 'Questa sezione è temporaneamente non disponibile per il tuo account.');
+            setBlockedScreens(blocked);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       const userPermissions = clientData.permissions || DEFAULT_PERMISSIONS;
 
       setPermissions(userPermissions);
@@ -118,6 +152,11 @@ export function ProtectedClientRoute({ children, requiredPermission }) {
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
+  }
+
+  // Se la sezione è bloccata per archivio
+  if (isArchiveBlocked) {
+    return <BlockedAccess message={archiveMessage} isPartialBlock={true} blockedScreens={blockedScreens} />;
   }
 
   if (accessDenied) {

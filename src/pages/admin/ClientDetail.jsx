@@ -642,10 +642,8 @@ export default function ClientDetail() {
   };
 
   const copyCredentialsToClipboard = () => {
-    const loginLink = process.env.NODE_ENV === 'production' 
-      ? 'https://www.flowfitpro.it/login'
-      : `${window.location.origin}/login`;
-    const text = `Ciao ${client.name},\n\nLink: ${loginLink}\nEmail: ${client.email}\nPassword: ${client.tempPassword || 'Contatta admin'}`;
+    const loginLink = 'https://www.flowfitpro.it/login';
+    const text = `Ciao ${client.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪 Tu come stai?\n\nLink: ${loginLink}\nEmail: ${client.email}\nPassword Temporanea: ${client.tempPassword || 'Contatta admin'}\n\n⚠️ IMPORTANTE: Al primo accesso ti verrà chiesto di impostare una password personale.`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);

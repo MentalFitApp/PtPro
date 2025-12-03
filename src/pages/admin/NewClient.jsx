@@ -232,10 +232,8 @@ export default function NewClient() {
   };
 
   const copyToClipboard = () => {
-    const loginLink = process.env.NODE_ENV === 'production' 
-      ? 'https://www.flowfitpro.it/login'
-      : `${window.location.origin}/login`;
-    const text = `Ciao ${newClientCredentials.name},\n\nBenvenuto in PT Manager, la tua area personale per monitorare i progressi e comunicare con il tuo coach!\n\nEcco le credenziali per il tuo primo accesso:\n\nLink: ${loginLink}\nEmail: ${newClientCredentials.email}\nPassword Temporanea: ${newClientCredentials.password}\n\n⚠️ IMPORTANTE: Copia e incolla la password ESATTAMENTE come appare, senza spazi prima o dopo.\n\nAl primo accesso ti verrà chiesto di impostare una password personale.\nA presto!`;
+    const loginLink = 'https://www.flowfitpro.it/login';
+    const text = `Ciao ${newClientCredentials.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪 Tu come stai?\n\nLink: ${loginLink}\nEmail: ${newClientCredentials.email}\nPassword Temporanea: ${newClientCredentials.password}\n\n⚠️ IMPORTANTE: Al primo accesso ti verrà chiesto di impostare una password personale.`;
     
     navigator.clipboard.writeText(text);
     setCopied(true);

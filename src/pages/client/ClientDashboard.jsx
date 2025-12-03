@@ -11,6 +11,8 @@ import { useTenantBranding } from '../../hooks/useTenantBranding';
 import HabitTracker from '../../components/client/HabitTracker';
 import WorkoutStreak from '../../components/client/WorkoutStreak';
 import CelebrationMoments from '../../components/client/CelebrationMoments';
+import BlockedAccess from '../../components/client/BlockedAccess';
+import LinkAccountBanner from '../../components/LinkAccountBanner';
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-slate-900 flex justify-center items-center">
@@ -68,6 +70,8 @@ const ClientDashboard = () => {
   const [showPWAInstall, setShowPWAInstall] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockMessage, setBlockMessage] = useState('');
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
@@ -115,7 +119,21 @@ const ClientDashboard = () => {
             navigate('/first-access');
             return;
           }
-          
+
+          // Verifica stato archivio
+          if (data.isArchived && data.archiveSettings) {
+            const { blockAppAccess, customMessage } = data.archiveSettings;
+            
+            if (blockAppAccess) {
+              console.log('ClientDashboard: Cliente archiviato con blocco completo app');
+              setIsBlocked(true);
+              setBlockMessage(customMessage || 'Il tuo accesso all\'app è stato temporaneamente sospeso. Contatta il tuo trainer per maggiori informazioni.');
+              clearTimeout(loadingTimeout);
+              setLoading(false);
+              return;
+            }
+          }
+
           setClientData(data);
           console.log('ClientDashboard: Dati cliente caricati:', data);
           clearTimeout(loadingTimeout);
@@ -183,6 +201,12 @@ const ClientDashboard = () => {
   };
 
   if (loading) return <LoadingSpinner />;
+  
+  // Mostra schermata di blocco se il cliente è archiviato con blockAppAccess
+  if (isBlocked) {
+    return <BlockedAccess message={blockMessage} />;
+  }
+  
   if (!clientData) {
     return (
       <div className="min-h-screen bg-slate-900 flex justify-center items-center p-8">
@@ -248,6 +272,14 @@ const ClientDashboard = () => {
                 <NotificationPanel userType="client" />
               </div>
               <motion.button 
+                onClick={() => navigate('/client/profile')} 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center justify-center gap-1.5 px-3 sm:px-3 py-1.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white preserve-white text-xs sm:text-sm font-medium rounded-lg transition-colors min-w-[44px] sm:min-w-auto"
+              >
+                <User size={14} className="sm:w-4 sm:h-4" /><span className="hidden sm:inline">Profilo</span>
+              </motion.button>
+              <motion.button 
                 onClick={handleLogout} 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -258,6 +290,11 @@ const ClientDashboard = () => {
             </div>
           </div>
         </motion.header>
+
+        {/* BANNER COLLEGAMENTO ACCOUNT - Multi-tenant */}
+        <motion.div variants={itemVariants}>
+          <LinkAccountBanner />
+        </motion.div>
 
         {/* PULSANTI PWA - Versione Compatta */}
         {showPWAInstall && (

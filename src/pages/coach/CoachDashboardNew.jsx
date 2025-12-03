@@ -11,6 +11,7 @@ import { uploadPhoto } from "../../cloudflareStorage";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTenantBranding } from '../../hooks/useTenantBranding';
 import { useCountUp } from '../../hooks/useCountUp';
+import LinkAccountBanner from '../../components/LinkAccountBanner';
 import {
   Users, Calendar, Target, Eye, EyeOff, Settings, BarChart3, Clock, 
   CheckCircle, AlertCircle, Plus, LogOut, User, X, FileText, 
@@ -490,6 +491,11 @@ export default function CoachDashboardNew() {
             </div>
           </motion.div>
         )}
+
+        {/* BANNER COLLEGAMENTO ACCOUNT - Multi-tenant */}
+        <div className="mx-2 sm:mx-4">
+          <LinkAccountBanner />
+        </div>
 
         {/* METRICHE CON ANIMAZIONE */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1 sm:gap-3 mx-1.5 sm:mx-4">

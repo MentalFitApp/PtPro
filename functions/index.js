@@ -980,3 +980,122 @@ exports.manychatWebhook = onRequest(
     }
   }
 );
+
+// ============================================
+// ARCHIVIAZIONE AUTOMATICA CLIENTI INATTIVI
+// ============================================
+// Eseguito ogni giorno alle 02:00 (ora italiana)
+exports.autoArchiveInactiveClients = onSchedule({
+  schedule: 'every day 02:00',
+  timeZone: 'Europe/Rome',
+  region: 'europe-west1'
+}, async (event) => {
+  console.log('🤖 [AUTO-ARCHIVE] Inizio controllo clienti inattivi...');
+  
+  try {
+    // 1. Recupera tutti i tenant
+    const tenantsSnapshot = await db.collection('tenants').get();
+    console.log(`📊 [AUTO-ARCHIVE] Trovati ${tenantsSnapshot.size} tenant da controllare`);
+
+    let totalArchived = 0;
+
+    // 2. Per ogni tenant
+    for (const tenantDoc of tenantsSnapshot.docs) {
+      const tenantId = tenantDoc.id;
+      console.log(`\n🏢 [AUTO-ARCHIVE] Controllo tenant: ${tenantId}`);
+
+      try {
+        // 2.1 Carica impostazioni archiviazione del tenant
+        const settingsRef = db.doc(`tenants/${tenantId}/settings/clientArchiveSettings`);
+        const settingsSnap = await settingsRef.get();
+
+        if (!settingsSnap.exists) {
+          console.log(`⚠️ [AUTO-ARCHIVE] Nessuna impostazione trovata per ${tenantId}, skip`);
+          continue;
+        }
+
+        const settings = settingsSnap.data();
+
+        // 2.2 Verifica se l'archiviazione automatica è abilitata
+        if (!settings.autoArchive?.enabled) {
+          console.log(`❌ [AUTO-ARCHIVE] Archiviazione automatica disabilitata per ${tenantId}, skip`);
+          continue;
+        }
+
+        const daysAfterExpiry = settings.autoArchive.inactivityDays || 7;
+        console.log(`⏱️ [AUTO-ARCHIVE] Soglia scadenza: ${daysAfterExpiry} giorni dopo la scadenza`);
+
+        // 2.3 Calcola data limite (oggi - giorni dopo scadenza)
+        const now = new Date();
+        now.setHours(0, 0, 0, 0); // Normalizza a mezzanotte
+        const limitDate = new Date(now.getTime() - (daysAfterExpiry * 24 * 60 * 60 * 1000));
+        console.log(`📅 [AUTO-ARCHIVE] Data limite scadenza: ${limitDate.toISOString()}`);
+
+        // 2.4 Recupera tutti i clienti del tenant non già archiviati
+        const clientsRef = db.collection(`tenants/${tenantId}/clients`);
+        const clientsSnapshot = await clientsRef
+          .where('isArchived', '!=', true)
+          .get();
+
+        console.log(`👥 [AUTO-ARCHIVE] Trovati ${clientsSnapshot.size} clienti attivi da verificare`);
+
+        let archivedInTenant = 0;
+
+        // 2.5 Per ogni cliente
+        for (const clientDoc of clientsSnapshot.docs) {
+          const clientId = clientDoc.id;
+          const clientData = clientDoc.data();
+
+          try {
+            // Ottieni data di scadenza
+            if (!clientData.scadenza) {
+              console.log(`⚠️ [AUTO-ARCHIVE] Cliente ${clientId} senza data di scadenza, skip`);
+              continue;
+            }
+
+            const expiryDate = clientData.scadenza.toDate();
+            expiryDate.setHours(23, 59, 59, 999); // Fine della giornata di scadenza
+
+            // Verifica se la scadenza è passata da più di N giorni
+            if (expiryDate < limitDate) {
+              const daysSinceExpiry = Math.floor((now - expiryDate) / (1000 * 60 * 60 * 24));
+              console.log(`🔴 [AUTO-ARCHIVE] Cliente ${clientData.name || clientId} scaduto da ${daysSinceExpiry} giorni, archiviazione...`);
+
+              // Archivia il cliente con le impostazioni configurate
+              await clientDoc.ref.update({
+                isArchived: true,
+                archivedAt: admin.firestore.FieldValue.serverTimestamp(),
+                archivedBy: 'system',
+                archivedReason: `Abbonamento scaduto da ${daysSinceExpiry} giorni`,
+                archiveSettings: {
+                  blockAppAccess: settings.archiveActions?.blockAppAccess || true,
+                  blockedScreens: settings.archiveActions?.blockedScreens || [],
+                  customMessage: settings.archiveActions?.customMessage || 
+                    'Il tuo abbonamento è scaduto. Contatta il tuo trainer per rinnovarlo e riattivare l\'accesso.'
+                }
+              });
+
+              archivedInTenant++;
+              totalArchived++;
+              console.log(`✅ [AUTO-ARCHIVE] Cliente ${clientData.name || clientId} archiviato con successo`);
+            }
+          } catch (clientError) {
+            console.error(`❌ [AUTO-ARCHIVE] Errore archiviazione cliente ${clientId}:`, clientError);
+          }
+        }
+
+        console.log(`📦 [AUTO-ARCHIVE] Tenant ${tenantId}: ${archivedInTenant} clienti archiviati`);
+
+      } catch (tenantError) {
+        console.error(`❌ [AUTO-ARCHIVE] Errore elaborazione tenant ${tenantId}:`, tenantError);
+      }
+    }
+
+    console.log(`\n✨ [AUTO-ARCHIVE] Completato! Totale clienti archiviati: ${totalArchived}`);
+    return { success: true, totalArchived };
+
+  } catch (error) {
+    console.error('💥 [AUTO-ARCHIVE] Errore critico:', error);
+    throw error;
+  }
+});

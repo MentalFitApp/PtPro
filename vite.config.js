@@ -19,6 +19,10 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+    hmr: {
+      clientPort: 443,
+      protocol: 'wss',
+    },
     allowedHosts: [
       'sale-commentary-priority-inns.trycloudflare.com',
       '.trycloudflare.com',
@@ -26,28 +30,10 @@ export default defineConfig({
       'miniature-cod-6vvj6wv5rxr2597w-5173.app.github.dev',
       'github.dev'
     ],
-    cors: {
-      origin: [
-        'http://localhost:5173',
-        'https://miniature-cod-6vvj6wv5rxr2597w-5173.app.github.dev',
-        /\.app\.github\.dev$/,
-        'https://github.dev'
-      ],
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['*'],
-    },
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': '*',
-    },
-    proxy: {
-      '/favicon.ico': {
-        target: 'http://localhost:5173',
-        changeOrigin: true,
-        secure: false,
-      },
+    cors: true,
+    fs: {
+      strict: false,
+      allow: ['..']
     },
   },
 

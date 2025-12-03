@@ -7,7 +7,7 @@ import { signOut } from "firebase/auth";
 import { getClientAnamnesi, getClientPayments, deleteClient } from '../../services/clientService';
 import { 
   UserPlus, FilePenLine, Trash2, Search, ArrowUp, ArrowDown, 
-  CheckCircle, XCircle, Calendar, Clock, AlertCircle, LogOut, Download, FileText, X, Menu, Filter, LayoutGrid, List, ChevronLeft, ChevronRight
+  CheckCircle, XCircle, Calendar, Clock, AlertCircle, LogOut, Download, FileText, X, Menu, Filter, LayoutGrid, List, ChevronLeft, ChevronRight, Archive
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Papa from 'papaparse';
@@ -16,6 +16,7 @@ import QuickActions from '../../components/admin/QuickActions';
 import SavedFilters from '../../components/admin/SavedFilters';
 import MessageTemplates from '../../components/admin/MessageTemplates';
 import BulkOperations from '../../components/admin/BulkOperations';
+import ClientArchiveSettings from '../../components/admin/ClientArchiveSettings';
 import { useToast } from '../../contexts/ToastContext';
 import { EmptyClients } from '../../components/ui/EmptyState';
 import FilterPanel, { FilterSection, FilterCheckbox, FilterDateRange } from '../../components/layout/FilterPanel';
@@ -216,7 +217,7 @@ export default function Clients() {
   const [viewMode, setViewMode] = useState('list'); // 'list', 'card', o 'kanban'
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [meseCalendario, setMeseCalendario] = useState(new Date());
-  const [showCalendar, setShowCalendar] = useState(true);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [calendarType, setCalendarType] = useState('iscrizioni'); // 'iscrizioni' o 'scadenze'
   const [paymentsTotals, setPaymentsTotals] = useState({});
   const [dayModalOpen, setDayModalOpen] = useState(false);
@@ -224,6 +225,7 @@ export default function Clients() {
   const [dayModalClients, setDayModalClients] = useState([]);
   const [stats, setStats] = useState({ total: 0, expiring: 0, expired: 0 });
   const [selectedClients, setSelectedClients] = useState([]);
+  const [showArchived, setShowArchived] = useState(false);
   const toast = useToast();
   
   // --- NUOVI STATI PER FILTER PANEL E KANBAN ---
@@ -355,7 +357,10 @@ export default function Clients() {
             createdAt: data.createdAt,
             statoPercorso: data.statoPercorso || calcolaStatoPercorso(data.scadenza),
             payments: data.payments || [],
-            rate: data.rate || []
+            rate: data.rate || [],
+            isArchived: data.isArchived || false,
+            archivedAt: data.archivedAt,
+            archiveSettings: data.archiveSettings
           };
         });
 
@@ -457,6 +462,11 @@ export default function Clients() {
   // --- Filtri e ordinamento ---
   const filteredAndSortedClients = useMemo(() => {
     let filtered = clients.filter(client => {
+      // Filtro archivio: se showArchived è false, nascondi i clienti archiviati
+      if (!showArchived && client.isArchived) return false;
+      // Se showArchived è true, mostra SOLO i clienti archiviati
+      if (showArchived && !client.isArchived) return false;
+
       const matchesSearch = 
         (client.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (client.email || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -612,6 +622,7 @@ export default function Clients() {
       <MessageTemplates
         onSelectTemplate={(template) => console.log('Template:', template)}
       />
+      <ClientArchiveSettings />
       <button onClick={handleLogout} className="flex items-center gap-1.5 px-2 py-1.5 bg-rose-600 hover:bg-rose-700 text-white preserve-white text-xs sm:text-sm font-medium rounded-lg transition-colors">
         <LogOut size={14} /> Logout
       </button>
@@ -632,6 +643,7 @@ export default function Clients() {
       <button onClick={() => setFilter('has-check')} className={`px-2 py-1 text-xs sm:text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'has-check' ? 'bg-cyan-600 text-white preserve-white' : 'text-cyan-400 hover:bg-cyan-900/30'}`}><CheckCircle size={12} /> Con Anamnesi</button>
       <button onClick={() => setFilter('no-check')} className={`px-2 py-1 text-xs sm:text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'no-check' ? 'bg-gray-600 text-white preserve-white' : 'text-gray-400 hover:bg-gray-900/30'}`}><XCircle size={12} /> Senza Anamnesi</button>
       <button onClick={() => { setFilter('recent'); setSortField('recent'); setSortDirection('desc'); }} className={`px-2 py-1 text-xs sm:text-sm rounded-lg flex items-center gap-1 transition-colors ${filter === 'recent' ? 'bg-purple-600 text-white preserve-white' : 'text-purple-400 hover:bg-purple-900/30'}`}><Calendar size={12} /> Più Recenti</button>
+      <button onClick={() => setShowArchived(!showArchived)} className={`px-2 py-1 text-xs sm:text-sm rounded-lg flex items-center gap-1 transition-colors ${showArchived ? 'bg-slate-600 text-white preserve-white' : 'bg-slate-700/50 text-slate-400 hover:bg-slate-600/70'}`}><Archive size={12} /> {showArchived ? 'Solo Archiviati' : 'Mostra Archiviati'}</button>
     </>
   );
 
@@ -853,6 +865,7 @@ export default function Clients() {
             <button onClick={() => setFilter('active')} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${filter === 'active' ? 'bg-emerald-600 text-white preserve-white' : 'bg-slate-700 text-emerald-400'}`}><CheckCircle size={12} /> Attivi</button>
             <button onClick={() => setFilter('expiring')} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${filter === 'expiring' ? 'bg-amber-600 text-white preserve-white' : 'bg-slate-700 text-amber-400'}`}><Clock size={12} /> Scadenza</button>
             <button onClick={() => setFilter('expired')} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${filter === 'expired' ? 'bg-red-600 text-white preserve-white' : 'bg-slate-700 text-red-400'}`}><AlertCircle size={12} /> Scaduti</button>
+            <button onClick={() => setShowArchived(!showArchived)} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${showArchived ? 'bg-slate-600 text-white preserve-white' : 'bg-slate-700 text-slate-400'}`}><Archive size={12} /> {showArchived ? 'Archiviati' : 'Archivio'}</button>
           </div>
         </div>
 
@@ -1072,8 +1085,13 @@ export default function Clients() {
                         </td>
                         <td className="p-2 md:p-4 font-medium min-w-[150px] md:min-w-[180px] sticky left-0 bg-slate-800/95">
                           <div className="flex items-center justify-between gap-2 md:gap-3">
-                            <button onClick={() => navigate(`/client/${c.id}`)} className="text-left hover:text-rose-400 transition-colors truncate">
+                            <button onClick={() => navigate(`/client/${c.id}`)} className="text-left hover:text-rose-400 transition-colors truncate flex items-center gap-2">
                               {c.name || "-"}
+                              {c.isArchived && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded bg-slate-600/40 text-slate-300 border border-slate-500/50">
+                                  <Archive size={10} /> Archiviato
+                                </span>
+                              )}
                             </button>
                             <span className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-full bg-cyan-900/40 text-cyan-300 border border-cyan-600/50 whitespace-nowrap">
                               €{totalPayments.toFixed(2)}
@@ -1156,8 +1174,15 @@ export default function Clients() {
               return (
                 <div key={c.id} className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-5 border border-slate-700 hover:border-slate-600 transition-all">
                   <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="text-lg font-semibold text-slate-100">{c.name}</h3>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-semibold text-slate-100">{c.name}</h3>
+                        {c.isArchived && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] rounded bg-slate-600/40 text-slate-300 border border-slate-500/50">
+                            <Archive size={10} /> Archiviato
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-rose-400">{c.email}</p>
                       <p className="text-xs text-slate-500">{c.phone || 'N/D'}</p>
                     </div>
@@ -1256,7 +1281,16 @@ export default function Clients() {
               }}
               renderCard={(client) => (
                 <KanbanCard
-                  title={client.name || 'N/D'}
+                  title={
+                    <div className="flex items-center gap-2">
+                      <span>{client.name || 'N/D'}</span>
+                      {client.isArchived && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] rounded bg-slate-600/40 text-slate-300 border border-slate-500/50">
+                          <Archive size={9} /> Arch.
+                        </span>
+                      )}
+                    </div>
+                  }
                   subtitle={client.email}
                   badge={
                     <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full text-xs font-bold">

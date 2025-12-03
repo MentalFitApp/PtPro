@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAuth, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import { getAuth, updatePassword, signInWithEmailAndPassword } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from '../../firebase.js';
 import { KeyRound, Lock, CheckCircle2 } from 'lucide-react';
@@ -35,7 +35,6 @@ const AnimatedBackground = () => (
 );
 
 const FirstAccess = () => {
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -102,62 +101,51 @@ const FirstAccess = () => {
     }
 
     try {
-      // Prova prima senza re-autenticazione (se l'utente ha appena fatto login)
-      let needsReauth = false;
+      console.log('🔐 Aggiornamento password per', userType);
       
-      try {
-        // Tenta di aggiornare direttamente la password
-        await updatePassword(user, newPassword);
-        console.log('✅ Password aggiornata senza re-autenticazione');
-      } catch (err) {
-        if (err.code === 'auth/requires-recent-login') {
-          console.log('⚠️ Richiesta re-autenticazione');
-          needsReauth = true;
-        } else {
-          throw err; // Altri errori vanno gestiti
-        }
-      }
-
-      // Se necessaria re-autenticazione, prova con la password temporanea
-      if (needsReauth) {
-        console.log('🔐 Re-autenticazione con password temporanea...');
-        const credential = EmailAuthProvider.credential(user.email, currentPassword);
-        await reauthenticateWithCredential(user, credential);
-        await updatePassword(user, newPassword);
-        console.log('✅ Password aggiornata dopo re-autenticazione');
-      }
+      // Aggiorna la password in Firebase Auth
+      await updatePassword(user, newPassword);
+      console.log('✅ Password aggiornata in Firebase Auth');
 
       // Aggiorna documento corretto nella struttura multi-tenant
       const collectionName = userType === 'client' ? 'clients' : 'collaboratori';
       const userDocRef = getTenantDoc(db, collectionName, user.uid);
       await updateDoc(userDocRef, { firstLogin: false });
+      console.log(`✅ Campo firstLogin aggiornato a false per ${userType}:`, user.uid);
 
-      console.log(`Campo firstLogin aggiornato a false per ${userType}:`, user.uid);
-
-      // Attendo per propagare le modifiche
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // IMPORTANTE: Forza logout e reindirizza a login per usare la nuova password
-      setSuccess("Password aggiornata! Effettua di nuovo il login con la nuova password.");
+      // Mostra messaggio di successo
+      setSuccess("Password aggiornata con successo! Accesso in corso...");
       
-      // Logout e redirect dopo 2 secondi
-      setTimeout(async () => {
-        try {
-          await auth.signOut();
-          console.log('✅ Logout effettuato dopo cambio password');
-          navigate('/login', { replace: true });
-        } catch (logoutErr) {
-          console.error('Errore logout:', logoutErr);
-          navigate('/login', { replace: true });
+      // Attendi un attimo
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Per i clienti, verifica se deve fare l'onboarding
+      if (userType === 'client') {
+        // Verifica se onboarding è abilitato nelle impostazioni
+        const settingsRef = getTenantDoc(db, 'settings', 'globalSettings');
+        const settingsSnap = await getDoc(settingsRef);
+        const hasOnboarding = settingsSnap.exists() && settingsSnap.data().welcomeVideo?.enabled;
+        
+        // Verifica se ha già completato l'onboarding
+        const userDoc = await getDoc(userDocRef);
+        const onboardingCompleted = userDoc.data()?.onboardingCompleted;
+
+        if (hasOnboarding && !onboardingCompleted) {
+          console.log('✅ Reindirizzamento a onboarding');
+          navigate('/client/onboarding', { replace: true });
+          return;
         }
-      }, 2000);
+      }
+
+      // Altrimenti reindirizza alla dashboard appropriata
+      const dashboardPath = userType === 'client' ? '/client/dashboard' : '/collaboratore/dashboard';
+      console.log('✅ Reindirizzamento a:', dashboardPath);
+      navigate(dashboardPath, { replace: true });
     } catch (err) {
       console.error("Errore aggiornamento password:", err.code, err.message, { uid: user?.uid, userType });
       
       // Gestisci errori specifici
-      if (err.code === 'auth/wrong-password') {
-        setError("La password temporanea inserita non è corretta. Verifica e riprova.");
-      } else if (err.code === 'auth/too-many-requests') {
+      if (err.code === 'auth/too-many-requests') {
         setError("Troppi tentativi falliti. Riprova più tardi o contatta il supporto.");
       } else if (err.code === 'auth/requires-recent-login') {
         setError("Sessione scaduta. Effettua nuovamente il login e riprova.");
@@ -197,23 +185,13 @@ const FirstAccess = () => {
           </div>
           
           <form onSubmit={handleChangePassword} className="space-y-6">
-            <div>
-              <label htmlFor="current-password" className={labelStyle}>Password Temporanea (se richiesta)</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input 
-                  id="current-password" 
-                  type="password" 
-                  value={currentPassword} 
-                  onChange={(e) => setCurrentPassword(e.target.value)} 
-                  className={inputStyle}
-                  placeholder="Lascia vuoto se hai appena fatto login"
-                />
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Inserisci solo se il sistema ti chiede di re-autenticarti
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+              <p className="text-sm text-blue-200">
+                <strong>🔒 Benvenuto!</strong> Hai effettuato il login con la password temporanea.
+                Imposta ora la tua password personale per completare l'accesso.
               </p>
             </div>
+
             <div>
               <label htmlFor="new-password" className={labelStyle}>Nuova Password</label>
               <div className="relative">
@@ -275,9 +253,13 @@ const FirstAccess = () => {
                 className="w-full px-4 py-2.5 font-bold text-white preserve-white bg-cyan-600 rounded-lg hover:bg-cyan-700 disabled:opacity-50 transition-colors"
                 disabled={isSubmitting || !!success}
               >
-                {success ? 'Reindirizzamento...' : isSubmitting ? 'Salvataggio...' : 'Imposta Nuova Password'}
+                {success ? 'Accesso in corso...' : isSubmitting ? 'Aggiornamento...' : 'Imposta Password e Accedi'}
               </button>
             </div>
+            
+            <p className="text-xs text-slate-400 text-center">
+              Dopo aver impostato la password, accederai automaticamente alla piattaforma
+            </p>
           </form>
         </motion.div>
       </div>

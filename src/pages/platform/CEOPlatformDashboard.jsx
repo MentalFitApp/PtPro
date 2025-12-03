@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageBuilder from '../../components/platform/PageBuilder';
+import LinkAccountBanner from '../../components/LinkAccountBanner';
 
 // === ANIMATED STARS BACKGROUND ===
 const AnimatedStars = () => {
@@ -623,6 +624,9 @@ export default function CEOPlatformDashboard() {
           {/* Overview Page */}
           {activePage === 'overview' && (
             <div className="space-y-6">
+              {/* Banner Collegamento Account - Multi-tenant */}
+              <LinkAccountBanner />
+              
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard

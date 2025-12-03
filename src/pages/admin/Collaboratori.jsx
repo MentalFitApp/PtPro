@@ -15,10 +15,10 @@ import {
 } from 'firebase/auth';
 import { 
   Users, Plus, Key, Trash2, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Eye, 
-  Edit, X, Check, File, DollarSign, CheckCircle
+  Edit, X, Check, File, DollarSign, CheckCircle, FileText, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import Calendar from '../Calendar';
+import SimpleCalendar from '../../components/calendar/SimpleCalendar';
 import LeadsTable from '../../components/leads/LeadsTable';
 
 const ReportStatus = ({ collaboratori }) => {
@@ -126,6 +126,13 @@ export default function Collaboratori() {
   // STORICO REPORT
   const [showPastSetting, setShowPastSetting] = useState(false);
   const [showPastSales, setShowPastSales] = useState(false);
+  
+  // MODAL STATES
+  const [showReportSetting, setShowReportSetting] = useState(false);
+  const [showReportVendita, setShowReportVendita] = useState(false);
+  const [showLeadsTable, setShowLeadsTable] = useState(false);
+  const [showFontiStats, setShowFontiStats] = useState(false);
+  const [showCollaboratoriList, setShowCollaboratoriList] = useState(false);
 
   // NUOVO: POPUP CONVERSIONE LEAD → CLIENTE
   const [showConvertPopup, setShowConvertPopup] = useState(false);
@@ -712,23 +719,109 @@ export default function Collaboratori() {
 
         <ReportStatus collaboratori={collaboratori} />
 
-        {/* 3 TABS LEADS */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-3 sm:mb-6 mx-3 sm:mx-6">
-          {[
-            { label: 'Oggi', leads: stats.leadsToday },
-            { label: 'Sett.', leads: stats.leadsWeek },
-            { label: 'Mese', leads: stats.leadsMonth },
-          ].map((stat, i) => (
-            <motion.div key={i} whileHover={{ y: -2, scale: 1.02 }} className="bg-slate-800/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 sm:p-4 border border-slate-700/50 shadow-xl min-w-0">
-              <h3 className="text-[9px] sm:text-sm font-semibold text-slate-400 mb-0.5">{stat.label}</h3>
-              <p className="text-lg sm:text-3xl font-bold text-green-400 mb-0">{stat.leads}</p>
-              <p className="text-[8px] sm:text-xs text-slate-500">Leads</p>
-            </motion.div>
-          ))}
+        {/* STATS LEADS - MOBILE HORIZONTAL, DESKTOP VERTICALE */}
+        <div className="mb-4 mx-3 sm:mx-6">
+          <div className="grid grid-cols-3 lg:grid-cols-3 gap-2 lg:hidden">
+            {[
+              { label: 'Oggi', value: stats.leadsToday, color: 'green' },
+              { label: 'Settimana', value: stats.leadsWeek, color: 'cyan' },
+              { label: 'Mese', value: stats.leadsMonth, color: 'blue' },
+            ].map((stat, i) => (
+              <motion.div 
+                key={i} 
+                whileTap={{ scale: 0.95 }} 
+                className="bg-slate-800/60 backdrop-blur-sm rounded-lg p-3 border border-slate-700/50 text-center"
+              >
+                <p className={`text-2xl font-bold text-${stat.color}-400 mb-1`}>{stat.value}</p>
+                <h3 className="text-[10px] font-semibold text-slate-400">{stat.label}</h3>
+              </motion.div>
+            ))}
+          </div>
         </div>
 
-        <div className="mb-6 mx-3 sm:mx-6">
-          <Calendar 
+        {/* LAYOUT DESKTOP: STATS + CALENDARIO + ACTIONS */}
+        <div className="hidden lg:grid lg:grid-cols-12 gap-4 mb-6 mx-3 sm:mx-6">
+          {/* COLONNA SINISTRA: STATS VERTICALI */}
+          <div className="lg:col-span-3 space-y-3">
+            {[
+              { label: 'Leads Oggi', value: stats.leadsToday, color: 'green' },
+              { label: 'Leads Settimana', value: stats.leadsWeek, color: 'cyan' },
+              { label: 'Leads Mese', value: stats.leadsMonth, color: 'blue' },
+            ].map((stat, i) => (
+              <motion.div 
+                key={i} 
+                whileHover={{ scale: 1.03 }} 
+                className="bg-slate-800/60 backdrop-blur-sm rounded-lg p-4 border border-slate-700/50 shadow-xl"
+              >
+                <h3 className="text-xs font-semibold text-slate-400 mb-2">{stat.label}</h3>
+                <p className={`text-4xl font-bold text-${stat.color}-400`}>{stat.value}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* COLONNA CENTRALE: CALENDARIO */}
+          <div className="lg:col-span-6 flex items-center justify-center">
+            <SimpleCalendar 
+              reports={collaboratori.flatMap(c => c.dailyReports || [])} 
+              collaboratori={collaboratori} 
+              onDateClick={d => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                navigate(`/calendar-report/${year}-${month}-${day}`);
+              }} 
+            />
+          </div>
+
+          {/* COLONNA DESTRA: QUICK ACTIONS */}
+          <div className="lg:col-span-3 space-y-3">
+            <motion.button
+              onClick={() => setShowReportSetting(true)}
+              whileHover={{ scale: 1.03 }}
+              className="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg p-4 border border-slate-700/50 hover:border-cyan-500/50 transition-all text-left"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded bg-cyan-600/20">
+                  <FileText size={18} className="text-cyan-400" />
+                </div>
+                <h3 className="text-sm font-bold text-cyan-400">Setting</h3>
+              </div>
+              <p className="text-xs text-slate-400">Compila report</p>
+            </motion.button>
+
+            <motion.button
+              onClick={() => setShowReportVendita(true)}
+              whileHover={{ scale: 1.03 }}
+              className="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg p-4 border border-slate-700/50 hover:border-rose-500/50 transition-all text-left"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded bg-rose-600/20">
+                  <DollarSign size={18} className="text-rose-400" />
+                </div>
+                <h3 className="text-sm font-bold text-rose-400">Vendita</h3>
+              </div>
+              <p className="text-xs text-slate-400">Compila report</p>
+            </motion.button>
+
+            <motion.button
+              onClick={handleSyncLeadsToCalendar}
+              whileHover={{ scale: 1.03 }}
+              className="w-full bg-emerald-600/20 backdrop-blur-sm rounded-lg p-4 border border-emerald-600/30 hover:border-emerald-500/50 transition-all text-left"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded bg-emerald-600/30">
+                  <CalendarIcon size={18} className="text-emerald-400" />
+                </div>
+                <h3 className="text-sm font-bold text-emerald-400">Sync</h3>
+              </div>
+              <p className="text-xs text-slate-400">Sincronizza leads</p>
+            </motion.button>
+          </div>
+        </div>
+
+        {/* CALENDARIO MOBILE - CENTRATO E COMPATTO */}
+        <div className="lg:hidden mb-4 mx-3 sm:mx-6">
+          <SimpleCalendar 
             reports={collaboratori.flatMap(c => c.dailyReports || [])} 
             collaboratori={collaboratori} 
             onDateClick={d => {
@@ -740,66 +833,212 @@ export default function Collaboratori() {
           />
         </div>
 
-        {/* REPORT SETTING & VENDITA */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mx-3 sm:mx-6">
-          {/* SETTING */}
-          <div className="bg-slate-800/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-slate-700/50 shadow-xl">
-            <div className="flex justify-between items-center mb-2 sm:mb-3">
-              <h2 className="text-sm sm:text-base font-semibold text-cyan-400">Report Setting</h2>
-              <button onClick={() => setShowPastSetting(!showPastSetting)} className="text-[10px] sm:text-xs flex items-center gap-1 text-cyan-300 hover:text-cyan-100 px-2 py-1 rounded hover:bg-slate-700/50"><Eye size={12} className="sm:w-[14px] sm:h-[14px]" /> Storico</button>
-            </div>
-            {showPastSetting && (
-              <div className="mb-2 sm:mb-3 p-1.5 sm:p-2 bg-slate-900/50 border border-cyan-800/30 rounded max-h-24 sm:max-h-32 overflow-y-auto text-[10px] sm:text-xs">
-                {settingReports.length === 0 ? <p className="text-slate-400">Nessun report</p> : settingReports.map(r => (
-                  <button key={r.id} onClick={() => loadPastSettingReport(r)} className="block w-full text-left p-1 hover:bg-cyan-900/30 rounded">
-                    {r.date} → {r.chiamatePrenotate} prenotate
-                  </button>
-                ))}
+        {/* SEZIONI PRINCIPALI - GRID CARDS RESPONSIVE */}
+        <div className="grid grid-cols-2 lg:grid-cols-2 gap-2 sm:gap-3 mx-3 sm:mx-6">
+          {/* REPORT SETTING */}
+          <button 
+            onClick={() => setShowReportSetting(true)}
+            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-3 lg:p-4 hover:bg-slate-700/30 transition-colors text-left"
+          >
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-3">
+              <div className="p-2 lg:p-3 rounded-lg bg-cyan-600/20">
+                <FileText size={16} className="text-cyan-400 lg:w-5 lg:h-5" />
               </div>
-            )}
-            <div className="space-y-1.5 sm:space-y-2 text-[10px] sm:text-xs">
-              <input type="date" value={reportSetting.date} onChange={e => setReportSetting({ ...reportSetting, date: e.target.value })} className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
-              <input type="number" value={reportSetting.followUpsFatti} onChange={e => setReportSetting({ ...reportSetting, followUpsFatti: e.target.value })} placeholder="Follow-ups" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
-              <input type="number" value={reportSetting.dialedFatti} onChange={e => setReportSetting({ ...reportSetting, dialedFatti: e.target.value })} placeholder="Dialed" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
-              <input type="number" value={reportSetting.dialedRisposte} onChange={e => setReportSetting({ ...reportSetting, dialedRisposte: e.target.value })} placeholder="Risposte" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
-              <input type="number" value={reportSetting.chiamatePrenotate} onChange={e => setReportSetting({ ...reportSetting, chiamatePrenotate: e.target.value })} placeholder="Prenotate" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
-              <button onClick={handleSaveReportSetting} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-1.5 rounded text-[10px] sm:text-xs"><Check className="inline mr-1" size={10} /><Check className="inline mr-1 hidden sm:inline" size={12} /> Salva</button>
+              <div className="min-w-0">
+                <h3 className="text-xs lg:text-sm font-bold text-cyan-400 truncate">Report Setting</h3>
+                <p className="text-[10px] lg:text-xs text-slate-400 mt-0.5 lg:mt-1 truncate">Follow-ups, Dialed</p>
+              </div>
             </div>
-          </div>
+          </button>
 
-          {/* VENDITA */}
-          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-xs sm:text-sm font-semibold text-rose-400">Report Vendita</h2>
-              <button onClick={() => setShowPastSales(!showPastSales)} className="text-[10px] sm:text-xs flex items-center gap-0.5 sm:gap-1 text-rose-300 hover:text-rose-100"><Eye size={10} className="sm:hidden" /><Eye size={12} className="hidden sm:block" /> Storico</button>
-            </div>
-            {showPastSales && (
-              <div className="mb-2 sm:mb-3 p-1.5 sm:p-2 bg-slate-900/50 border border-rose-800/30 rounded max-h-24 sm:max-h-32 overflow-y-auto text-[10px] sm:text-xs">
-                {salesReports.length === 0 ? <p className="text-slate-400">Nessun report</p> : salesReports.map(r => (
-                  <button key={r.id} onClick={() => loadPastSalesReport(r)} className="block w-full text-left p-1 hover:bg-rose-900/30 rounded">
-                    {r.date} → {r.chiuse} chiuse
-                  </button>
-                ))}
+          {/* REPORT VENDITA */}
+          <button 
+            onClick={() => setShowReportVendita(true)}
+            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-3 lg:p-4 hover:bg-slate-700/30 transition-colors text-left"
+          >
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-3">
+              <div className="p-2 lg:p-3 rounded-lg bg-rose-600/20">
+                <DollarSign size={16} className="text-rose-400 lg:w-5 lg:h-5" />
               </div>
-            )}
-            <div className="space-y-1.5 sm:space-y-2 text-[10px] sm:text-xs">
-              <input type="date" value={reportVendita.date} onChange={e => setReportVendita({ ...reportVendita, date: e.target.value })} className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
-              <input type="number" value={reportVendita.chiamateFissate} onChange={e => setReportVendita({ ...reportVendita, chiamateFissate: e.target.value })} placeholder="Fissate" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
-              <input type="number" value={reportVendita.chiamateFatte} onChange={e => setReportVendita({ ...reportVendita, chiamateFatte: e.target.value })} placeholder="Fatte" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
-              <input type="number" value={reportVendita.offersFatte} onChange={e => setReportVendita({ ...reportVendita, offersFatte: e.target.value })} placeholder="Warm" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
-              <input type="number" value={reportVendita.chiuse} onChange={e => setReportVendita({ ...reportVendita, chiuse: e.target.value })} placeholder="Chiuse" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
-              <input type="number" value={reportVendita.cash} onChange={e => setReportVendita({ ...reportVendita, cash: e.target.value })} placeholder="Cash" className="w-full p-1 sm:p-1.5 bg-slate-700/50 border border-slate-600 rounded" />
-              <button onClick={handleSaveReportVendita} className="w-full bg-gradient-to-r from-rose-600 to-red-600 text-white py-1.5 rounded text-[10px] sm:text-xs"><Check className="inline mr-1" size={10} /><Check className="inline mr-1 hidden sm:inline" size={12} /> Salva</button>
+              <div className="min-w-0">
+                <h3 className="text-xs lg:text-sm font-bold text-rose-400 truncate">Report Vendita</h3>
+                <p className="text-[10px] lg:text-xs text-slate-400 mt-0.5 lg:mt-1 truncate">Chiamate, Offers</p>
+              </div>
             </div>
-          </div>
+          </button>
+
+          {/* TABELLA LEADS */}
+          <button 
+            onClick={() => setShowLeadsTable(true)}
+            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-3 lg:p-4 hover:bg-slate-700/30 transition-colors text-left"
+          >
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-3">
+              <div className="p-2 lg:p-3 rounded-lg bg-blue-600/20">
+                <Users size={16} className="text-blue-400 lg:w-5 lg:h-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs lg:text-sm font-bold text-slate-200 truncate">Tabella Leads</h3>
+                <p className="text-[10px] lg:text-xs text-slate-400 mt-0.5 lg:mt-1 truncate">{filteredLeads.length} leads</p>
+              </div>
+            </div>
+          </button>
+
+          {/* LEAD PER FONTE */}
+          <button 
+            onClick={() => setShowFontiStats(true)}
+            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-3 lg:p-4 hover:bg-slate-700/30 transition-colors text-left"
+          >
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-3">
+              <div className="p-2 lg:p-3 rounded-lg bg-purple-600/20">
+                <File size={16} className="text-purple-400 lg:w-5 lg:h-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs lg:text-sm font-bold text-purple-400 truncate">Lead per Fonte</h3>
+                <p className="text-[10px] lg:text-xs text-slate-400 mt-0.5 lg:mt-1 truncate">{sourceStats.length} fonti</p>
+              </div>
+            </div>
+          </button>
+
+          {/* COLLABORATORI */}
+          <button 
+            onClick={() => setShowCollaboratoriList(true)}
+            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-3 lg:p-4 hover:bg-slate-700/30 transition-colors text-left col-span-2"
+          >
+            <div className="flex items-center gap-2 lg:gap-3">
+              <div className="p-2 lg:p-3 rounded-lg bg-emerald-600/20 flex-shrink-0">
+                <Users size={16} className="text-emerald-400 lg:w-5 lg:h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-xs lg:text-sm font-bold text-emerald-400 truncate">Gestione Collaboratori</h3>
+                <p className="text-[10px] lg:text-xs text-slate-400 mt-0.5 lg:mt-1 truncate">{collaboratori.length + admins.length} membri del team</p>
+              </div>
+            </div>
+          </button>
         </div>
 
-        {/* FILTRI UNIFICATI + TABELLA */}
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
-            <h2 className="text-xs sm:text-sm font-semibold text-slate-200">Leads ({filteredLeads.length})</h2>
-            <div className="flex flex-wrap gap-1.5 text-xs w-full sm:w-auto">
-              <div className="flex items-center gap-1 bg-slate-700/50 rounded px-2 py-1 flex-1 sm:flex-none">
+        {/* MODAL REPORT SETTING */}
+        {showReportSetting && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-slate-800/95 backdrop-blur-md rounded-xl p-6 max-w-md w-full border border-slate-700 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded bg-cyan-600/20">
+                    <FileText size={18} className="text-cyan-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-cyan-400">Report Setting</h3>
+                </div>
+                <button onClick={() => setShowReportSetting(false)} className="text-slate-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="flex justify-end mb-3">
+                <button onClick={() => setShowPastSetting(!showPastSetting)} className="text-xs flex items-center gap-1 text-cyan-300 hover:text-cyan-100 px-2 py-1 rounded hover:bg-slate-700/50">
+                  <Eye size={12} /> Storico
+                </button>
+              </div>
+              
+              {showPastSetting && (
+                <div className="mb-3 p-2 bg-slate-900/50 border border-cyan-800/30 rounded max-h-32 overflow-y-auto text-xs">
+                  {settingReports.length === 0 ? <p className="text-slate-400">Nessun report</p> : settingReports.map(r => (
+                    <button key={r.id} onClick={() => loadPastSettingReport(r)} className="block w-full text-left p-2 hover:bg-cyan-900/30 rounded text-xs">
+                      {r.date} → {r.chiamatePrenotate} prenotate
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              <div className="space-y-2 text-xs">
+                <input type="date" value={reportSetting.date} onChange={e => setReportSetting({ ...reportSetting, date: e.target.value })} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded" />
+                <input type="number" value={reportSetting.followUpsFatti} onChange={e => setReportSetting({ ...reportSetting, followUpsFatti: e.target.value })} placeholder="Follow-ups" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded" />
+                <input type="number" value={reportSetting.dialedFatti} onChange={e => setReportSetting({ ...reportSetting, dialedFatti: e.target.value })} placeholder="Dialed" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded" />
+                <input type="number" value={reportSetting.dialedRisposte} onChange={e => setReportSetting({ ...reportSetting, dialedRisposte: e.target.value })} placeholder="Risposte" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded" />
+                <input type="number" value={reportSetting.chiamatePrenotate} onChange={e => setReportSetting({ ...reportSetting, chiamatePrenotate: e.target.value })} placeholder="Prenotate" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded" />
+                <button onClick={handleSaveReportSetting} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-2.5 rounded text-sm font-medium hover:shadow-lg transition-shadow"><Check className="inline mr-1" size={14} /> Salva Report</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* MODAL REPORT VENDITA */}
+        {showReportVendita && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-slate-800/95 backdrop-blur-md rounded-xl p-6 max-w-md w-full border border-slate-700 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded bg-rose-600/20">
+                    <DollarSign size={18} className="text-rose-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-rose-400">Report Vendita</h3>
+                </div>
+                <button onClick={() => setShowReportVendita(false)} className="text-slate-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="flex justify-end mb-3">
+                <button onClick={() => setShowPastSales(!showPastSales)} className="text-xs flex items-center gap-1 text-rose-300 hover:text-rose-100 px-2 py-1 rounded hover:bg-slate-700/50">
+                  <Eye size={12} /> Storico
+                </button>
+              </div>
+              
+              {showPastSales && (
+                <div className="mb-3 p-2 bg-slate-900/50 border border-rose-800/30 rounded max-h-32 overflow-y-auto text-xs">
+                  {salesReports.length === 0 ? <p className="text-slate-400">Nessun report</p> : salesReports.map(r => (
+                    <button key={r.id} onClick={() => loadPastSalesReport(r)} className="block w-full text-left p-2 hover:bg-rose-900/30 rounded text-xs">
+                      {r.date} → {r.chiuse} chiuse
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              <div className="space-y-2 text-xs">
+                <input type="date" value={reportVendita.date} onChange={e => setReportVendita({ ...reportVendita, date: e.target.value })} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded" />
+                <input type="number" value={reportVendita.chiamateFissate} onChange={e => setReportVendita({ ...reportVendita, chiamateFissate: e.target.value })} placeholder="Fissate" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded" />
+                <input type="number" value={reportVendita.chiamateFatte} onChange={e => setReportVendita({ ...reportVendita, chiamateFatte: e.target.value })} placeholder="Fatte" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded" />
+                <input type="number" value={reportVendita.offersFatte} onChange={e => setReportVendita({ ...reportVendita, offersFatte: e.target.value })} placeholder="Warm" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded" />
+                <input type="number" value={reportVendita.chiuse} onChange={e => setReportVendita({ ...reportVendita, chiuse: e.target.value })} placeholder="Chiuse" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded" />
+                <input type="number" value={reportVendita.cash} onChange={e => setReportVendita({ ...reportVendita, cash: e.target.value })} placeholder="Cash €" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded" />
+                <button onClick={handleSaveReportVendita} className="w-full bg-gradient-to-r from-rose-600 to-red-600 text-white py-2.5 rounded text-sm font-medium hover:shadow-lg transition-shadow"><Check className="inline mr-1" size={14} /> Salva Report</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+
+        
+        {/* MODAL TABELLA LEADS */}
+        {showLeadsTable && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-slate-800/95 backdrop-blur-md rounded-xl p-6 max-w-6xl w-full border border-slate-700 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded bg-blue-600/20">
+                    <Users size={18} className="text-blue-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-200">Tabella Leads ({filteredLeads.length})</h3>
+                </div>
+                <button onClick={() => setShowLeadsTable(false)} className="text-slate-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="overflow-y-auto flex-1">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                  <div className="flex flex-wrap gap-1.5 text-xs w-full sm:w-auto">
+                    <div className="flex items-center gap-1 bg-slate-700/50 rounded px-2 py-1 flex-1 sm:flex-none">
                 <Search size={12} className="text-slate-400" />
                 <input 
                   type="text" 
@@ -839,235 +1078,154 @@ export default function Collaboratori() {
                 <option value="si">Warm: Sì</option>
                 <option value="no">Warm: No</option>
               </select>
-            </div>
-          </div>
-        </div>
-
-        {/* TABELLA LEADS CON STATUS DINAMICI */}
-        <div className="mx-3 sm:mx-6">
-          <LeadsTable 
-            key={refreshKey}
-            leads={paginatedLeads} 
-            leadStatuses={leadStatuses}
-            columns={leadColumns}
-            onRefresh={() => setRefreshKey(prev => prev + 1)}
-            showConfig={true}
-          />
-          
-          {/* Paginazione */}
-          {totalPages > 1 && (
-            <div className="flex justify-center gap-3 mt-4 text-xs">
-              <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"><ChevronLeft size={14} /></button>
-              <span className="text-slate-300 self-center">Pag {currentPage} di {totalPages}</span>
-              <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"><ChevronRight size={14} /></button>
-            </div>
-          )}
-        </div>
-
-        {/* VECCHIA TABELLA COMMENTATA PER BACKUP */}
-        {false && (
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700 mx-3 sm:mx-6">
-          <div className="mobile-table-wrapper relative">
-            <div className="inline-block min-w-full align-middle">
-              <table className="w-full text-[10px] sm:text-xs text-left text-slate-400 min-w-[800px]">
-                <thead className="text-[10px] sm:text-xs uppercase bg-slate-900/50 sticky top-0">
-                  <tr>
-                    <th className="px-1 sm:px-2 py-1 text-center">Az</th>
-                    <th className="px-1 sm:px-2 py-1">Nome</th>
-                    <th className="px-1 sm:px-2 py-1">Fonte</th>
-                    <th className="px-1 sm:px-2 py-1 table-cell">Email</th>
-                    <th className="px-1 sm:px-2 py-1">Num</th>
-                    <th className="px-1 sm:px-2 py-1">Data</th>
-                    <th className="px-1 sm:px-2 py-1">Setter</th>
-                    <th className="px-1 sm:px-2 py-1 text-center table-cell">Dialed</th>
-                    <th className="px-1 sm:px-2 py-1 text-center">Setting</th>
-                    <th className="px-1 sm:px-2 py-1 text-center">Show</th>
-                    <th className="px-1 sm:px-2 py-1 text-center table-cell">Target</th>
-                    <th className="px-1 sm:px-2 py-1 text-center">Warm</th>
-                    <th className="px-1 sm:px-2 py-1 text-center">Close</th>
-                    <th className="px-1 sm:px-2 py-1 text-center">€</th>
-                    <th className="px-1 sm:px-2 py-1 text-center table-cell">M</th>
-                    <th className="px-1 sm:px-2 py-1">Note</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedLeads.map(lead => (
-                    <tr key={lead.id} className="border-b border-white/10 hover:bg-slate-700/30">
-                      <td className="px-1 sm:px-2 py-1 text-center">
-                        {editingLead === lead.id ? (
-                          <div className="flex gap-0.5 sm:gap-1 justify-center">
-                            <button onClick={handleSaveLeadEdit} className="text-green-400"><Check size={10} className="sm:hidden" /><Check size={12} className="hidden sm:block" /></button>
-                            <button onClick={handleCancelEdit} className="text-red-400"><X size={10} className="sm:hidden" /><X size={12} className="hidden sm:block" /></button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-0.5 sm:gap-1 justify-center">
-                            <button onClick={() => handleEditLead(lead)} className="text-cyan-400"><Edit size={10} className="sm:hidden" /><Edit size={12} className="hidden sm:block" /></button>
-                            <button onClick={() => handleDeleteLead(lead.id)} className="text-red-400"><Trash2 size={10} className="sm:hidden" /><Trash2 size={12} className="hidden sm:block" /></button>
-                          </div>
-                        )}
-                      </td>
-
-                      <td className="px-1 sm:px-2 py-1">
-                        {editingLead === lead.id ? (
-                          <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full p-0.5 sm:p-1 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs" />
-                        ) : <div className="max-w-[60px] sm:max-w-[80px] truncate font-medium">{lead.name || '—'}</div>}
-                      </td>
-
-                      <td className="px-1 sm:px-2 py-1">
-                        {editingLead === lead.id ? (
-                          <select value={editForm.source} onChange={e => setEditForm({ ...editForm, source: e.target.value })} className="w-full p-1 bg-slate-700/50 border border-slate-600 rounded text-xs">
-                            <option value="">—</option>
-                            {fonti.map(f => <option key={f} value={f}>{f}</option>)}
-                          </select>
-                        ) : <div className="max-w-[60px] sm:max-w-[100px] truncate text-[9px] sm:text-[10px]">{lead.source || '—'}</div>}
-                      </td>
-
-                      <td className="px-1 sm:px-2 py-1 truncate max-w-[100px] table-cell">{lead.email || '—'}</td>
-                      <td className="px-1 sm:px-2 py-1">{lead.number || '—'}</td>
-                      <td className="px-1 sm:px-2 py-1 text-[9px] sm:text-[10px]">{lead.dataPrenotazione ? `${lead.dataPrenotazione.slice(5)} ${lead.oraPrenotazione || ''}` : '—'}</td>
-                      <td className="px-1 sm:px-2 py-1 truncate max-w-[60px] sm:max-w-[70px]">{lead.collaboratoreNome || '—'}</td>
-
-                      <td className="px-1 sm:px-2 py-1 text-center table-cell">
-                        {editingLead === lead.id ? (
-                          <input type="number" min="0" value={editForm.dialed || 0} onChange={e => setEditForm({ ...editForm, dialed: parseInt(e.target.value) || 0 })} className="w-12 p-0.5 bg-slate-700/50 border border-slate-600 rounded text-xs text-center" />
-                        ) : <span className="font-bold text-cyan-400">{lead.dialed ?? 0}</span>}
-                      </td>
-
-                      <td className="px-1 sm:px-2 py-1 text-center">
-                        {editingLead === lead.id ? (
-                          <input type="checkbox" checked={editForm.settingCall || false} onChange={e => setEditForm({ ...editForm, settingCall: e.target.checked })} className="w-3 h-3" />
-                        ) : <div className={`font-bold text-[10px] ${lead.settingCall ? 'text-green-400' : 'text-red-400'}`}>{lead.settingCall ? 'Sì' : 'No'}</div>}
-                      </td>
-
-                      <td className="px-1 sm:px-2 py-1 text-center">
-                        {editingLead === lead.id ? (
-                          <input type="checkbox" checked={editForm.showUp} onChange={e => setEditForm({ ...editForm, showUp: e.target.checked })} className="w-3 h-3" />
-                        ) : <div className={`font-bold text-[10px] ${lead.showUp ? 'text-green-400' : 'text-red-400'}`}>{lead.showUp ? 'Sì' : 'No'}</div>}
-                      </td>
-
-                      <td className="px-1 sm:px-2 py-1 text-center table-cell">
-                        {editingLead === lead.id ? (
-                          <input type="checkbox" checked={editForm.target || false} onChange={e => setEditForm({ ...editForm, target: e.target.checked })} className="w-3 h-3" />
-                        ) : <div className={`font-bold text-[10px] ${lead.target ? 'text-yellow-400' : 'text-gray-500'}`}>{lead.target ? 'Sì' : 'No'}</div>}
-                      </td>
-
-                      <td className="px-1 sm:px-2 py-1 text-center">
-                        {editingLead === lead.id ? (
-                          <input type="checkbox" checked={editForm.offer} onChange={e => setEditForm({ ...editForm, offer: e.target.checked })} className="w-3 h-3" />
-                        ) : <div className={`font-bold text-[10px] ${lead.offer ? 'text-yellow-400' : 'text-gray-500'}`}>{lead.offer ? 'Sì' : 'No'}</div>}
-                      </td>
-
-                      <td className="px-1 sm:px-2 py-1 text-center">
-                        {editingLead === lead.id ? (
-                          <input type="checkbox" checked={editForm.chiuso} onChange={e => setEditForm({ ...editForm, chiuso: e.target.checked })} className="w-3 h-3" />
-                        ) : <div className={`font-bold text-[10px] ${lead.chiuso ? 'text-green-400' : 'text-yellow-400'}`}>{lead.chiuso ? 'Sì' : 'No'}</div>}
-                      </td>
-
-                      <td className="px-1 sm:px-2 py-1 text-center">
-                        {editingLead === lead.id ? (
-                          <input type="number" min="0" step="0.01" value={editForm.amount || ''} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} className="w-12 sm:w-16 p-0.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs text-center" />
-                        ) : <div className="font-bold text-green-400 text-[10px] sm:text-xs">€{lead.amount || 0}</div>}
-                      </td>
-
-                      <td className="px-1 sm:px-2 py-1 text-center table-cell">
-                        {editingLead === lead.id ? (
-                          <input type="number" min="0" value={editForm.mesi || ''} onChange={e => setEditForm({ ...editForm, mesi: e.target.value })} className="w-10 sm:w-12 p-0.5 bg-slate-700/50 border border-slate-600 rounded text-xs text-center" />
-                        ) : <div className="font-bold">{lead.mesi || 0}</div>}
-                      </td>
-
-                      <td className="px-1 sm:px-2 py-1 max-w-[100px] truncate">
-                        <button 
-                          onClick={() => { setCurrentNote(lead.note || 'Nessuna nota'); setShowNotePopup(true); }} 
-                          className="text-cyan-400 hover:underline text-[9px] sm:text-xs"
-                        >
-                          {lead.note ? 'Vedi' : '—'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        )}
-        {/* FINE VECCHIA TABELLA */}
-
-        {/* LEAD PER FONTE */}
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
-          <h2 className="text-xs sm:text-sm font-semibold text-slate-200 mb-2 sm:mb-3">Lead per Fonte</h2>
-          <div className="text-[9px] sm:text-[10px] text-slate-400 mb-2">
-            📊 <strong>% Totale</strong> = quota sul totale dei lead • 🟢 <strong>% Show-up</strong> = % di presenze su lead fonte • 🔴 <strong>% Chiusura</strong> = % di chiusure su lead fonte
-          </div>
-          <div className="space-y-1 text-[10px] sm:text-xs">
-            {sourceStats.length === 0 ? (
-              <p className="text-slate-400">Nessun lead</p>
-            ) : (
-              sourceStats.map(s => (
-                <div key={s.source} className="flex justify-between items-center p-1.5 sm:p-2 bg-slate-700/50 rounded border border-slate-600">
-                  <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
-                    <span className="text-cyan-400 font-bold flex-shrink-0">{s.index}.</span>
-                    <span className="truncate max-w-[80px] sm:max-w-[100px]">{s.source}</span>
-                  </div>
-                  <div className="flex gap-1 sm:gap-2 flex-shrink-0 text-center">
-                    <div className="flex flex-col items-center">
-                      <span className="text-blue-400 font-bold">{s.totalPercentage}%</span>
-                      <span className="text-[8px] sm:text-[9px] text-slate-500">TOT</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span><strong>{s.total}</strong></span>
-                      <span className="text-[8px] sm:text-[9px] text-slate-500">LEAD</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-green-400"><strong>{s.showUp}%</strong></span>
-                      <span className="text-[8px] sm:text-[9px] text-slate-500">SHOW</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-rose-400"><strong>{s.chiusura}%</strong></span>
-                      <span className="text-[8px] sm:text-[9px] text-slate-500">CHIUS</span>
-                    </div>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
 
-        {/* COLLABORATORI */}
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-slate-700">
-          <h2 className="text-xs sm:text-sm font-semibold text-slate-200 mb-2 sm:mb-3">Collaboratori</h2>
-          <div className="space-y-1.5 sm:space-y-2 text-[10px] sm:text-xs">
-            {[...collaboratori, ...admins].map(c => {
-              const isCurrentUser = c.id === auth.currentUser?.uid;
-              const displayName = c.nome || c.email?.split('@')[0] || 'Sconosciuto';
-              const isSelected = selectedCollaboratore === c.id;
-              return (
-                <motion.div 
-                  key={c.id} 
-                  className={`p-1.5 sm:p-2 bg-slate-700/50 rounded border ${isSelected ? 'border-cyan-500' : 'border-slate-600'} flex justify-between items-center cursor-pointer`}
-                  whileHover={{ scale: 1.02 }}
-                  onClick={() => setSelectedCollaboratore(isSelected ? null : c.id)}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-200 truncate">{displayName} ({c.ruolo || c.role})</p>
-                    <p className="text-slate-400 truncate text-[9px] sm:text-[10px]">{c.email || '—'}</p>
+                {/* TABELLA LEADS CON STATUS DINAMICI */}
+                <LeadsTable 
+                  key={refreshKey}
+                  leads={paginatedLeads} 
+                  leadStatuses={leadStatuses}
+                  columns={leadColumns}
+                  onRefresh={() => setRefreshKey(prev => prev + 1)}
+                  showConfig={true}
+                />
+                
+                {/* Paginazione */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center gap-3 mt-4 text-xs">
+                    <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"><ChevronLeft size={14} /></button>
+                    <span className="text-slate-300 self-center">Pag {currentPage} di {totalPages}</span>
+                    <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"><ChevronRight size={14} /></button>
                   </div>
-                  {isAdmin && !isCurrentUser && (
-                    <div className="flex gap-0.5 sm:gap-1 ml-1 sm:ml-2 flex-shrink-0">
-                      <button onClick={(e) => { e.stopPropagation(); setEditingCollab(c.id); setEditEmail(c.email || ''); }} className="p-0.5 sm:p-1 text-yellow-400"><Key size={10} className="sm:hidden" /><Key size={12} className="hidden sm:block" /></button>
-                      <button onClick={(e) => { e.stopPropagation(); if (confirm(`Elimina ${displayName}?`)) handleDeleteCollaboratore(c.id); }} className="p-0.5 sm:p-1 text-red-400"><Trash2 size={10} className="sm:hidden" /><Trash2 size={12} className="hidden sm:block" /></button>
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
+                )}
+              </div>
+            </motion.div>
           </div>
-          {selectedCollaboratore && (
-            <button onClick={() => setSelectedCollaboratore(null)} className="mt-2 text-[10px] sm:text-xs text-cyan-400 hover:underline">
-              ← Mostra tutti i leads
-            </button>
-          )}
-        </div>
+        )}
+
+
+
+        {/* MODAL LEAD PER FONTE */}
+        {showFontiStats && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-slate-800/95 backdrop-blur-md rounded-xl p-6 max-w-2xl w-full border border-slate-700 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded bg-purple-600/20">
+                    <File size={18} className="text-purple-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-purple-400">Lead per Fonte</h3>
+                </div>
+                <button onClick={() => setShowFontiStats(false)} className="text-slate-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="text-xs text-slate-400 mb-4 p-3 bg-slate-900/50 rounded-lg">
+                📊 <strong>% Totale</strong> = quota sul totale dei lead<br/>
+                🟢 <strong>% Show-up</strong> = percentuale di presenze su lead fonte<br/>
+                🔴 <strong>% Chiusura</strong> = percentuale di chiusure su lead fonte
+              </div>
+              
+              <div className="overflow-y-auto flex-1">
+                <div className="space-y-2 text-xs">
+                  {sourceStats.length === 0 ? (
+                    <p className="text-slate-400 text-center py-8">Nessun lead</p>
+                  ) : (
+                    sourceStats.map(s => (
+                      <div key={s.source} className="flex justify-between items-center p-3 bg-slate-700/50 rounded-lg border border-slate-600 hover:bg-slate-700/70 transition-colors">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <span className="text-cyan-400 font-bold text-lg">{s.index}.</span>
+                          <span className="font-medium truncate">{s.source}</span>
+                        </div>
+                        <div className="flex gap-4 flex-shrink-0 text-center">
+                          <div className="flex flex-col items-center">
+                            <span className="text-blue-400 font-bold text-base">{s.totalPercentage}%</span>
+                            <span className="text-[10px] text-slate-500">TOTALE</span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <span className="font-bold text-base">{s.total}</span>
+                            <span className="text-[10px] text-slate-500">LEADS</span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <span className="text-green-400 font-bold text-base">{s.showUp}%</span>
+                            <span className="text-[10px] text-slate-500">SHOW-UP</span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <span className="text-rose-400 font-bold text-base">{s.chiusura}%</span>
+                            <span className="text-[10px] text-slate-500">CHIUSURA</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* MODAL COLLABORATORI */}
+        {showCollaboratoriList && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-slate-800/95 backdrop-blur-md rounded-xl p-6 max-w-3xl w-full border border-slate-700 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded bg-emerald-600/20">
+                    <Users size={18} className="text-emerald-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-emerald-400">Gestione Collaboratori</h3>
+                </div>
+                <button onClick={() => setShowCollaboratoriList(false)} className="text-slate-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="overflow-y-auto flex-1">
+                <div className="space-y-2">
+                  {[...collaboratori, ...admins].map(c => {
+                    const isCurrentUser = c.id === auth.currentUser?.uid;
+                    const displayName = c.nome || c.email?.split('@')[0] || 'Sconosciuto';
+                    const isSelected = selectedCollaboratore === c.id;
+                    return (
+                      <motion.div 
+                        key={c.id} 
+                        className={`p-3 bg-slate-700/50 rounded-lg border ${isSelected ? 'border-cyan-500' : 'border-slate-600'} flex justify-between items-center cursor-pointer hover:bg-slate-700/70 transition-colors`}
+                        whileHover={{ scale: 1.01 }}
+                        onClick={() => setSelectedCollaboratore(isSelected ? null : c.id)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-200 truncate text-sm">{displayName} ({c.ruolo || c.role})</p>
+                          <p className="text-slate-400 truncate text-xs">{c.email || '—'}</p>
+                        </div>
+                        {isAdmin && !isCurrentUser && (
+                          <div className="flex gap-2 ml-2 flex-shrink-0">
+                            <button onClick={(e) => { e.stopPropagation(); setEditingCollab(c.id); setEditEmail(c.email || ''); }} className="p-2 text-yellow-400 hover:bg-slate-600/50 rounded"><Key size={16} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); if (confirm(`Elimina ${displayName}?`)) handleDeleteCollaboratore(c.id); }} className="p-2 text-red-400 hover:bg-slate-600/50 rounded"><Trash2 size={16} /></button>
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                {selectedCollaboratore && (
+                  <button onClick={() => setSelectedCollaboratore(null)} className="mt-4 text-sm text-cyan-400 hover:underline">
+                    ← Mostra tutti i leads
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
 
         {/* POPUP NOTE */}
         {showNotePopup && (

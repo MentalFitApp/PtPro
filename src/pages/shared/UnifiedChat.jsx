@@ -153,17 +153,28 @@ export default function UnifiedChat() {
     return () => unsubscribe();
   }, []);
 
-  // Carica tutti gli utenti dalla community
+  // Carica utenti disponibili per chat in base al ruolo
   useEffect(() => {
     const loadUsers = async () => {
       try {
+        // Carica tutti i profili utente
         const usersSnapshot = await getDocs(getTenantCollection(db, 'users'));
-        const usersData = usersSnapshot.docs
+        let usersData = usersSnapshot.docs
           .map(doc => ({
             id: doc.id,
             ...doc.data(),
           }))
-          .filter(u => u.name && u.id !== currentUser.uid); // Escludi te stesso
+          .filter(u => u.displayName && u.id !== currentUser.uid); // Escludi te stesso
+
+        // Filtra in base al ruolo dell'utente corrente
+        if (userRole === 'client') {
+          // I clienti vedono solo admin e coach
+          usersData = usersData.filter(u => u.role === 'admin' || u.role === 'coach');
+        } else if (userRole === 'coach') {
+          // I coach vedono admin e clienti (non altri coach)
+          usersData = usersData.filter(u => u.role === 'admin' || u.role === 'client');
+        }
+        // Gli admin vedono tutti (già filtrato solo currentUser)
         
         setAllUsers(usersData);
         setFilteredUsers(usersData);
@@ -172,10 +183,10 @@ export default function UnifiedChat() {
       }
     };
 
-    if (currentUser) {
+    if (currentUser && userRole) {
       loadUsers();
     }
-  }, [currentUser]);
+  }, [currentUser, userRole]);
 
   // Carica le chat
   useEffect(() => {
@@ -1172,15 +1183,33 @@ export default function UnifiedChat() {
                         onClick={() => handleStartChat(user)}
                         className="w-full p-3 flex items-center gap-3 hover:bg-slate-700/50 rounded-lg transition-all text-left"
                       >
-                        <img
-                          src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}`}
-                          alt={user.name}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-cyan-500"
-                        />
+                        <div className="relative">
+                          <img
+                            src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.name || 'User')}&background=0891b2&color=fff`}
+                            alt={user.displayName || user.name}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-cyan-500"
+                          />
+                          {user.role && (
+                            <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-slate-800 flex items-center justify-center text-[10px] ${
+                              user.role === 'admin' ? 'bg-purple-500' : 
+                              user.role === 'coach' ? 'bg-blue-500' : 
+                              'bg-green-500'
+                            }`}>
+                              {user.role === 'admin' ? '👑' : user.role === 'coach' ? '💪' : '👤'}
+                            </div>
+                          )}
+                        </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-slate-100">{user.name}</h3>
+                          <h3 className="font-semibold text-slate-100">{user.displayName || user.name}</h3>
+                          {user.role && (
+                            <p className="text-xs text-slate-500 capitalize">
+                              {user.role === 'admin' ? 'Amministratore' : 
+                               user.role === 'coach' ? 'Coach' : 
+                               'Cliente'}
+                            </p>
+                          )}
                           {user.email && (
-                            <p className="text-sm text-slate-400">{user.email}</p>
+                            <p className="text-xs text-slate-400 truncate">{user.email}</p>
                           )}
                         </div>
                         <UserPlus size={20} className="text-cyan-400" />

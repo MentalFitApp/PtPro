@@ -4,7 +4,7 @@ import {
   Home, Users, MessageSquare, FileText, Bell,
   Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing,
   UserCheck, BookOpen, Target, Activity, GraduationCap, Plus, Menu, X, Palette, Globe, Instagram,
-  Dumbbell, Utensils, Shield
+  Dumbbell, Utensils, Shield, Layout
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isSuperAdmin } from '../../utils/superadmin';
@@ -149,7 +149,7 @@ const adminNavLinks = [
     isSection: true,
     children: [
       { to: '/admin/branding', icon: <Palette size={18} />, label: 'Branding' },
-      { to: '/admin/landing', icon: <Globe size={18} />, label: 'Sito Web' },
+      { to: '/landing-pages', icon: <Layout size={18} />, label: 'Landing Pages' },
       { to: '/instagram', icon: <Instagram size={18} />, label: 'Instagram' },
       { to: '/platform-settings', icon: <Settings size={18} />, label: 'Gestione Piattaforma' },
     ]
@@ -408,7 +408,23 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
             <SidebarLogo isCollapsed={true} />
           )}
         </div>
-        <div className="flex items-center gap-2 mt-3">
+        <div className={`flex ${isCollapsed ? 'flex-col' : 'flex-row'} items-center gap-2 mt-3`}>
+          <button
+            onClick={() => {
+              const profilePath = isCoach ? '/coach/profile' : 
+                                 isClient ? '/client/profile' : 
+                                 isCollaboratore ? '/collaboratore/profile' : '/profile';
+              navigate(profilePath);
+            }}
+            className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-blue-500/30 hover:ring-blue-500/50 transition-all flex-shrink-0"
+            title="Profilo"
+          >
+            <img 
+              src={auth.currentUser?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(auth.currentUser?.displayName || auth.currentUser?.email || 'User')}&background=3b82f6&color=fff`}
+              alt="Profilo"
+              className="w-full h-full object-cover"
+            />
+          </button>
           <ThemeToggle />
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -761,7 +777,27 @@ export default function MainLayout() {
                   )}
                 </div>
               </div>
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                {/* Menu utente con foto profilo */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      const profilePath = isCoach ? '/coach/profile' : 
+                                         isClient ? '/client/profile' : 
+                                         isCollaboratore ? '/collaboratore/profile' : '/profile';
+                      navigate(profilePath);
+                    }}
+                    className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-blue-500/30 hover:ring-blue-500/50 transition-all"
+                  >
+                    <img 
+                      src={auth.currentUser?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(auth.currentUser?.displayName || auth.currentUser?.email || 'User')}&background=3b82f6&color=fff`}
+                      alt="Profilo"
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}

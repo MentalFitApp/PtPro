@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Lock, Mail, Eye, EyeOff, ArrowLeft, Zap, Crown, LogIn } from 'lucide-react';
@@ -202,6 +202,74 @@ const Login = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setError('');
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
+      const userCredential = await signInWithPopup(auth, provider);
+      
+      // Salva tenantId in localStorage
+      let tenantId = CURRENT_TENANT_ID;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+        if (userDoc.exists() && userDoc.data()?.tenantId) {
+          tenantId = userDoc.data().tenantId;
+        }
+      } catch (err) {
+        console.debug('Using default tenantId from config');
+      }
+      localStorage.setItem('tenantId', tenantId);
+      console.log('✅ TenantId salvato al login Google:', tenantId);
+
+      // Verifica ruolo
+      const adminDocRef = getTenantDoc(db, 'roles', 'admins');
+      const coachDocRef = getTenantDoc(db, 'roles', 'coaches');
+      const clientDocRef = getTenantDoc(db, 'clients', userCredential.user.uid);
+      const collabDocRef = getTenantDoc(db, 'collaboratori', userCredential.user.uid);
+      const [adminDoc, coachDoc, clientDoc, collabDoc] = await Promise.all([
+        getDoc(adminDocRef),
+        getDoc(coachDocRef),
+        getDoc(clientDocRef),
+        getDoc(collabDocRef)
+      ]);
+
+      const isAdmin = adminDoc.exists() && adminDoc.data().uids.includes(userCredential.user.uid);
+      const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(userCredential.user.uid);
+      const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
+      const isCollaboratore = collabDoc.exists();
+
+      if (isAdmin) {
+        sessionStorage.setItem('app_role', 'admin');
+        navigate('/');
+      } else if (isCoach) {
+        sessionStorage.setItem('app_role', 'coach');
+        navigate('/coach');
+      } else if (isCollaboratore) {
+        sessionStorage.setItem('app_role', 'collaboratore');
+        navigate(collabDoc.data().firstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard');
+      } else if (isClient) {
+        sessionStorage.setItem('app_role', 'client');
+        navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
+      } else {
+        setError('Account Google non collegato. Registrati prima con email/password e poi collega Google dal profilo.');
+        await signOut(auth);
+      }
+    } catch (error) {
+      console.error('❌ Errore login Google:', error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        setError('Popup chiuso. Riprova.');
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        // Ignora - popup già aperto
+      } else {
+        setError('Errore login Google: ' + error.message);
+      }
+    }
+  };
+
   const handleResetPassword = async () => {
     if (!email) {
       setError('Inserisci un\'email per reimpostare la password.');
@@ -399,6 +467,37 @@ const Login = () => {
               <span className="relative">Accedi</span>
             </motion.button>
           </form>
+
+          {/* Divider */}
+          <div className="relative flex items-center justify-center py-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-700/50"></div>
+            </div>
+            <div className="relative bg-slate-900/80 px-4 text-sm text-slate-500">
+              oppure
+            </div>
+          </div>
+
+          {/* Google Login Button */}
+          <motion.button
+            type="button"
+            onClick={handleGoogleLogin}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-3.5 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 flex items-center justify-center gap-3 group shadow-sm hover:shadow-md"
+          >
+            <img 
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              alt="Google"
+              className="w-5 h-5"
+            />
+            <span>Accedi con Google</span>
+          </motion.button>
+
+          {/* Info collegamento Google */}
+          <p className="text-xs text-slate-500 text-center pt-2">
+            ℹ️ Funziona solo se hai già collegato Google al tuo account
+          </p>
 
           {/* Password Reset Link */}
           <div className="text-center pt-4 border-t border-slate-700/50">

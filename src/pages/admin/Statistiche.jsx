@@ -37,6 +37,8 @@ export default function Statistiche() {
   const [setters, setSetters] = useState([]);
   const [setterMap, setSetterMap] = useState({}); // uid → name
 
+  // Layout FISSO - Non modificabile
+
   // --- ADMIN ---
   useEffect(() => {
     const checkAdmin = async () => {
@@ -199,11 +201,17 @@ export default function Statistiche() {
     const offers = salesReports.reduce((a, r) => a + (parseInt(r.offersFatte) || 0), 0);
     const chiuse = salesReports.reduce((a, r) => a + (parseInt(r.chiuse) || 0), 0);
 
+    // Debug: verifica dati vendita
+    console.log('📊 Sales Stats:', { fissate, fatte, offers, chiuse });
+    if (salesReports.length > 0) {
+      console.log('📝 Primo report vendita:', salesReports[0]);
+    }
+
     return {
       fissate, fatte, offers, chiuse,
       showUpRate: fissate > 0 ? ((fatte / fissate) * 100).toFixed(1) : '0.0',
       warmRate: fatte > 0 ? ((offers / fatte) * 100).toFixed(1) : '0.0',
-      closeRate: offers > 0 ? ((chiuse / offers) * 100).toFixed(1) : '0.0',
+      closeRate: fatte > 0 ? ((chiuse / fatte) * 100).toFixed(1) : '0.0',
     };
   }, [salesReports]);
 
@@ -268,66 +276,104 @@ export default function Statistiche() {
         </div>
       </div>
 
-      {/* LEAD TOTALI */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-slate-400">Lead Totali</p>
-              <p className="text-2xl sm:text-3xl font-bold text-amber-300">{totalLeads}</p>
-            </div>
-            <Users size={24} className="sm:w-7 sm:h-7 text-amber-400" />
-          </div>
-        </div>
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-slate-400">Show-Up</p>
-              <p className="text-2xl sm:text-3xl font-bold text-emerald-300">{showUpTotal}</p>
-            </div>
-            <UserCheck size={24} className="sm:w-7 sm:h-7 text-emerald-400" />
-          </div>
-        </div>
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-slate-400">Chiusi</p>
-              <p className="text-2xl sm:text-3xl font-bold text-rose-300">{chiusoTotal}</p>
-            </div>
-            <DollarSign size={24} className="sm:w-7 sm:h-7 text-rose-400" />
-          </div>
-        </div>
-      </div>
-
       {/* VENDITA */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-6">
-        {[
-          { label: 'Call Fissate', value: salesStats.fissate, color: 'text-amber-300' },
-          { label: 'Call Fatte', value: salesStats.fatte, color: 'text-green-300' },
-          { label: 'Show-Up', value: `${salesStats.showUpRate}%`, color: 'text-emerald-300' },
-          { label: 'Warm', value: `${salesStats.warmRate}%`, color: 'text-yellow-300' },
-          { label: 'Close', value: `${salesStats.closeRate}%`, color: 'text-rose-300' },
-        ].map((kpi, i) => (
-          <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
-            <p className="text-xs sm:text-sm text-slate-400 truncate">{kpi.label}</p>
-            <p className={`text-xl sm:text-2xl font-bold ${kpi.color} truncate`}>{kpi.value}</p>
+      <div className="space-y-3 sm:space-y-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-100 flex items-center gap-2">
+          <DollarSign size={24} className="sm:w-7 sm:h-7" /> Funnel Vendita
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4">
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">Call Fissate</p>
+            <p className="text-xl sm:text-2xl font-bold text-amber-300 truncate">{salesStats.fissate}</p>
           </div>
-        ))}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">Call Fatte</p>
+            <p className="text-xl sm:text-2xl font-bold text-green-300 truncate">{salesStats.fatte}</p>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">Warms</p>
+            <p className="text-xl sm:text-2xl font-bold text-yellow-300 truncate">{salesStats.offers}</p>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">Chiuse</p>
+            <p className="text-xl sm:text-2xl font-bold text-rose-300 truncate">{salesStats.chiuse}</p>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">% Show-Up</p>
+            <p className="text-xl sm:text-2xl font-bold text-emerald-300 truncate">{salesStats.showUpRate}%</p>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">% Warm</p>
+            <p className="text-[10px] text-slate-500">(Sulle fatte)</p>
+            <p className="text-xl sm:text-2xl font-bold text-yellow-300 truncate">{salesStats.warmRate}%</p>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">% Chiuse</p>
+            <p className="text-[10px] text-slate-500">(Sulle fatte)</p>
+            <p className="text-xl sm:text-2xl font-bold text-rose-300 truncate">{salesStats.closeRate}%</p>
+          </div>
+        </div>
       </div>
 
       {/* SETTING */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
-        {[
-          { label: 'Dialed', value: settingStats.dialed, color: 'text-blue-300' },
-          { label: 'Risposte', value: `${settingStats.risposteRate}%`, color: 'text-cyan-300' },
-          { label: 'Follow-Ups', value: settingStats.followUps, color: 'text-green-300' },
-          { label: 'Prenotate', value: `${settingStats.prenotateRate}%`, color: 'text-rose-300' },
-        ].map((kpi, i) => (
-          <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
-            <p className="text-xs sm:text-sm text-slate-400 truncate">{kpi.label}</p>
-            <p className={`text-xl sm:text-2xl font-bold ${kpi.color} truncate`}>{kpi.value}</p>
+      <div className="space-y-3 sm:space-y-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-100 flex items-center gap-2">
+          <Phone size={24} className="sm:w-7 sm:h-7" /> Attività Setting
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">Dialed</p>
+            <p className="text-xl sm:text-2xl font-bold text-blue-300 truncate">{settingStats.dialed}</p>
           </div>
-        ))}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">Risposte</p>
+            <p className="text-xl sm:text-2xl font-bold text-cyan-300 truncate">{settingStats.risposteRate}%</p>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">Follow-Ups</p>
+            <p className="text-xl sm:text-2xl font-bold text-green-300 truncate">{settingStats.followUps}</p>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 truncate">Prenotate</p>
+            <p className="text-xl sm:text-2xl font-bold text-rose-300 truncate">{settingStats.prenotateRate}%</p>
+          </div>
+        </div>
+      </div>
+
+      {/* LEAD TOTALI */}
+      <div className="space-y-3 sm:space-y-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-100 flex items-center gap-2">
+          <Users size={24} className="sm:w-7 sm:h-7" /> Lead Totali
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-slate-400">Lead Totali</p>
+                <p className="text-2xl sm:text-3xl font-bold text-amber-300">{totalLeads}</p>
+              </div>
+              <Users size={24} className="sm:w-7 sm:h-7 text-amber-400" />
+            </div>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-slate-400">Show-Up</p>
+                <p className="text-2xl sm:text-3xl font-bold text-emerald-300">{showUpTotal}</p>
+              </div>
+              <UserCheck size={24} className="sm:w-7 sm:h-7 text-emerald-400" />
+            </div>
+          </div>
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-slate-400">Chiusi</p>
+                <p className="text-2xl sm:text-3xl font-bold text-rose-300">{chiusoTotal}</p>
+              </div>
+              <DollarSign size={24} className="sm:w-7 sm:h-7 text-rose-400" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* LEAD PER SETTER */}
@@ -336,7 +382,7 @@ export default function Statistiche() {
           <Users size={24} className="sm:w-7 sm:h-7" /> Lead per Setter
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-          {leadsBySetter.map((s, i) => (
+            {leadsBySetter.map((s, i) => (
             <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <div className="flex items-center gap-2">
@@ -362,9 +408,9 @@ export default function Statistiche() {
               </div>
             </div>
           ))}
-          {leadsBySetter.length === 0 && (
-            <div className="col-span-full text-center py-8 text-slate-400 text-sm">Nessun lead nel periodo</div>
-          )}
+        {leadsBySetter.length === 0 && (
+          <div className="col-span-full text-center py-8 text-slate-400 text-sm">Nessun lead nel periodo</div>
+        )}
         </div>
       </div>
 
