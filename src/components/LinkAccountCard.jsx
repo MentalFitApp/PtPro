@@ -6,7 +6,6 @@ import {
   getLinkedProviders,
   isProviderLinked,
   linkGoogleAccount,
-  linkFacebookAccount,
   unlinkProvider,
   getProviderDisplayName,
   getProviderIcon
@@ -54,23 +53,6 @@ export default function LinkAccountCard() {
     setTimeout(() => setMessage(null), 5000);
   }
 
-  async function handleLinkFacebook() {
-    setLoading(true);
-    setMessage(null);
-
-    const result = await linkFacebookAccount();
-
-    if (result.success) {
-      setMessage({ type: 'success', text: '✅ Account Facebook collegato con successo!' });
-      await loadProviders();
-    } else {
-      setMessage({ type: 'error', text: result.error });
-    }
-
-    setLoading(false);
-    setTimeout(() => setMessage(null), 5000);
-  }
-
   async function handleUnlink(providerId) {
     if (!confirm(`Vuoi davvero scollegare ${getProviderDisplayName(providerId)}?`)) {
       return;
@@ -93,7 +75,6 @@ export default function LinkAccountCard() {
   }
 
   const hasGoogle = isProviderLinked(currentUser, 'google.com');
-  const hasFacebook = isProviderLinked(currentUser, 'facebook.com');
   const hasPassword = isProviderLinked(currentUser, 'password');
 
   return (
@@ -103,7 +84,7 @@ export default function LinkAccountCard() {
           🔗 Metodi di Accesso
         </h3>
         <p className="text-sm text-gray-600">
-          Collega il tuo account a Google o Facebook per accedere più velocemente
+          Collega il tuo account Google per accedere più velocemente
         </p>
       </div>
 
@@ -193,21 +174,6 @@ export default function LinkAccountCard() {
               className="w-5 h-5"
             />
             {loading ? 'Collegamento...' : 'Collega Google'}
-          </button>
-        )}
-
-        {!hasFacebook && (
-          <button
-            onClick={handleLinkFacebook}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <img 
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/facebook.svg"
-              alt="Facebook"
-              className="w-5 h-5"
-            />
-            {loading ? 'Collegamento...' : 'Collega Facebook'}
           </button>
         )}
       </div>
