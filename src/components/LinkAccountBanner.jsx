@@ -65,24 +65,24 @@ export default function LinkAccountBanner() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5 shadow-sm mb-6"
+        className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-2.5 sm:p-4 shadow-sm mb-3 sm:mb-5"
       >
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white rounded-lg shadow-sm flex items-center justify-center">
+        <div className="flex items-start justify-between mb-2 sm:mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-lg shadow-sm flex items-center justify-center flex-shrink-0">
               <img 
                 src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                 alt="Google"
-                className="w-7 h-7"
+                className="w-5 h-5 sm:w-6 sm:h-6"
               />
             </div>
-            <div>
-              <h3 className="font-bold text-gray-900 text-lg">
-                🚀 Accesso più veloce con Google
+            <div className="min-w-0">
+              <h3 className="font-bold text-gray-900 text-xs sm:text-base leading-tight">
+                🚀 Accesso veloce
               </h3>
-              <p className="text-sm text-gray-600">
-                Collega il tuo account Google per entrare in un click
+              <p className="text-xs text-gray-600 leading-tight">
+                Collega Google
               </p>
             </div>
           </div>
@@ -99,19 +99,19 @@ export default function LinkAccountBanner() {
           </button>
         </div>
 
-        {/* Vantaggi */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-          <div className="flex items-center gap-2 text-sm text-gray-700">
+        {/* Vantaggi - nascondi su mobile per risparmiare spazio */}
+        <div className="hidden sm:grid grid-cols-3 gap-2 mb-3">
+          <div className="flex items-center gap-2 text-xs text-gray-700">
             <span className="text-green-500">✓</span>
-            <span>Login con un click</span>
+            <span>Login veloce</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-700">
+          <div className="flex items-center gap-2 text-xs text-gray-700">
             <span className="text-green-500">✓</span>
             <span>Più sicuro</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-700">
+          <div className="flex items-center gap-2 text-xs text-gray-700">
             <span className="text-green-500">✓</span>
-            <span>Non perdi l'account</span>
+            <span>Non perdi account</span>
           </div>
         </div>
 
@@ -134,20 +134,20 @@ export default function LinkAccountBanner() {
         </AnimatePresence>
 
         {/* Pulsanti azione */}
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             onClick={handleLinkGoogle}
             disabled={loading}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-blue-300 rounded-lg font-semibold text-blue-700 hover:bg-blue-50 hover:border-blue-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2.5 bg-white border-2 border-blue-300 rounded-lg font-semibold text-xs sm:text-sm text-blue-700 hover:bg-blue-50 hover:border-blue-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             {loading ? (
               <>
                 <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                <span>Collegamento...</span>
+                <span className="text-sm sm:text-base">Collegamento...</span>
               </>
             ) : (
               <>
-                <span>Collega Google</span>
+                <span className="text-xs sm:text-sm">Collega Google</span>
                 <span>→</span>
               </>
             )}
@@ -156,14 +156,14 @@ export default function LinkAccountBanner() {
           <button
             onClick={handleDismiss}
             disabled={loading}
-            className="px-4 py-3 text-gray-600 hover:text-gray-800 font-medium transition-colors disabled:opacity-50"
+            className="px-3 py-1.5 sm:px-4 sm:py-2.5 text-gray-600 hover:text-gray-800 text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
           >
-            Forse più tardi
+            Più tardi
           </button>
         </div>
 
-        {/* Nota privacy */}
-        <p className="text-xs text-gray-500 mt-3">
+        {/* Nota privacy - nascondi su mobile */}
+        <p className="hidden sm:block text-xs text-gray-500 mt-2">
           ℹ️ Il tuo account email rimane attivo. Potrai sempre accedere con email e password.
         </p>
       </motion.div>

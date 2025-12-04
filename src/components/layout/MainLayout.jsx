@@ -216,8 +216,8 @@ const MobileMenu = ({ isOpen, setIsOpen, isCoach, isCollaboratore, isClient, use
             exit="closed"
             className="fixed left-0 top-0 h-screen w-72 bg-slate-900/98 backdrop-blur-xl border-r border-slate-700/50 z-[70] flex flex-col shadow-2xl lg:hidden overflow-y-auto"
           >
-            {/* Header */}
-            <div className="p-4 border-b border-slate-700/50 flex-shrink-0">
+            {/* Header con Safe Area */}
+            <div className="pt-safe p-4 border-b border-slate-700/50 flex-shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/30">
                   <img 
@@ -733,7 +733,7 @@ export default function MainLayout() {
             className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 shadow-xl will-change-transform"
             style={{ paddingTop: 'env(safe-area-inset-top)' }}
           >
-            <div className="flex items-center justify-between px-4 py-3 safe-area-top">
+            <div className="flex items-center justify-between px-3 py-2 safe-area-top">
               <div className="flex items-center gap-3">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
@@ -752,21 +752,21 @@ export default function MainLayout() {
                     <img 
                       src={branding.logoUrl} 
                       alt={branding.appName}
-                      className="h-8 max-w-[120px] object-contain"
+                      className="h-7 max-w-[100px] object-contain"
                     />
                   ) : (
                     // Fallback al design predefinito
                     <>
-                      <div className="w-8 h-8 rounded-lg overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/30">
+                      <div className="w-7 h-7 rounded-lg overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/30">
                         <img 
                           src="/logo192.PNG" 
                           alt="FitFlow"
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <div>
-                        <h1 className="text-sm font-bold text-white">{branding.appName}</h1>
-                        <p className="text-[10px] text-slate-400">
+                      <div className="hidden xs:block">
+                        <h1 className="text-xs font-bold text-white">{branding.appName}</h1>
+                        <p className="text-[9px] text-slate-400">
                           {isCoach ? branding.coachAreaName.replace('Area ', '') : 
                            isCollaboratore ? branding.collaboratoreAreaName.replace('Area ', '') : 
                            isClient ? branding.clientAreaName.replace('Area ', '') : 
