@@ -120,7 +120,7 @@ const MainLayout = ({ children, title, actions, filters, sortButtons, viewToggle
     <div className="min-h-screen bg-gradient-to-b from-[#1b2735] to-[#090a0f]">
       {/* HEADER */}
       <header className="sticky top-0 z-40 bg-slate-900/50 backdrop-blur-xl border-b border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <button
@@ -183,7 +183,7 @@ const MainLayout = ({ children, title, actions, filters, sortButtons, viewToggle
       </header>
 
       {/* FILTRO + TOGGLE CALENDARIO DESKTOP */}
-      <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+      <div className="hidden lg:block mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 mt-6">
         <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-3 mb-4">
           <div className="flex flex-wrap gap-2 items-center">
             {filters}
@@ -197,7 +197,7 @@ const MainLayout = ({ children, title, actions, filters, sortButtons, viewToggle
       </div>
 
       {/* CONTENUTO */}
-      <main className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4 py-2 sm:py-3">
+      <main className="mx-auto px-2 sm:px-3 lg:px-4 xl:px-6 py-2 sm:py-3">
         {children}
       </main>
     </div>
@@ -668,7 +668,7 @@ export default function Clients() {
   
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#1b2735] to-[#090a0f]">
+    <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
     </div>
   );
@@ -870,7 +870,7 @@ export default function Clients() {
         </div>
 
         {/* HEADER DESKTOP */}
-        <div className="hidden md:block bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-5 space-y-5 mx-3 sm:mx-6">
+        <div className="hidden md:block bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-5 space-y-5 mx-3 sm:mx-4 lg:mx-0">
           {/* HEADER */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
@@ -924,7 +924,7 @@ export default function Clients() {
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mx-3 sm:mx-6 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex items-center justify-between"
+            className="mx-3 sm:mx-4 lg:mx-0 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
               <CheckCircle className="text-blue-400" size={20} />
@@ -955,7 +955,7 @@ export default function Clients() {
 
         {/* CALENDARIO SCADENZE */}
         {showCalendar && (
-          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-slate-700 shadow-xl mx-3 sm:mx-6">
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-slate-700 shadow-xl mx-3 sm:mx-4 lg:mx-0">
             <div className="flex justify-between items-center mb-4">
               <button onClick={() => setMeseCalendario(addMonths(meseCalendario, -1))} className="p-2 hover:bg-slate-700 rounded-lg transition">
                 <ChevronLeft size={18} className="text-slate-400" />
@@ -1043,7 +1043,7 @@ export default function Clients() {
         {viewMode === 'list' && (
           <>
             {/* TABLE - Always visible with horizontal scroll on mobile */}
-            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 md:p-6 border border-slate-700 shadow-xl mx-3 sm:mx-6">
+            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 md:p-4 lg:p-6 border border-slate-700 shadow-xl mx-3 sm:mx-4 lg:mx-0">
               <div className="mobile-table-wrapper relative -mx-3 md:mx-0 overflow-x-auto">
                 {/* Scroll indicator for mobile */}
                 <div className="md:hidden absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none z-10 bg-gradient-to-l from-slate-800/90 to-transparent pl-8 pr-2">
@@ -1060,11 +1060,11 @@ export default function Clients() {
                         className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
                       />
                     </th>
-                    <th className="p-2 md:p-4 min-w-[150px] md:min-w-[180px] font-bold sticky left-0 bg-slate-800/95 z-10">Nome</th>
+                    <th className="p-2 md:p-4 min-w-[150px] md:min-w-[180px] font-bold sticky left-0 z-10">Nome</th>
                     <th className="p-2 md:p-4 min-w-[100px] md:min-w-[140px] font-bold">Inizio</th>
                     <th className="p-2 md:p-4 min-w-[120px] md:min-w-[160px] font-bold">Scadenza</th>
                     <th className="p-2 md:p-4 min-w-[120px] md:min-w-[160px] font-bold">Anamnesi</th>
-                    <th className="p-2 md:p-4 text-right min-w-[100px] md:min-w-[120px] font-bold sticky right-0 bg-slate-800/95 z-10">Azioni</th>
+                    <th className="p-2 md:p-4 text-right min-w-[100px] md:min-w-[120px] font-bold sticky right-0 z-10">Azioni</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1083,7 +1083,7 @@ export default function Clients() {
                             className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
                           />
                         </td>
-                        <td className="p-2 md:p-4 font-medium min-w-[150px] md:min-w-[180px] sticky left-0 bg-slate-800/95">
+                        <td className="p-2 md:p-4 font-medium min-w-[150px] md:min-w-[180px] sticky left-0">
                           <div className="flex items-center justify-between gap-2 md:gap-3">
                             <button onClick={() => navigate(`/client/${c.id}`)} className="text-left hover:text-rose-400 transition-colors truncate flex items-center gap-2">
                               {c.name || "-"}
@@ -1124,7 +1124,7 @@ export default function Clients() {
                           )}
                         </td>
                         <td className="p-2 md:p-4 min-w-[120px] md:min-w-[160px]"><AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} /></td>
-                        <td className="p-2 md:p-4 text-right min-w-[100px] md:min-w-[120px] sticky right-0 bg-slate-800/95">
+                        <td className="p-2 md:p-4 text-right min-w-[100px] md:min-w-[120px] sticky right-0">
                           <div className="flex items-center justify-end gap-1 md:gap-2">
                             <button
                               type="button"
@@ -1165,7 +1165,7 @@ export default function Clients() {
 
         {/* VISTA CARD */}
         {viewMode === 'card' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 sm:gap-6 mx-3 sm:mx-6 max-w-[1800px]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 mx-3 sm:mx-6">
             {filteredAndSortedClients.map((c) => {
               const expiry = toDate(c.scadenza);
               const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
@@ -1231,7 +1231,7 @@ export default function Clients() {
 
         {/* VISTA KANBAN */}
         {viewMode === 'kanban' && (
-          <div className="mx-3 sm:mx-6">
+          <div className="mx-3 sm:mx-4 lg:mx-0">
             <KanbanBoard
               columns={[
                 {

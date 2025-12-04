@@ -1,6 +1,7 @@
 // src/pages/ClientDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, CLIENT_STATUS_STYLES, CLIENT_STATUS_LABELS, DURATION_OPTIONS } from '../../constants/payments';
 import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } from 'firebase/firestore';
 import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
 import { db, toDate, updateStatoPercorso } from '../../firebase'
@@ -21,20 +22,13 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// PathStatusBadge
-const PathStatusBadge = ({ status }) => {
-  const styles = {
-    attivo: "bg-emerald-900/80 text-emerald-300 border border-emerald-500/30",
-    rinnovato: "bg-amber-900/80 text-amber-300 border border-amber-500/30",
-    non_rinnovato: "bg-red-900/80 text-red-400 border border-red-500/30",
-    na: "bg-slate-700/80 text-slate-300 border border-slate-500/30",
-  };
-  const labels = { attivo: 'Attivo', rinnovato: 'In Scadenza', non_rinnovato: 'Scaduto', na: 'N/D' };
-  return <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${styles[status] || styles.na}`}>{labels[status] || 'N/D'}</span>;
-};
+// PathStatusBadge - MEMOIZED
+const PathStatusBadge = React.memo(({ status }) => {
+  return <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${CLIENT_STATUS_STYLES[status] || CLIENT_STATUS_STYLES.na}`}>{CLIENT_STATUS_LABELS[status] || 'N/D'}</span>;
+});
 
-// MODALE ZOOM FOTO
-const PhotoZoomModal = ({ isOpen, onClose, imageUrl, alt }) => {
+// MODALE ZOOM FOTO - MEMOIZED
+const PhotoZoomModal = React.memo(({ isOpen, onClose, imageUrl, alt }) => {
   if (!isOpen) return null;
 
   return (
@@ -65,7 +59,7 @@ const PhotoZoomModal = ({ isOpen, onClose, imageUrl, alt }) => {
       </motion.div>
     </motion.div>
   );
-};
+});
 
 // MODALE RINNOVO
 const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
@@ -121,10 +115,9 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
           <div>
             <label className="block text-sm text-slate-300 mb-1">Mesi di rinnovo</label>
             <select value={months} onChange={e => setMonths(parseInt(e.target.value))} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white">
-              <option value={1}>1 mese</option>
-              <option value={3}>3 mesi</option>
-              <option value={6}>6 mesi</option>
-              <option value={12}>12 mesi</option>
+              {DURATION_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -138,12 +131,12 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
           <div>
             <label className="block text-sm text-slate-300 mb-1">Metodo</label>
             <select value={method} onChange={e => setMethod(e.target.value)} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white">
-              <option value="bonifico">Bonifico</option>
-              <option value="klarna">Klarna 3 rate</option>
-              <option value="paypal">PayPal</option>
-              <option value="cash">Contanti</option>
-              <option value="rateizzato">Rateizzato</option>
-              <option value="altro">Altro</option>
+              <option value={PAYMENT_METHODS.BONIFICO}>{PAYMENT_METHOD_LABELS[PAYMENT_METHODS.BONIFICO]}</option>
+              <option value={PAYMENT_METHODS.KLARNA}>{PAYMENT_METHOD_LABELS[PAYMENT_METHODS.KLARNA]}</option>
+              <option value={PAYMENT_METHODS.PAYPAL}>{PAYMENT_METHOD_LABELS[PAYMENT_METHODS.PAYPAL]}</option>
+              <option value={PAYMENT_METHODS.CASH}>{PAYMENT_METHOD_LABELS[PAYMENT_METHODS.CASH]}</option>
+              <option value={PAYMENT_METHODS.RATEIZZATO}>{PAYMENT_METHOD_LABELS[PAYMENT_METHODS.RATEIZZATO]}</option>
+              <option value={PAYMENT_METHODS.ALTRO}>{PAYMENT_METHOD_LABELS[PAYMENT_METHODS.ALTRO]}</option>
             </select>
             {method === 'altro' && (
               <input 
@@ -307,12 +300,9 @@ const EditPaymentModal = ({ isOpen, onClose, payment, paymentIndex, client, onSa
               onChange={e => setForm({ ...form, paymentMethod: e.target.value })} 
               className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white"
             >
-              <option value="bonifico">Bonifico</option>
-              <option value="klarna">Klarna 3 rate</option>
-              <option value="paypal">PayPal</option>
-              <option value="cash">Contanti</option>
-              <option value="rateizzato">Rateizzato</option>
-              <option value="altro">Altro</option>
+              {Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
             </select>
             {form.paymentMethod === 'altro' && (
               <input 
@@ -429,8 +419,8 @@ const AnamnesiField = ({ label, value }) => (
   </div>
 );
 
-// COMPONENTE TABELLA RATE
-const RateTable = ({ rates, canEdit, onAdd, onUpdate, onDelete, showAmounts }) => {
+// COMPONENTE TABELLA RATE - MEMOIZED
+const RateTable = React.memo(({ rates, canEdit, onAdd, onUpdate, onDelete, showAmounts }) => {
   const [newRate, setNewRate] = useState({ amount: '', dueDate: '', paid: false });
   const [editIdx, setEditIdx] = useState(null);
   const [editRate, setEditRate] = useState({ amount: '', dueDate: '' });
@@ -507,7 +497,12 @@ const RateTable = ({ rates, canEdit, onAdd, onUpdate, onDelete, showAmounts }) =
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Solo re-render se rates, canEdit o showAmounts cambiano
+  return JSON.stringify(prevProps.rates) === JSON.stringify(nextProps.rates) && 
+         prevProps.canEdit === nextProps.canEdit && 
+         prevProps.showAmounts === nextProps.showAmounts;
+});
 
 export default function ClientDetail() {
   const { clientId } = useParams();
@@ -516,7 +511,7 @@ export default function ClientDetail() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('info');
   const [checks, setChecks] = useState([]);
-  const [payments, setPayments] = useState([]);
+  const payments = client?.payments || []; 
   const [anamnesi, setAnamnesi] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -546,6 +541,17 @@ export default function ClientDetail() {
   }
   const isAdmin = userRole === 'admin';
   const isCoach = userRole === 'coach';
+
+  const sortedPayments = React.useMemo(() => {
+    if (!client?.payments) return [];
+    return client.payments
+      .map((p, i) => ({ ...p, originalIndex: i }))
+      .sort((a, b) => {
+        const dateA = toDate(a.paymentDate) || new Date(0);
+        const dateB = toDate(b.paymentDate) || new Date(0);
+        return dateB - dateA;
+      });
+  }, [client?.payments]);
 
   useEffect(() => {
     if (!clientId) {
@@ -607,17 +613,10 @@ export default function ClientDetail() {
       console.error('Errore caricamento checks:', error);
     });
 
-    // === PAGAMENTI ===
-    const paymentsQuery = query(getTenantSubcollection(db, 'clients', clientId, 'payments'), orderBy('paymentDate', 'desc'));
-    const unsubPayments = onSnapshot(paymentsQuery, (snap) => {
-      setPayments(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
-
     return () => {
       unsubClient(); 
       unsubAnamnesi(); 
       unsubChecks(); 
-      unsubPayments();
     };
   }, [clientId, navigate]);
 
@@ -650,24 +649,15 @@ export default function ClientDetail() {
   };
 
   const handleRenewalSaved = () => {
-    const clientRef = getTenantDoc(db, 'clients', clientId);
-    onSnapshot(clientRef, (snap) => {
-      if (snap.exists()) setClient({ id: snap.id, ...snap.data() });
-    });
+    // Il listener principale aggiornerà i dati
   };
 
   const handleEditSaved = () => {
-    const clientRef = getTenantDoc(db, 'clients', clientId);
-    onSnapshot(clientRef, (snap) => {
-      if (snap.exists()) setClient({ id: snap.id, ...snap.data() });
-    });
+    // Il listener principale aggiornerà i dati
   };
 
   const handleExtendSaved = () => {
-    const clientRef = getTenantDoc(db, 'clients', clientId);
-    onSnapshot(clientRef, (snap) => {
-      if (snap.exists()) setClient({ id: snap.id, ...snap.data() });
-    });
+    // Il listener principale aggiornerà i dati
   };
 
   const handleAddRate = async (rate) => {
@@ -849,8 +839,8 @@ export default function ClientDetail() {
                   {showAmounts ? 'Nascondi' : 'Mostra'}
                 </button>
               </div>
-              {payments.length > 0 ? payments.map((p, index) => (
-                <div key={p.id} className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 relative group">
+              {sortedPayments.length > 0 ? sortedPayments.map((p) => (
+                <div key={p.originalIndex} className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 relative group">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <p className="text-sm text-slate-400">Data: {toDate(p.paymentDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
@@ -862,7 +852,7 @@ export default function ClientDetail() {
                     </div>
                     <button
                       onClick={() => {
-                        setEditingPaymentIndex(index);
+                        setEditingPaymentIndex(p.originalIndex);
                         setEditPaymentData({
                           amount: p.amount || 0,
                           duration: p.duration || '',
@@ -999,7 +989,7 @@ export default function ClientDetail() {
             setShowEditPayment(false);
             setEditingPaymentIndex(null);
           }} 
-          payment={editingPaymentIndex !== null ? payments[editingPaymentIndex] : null}
+          payment={editingPaymentIndex !== null && client?.payments ? client.payments[editingPaymentIndex] : null}
           paymentIndex={editingPaymentIndex}
           client={client} 
           onSave={handleRenewalSaved} 

@@ -1,6 +1,8 @@
 // src/pages/admin/DashboardNew.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { PAYMENT_METHODS, PAYMENT_TYPES } from '../../constants/payments';
+import { TIME_RANGES, ACTIVITY_TYPES } from '../../constants';
 import { 
   collection, onSnapshot, query, where, orderBy, getDocs, getDoc, doc, setDoc, serverTimestamp 
 } from "firebase/firestore";
@@ -18,8 +20,8 @@ import {
   Plus, LogOut, User, X, FileText, RefreshCw, Bell
 } from "lucide-react";
 
-// Componente MetricCard con animazione
-function AnimatedMetricCard({ value, label, icon: Icon, gradientFrom, gradientTo, borderColor, iconColor, textColor, suffix = '', prefix = '', badge = null }) {
+// Componente MetricCard con animazione - MEMOIZED
+const AnimatedMetricCard = React.memo(({ value, label, icon: Icon, gradientFrom, gradientTo, borderColor, iconColor, textColor, suffix = '', prefix = '', badge = null, onClick }) => {
   const numericValue = parseFloat(value) || 0;
   const isPercentage = suffix === '%';
   const isCurrency = suffix === '€';
@@ -52,7 +54,8 @@ function AnimatedMetricCard({ value, label, icon: Icon, gradientFrom, gradientTo
         duration: 0.4,
         scale: { duration: 0.4 }
       }}
-      className={`relative bg-gradient-to-br ${gradientFrom} ${gradientTo} backdrop-blur-sm border ${borderColor} rounded-lg p-1.5 sm:p-3 overflow-hidden`}
+      onClick={onClick}
+      className={`relative bg-gradient-to-br ${gradientFrom} ${gradientTo} backdrop-blur-sm border ${borderColor} rounded-lg p-1.5 sm:p-3 overflow-hidden ${onClick ? 'cursor-pointer hover:brightness-110 transition-all' : ''}`}
     >
       {/* Effetto shine quando completa */}
       {isComplete && (
@@ -84,7 +87,10 @@ function AnimatedMetricCard({ value, label, icon: Icon, gradientFrom, gradientTo
       <p className={`text-[9px] sm:text-xs ${textColor} truncate relative z-10`}>{label}</p>
     </motion.div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Solo re-render se value o label cambiano
+  return prevProps.value === nextProps.value && prevProps.label === nextProps.label;
+});
 
 export default function DashboardNew() {
   const navigate = useNavigate();
@@ -98,6 +104,8 @@ export default function DashboardNew() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30'); // giorni
   const [showSettings, setShowSettings] = useState(false);
+  const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
+  const [revenueBreakdownData, setRevenueBreakdownData] = useState([]);
   const [userName, setUserName] = useState('');
   const [currentPhotoURL, setCurrentPhotoURL] = useState(null);
   const [visibleMetrics, setVisibleMetrics] = useState({
@@ -179,28 +187,79 @@ export default function DashboardNew() {
     return () => unsub();
   }, []);
 
-  // Carica tutti i pagamenti dalle subcollection
+  // Carica tutti i pagamenti (array payments + rate pagate) - LISTENER IN TEMPO REALE
   useEffect(() => {
-    const loadPayments = async () => {
+    const unsubscribe = onSnapshot(getTenantCollection(db, 'clients'), (snapshot) => {
       const allPayments = [];
-      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
       
-      for (const clientDoc of clientsSnap.docs) {
-        const paymentsSnap = await getDocs(
-          getTenantSubcollection(db, 'clients', clientDoc.id, 'payments')
-        );
-        paymentsSnap.docs.forEach(payDoc => {
-          allPayments.push({
-            id: payDoc.id,
-            clientId: clientDoc.id,
-            clientName: clientDoc.data().name,
-            ...payDoc.data()
+      snapshot.docs.forEach(clientDoc => {
+        const clientData = clientDoc.data();
+        const clientId = clientDoc.id;
+        const clientName = clientData.name || 'Cliente';
+
+        // 1. Verifica se cliente usa sistema rateale
+        const hasRates = clientData.rate && Array.isArray(clientData.rate) && clientData.rate.length > 0;
+        const isRateizzato = clientData.rateizzato === true;
+
+        // 2. Pagamenti da array 'payments'
+        if (clientData.payments && Array.isArray(clientData.payments)) {
+          clientData.payments.forEach((p, index) => {
+             // Salta SOLO i pagamenti con metodo 'rateizzato' se ci sono rate definite
+             // Gli altri pagamenti (bonifico, paypal, ecc.) devono essere contati
+             if (p.paymentMethod === PAYMENT_METHODS.RATEIZZATO && hasRates && isRateizzato) {
+               return;
+             }
+             allPayments.push({
+               id: `pay_${clientId}_${index}`,
+               clientId,
+               clientName,
+               ...p
+             });
           });
-        });
-      }
+        }
+
+        // 3. Rate pagate da array 'rate' (solo se cliente è flaggato come rateizzato)
+        if (hasRates && isRateizzato) {
+          clientData.rate.forEach((r, index) => {
+            if (r.paid && r.paidDate) {
+              allPayments.push({
+                id: `rate_${clientId}_${index}`,
+                clientId,
+                clientName,
+                amount: parseFloat(r.amount) || 0,
+                paymentDate: r.paidDate,
+                duration: 'Rata',
+                paymentMethod: 'Rateizzato',
+                isRate: true
+              });
+            }
+          });
+        }
+
+        // 4. FALLBACK LEGACY: carica da subcollection se array è vuoto
+        if ((!clientData.payments || clientData.payments.length === 0) && !hasRates) {
+          // Questa chiamata async è ok, verrà eseguita in parallelo
+          getDocs(getTenantSubcollection(db, 'clients', clientId, 'payments')).then(paymentsSnap => {
+            const legacyPayments = [];
+            paymentsSnap.docs.forEach(payDoc => {
+              legacyPayments.push({
+                id: payDoc.id,
+                clientId,
+                clientName,
+                ...payDoc.data()
+              });
+            });
+            if (legacyPayments.length > 0) {
+              setPayments(prev => [...prev, ...legacyPayments]);
+            }
+          });
+        }
+      });
+
       setPayments(allPayments);
-    };
-    loadPayments();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Last viewed
@@ -252,7 +311,7 @@ export default function DashboardNew() {
               if (previousPayments.length > 0) {
                 // È un RINNOVO
                 activities.push({
-                  type: 'renewal',
+                  type: ACTIVITY_TYPES.RENEWAL,
                   clientId: clientDoc.id,
                   clientName: clientData.name || 'Cliente',
                   description: `Ha rinnovato ${paymentData.duration || 'abbonamento'} (${paymentData.amount}€)`,
@@ -261,7 +320,7 @@ export default function DashboardNew() {
               } else {
                 // È un NUOVO CLIENTE
                 activities.push({
-                  type: 'new_payment',
+                  type: ACTIVITY_TYPES.NEW_PAYMENT,
                   clientId: clientDoc.id,
                   clientName: clientData.name || 'Cliente',
                   description: `Nuovo cliente - ${paymentData.duration || 'abbonamento'} (${paymentData.amount}€)`,
@@ -440,6 +499,7 @@ export default function DashboardNew() {
     let renewalsRevenue = 0;
     let newClientsRevenue = 0;
     let renewalsCount = 0;
+    const breakdown = [];
     
     // Per ogni cliente, analizza i pagamenti nel range
     Object.keys(paymentsByClient).forEach(clientId => {
@@ -467,16 +527,35 @@ export default function DashboardNew() {
           return prevDate && prevDate < paymentDate && !p.isPast;
         });
         
+        let type = PAYMENT_TYPES.NEW_CLIENT;
         if (previousPayments.length > 0) {
           // È un rinnovo
           renewalsRevenue += amount;
           renewalsCount++;
+          type = PAYMENT_TYPES.RENEWAL;
         } else {
           // È un nuovo cliente (primo pagamento)
           newClientsRevenue += amount;
         }
+
+        if (payment.isRate) {
+          type = PAYMENT_TYPES.INSTALLMENT;
+        }
+
+        breakdown.push({
+          id: payment.id,
+          clientName: payment.clientName,
+          amount: amount,
+          date: paymentDate,
+          method: payment.paymentMethod || 'N/D',
+          type: type
+        });
       });
     });
+    
+    // Ordina breakdown per data decrescente
+    breakdown.sort((a, b) => b.date - a.date);
+    setRevenueBreakdownData(breakdown);
     
     const revenue = newClientsRevenue + renewalsRevenue; // Totale incassi (nuovi + rinnovi)
     
@@ -545,7 +624,7 @@ export default function DashboardNew() {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-xl p-3 sm:p-5 shadow-2xl mx-2 sm:mx-4"
+          className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-xl p-3 sm:p-5 shadow-2xl mx-2 sm:mx-4 lg:mx-6 xl:mx-8"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
             <div>
@@ -594,7 +673,7 @@ export default function DashboardNew() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mx-1.5 sm:mx-4"
+          className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mx-1.5 sm:mx-4 lg:mx-6 xl:mx-8"
         >
           <motion.button
             whileHover={{ scale: 1.02, y: -2 }}
@@ -635,12 +714,12 @@ export default function DashboardNew() {
         </motion.div>
 
         {/* BANNER COLLEGAMENTO ACCOUNT - Multi-tenant */}
-        <div className="mx-2 sm:mx-4">
+        <div className="mx-2 sm:mx-4 lg:mx-6 xl:mx-8">
           <LinkAccountBanner />
         </div>
 
         {/* FILTRI DASHBOARD */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 mx-1.5 sm:mx-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 mx-1.5 sm:mx-4 lg:mx-6 xl:mx-8">
           <h2 className="text-xs sm:text-base font-semibold text-white flex items-center gap-1.5">
             <BarChart3 size={14} /> Metriche
           </h2>
@@ -695,7 +774,7 @@ export default function DashboardNew() {
         )}
 
         {/* METRICHE COMPATTE - INLINE CON ANIMAZIONE */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1 sm:gap-3 mx-1.5 sm:mx-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1 sm:gap-3 mx-1.5 sm:mx-4 lg:mx-6 xl:mx-8">
           {visibleMetrics.revenue && (
             <AnimatedMetricCard
               value={metrics.revenue}
@@ -708,6 +787,7 @@ export default function DashboardNew() {
               textColor="text-emerald-300"
               suffix="€"
               badge={<TrendingUp className="text-emerald-400" size={10} />}
+              onClick={() => setShowRevenueBreakdown(true)}
             />
           )}
 
@@ -796,7 +876,7 @@ export default function DashboardNew() {
         </div>
 
         {/* TABS PER VISTE DETTAGLIATE */}
-        <div className="flex gap-0.5 overflow-x-auto bg-slate-900/50 p-1 rounded-lg border border-slate-700 mx-1.5 sm:mx-4 scrollbar-hide">
+        <div className="flex gap-0.5 overflow-x-auto bg-slate-900/50 p-1 rounded-lg border border-slate-700 mx-1.5 sm:mx-4 lg:mx-6 xl:mx-8 scrollbar-hide">
           {['overview', 'clienti', 'pagamenti', 'lead', 'scadenze', 'attività'].map(tab => (
             <button
               key={tab}
@@ -818,7 +898,7 @@ export default function DashboardNew() {
         </div>
 
         {/* CONTENUTO TAB */}
-        <div className="bg-slate-800/40 backdrop-blur-sm rounded-lg border border-slate-700 p-1.5 sm:p-3 mx-1.5 sm:mx-4 overflow-x-hidden">
+        <div className="bg-slate-800/40 backdrop-blur-sm rounded-lg border border-slate-700 p-1.5 sm:p-3 mx-1.5 sm:mx-4 lg:mx-6 xl:mx-8 overflow-x-hidden">
           {activeTab === 'overview' && (
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -1110,9 +1190,90 @@ export default function DashboardNew() {
             </div>
           )}
         </div>
+
+        {/* MODALE DETTAGLIO INCASSI */}
+        <AnimatePresence>
+        {showRevenueBreakdown && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowRevenueBreakdown(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <DollarSign className="text-emerald-400" size={20} />
+                    Dettaglio Incassi
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Ultimi {timeRange} giorni • Totale: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(metrics.revenue)}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowRevenueBreakdown(false)}
+                  className="p-2 hover:bg-slate-700 rounded-full text-slate-400 hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                {revenueBreakdownData.length > 0 ? (
+                  revenueBreakdownData.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:border-slate-600 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          item.type === 'Rinnovo' ? 'bg-emerald-500/10 text-emerald-400' : 
+                          item.type === 'Rata' ? 'bg-blue-500/10 text-blue-400' :
+                          'bg-green-500/10 text-green-400'
+                        }`}>
+                          {item.type === 'Rinnovo' ? <RefreshCw size={18} /> : 
+                           item.type === 'Rata' ? <Calendar size={18} /> :
+                           <User size={18} />}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-white text-sm">{item.clientName}</p>
+                          <div className="flex items-center gap-2 text-xs text-slate-400">
+                            <span>{item.date?.toLocaleDateString('it-IT')}</span>
+                            <span>•</span>
+                            <span className="capitalize">{item.method}</span>
+                            <span>•</span>
+                            <span className={`${
+                              item.type === 'Rinnovo' ? 'text-emerald-400' : 
+                              item.type === 'Rata' ? 'text-blue-400' :
+                              'text-green-400'
+                            }`}>{item.type}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-emerald-400">
+                          +{new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(item.amount)}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-slate-500">
+                    <DollarSign size={48} className="mx-auto mb-4 opacity-20" />
+                    <p>Nessun incasso nel periodo selezionato</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+        </AnimatePresence>
       </div>
-
-
     </div>
   );
 }
