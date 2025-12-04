@@ -807,7 +807,7 @@ export default function MainLayout() {
           showSidebar
             ? (isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-[280px]')
             : 'ml-0'
-        } ${showSidebar && isMobile && !isAuthPage ? 'pt-14' : ''}`}>
+        } ${showSidebar && isMobile && !isAuthPage ? 'pt-[4.5rem]' : ''}`}>
           <main className={`min-h-screen bg-transparent ${
             isChatPage ? 'p-0' : 'p-2 xs:p-4 sm:p-6 md:p-8 lg:p-10'
           }`}>
