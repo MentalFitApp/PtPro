@@ -694,12 +694,12 @@ export default function MainLayout() {
   }, [isChatPage, isMobile]);
 
   return (
-    <div className="overflow-x-hidden w-full bg-transparent">
+    <div className="overflow-x-hidden w-full max-w-full bg-transparent">
       {/* SFONDO STELLATO GLOBALE */}
       <div className="starry-background"></div>
       <AnimatedStars />
 
-      <div className="relative min-h-screen flex w-full bg-transparent">
+      <div className="relative min-h-screen flex w-full max-w-full overflow-x-hidden bg-transparent">
         {/* SIDEBAR DESKTOP: SOLO SU PAGINE PROTETTE */}
         {showSidebar && (
           <Sidebar 
@@ -730,10 +730,10 @@ export default function MainLayout() {
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: durations.normal, ease: easings.smooth }}
-            className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 shadow-xl will-change-transform"
-            style={{ paddingTop: 'env(safe-area-inset-top)' }}
+            className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 shadow-xl"
+            style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: '0.5rem' }}
           >
-            <div className="flex items-center justify-between px-3 py-2 safe-area-top">
+            <div className="flex items-center justify-between px-3 py-2">
               <div className="flex items-center gap-3">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
@@ -757,7 +757,7 @@ export default function MainLayout() {
                   ) : (
                     // Fallback al design predefinito
                     <>
-                      <div className="w-7 h-7 rounded-lg overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/30">
+                      <div className="w-6 h-6 rounded-lg overflow-hidden ring-1 ring-blue-500/30">
                         <img 
                           src="/logo192.PNG" 
                           alt="FitFlow"
@@ -765,8 +765,8 @@ export default function MainLayout() {
                         />
                       </div>
                       <div className="hidden xs:block">
-                        <h1 className="text-xs font-bold text-white">{branding.appName}</h1>
-                        <p className="text-[9px] text-slate-400">
+                        <h1 className="text-[11px] font-bold text-white">{branding.appName}</h1>
+                        <p className="text-[8px] text-slate-400">
                           {isCoach ? branding.coachAreaName.replace('Area ', '') : 
                            isCollaboratore ? branding.collaboratoreAreaName.replace('Area ', '') : 
                            isClient ? branding.clientAreaName.replace('Area ', '') : 
@@ -803,11 +803,11 @@ export default function MainLayout() {
         )}
 
         {/* CONTENUTO PRINCIPALE - LARGHEZZA MASSIMA DESKTOP CON STILE PREMIUM */}
-        <div className={`flex-1 transition-all duration-300 bg-transparent ${
+        <div className={`flex-1 transition-all duration-300 bg-transparent overflow-x-hidden ${
           showSidebar
             ? (isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-[280px]')
             : 'ml-0'
-        } ${showSidebar && isMobile && !isAuthPage ? 'pt-20' : ''}`}>
+        } ${showSidebar && isMobile && !isAuthPage ? 'pt-16' : ''}`}>
           <main className={`min-h-screen bg-transparent ${
             isChatPage ? 'p-0' : 'p-2 xs:p-4 sm:p-6 md:p-8 lg:p-10'
           }`}>
