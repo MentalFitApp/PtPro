@@ -70,7 +70,7 @@ class ErrorBoundary extends React.Component {
               </p>
 
               {/* Error Details (Dev Mode) */}
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.DEV && this.state.error && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}

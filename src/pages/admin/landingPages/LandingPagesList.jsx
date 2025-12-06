@@ -1,7 +1,7 @@
 // src/pages/admin/landingPages/LandingPagesList.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../../firebase';
 import { getTenantCollection, getTenantDoc } from '../../../config/tenant';
 import { motion } from 'framer-motion';
@@ -134,7 +134,7 @@ export default function LandingPagesList() {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-3 sm:p-5 shadow-xl mx-2 sm:mx-4"
+            className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-3 sm:p-5 shadow-glow mx-2 sm:mx-4"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
@@ -149,7 +149,7 @@ export default function LandingPagesList() {
 
             <div className="flex gap-2 sm:gap-3 flex-shrink-0">
               {/* Debug: Test salvataggio */}
-              {process.env.NODE_ENV === 'development' && (
+              {import.meta.env.DEV && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -207,7 +207,7 @@ export default function LandingPagesList() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-8 sm:p-12 text-center shadow-xl"
+                className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-8 sm:p-12 text-center shadow-glow"
             >
               <LayoutGrid className="mx-auto text-slate-600 mb-4" size={64} />
               <h3 className="text-xl font-semibold text-white mb-2">
@@ -231,7 +231,7 @@ export default function LandingPagesList() {
                   key={page.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl overflow-hidden hover:border-slate-600 transition-all shadow-lg group"
+                    className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl overflow-hidden hover:border-slate-600 transition-all shadow-glow group"
                 >
                 {/* Preview Image */}
                 <div className="aspect-video bg-slate-900 relative overflow-hidden">
@@ -327,7 +327,7 @@ export default function LandingPagesList() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-xl"
+              className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-glow"
           >
             <h3 className="text-xl font-bold text-white mb-2">
               Conferma Eliminazione

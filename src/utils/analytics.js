@@ -32,7 +32,7 @@ export const useAnalytics = () => {
   const trackEvent = async (eventName, properties = {}) => {
     try {
       // Solo in produzione
-      if (process.env.NODE_ENV !== 'production') {
+      if (!import.meta.env.PROD) {
         console.log('Analytics event:', eventName, properties);
         return;
       }

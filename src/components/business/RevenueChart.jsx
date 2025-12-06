@@ -181,7 +181,7 @@ export default function RevenueChart({ payments, selectedPeriod }) {
   };
 
   return (
-    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
+    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6 shadow-glow">
       <h3 className="text-lg font-semibold text-slate-200 mb-4">
         Trend Revenue nel Tempo
       </h3>

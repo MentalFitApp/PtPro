@@ -130,7 +130,7 @@ export const HoverCard = ({ children, onClick, className = '' }) => (
     whileHover={{ y: -4, scale: 1.01 }}
     whileTap={onClick ? { scale: 0.99 } : {}}
     onClick={onClick}
-    className={`bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 hover:border-cyan-500/50 transition-all cursor-pointer shadow-lg hover:shadow-xl ${className}`}
+    className={`bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 hover:border-cyan-500/50 transition-all cursor-pointer shadow-glow ${className}`}
   >
     {children}
   </motion.div>

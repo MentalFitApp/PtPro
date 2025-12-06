@@ -35,19 +35,21 @@ const ReportStatus = ({ collaboratori }) => {
   }, [collaboratori]);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-slate-700 mx-3 sm:mx-6">
-      <h2 className="text-xs sm:text-sm font-semibold text-slate-200 mb-2 sm:mb-3">Stato Report Oggi</h2>
-      <p className="text-[10px] sm:text-xs"><strong>Completati:</strong> {collaboratori.length - missingReports.length}</p>
-      <p className="text-[10px] sm:text-xs"><strong>Mancanti:</strong> {missingReports.length}</p>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-slate-900/40 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-slate-700/50 mx-3 sm:mx-6">
+      <h2 className="text-sm font-semibold text-white mb-3">Stato Report Oggi</h2>
+      <div className="flex gap-4 text-sm">
+        <p><span className="text-slate-400">Completati:</span> <span className="text-emerald-400 font-medium">{collaboratori.length - missingReports.length}</span></p>
+        <p><span className="text-slate-400">Mancanti:</span> <span className="text-red-400 font-medium">{missingReports.length}</span></p>
+      </div>
       {missingReports.length > 0 && (
-        <div className="mt-1">
-          <p className="text-red-500 text-[10px] sm:text-xs">Mancanti:</p>
-          <ul className="list-disc pl-4 text-[10px] sm:text-xs">
+        <div className="mt-3 pt-3 border-t border-slate-700/50">
+          <p className="text-red-400 text-xs font-medium mb-1">Mancanti:</p>
+          <ul className="list-disc pl-4 text-xs text-slate-300">
             {missingReports.map(name => <li key={name} className="truncate">{name}</li>)}
           </ul>
         </div>
       )}
-      <p className="text-[10px] sm:text-xs text-slate-400 mt-1">Nota: 2 report/giorno richiesti.</p>
+      <p className="text-xs text-slate-500 mt-3">Nota: 2 report/giorno richiesti.</p>
     </motion.div>
   );
 };
@@ -676,84 +678,93 @@ export default function Collaboratori() {
 
   return (
     <div className="mobile-container mobile-safe-bottom">
-      <div className="py-2 sm:py-3 space-y-2 sm:space-y-3">
+      <div className="py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* HEADER */}
-        <motion.header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 w-full min-w-0 mx-2 sm:mx-3">
-          <h1 className="text-lg sm:text-xl font-bold text-slate-50 flex items-center gap-2">
-            <Users size={20} /> Gestione
-          </h1>
-          <div className="flex flex-col sm:flex-row gap-1.5 w-full sm:w-auto">
-            <motion.button
-              onClick={handleSyncLeadsToCalendar}
-              className="flex items-center justify-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs w-full sm:w-auto"
-              whileHover={{ scale: 1.05 }}
-              title="Sincronizza lead esistenti con il calendario"
-            >
-              <CalendarIcon size={14} /> <span className="hidden sm:inline">Sync</span> Cal
-            </motion.button>
-            {isAdmin && (
+        <motion.header className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6 mx-3 sm:mx-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-widest text-slate-500 font-medium">Team</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                <Users size={22} className="text-slate-400" /> Gestione Collaboratori
+              </h1>
+            </div>
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <motion.button
-                onClick={() => setShowFontiModal(true)}
-                className="flex items-center justify-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs w-full sm:w-auto"
-                whileHover={{ scale: 1.05 }}
-                title="Gestisci fonti lead"
+                onClick={handleSyncLeadsToCalendar}
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm transition-colors"
+                whileHover={{ scale: 1.02 }}
+                title="Sincronizza lead esistenti con il calendario"
               >
-                <File size={14} /> <span className="hidden sm:inline">Fonti</span>
+                <CalendarIcon size={16} /> Sync Cal
               </motion.button>
-            )}
-            <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@esempio.com" className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs w-full sm:max-w-[160px]" />
-            <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-2 sm:px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded text-[10px] sm:text-xs w-full sm:w-24">
+              {isAdmin && (
+                <motion.button
+                  onClick={() => setShowFontiModal(true)}
+                  className="flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm transition-colors"
+                  whileHover={{ scale: 1.02 }}
+                  title="Gestisci fonti lead"
+                >
+                  <File size={16} /> Fonti
+                </motion.button>
+              )}
+            </div>
+          </div>
+          
+          {/* Add collaborator form */}
+          <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-700/50">
+            <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@esempio.com" className="px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm flex-1 focus:outline-none focus:border-blue-500/50" />
+            <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm">
               <option>Setter</option>
               <option>Marketing</option>
               <option>Vendita</option>
             </select>
-            <motion.button onClick={handleAddCollaboratore} className="flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg text-[10px] sm:text-xs font-medium w-full sm:w-auto whitespace-nowrap shadow-lg" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Plus size={12} className="sm:w-[14px] sm:h-[14px]" /> Aggiungi
+            <motion.button onClick={handleAddCollaboratore} className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Plus size={16} /> Aggiungi
             </motion.button>
           </div>
         </motion.header>
 
-        {success && <p className="text-green-500 text-center text-xs">{success}</p>}
-        {error && <p className="text-red-500 text-center text-xs">{error}</p>}
+        {success && <p className="text-emerald-400 text-center text-sm bg-emerald-500/10 py-2 rounded-lg mx-3 sm:mx-6">{success}</p>}
+        {error && <p className="text-red-400 text-center text-sm bg-red-500/10 py-2 rounded-lg mx-3 sm:mx-6">{error}</p>}
 
         <ReportStatus collaboratori={collaboratori} />
 
-        {/* STATS LEADS - MOBILE HORIZONTAL, DESKTOP VERTICALE */}
-        <div className="mb-4 mx-3 sm:mx-6">
-          <div className="grid grid-cols-3 lg:grid-cols-3 gap-2 lg:hidden">
+        {/* STATS LEADS - MOBILE */}
+        <div className="mx-3 sm:mx-6">
+          <div className="grid grid-cols-3 gap-3 lg:hidden">
             {[
-              { label: 'Oggi', value: stats.leadsToday, color: 'green' },
+              { label: 'Oggi', value: stats.leadsToday, color: 'emerald' },
               { label: 'Settimana', value: stats.leadsWeek, color: 'cyan' },
               { label: 'Mese', value: stats.leadsMonth, color: 'blue' },
             ].map((stat, i) => (
               <motion.div 
                 key={i} 
-                whileTap={{ scale: 0.95 }} 
-                className="bg-slate-800/60 backdrop-blur-sm rounded-lg p-3 border border-slate-700/50 text-center"
+                whileTap={{ scale: 0.98 }} 
+                className="bg-slate-900/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 text-center"
               >
                 <p className={`text-2xl font-bold text-${stat.color}-400 mb-1`}>{stat.value}</p>
-                <h3 className="text-[10px] font-semibold text-slate-400">{stat.label}</h3>
+                <h3 className="text-xs font-medium text-slate-400">{stat.label}</h3>
               </motion.div>
             ))}
           </div>
         </div>
 
         {/* LAYOUT DESKTOP: STATS + CALENDARIO + ACTIONS */}
-        <div className="hidden lg:grid lg:grid-cols-12 gap-4 mb-6 mx-3 sm:mx-6">
+        <div className="hidden lg:grid lg:grid-cols-12 gap-4 mx-3 sm:mx-6">
           {/* COLONNA SINISTRA: STATS VERTICALI */}
           <div className="lg:col-span-3 space-y-3">
             {[
-              { label: 'Leads Oggi', value: stats.leadsToday, color: 'green' },
+              { label: 'Leads Oggi', value: stats.leadsToday, color: 'emerald' },
               { label: 'Leads Settimana', value: stats.leadsWeek, color: 'cyan' },
               { label: 'Leads Mese', value: stats.leadsMonth, color: 'blue' },
             ].map((stat, i) => (
               <motion.div 
                 key={i} 
-                whileHover={{ scale: 1.03 }} 
-                className="bg-slate-800/60 backdrop-blur-sm rounded-lg p-4 border border-slate-700/50 shadow-xl"
+                whileHover={{ scale: 1.02 }} 
+                className="bg-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-slate-700/50"
               >
-                <h3 className="text-xs font-semibold text-slate-400 mb-2">{stat.label}</h3>
+                <h3 className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-2">{stat.label}</h3>
                 <p className={`text-4xl font-bold text-${stat.color}-400`}>{stat.value}</p>
               </motion.div>
             ))}
@@ -834,19 +845,19 @@ export default function Collaboratori() {
         </div>
 
         {/* SEZIONI PRINCIPALI - GRID CARDS RESPONSIVE */}
-        <div className="grid grid-cols-2 lg:grid-cols-2 gap-2 sm:gap-3 mx-3 sm:mx-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mx-3 sm:mx-6">
           {/* REPORT SETTING */}
           <button 
             onClick={() => setShowReportSetting(true)}
-            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-3 lg:p-4 hover:bg-slate-700/30 transition-colors text-left"
+            className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
           >
-            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-3">
-              <div className="p-2 lg:p-3 rounded-lg bg-cyan-600/20">
-                <FileText size={16} className="text-cyan-400 lg:w-5 lg:h-5" />
+            <div className="flex flex-col gap-3">
+              <div className="p-3 rounded-lg bg-cyan-500/10 w-fit">
+                <FileText size={20} className="text-cyan-400" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-xs lg:text-sm font-bold text-cyan-400 truncate">Report Setting</h3>
-                <p className="text-[10px] lg:text-xs text-slate-400 mt-0.5 lg:mt-1 truncate">Follow-ups, Dialed</p>
+                <h3 className="text-sm font-semibold text-white truncate">Report Setting</h3>
+                <p className="text-xs text-slate-400 mt-1 truncate">Follow-ups, Dialed</p>
               </div>
             </div>
           </button>
@@ -854,15 +865,15 @@ export default function Collaboratori() {
           {/* REPORT VENDITA */}
           <button 
             onClick={() => setShowReportVendita(true)}
-            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-3 lg:p-4 hover:bg-slate-700/30 transition-colors text-left"
+            className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
           >
-            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-3">
-              <div className="p-2 lg:p-3 rounded-lg bg-rose-600/20">
-                <DollarSign size={16} className="text-rose-400 lg:w-5 lg:h-5" />
+            <div className="flex flex-col gap-3">
+              <div className="p-3 rounded-lg bg-rose-500/10 w-fit">
+                <DollarSign size={20} className="text-rose-400" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-xs lg:text-sm font-bold text-rose-400 truncate">Report Vendita</h3>
-                <p className="text-[10px] lg:text-xs text-slate-400 mt-0.5 lg:mt-1 truncate">Chiamate, Offers</p>
+                <h3 className="text-sm font-semibold text-white truncate">Report Vendita</h3>
+                <p className="text-xs text-slate-400 mt-1 truncate">Chiamate, Offers</p>
               </div>
             </div>
           </button>
@@ -870,15 +881,15 @@ export default function Collaboratori() {
           {/* TABELLA LEADS */}
           <button 
             onClick={() => setShowLeadsTable(true)}
-            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-3 lg:p-4 hover:bg-slate-700/30 transition-colors text-left"
+            className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
           >
-            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-3">
-              <div className="p-2 lg:p-3 rounded-lg bg-blue-600/20">
-                <Users size={16} className="text-blue-400 lg:w-5 lg:h-5" />
+            <div className="flex flex-col gap-3">
+              <div className="p-3 rounded-lg bg-blue-500/10 w-fit">
+                <Users size={20} className="text-blue-400" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-xs lg:text-sm font-bold text-slate-200 truncate">Tabella Leads</h3>
-                <p className="text-[10px] lg:text-xs text-slate-400 mt-0.5 lg:mt-1 truncate">{filteredLeads.length} leads</p>
+                <h3 className="text-sm font-semibold text-white truncate">Tabella Leads</h3>
+                <p className="text-xs text-slate-400 mt-1 truncate">{filteredLeads.length} leads</p>
               </div>
             </div>
           </button>
@@ -886,27 +897,29 @@ export default function Collaboratori() {
           {/* LEAD PER FONTE */}
           <button 
             onClick={() => setShowFontiStats(true)}
-            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-3 lg:p-4 hover:bg-slate-700/30 transition-colors text-left"
+            className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
           >
-            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-3">
-              <div className="p-2 lg:p-3 rounded-lg bg-purple-600/20">
-                <File size={16} className="text-purple-400 lg:w-5 lg:h-5" />
+            <div className="flex flex-col gap-3">
+              <div className="p-3 rounded-lg bg-purple-500/10 w-fit">
+                <File size={20} className="text-purple-400" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-xs lg:text-sm font-bold text-purple-400 truncate">Lead per Fonte</h3>
-                <p className="text-[10px] lg:text-xs text-slate-400 mt-0.5 lg:mt-1 truncate">{sourceStats.length} fonti</p>
+                <h3 className="text-sm font-semibold text-white truncate">Lead per Fonte</h3>
+                <p className="text-xs text-slate-400 mt-1 truncate">{sourceStats.length} fonti</p>
               </div>
             </div>
           </button>
+        </div>
 
-          {/* COLLABORATORI */}
+        {/* COLLABORATORI - Full width */}
+        <div className="mx-3 sm:mx-6">
           <button 
             onClick={() => setShowCollaboratoriList(true)}
-            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-3 lg:p-4 hover:bg-slate-700/30 transition-colors text-left col-span-2"
+            className="w-full bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
           >
-            <div className="flex items-center gap-2 lg:gap-3">
-              <div className="p-2 lg:p-3 rounded-lg bg-emerald-600/20 flex-shrink-0">
-                <Users size={16} className="text-emerald-400 lg:w-5 lg:h-5" />
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-emerald-500/10 flex-shrink-0">
+                <Users size={20} className="text-emerald-400" />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="text-xs lg:text-sm font-bold text-emerald-400 truncate">Gestione Collaboratori</h3>

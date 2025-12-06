@@ -185,7 +185,7 @@ export default function CreateLandingPage() {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-3 sm:p-5 shadow-xl mx-2 sm:mx-4"
+          className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-3 sm:p-5 shadow-glow mx-2 sm:mx-4"
         >
           <button
             onClick={() => navigate('/landing-pages')}
@@ -265,7 +265,7 @@ export default function CreateLandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             onSubmit={handleGenerate}
-            className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-4 sm:p-6 shadow-xl space-y-4"
+            className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-4 sm:p-6 shadow-glow space-y-4"
           >
             {mode === 'form' && (
               <>

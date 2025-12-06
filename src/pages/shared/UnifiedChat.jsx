@@ -205,6 +205,18 @@ export default function UnifiedChat() {
       }));
       setChats(chatsData);
       setLoading(false);
+
+      // Aggiorna badge nav con somma degli unread
+      const totalUnread = chatsData.reduce((sum, chat) => {
+        const count = chat.unreadCount?.[currentUser.uid] || 0;
+        return sum + (Number.isFinite(count) ? count : 0);
+      }, 0);
+      try {
+        localStorage.setItem('ff_badge_chat', String(totalUnread));
+        window.dispatchEvent(new Event('ff-badges-updated'));
+      } catch (e) {
+        console.debug('Impossibile salvare badge chat:', e);
+      }
     });
 
     return () => unsubscribe();
@@ -369,8 +381,16 @@ export default function UnifiedChat() {
   const [incomingCall, setIncomingCall] = useState(null);
   const [callDuration, setCallDuration] = useState(0);
   const [dailyCallObject, setDailyCallObject] = useState(null);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const callTimerRef = useRef(null);
   const activeCallMessageRef = useRef(null);
+
+  // Funzione per toggle audio (wrapper per uso esterno)
+  const toggleAudio = async () => {
+    setIsAudioEnabled(prev => !prev);
+  };
 
   // Listener per notifiche videocall e voicecall in arrivo
   useEffect(() => {
@@ -1457,7 +1477,7 @@ function VideoCallInterface({ onClose }) {
   const localParticipant = useLocalParticipant();
   const localVideo = useVideoTrack('local');
   const localAudio = useAudioTrack('local');
-  const { isSharingScreen, startScreenShare, stopScreenShare } = useScreenShare();
+  const { isSharingScreen, startScreenShare, stopScreenShare, screens } = useScreenShare();
 
   // Filtra solo i partecipanti remoti (esclude il locale)
   const remoteParticipantIds = participantIds.filter(id => {

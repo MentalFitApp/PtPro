@@ -232,7 +232,7 @@ export default function LandingPageEditor() {
   return (
     <div className="min-h-screen bg-slate-900">
       {/* Top Toolbar */}
-      <div className="bg-slate-800/60 backdrop-blur-sm border-b border-slate-700 sticky top-0 z-40">
+      <div className="bg-slate-800/60 backdrop-blur-sm border-b border-slate-700 sticky top-0 z-40 shadow-glow">
         <div className="max-w-screen-2xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <button
@@ -417,7 +417,7 @@ export default function LandingPageEditor() {
 
             {/* Sidebar */}
             <div className="col-span-3">
-              <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-4 sticky top-32">
+              <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-4 sticky top-32 shadow-glow">
                 {editingSection && editingSection.id && editingSection.props ? (
                   <SectionPropertiesEditor
                     section={editingSection}

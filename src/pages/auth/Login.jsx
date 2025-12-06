@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { Lock, Mail, Eye, EyeOff, ArrowLeft, Zap, Crown, LogIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getTenantDoc, CURRENT_TENANT_ID } from '../../config/tenant';
@@ -173,6 +173,15 @@ const Login = () => {
       const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
       const isCollaboratore = collabDoc.exists();
 
+      // Aggiorna lastActive nel documento client
+      if (isClient && clientDoc.exists()) {
+        try {
+          await updateDoc(clientDocRef, { lastActive: serverTimestamp() });
+        } catch (e) {
+          console.debug('Could not update lastActive:', e.message);
+        }
+      }
+
       if (isAdmin) {
         sessionStorage.setItem('app_role', 'admin');
         navigate('/');
@@ -241,6 +250,15 @@ const Login = () => {
       const isCoach = coachDoc.exists() && coachDoc.data().uids.includes(userCredential.user.uid);
       const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
       const isCollaboratore = collabDoc.exists();
+
+      // Aggiorna lastActive nel documento client
+      if (isClient && clientDoc.exists()) {
+        try {
+          await updateDoc(clientDocRef, { lastActive: serverTimestamp() });
+        } catch (e) {
+          console.debug('Could not update lastActive:', e.message);
+        }
+      }
 
       if (isAdmin) {
         sessionStorage.setItem('app_role', 'admin');
@@ -391,7 +409,7 @@ const Login = () => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4 }}
-          className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/50 p-8 space-y-6"
+          className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-glow p-8 space-y-6"
         >
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Email */}

@@ -47,7 +47,7 @@ export const UnifiedLayout = ({
 
         {/* Page Content */}
         <motion.main 
-          className="p-4 sm:p-6 lg:p-8"
+          className="min-h-screen p-3 sm:p-4 md:p-5 lg:p-6 xl:p-8 bg-slate-900/40 backdrop-blur-xl"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}

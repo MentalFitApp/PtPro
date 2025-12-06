@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { db } from '../../firebase'
+import { db, auth } from '../../firebase'
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useUserPreferences } from '../../hooks/useUserPreferences';
+import { notifyNewCheck } from '../../services/notificationService';
 
 // --- 1. NUOVE ICONE DA LUCIDE-REACT ---
 import { UploadCloud, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { uploadToR2 } from '../cloudflareStorage.js';
 
-export default function CheckForm({ clientId, onSuccess }) {
+export default function CheckForm({ clientId, clientName, onSuccess }) {
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { weightLabel } = useUserPreferences();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [formError, setFormError] = useState('');
@@ -48,6 +51,13 @@ export default function CheckForm({ clientId, onSuccess }) {
         createdAt: serverTimestamp()
       });
 
+      // Invia notifica al coach
+      try {
+        await notifyNewCheck({ notes: data.notes, weight: data.weight }, clientName || 'Cliente', clientId);
+      } catch (notifError) {
+        console.log('Notifica check non inviata:', notifError);
+      }
+
       reset();
       if(onSuccess) onSuccess(); // Chiama la callback di successo
       
@@ -65,13 +75,13 @@ export default function CheckForm({ clientId, onSuccess }) {
   const labelStyle = "block mb-1 text-sm font-medium text-slate-300";
 
   return (
-    <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-700 p-6">
+    <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-700 p-6 shadow-glow">
       <h3 className="text-xl font-semibold mb-4 text-blue-300 flex items-center gap-2">
         <UploadCloud size={20} /> Nuovo Check
       </h3>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label htmlFor="weight" className={labelStyle}>Peso Attuale (kg)*</label>
+          <label htmlFor="weight" className={labelStyle}>Peso Attuale ({weightLabel})*</label>
            <input
             id="weight"
             type="number"

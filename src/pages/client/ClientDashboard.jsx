@@ -4,7 +4,7 @@ import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/fi
 import { db } from '../../firebase.js';
 import { useNavigate, Link } from 'react-router-dom';
 import { getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone, TrendingUp, Target, Dumbbell, Utensils } from 'lucide-react';
+import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone, TrendingUp, Target, Dumbbell, Utensils, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
 import { useTenantBranding } from '../../hooks/useTenantBranding';
@@ -13,6 +13,7 @@ import WorkoutStreak from '../../components/client/WorkoutStreak';
 import CelebrationMoments from '../../components/client/CelebrationMoments';
 import BlockedAccess from '../../components/client/BlockedAccess';
 import LinkAccountBanner from '../../components/LinkAccountBanner';
+import { NextCallCard, RequestCallCard } from '../../components/calls/CallScheduler';
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-slate-900 flex justify-center items-center">
@@ -32,7 +33,7 @@ const DashboardCard = ({ title, value, subtext, icon, color = 'cyan', variants }
     <motion.div 
       variants={variants}
       whileHover={{ y: -4, scale: 1.02 }}
-      className="bg-slate-800/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-5 border border-slate-700/50 shadow-xl hover:border-blue-500/50 transition-all"
+      className="bg-slate-800/60 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-5 border border-slate-700/50 shadow-glow hover:border-blue-500/50 transition-all"
     >
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div className={`p-2 sm:p-3 rounded-lg ${colorClasses[color]}`}>
@@ -374,6 +375,12 @@ const ClientDashboard = () => {
           {/* Workout Streak */}
           <motion.div variants={itemVariants}>
             <WorkoutStreak compact />
+          </motion.div>
+
+          {/* Sezione Chiamate */}
+          <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <NextCallCard clientId={user?.uid} isAdmin={false} />
+            <RequestCallCard clientId={user?.uid} clientName={clientData?.name} />
           </motion.div>
 
           {/* Azioni Rapide - PRIMA delle abitudini */}

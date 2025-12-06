@@ -149,6 +149,14 @@ export default function CoachClients() {
         });
         
         setAnamnesiStatus(anamnesiStatusTemp);
+        // Badge: clienti senza anamnesi
+        const missingAnamnesi = Object.values(anamnesiStatusTemp).filter(v => !v).length;
+        try {
+          localStorage.setItem('ff_badge_clients', String(missingAnamnesi));
+          window.dispatchEvent(new Event('ff-badges-updated'));
+        } catch (e) {
+          console.debug('Impossibile salvare badge clients (coach):', e);
+        }
         setClients(clientList);
         setLoading(false);
       } catch (error) {
@@ -267,7 +275,7 @@ export default function CoachClients() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-3 mb-4">
+        <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-3 mb-4 shadow-glow">
           <div className="flex flex-wrap gap-2 items-center">
             <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-sm rounded-lg ${filter === 'all' ? 'bg-blue-600 text-white preserve-white' : 'text-slate-400 hover:bg-white/10'}`}>Tutti</button>
             <button onClick={() => setFilter('active')} className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1 ${filter === 'active' ? 'bg-emerald-600 text-white preserve-white' : 'text-emerald-400 hover:bg-emerald-900/30'}`}><CheckCircle size={14}/> Attivi</button>
@@ -298,13 +306,13 @@ export default function CoachClients() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-4"><h3 className="text-sm text-slate-400 mb-1">Totale Clienti</h3><p className="text-2xl font-bold text-white">{stats.total}</p></div>
+          <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-4 shadow-glow"><h3 className="text-sm text-slate-400 mb-1">Totale Clienti</h3><p className="text-2xl font-bold text-white">{stats.total}</p></div>
           <div className="bg-amber-900/20 border border-amber-600/30 rounded-xl p-4"><h3 className="text-sm text-amber-400 mb-1">In Scadenza</h3><p className="text-2xl font-bold text-amber-300">{stats.expiring}</p></div>
           <div className="bg-red-900/20 border border-red-600/30 rounded-xl p-4"><h3 className="text-sm text-red-400 mb-1">Scaduti</h3><p className="text-2xl font-bold text-red-300">{stats.expired}</p></div>
         </div>
 
         {showCalendar && (
-          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-slate-700 shadow-xl mb-6">
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-slate-700 shadow-glow mb-6">
             <div className="flex justify-between items-center mb-4">
               <button onClick={() => setMeseCalendario(addMonths(meseCalendario, -1))} className="p-2 hover:bg-slate-700 rounded-lg"><ChevronLeft size={18} className="text-slate-400"/></button>
               <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2"><Calendar size={18}/> {format(meseCalendario, "MMMM yyyy")}</h3>
@@ -377,7 +385,7 @@ export default function CoachClients() {
         )}
 
         {viewMode === 'list' && (
-          <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 overflow-hidden">
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 overflow-hidden shadow-glow">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left text-slate-300">
                 <thead className="bg-white/5 text-slate-400 uppercase text-xs"><tr><th className="p-4">Nome</th><th className="p-4">Email</th><th className="p-4">Inizio</th><th className="p-4">Scadenza</th><th className="p-4">Stato</th><th className="p-4">Anamnesi</th></tr></thead>
@@ -411,7 +419,7 @@ export default function CoachClients() {
               const expiry = toDate(c.scadenza);
               const days = expiry ? Math.ceil((expiry - new Date()) / 86400000) : null;
               return (
-                <motion.div key={c.id} whileHover={{scale:1.02}} onClick={() => navigate(`/coach/client/${c.id}`)} className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-4 cursor-pointer hover:border-blue-500/50 shadow-lg">
+                <motion.div key={c.id} whileHover={{scale:1.02}} onClick={() => navigate(`/coach/client/${c.id}`)} className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-xl p-4 cursor-pointer hover:border-blue-500/50 shadow-glow">
                   <h3 className="text-lg font-semibold text-white mb-2">{c.name || '-'}</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between"><span className="text-slate-400">Email:</span><span className="text-slate-200">{c.email || '-'}</span></div>
@@ -430,7 +438,7 @@ export default function CoachClients() {
         {/* MODAL CLIENTI DEL GIORNO */}
         {dayModalOpen && (
           <div onClick={() => setDayModalOpen(false)} className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-2xl bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6 shadow-xl max-h-[80vh] overflow-y-auto">
+            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-2xl bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6 shadow-glow max-h-[80vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-slate-100">
                   {calendarType === 'scadenze' ? 'Scadenze' : 'Iscrizioni'} del {dayModalDate && format(dayModalDate, "d MMMM yyyy")}
@@ -476,7 +484,7 @@ export default function CoachClients() {
         {/* MODAL CONFERMA ELIMINAZIONE */}
         {clientToDelete && (
           <div onClick={() => setClientToDelete(null)} className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6 text-center shadow-xl">
+            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6 text-center shadow-glow">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-900/40 mb-4">
                 <AlertCircle className="h-6 w-6 text-red-400" />
               </div>

@@ -12,6 +12,7 @@ import {
   doc
 } from 'firebase/firestore';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../config/tenant';
+import { notifyNewCheck, notifyNewAnamnesi, notifyPayment } from './notificationService';
 
 /**
  * Client Service - Centralizza tutte le operazioni sui clients
@@ -202,13 +203,20 @@ export const getClientChecks = async (db, clientId, limitCount = 50) => {
   }
 };
 
-export const createClientCheck = async (db, clientId, checkData) => {
+export const createClientCheck = async (db, clientId, checkData, clientName = '') => {
   try {
     const checksRef = getTenantSubcollection(db, 'clients', clientId, 'checks');
     const docRef = await addDoc(checksRef, {
       ...checkData,
       createdAt: new Date()
     });
+    
+    // Invia notifica al coach
+    try {
+      await notifyNewCheck({ id: docRef.id, ...checkData }, clientName, clientId);
+    } catch (notifError) {
+      console.log('Notifica check non inviata:', notifError);
+    }
     
     return { id: docRef.id, ...checkData };
   } catch (error) {
@@ -294,13 +302,20 @@ export const getClientAnamnesi = async (db, clientId, limitCount = 10) => {
   }
 };
 
-export const createClientAnamnesi = async (db, clientId, anamnesiData) => {
+export const createClientAnamnesi = async (db, clientId, anamnesiData, clientName = '') => {
   try {
     const anamnesiRef = getTenantSubcollection(db, 'clients', clientId, 'anamnesi');
     const docRef = await addDoc(anamnesiRef, {
       ...anamnesiData,
       createdAt: new Date()
     });
+    
+    // Invia notifica al coach
+    try {
+      await notifyNewAnamnesi({ id: docRef.id, ...anamnesiData }, clientName, clientId);
+    } catch (notifError) {
+      console.log('Notifica anamnesi non inviata:', notifError);
+    }
     
     return { id: docRef.id, ...anamnesiData };
   } catch (error) {

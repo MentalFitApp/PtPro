@@ -79,9 +79,10 @@ export async function updateTenantBranding(tenantId, brandingData) {
  * Da usare nei componenti
  * Include: appName, area names, logoUrl
  */
+import { useState, useEffect } from 'react';
+import { auth } from '../firebase';
+
 export function useTenantBranding() {
-  const { useState, useEffect } = require('react');
-  const { auth } = require('../firebase');
   
   const [branding, setBranding] = useState(defaultBranding);
   const [loading, setLoading] = useState(true);

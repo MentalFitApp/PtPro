@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection, getCoachId } from '../../config/tenant';
 import { ChevronLeft, ChevronRight, Plus, X, Phone, Users, Trash2, Edit, Save, Bell, BellOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { requestNotificationPermission, checkNotificationPermission, scheduleEventNotifications, setupForegroundMessageListener } from '../../utils/notifications';
+import { notifyNewEvent } from '../../services/notificationService';
 import CalendarNotesPanel from '../../components/calendar/CalendarNotesPanel';
 
 export default function CalendarPage() {
@@ -283,6 +284,20 @@ export default function CalendarPage() {
         participants: [],
         timestamp: new Date()
       });
+
+      // Invia notifica evento al coach
+      try {
+        const coachId = await getCoachId();
+        if (coachId && coachId !== auth.currentUser.uid) {
+          await notifyNewEvent({
+            title: newEvent.title,
+            date: dateStr,
+            time: eventTime
+          }, coachId, 'coach');
+        }
+      } catch (notifError) {
+        console.log('Notifica evento non inviata:', notifError);
+      }
 
       setShowEventModal(false);
       setNewEvent({ title: '', time: '', endTime: '', type: 'call', note: '', durationMinutes: 30, participants: [auth.currentUser?.uid || ''], allDay: false });
@@ -839,7 +854,7 @@ export default function CalendarPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-[80] p-4"
           >
             <motion.div
               initial={{ scale: 0.9 }}
@@ -918,7 +933,7 @@ export default function CalendarPage() {
                                   setShowLeadDetails(true);
                                 }
                               }}
-                              className={`bg-slate-800/70 p-3 rounded-lg border border-slate-600 flex justify-between items-start ${
+                              className={`bg-slate-800/70 p-3 rounded-lg border border-slate-600 flex justify-between items-start shadow-glow ${
                                 event.type === 'lead' ? 'cursor-pointer hover:bg-slate-800/90' : ''
                               }`}
                             >

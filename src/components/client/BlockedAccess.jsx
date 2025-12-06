@@ -37,7 +37,7 @@ const BlockedAccess = ({ message, isPartialBlock = false, blockedScreens = [] })
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 max-w-lg w-full shadow-2xl"
+        className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 max-w-lg w-full shadow-glow"
       >
         {/* Icona */}
         <motion.div

@@ -1099,3 +1099,198 @@ exports.autoArchiveInactiveClients = onSchedule({
     throw error;
   }
 });
+
+// ============================================
+// MAGIC LINK - Sistema di accesso semplificato
+// ============================================
+
+/**
+ * Genera un Magic Link per un cliente
+ * Il link permette al cliente di impostare la propria password senza conoscere quella temporanea
+ */
+exports.generateMagicLink = onCall(async (request) => {
+  const { clientId, tenantId, email, name } = request.data;
+
+  console.log('🔗 [MAGIC-LINK] Generazione link per:', email);
+
+  if (!clientId || !tenantId || !email) {
+    throw new Error('Parametri mancanti: clientId, tenantId e email sono richiesti');
+  }
+
+  try {
+    // Genera un token univoco (32 caratteri hex)
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(16).toString('hex');
+    
+    // Scadenza: 48 ore da adesso
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 48);
+
+    // Salva il token nel database
+    const tokenRef = db.collection('magicLinks').doc(token);
+    await tokenRef.set({
+      token,
+      clientId,
+      tenantId,
+      email: email.toLowerCase().trim(),
+      name: name || '',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      expiresAt,
+      used: false,
+      usedAt: null
+    });
+
+    console.log('✅ [MAGIC-LINK] Token generato:', token.substring(0, 8) + '...');
+
+    // Ritorna il link completo
+    const baseUrl = 'https://www.flowfitpro.it';
+    const magicLink = `${baseUrl}/setup/${token}`;
+
+    return { 
+      success: true, 
+      magicLink,
+      expiresAt: expiresAt.toISOString()
+    };
+
+  } catch (error) {
+    console.error('💥 [MAGIC-LINK] Errore generazione:', error);
+    throw new Error('Errore nella generazione del Magic Link');
+  }
+});
+
+/**
+ * Valida un Magic Link token
+ * Ritorna i dati del cliente se il token è valido
+ */
+exports.validateMagicLink = onCall(async (request) => {
+  const { token } = request.data;
+
+  console.log('🔍 [MAGIC-LINK] Validazione token:', token?.substring(0, 8) + '...');
+
+  if (!token) {
+    throw new Error('Token mancante');
+  }
+
+  try {
+    const tokenRef = db.collection('magicLinks').doc(token);
+    const tokenDoc = await tokenRef.get();
+
+    if (!tokenDoc.exists) {
+      console.log('❌ [MAGIC-LINK] Token non trovato');
+      return { valid: false, reason: 'Token non valido o scaduto' };
+    }
+
+    const tokenData = tokenDoc.data();
+
+    // Controlla se già usato
+    if (tokenData.used) {
+      console.log('❌ [MAGIC-LINK] Token già utilizzato');
+      return { valid: false, reason: 'Questo link è già stato utilizzato' };
+    }
+
+    // Controlla scadenza
+    const now = new Date();
+    const expiresAt = tokenData.expiresAt?.toDate ? tokenData.expiresAt.toDate() : new Date(tokenData.expiresAt);
+    if (now > expiresAt) {
+      console.log('❌ [MAGIC-LINK] Token scaduto');
+      return { valid: false, reason: 'Questo link è scaduto. Richiedi un nuovo link al tuo coach.' };
+    }
+
+    console.log('✅ [MAGIC-LINK] Token valido per:', tokenData.email);
+
+    return {
+      valid: true,
+      email: tokenData.email,
+      name: tokenData.name,
+      clientId: tokenData.clientId,
+      tenantId: tokenData.tenantId
+    };
+
+  } catch (error) {
+    console.error('💥 [MAGIC-LINK] Errore validazione:', error);
+    throw new Error('Errore nella validazione del link');
+  }
+});
+
+/**
+ * Completa il setup account: imposta la nuova password e marca il token come usato
+ */
+exports.completeMagicLinkSetup = onCall(async (request) => {
+  const { token, newPassword } = request.data;
+
+  console.log('🔐 [MAGIC-LINK] Completamento setup per token:', token?.substring(0, 8) + '...');
+
+  if (!token || !newPassword) {
+    throw new Error('Token e password sono richiesti');
+  }
+
+  if (newPassword.length < 6) {
+    throw new Error('La password deve essere di almeno 6 caratteri');
+  }
+
+  try {
+    // Valida il token
+    const tokenRef = db.collection('magicLinks').doc(token);
+    const tokenDoc = await tokenRef.get();
+
+    if (!tokenDoc.exists) {
+      throw new Error('Token non valido');
+    }
+
+    const tokenData = tokenDoc.data();
+
+    if (tokenData.used) {
+      throw new Error('Questo link è già stato utilizzato');
+    }
+
+    const now = new Date();
+    const expiresAt = tokenData.expiresAt?.toDate ? tokenData.expiresAt.toDate() : new Date(tokenData.expiresAt);
+    if (now > expiresAt) {
+      throw new Error('Questo link è scaduto');
+    }
+
+    // Trova l'utente Firebase Auth tramite email
+    let userRecord;
+    try {
+      userRecord = await admin.auth().getUserByEmail(tokenData.email);
+    } catch (authError) {
+      if (authError.code === 'auth/user-not-found') {
+        throw new Error('Account non trovato. Contatta il tuo coach.');
+      }
+      throw authError;
+    }
+
+    // Aggiorna la password dell'utente
+    await admin.auth().updateUser(userRecord.uid, {
+      password: newPassword
+    });
+
+    console.log('✅ [MAGIC-LINK] Password aggiornata per:', tokenData.email);
+
+    // Marca il token come usato
+    await tokenRef.update({
+      used: true,
+      usedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Aggiorna il documento cliente per rimuovere la password temporanea
+    const clientRef = db.collection('tenants').doc(tokenData.tenantId).collection('clients').doc(tokenData.clientId);
+    await clientRef.update({
+      tempPassword: admin.firestore.FieldValue.delete(),
+      passwordSetAt: admin.firestore.FieldValue.serverTimestamp(),
+      accountActivated: true
+    });
+
+    console.log('✅ [MAGIC-LINK] Setup completato per:', tokenData.email);
+
+    return { 
+      success: true, 
+      email: tokenData.email,
+      message: 'Account attivato con successo! Ora puoi accedere.'
+    };
+
+  } catch (error) {
+    console.error('💥 [MAGIC-LINK] Errore completamento:', error);
+    throw new Error(error.message || 'Errore nel completamento del setup');
+  }
+});

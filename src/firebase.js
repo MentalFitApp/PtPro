@@ -6,6 +6,7 @@ import { getStorage } from "firebase/storage";
 import { getMessaging, isSupported } from "firebase/messaging";
 import { getFunctions } from "firebase/functions";
 import { getTenantDoc } from "./config/tenant";
+import { CLIENT_STATUS } from "./constants/payments";
 
 // CONFIGURAZIONE CON FALLBACK → così il build Vercel NON crasha mai
 const firebaseConfig = {
@@ -54,9 +55,9 @@ export const toDate = (x) => {
 };
 
 export const calcolaStatoPercorso = (dataScadenza) => {
-  if (!dataScadenza) return "N/D";
+  if (!dataScadenza) return CLIENT_STATUS.NA;
   const scadenza = toDate(dataScadenza);
-  if (!scadenza) return "N/D";
+  if (!scadenza) return CLIENT_STATUS.NA;
 
   const oggi = new Date();
   oggi.setHours(0, 0, 0, 0);
@@ -64,9 +65,9 @@ export const calcolaStatoPercorso = (dataScadenza) => {
 
   const diffGiorni = Math.ceil((scadenza - oggi) / (1000 * 60 * 60 * 24));
 
-  if (diffGiorni < 0) return "Scaduto";
-  if (diffGiorni <= 7) return "In scadenza";
-  return "Attivo";
+  if (diffGiorni < 0) return CLIENT_STATUS.NOT_RENEWED;
+  if (diffGiorni <= 7) return CLIENT_STATUS.RENEWED;
+  return CLIENT_STATUS.ACTIVE;
 };
 
 export const updateStatoPercorso = async (userId) => {

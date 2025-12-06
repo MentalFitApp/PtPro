@@ -10,6 +10,7 @@ import {
   doc
 } from 'firebase/firestore';
 import { getTenantCollection } from '../config/tenant';
+import { notifyNewLead } from './notificationService';
 
 /**
  * Lead Service - Gestione leads e conversioni
@@ -58,6 +59,13 @@ export const createLead = async (db, leadData) => {
       createdAt: new Date(),
       status: leadData.status || 'nuovo'
     });
+    
+    // Invia notifica al coach
+    try {
+      await notifyNewLead({ id: docRef.id, ...leadData });
+    } catch (notifError) {
+      console.log('Notifica lead non inviata:', notifError);
+    }
     
     return { id: docRef.id, ...leadData };
   } catch (error) {

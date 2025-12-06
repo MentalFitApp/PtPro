@@ -53,6 +53,9 @@ module.exports = {
         'safe-left': 'env(safe-area-inset-left)',
         'safe-right': 'env(safe-area-inset-right)',
       },
+      boxShadow: {
+        glow: '0 0 0 1px rgba(255,255,255,0.08), 0 12px 35px rgba(0,0,0,0.45), 0 0 24px rgba(148,163,184,0.18)',
+      },
     },
   },
   plugins: [],

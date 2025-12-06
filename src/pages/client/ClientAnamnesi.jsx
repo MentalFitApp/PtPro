@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../firebase.js';
-import { getTenantSubcollection } from '../../config/tenant';
+import { getTenantSubcollection, getTenantDoc } from '../../config/tenant';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, FilePenLine, Camera, UploadCloud, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadPhoto } from '../../storageUtils.js';
+import { useUserPreferences } from '../../hooks/useUserPreferences';
 
 const Notification = ({ message, type, onDismiss }) => (
   <AnimatePresence>
@@ -83,6 +84,7 @@ const PhotoUploader = ({ type, label, onFileSelect, previewUrl, disabled }) => {
 };
 
 const ClientAnamnesi = () => {
+  const { formatWeight, formatLength } = useUserPreferences();
   const [anamnesiData, setAnamnesiData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -193,6 +195,13 @@ const ClientAnamnesi = () => {
       const anamnesiCollectionRef = getTenantSubcollection(db, 'clients', user.uid, 'anamnesi');
       await setDoc(doc(anamnesiCollectionRef.firestore, anamnesiCollectionRef.path, 'initial'), dataToSave, { merge: true });
 
+      // Aggiorna lastActive nel documento client
+      try {
+        await updateDoc(getTenantDoc(db, 'clients', user.uid), { lastActive: serverTimestamp() });
+      } catch (e) {
+        console.debug('Could not update lastActive:', e.message);
+      }
+
       setAnamnesiData(dataToSave);
       setPhotos({ front: null, right: null, left: null, back: null });
       setPhotoPreviews(normalizePhotoURLs(photoURLs));
@@ -223,7 +232,7 @@ const ClientAnamnesi = () => {
 
   const inputStyle = "w-full p-2.5 mt-1 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-cyan-500 text-white placeholder:text-slate-400";
   const labelStyle = "block text-sm font-medium text-slate-300";
-  const sectionStyle = "bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 shadow-lg";
+  const sectionStyle = "bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 shadow-glow";
   const headingStyle = "font-bold mb-4 text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 flex items-center gap-2";
 
   const ViewField = ({ label, value }) => (
@@ -282,8 +291,8 @@ const ClientAnamnesi = () => {
                 <div><label className={labelStyle}>Cognome</label><input {...register('lastName')} className={inputStyle} /></div>
                 <div><label className={labelStyle}>Data di Nascita</label><input type="date" {...register('birthDate')} className={inputStyle} /></div>
                 <div><label className={labelStyle}>Che lavoro fai?</label><input {...register('job')} className={inputStyle} placeholder="Es. Impiegato, studente..." /></div>
-                <div><label className={labelStyle}>Peso (kg)</label><input type="number" step="0.1" {...register('weight')} className={inputStyle} placeholder="Es. 75.5" /></div>
-                <div><label className={labelStyle}>Altezza (cm)</label><input type="number" {...register('height')} className={inputStyle} placeholder="Es. 180" /></div>
+                <div><label className={labelStyle}>Peso</label><input type="number" step="0.1" {...register('weight')} className={inputStyle} placeholder="Es. 75.5" /></div>
+                <div><label className={labelStyle}>Altezza</label><input type="number" {...register('height')} className={inputStyle} placeholder="Es. 180" /></div>
               </div>
             </div>
 
@@ -391,8 +400,8 @@ const ClientAnamnesi = () => {
                   <ViewField label="Cognome" value={anamnesiData.lastName} />
                   <ViewField label="Data di Nascita" value={anamnesiData.birthDate} />
                   <ViewField label="Lavoro" value={anamnesiData.job} />
-                  <ViewField label="Peso (kg)" value={anamnesiData.weight} />
-                  <ViewField label="Altezza (cm)" value={anamnesiData.height} />
+                  <ViewField label="Peso" value={formatWeight(anamnesiData.weight)} />
+                  <ViewField label="Altezza" value={formatLength(anamnesiData.height)} />
                 </div>
               </div>
 

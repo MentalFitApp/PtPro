@@ -111,16 +111,11 @@ html, body {
 /* ========================================
    PERFORMANCE & SMOOTH TRANSITIONS
    ======================================== */
-/* Ottimizzazione animazioni hardware-accelerate */
-* {
+/* Ottimizzazione animazioni hardware-accelerate (scoped, non globale) */
+.animated-3d {
   -webkit-backface-visibility: hidden;
-  -moz-backface-visibility: hidden;
-  -ms-backface-visibility: hidden;
   backface-visibility: hidden;
-  -webkit-perspective: 1000;
-  -moz-perspective: 1000;
-  -ms-perspective: 1000;
-  perspective: 1000;
+  transform: translateZ(0);
 }
 
 .will-change-transform {
@@ -159,8 +154,7 @@ html, body {
 }
 
 /* Ottimizzazione scroll */
-* {
-  -webkit-overflow-scrolling: touch;
+.smooth-scroll {
   scroll-behavior: smooth;
 }
 
@@ -1307,23 +1301,29 @@ html, body {
   }
 }
 
+/* Additional accessibility and motion safeguards */
+.theme-preload *, .no-transitions * { transition: none !important; }
+
+:where(button, [type="button"], [type="submit"], [role="button"], a, input, textarea, select):focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+}
+
+/* Reduce motion: disable non-essential animations/transitions */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .page-transition, .smooth-transition, .smooth-transform { transition: none !important; }
+  .starry-background, .stars, .star { animation: none !important; }
+}
+
+/* Mobile performance: tone down heavy backgrounds */
+@media (max-width: 640px) {
+  .starry-background { display: none; }
+}
+
 /* ========================================
    CHART.JS THEME STYLES
-   ======================================== */
-
-/* Dark theme - Chart colors */
-[data-theme="dark"] canvas {
-  filter: none;
-}
-
-/* Light theme - Chart visibility */
-[data-theme="light"] canvas {
-  filter: none;
-}
-
-/* Light theme - Chart container backgrounds */
-[data-theme="light"] .chart-container,
-[data-theme="light"] [class*="chart"] {
   background-color: transparent !important;
 }
 

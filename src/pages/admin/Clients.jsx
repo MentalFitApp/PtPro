@@ -57,10 +57,14 @@ const exportToCSV = (clients) => {
 
   const csv = Papa.unparse(data);
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'clienti.csv';
+  link.href = url;
+  link.setAttribute('download', 'clienti.csv');
+  document.body.appendChild(link);
   link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
 const AnamnesiBadge = ({ hasAnamnesi }) => (
@@ -117,11 +121,11 @@ const MainLayout = ({ children, title, actions, filters, sortButtons, viewToggle
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#1b2735] to-[#090a0f]">
+    <div className="min-h-screen bg-transparent">
       {/* HEADER */}
-      <header className="sticky top-0 z-40 bg-slate-900/50 backdrop-blur-xl border-b border-slate-700">
-        <div className="mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
-          <div className="flex items-center justify-between h-16">
+      <header className="sticky top-0 z-40 bg-slate-900/40 backdrop-blur-xl border-b border-slate-800/70">
+        <div className="w-full px-0 sm:px-0">
+          <div className="flex items-center justify-between h-16 px-3 sm:px-4">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -150,7 +154,7 @@ const MainLayout = ({ children, title, actions, filters, sortButtons, viewToggle
 
         {/* MENU MOBILE */}
         <AnimatePresence>
-          {mobileActionsOpen && (
+          {mobileMenuOpen && (
             <motion.div
               initial={{ height: 0 }}
               animate={{ height: 'auto' }}
@@ -183,8 +187,8 @@ const MainLayout = ({ children, title, actions, filters, sortButtons, viewToggle
       </header>
 
       {/* FILTRO + TOGGLE CALENDARIO DESKTOP */}
-      <div className="hidden lg:block mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 mt-6">
-        <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-3 mb-4">
+      <div className="hidden lg:block w-full px-0 mt-4">
+        <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/70 rounded-lg p-3 mb-4">
           <div className="flex flex-wrap gap-2 items-center">
             {filters}
             <div className="ml-auto flex gap-2">
@@ -197,7 +201,7 @@ const MainLayout = ({ children, title, actions, filters, sortButtons, viewToggle
       </div>
 
       {/* CONTENUTO */}
-      <main className="mx-auto px-2 sm:px-3 lg:px-4 xl:px-6 py-2 sm:py-3">
+      <main className="w-full px-0 py-0">
         {children}
       </main>
     </div>
@@ -377,6 +381,15 @@ export default function Clients() {
           anamnesiStatusTemp[result.clientId] = result.hasAnamnesi;
         });
         setAnamnesiStatus(anamnesiStatusTemp);
+
+        // Badge: clienti senza anamnesi
+        const missingAnamnesi = Object.values(anamnesiStatusTemp).filter(v => !v).length;
+        try {
+          localStorage.setItem('ff_badge_clients', String(missingAnamnesi));
+          window.dispatchEvent(new Event('ff-badges-updated'));
+        } catch (e) {
+          console.debug('Impossibile salvare badge clients:', e);
+        }
 
         // Calcolo totale incasso dalle rate pagate + payments collection usando service
         const paymentsTotalsTemp = {};
@@ -870,7 +883,7 @@ export default function Clients() {
         </div>
 
         {/* HEADER DESKTOP */}
-        <div className="hidden md:block bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-5 space-y-5 mx-3 sm:mx-4 lg:mx-0">
+        <div className="hidden md:block bg-slate-900/60 border border-white/10 shadow-glow rounded-2xl p-6 space-y-5 mx-3 sm:mx-6">
           {/* HEADER */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
@@ -924,7 +937,7 @@ export default function Clients() {
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mx-3 sm:mx-4 lg:mx-0 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex items-center justify-between"
+            className="mx-3 sm:mx-6 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
               <CheckCircle className="text-blue-400" size={20} />
@@ -955,7 +968,7 @@ export default function Clients() {
 
         {/* CALENDARIO SCADENZE */}
         {showCalendar && (
-          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-slate-700 shadow-xl mx-3 sm:mx-4 lg:mx-0">
+          <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-slate-700 shadow-xl mx-3 sm:mx-6">
             <div className="flex justify-between items-center mb-4">
               <button onClick={() => setMeseCalendario(addMonths(meseCalendario, -1))} className="p-2 hover:bg-slate-700 rounded-lg transition">
                 <ChevronLeft size={18} className="text-slate-400" />
@@ -1042,17 +1055,120 @@ export default function Clients() {
         {/* VISTA LISTA - Table with horizontal scroll on mobile */}
         {viewMode === 'list' && (
           <>
-            {/* TABLE - Always visible with horizontal scroll on mobile */}
-            <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 md:p-4 lg:p-6 border border-slate-700 shadow-xl mx-3 sm:mx-4 lg:mx-0">
-              <div className="mobile-table-wrapper relative -mx-3 md:mx-0 overflow-x-auto">
-                {/* Scroll indicator for mobile */}
-                <div className="md:hidden absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none z-10 bg-gradient-to-l from-slate-800/90 to-transparent pl-8 pr-2">
-                  <ChevronRight size={20} className="text-slate-400 animate-pulse" />
+            {/* Mobile filter pills */}
+            <div className="md:hidden sticky top-16 z-30 px-3 mb-3">
+              <div className="flex gap-2 overflow-x-auto py-2 px-2 rounded-xl bg-slate-900/70 backdrop-blur-lg border border-slate-700/70 scrollbar-hide">
+                {[{ key: 'all', label: 'Tutti' }, { key: 'active', label: 'Attivi' }, { key: 'expiring', label: 'In scadenza' }, { key: 'expired', label: 'Scaduti' }].map(opt => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setFilter(opt.key)}
+                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors whitespace-nowrap ${
+                      filter === opt.key
+                        ? 'bg-rose-600 text-white preserve-white border-rose-500'
+                        : 'bg-slate-800/70 text-slate-200 border-slate-600 hover:border-slate-500'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setFilter('all')}
+                  className="px-3 py-1.5 text-xs rounded-full border border-slate-600 text-slate-200 hover:border-slate-500 whitespace-nowrap"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            {/* MOBILE CARD STACK */}
+            <div className="md:hidden space-y-4 px-0">
+              {filteredAndSortedClients.map((c) => {
+                const expiry = toDate(c.scadenza);
+                const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                const totalPayments = paymentsTotals[c.id] ?? 0;
+
+                const expiryColor = daysToExpiry === null
+                  ? 'text-slate-400'
+                  : daysToExpiry < 0
+                    ? 'text-red-400'
+                    : daysToExpiry <= 7
+                      ? 'text-amber-400'
+                      : 'text-emerald-400';
+
+                return (
+                  <div key={c.id} className="bg-slate-900/70 backdrop-blur-xl border border-slate-800 rounded-xl p-4 shadow-xl">
+                    <div className="flex justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-base font-semibold text-white truncate">{c.name || '-'}</p>
+                          {c.isArchived && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] rounded bg-slate-600/40 text-slate-200 border border-slate-500/60 whitespace-nowrap">
+                              <Archive size={10} /> Archiviato
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 truncate">{c.email || 'Email non presente'}</p>
+                        <p className="text-xs text-slate-500 truncate">{c.phone || 'Telefono non presente'}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[11px] px-2 py-1 rounded-full bg-cyan-900/50 text-cyan-200 border border-cyan-600/50 inline-block mb-1">
+                          €{totalPayments.toFixed(2)}
+                        </span>
+                        <p className={`text-xs font-medium ${expiryColor}`}>
+                          {expiry ? expiry.toLocaleDateString('it-IT') : 'N/D'}
+                        </p>
+                        {daysToExpiry !== null && (
+                          <p className="text-[10px] text-slate-400">{daysToExpiry < 0 ? 'Scaduto' : `${daysToExpiry} gg`}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-300">
+                      <div className="bg-slate-900/70 rounded-lg px-3 py-2 border border-slate-800">
+                        <p className="text-[10px] text-slate-400">Inizio</p>
+                        <p className="font-medium text-white">{toDate(c.startDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
+                      </div>
+                      <div className="bg-slate-900/70 rounded-lg px-3 py-2 border border-slate-800">
+                        <p className="text-[10px] text-slate-400">Anamnesi</p>
+                        <div className="mt-1"><AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} /></div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/client/${c.id}`)}
+                        className="w-full py-2.5 rounded-lg bg-rose-600 text-white preserve-white text-sm font-semibold hover:bg-rose-700 transition"
+                      >
+                        Dettagli
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/edit/${c.id}`)}
+                        className="w-full py-2.5 rounded-lg bg-slate-700 text-slate-100 text-sm font-semibold hover:bg-slate-600 transition border border-slate-600"
+                      >
+                        Modifica
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {filteredAndSortedClients.length === 0 && (
+                <div className="text-center py-12 text-slate-500">
+                  <Search size={48} className="mx-auto mb-3 opacity-50" />
+                  <p className="text-sm">Nessun cliente trovato</p>
                 </div>
-                <table className="w-full min-w-[800px] text-xs md:text-sm text-left text-slate-300">
-                <thead className="text-slate-400 uppercase text-[10px] md:text-xs">
-                  <tr>
-                    <th className="p-2 md:p-4 w-12">
+              )}
+            </div>
+
+            {/* TABLE - Desktop professional view */}
+            <div className="hidden md:block bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden mx-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                <thead className="bg-slate-800/60">
+                  <tr className="border-b border-slate-700/50">
+                    <th className="px-4 py-3 w-12">
                       <input
                         type="checkbox"
                         checked={selectedClients.length === filteredAndSortedClients.length && filteredAndSortedClients.length > 0}
@@ -1060,11 +1176,11 @@ export default function Clients() {
                         className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
                       />
                     </th>
-                    <th className="p-2 md:p-4 min-w-[150px] md:min-w-[180px] font-bold sticky left-0 z-10">Nome</th>
-                    <th className="p-2 md:p-4 min-w-[100px] md:min-w-[140px] font-bold">Inizio</th>
-                    <th className="p-2 md:p-4 min-w-[120px] md:min-w-[160px] font-bold">Scadenza</th>
-                    <th className="p-2 md:p-4 min-w-[120px] md:min-w-[160px] font-bold">Anamnesi</th>
-                    <th className="p-2 md:p-4 text-right min-w-[100px] md:min-w-[120px] font-bold sticky right-0 z-10">Azioni</th>
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Nome</th>
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Inizio</th>
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Scadenza</th>
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Anamnesi</th>
+                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 text-right">Azioni</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1074,8 +1190,12 @@ export default function Clients() {
                     const totalPayments = paymentsTotals[c.id] ?? 0;
 
                     return (
-                      <tr key={c.id} className={`border-t border-white/10 hover:bg-white/10 transition-all ${selectedClients.includes(c.id) ? 'bg-blue-500/5' : ''}`}>
-                        <td className="p-2 md:p-4">
+                      <tr 
+                        key={c.id} 
+                        onClick={() => navigate(`/client/${c.id}`)}
+                        className={`border-b border-slate-700/30 transition-colors hover:bg-slate-800/50 cursor-pointer ${selectedClients.includes(c.id) ? 'bg-blue-500/10' : ''}`}
+                      >
+                        <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
                             checked={selectedClients.includes(c.id)}
@@ -1083,25 +1203,25 @@ export default function Clients() {
                             className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
                           />
                         </td>
-                        <td className="p-2 md:p-4 font-medium min-w-[150px] md:min-w-[180px] sticky left-0">
-                          <div className="flex items-center justify-between gap-2 md:gap-3">
-                            <button onClick={() => navigate(`/client/${c.id}`)} className="text-left hover:text-rose-400 transition-colors truncate flex items-center gap-2">
+                        <td className="px-4 py-3.5 font-medium text-slate-100">
+                          <div className="flex items-center justify-between gap-3">
+                            <button onClick={(e) => { e.stopPropagation(); navigate(`/client/${c.id}`); }} className="text-left hover:text-blue-400 transition-colors truncate flex items-center gap-2">
                               {c.name || "-"}
                               {c.isArchived && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded bg-slate-600/40 text-slate-300 border border-slate-500/50">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded bg-slate-700/50 text-slate-400 border border-slate-600/50">
                                   <Archive size={10} /> Archiviato
                                 </span>
                               )}
                             </button>
-                            <span className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-full bg-cyan-900/40 text-cyan-300 border border-cyan-600/50 whitespace-nowrap">
+                            <span className="text-xs px-2 py-1 rounded-md bg-cyan-500/10 text-cyan-400 font-medium">
                               €{totalPayments.toFixed(2)}
                             </span>
                           </div>
                         </td>
-                        <td className="p-2 md:p-4 min-w-[100px] md:min-w-[140px] text-[10px] md:text-xs">{toDate(c.startDate)?.toLocaleDateString('it-IT') || 'N/D'}</td>
-                        <td className="p-2 md:p-4 min-w-[120px] md:min-w-[160px]">
+                        <td className="px-4 py-3.5 text-slate-300">{toDate(c.startDate)?.toLocaleDateString('it-IT') || 'N/D'}</td>
+                        <td className="px-4 py-3.5">
                           {expiry ? (
-                            <div className="flex items-center gap-1 md:gap-2">
+                            <div className="flex items-center gap-2">
                               <span className={`font-medium ${
                                 daysToExpiry < 0 ? 'text-red-400' : 
                                 daysToExpiry <= 7 ? 'text-amber-400' : 
@@ -1110,12 +1230,12 @@ export default function Clients() {
                                 {expiry.toLocaleDateString('it-IT')}
                               </span>
                               {daysToExpiry !== null && (
-                                <span className={`text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded-full font-medium whitespace-nowrap ${
-                                  daysToExpiry < 0 ? 'bg-red-900/40 text-red-300 border border-red-600/50' 
-                                  : daysToExpiry <= 7 ? 'bg-amber-900/40 text-amber-300 border border-amber-600/50'
-                                  : 'bg-emerald-900/40 text-emerald-300 border border-emerald-600/50'
+                                <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+                                  daysToExpiry < 0 ? 'bg-red-500/10 text-red-400' 
+                                  : daysToExpiry <= 7 ? 'bg-amber-500/10 text-amber-400'
+                                  : 'bg-emerald-500/10 text-emerald-400'
                                 }`}>
-                                  {daysToExpiry < 0 ? 'Scaduto' : `${daysToExpiry} gg`}
+                                  {daysToExpiry < 0 ? 'Scaduto' : `${daysToExpiry}g`}
                                 </span>
                               )}
                             </div>
@@ -1123,24 +1243,24 @@ export default function Clients() {
                             <span className="text-slate-500">N/D</span>
                           )}
                         </td>
-                        <td className="p-2 md:p-4 min-w-[120px] md:min-w-[160px]"><AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} /></td>
-                        <td className="p-2 md:p-4 text-right min-w-[100px] md:min-w-[120px] sticky right-0">
-                          <div className="flex items-center justify-end gap-1 md:gap-2">
+                        <td className="px-4 py-3.5"><AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} /></td>
+                        <td className="px-4 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1">
                             <button
                               type="button"
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/edit/${c.id}`); }}
-                              className="p-1.5 md:p-2 text-amber-400 hover:bg-white/10 rounded-lg transition-all min-w-[36px] min-h-[36px] md:min-w-[44px] md:min-h-[44px] flex items-center justify-center"
+                              className="p-2 text-slate-400 hover:text-amber-400 hover:bg-slate-700/50 rounded-lg transition-all"
                               title="Modifica"
                             >
-                              <FilePenLine size={14}/>
+                              <FilePenLine size={16}/>
                             </button>
                             <button
                               type="button"
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); setClientToDelete(c); }}
-                              className="p-1.5 md:p-2 text-red-400 hover:bg-white/10 rounded-lg transition-all min-w-[36px] min-h-[36px] md:min-w-[44px] md:min-h-[44px] flex items-center justify-center"
+                              className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700/50 rounded-lg transition-all"
                               title="Elimina"
                             >
-                              <Trash2 size={14}/>
+                              <Trash2 size={16}/>
                             </button>
                           </div>
                         </td>
@@ -1165,14 +1285,14 @@ export default function Clients() {
 
         {/* VISTA CARD */}
         {viewMode === 'card' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 mx-3 sm:mx-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 sm:gap-6 mx-0 max-w-none">
             {filteredAndSortedClients.map((c) => {
               const expiry = toDate(c.scadenza);
               const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
               const totalPayments = paymentsTotals[c.id] ?? 0;
 
               return (
-                <div key={c.id} className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-5 border border-slate-700 hover:border-slate-600 transition-all">
+                <div key={c.id} className="bg-slate-900/70 backdrop-blur-xl rounded-xl p-5 border border-slate-800 hover:border-slate-700 transition-all shadow-xl">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -1231,7 +1351,7 @@ export default function Clients() {
 
         {/* VISTA KANBAN */}
         {viewMode === 'kanban' && (
-          <div className="mx-3 sm:mx-4 lg:mx-0">
+          <div className="mx-3 sm:mx-6">
             <KanbanBoard
               columns={[
                 {

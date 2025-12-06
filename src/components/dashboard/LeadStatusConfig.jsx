@@ -136,7 +136,7 @@ export default function LeadStatusConfig({ onClose, onSave }) {
             {statuses.map((status, index) => (
               <div
                 key={status.id}
-                className="flex items-center gap-3 bg-slate-800/60 rounded-lg p-3 border border-slate-700"
+                className="flex items-center gap-3 bg-slate-800/60 rounded-lg p-3 border border-slate-700 shadow-glow"
               >
                 {/* Drag handle */}
                 <div className="flex flex-col gap-1">

@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Download, Trash2 } from 'lucide-react';
+import { Shield, Download, Trash2, Link as LinkIcon } from 'lucide-react';
 import GDPRSettings from '../../components/settings/GDPRSettings';
+import LinkAccountCard from '../../components/LinkAccountCard';
 
 /**
  * Pagina Impostazioni Client
@@ -26,12 +27,30 @@ const ClientSettings = () => {
           </p>
         </div>
 
-        {/* Privacy e GDPR */}
+        {/* Account Collegati */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 shadow-xl mb-6"
+          className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 shadow-glow mb-6"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <LinkIcon className="text-indigo-400" size={24} />
+            <h2 className="text-xl font-bold text-white">Account Collegati</h2>
+          </div>
+          <p className="text-slate-400 mb-6">
+            Collega Google o Facebook per accedere più velocemente al tuo account.
+          </p>
+
+          <LinkAccountCard />
+        </motion.div>
+
+        {/* Privacy e GDPR */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 shadow-glow mb-6"
         >
           <div className="flex items-center gap-3 mb-4">
             <Shield className="text-cyan-400" size={24} />
@@ -48,7 +67,7 @@ const ClientSettings = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.3 }}
           className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30"
         >
           <h3 className="text-lg font-semibold text-white mb-3">I Tuoi Diritti</h3>

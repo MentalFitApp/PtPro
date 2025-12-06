@@ -139,6 +139,18 @@ export default function ModernChat() {
         ...doc.data()
       }));
       setChats(chatsData);
+
+      // Aggiorna badge nav con somma degli unread
+      const totalUnread = chatsData.reduce((sum, chat) => {
+        const count = chat.unreadCount?.[currentUser.uid] || 0;
+        return sum + (Number.isFinite(count) ? count : 0);
+      }, 0);
+      try {
+        localStorage.setItem('ff_badge_chat', String(totalUnread));
+        window.dispatchEvent(new Event('ff-badges-updated'));
+      } catch (e) {
+        console.debug('Impossibile salvare badge chat:', e);
+      }
     });
 
     return () => unsubscribe();

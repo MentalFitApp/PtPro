@@ -1,6 +1,6 @@
 // ============================================
-// DESIGN SYSTEM V2 - MentalFit Platform
-// Ispirato a CEOPlatformDashboard
+// DESIGN SYSTEM V3 - FitFlow Pro Platform
+// Layout professionale con sidebar e griglia
 // ============================================
 
 export const colors = {
@@ -8,10 +8,13 @@ export const colors = {
   bg: {
     primary: 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950',
     secondary: 'bg-slate-900/50',
-    card: 'bg-slate-800/60 backdrop-blur-sm',
-    cardHover: 'hover:bg-slate-800/80',
+    card: 'bg-slate-800/50 backdrop-blur-sm',
+    cardHover: 'hover:bg-slate-800/70',
+    cardSolid: 'bg-slate-800/80',
     elevated: 'bg-slate-800/90 backdrop-blur-md',
     glass: 'bg-white/5 backdrop-blur-lg',
+    surface: 'bg-slate-900/40',
+    header: 'bg-slate-900/60 backdrop-blur-xl',
   },
   
   // Borders
@@ -187,13 +190,25 @@ export const components = {
     itemActive: `flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border ${colors.border.accent} ${colors.text.accent}`,
   },
   
-  // Table
+  // Table - Pro Style
   table: {
-    container: `w-full ${colors.bg.card} ${borders.default} ${borders.rounded} overflow-hidden`,
-    header: `bg-slate-800/80 border-b ${colors.border.default}`,
-    row: `border-b ${colors.border.default} ${transitions.default} hover:bg-slate-800/40`,
-    cell: `px-6 py-4 ${colors.text.secondary}`,
-    cellHeader: `px-6 py-4 text-left text-xs font-medium uppercase tracking-wider ${colors.text.muted}`,
+    container: `w-full bg-slate-900/40 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden`,
+    header: `bg-slate-800/60`,
+    headerRow: `border-b border-slate-700/50`,
+    row: `border-b border-slate-700/30 transition-colors hover:bg-slate-800/40`,
+    rowClickable: `border-b border-slate-700/30 transition-colors hover:bg-slate-800/50 cursor-pointer`,
+    cell: `px-4 py-3.5 text-sm text-slate-300`,
+    cellHeader: `px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400`,
+    cellCompact: `px-3 py-2.5 text-sm text-slate-300`,
+  },
+  
+  // Pro Cards - Multiple variants
+  proCard: {
+    base: `bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4`,
+    header: `bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-xl`,
+    widget: `bg-slate-800/40 backdrop-blur-sm border border-slate-700/40 rounded-xl p-4 hover:bg-slate-800/60 transition-all`,
+    stats: `bg-gradient-to-br from-slate-800/60 to-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4`,
+    info: `bg-slate-800/30 border border-slate-700/30 rounded-lg p-3`,
   },
   
   // Modals
@@ -203,16 +218,41 @@ export const components = {
   },
 };
 
-// Layout utilities
+// Layout utilities - Extended
 export const layout = {
   container: 'max-w-7xl mx-auto',
   containerWide: 'max-w-[1920px] mx-auto',
+  containerFull: 'w-full',
   flexCenter: 'flex items-center justify-center',
   flexBetween: 'flex items-center justify-between',
+  flexStart: 'flex items-start',
   grid: {
     cols2: 'grid grid-cols-1 md:grid-cols-2 gap-6',
     cols3: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6',
     cols4: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6',
+    cols5: 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4',
+    // Dashboard layout
+    dashboard: 'grid grid-cols-1 lg:grid-cols-12 gap-6',
+    // Card grid compatto
+    compact: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4',
+    // Widget grid
+    widgets: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3',
+    // Auto fit
+    autoFit: 'grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4',
+  },
+  // Span utilities per dashboard grid
+  span: {
+    full: 'lg:col-span-12',
+    half: 'lg:col-span-6',
+    third: 'lg:col-span-4',
+    twoThirds: 'lg:col-span-8',
+    quarter: 'lg:col-span-3',
+  },
+  // Page padding
+  page: {
+    default: 'p-4 md:p-6',
+    compact: 'p-3 md:p-4',
+    none: 'p-0',
   },
 };
 
@@ -225,6 +265,16 @@ export const iconSizes = {
   xl: 32,
 };
 
+// Pro Badge variants
+export const badges = {
+  success: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
+  warning: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30',
+  error: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/30',
+  info: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30',
+  neutral: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/30',
+  primary: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/30',
+};
+
 export default {
   colors,
   spacing,
@@ -235,5 +285,6 @@ export default {
   typography,
   components,
   layout,
+  badges,
   iconSizes,
 };

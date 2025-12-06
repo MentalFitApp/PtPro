@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, addDoc, doc, updateDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { db, auth } from '../../firebase.js';
 import { useNavigate } from 'react-router-dom';
-import { getTenantSubcollection } from '../../config/tenant';
+import { getTenantSubcollection, getTenantDoc } from '../../config/tenant';
+import { notifyNewCheck } from '../../services/notificationService';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { useUserPreferences } from '../../hooks/useUserPreferences';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadPhoto } from '../../storageUtils.js';
@@ -90,7 +92,7 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
       </div>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">Peso Attuale (kg)*</label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">Peso Attuale*</label>
           <input
             type="number"
             step="0.1"
@@ -173,7 +175,7 @@ const ImageModal = ({ isOpen, imageUrl, onClose }) => (
   </AnimatePresence>
 );
 
-const CheckDetails = ({ check, handleEditClick }) => {
+const CheckDetails = ({ check, handleEditClick, formatWeight }) => {
   const [photoURLs, setPhotoURLs] = useState({});
   const [modalImage, setModalImage] = useState(null);
   const isEditable = check.createdAt ? (new Date() - check.createdAt.toDate()) / (1000 * 60 * 60) < 2 : false; // 2 ore
@@ -212,7 +214,7 @@ const CheckDetails = ({ check, handleEditClick }) => {
       <div className="mt-4 space-y-4">
         <div>
           <h4 className="font-semibold text-slate-300">Peso Registrato:</h4>
-          <p className="text-white text-xl font-bold">{check.weight} kg</p>
+          <p className="text-white text-xl font-bold">{formatWeight(check.weight)}</p>
         </div>
         <div>
           <h4 className="font-semibold text-slate-300">Note:</h4>
@@ -250,6 +252,7 @@ const CheckDetails = ({ check, handleEditClick }) => {
 };
 
 export default function ClientChecks() {
+  const { formatWeight, weightLabel } = useUserPreferences();
   const [checks, setChecks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -420,7 +423,22 @@ export default function ClientChecks() {
       } else {
         await addDoc(getTenantSubcollection(db, 'clients', user.uid, 'checks'), checkData);
         showNotification('Check caricato con successo!', 'success');
+        
+        // Invia notifica al coach
+        try {
+          await notifyNewCheck(checkData, user.displayName || 'Cliente', user.uid);
+        } catch (notifError) {
+          console.log('Notifica check non inviata:', notifError);
+        }
       }
+
+      // Aggiorna lastActive nel documento client
+      try {
+        await updateDoc(getTenantDoc(db, 'clients', user.uid), { lastActive: serverTimestamp() });
+      } catch (e) {
+        console.debug('Could not update lastActive:', e.message);
+      }
+
       setFormState({ id: null, notes: '', weight: '', photos: {}, photoPreviews: {} });
     } catch (error) {
       console.error("Errore handleSubmit:", error);
@@ -440,7 +458,7 @@ export default function ClientChecks() {
         return <ClientUploadForm {...{ formState, setFormState, handleSubmit, isUploading, uploadProgress, handleFileChange }} />;
       }
       if (checkOnDate) {
-        return <CheckDetails check={checkOnDate} handleEditClick={handleEditClick} />;
+        return <CheckDetails check={checkOnDate} handleEditClick={handleEditClick} formatWeight={formatWeight} />;
       }
       return (
         <div className="text-center p-8">
@@ -476,10 +494,10 @@ export default function ClientChecks() {
           </button>
         </header>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-4">
+          <div className="lg:col-span-1 bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-4 shadow-glow">
             <Calendar onChange={setSelectedDate} value={selectedDate} tileClassName={tileClassName} />
           </div>
-          <div className="lg:col-span-2 bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 min-h-[400px]">
+          <div className="lg:col-span-2 bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 min-h-[400px] shadow-glow">
             {renderContentForDate()}
           </div>
         </motion.div>

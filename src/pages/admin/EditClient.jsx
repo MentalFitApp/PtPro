@@ -127,9 +127,9 @@ export default function EditClient() {
     navigate(`/client/${clientId}`);
   };
 
-  const inputStyle = "w-full p-2.5 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 transition-all text-slate-200";
-  const labelStyle = "block mb-1.5 text-sm font-medium text-slate-400";
-  const errorStyle = "text-red-500 text-sm mt-1";
+  const inputStyle = "w-full p-3 bg-slate-800/40 border border-slate-700/50 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-white placeholder:text-slate-500";
+  const labelStyle = "block mb-1.5 text-sm font-medium text-slate-300";
+  const errorStyle = "text-red-400 text-sm mt-1";
 
   if (loading) return <div className="text-center p-8 text-slate-400">Caricamento dati cliente...</div>;
 
@@ -137,115 +137,121 @@ export default function EditClient() {
     <>
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
       <motion.div 
-        className="w-full max-w-2xl mx-auto bg-slate-900/60 backdrop-blur-xl rounded-xl border border-slate-700 p-6 sm:p-8"
+        className="w-full max-w-2xl mx-auto px-4 sm:px-0"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-50">Modifica Cliente</h1>
-            <p className="text-rose-500 font-semibold">{clientName}</p>
+        {/* Header */}
+        <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-semibold text-white">Modifica Cliente</h1>
+              <p className="text-sm text-blue-400 mt-1">{clientName}</p>
+            </div>
+            <button 
+              onClick={handleCancel}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 rounded-lg text-sm text-slate-300 transition-colors"
+            >
+              <ArrowLeft size={16} /> Indietro
+            </button>
           </div>
-          <button 
-            onClick={handleCancel}
-            className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 rounded-lg text-sm text-slate-300 transition-colors"
-          >
-            <X size={16} /> Annulla
-          </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          <div>
-            <label className={labelStyle}>Nome e Cognome*</label>
-            <input 
-              {...register('name', { 
-                required: 'Il nome è obbligatorio',
-                minLength: { value: 2, message: 'Il nome deve essere lungo almeno 2 caratteri' }
-              })} 
-              className={inputStyle} 
-            />
-            {errors.name && <p className={errorStyle}>{errors.name.message}</p>}
-          </div>
-          <div>
-            <label className={labelStyle}>Email*</label>
-            <input 
-              type="email" 
-              {...register('email', { 
-                required: 'L\'email è obbligatoria',
-                pattern: { 
-                  value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-                  message: 'Inserisci un\'email valida'
-                }
-              })} 
-              className={inputStyle} 
-            />
-            {errors.email && <p className={errorStyle}>{errors.email.message}</p>}
-          </div>
-          <div>
-            <label className={labelStyle}>Telefono (Opzionale)</label>
-            <input 
-              {...register('phone', { 
-                pattern: { 
-                  value: /^\+?[0-9]{7,15}$/,
-                  message: 'Inserisci un numero di telefono valido (7-15 cifre)'
-                }
-              })} 
-              className={inputStyle} 
-            />
-            {errors.phone && <p className={errorStyle}>{errors.phone.message}</p>}
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-5 border-t border-white/10">
+        {/* Form */}
+        <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
-              <label className={labelStyle}>Stato Cliente*</label>
-              <select 
-                {...register('status', { required: 'Lo stato è obbligatorio' })} 
-                className={inputStyle}
-              >
-                <option value="attivo">Attivo</option>
-                <option value="in prova">In Prova</option>
-                <option value="sospeso">Sospeso</option>
-                <option value="scaduto">Scaduto</option>
-              </select>
-              {errors.status && <p className={errorStyle}>{errors.status.message}</p>}
+              <label className={labelStyle}>Nome e Cognome*</label>
+              <input 
+                {...register('name', { 
+                  required: 'Il nome è obbligatorio',
+                  minLength: { value: 2, message: 'Il nome deve essere lungo almeno 2 caratteri' }
+                })} 
+                className={inputStyle} 
+              />
+              {errors.name && <p className={errorStyle}>{errors.name.message}</p>}
             </div>
             <div>
-              <label className={labelStyle}>Data Scadenza*</label>
+              <label className={labelStyle}>Email*</label>
               <input 
-                type="date" 
-                {...register('scadenza', { 
-                  required: 'La data di scadenza è obbligatoria',
-                  validate: value => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    return new Date(value) >= today || 'La data di scadenza non può essere nel passato';
+                type="email" 
+                {...register('email', { 
+                  required: 'L\'email è obbligatoria',
+                  pattern: { 
+                    value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                    message: 'Inserisci un\'email valida'
                   }
                 })} 
                 className={inputStyle} 
               />
-              {errors.scadenza && <p className={errorStyle}>{errors.scadenza.message}</p>}
+              {errors.email && <p className={errorStyle}>{errors.email.message}</p>}
             </div>
-          </div>
-          <div className="flex justify-end gap-4 pt-5">
-            <motion.button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg transition-colors disabled:bg-rose-900 disabled:cursor-not-allowed"
-              whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
-              whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
-            >
-              <Save size={18} /> {isSubmitting ? 'Salvataggio...' : 'Salva Modifiche'}
-            </motion.button>
-            <motion.button
-              type="button"
-              onClick={handleCancel}
-              className="flex items-center gap-2 px-6 py-2.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-white font-semibold rounded-lg transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <X size={18} /> Annulla
-            </motion.button>
-          </div>
-        </form>
+            <div>
+              <label className={labelStyle}>Telefono (Opzionale)</label>
+              <input 
+                {...register('phone', { 
+                  pattern: { 
+                    value: /^\+?[0-9]{7,15}$/,
+                    message: 'Inserisci un numero di telefono valido (7-15 cifre)'
+                  }
+                })} 
+                className={inputStyle} 
+              />
+              {errors.phone && <p className={errorStyle}>{errors.phone.message}</p>}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-5 border-t border-slate-700/50">
+              <div>
+                <label className={labelStyle}>Stato Cliente*</label>
+                <select 
+                  {...register('status', { required: 'Lo stato è obbligatorio' })} 
+                  className={inputStyle}
+                >
+                  <option value="attivo">Attivo</option>
+                  <option value="in prova">In Prova</option>
+                  <option value="sospeso">Sospeso</option>
+                  <option value="scaduto">Scaduto</option>
+                </select>
+                {errors.status && <p className={errorStyle}>{errors.status.message}</p>}
+              </div>
+              <div>
+                <label className={labelStyle}>Data Scadenza*</label>
+                <input 
+                  type="date" 
+                  {...register('scadenza', { 
+                    required: 'La data di scadenza è obbligatoria',
+                    validate: value => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      return new Date(value) >= today || 'La data di scadenza non può essere nel passato';
+                    }
+                  })} 
+                  className={inputStyle} 
+                />
+                {errors.scadenza && <p className={errorStyle}>{errors.scadenza.message}</p>}
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-5">
+              <motion.button
+                type="button"
+                onClick={handleCancel}
+                className="flex items-center gap-2 px-5 py-2.5 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 text-white font-medium rounded-lg transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <X size={18} /> Annulla
+              </motion.button>
+              <motion.button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:bg-blue-900 disabled:cursor-not-allowed"
+                whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+                whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
+              >
+                <Save size={18} /> {isSubmitting ? 'Salvataggio...' : 'Salva Modifiche'}
+              </motion.button>
+            </div>
+          </form>
+        </div>
       </motion.div>
     </>
   );

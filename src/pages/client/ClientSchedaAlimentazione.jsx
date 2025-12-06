@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Download, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw, RotateCcw } from 'lucide-react';
 import { db } from '../../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth } from '../../firebase';
@@ -164,6 +164,49 @@ const ClientSchedaAlimentazione = () => {
     }
   };
 
+  const handleResetScheda = async () => {
+    if (!window.confirm('Sei sicuro di voler ripristinare la scheda originale del coach? Tutte le modifiche andranno perse.')) {
+      return;
+    }
+
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      // Carica la scheda originale dal coach
+      const schedaRef = getTenantDoc(db, 'schede_alimentazione', user.uid);
+      const schedaSnap = await getDoc(schedaRef);
+      
+      if (!schedaSnap.exists()) {
+        alert('Scheda non trovata');
+        return;
+      }
+
+      const originalData = schedaSnap.data();
+      
+      // Ripristina solo se esiste una versione originale salvata
+      if (originalData.originalGiorni) {
+        await updateDoc(schedaRef, {
+          giorni: originalData.originalGiorni,
+          lastModified: new Date().toISOString(),
+          modifiedBy: 'client_reset',
+        });
+
+        setSchedaData({
+          ...originalData,
+          giorni: originalData.originalGiorni
+        });
+
+        alert('✅ Scheda ripristinata correttamente!');
+      } else {
+        alert('⚠️ Non è disponibile una versione originale da ripristinare. La scheda potrebbe non essere mai stata modificata.');
+      }
+    } catch (error) {
+      console.error('Errore nel ripristino:', error);
+      alert('Errore durante il ripristino della scheda');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-slate-900">
@@ -207,20 +250,33 @@ const ClientSchedaAlimentazione = () => {
                 </p>
               )}
             </div>
-            {canExportPDF ? (
+            <div className="flex items-center gap-2">
+              {canExportPDF ? (
+                <button
+                  onClick={() => exportNutritionCardToPDF(schedaData, clientName)}
+                  className="flex items-center gap-1.5 lg:gap-2 px-2.5 lg:px-4 py-1.5 lg:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs lg:text-sm rounded-lg lg:rounded-xl transition-all shadow-lg"
+                >
+                  <Download size={14} className="lg:hidden" />
+                  <Download size={18} className="hidden lg:block" />
+                  <span className="hidden sm:inline">PDF</span>
+                </button>
+              ) : pdfDisabledMessage ? (
+                <div className="px-3 py-2 bg-amber-900/30 border border-amber-600/30 rounded-lg text-xs text-amber-400 flex items-center gap-2">
+                  🔒 {pdfDisabledMessage}
+                </div>
+              ) : null}
+              
+              {/* Pulsante Reset Scheda */}
               <button
-                onClick={() => exportNutritionCardToPDF(schedaData, clientName)}
-                className="flex items-center gap-1.5 lg:gap-2 px-2.5 lg:px-4 py-1.5 lg:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs lg:text-sm rounded-lg lg:rounded-xl transition-all shadow-lg"
+                onClick={handleResetScheda}
+                className="flex items-center gap-1.5 lg:gap-2 px-2.5 lg:px-4 py-1.5 lg:py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-xs lg:text-sm rounded-lg lg:rounded-xl transition-all shadow-lg"
+                title="Ripristina scheda originale del coach"
               >
-                <Download size={14} className="lg:hidden" />
-                <Download size={18} className="hidden lg:block" />
-                <span className="hidden sm:inline">Esporta PDF</span>
+                <RotateCcw size={14} className="lg:hidden" />
+                <RotateCcw size={18} className="hidden lg:block" />
+                <span className="hidden sm:inline">Reset</span>
               </button>
-            ) : pdfDisabledMessage ? (
-              <div className="px-3 py-2 bg-amber-900/30 border border-amber-600/30 rounded-lg text-xs text-amber-400 flex items-center gap-2">
-                🔒 {pdfDisabledMessage}
-              </div>
-            ) : null}
+            </div>
           </div>
         </motion.div>
 
@@ -326,11 +382,11 @@ const ClientSchedaAlimentazione = () => {
             </h3>
           </div>
           <div className="grid grid-cols-5 gap-1.5 lg:gap-4">
-            <div className="bg-slate-900/60 rounded-lg lg:rounded-xl p-1.5 lg:p-4 border border-slate-700/50 text-center">
+            <div className="bg-slate-900/60 rounded-lg lg:rounded-xl p-1.5 lg:p-4 border border-slate-700/50 text-center shadow-glow">
               <div className="text-emerald-200 font-bold text-sm lg:text-2xl">{dayTotals.quantita.toFixed(0)}</div>
               <div className="text-slate-400 text-[9px] lg:text-sm mt-0.5 lg:mt-1">Quantità (g)</div>
             </div>
-            <div className="bg-slate-900/60 rounded-lg lg:rounded-xl p-1.5 lg:p-4 border border-emerald-600/30 text-center">
+            <div className="bg-slate-900/60 rounded-lg lg:rounded-xl p-1.5 lg:p-4 border border-emerald-600/30 text-center shadow-glow">
               <div className="text-emerald-200 font-bold text-sm lg:text-2xl">{dayTotals.kcal.toFixed(0)}</div>
               <div className="text-emerald-400 text-[9px] lg:text-sm mt-0.5 lg:mt-1">Kcal</div>
             </div>

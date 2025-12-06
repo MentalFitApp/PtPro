@@ -22,13 +22,15 @@ const StatCard = ({ title, value, icon, trend, trendValue, isCurrency = false, i
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-slate-800/60 backdrop-blur-sm p-5 rounded-xl border border-slate-700 shadow-xl"
+      className="bg-slate-900/40 backdrop-blur-sm p-5 rounded-xl border border-slate-700/50"
     >
       <div className="flex items-center gap-3 text-slate-400 mb-3">
-        {React.cloneElement(icon, { size: 20 })}
+        <div className="p-2 rounded-lg bg-slate-800/50">
+          {React.cloneElement(icon, { size: 18 })}
+        </div>
         <p className="text-sm font-medium">{title}</p>
       </div>
-      <p className="text-3xl font-bold text-slate-100 mb-2">
+      <p className="text-3xl font-bold text-white mb-2">
         {isCurrency 
           ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value) 
           : isPercentage ? `${value}%` : value
@@ -36,7 +38,7 @@ const StatCard = ({ title, value, icon, trend, trendValue, isCurrency = false, i
       </p>
       {subtitle && <p className="text-xs text-slate-400 mb-2">{subtitle}</p>}
       {trendValue && TrendIcon && (
-        <div className={`flex items-center gap-1 text-sm ${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
+        <div className={`flex items-center gap-1 text-sm ${trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>
           <TrendIcon size={16} />
           <span>{trendValue}</span>
         </div>
@@ -363,190 +365,191 @@ export default function Analytics() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-2 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto w-full">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto w-full space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold text-slate-100">Analytics Dashboard</h1>
-              <p className="text-slate-400 text-sm mt-1">Panoramica metriche business e performance</p>
-            </div>
-          </div>
-
-          {/* Period Selector */}
-          <div className="flex gap-2">
-            {['month', 'quarter', 'year'].map(period => (
+        <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
               <button
-                key={period}
-                onClick={() => setSelectedPeriod(period)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedPeriod === period
-                    ? 'bg-rose-600 text-white'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
+                onClick={() => navigate('/dashboard')}
+                className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-700/50"
               >
-                {period === 'month' ? 'Mese' : period === 'quarter' ? 'Trimestre' : 'Anno'}
+                <ArrowLeft size={20} />
               </button>
-            ))}
+              <div>
+                <p className="text-xs uppercase tracking-widest text-slate-500 font-medium">Analytics</p>
+                <h1 className="text-2xl font-bold text-white">Dashboard Metriche</h1>
+              </div>
+            </div>
+
+            {/* Period Selector */}
+            <div className="flex gap-1 bg-slate-800/30 p-1 rounded-lg">
+              {['month', 'quarter', 'year'].map(period => (
+                <button
+                  key={period}
+                  onClick={() => setSelectedPeriod(period)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedPeriod === period
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                  }`}
+                >
+                  {period === 'month' ? 'Mese' : period === 'quarter' ? 'Trimestre' : 'Anno'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Analytics Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto">
+        <div className="flex gap-1 bg-slate-900/40 p-1.5 rounded-xl border border-slate-700/50">
           <button
             onClick={() => setActiveTab('business')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'business'
-                ? 'bg-rose-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <DollarSign size={16} className="inline mr-2" />
+            <DollarSign size={16} />
             Business
           </button>
           <button
             onClick={() => setActiveTab('courses')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'courses'
-                ? 'bg-cyan-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <GraduationCap size={16} className="inline mr-2" />
+            <GraduationCap size={16} />
             Corsi
           </button>
-
         </div>
 
         {/* Business Analytics */}
         {activeTab === 'business' && (
-          <>
+          <div className="space-y-6">
             {/* Revenue Metrics */}
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
-                <DollarSign size={24} className="text-green-400" />
+            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
+              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <DollarSign size={20} className="text-emerald-400" />
                 Revenue Tracking
               </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard
-              title="Revenue Totale"
-              value={revenueMetrics.currentRevenue}
-              icon={<DollarSign className="text-green-400" />}
-              trend={revenueMetrics.trend}
-              trendValue={`${revenueMetrics.revenueChange}% vs periodo precedente`}
-              isCurrency
-            />
-            <StatCard
-              title="MRR (Monthly Recurring)"
-              value={revenueMetrics.mrr}
-              icon={<TrendingUp className="text-blue-400" />}
-              subtitle="Ultimi 30 giorni"
-              isCurrency
-            />
-            <StatCard
-              title="ARPU"
-              value={revenueMetrics.arpu}
-              icon={<Target className="text-purple-400" />}
-              subtitle="Average Revenue Per User"
-              isCurrency
-            />
-            <StatCard
-              title="Crescita Revenue"
-              value={revenueMetrics.revenueChange}
-              icon={<BarChart3 className="text-cyan-400" />}
-              isPercentage
-              subtitle="vs periodo precedente"
-            />
-          </div>
-          <RevenueChart payments={payments} selectedPeriod={selectedPeriod} />
-        </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <StatCard
+                  title="Revenue Totale"
+                  value={revenueMetrics.currentRevenue}
+                  icon={<DollarSign className="text-emerald-400" />}
+                  trend={revenueMetrics.trend}
+                  trendValue={`${revenueMetrics.revenueChange}% vs periodo precedente`}
+                  isCurrency
+                />
+                <StatCard
+                  title="MRR (Monthly Recurring)"
+                  value={revenueMetrics.mrr}
+                  icon={<TrendingUp className="text-blue-400" />}
+                  subtitle="Ultimi 30 giorni"
+                  isCurrency
+                />
+                <StatCard
+                  title="ARPU"
+                  value={revenueMetrics.arpu}
+                  icon={<Target className="text-purple-400" />}
+                  subtitle="Average Revenue Per User"
+                  isCurrency
+                />
+                <StatCard
+                  title="Crescita Revenue"
+                  value={revenueMetrics.revenueChange}
+                  icon={<BarChart3 className="text-cyan-400" />}
+                  isPercentage
+                  subtitle="vs periodo precedente"
+                />
+              </div>
+              <RevenueChart payments={payments} selectedPeriod={selectedPeriod} />
+            </div>
 
-        {/* Retention Metrics */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
-            <Users size={24} className="text-blue-400" />
-            Client Retention
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard
-              title="Clienti Attivi"
-              value={retentionMetrics.activeClients}
-              icon={<UserCheck className="text-green-400" />}
-              subtitle={`${retentionMetrics.expiredClients} scaduti`}
-            />
-            <StatCard
-              title="Retention Rate"
-              value={retentionMetrics.retentionRate}
-              icon={<Target className="text-blue-400" />}
-              isPercentage
-            />
-            <StatCard
-              title="Churn Rate"
-              value={retentionMetrics.churnRate}
-              icon={<UserX className="text-red-400" />}
-              isPercentage
-            />
-            <StatCard
-              title="Lifetime Value"
-              value={retentionMetrics.ltv}
-              icon={<DollarSign className="text-purple-400" />}
-              subtitle="Media per cliente"
-              isCurrency
-            />
-          </div>
-          <RetentionChart clients={clients} />
-        </div>
+            {/* Retention Metrics */}
+            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
+              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Users size={20} className="text-blue-400" />
+                Client Retention
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <StatCard
+                  title="Clienti Attivi"
+                  value={retentionMetrics.activeClients}
+                  icon={<UserCheck className="text-emerald-400" />}
+                  subtitle={`${retentionMetrics.expiredClients} scaduti`}
+                />
+                <StatCard
+                  title="Retention Rate"
+                  value={retentionMetrics.retentionRate}
+                  icon={<Target className="text-blue-400" />}
+                  isPercentage
+                />
+                <StatCard
+                  title="Churn Rate"
+                  value={retentionMetrics.churnRate}
+                  icon={<UserX className="text-red-400" />}
+                  isPercentage
+                />
+                <StatCard
+                  title="Lifetime Value"
+                  value={retentionMetrics.ltv}
+                  icon={<DollarSign className="text-purple-400" />}
+                  subtitle="Media per cliente"
+                  isCurrency
+                />
+              </div>
+              <RetentionChart clients={clients} />
+            </div>
 
-        {/* Engagement Metrics */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
-            <Activity size={24} className="text-yellow-400" />
-            Engagement Metrics
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <StatCard
-              title="Check-in per Cliente"
-              value={engagementMetrics.avgChecksPerClient}
-              icon={<Calendar className="text-cyan-400" />}
-              subtitle="Media ultimi 30 giorni"
-            />
-            <StatCard
-              title="Total Check-ins"
-              value={engagementMetrics.totalChecks}
-              icon={<Activity className="text-green-400" />}
-              subtitle="Ultimi 30 giorni"
-            />
-            <StatCard
-              title="Tempo Risposta Medio"
-              value={engagementMetrics.avgResponseTimeHours}
-              icon={<Clock className="text-orange-400" />}
-              subtitle="Ore per rispondere"
-            />
-          </div>
-        </div>
+            {/* Engagement Metrics */}
+            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
+              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Activity size={20} className="text-amber-400" />
+                Engagement Metrics
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <StatCard
+                  title="Check-in per Cliente"
+                  value={engagementMetrics.avgChecksPerClient}
+                  icon={<Calendar className="text-cyan-400" />}
+                  subtitle="Media ultimi 30 giorni"
+                />
+                <StatCard
+                  title="Total Check-ins"
+                  value={engagementMetrics.totalChecks}
+                  icon={<Activity className="text-emerald-400" />}
+                  subtitle="Ultimi 30 giorni"
+                />
+                <StatCard
+                  title="Tempo Risposta Medio"
+                  value={engagementMetrics.avgResponseTimeHours}
+                  icon={<Clock className="text-orange-400" />}
+                  subtitle="Ore per rispondere"
+                />
+              </div>
+            </div>
 
             {/* At Risk Clients */}
             {retentionMetrics.atRiskCount > 0 && (
-              <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-6">
-                <h2 className="text-xl font-semibold text-red-400 mb-4 flex items-center gap-2">
-                  <UserX size={24} />
+              <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4 sm:p-6">
+                <h2 className="text-lg font-semibold text-red-400 mb-4 flex items-center gap-2">
+                  <UserX size={20} />
                   Clienti a Rischio ({retentionMetrics.atRiskCount})
                 </h2>
-                <p className="text-slate-300 mb-4">
+                <p className="text-sm text-slate-400 mb-4">
                   Questi clienti hanno abbonamenti in scadenza nei prossimi 15 giorni
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -556,9 +559,9 @@ export default function Analytics() {
                       <button
                         key={client.id}
                         onClick={() => navigate(`/client/${client.id}?tab=payments`)}
-                        className="bg-slate-800/60 p-4 rounded-lg text-left hover:bg-slate-800 transition-colors"
+                        className="bg-slate-800/40 p-4 rounded-lg text-left hover:bg-slate-800/60 transition-colors border border-slate-700/50"
                       >
-                        <p className="font-semibold text-slate-200">{client.name}</p>
+                        <p className="font-medium text-white">{client.name}</p>
                         <p className="text-sm text-red-400 mt-1">Scade tra {daysLeft} giorni</p>
                       </button>
                     );
@@ -566,15 +569,15 @@ export default function Analytics() {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {/* Courses Analytics */}
         {activeTab === 'courses' && (
-          <>
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
-                <GraduationCap size={24} className="text-cyan-400" />
+          <div className="space-y-6">
+            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
+              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <GraduationCap size={20} className="text-cyan-400" />
                 Statistiche Corsi
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -606,42 +609,42 @@ export default function Analytics() {
                   icon={<Trophy className="text-yellow-400" />}
                 />
               </div>
+            </div>
 
-              {/* Top Courses */}
-              <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
-                <h3 className="text-lg font-semibold text-slate-200 mb-4">Corsi Più Popolari</h3>
-                <div className="space-y-3">
-                  {courses
-                    .map(course => ({
-                      ...course,
-                      enrollmentCount: enrollments.filter(e => e.courseId === course.id).length
-                    }))
-                    .sort((a, b) => b.enrollmentCount - a.enrollmentCount)
-                    .slice(0, 5)
-                    .map((course, index) => (
-                      <div key={course.id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl font-bold text-slate-500">#{index + 1}</span>
-                          <div>
-                            <h4 className="font-medium text-white">{course.title}</h4>
-                            <p className="text-sm text-slate-400">{course.enrollmentCount} iscritti</p>
-                          </div>
+            {/* Top Courses */}
+            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Corsi Più Popolari</h3>
+              <div className="space-y-3">
+                {courses
+                  .map(course => ({
+                    ...course,
+                    enrollmentCount: enrollments.filter(e => e.courseId === course.id).length
+                  }))
+                  .sort((a, b) => b.enrollmentCount - a.enrollmentCount)
+                  .slice(0, 5)
+                  .map((course, index) => (
+                    <div key={course.id} className="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-slate-700/50 hover:bg-slate-800/60 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl font-bold text-slate-500">#{index + 1}</span>
+                        <div>
+                          <h4 className="font-medium text-white">{course.title}</h4>
+                          <p className="text-sm text-slate-400">{course.enrollmentCount} iscritti</p>
                         </div>
-                        <button
-                          onClick={() => navigate(`/admin/course/${course.id}/manage`)}
-                          className="px-3 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded text-sm"
-                        >
-                          Gestisci
-                        </button>
                       </div>
-                    ))}
-                  {courses.length === 0 && (
-                    <p className="text-center text-slate-400 py-4">Nessun corso disponibile</p>
-                  )}
-                </div>
+                      <button
+                        onClick={() => navigate(`/admin/course/${course.id}/manage`)}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Gestisci
+                      </button>
+                    </div>
+                  ))}
+                {courses.length === 0 && (
+                  <p className="text-center text-slate-400 py-4">Nessun corso disponibile</p>
+                )}
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

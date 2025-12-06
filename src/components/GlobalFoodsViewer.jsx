@@ -176,7 +176,7 @@ const GlobalFoodsViewer = ({ onBack }) => {
                 key={food.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-slate-800/60 border border-slate-700 rounded-lg p-4 hover:border-blue-500/50 transition-all"
+                className="bg-slate-800/60 border border-slate-700 rounded-lg p-4 hover:border-blue-500/50 transition-all shadow-glow"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">

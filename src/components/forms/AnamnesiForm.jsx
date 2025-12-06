@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { db } from '../../firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useUserPreferences } from '../../hooks/useUserPreferences';
 // --- 1. NUOVE ICONE DA LUCIDE-REACT ---
 import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -9,6 +10,7 @@ import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../..
 
 export default function AnamnesiForm({ clientId, onSave }) {
   const { register, handleSubmit, formState: { isSubmitting } } = useForm();
+  const { weightLabel, lengthLabel } = useUserPreferences();
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
@@ -31,7 +33,7 @@ export default function AnamnesiForm({ clientId, onSave }) {
   // --- 2. STILI AGGIORNATI ---
   const inputStyle = "w-full p-2.5 bg-slate-800/50 border border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-slate-200 placeholder:text-slate-500";
   const labelStyle = "block mb-1 text-sm font-medium text-slate-300";
-  const sectionStyle = "bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6";
+  const sectionStyle = "bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 shadow-glow";
   const headingStyle = "font-bold mb-4 text-lg text-blue-300 border-b border-blue-400/30 pb-2";
 
   return (
@@ -47,8 +49,8 @@ export default function AnamnesiForm({ clientId, onSave }) {
             <div><label className={labelStyle}>Cognome*</label><input {...register('lastName', { required: true })} className={inputStyle} /></div>
             <div><label className={labelStyle}>Data di Nascita*</label><input type="date" {...register('birthDate', { required: true })} className={inputStyle} /></div>
             <div><label className={labelStyle}>Che lavoro fai?*</label><input {...register('job', { required: true })} className={inputStyle} placeholder="Es. Impiegato, operaio..." /></div>
-            <div><label className={labelStyle}>Peso (kg)*</label><input type="number" step="0.1" {...register('weight', { required: true })} className={inputStyle} placeholder="Es. 75.5" /></div>
-            <div><label className={labelStyle}>Altezza (cm)*</label><input type="number" {...register('height', { required: true })} className={inputStyle} placeholder="Es. 180" /></div>
+            <div><label className={labelStyle}>Peso ({weightLabel})*</label><input type="number" step="0.1" {...register('weight', { required: true })} className={inputStyle} placeholder="Es. 75.5" /></div>
+            <div><label className={labelStyle}>Altezza ({lengthLabel})*</label><input type="number" {...register('height', { required: true })} className={inputStyle} placeholder="Es. 180" /></div>
           </div>
         </div>
 

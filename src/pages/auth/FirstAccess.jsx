@@ -177,7 +177,7 @@ const FirstAccess = () => {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-8 space-y-8"
+          className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-8 space-y-8 shadow-glow"
         >
           <div className="text-center">
             <h2 className="text-3xl font-bold text-slate-50">Imposta la tua Password</h2>

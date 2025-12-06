@@ -905,7 +905,7 @@ export default function CollaboratoreDashboard() {
       <AnimatePresence>
         {showProfile && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-md shadow-glow">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Profilo</h3>
                 <button onClick={() => setShowProfile(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
@@ -956,7 +956,7 @@ export default function CollaboratoreDashboard() {
       <AnimatePresence>
         {showTracker && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-md shadow-glow">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Tracker DMS</h3>
                 <button onClick={() => setShowTracker(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
@@ -1130,7 +1130,7 @@ export default function CollaboratoreDashboard() {
       <AnimatePresence>
         {showMyLeads && isSetter && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto shadow-glow">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">I miei Lead</h3>
                 <button onClick={() => setShowMyLeads(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
@@ -1181,7 +1181,7 @@ export default function CollaboratoreDashboard() {
       <AnimatePresence>
         {showPastReports && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto shadow-glow">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Report Passati</h3>
                 <button onClick={() => setShowPastReports(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
@@ -1211,7 +1211,7 @@ export default function CollaboratoreDashboard() {
       <AnimatePresence>
         {showDateTimePicker && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 w-full max-w-lg flex flex-col max-h-[90vh]">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 w-full max-w-lg flex flex-col max-h-[90vh] shadow-glow">
               {/* Header Fisso */}
               <div className="flex-shrink-0 flex justify-between items-center p-6 border-b border-white/10">
                 <h3 className="text-xl font-bold text-white">\ud83d\udcc5 Seleziona Data e Ora</h3>
@@ -1316,7 +1316,7 @@ export default function CollaboratoreDashboard() {
       <AnimatePresence>
         {leadToDelete && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-md">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-md shadow-glow">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Elimina Lead</h3>
                 <button onClick={() => setLeadToDelete(null)} className="text-white hover:text-rose-400"><X size={24} /></button>

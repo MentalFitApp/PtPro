@@ -10,6 +10,7 @@ import {
   FolderPlus, Check, Clock, Star, BookOpen
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * Course Content Manager
@@ -18,7 +19,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 export default function CourseContentManager() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const toast = useToast();
+  const { showToast: toast } = useToast();
   const [course, setCourse] = useState(null);
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);

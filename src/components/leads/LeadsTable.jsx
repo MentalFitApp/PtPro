@@ -56,7 +56,7 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
   };
 
   return (
-    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 overflow-hidden">
+    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 overflow-hidden shadow-glow">
       {/* Header con config buttons */}
       <div className="flex items-center justify-between p-4 border-b border-slate-700">
         <h3 className="text-lg font-semibold text-slate-100">Leads ({leads.length})</h3>

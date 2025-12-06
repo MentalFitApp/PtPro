@@ -51,6 +51,7 @@ export default function Notifications() {
   const [scheduledTime, setScheduledTime] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [sentNotifications, setSentNotifications] = useState([]);
 
   useEffect(() => {
     loadClientsAndCollaboratori();

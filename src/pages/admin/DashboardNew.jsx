@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTenantBranding } from '../../hooks/useTenantBranding';
 import { useCountUp } from '../../hooks/useCountUp';
 import LinkAccountBanner from '../../components/LinkAccountBanner';
+import CallRequestsPanel from '../../components/calls/CallRequestsPanel';
 import {
   TrendingUp, Users, DollarSign, Calendar, Target, Eye, EyeOff,
   ChevronDown, Settings, BarChart3, Clock, CheckCircle, AlertCircle,
@@ -21,12 +22,13 @@ import {
 } from "lucide-react";
 
 // Componente MetricCard con animazione - MEMOIZED
-const AnimatedMetricCard = React.memo(({ value, label, icon: Icon, gradientFrom, gradientTo, borderColor, iconColor, textColor, suffix = '', prefix = '', badge = null, onClick }) => {
+const AnimatedMetricCard = React.memo(({ value, label, icon: Icon, gradientFrom, gradientTo, borderColor, iconColor, textColor, suffix = '', prefix = '', badge = null, onClick, compact = false, className = '' }) => {
   const numericValue = parseFloat(value) || 0;
   const isPercentage = suffix === '%';
   const isCurrency = suffix === '€';
   const animatedValue = useCountUp(numericValue, 800);
   const [isComplete, setIsComplete] = React.useState(false);
+  const iconSize = compact ? 12 : 14;
   
   React.useEffect(() => {
     if (animatedValue === numericValue && numericValue > 0) {
@@ -55,7 +57,7 @@ const AnimatedMetricCard = React.memo(({ value, label, icon: Icon, gradientFrom,
         scale: { duration: 0.4 }
       }}
       onClick={onClick}
-      className={`relative bg-gradient-to-br ${gradientFrom} ${gradientTo} backdrop-blur-sm border ${borderColor} rounded-lg p-1.5 sm:p-3 overflow-hidden ${onClick ? 'cursor-pointer hover:brightness-110 transition-all' : ''}`}
+      className={`relative bg-gradient-to-br ${gradientFrom} ${gradientTo} backdrop-blur-sm border ${borderColor} rounded-lg ${compact ? 'p-2' : 'p-1.5 sm:p-3'} overflow-hidden ${onClick ? 'cursor-pointer hover:brightness-110 transition-all' : ''} ${className}`}
     >
       {/* Effetto shine quando completa */}
       {isComplete && (
@@ -80,11 +82,11 @@ const AnimatedMetricCard = React.memo(({ value, label, icon: Icon, gradientFrom,
       )}
       
       <div className="flex items-center justify-between mb-0.5 relative z-10">
-        <Icon className={iconColor} size={12} />
+        <Icon className={iconColor} size={iconSize} />
         {badge}
       </div>
-      <p className="text-base sm:text-2xl font-bold text-white truncate relative z-10">{displayValue}</p>
-      <p className={`text-[9px] sm:text-xs ${textColor} truncate relative z-10`}>{label}</p>
+      <p className={`${compact ? 'text-sm' : 'text-base sm:text-2xl'} font-bold text-white truncate relative z-10`}>{displayValue}</p>
+      <p className={`${compact ? 'text-[10px]' : 'text-[9px] sm:text-xs'} ${textColor} truncate relative z-10`}>{label}</p>
     </motion.div>
   );
 }, (prevProps, nextProps) => {
@@ -117,6 +119,7 @@ export default function DashboardNew() {
     retention: true,
     avgValue: true
   });
+  const [isMobile, setIsMobile] = useState(false);
 
   // Check ruolo
   useEffect(() => {
@@ -610,6 +613,139 @@ export default function DashboardNew() {
     if (saved) setVisibleMetrics(JSON.parse(saved));
   }, []);
 
+  useEffect(() => {
+    const updateIsMobile = () => setIsMobile(window.innerWidth < 768);
+    updateIsMobile();
+    window.addEventListener('resize', updateIsMobile);
+    return () => window.removeEventListener('resize', updateIsMobile);
+  }, []);
+
+  const metricCards = useMemo(() => {
+    const cards = [];
+
+    if (visibleMetrics.revenue) {
+      cards.push({
+        key: 'revenue',
+        props: {
+          value: metrics.revenue,
+          label: 'Fatturato',
+          icon: DollarSign,
+          gradientFrom: 'from-emerald-900/40',
+          gradientTo: 'to-emerald-800/20',
+          borderColor: 'border-emerald-500/30',
+          iconColor: 'text-emerald-400',
+          textColor: 'text-emerald-300',
+          suffix: '€',
+          badge: <TrendingUp className="text-emerald-400" size={10} />,
+          onClick: () => setShowRevenueBreakdown(true)
+        }
+      });
+    }
+
+    if (visibleMetrics.renewalsRevenue) {
+      cards.push({
+        key: 'renewalsRevenue',
+        props: {
+          value: metrics.renewalsRevenue,
+          label: 'Rinnovi',
+          icon: RefreshCw,
+          gradientFrom: 'from-green-900/40',
+          gradientTo: 'to-green-800/20',
+          borderColor: 'border-green-500/30',
+          iconColor: 'text-green-400',
+          textColor: 'text-green-300',
+          suffix: '€',
+          badge: <TrendingUp className="text-green-400" size={10} />
+        }
+      });
+    }
+
+    if (visibleMetrics.clients) {
+      cards.push({
+        key: 'clients',
+        props: {
+          value: metrics.newClients,
+          label: 'Nuovi',
+          icon: Users,
+          gradientFrom: 'from-blue-900/40',
+          gradientTo: 'to-blue-800/20',
+          borderColor: 'border-blue-500/30',
+          iconColor: 'text-blue-400',
+          textColor: 'text-blue-300',
+          badge: <span className="text-[8px] sm:text-xs text-blue-300">{metrics.activeClients}/{metrics.totalClients}</span>
+        }
+      });
+    }
+
+    if (visibleMetrics.renewals) {
+      cards.push({
+        key: 'renewals',
+        props: {
+          value: metrics.renewals,
+          label: 'Rinnovi',
+          icon: CheckCircle,
+          gradientFrom: 'from-purple-900/40',
+          gradientTo: 'to-purple-800/20',
+          borderColor: 'border-purple-500/30',
+          iconColor: 'text-purple-400',
+          textColor: 'text-purple-300'
+        }
+      });
+    }
+
+    if (visibleMetrics.leads) {
+      cards.push({
+        key: 'leads',
+        props: {
+          value: metrics.leads,
+          label: 'Lead',
+          icon: Target,
+          gradientFrom: 'from-amber-900/40',
+          gradientTo: 'to-amber-800/20',
+          borderColor: 'border-amber-500/30',
+          iconColor: 'text-amber-400',
+          textColor: 'text-amber-300'
+        }
+      });
+    }
+
+    if (visibleMetrics.retention) {
+      cards.push({
+        key: 'retention',
+        props: {
+          value: metrics.retention,
+          label: 'Retention',
+          icon: TrendingUp,
+          gradientFrom: 'from-cyan-900/40',
+          gradientTo: 'to-cyan-800/20',
+          borderColor: 'border-cyan-500/30',
+          iconColor: 'text-cyan-400',
+          textColor: 'text-cyan-300',
+          suffix: '%'
+        }
+      });
+    }
+
+    if (visibleMetrics.avgValue) {
+      cards.push({
+        key: 'avgValue',
+        props: {
+          value: metrics.avgValue,
+          label: 'Medio',
+          icon: DollarSign,
+          gradientFrom: 'from-rose-900/40',
+          gradientTo: 'to-rose-800/20',
+          borderColor: 'border-rose-500/30',
+          iconColor: 'text-rose-400',
+          textColor: 'text-rose-300',
+          suffix: '€'
+        }
+      });
+    }
+
+    return cards;
+  }, [metrics, visibleMetrics]);
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -618,51 +754,52 @@ export default function DashboardNew() {
 
   return (
     <div className="min-h-screen overflow-x-hidden w-full">
-      <div className="w-full max-w-[100vw] py-2 sm:py-4 space-y-2 sm:space-y-4 mobile-safe-bottom overflow-x-hidden">
+      <div className="w-full max-w-[100vw] py-4 sm:py-6 space-y-4 sm:space-y-6 mobile-safe-bottom overflow-x-hidden">
         
-        {/* HEADER PREMIUM CON SALUTO */}
+        {/* HEADER PROFESSIONALE */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-xl p-3 sm:p-5 shadow-2xl mx-2 sm:mx-4 lg:mx-6 xl:mx-8"
+          className="bg-slate-900/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 sm:p-6 mx-2 sm:mx-4 lg:mx-6 xl:mx-8"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
-            <div>
-              <h1 className="text-lg sm:text-2xl font-bold text-white mb-1">
-                {branding.adminAreaName} - Benvenuto, {userName || 'Admin'} 👋
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-widest text-slate-500 font-medium">Dashboard</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-white">
+                Benvenuto, {userName || 'Admin'}
               </h1>
-              <p className="text-[10px] sm:text-sm text-slate-400">Panoramica della tua attività oggi</p>
+              <p className="text-sm text-slate-400">Panoramica della tua attività</p>
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/new-client')}
-                className="flex items-center gap-1 px-2 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white preserve-white rounded-lg font-medium shadow-lg text-[10px] sm:text-sm"
+                className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium text-sm transition-colors"
               >
-                <Plus size={14} />
+                <Plus size={16} />
                 <span className="hidden sm:inline">Nuovo Cliente</span>
                 <span className="sm:hidden">Nuovo</span>
               </motion.button>
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/profile')}
-                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white preserve-white"
+                className="p-2.5 hover:bg-slate-800/50 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-700/50"
                 title="Modifica Profilo"
               >
-                <User size={16} />
+                <User size={18} />
               </motion.button>
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={async () => {
                   await signOut(auth);
                   navigate('/login');
                 }}
-                className="p-1.5 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-400"
+                className="p-2.5 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-400 transition-colors border border-slate-700/50"
               >
-                <LogOut size={16} />
+                <LogOut size={18} />
               </motion.button>
             </div>
           </div>
@@ -673,42 +810,42 @@ export default function DashboardNew() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mx-1.5 sm:mx-4 lg:mx-6 xl:mx-8"
+          className="grid grid-cols-2 sm:grid-cols-4 gap-3 mx-2 sm:mx-4 lg:mx-6 xl:mx-8"
         >
           <motion.button
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
             onClick={() => navigate('/clients')}
-            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white preserve-white"
+            className="flex items-center justify-center gap-2 p-3 sm:p-4 bg-slate-900/40 hover:bg-slate-800/50 border border-slate-700/50 rounded-xl transition-all text-sm font-medium text-slate-300 hover:text-white"
           >
-            <Users size={12} />
+            <Users size={16} className="text-blue-400" />
             <span>Clienti</span>
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
             onClick={() => navigate('/business-history')}
-            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white preserve-white"
+            className="flex items-center justify-center gap-2 p-3 sm:p-4 bg-slate-900/40 hover:bg-slate-800/50 border border-slate-700/50 rounded-xl transition-all text-sm font-medium text-slate-300 hover:text-white"
           >
-            <BarChart3 size={12} />
+            <BarChart3 size={16} className="text-emerald-400" />
             <span>Storico</span>
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
             onClick={() => navigate('/analytics')}
-            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white preserve-white"
+            className="flex items-center justify-center gap-2 p-3 sm:p-4 bg-slate-900/40 hover:bg-slate-800/50 border border-slate-700/50 rounded-xl transition-all text-sm font-medium text-slate-300 hover:text-white"
           >
-            <TrendingUp size={12} />
+            <TrendingUp size={16} className="text-cyan-400" />
             <span>Analytics</span>
           </motion.button>
           <motion.button
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
             onClick={() => navigate('/calendar')}
-            className="flex items-center justify-center gap-1 p-1.5 sm:p-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 rounded-lg transition-all text-[10px] sm:text-xs font-medium text-slate-300 hover:text-white preserve-white"
+            className="flex items-center justify-center gap-2 p-3 sm:p-4 bg-slate-900/40 hover:bg-slate-800/50 border border-slate-700/50 rounded-xl transition-all text-sm font-medium text-slate-300 hover:text-white"
           >
-            <Bell size={12} />
+            <Bell size={16} className="text-amber-400" />
             <span>Calendario</span>
           </motion.button>
         </motion.div>
@@ -718,17 +855,22 @@ export default function DashboardNew() {
           <LinkAccountBanner />
         </div>
 
+        {/* PANNELLO RICHIESTE CHIAMATA */}
+        <div className="mx-2 sm:mx-4 lg:mx-6 xl:mx-8">
+          <CallRequestsPanel />
+        </div>
+
         {/* FILTRI DASHBOARD */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 mx-1.5 sm:mx-4 lg:mx-6 xl:mx-8">
-          <h2 className="text-xs sm:text-base font-semibold text-white flex items-center gap-1.5">
-            <BarChart3 size={14} /> Metriche
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mx-2 sm:mx-4 lg:mx-6 xl:mx-8">
+          <h2 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+            <BarChart3 size={16} className="text-slate-400" /> Metriche
           </h2>
           
-          <div className="flex items-center gap-1.5 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <select 
               value={timeRange} 
               onChange={e => setTimeRange(e.target.value)}
-              className="px-2 py-1 bg-slate-800 text-white preserve-white rounded-lg border border-slate-700 text-[10px] flex-1 sm:flex-none"
+              className="px-3 py-2 bg-slate-900/60 text-slate-200 rounded-lg border border-slate-700/50 text-sm flex-1 sm:flex-none focus:outline-none focus:border-blue-500/50"
             >
               <option value="7">Ultimi 7 giorni</option>
               <option value="30">Ultimi 30 giorni</option>
@@ -738,9 +880,9 @@ export default function DashboardNew() {
             
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-white preserve-white rounded-lg border border-slate-700 flex-shrink-0"
+              className="p-2 bg-slate-900/60 hover:bg-slate-800/50 text-slate-400 hover:text-white rounded-lg border border-slate-700/50 flex-shrink-0 transition-colors"
             >
-              <Eye size={14} />
+              <Eye size={16} />
             </button>
           </div>
         </div>
@@ -751,21 +893,21 @@ export default function DashboardNew() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-2"
+            className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 mx-2 sm:mx-4 lg:mx-6 xl:mx-8"
           >
-            <p className="text-xs text-slate-400 mb-2">Mostra/Nascondi Metriche:</p>
-            <div className="flex flex-wrap gap-1.5">
+            <p className="text-sm text-slate-300 mb-3 font-medium">Mostra/Nascondi Metriche:</p>
+            <div className="flex flex-wrap gap-2">
               {Object.keys(visibleMetrics).map(key => (
                 <button
                   key={key}
                   onClick={() => toggleMetric(key)}
-                  className={`px-2 py-1 text-xs rounded flex items-center gap-1 transition-colors ${
+                  className={`px-3 py-1.5 text-sm rounded-lg flex items-center gap-1.5 transition-colors border ${
                     visibleMetrics[key]
-                      ? 'bg-blue-600 text-white preserve-white'
-                      : 'bg-slate-700 text-slate-400'
+                      ? 'bg-blue-600 text-white border-blue-500'
+                      : 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:border-slate-600'
                   }`}
                 >
-                  {visibleMetrics[key] ? <Eye size={12} /> : <EyeOff size={12} />}
+                  {visibleMetrics[key] ? <Eye size={14} /> : <EyeOff size={14} />}
                   {key}
                 </button>
               ))}
@@ -774,148 +916,61 @@ export default function DashboardNew() {
         )}
 
         {/* METRICHE COMPATTE - INLINE CON ANIMAZIONE */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1 sm:gap-3 mx-1.5 sm:mx-4 lg:mx-6 xl:mx-8">
-          {visibleMetrics.revenue && (
-            <AnimatedMetricCard
-              value={metrics.revenue}
-              label="Fatturato"
-              icon={DollarSign}
-              gradientFrom="from-emerald-900/40"
-              gradientTo="to-emerald-800/20"
-              borderColor="border-emerald-500/30"
-              iconColor="text-emerald-400"
-              textColor="text-emerald-300"
-              suffix="€"
-              badge={<TrendingUp className="text-emerald-400" size={10} />}
-              onClick={() => setShowRevenueBreakdown(true)}
-            />
-          )}
+        <div className="sm:hidden mx-2 overflow-x-auto pb-2 flex gap-3 snap-x snap-mandatory scrollbar-hide">
+          {metricCards.map(card => (
+            <div key={card.key} className="min-w-[160px] snap-start">
+              <AnimatedMetricCard {...card.props} compact />
+            </div>
+          ))}
+        </div>
 
-          {visibleMetrics.renewalsRevenue && (
-            <AnimatedMetricCard
-              value={metrics.renewalsRevenue}
-              label="Rinnovi"
-              icon={RefreshCw}
-              gradientFrom="from-green-900/40"
-              gradientTo="to-green-800/20"
-              borderColor="border-green-500/30"
-              iconColor="text-green-400"
-              textColor="text-green-300"
-              suffix="€"
-              badge={<TrendingUp className="text-green-400" size={10} />}
-            />
-          )}
-
-          {visibleMetrics.clients && (
-            <AnimatedMetricCard
-              value={metrics.newClients}
-              label="Nuovi"
-              icon={Users}
-              gradientFrom="from-blue-900/40"
-              gradientTo="to-blue-800/20"
-              borderColor="border-blue-500/30"
-              iconColor="text-blue-400"
-              textColor="text-blue-300"
-              badge={<span className="text-[8px] sm:text-xs text-blue-300">{metrics.activeClients}/{metrics.totalClients}</span>}
-            />
-          )}
-
-          {visibleMetrics.renewals && (
-            <AnimatedMetricCard
-              value={metrics.renewals}
-              label="Rinnovi"
-              icon={CheckCircle}
-              gradientFrom="from-purple-900/40"
-              gradientTo="to-purple-800/20"
-              borderColor="border-purple-500/30"
-              iconColor="text-purple-400"
-              textColor="text-purple-300"
-            />
-          )}
-
-          {visibleMetrics.leads && (
-            <AnimatedMetricCard
-              value={metrics.leads}
-              label="Lead"
-              icon={Target}
-              gradientFrom="from-amber-900/40"
-              gradientTo="to-amber-800/20"
-              borderColor="border-amber-500/30"
-              iconColor="text-amber-400"
-              textColor="text-amber-300"
-            />
-          )}
-
-          {visibleMetrics.retention && (
-            <AnimatedMetricCard
-              value={metrics.retention}
-              label="Retention"
-              icon={TrendingUp}
-              gradientFrom="from-cyan-900/40"
-              gradientTo="to-cyan-800/20"
-              borderColor="border-cyan-500/30"
-              iconColor="text-cyan-400"
-              textColor="text-cyan-300"
-              suffix="%"
-            />
-          )}
-
-          {visibleMetrics.avgValue && (
-            <AnimatedMetricCard
-              value={metrics.avgValue}
-              label="Medio"
-              icon={DollarSign}
-              gradientFrom="from-rose-900/40"
-              gradientTo="to-rose-800/20"
-              borderColor="border-rose-500/30"
-              iconColor="text-rose-400"
-              textColor="text-rose-300"
-              suffix="€"
-            />
-          )}
+        <div className="hidden sm:grid grid-cols-3 lg:grid-cols-7 gap-4 mx-2 sm:mx-4 lg:mx-6 xl:mx-8">
+          {metricCards.map(card => (
+            <AnimatedMetricCard key={card.key} {...card.props} />
+          ))}
         </div>
 
         {/* TABS PER VISTE DETTAGLIATE */}
-        <div className="flex gap-0.5 overflow-x-auto bg-slate-900/50 p-1 rounded-lg border border-slate-700 mx-1.5 sm:mx-4 lg:mx-6 xl:mx-8 scrollbar-hide">
+        <div className="flex gap-1 overflow-x-auto bg-slate-900/40 p-1.5 rounded-xl border border-slate-700/50 mx-2 sm:mx-4 lg:mx-6 xl:mx-8 scrollbar-hide">
           {['overview', 'clienti', 'pagamenti', 'lead', 'scadenze', 'attività'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-2 py-1 text-[10px] sm:text-xs rounded whitespace-nowrap transition-colors flex-shrink-0 ${
+              className={`px-4 py-2 text-sm rounded-lg whitespace-nowrap transition-all flex-shrink-0 ${
                 activeTab === tab
-                  ? 'bg-blue-600 text-white preserve-white'
-                  : 'text-slate-400 hover:bg-slate-800'
+                  ? 'bg-blue-600 text-white font-medium shadow-lg shadow-blue-600/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
               }`}
             >
-              {tab === 'overview' ? '📊 Panoramica' :
-               tab === 'clienti' ? '👥 Clienti' :
-               tab === 'pagamenti' ? '💰 Pagamenti' :
-               tab === 'lead' ? '🎯 Lead' :
-               tab === 'scadenze' ? '⏰ Scadenze' :
-               '🔔 Attività'}
+              {tab === 'overview' ? 'Panoramica' :
+               tab === 'clienti' ? 'Clienti' :
+               tab === 'pagamenti' ? 'Pagamenti' :
+               tab === 'lead' ? 'Lead' :
+               tab === 'scadenze' ? 'Scadenze' :
+               'Attività'}
             </button>
           ))}
         </div>
 
         {/* CONTENUTO TAB */}
-        <div className="bg-slate-800/40 backdrop-blur-sm rounded-lg border border-slate-700 p-1.5 sm:p-3 mx-1.5 sm:mx-4 lg:mx-6 xl:mx-8 overflow-x-hidden">
+        <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6 mx-2 sm:mx-4 lg:mx-6 xl:mx-8 overflow-x-hidden">
           {activeTab === 'overview' && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <BarChart3 size={16} /> Panoramica Rapida
+            <div className="space-y-4">
+              <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <BarChart3 size={18} className="text-slate-400" /> Panoramica Rapida
               </h3>
               
               {/* Alert Scadenze */}
               {metrics.expiringClients > 0 && (
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 flex items-start gap-2">
-                  <AlertCircle className="text-amber-400 flex-shrink-0" size={16} />
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
+                  <AlertCircle className="text-amber-400 flex-shrink-0" size={18} />
                   <div>
-                    <p className="text-xs font-semibold text-amber-300">
+                    <p className="text-sm font-semibold text-amber-300">
                       {metrics.expiringClients} clienti in scadenza nei prossimi 7 giorni
                     </p>
                     <button 
                       onClick={() => setActiveTab('scadenze')}
-                      className="text-[10px] text-amber-400 hover:underline mt-1"
+                      className="text-xs text-amber-400 hover:underline mt-1"
                     >
                       Vedi dettagli →
                     </button>
@@ -925,21 +980,21 @@ export default function DashboardNew() {
 
               {/* Ultimi Clienti */}
               <div>
-                <p className="text-xs text-slate-400 mb-2">Ultimi Clienti Aggiunti</p>
-                <div className="space-y-1.5">
+                <p className="text-sm text-slate-400 mb-3 font-medium">Ultimi Clienti Aggiunti</p>
+                <div className="space-y-2">
                   {clients.filter(c => !c.isOldClient).slice(0, 5).map(client => (
                     <div 
                       key={client.id}
                       onClick={() => navigate(`/client/${client.id}`)}
-                      className="flex items-center justify-between p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
+                      className="flex items-center justify-between p-3 bg-slate-800/40 hover:bg-slate-800/60 rounded-lg cursor-pointer transition-colors border border-slate-700/30"
                     >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white preserve-white text-[10px] font-bold flex-shrink-0">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 text-sm font-bold flex-shrink-0">
                           {client.name?.charAt(0)?.toUpperCase()}
                         </div>
-                        <span className="text-xs text-white truncate">{client.name}</span>
+                        <span className="text-sm text-white truncate">{client.name}</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 flex-shrink-0">
+                      <span className="text-xs text-slate-400 flex-shrink-0">
                         {toDate(client.startDate)?.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
                       </span>
                     </div>
@@ -950,20 +1005,20 @@ export default function DashboardNew() {
           )}
 
           {activeTab === 'clienti' && (
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Users size={16} /> Tutti i Clienti ({clients.filter(c => !c.isOldClient).length})
+                <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                  <Users size={18} className="text-slate-400" /> Tutti i Clienti ({clients.filter(c => !c.isOldClient).length})
                 </h3>
                 <button
                   onClick={() => navigate('/clients')}
-                  className="text-xs text-blue-400 hover:underline"
+                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
                 >
                   Vedi tutti →
                 </button>
               </div>
               
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {clients.filter(c => !c.isOldClient).slice(0, 10).map(client => {
                   const exp = toDate(client.scadenza);
                   const isActive = exp && exp > new Date();
@@ -973,20 +1028,20 @@ export default function DashboardNew() {
                     <div 
                       key={client.id}
                       onClick={() => navigate(`/client/${client.id}`)}
-                      className="flex items-center justify-between p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
+                      className="flex items-center justify-between p-3 bg-slate-800/40 hover:bg-slate-800/60 rounded-lg cursor-pointer transition-colors border border-slate-700/30"
                     >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                        <span className="text-xs text-white truncate">{client.name}</span>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                        <span className="text-sm text-white truncate">{client.name}</span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {daysLeft !== null && (
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                            daysLeft <= 7 ? 'bg-amber-500/20 text-amber-300' :
-                            daysLeft <= 30 ? 'bg-blue-500/20 text-blue-300' :
-                            'bg-slate-600/50 text-slate-400'
+                          <span className={`text-xs px-2 py-0.5 rounded-md ${
+                            daysLeft <= 7 ? 'bg-amber-500/10 text-amber-400' :
+                            daysLeft <= 30 ? 'bg-blue-500/10 text-blue-400' :
+                            'bg-slate-700/50 text-slate-400'
                           }`}>
-                            {daysLeft > 0 ? `${daysLeft}gg` : 'Scaduto'}
+                            {daysLeft > 0 ? `${daysLeft}g` : 'Scaduto'}
                           </span>
                         )}
                       </div>
@@ -998,14 +1053,14 @@ export default function DashboardNew() {
           )}
 
           {activeTab === 'pagamenti' && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <DollarSign size={16} /> Pagamenti Recenti
+            <div className="space-y-4">
+              <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <DollarSign size={18} className="text-slate-400" /> Pagamenti Recenti
               </h3>
               
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {payments.filter(p => !p.isPast).length === 0 ? (
-                  <p className="text-xs text-slate-500 py-4 text-center">Nessun pagamento recente</p>
+                  <p className="text-sm text-slate-500 py-8 text-center">Nessun pagamento recente</p>
                 ) : (
                   payments
                     .filter(p => !p.isPast)
@@ -1014,11 +1069,11 @@ export default function DashboardNew() {
                     .map((payment, idx) => (
                       <div 
                         key={payment.id || idx}
-                        className="flex items-center justify-between p-2 bg-slate-700/30 rounded-lg"
+                        className="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-slate-700/30"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-white truncate">{payment.clientName}</p>
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-sm text-white truncate">{payment.clientName}</p>
+                          <p className="text-xs text-slate-400">
                             {toDate(payment.paymentDate)?.toLocaleDateString('it-IT')} • {payment.paymentMethod}
                           </p>
                         </div>
@@ -1033,34 +1088,34 @@ export default function DashboardNew() {
           )}
 
           {activeTab === 'lead' && (
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Target size={16} /> Lead ({leads.length})
+                <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                  <Target size={18} className="text-slate-400" /> Lead ({leads.length})
                 </h3>
                 <button
                   onClick={() => navigate('/admin/collaboratori')}
-                  className="text-xs text-blue-400 hover:underline"
+                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
                 >
                   Gestisci →
                 </button>
               </div>
               
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {leads.slice(0, 10).map(lead => (
                   <div 
                     key={lead.id}
-                    className="flex items-center justify-between p-2 bg-slate-700/30 rounded-lg"
+                    className="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-slate-700/30"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-white truncate">{lead.name}</p>
-                      <p className="text-[10px] text-slate-400 truncate">
+                      <p className="text-sm text-white truncate">{lead.name}</p>
+                      <p className="text-xs text-slate-400 truncate">
                         {lead.source} • {lead.collaboratoreNome}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {lead.showUp && <CheckCircle className="text-emerald-400" size={12} />}
-                      {lead.chiuso && <DollarSign className="text-blue-400" size={12} />}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {lead.showUp && <CheckCircle className="text-emerald-400" size={14} />}
+                      {lead.chiuso && <DollarSign className="text-blue-400" size={14} />}
                     </div>
                   </div>
                 ))}
@@ -1069,12 +1124,12 @@ export default function DashboardNew() {
           )}
 
           {activeTab === 'scadenze' && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <Clock size={16} /> Clienti in Scadenza
+            <div className="space-y-4">
+              <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <Clock size={18} className="text-slate-400" /> Clienti in Scadenza
               </h3>
               
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {(() => {
                   const expiringClients = clients.filter(c => {
                     if (c.isOldClient) return false;
@@ -1087,9 +1142,9 @@ export default function DashboardNew() {
                   
                   if (expiringClients.length === 0) {
                     return (
-                      <div className="text-xs text-slate-400 py-4 text-center">
+                      <div className="text-sm text-slate-400 py-8 text-center">
                         <p>Nessun cliente in scadenza nei prossimi 30 giorni</p>
-                        <p className="text-[10px] mt-1">Totale clienti: {clients.filter(c => !c.isOldClient).length}</p>
+                        <p className="text-xs mt-2 text-slate-500">Totale clienti: {clients.filter(c => !c.isOldClient).length}</p>
                       </div>
                     );
                   }
@@ -1104,28 +1159,28 @@ export default function DashboardNew() {
                         <div 
                           key={client.id}
                           onClick={() => navigate(`/client/${client.id}`)}
-                          className="flex items-center justify-between p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
+                          className="flex items-center justify-between p-3 bg-slate-800/40 hover:bg-slate-800/60 rounded-lg cursor-pointer transition-colors border border-slate-700/30"
                         >
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
                             <Clock 
                               className={`flex-shrink-0 ${
                                 daysLeft <= 7 ? 'text-red-400' : 
                                 daysLeft <= 14 ? 'text-amber-400' : 
                                 'text-blue-400'
                               }`} 
-                              size={14} 
+                              size={16} 
                             />
-                            <span className="text-xs text-white truncate">{client.name}</span>
+                            <span className="text-sm text-white truncate">{client.name}</span>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className={`text-xs font-bold ${
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <span className={`text-sm font-bold ${
                               daysLeft <= 7 ? 'text-red-400' : 
                               daysLeft <= 14 ? 'text-amber-400' : 
                               'text-blue-400'
                             }`}>
-                              {daysLeft}gg
+                              {daysLeft}g
                             </span>
-                            <span className="text-[10px] text-slate-400">
+                            <span className="text-xs text-slate-400">
                               {exp.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
                             </span>
                           </div>
@@ -1138,15 +1193,15 @@ export default function DashboardNew() {
           )}
 
           {activeTab === 'attività' && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <Bell size={16} /> Attività Recenti ({activityFeed.length})
+            <div className="space-y-4">
+              <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <Bell size={18} className="text-slate-400" /> Attività Recenti ({activityFeed.length})
               </h3>
               
               {activityFeed.length === 0 ? (
-                <p className="text-xs text-slate-400 py-4 text-center">Nessuna attività recente</p>
+                <p className="text-sm text-slate-400 py-8 text-center">Nessuna attività recente</p>
               ) : (
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {activityFeed
                     .sort((a, b) => {
                       const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
@@ -1161,26 +1216,26 @@ export default function DashboardNew() {
                           activity.type === 'renewal' || activity.type === 'new_payment' || activity.type === 'expiring' ? 'payments' :
                           activity.type === 'new_check' ? 'check' : 'anamnesi'
                         }`)}
-                        className="flex items-start gap-2 p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
+                        className="flex items-start gap-3 p-3 bg-slate-800/40 hover:bg-slate-800/60 rounded-lg cursor-pointer transition-colors border border-slate-700/30"
                       >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          activity.type === 'renewal' ? 'bg-emerald-500/20' :
-                          activity.type === 'new_payment' ? 'bg-green-500/20' :
-                          activity.type === 'new_check' ? 'bg-blue-500/20' :
-                          activity.type === 'new_anamnesi' ? 'bg-purple-500/20' :
-                          'bg-amber-500/20'
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          activity.type === 'renewal' ? 'bg-emerald-500/10' :
+                          activity.type === 'new_payment' ? 'bg-green-500/10' :
+                          activity.type === 'new_check' ? 'bg-blue-500/10' :
+                          activity.type === 'new_anamnesi' ? 'bg-purple-500/10' :
+                          'bg-amber-500/10'
                         }`}>
-                          {activity.type === 'renewal' ? <RefreshCw className="text-emerald-400" size={14} /> :
-                           activity.type === 'new_payment' ? <DollarSign className="text-green-400" size={14} /> :
-                           activity.type === 'new_check' ? <CheckCircle className="text-blue-400" size={14} /> :
-                           activity.type === 'new_anamnesi' ? <FileText className="text-purple-400" size={14} /> :
-                           <Clock className="text-amber-400" size={14} />}
+                          {activity.type === 'renewal' ? <RefreshCw className="text-emerald-400" size={16} /> :
+                           activity.type === 'new_payment' ? <DollarSign className="text-green-400" size={16} /> :
+                           activity.type === 'new_check' ? <CheckCircle className="text-blue-400" size={16} /> :
+                           activity.type === 'new_anamnesi' ? <FileText className="text-purple-400" size={16} /> :
+                           <Clock className="text-amber-400" size={16} />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-white truncate">{activity.clientName}</p>
-                          <p className="text-[10px] text-slate-400">{activity.description}</p>
+                          <p className="text-sm font-medium text-white truncate">{activity.clientName}</p>
+                          <p className="text-xs text-slate-400">{activity.description}</p>
                         </div>
-                        <span className="text-[9px] text-slate-500 flex-shrink-0">
+                        <span className="text-xs text-slate-500 flex-shrink-0">
                           {toDate(activity.date)?.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
                         </span>
                       </div>
@@ -1198,17 +1253,18 @@ export default function DashboardNew() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4"
             onClick={() => setShowRevenueBreakdown(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl"
+              initial={{ scale: 0.98, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.98, opacity: 0, y: 20 }}
+              className={`bg-slate-900 border border-slate-700 w-full ${isMobile ? 'rounded-t-3xl max-h-[85vh]' : 'rounded-2xl max-w-2xl max-h-[80vh]'} overflow-hidden flex flex-col shadow-2xl`}
               onClick={e => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+              {isMobile && <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mt-3 mb-2" />}
+              <div className="px-4 py-3 md:p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
                 <div>
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <DollarSign className="text-emerald-400" size={20} />
@@ -1225,7 +1281,12 @@ export default function DashboardNew() {
                   <X size={20} />
                 </button>
               </div>
-              
+
+              <div className="px-4 py-3 text-[11px] text-slate-400 flex items-center justify-between bg-slate-900/80">
+                <span>Movimenti: {revenueBreakdownData.length}</span>
+                <span>Ticket medio: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(metrics.avgValue || 0)}</span>
+              </div>
+
               <div className="overflow-y-auto p-4 space-y-2 custom-scrollbar">
                 {revenueBreakdownData.length > 0 ? (
                   revenueBreakdownData.map((item, idx) => (

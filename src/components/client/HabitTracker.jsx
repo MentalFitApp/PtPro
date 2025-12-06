@@ -188,7 +188,7 @@ export default function HabitTracker() {
 
   if (loading) {
     return (
-      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6 shadow-glow">
         <div className="animate-pulse space-y-4">
           <div className="h-6 bg-slate-700 rounded w-1/3"></div>
           <div className="space-y-3">
@@ -206,7 +206,7 @@ export default function HabitTracker() {
   const last7Days = getLast7DaysCompletion();
 
   return (
-    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-3 sm:p-4 space-y-3 sm:space-y-4">
+    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-3 sm:p-4 space-y-3 sm:space-y-4 shadow-glow">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

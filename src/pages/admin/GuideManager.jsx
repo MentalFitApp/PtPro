@@ -171,7 +171,7 @@ export default function GuideManager() {
       </div>
 
       {/* GUIDE ATTIVE */}
-      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700 shadow-glow">
         <h2 className="text-xl font-semibold text-cyan-300 mb-4">Guide Attive</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {guides.filter(g => g.active).map(g => (
@@ -222,7 +222,7 @@ export default function GuideManager() {
       </div>
 
       {/* TABELLA LEAD */}
-      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-6 border border-slate-700 overflow-x-auto">
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-2 sm:p-6 border border-slate-700 overflow-x-auto shadow-glow">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 sm:mb-4">
           <h2 className="text-base sm:text-xl font-semibold text-cyan-300">Lead dalle Guide ({filteredLeads.length})</h2>
           <div className="flex gap-1.5 sm:gap-2 text-[10px] sm:text-xs w-full sm:w-auto">

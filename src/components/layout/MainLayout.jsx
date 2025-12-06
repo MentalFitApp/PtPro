@@ -4,7 +4,7 @@ import {
   Home, Users, MessageSquare, FileText, Bell,
   Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing,
   UserCheck, BookOpen, Target, Activity, GraduationCap, Plus, Menu, X, Palette, Globe, Instagram,
-  Dumbbell, Utensils, Shield, Layout
+  Dumbbell, Utensils, Shield, Layout, MoreHorizontal
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isSuperAdmin } from '../../utils/superadmin';
@@ -12,6 +12,7 @@ import { auth, db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import ThemeToggle from '../ui/ThemeToggle';
 import { defaultBranding } from '../../config/tenantBranding';
+import NotificationPermissionModal from '../notifications/NotificationPermissionModal';
 import { 
   pageVariants, 
   fadeVariants, 
@@ -80,90 +81,136 @@ const AnimatedStars = () => {
   return null;
 };
 
-// === LINKS NAVIGAZIONE CON SOTTOMENU ===
+// === LINKS NAVIGAZIONE CON SEZIONI (Stile Pro) ===
+const adminNavConfig = {
+  sections: [
+    {
+      title: 'Main',
+      items: [
+        { to: '/', icon: <Home size={18} />, label: 'Dashboard' },
+        { to: '/clients', icon: <Users size={18} />, label: 'Clienti' },
+        { to: '/chat', icon: <MessageSquare size={18} />, label: 'Messaggi' },
+        { to: '/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
+      ]
+    },
+    {
+      title: 'Gestione',
+      items: [
+        { to: '/collaboratori', icon: <UserCheck size={18} />, label: 'Collaboratori' },
+        { to: '/admin/dipendenti', icon: <Users size={18} />, label: 'Dipendenti' },
+        { to: '/alimentazione-allenamento', icon: <Target size={18} />, label: 'Schede' },
+      ]
+    },
+    {
+      title: 'Contenuti',
+      items: [
+        { to: '/courses', icon: <BookOpen size={18} />, label: 'Corsi' },
+        { to: '/community', icon: <Users size={18} />, label: 'Community' },
+        { to: '/updates', icon: <BellRing size={18} />, label: 'Novità' },
+      ]
+    },
+    {
+      title: 'Analytics',
+      items: [
+        { to: '/business-history', icon: <BarChart3 size={18} />, label: 'Business History' },
+        { to: '/statistiche', icon: <Activity size={18} />, label: 'Statistiche' },
+        { to: '/analytics', icon: <BarChart3 size={18} />, label: 'Analytics' },
+        { to: '/coach-analytics', icon: <Target size={18} />, label: 'Coach Analytics' },
+      ]
+    },
+    {
+      title: 'Impostazioni',
+      items: [
+        { to: '/admin/branding', icon: <Palette size={18} />, label: 'Branding' },
+        { to: '/landing-pages', icon: <Layout size={18} />, label: 'Landing Pages' },
+        { to: '/instagram', icon: <Instagram size={18} />, label: 'Instagram' },
+        { to: '/platform-settings', icon: <Settings size={18} />, label: 'Piattaforma' },
+      ]
+    }
+  ]
+};
+
+const coachNavConfig = {
+  sections: [
+    {
+      title: 'Main',
+      items: [
+        { to: '/coach', icon: <Home size={18} />, label: 'Dashboard' },
+        { to: '/coach/clients', icon: <Users size={18} />, label: 'Clienti' },
+        { to: '/coach/chat', icon: <MessageSquare size={18} />, label: 'Messaggi' },
+      ]
+    },
+    {
+      title: 'Gestione',
+      items: [
+        { to: '/coach/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
+        { to: '/coach/schede', icon: <Target size={18} />, label: 'Schede' },
+      ]
+    },
+    {
+      title: 'Altro',
+      items: [
+        { to: '/coach/updates', icon: <BellRing size={18} />, label: 'Aggiornamenti' },
+        { to: '/coach/settings', icon: <Settings size={18} />, label: 'Impostazioni' },
+      ]
+    }
+  ]
+};
+
+const clientNavConfig = {
+  sections: [
+    {
+      title: 'Main',
+      items: [
+        { to: '/client/dashboard', icon: <Home size={18} />, label: 'Dashboard' },
+        { to: '/client/scheda-allenamento', icon: <Dumbbell size={18} />, label: 'Allenamento' },
+        { to: '/client/scheda-alimentazione', icon: <Utensils size={18} />, label: 'Alimentazione' },
+      ]
+    },
+    {
+      title: 'Comunicazioni',
+      items: [
+        { to: '/client/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
+        { to: '/client/community', icon: <Users size={18} />, label: 'Community' },
+      ]
+    },
+    {
+      title: 'Profilo',
+      items: [
+        { to: '/client/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
+        { to: '/client/checks', icon: <Activity size={18} />, label: 'Check' },
+        { to: '/client/payments', icon: <Target size={18} />, label: 'Pagamenti' },
+        { to: '/client/courses', icon: <BookOpen size={18} />, label: 'Corsi' },
+        { to: '/client/settings', icon: <Settings size={18} />, label: 'Impostazioni' },
+      ]
+    }
+  ]
+};
+
+const collaboratoreNavConfig = {
+  sections: [
+    {
+      title: 'Main',
+      items: [
+        { to: '/collaboratore/dashboard', icon: <Home size={18} />, label: 'Dashboard' },
+        { to: '/collaboratore/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
+      ]
+    }
+  ]
+};
+
+// Keep old flat arrays for bottom nav compatibility
 const adminNavLinks = [
   { to: '/', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
   { to: '/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/updates', icon: <BellRing size={18} />, label: 'Novità' },
   { to: '/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
-  
-  // Sezione Clienti
-  { 
-    label: 'Clienti', 
-    icon: <Users size={18} />, 
-    isSection: true,
-    children: [
-      { to: '/clients', icon: <Users size={18} />, label: 'Lista Clienti' },
-      { to: '/new-client', icon: <Plus size={18} />, label: 'Nuovo Cliente' },
-    ]
-  },
-  
-  // Sezione Schede
-  { 
-    label: 'Schede', 
-    icon: <Target size={18} />, 
-    isSection: true,
-    children: [
-      { to: '/alimentazione-allenamento', icon: <Target size={18} />, label: 'Allenamento & Alimentazione' },
-    ]
-  },
-  
-  // Sezione Team
-  { 
-    label: 'Team', 
-    icon: <UserCheck size={18} />, 
-    isSection: true,
-    children: [
-      { to: '/collaboratori', icon: <UserCheck size={18} />, label: 'Collaboratori' },
-      { to: '/admin/dipendenti', icon: <Users size={18} />, label: 'Dipendenti' },
-    ]
-  },
-  
-  // Sezione Analytics
-  { 
-    label: 'Analytics', 
-    icon: <BarChart3 size={18} />, 
-    isSection: true,
-    children: [
-      { to: '/business-history', icon: <BarChart3 size={18} />, label: 'Business History' },
-      { to: '/statistiche', icon: <Activity size={18} />, label: 'Statistiche' },
-      { to: '/analytics', icon: <BarChart3 size={18} />, label: 'Analytics Avanzate' },
-    ]
-  },
-  
-  // Sezione Contenuti
-  { 
-    label: 'Contenuti', 
-    icon: <BookOpen size={18} />, 
-    isSection: true,
-    children: [
-      { to: '/courses', icon: <BookOpen size={18} />, label: 'Corsi' },
-      { to: '/community', icon: <Users size={18} />, label: 'Community' },
-    ]
-  },
-  
-  // Sezione Impostazioni
-  { 
-    label: 'Impostazioni', 
-    icon: <Settings size={18} />, 
-    isSection: true,
-    children: [
-      { to: '/admin/branding', icon: <Palette size={18} />, label: 'Branding' },
-      { to: '/landing-pages', icon: <Layout size={18} />, label: 'Landing Pages' },
-      { to: '/instagram', icon: <Instagram size={18} />, label: 'Instagram' },
-      { to: '/platform-settings', icon: <Settings size={18} />, label: 'Gestione Piattaforma' },
-    ]
-  },
 ];
 
 const coachNavLinks = [
   { to: '/coach', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
   { to: '/coach/clients', icon: <Users size={18} />, label: 'Clienti' },
   { to: '/coach/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
-  { to: '/coach/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
-  { to: '/coach/schede', icon: <Target size={18} />, label: 'Schede' },
-  { to: '/coach/updates', icon: <BellRing size={18} />, label: 'Aggiornamenti' },
-  { to: '/coach/settings', icon: <Settings size={18} />, label: 'Impostazioni' },
 ];
 
 const clientNavLinks = [
@@ -193,6 +240,8 @@ const MobileMenu = ({ isOpen, setIsOpen, isCoach, isCollaboratore, isClient, use
   const navigate = useNavigate();
   const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : (isClient ? clientNavLinks : adminNavLinks));
   const [expandedMenus, setExpandedMenus] = useState({});
+
+  const isClientDetailPage = location.pathname.startsWith('/client/');
 
   return (
     <AnimatePresence>
@@ -312,6 +361,234 @@ const MobileMenu = ({ isOpen, setIsOpen, isCoach, isCollaboratore, isClient, use
   );
 };
 
+const getRoleNavConfig = (isCoach, isClient, isCollaboratore) => {
+  if (isClient) {
+    return {
+      primary: [
+        { to: '/client/dashboard', label: 'Home', Icon: Home, isCentral: true },
+        { to: '/client/scheda-allenamento', label: 'Allenamento', Icon: Dumbbell },
+        { to: '/client/scheda-alimentazione', label: 'Alimentazione', Icon: Utensils },
+        { to: '/client/chat', label: 'Messaggi', Icon: MessageSquare, badgeKey: 'chat' },
+        { type: 'more', label: 'Altro', Icon: MoreHorizontal }
+      ],
+      more: [
+        { to: '/client/payments', label: 'Pagamenti', Icon: Target },
+        { to: '/client/community', label: 'Community', Icon: Users },
+        { to: '/client/settings', label: 'Impostazioni', Icon: Settings },
+        { to: '/client/anamnesi', label: 'Anamnesi', Icon: FileText }
+      ]
+    };
+  }
+
+  if (isCoach) {
+    return {
+      primary: [
+        { to: '/coach', label: 'Home', Icon: Home, isCentral: true },
+        { to: '/coach/clients', label: 'Clienti', Icon: Users, badgeKey: 'clients' },
+        { to: '/coach/anamnesi', label: 'Anamnesi', Icon: FileText },
+        { to: '/coach/chat', label: 'Messaggi', Icon: MessageSquare, badgeKey: 'chat' },
+        { type: 'more', label: 'Altro', Icon: MoreHorizontal }
+      ],
+      more: [
+        { to: '/coach/updates', label: 'Novità', Icon: BellRing },
+        { to: '/coach/schede', label: 'Schede', Icon: Target },
+        { to: '/profile', label: 'Profilo', Icon: UserCheck },
+        { to: '/coach/settings', label: 'Impostazioni', Icon: Settings }
+      ]
+    };
+  }
+
+  if (isCollaboratore) {
+    return {
+      primary: [
+        { to: '/collaboratore/dashboard', label: 'Home', Icon: Home, isCentral: true },
+        { to: '/collaboratore/calendar', label: 'Calendario', Icon: Calendar },
+        { to: '/profile', label: 'Profilo', Icon: UserCheck }
+      ],
+      more: []
+    };
+  }
+
+  return {
+    primary: [
+      { to: '/', label: 'Home', Icon: Home, isCentral: true },
+      { to: '/clients', label: 'Clienti', Icon: Users, badgeKey: 'clients' },
+      { to: '/calendar', label: 'Calendario', Icon: Calendar },
+      { to: '/chat', label: 'Messaggi', Icon: MessageSquare, badgeKey: 'chat' },
+      { type: 'more', label: 'Altro', Icon: MoreHorizontal }
+    ],
+    more: [
+      { to: '/collaboratori', label: 'Collaboratori', Icon: UserCheck },
+      { to: '/admin/dipendenti', label: 'Dipendenti', Icon: Users },
+      { to: '/courses', label: 'Corsi', Icon: BookOpen },
+      { to: '/community', label: 'Community', Icon: Users },
+      { to: '/landing-pages', label: 'Landing Pages', Icon: Layout },
+      { to: '/instagram', label: 'Instagram', Icon: Instagram },
+      { to: '/updates', label: 'Novità', Icon: BellRing },
+      { to: '/analytics', label: 'Analytics', Icon: BarChart3 },
+      { to: '/notifications', label: 'Notifiche', Icon: Bell },
+      { to: '/admin/branding', label: 'Branding', Icon: Palette },
+      { to: '/platform-settings', label: 'Piattaforma', Icon: Shield },
+      { to: '/profile', label: 'Profilo', Icon: UserCheck }
+    ]
+  };
+};
+
+const BottomNav = ({ isCoach, isClient, isCollaboratore }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { primary, more } = getRoleNavConfig(isCoach, isClient, isCollaboratore);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [badges, setBadges] = useState({ chat: 0, clients: 0 });
+
+  useEffect(() => {
+    const readBadges = () => {
+      try {
+        const chat = parseInt(localStorage.getItem('ff_badge_chat') || '0', 10);
+        const clients = parseInt(localStorage.getItem('ff_badge_clients') || '0', 10);
+        setBadges({ chat: Number.isFinite(chat) ? chat : 0, clients: Number.isFinite(clients) ? clients : 0 });
+      } catch {
+        setBadges({ chat: 0, clients: 0 });
+      }
+    };
+
+    readBadges();
+    window.addEventListener('storage', readBadges);
+    window.addEventListener('ff-badges-updated', readBadges);
+    return () => {
+      window.removeEventListener('storage', readBadges);
+      window.removeEventListener('ff-badges-updated', readBadges);
+    };
+  }, []);
+
+  const items = more.length ? primary : primary.filter(item => item.type !== 'more');
+
+  const handleNav = (to) => {
+    setIsMoreOpen(false);
+    navigate(to);
+  };
+
+  return (
+    <>
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden px-3"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 4px)' }}
+      >
+        <div className="max-w-5xl mx-auto">
+          <div className="relative bg-slate-900/95 border border-slate-700/60 rounded-2xl shadow-glow backdrop-blur-xl px-2 py-2">
+            <div className="flex items-end justify-between gap-2">
+              {items.map((item) => {
+                const isActive = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+
+                if (item.type === 'more') {
+                  return (
+                    <button
+                      key="bottom-more"
+                      onClick={() => setIsMoreOpen(true)}
+                      className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all"
+                    >
+                      <MoreHorizontal size={22} />
+                      <span>Altro</span>
+                    </button>
+                  );
+                }
+
+                return (
+                  <button
+                    key={item.to}
+                    onClick={() => handleNav(item.to)}
+                    className={`relative flex-1 flex flex-col items-center justify-center gap-1 transition-all ${
+                      item.isCentral
+                        ? 'h-14 -translate-y-2 rounded-full px-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-glow shadow-blue-500/30'
+                        : 'h-12 rounded-xl text-xs font-semibold'
+                    } ${
+                      !item.isCentral && (isActive ? 'text-white bg-slate-800/80 border border-slate-700/70 shadow-glow' : 'text-slate-300 hover:text-white hover:bg-slate-800/60')
+                    }`}
+                    aria-label={item.label}
+                  >
+                    <div className="relative">
+                      <item.Icon size={item.isCentral ? 22 : 20} />
+                      {!!item.badgeKey && badges[item.badgeKey] > 0 && (
+                        <span className="absolute -top-1.5 -right-2 h-4 min-w-[14px] px-1 rounded-full bg-rose-500 text-white text-[10px] leading-4 font-semibold shadow-glow">
+                          {badges[item.badgeKey] > 9 ? '9+' : badges[item.badgeKey]}
+                        </span>
+                      )}
+                    </div>
+                    <span className={`leading-tight ${item.isCentral ? 'text-[13px]' : 'text-[11px]'}`}>
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isMoreOpen && more.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm lg:hidden"
+            onClick={() => setIsMoreOpen(false)}
+          >
+            <motion.div
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute bottom-0 left-0 right-0 px-4 pb-6"
+              style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 18px)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="max-w-5xl mx-auto bg-slate-900/98 border border-slate-700/70 rounded-2xl shadow-glow backdrop-blur-xl p-3">
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <div className="text-sm font-semibold text-white">Altre azioni</div>
+                  <button
+                    onClick={() => setIsMoreOpen(false)}
+                    className="p-2 rounded-lg hover:bg-slate-800 text-slate-300"
+                    aria-label="Chiudi Altro"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {more.map((item) => {
+                    const isActive = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+                    return (
+                      <button
+                        key={item.to}
+                        onClick={() => handleNav(item.to)}
+                        className={`flex items-center gap-3 w-full px-3 py-3 rounded-xl border transition-all text-sm ${
+                          isActive
+                            ? 'border-blue-500/50 bg-blue-500/10 text-white shadow-glow'
+                            : 'border-slate-700/70 bg-slate-800/70 text-slate-200 hover:border-blue-500/40 hover:bg-slate-800'
+                        }`}
+                      >
+                        <div className="relative">
+                          <item.Icon size={18} />
+                          {!!item.badgeKey && badges[item.badgeKey] > 0 && (
+                            <span className="absolute -top-1.5 -right-2 h-4 min-w-[14px] px-1 rounded-full bg-rose-500 text-white text-[10px] leading-4 font-semibold shadow-glow">
+                              {badges[item.badgeKey] > 9 ? '9+' : badges[item.badgeKey]}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-left">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
 // === COMPONENTE LOGO SIDEBAR ===
 const SidebarLogo = ({ isCollapsed }) => {
   const [branding, setBranding] = useState(defaultBranding);
@@ -375,193 +652,122 @@ const SidebarLogo = ({ isCollapsed }) => {
   );
 };
 
-// === SIDEBAR DESKTOP COLLASSABILE (Stile Premium CEO Dashboard) ===
+// === SIDEBAR DESKTOP PROFESSIONALE (Stile Pro con Sezioni) ===
 const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollapsed, userIsSuperAdmin }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : (isClient ? clientNavLinks : adminNavLinks));
-  const [expandedMenus, setExpandedMenus] = useState({});
+  
+  // Usa le nuove configurazioni con sezioni
+  const navConfig = isCollaboratore ? collaboratoreNavConfig : 
+                    isCoach ? coachNavConfig : 
+                    isClient ? clientNavConfig : 
+                    adminNavConfig;
 
   return (
     <motion.aside
       initial={false}
-      animate={{ width: isCollapsed ? 80 : 280 }}
-      className="hidden lg:flex fixed left-0 top-0 h-screen bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-40 flex-col transition-all duration-300 shadow-2xl"
+      animate={{ width: isCollapsed ? 72 : 260 }}
+      transition={{ duration: 0.2, ease: 'easeInOut' }}
+      className="hidden lg:flex fixed left-0 top-0 h-screen bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-40 flex-col"
     >
-      {/* Header con logo premium */}
-      <div className="p-6 border-b border-slate-700/50">
+      {/* Header */}
+      <div className={`p-4 border-b border-slate-700/50 ${isCollapsed ? 'px-3' : ''}`}>
         <div className="flex items-center justify-between">
-          <AnimatePresence>
-            {!isCollapsed && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-3 w-full"
-              >
-                {/* Mostra logo personalizzato se disponibile, altrimenti design predefinito */}
-                <SidebarLogo isCollapsed={false} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-          {isCollapsed && (
-            <SidebarLogo isCollapsed={true} />
+          <SidebarLogo isCollapsed={isCollapsed} />
+          {!isCollapsed && (
+            <button
+              onClick={() => setIsCollapsed(true)}
+              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+              title="Comprimi sidebar"
+            >
+              <ChevronLeft size={18} />
+            </button>
           )}
         </div>
-        <div className={`flex ${isCollapsed ? 'flex-col' : 'flex-row'} items-center gap-2 mt-3`}>
+        
+        {isCollapsed && (
           <button
-            onClick={() => {
-              const profilePath = isCoach ? '/coach/profile' : 
-                                 isClient ? '/client/profile' : 
-                                 isCollaboratore ? '/collaboratore/profile' : '/profile';
-              navigate(profilePath);
-            }}
-            className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-blue-500/30 hover:ring-blue-500/50 transition-all flex-shrink-0"
-            title="Profilo"
+            onClick={() => setIsCollapsed(false)}
+            className="w-full mt-3 p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors flex items-center justify-center"
+            title="Espandi sidebar"
           >
-            <img 
-              src={auth.currentUser?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(auth.currentUser?.displayName || auth.currentUser?.email || 'User')}&background=3b82f6&color=fff`}
-              alt="Profilo"
-              className="w-full h-full object-cover"
-            />
+            <ChevronRight size={18} />
           </button>
-          <ThemeToggle />
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 rounded-lg hover:bg-slate-800 transition-colors text-slate-400"
-          >
-            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
-        </div>
+        )}
       </div>
 
-      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-        {links
-          .filter(link => !link.isSuperAdmin || userIsSuperAdmin)
-          .map((link) => {
-            // Gestione sezioni collassabili
-            if (link.isSection && link.children) {
-              const isExpanded = expandedMenus[link.label];
-              const hasActiveChild = link.children.some(child => 
-                location.pathname === child.to || location.pathname.startsWith(child.to + '/')
-              );
+      {/* Actions bar */}
+      <div className={`px-3 py-3 border-b border-slate-700/50 flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'}`}>
+        <button
+          onClick={() => {
+            const profilePath = isCoach ? '/coach/profile' : 
+                               isClient ? '/client/profile' : 
+                               isCollaboratore ? '/collaboratore/profile' : '/profile';
+            navigate(profilePath);
+          }}
+          className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-slate-700 hover:ring-blue-500/50 transition-all flex-shrink-0"
+          title="Profilo"
+        >
+          <img 
+            src={auth.currentUser?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(auth.currentUser?.displayName || auth.currentUser?.email || 'User')}&background=3b82f6&color=fff`}
+            alt="Profilo"
+            className="w-full h-full object-cover"
+          />
+        </button>
+        <ThemeToggle />
+        {!isCollapsed && (
+          <button
+            onClick={() => navigate('/notifications')}
+            className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            title="Notifiche"
+          >
+            <Bell size={18} />
+          </button>
+        )}
+      </div>
 
-              return (
-                <div key={link.label}>
+      {/* Navigation con sezioni */}
+      <nav className="flex-1 p-3 overflow-y-auto scrollbar-hide">
+        {navConfig.sections.map((section, sectionIdx) => (
+          <div key={section.title} className={sectionIdx > 0 ? 'mt-4' : ''}>
+            {!isCollapsed && (
+              <div className="px-3 mb-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  {section.title}
+                </span>
+              </div>
+            )}
+            <div className="space-y-1">
+              {section.items.map((item) => {
+                const isActive = location.pathname === item.to || 
+                  (item.to !== '/' && item.to !== '/coach' && item.to !== '/client/dashboard' && item.to !== '/collaboratore/dashboard' && 
+                   location.pathname.startsWith(item.to + '/'));
+                
+                return (
                   <motion.button
-                    onClick={() => {
-                      if (isCollapsed) {
-                        setIsCollapsed(false);
-                      }
-                      setExpandedMenus(prev => ({
-                        ...prev,
-                        [link.label]: !prev[link.label]
-                      }));
-                    }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                      hasActiveChild
-                        ? 'bg-slate-800 text-blue-400'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    key={item.to}
+                    onClick={() => navigate(item.to)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                      isActive
+                        ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                     }`}
-                    whileHover={{ scale: isCollapsed ? 1 : 1.02 }}
+                    whileHover={{ x: isCollapsed ? 0 : 2 }}
                     whileTap={{ scale: 0.98 }}
+                    title={isCollapsed ? item.label : undefined}
                   >
                     <div className="flex-shrink-0">
-                      {React.cloneElement(link.icon, { size: 18 })}
+                      {item.icon}
                     </div>
-                    <AnimatePresence>
-                      {!isCollapsed && (
-                        <>
-                          <motion.span
-                            initial={{ opacity: 0, width: 0 }}
-                            animate={{ opacity: 1, width: 'auto' }}
-                            exit={{ opacity: 0, width: 0 }}
-                            className="flex-1 truncate"
-                          >
-                            {link.label}
-                          </motion.span>
-                          <motion.div
-                            animate={{ rotate: isExpanded ? 90 : 0 }}
-                            className="flex-shrink-0"
-                          >
-                            <ChevronRight size={14} />
-                          </motion.div>
-                        </>
-                      )}
-                    </AnimatePresence>
-                  </motion.button>
-
-                  <AnimatePresence>
-                    {isExpanded && !isCollapsed && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="ml-6 mt-1 space-y-1 overflow-hidden"
-                      >
-                        {link.children.map(child => {
-                          const isChildActive = location.pathname === child.to || location.pathname.startsWith(child.to + '/');
-                          return (
-                            <motion.button
-                              key={child.to}
-                              onClick={() => navigate(child.to)}
-                              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                                isChildActive
-                                  ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-400 border border-blue-500/30'
-                                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
-                              }`}
-                              whileHover={{ scale: 1.02, x: 4 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              <div className="flex-shrink-0">
-                                {React.cloneElement(child.icon, { size: 14 })}
-                              </div>
-                              <motion.span className="truncate">
-                                {child.label}
-                              </motion.span>
-                            </motion.button>
-                          );
-                        })}
-                      </motion.div>
+                    {!isCollapsed && (
+                      <span className="truncate font-medium">{item.label}</span>
                     )}
-                  </AnimatePresence>
-                </div>
-              );
-            }
-
-            // Link normale
-            return (
-              <motion.button
-                key={link.to}
-                onClick={() => {
-                  navigate(link.to);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                  location.pathname === link.to || location.pathname.startsWith(link.to + '/')
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-                whileHover={{ scale: isCollapsed ? 1 : 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="flex-shrink-0">
-                  {React.cloneElement(link.icon, { size: 18 })}
-                </div>
-                <AnimatePresence>
-                  {!isCollapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: 'auto' }}
-                      exit={{ opacity: 0, width: 0 }}
-                      className="truncate"
-                    >
-                      {link.label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            );
-          })}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
     </motion.aside>
   );
@@ -570,9 +776,15 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
 // === MAIN LAYOUT INTELLIGENTE ===
 export default function MainLayout() {
   const location = useLocation();
-  const [isCoach, setIsCoach] = useState(false);
-  const [isCollaboratore, setIsCollaboratore] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  const navigate = useNavigate();
+  const matchesBasePath = (basePath) => 
+    location.pathname === basePath || location.pathname.startsWith(`${basePath}/`);
+
+  const isCoach = matchesBasePath('/coach');
+  const isCollaboratore = matchesBasePath('/collaboratore');
+  const isClient = matchesBasePath('/client');
+  const isClientDetailPage = location.pathname.startsWith('/client/');
+  const isClientsListPage = location.pathname === '/clients';
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem('sidebarCollapsed') === 'true';
@@ -582,6 +794,7 @@ export default function MainLayout() {
   });
   const [isMobile, setIsMobile] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [userIsSuperAdmin, setUserIsSuperAdmin] = useState(false);
   const [branding, setBranding] = useState(defaultBranding);
 
@@ -590,12 +803,20 @@ export default function MainLayout() {
   const isChatPage = location.pathname === '/chat' || location.pathname === '/coach/chat' || location.pathname === '/client/chat' || location.pathname === '/community';
   const [isChatSelected, setIsChatSelected] = useState(false);
   const showSidebar = !isAuthPage && auth.currentUser;
+  const mobileBottomPadding = showSidebar && isMobile && !isAuthPage
+    ? 'calc(env(safe-area-inset-bottom) + 110px)'
+    : undefined;
 
+  // Chiudi menu profilo quando si clicca fuori
   useEffect(() => {
-    setIsCoach(location.pathname.startsWith('/coach'));
-    setIsCollaboratore(location.pathname.startsWith('/collaboratore'));
-    setIsClient(location.pathname.startsWith('/client'));
-  }, [location.pathname]);
+    const handleClickOutside = (e) => {
+      if (isProfileMenuOpen && !e.target.closest('[data-profile-menu]')) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isProfileMenuOpen]);
 
   // Salva lo stato della sidebar in localStorage
   useEffect(() => {
@@ -677,7 +898,7 @@ export default function MainLayout() {
 
   // Rileva mobile
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => setIsMobile(window.innerWidth <= 1024);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -779,15 +1000,10 @@ export default function MainLayout() {
               </div>
               <div className="flex items-center gap-2">
                 <ThemeToggle />
-                {/* Menu utente con foto profilo */}
-                <div className="relative">
+                {/* Menu utente con foto profilo - Dropdown */}
+                <div className="relative" data-profile-menu>
                   <button
-                    onClick={() => {
-                      const profilePath = isCoach ? '/coach/profile' : 
-                                         isClient ? '/client/profile' : 
-                                         isCollaboratore ? '/collaboratore/profile' : '/profile';
-                      navigate(profilePath);
-                    }}
+                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                     className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-blue-500/30 hover:ring-blue-500/50 transition-all"
                   >
                     <img 
@@ -796,34 +1012,99 @@ export default function MainLayout() {
                       className="w-full h-full object-cover"
                     />
                   </button>
+                  
+                  <AnimatePresence>
+                    {isProfileMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-2 w-56 bg-slate-800/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[60]"
+                      >
+                        <div className="p-3 border-b border-slate-700/50">
+                          <p className="text-sm font-medium text-white truncate">{auth.currentUser?.displayName || 'Utente'}</p>
+                          <p className="text-xs text-slate-400 truncate">{auth.currentUser?.email}</p>
+                        </div>
+                        <div className="py-1">
+                          <button
+                            onClick={() => {
+                              setIsProfileMenuOpen(false);
+                              const profilePath = isCoach ? '/coach/profile' : 
+                                                 isClient ? '/client/profile' : 
+                                                 isCollaboratore ? '/collaboratore/profile' : '/profile';
+                              navigate(profilePath);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700/50 transition-colors"
+                          >
+                            <Users size={16} />
+                            <span>Profilo</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsProfileMenuOpen(false);
+                              const settingsPath = isCoach ? '/coach/settings' : 
+                                                  isClient ? '/client/settings' : 
+                                                  isCollaboratore ? '/collaboratore/settings' : '/settings';
+                              navigate(settingsPath);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700/50 transition-colors"
+                          >
+                            <Settings size={16} />
+                            <span>Impostazioni</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsProfileMenuOpen(false);
+                              auth.signOut();
+                              navigate('/login');
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-400 hover:bg-slate-700/50 transition-colors"
+                          >
+                            <ChevronRight size={16} className="rotate-180" />
+                            <span>Esci</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>
           </motion.div>
         )}
 
-        {/* CONTENUTO PRINCIPALE - LARGHEZZA MASSIMA DESKTOP CON STILE PREMIUM */}
-        <div className={`flex-1 transition-all duration-300 bg-transparent overflow-x-hidden ${
+        {/* CONTENUTO PRINCIPALE */}
+        <div className={`flex-1 transition-all duration-200 bg-transparent overflow-x-hidden ${
           showSidebar
-            ? (isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-[280px]')
+            ? (isSidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]')
             : 'ml-0'
-        } ${showSidebar && isMobile && !isAuthPage ? 'pt-24' : ''}`}>
-          <main className={`min-h-screen bg-transparent ${
-            isChatPage ? 'p-0' : 'p-2 xs:p-4 sm:p-6 md:p-8 lg:p-10'
-          }`}>
-            <div className="max-w-7xl mx-auto w-full">
-              <motion.div
-                key={location.pathname}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="w-full"
-              >
-                <Outlet />
-              </motion.div>
+        } ${showSidebar && isMobile && !isAuthPage ? 'pt-16' : ''}`}>
+          <main
+            className={`min-h-screen ${
+              (isClientDetailPage || isClientsListPage) ? 'bg-transparent' : 'bg-slate-900/30'
+            } ${
+              isChatPage ? 'p-0' : 'p-4 md:p-6'
+            } ${showSidebar && isMobile && !isAuthPage ? 'pb-24' : ''}`}
+            style={mobileBottomPadding ? { paddingBottom: mobileBottomPadding } : undefined}
+          >
+            <div className="w-full max-w-none">
+              <Outlet />
             </div>
           </main>
         </div>
+
+        {/* Modal richiesta permessi notifiche (primo accesso) */}
+        {!isAuthPage && <NotificationPermissionModal />}
+
+        {/* Bottom navigation mobile con dashboard in evidenza */}
+        {showSidebar && isMobile && !isAuthPage && (
+          <BottomNav
+            isCoach={isCoach}
+            isClient={isClient}
+            isCollaboratore={isCollaboratore}
+          />
+        )}
 
         {/* SCROLLBAR NASCOSTA */}
         <style>{`

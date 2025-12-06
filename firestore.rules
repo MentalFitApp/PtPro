@@ -133,6 +133,20 @@ service cloud.firestore {
           allow create, update: if (isTenantCoach(tenantId) || isTenantAdmin(tenantId) || isTenantCollaboratore(tenantId, request.auth.uid)) && isValidPayment();
           allow delete: if isTenantCoach(tenantId) || isTenantAdmin(tenantId);
         }
+
+        // Subcollection calls per prenotare chiamate
+        match /calls/{callId} {
+          // Tutti possono leggere le proprie chiamate (cliente) o tutte (admin/coach)
+          allow read: if request.auth != null && (
+            request.auth.uid == userId ||
+            isTenantCoach(tenantId) ||
+            isTenantAdmin(tenantId)
+          );
+          // Admin può creare/modificare/eliminare chiamate programmate
+          allow create, update, delete: if isTenantAdmin(tenantId);
+          // Cliente può solo creare/modificare/eliminare richieste (document 'request')
+          allow create, update, delete: if request.auth.uid == userId && callId == 'request';
+        }
       }
 
       // --- ROLES ---

@@ -18,6 +18,7 @@ const PASTI = ['Colazione', 'Spuntino', 'Pranzo', 'Spuntino', 'Cena'];
 const SchedaAlimentazione = () => {
   const { clientId } = useParams();
   const navigate = useNavigate();
+  const currentUser = auth.currentUser;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [clientName, setClientName] = useState('');
@@ -247,6 +248,7 @@ const SchedaAlimentazione = () => {
       const schedaRef = getTenantDoc(db, 'schede_alimentazione', clientId);
       await setDoc(schedaRef, {
         ...schedaData,
+        originalGiorni: schedaData.giorni, // Salva copia originale per il reset
         updatedAt: new Date(),
         publishedAt: new Date()
       });

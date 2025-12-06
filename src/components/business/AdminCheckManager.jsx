@@ -7,6 +7,7 @@ import 'react-calendar/dist/Calendar.css';
 import { Save, MessageSquare, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { useUserPreferences } from '../../hooks/useUserPreferences';
 
 // --- 2. STILI DEL CALENDARIO AGGIORNATI ---
 const calendarStyles = `
@@ -47,6 +48,7 @@ const Notification = ({ message, type, onDismiss }) => (
 
 
 const AdminCheckManager = ({ clientId }) => {
+    const { formatWeight } = useUserPreferences();
     const [checks, setChecks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -111,18 +113,18 @@ const AdminCheckManager = ({ clientId }) => {
             <style>{calendarStyles}</style>
             <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
-                <div className="lg:col-span-1 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-4">
+                <div className="lg:col-span-1 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-4 shadow-glow">
                      <Calendar onChange={handleDateChange} value={selectedDate} tileClassName={tileClassName} />
                 </div>
 
                 <div className="lg:col-span-2 space-y-6">
                     {selectedCheck ? (
-                        <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6">
+                        <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6 shadow-glow">
                             <h3 className="text-xl font-semibold text-rose-300">Dettagli Check del {selectedCheck.createdAt.toDate().toLocaleDateString('it-IT')}</h3>
                              <div className="mt-4 space-y-4">
                                 <div>
                                     <h4 className="font-semibold text-slate-400">Peso Registrato:</h4>
-                                    <p className="text-slate-50 text-xl font-bold">{selectedCheck.weight} kg</p>
+                                    <p className="text-slate-50 text-xl font-bold">{formatWeight(selectedCheck.weight)}</p>
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-slate-400">Note del Cliente:</h4>
@@ -156,7 +158,7 @@ const AdminCheckManager = ({ clientId }) => {
                             </div>
                         </div>
                     ) : (
-                        <div className="flex items-center justify-center h-full bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6 text-slate-500">
+                        <div className="flex items-center justify-center h-full bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6 text-slate-500 shadow-glow">
                             <p>Seleziona un giorno dal calendario per vedere i dettagli del check.</p>
                         </div>
                     )}

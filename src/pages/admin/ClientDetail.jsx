@@ -1,71 +1,102 @@
-// src/pages/ClientDetail.jsx
-import React, { useState, useEffect } from 'react';
+// src/pages/admin/ClientDetail.jsx
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, CLIENT_STATUS_STYLES, CLIENT_STATUS_LABELS, DURATION_OPTIONS } from '../../constants/payments';
-import { doc, onSnapshot, updateDoc, deleteDoc, collection, query, orderBy } from 'firebase/firestore';
-import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
-import { db, toDate, updateStatoPercorso } from '../../firebase'
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit, ArrowLeft, Copy, Check, X, Plus, ZoomIn, CalendarDays, Eye, EyeOff } from 'lucide-react';
+import { doc, onSnapshot, orderBy, query, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  FileText,
+  DollarSign,
+  Trash2,
+  Edit,
+  ArrowLeft,
+  Copy,
+  Check,
+  X,
+  Plus,
+  ZoomIn,
+  CalendarDays,
+  Eye,
+  EyeOff,
+  AlertTriangle,
+  Activity,
+  Image,
+  CreditCard,
+  Info,
+  BarChart3,
+  Clock,
+  Tag,
+  ClipboardList,
+  Moon,
+  NotebookPen,
+  CheckCircle,
+  Link2,
+  Loader2
+} from 'lucide-react';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
+import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, CLIENT_STATUS_STYLES, CLIENT_STATUS_LABELS, CLIENT_STATUS, DURATION_OPTIONS } from '../../constants/payments';
+import { db, toDate, updateStatoPercorso } from '../../firebase';
+import { getTenantDoc, getTenantSubcollection, CURRENT_TENANT_ID } from '../../config/tenant';
+import { useUserPreferences } from '../../hooks/useUserPreferences';
+import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
+import { 
+  UnifiedCard, 
+  CardHeader, 
+  CardHeaderSimple,
+  CardContent, 
+  CardFooter,
+  InfoField,
+  DataCard,
+  Badge,
+  ListItemCard,
+  EmptyState,
+  CardGrid
+} from '../../components/ui/UnifiedCard';
+import { ScheduleCallModal, NextCallCard, CallRequestsBadge } from '../../components/calls/CallScheduler';
 
-// Error Boundary
+// Error boundary to avoid full page crash
 class ErrorBoundary extends React.Component {
-  state = { hasError: false, error: null };
-  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
   render() {
     if (this.state.hasError) {
-      return <div className="text-center text-red-400 p-8">Errore: {this.state.error.message}</div>;
+      return <div className="text-center text-red-400 p-8">Errore: {this.state.error?.message}</div>;
     }
     return this.props.children;
   }
 }
 
-// PathStatusBadge - MEMOIZED
-const PathStatusBadge = React.memo(({ status }) => {
-  return <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${CLIENT_STATUS_STYLES[status] || CLIENT_STATUS_STYLES.na}`}>{CLIENT_STATUS_LABELS[status] || 'N/D'}</span>;
-});
-
-// MODALE ZOOM FOTO - MEMOIZED
-const PhotoZoomModal = React.memo(({ isOpen, onClose, imageUrl, alt }) => {
-  if (!isOpen) return null;
-
+const PathStatusBadge = ({ status }) => {
+  const normalizeStatus = (value) => {
+    if (!value) return CLIENT_STATUS.NA;
+    if (CLIENT_STATUS_STYLES[value]) return value;
+    const lowered = String(value).toLowerCase();
+    if (lowered.includes('scad') && !lowered.includes('in ')) return CLIENT_STATUS.NOT_RENEWED;
+    if (lowered.includes('scaden')) return CLIENT_STATUS.RENEWED;
+    if (lowered.includes('attiv')) return CLIENT_STATUS.ACTIVE;
+    return CLIENT_STATUS.NA;
+  };
+  const key = normalizeStatus(status);
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      exit={{ opacity: 0 }} 
-      onClick={onClose}
-      className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-    >
-      <motion.div 
-        initial={{ scale: 0.8 }} 
-        animate={{ scale: 1 }} 
-        exit={{ scale: 0.8 }}
-        onClick={(e) => e.stopPropagation()}
-        className="relative max-w-4xl max-h-full"
-      >
-        <img src={imageUrl} alt={alt} className="w-full h-auto max-h-screen object-contain rounded-lg shadow-2xl" />
-        <button 
-          onClick={onClose} 
-          className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white"
-        >
-          <X size={24} />
-        </button>
-        <div className="absolute bottom-4 left-4 text-white bg-black/60 px-3 py-1 rounded text-sm">
-          {alt}
-        </div>
-      </motion.div>
-    </motion.div>
+    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${CLIENT_STATUS_STYLES[key] || CLIENT_STATUS_STYLES.na}`}>
+      {CLIENT_STATUS_LABELS[key] || 'N/D'}
+    </span>
   );
-});
+};
 
-// MODALE RINNOVO
 const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
   const [months, setMonths] = useState(3);
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState('bonifico');
+  const [method, setMethod] = useState(PAYMENT_METHODS.BONIFICO);
   const [customMethod, setCustomMethod] = useState('');
   const [manualExpiry, setManualExpiry] = useState('');
 
@@ -73,27 +104,23 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
     try {
       const currentExpiry = toDate(client.scadenza) || new Date();
       const expiry = manualExpiry ? new Date(manualExpiry) : new Date(currentExpiry);
-      
-      if (!manualExpiry) {
-        expiry.setMonth(expiry.getMonth() + months);
-      }
-
-      const paymentMethod = method === 'altro' ? customMethod : method;
+      if (!manualExpiry) expiry.setMonth(expiry.getMonth() + months);
+      const paymentMethod = method === PAYMENT_METHODS.ALTRO ? customMethod : method;
       const payment = {
         amount: parseFloat(amount) || 0,
         duration: manualExpiry ? 'Manuale' : `${months} mesi`,
         paymentDate: new Date(),
-        paymentMethod
+        paymentMethod,
+        createdAt: new Date()
       };
-
+      // Aggiorna scadenza cliente
       const clientRef = getTenantDoc(db, 'clients', client.id);
-      await updateDoc(clientRef, {
-        scadenza: expiry,
-        payments: [...(client.payments || []), payment]
-      });
-
+      await updateDoc(clientRef, { scadenza: expiry });
+      // Salva pagamento nella subcollection
+      const paymentsRef = getTenantSubcollection(db, 'clients', client.id, 'payments');
+      await addDoc(paymentsRef, payment);
       updateStatoPercorso(client.id);
-      onSave();
+      onSave?.();
       onClose();
     } catch (err) {
       console.error('Errore rinnovo:', err);
@@ -103,96 +130,198 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-800/95 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 w-full max-w-md">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-[90] p-4">
+      <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-slate-900/90 rounded-2xl border border-slate-800 p-6 w-full max-w-md shadow-2xl">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-white">Rinnovo {client.name}</h3>
-          <button onClick={onClose} className="text-white hover:text-rose-400">
-            <X size={24} />
-          </button>
+          <button onClick={onClose} className="text-slate-300 hover:text-rose-300"><X size={22} /></button>
         </div>
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-slate-300 mb-1">Mesi di rinnovo</label>
-            <select value={months} onChange={e => setMonths(parseInt(e.target.value))} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white">
-              {DURATION_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
+            <select value={months} onChange={e => setMonths(parseInt(e.target.value))} className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white">
+              {DURATION_OPTIONS.map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
             </select>
           </div>
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Oppure data scadenza manuale</label>
-            <input type="date" value={manualExpiry} onChange={e => setManualExpiry(e.target.value)} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" />
+            <label className="block text-sm text-slate-300 mb-1">Oppure data manuale</label>
+            <input type="date" value={manualExpiry} onChange={e => setManualExpiry(e.target.value)} className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white" />
           </div>
           <div>
             <label className="block text-sm text-slate-300 mb-1">Importo</label>
-            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="es. 150" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" />
+            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="es. 150" className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white" />
           </div>
           <div>
             <label className="block text-sm text-slate-300 mb-1">Metodo</label>
-            <select value={method} onChange={e => setMethod(e.target.value)} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white">
-              <option value={PAYMENT_METHODS.BONIFICO}>{PAYMENT_METHOD_LABELS[PAYMENT_METHODS.BONIFICO]}</option>
-              <option value={PAYMENT_METHODS.KLARNA}>{PAYMENT_METHOD_LABELS[PAYMENT_METHODS.KLARNA]}</option>
-              <option value={PAYMENT_METHODS.PAYPAL}>{PAYMENT_METHOD_LABELS[PAYMENT_METHODS.PAYPAL]}</option>
-              <option value={PAYMENT_METHODS.CASH}>{PAYMENT_METHOD_LABELS[PAYMENT_METHODS.CASH]}</option>
-              <option value={PAYMENT_METHODS.RATEIZZATO}>{PAYMENT_METHOD_LABELS[PAYMENT_METHODS.RATEIZZATO]}</option>
-              <option value={PAYMENT_METHODS.ALTRO}>{PAYMENT_METHOD_LABELS[PAYMENT_METHODS.ALTRO]}</option>
+            <select value={method} onChange={e => setMethod(e.target.value)} className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white">
+              {Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
             </select>
-            {method === 'altro' && (
-              <input 
-                type="text" 
-                value={customMethod} 
-                onChange={e => setCustomMethod(e.target.value)} 
-                placeholder="Specifica metodo" 
-                className="w-full mt-2 p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" 
-              />
+            {method === PAYMENT_METHODS.ALTRO && (
+              <input type="text" value={customMethod} onChange={e => setCustomMethod(e.target.value)} placeholder="Specifica metodo" className="w-full mt-2 p-2 bg-slate-900 border border-slate-700 rounded-lg text-white" />
             )}
           </div>
-          <button onClick={handleSave} className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold">
-            Salva Rinnovo
-          </button>
+          <button onClick={handleSave} className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold shadow-sm">Salva Rinnovo</button>
         </div>
       </motion.div>
     </motion.div>
   );
 };
 
-// MODALE MODIFICA ANAGRAFICA
 const EditClientModal = ({ isOpen, onClose, client, onSave }) => {
+  const initialDate = client?.scadenza ? toDate(client.scadenza) : null;
   const [form, setForm] = useState({
     name: client.name || '',
     email: client.email || '',
     phone: client.phone || '',
+    statoPercorso: client.statoPercorso || CLIENT_STATUS.NA,
+    scadenza: initialDate ? initialDate.toISOString().slice(0, 10) : '',
+    rateizzato: !!client.rateizzato,
+    isOldClient: !!client.isOldClient,
   });
+
+  useEffect(() => {
+    const nextDate = client?.scadenza ? toDate(client.scadenza) : null;
+    setForm({
+      name: client.name || '',
+      email: client.email || '',
+      phone: client.phone || '',
+      statoPercorso: client.statoPercorso || CLIENT_STATUS.NA,
+      scadenza: nextDate ? nextDate.toISOString().slice(0, 10) : '',
+      rateizzato: !!client.rateizzato,
+      isOldClient: !!client.isOldClient,
+    });
+  }, [client]);
 
   const handleSave = async () => {
     try {
+      const payload = {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        statoPercorso: form.statoPercorso,
+        rateizzato: form.rateizzato,
+        isOldClient: form.isOldClient,
+      };
+      if (form.scadenza) payload.scadenza = new Date(form.scadenza);
       const clientRef = getTenantDoc(db, 'clients', client.id);
-      await updateDoc(clientRef, form);
-      onSave();
+      await updateDoc(clientRef, payload);
+      updateStatoPercorso(client.id);
+      onSave?.();
       onClose();
     } catch (err) {
       console.error('Errore modifica:', err);
+      alert('Errore durante il salvataggio.');
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-800/95 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 w-full max-w-md">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-[90] p-0 md:p-4">
+      <motion.div initial={{ y: 20 }} animate={{ y: 0 }} exit={{ y: 20 }} className="bg-slate-900/90 rounded-t-3xl md:rounded-2xl border border-slate-800 p-6 w-full max-w-2xl shadow-2xl">
+        <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-4 md:hidden" />
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-white">Modifica {client.name}</h3>
-          <button onClick={onClose} className="text-white hover:text-rose-400">
-            <X size={24} />
-          </button>
+          <h3 className="text-xl font-bold text-white">Modifica cliente</h3>
+          <button onClick={onClose} className="text-slate-300 hover:text-rose-300"><X size={22} /></button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nome" className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white" />
+            <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email" className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white" />
+            <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Telefono" className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white" />
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm text-slate-300 mb-1">Stato percorso</label>
+              <select value={form.statoPercorso} onChange={e => setForm({ ...form, statoPercorso: e.target.value })} className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white">
+                {Object.keys(CLIENT_STATUS_LABELS).map(key => (<option key={key} value={key}>{CLIENT_STATUS_LABELS[key]}</option>))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-slate-300 mb-1">Scadenza</label>
+              <input type="date" value={form.scadenza} onChange={e => setForm({ ...form, scadenza: e.target.value })} className="p-2 bg-slate-900 border border-slate-700 rounded-lg text-white w-full" />
+            </div>
+            <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">
+              <div>
+                <p className="text-sm text-white">Rateizzato</p>
+                <p className="text-xs text-slate-400">Pagamento a rate</p>
+              </div>
+              <input type="checkbox" checked={form.rateizzato} onChange={e => setForm({ ...form, rateizzato: e.target.checked })} />
+            </div>
+            <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">
+              <div>
+                <p className="text-sm text-white">Archivia cliente</p>
+                <p className="text-xs text-slate-400">Escludi da liste attive</p>
+              </div>
+              <input type="checkbox" checked={form.isOldClient} onChange={e => setForm({ ...form, isOldClient: e.target.checked })} />
+            </div>
+          </div>
+        </div>
+        <div className="mt-6 flex flex-col md:flex-row gap-3">
+          <div className="flex-1" />
+          <button onClick={handleSave} className="w-full md:w-auto px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-semibold shadow-sm">Salva</button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+const ExtendExpiryModal = ({ isOpen, onClose, client, onSave }) => {
+  const [days, setDays] = useState(7);
+  const [manualDate, setManualDate] = useState('');
+  const [useManual, setUseManual] = useState(false);
+
+  const handleSave = async () => {
+    try {
+      const current = toDate(client.scadenza) || new Date();
+      const newExpiry = useManual && manualDate ? new Date(manualDate) : new Date(current);
+      if (!useManual) newExpiry.setDate(newExpiry.getDate() + days);
+      const clientRef = getTenantDoc(db, 'clients', client.id);
+      await updateDoc(clientRef, { scadenza: newExpiry });
+      updateStatoPercorso(client.id);
+      onSave?.();
+      onClose();
+    } catch (err) {
+      console.error('Errore prolungamento:', err);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-[90] p-4">
+      <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white rounded-2xl border border-slate-200 p-6 w-full max-w-md shadow-xl">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-slate-900">Prolunga Scadenza</h3>
+          <button onClick={onClose} className="text-slate-500 hover:text-rose-500"><X size={22} /></button>
         </div>
         <div className="space-y-4">
-          <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nome" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" />
-          <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" />
-          <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Telefono" className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" />
-          <button onClick={handleSave} className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-semibold">
-            Salva Modifiche
+          <div className="flex items-center gap-2">
+            <input type="checkbox" checked={useManual} onChange={e => setUseManual(e.target.checked)} className="w-4 h-4" />
+            <label className="text-sm text-slate-700">Scegli data manuale</label>
+          </div>
+          {useManual ? (
+            <div>
+              <label className="block text-sm text-slate-600 mb-1">Nuova scadenza</label>
+              <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800" />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm text-slate-600 mb-1">Aggiungi giorni</label>
+              <select value={days} onChange={e => setDays(parseInt(e.target.value))} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800">
+                {[1,3,7,15,30,60].map(d => (<option key={d} value={d}>+{d} giorni</option>))}
+              </select>
+            </div>
+          )}
+          <div className="text-xs text-slate-600 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+            <p>Scadenza attuale: <strong className="text-slate-900">{toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}</strong></p>
+            <p>Nuova scadenza: <strong className="text-slate-900">{
+              useManual && manualDate ? new Date(manualDate).toLocaleDateString('it-IT') :
+              toDate(client.scadenza) ? new Date(toDate(client.scadenza).getTime() + days * 86400000).toLocaleDateString('it-IT') : 'N/D'
+            }</strong></p>
+          </div>
+          <button onClick={handleSave} className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 shadow-sm">
+            <CalendarDays size={18} /> Prolunga Scadenza
           </button>
         </div>
       </motion.div>
@@ -200,50 +329,37 @@ const EditClientModal = ({ isOpen, onClose, client, onSave }) => {
   );
 };
 
-// MODALE MODIFICA PAGAMENTO
-const EditPaymentModal = ({ isOpen, onClose, payment, paymentIndex, client, onSave }) => {
-  const [form, setForm] = useState({
-    amount: 0,
-    duration: '',
-    paymentMethod: 'bonifico',
-    paymentDate: new Date()
-  });
+const EditPaymentModal = ({ isOpen, onClose, payment, client, onSave }) => {
+  const [form, setForm] = useState({ amount: 0, duration: '', paymentMethod: PAYMENT_METHODS.BONIFICO, paymentDate: new Date() });
   const [customMethod, setCustomMethod] = useState('');
 
-  // Aggiorna form quando payment cambia
-  React.useEffect(() => {
+  useEffect(() => {
     if (payment) {
       setForm({
         amount: payment.amount || 0,
         duration: payment.duration || '',
-        paymentMethod: payment.paymentMethod || 'bonifico',
+        paymentMethod: payment.paymentMethod || PAYMENT_METHODS.BONIFICO,
         paymentDate: payment.paymentDate || new Date()
       });
-      if (payment.paymentMethod === 'altro') {
-        setCustomMethod(payment.paymentMethod);
-      }
+      if (payment.paymentMethod === PAYMENT_METHODS.ALTRO) setCustomMethod(payment.paymentMethod);
     }
   }, [payment]);
 
   const handleSave = async () => {
     try {
-      const updatedPayments = [...(client.payments || [])];
-      const paymentMethod = form.paymentMethod === 'altro' ? customMethod : form.paymentMethod;
-      
-      updatedPayments[paymentIndex] = {
-        ...updatedPayments[paymentIndex],
+      if (!payment?.id) {
+        console.error('ID pagamento non valido');
+        return;
+      }
+      const paymentMethod = form.paymentMethod === PAYMENT_METHODS.ALTRO ? customMethod : form.paymentMethod;
+      const paymentRef = doc(getTenantSubcollection(db, 'clients', client.id, 'payments'), payment.id);
+      await updateDoc(paymentRef, {
         amount: parseFloat(form.amount) || 0,
         duration: form.duration,
         paymentMethod,
         paymentDate: form.paymentDate
-      };
-
-      const clientRef = getTenantDoc(db, 'clients', client.id);
-      await updateDoc(clientRef, {
-        payments: updatedPayments
       });
-
-      onSave();
+      onSave?.();
       onClose();
     } catch (err) {
       console.error('Errore modifica pagamento:', err);
@@ -254,308 +370,179 @@ const EditPaymentModal = ({ isOpen, onClose, payment, paymentIndex, client, onSa
   if (!isOpen) return null;
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      exit={{ opacity: 0 }} 
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-    >
-      <motion.div 
-        initial={{ scale: 0.9 }} 
-        animate={{ scale: 1 }} 
-        exit={{ scale: 0.9 }} 
-        className="bg-slate-800/95 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 w-full max-w-md"
-      >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-[90] p-0 md:p-4">
+      <motion.div initial={{ y: 30 }} animate={{ y: 0 }} exit={{ y: 30 }} className="bg-white border border-slate-200 w-full max-h-[90vh] overflow-y-auto rounded-t-3xl md:rounded-2xl p-6 shadow-2xl">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-white">Modifica Pagamento</h3>
-          <button onClick={onClose} className="text-white hover:text-rose-400">
-            <X size={24} />
-          </button>
+          <h3 className="text-xl font-bold text-slate-900">Modifica Pagamento</h3>
+          <button onClick={onClose} className="text-slate-500 hover:text-rose-500"><X size={22} /></button>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Importo (€)</label>
-            <input 
-              type="number" 
-              value={form.amount} 
-              onChange={e => setForm({ ...form, amount: e.target.value })} 
-              placeholder="es. 150" 
-              className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" 
-            />
+            <label className="block text-sm text-slate-600 mb-1">Importo (€)</label>
+            <input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800" />
           </div>
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Durata</label>
-            <input 
-              type="text" 
-              value={form.duration} 
-              onChange={e => setForm({ ...form, duration: e.target.value })} 
-              placeholder="es. 3 mesi" 
-              className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" 
-            />
+            <label className="block text-sm text-slate-600 mb-1">Durata</label>
+            <input type="text" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800" />
           </div>
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Metodo Pagamento</label>
-            <select 
-              value={form.paymentMethod} 
-              onChange={e => setForm({ ...form, paymentMethod: e.target.value })} 
-              className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white"
-            >
-              {Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
+            <label className="block text-sm text-slate-600 mb-1">Metodo Pagamento</label>
+            <select value={form.paymentMethod} onChange={e => setForm({ ...form, paymentMethod: e.target.value })} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800">
+              {Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
             </select>
-            {form.paymentMethod === 'altro' && (
-              <input 
-                type="text" 
-                value={customMethod} 
-                onChange={e => setCustomMethod(e.target.value)} 
-                placeholder="Specifica metodo" 
-                className="w-full p-2 mt-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" 
-              />
+            {form.paymentMethod === PAYMENT_METHODS.ALTRO && (
+              <input type="text" value={customMethod} onChange={e => setCustomMethod(e.target.value)} className="w-full p-2 mt-2 bg-white border border-slate-200 rounded-lg text-slate-800" placeholder="Specifica metodo" />
             )}
           </div>
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-            <p className="text-xs text-blue-300">
-              💡 L'importo modificato verrà considerato come incasso del mese di pagamento originale.
-            </p>
-          </div>
-          <button 
-            onClick={handleSave} 
-            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold"
-          >
-            Salva Modifiche
-          </button>
+          <button onClick={handleSave} className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-sm">Salva Modifiche</button>
         </div>
       </motion.div>
     </motion.div>
   );
 };
 
-// NUOVO MODALE: PROLUNGA SCADENZA
-const ExtendExpiryModal = ({ isOpen, onClose, client, onSave }) => {
-  const [days, setDays] = useState(7);
-  const [manualDate, setManualDate] = useState('');
-  const [useManual, setUseManual] = useState(false);
-
-  const handleSave = async () => {
-    try {
-      const current = toDate(client.scadenza) || new Date();
-      const newExpiry = useManual && manualDate ? new Date(manualDate) : new Date(current);
-      if (!useManual) {
-        newExpiry.setDate(newExpiry.getDate() + days);
-      }
-
-      const clientRef = getTenantDoc(db, 'clients', client.id);
-      await updateDoc(clientRef, { scadenza: newExpiry });
-
-      updateStatoPercorso(client.id);
-      onSave();
-      onClose();
-    } catch (err) {
-      console.error('Errore prolungamento:', err);
-    }
-  };
-
+const PhotoZoomModal = ({ isOpen, onClose, imageUrl, alt }) => {
   if (!isOpen) return null;
-
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-800/95 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-white">Prolunga Scadenza</h3>
-          <button onClick={onClose} className="text-white hover:text-rose-400">
-            <X size={24} />
-          </button>
-        </div>
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <input type="checkbox" checked={useManual} onChange={e => setUseManual(e.target.checked)} className="w-4 h-4 text-cyan-500" />
-            <label className="text-sm text-slate-300">Scegli data manuale</label>
-          </div>
-
-          {useManual ? (
-            <div>
-              <label className="block text-sm text-slate-300 mb-1">Nuova data scadenza</label>
-              <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white" />
-            </div>
-          ) : (
-            <div>
-              <label className="block text-sm text-slate-300 mb-1">Aggiungi giorni</label>
-              <select value={days} onChange={e => setDays(parseInt(e.target.value))} className="w-full p-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white">
-                <option value={1}>+1 giorno</option>
-                <option value={3}>+3 giorni</option>
-                <option value={7}>+7 giorni</option>
-                <option value={15}>+15 giorni</option>
-                <option value={30}>+30 giorni</option>
-                <option value={60}>+60 giorni</option>
-              </select>
-            </div>
-          )}
-
-          <div className="text-xs text-slate-400 p-3 bg-slate-700/30 rounded-lg">
-            <p>Scadenza attuale: <strong>{toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}</strong></p>
-            <p>Nuova scadenza: <strong>{
-              useManual && manualDate ? new Date(manualDate).toLocaleDateString('it-IT') :
-              toDate(client.scadenza) ? new Date(toDate(client.scadenza).getTime() + days * 86400000).toLocaleDateString('it-IT') : 'N/D'
-            }</strong></p>
-          </div>
-
-          <button onClick={handleSave} className="w-full py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2">
-            <CalendarDays size={18} /> Prolunga Scadenza
-          </button>
-        </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-black/90 z-[90] flex items-center justify-center p-4">
+      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} onClick={(e) => e.stopPropagation()} className="relative max-w-4xl max-h-full">
+        <img src={imageUrl} alt={alt} className="w-full h-auto max-h-screen object-contain rounded-lg shadow-2xl" />
+        <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white"><X size={24} /></button>
+        <div className="absolute bottom-4 left-4 text-white bg-black/60 px-3 py-1 rounded text-sm">{alt}</div>
       </motion.div>
     </motion.div>
   );
 };
 
-// COMPONENTE RIUTILIZZABILE: Campo Anamnesi
-const AnamnesiField = ({ label, value }) => (
-  <div className="mb-4">
-    <h4 className="text-sm font-semibold text-slate-400">{label}</h4>
-    <p className="mt-1 p-3 bg-white/5 backdrop-blur-md rounded-lg min-h-[44px] text-white break-words whitespace-pre-wrap shadow-inner">
-      {value || 'Non specificato'}
-    </p>
-  </div>
-);
-
-// COMPONENTE TABELLA RATE - MEMOIZED
 const RateTable = React.memo(({ rates, canEdit, onAdd, onUpdate, onDelete, showAmounts }) => {
   const [newRate, setNewRate] = useState({ amount: '', dueDate: '', paid: false });
   const [editIdx, setEditIdx] = useState(null);
   const [editRate, setEditRate] = useState({ amount: '', dueDate: '' });
 
   return (
-    <div className="mt-6">
-      <h3 className="text-base sm:text-lg font-bold text-slate-200 mb-2">Rate</h3>
+    <div className="mt-4">
+      <h3 className="text-base sm:text-lg font-semibold text-white mb-2">Rate</h3>
       <div className="mobile-table-wrapper">
-      <table className="w-full text-xs sm:text-sm bg-slate-800/60 rounded-xl border border-slate-700 min-w-[500px]">
-        <thead>
-          <tr className="bg-slate-900/50">
-            <th className="px-2 py-2">Importo</th>
-            <th className="px-2 py-2">Scadenza</th>
-            <th className="px-2 py-2">Pagata</th>
-            {canEdit && <th className="px-2 py-2">Modifica</th>}
-            {canEdit && <th className="px-2 py-2">Azioni</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {rates && rates.length > 0 ? rates.map((rate, idx) => (
-            <tr key={idx} className="border-b border-slate-700">
-              <td className="px-2 py-2">
-                {canEdit && editIdx === idx ? (
-                  <input type="number" value={editRate.amount} onChange={e => setEditRate({ ...editRate, amount: e.target.value })} className="p-1 rounded bg-slate-700/50 border border-slate-600 text-white w-20" />
-                ) : (showAmounts ? `€${rate.amount}` : '€ •••')}
-              </td>
-              <td className="px-2 py-2">
-                {canEdit && editIdx === idx ? (
-                  <input type="date" value={editRate.dueDate} onChange={e => setEditRate({ ...editRate, dueDate: e.target.value })} className="p-1 rounded bg-slate-700/50 border border-slate-600 text-white" />
-                ) : (rate.dueDate ? new Date(rate.dueDate).toLocaleDateString() : '-')}
-              </td>
-              <td className="px-2 py-2">
-                {canEdit ? (
-                  <input type="checkbox" checked={rate.paid} onChange={() => {
-                    const update = { ...rate, paid: !rate.paid };
-                    if (!rate.paid) update.paidDate = new Date().toISOString();
-                    else update.paidDate = null;
-                    onUpdate(idx, update);
-                  }} />
-                ) : (
-                  rate.paid ? <span className="text-green-400">Pagata{rate.paidDate ? ` il ${new Date(rate.paidDate).toLocaleDateString('it-IT')}` : ''}</span> : <span className="text-red-400">Da pagare</span>
-                )}
-              </td>
-              {canEdit && (
-                <td className="px-2 py-2">
-                  {editIdx === idx ? (
-                    <>
-                      <button onClick={() => { onUpdate(idx, { ...rate, ...editRate }); setEditIdx(null); }} className="text-emerald-400 px-2">Salva</button>
-                      <button onClick={() => setEditIdx(null)} className="text-slate-400 px-2">Annulla</button>
-                    </>
-                  ) : (
-                    <button onClick={() => { setEditIdx(idx); setEditRate({ amount: rate.amount, dueDate: rate.dueDate }); }} className="text-cyan-400 px-2">Modifica</button>
-                  )}
-                </td>
-              )}
-              {canEdit && (
-                <td className="px-2 py-2">
-                  <button onClick={() => onDelete(idx)} className="text-red-400 px-2">Elimina</button>
-                </td>
-              )}
+        <table className="w-full text-xs sm:text-sm bg-slate-900/70 rounded-xl border border-slate-800 min-w-[520px] overflow-hidden">
+          <thead>
+            <tr className="bg-slate-900 text-slate-300">
+              <th className="px-3 py-2 text-left font-semibold">Importo</th>
+              <th className="px-3 py-2 text-left font-semibold">Scadenza</th>
+              <th className="px-3 py-2 text-left font-semibold">Pagata</th>
+              {canEdit && <th className="px-3 py-2 text-left font-semibold">Modifica</th>}
+              {canEdit && <th className="px-3 py-2 text-left font-semibold">Azioni</th>}
             </tr>
-          )) : (
-            <tr><td colSpan={canEdit ? 5 : 3} className="text-center py-2 text-slate-400">Nessuna rata</td></tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rates && rates.length > 0 ? rates.map((rate, idx) => (
+              <tr key={idx} className="border-b border-slate-800/70">
+                <td className="px-3 py-2 text-slate-100">
+                  {canEdit && editIdx === idx ? (
+                    <input type="number" value={editRate.amount} onChange={e => setEditRate({ ...editRate, amount: e.target.value })} className="p-1 rounded border border-slate-700 bg-slate-900 text-slate-100 w-24" />
+                  ) : (showAmounts ? `€${rate.amount}` : '€ •••')}
+                </td>
+                <td className="px-3 py-2 text-slate-100">
+                  {canEdit && editIdx === idx ? (
+                    <input type="date" value={editRate.dueDate} onChange={e => setEditRate({ ...editRate, dueDate: e.target.value })} className="p-1 rounded border border-slate-700 bg-slate-900 text-slate-100" />
+                  ) : (rate.dueDate ? new Date(rate.dueDate).toLocaleDateString() : '-')}
+                </td>
+                <td className="px-3 py-2 text-slate-100">
+                  <div className="flex items-center gap-2">
+                    {canEdit && (
+                      <input 
+                        type="checkbox" 
+                        checked={rate.paid} 
+                        onChange={() => {
+                          const update = { ...rate, paid: !rate.paid };
+                          update.paidDate = update.paid ? new Date().toISOString() : null;
+                          onUpdate(idx, update);
+                        }} 
+                        className="w-4 h-4 accent-emerald-500 cursor-pointer"
+                      />
+                    )}
+                    {rate.paid ? (
+                      <span className="text-emerald-300 text-xs">{rate.paidDate ? new Date(rate.paidDate).toLocaleDateString('it-IT') : 'Pagata'}</span>
+                    ) : (
+                      <span className="text-rose-300 text-xs">Da pagare</span>
+                    )}
+                  </div>
+                </td>
+                {canEdit && (
+                  <td className="px-3 py-2 text-slate-100">
+                    {editIdx === idx ? (
+                      <>
+                        <button onClick={() => { onUpdate(idx, { ...rate, ...editRate }); setEditIdx(null); }} className="text-emerald-300 font-semibold px-2">Salva</button>
+                        <button onClick={() => setEditIdx(null)} className="text-slate-400 px-2">Annulla</button>
+                      </>
+                    ) : (
+                      <button onClick={() => { setEditIdx(idx); setEditRate({ amount: rate.amount, dueDate: rate.dueDate }); }} className="text-cyan-300 px-2 font-semibold">Modifica</button>
+                    )}
+                  </td>
+                )}
+                {canEdit && (
+                  <td className="px-3 py-2">
+                    <button onClick={() => onDelete(idx)} className="text-rose-300 px-2 font-semibold">Elimina</button>
+                  </td>
+                )}
+              </tr>
+            )) : (
+              <tr><td colSpan={canEdit ? 5 : 3} className="text-center py-3 text-slate-500">Nessuna rata</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
       {canEdit && (
         <div className="flex flex-col sm:flex-row gap-2 mt-3">
-          <input type="number" placeholder="Importo (€)" value={newRate.amount} onChange={e => setNewRate({ ...newRate, amount: e.target.value })} className="p-2 rounded bg-slate-700/50 border border-slate-600 text-white text-sm w-full sm:w-auto" />
-          <input type="date" value={newRate.dueDate} onChange={e => setNewRate({ ...newRate, dueDate: e.target.value })} className="p-2 rounded bg-slate-700/50 border border-slate-600 text-white text-sm w-full sm:w-auto" />
-          <button onClick={() => { if (newRate.amount && newRate.dueDate) { onAdd(newRate); setNewRate({ amount: '', dueDate: '', paid: false }); } }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-sm whitespace-nowrap">Aggiungi rata</button>
+          <input type="number" placeholder="Importo (€)" value={newRate.amount} onChange={e => setNewRate({ ...newRate, amount: e.target.value })} className="p-2 rounded border border-slate-700 bg-slate-900 text-slate-100 text-sm w-full sm:w-auto" />
+          <input type="date" value={newRate.dueDate} onChange={e => setNewRate({ ...newRate, dueDate: e.target.value })} className="p-2 rounded border border-slate-700 bg-slate-900 text-slate-100 text-sm w-full sm:w-auto" />
+          <button onClick={() => { if (newRate.amount && newRate.dueDate) { onAdd(newRate); setNewRate({ amount: '', dueDate: '', paid: false }); } }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-sm whitespace-nowrap shadow-sm">Aggiungi rata</button>
         </div>
       )}
     </div>
   );
-}, (prevProps, nextProps) => {
-  // Solo re-render se rates, canEdit o showAmounts cambiano
-  return JSON.stringify(prevProps.rates) === JSON.stringify(nextProps.rates) && 
-         prevProps.canEdit === nextProps.canEdit && 
-         prevProps.showAmounts === nextProps.showAmounts;
-});
+}, (prevProps, nextProps) => JSON.stringify(prevProps.rates) === JSON.stringify(nextProps.rates) && prevProps.canEdit === nextProps.canEdit && prevProps.showAmounts === nextProps.showAmounts);
 
 export default function ClientDetail() {
   const { clientId } = useParams();
   const navigate = useNavigate();
+  const { formatWeight, formatLength, weightLabel, lengthLabel } = useUserPreferences();
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('info');
   const [checks, setChecks] = useState([]);
-  const payments = client?.payments || []; 
+  const [payments, setPayments] = useState([]);
   const [anamnesi, setAnamnesi] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
   const [showRenewal, setShowRenewal] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
-  const [showExtend, setShowExtend] = useState(false); // NUOVO
-  const [zoomPhoto, setZoomPhoto] = useState({ open: false, url: '', alt: '' });
-  const [rates, setRates] = useState([]);
-  const [canEditRates, setCanEditRates] = useState(false);
-  const [isRateizzato, setIsRateizzato] = useState(false);
+  const [showExtend, setShowExtend] = useState(false);
   const [showEditPayment, setShowEditPayment] = useState(false);
   const [editingPaymentIndex, setEditingPaymentIndex] = useState(null);
-  const [editPaymentData, setEditPaymentData] = useState({
-    amount: 0,
-    duration: '',
-    paymentMethod: 'bonifico',
-    paymentDate: new Date()
-  });
-  const [showAmounts, setShowAmounts] = useState(false); // Stato per nascondere/mostrare importi
+  const [showAmounts, setShowAmounts] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [rates, setRates] = useState([]);
+  const [zoomPhoto, setZoomPhoto] = useState({ open: false, url: '', alt: '' });
+  const [showScheduleCall, setShowScheduleCall] = useState(false);
+  const [nextCall, setNextCall] = useState(null);
+  const [magicLink, setMagicLink] = useState(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
 
-  // Recupera ruolo utente da localStorage o sessione (adatta se hai un contesto globale)
   let userRole = null;
-  try {
-    userRole = JSON.parse(localStorage.getItem('user'))?.role || null;
-  } catch {
-    // Ignora errori di parsing JSON
-  }
+  try { userRole = sessionStorage.getItem('app_role') || JSON.parse(localStorage.getItem('user'))?.role || null; } catch {}
   const isAdmin = userRole === 'admin';
   const isCoach = userRole === 'coach';
 
-  const sortedPayments = React.useMemo(() => {
-    if (!client?.payments) return [];
-    return client.payments
-      .map((p, i) => ({ ...p, originalIndex: i }))
-      .sort((a, b) => {
-        const dateA = toDate(a.paymentDate) || new Date(0);
-        const dateB = toDate(b.paymentDate) || new Date(0);
-        return dateB - dateA;
-      });
-  }, [client?.payments]);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (!clientId) {
-      setError("ID cliente non valido.");
+      setError('ID cliente non valido.');
       setTimeout(() => navigate('/clients'), 3000);
       return;
     }
@@ -567,97 +554,202 @@ export default function ClientDetail() {
         setClient(data);
         updateStatoPercorso(clientId);
       } else {
-        setError("Cliente non trovato.");
+        setError('Cliente non trovato.');
         setTimeout(() => navigate('/clients'), 3000);
       }
       setLoading(false);
     }, () => {
-      setError("Errore caricamento.");
+      setError('Errore caricamento.');
       setTimeout(() => navigate('/clients'), 3000);
       setLoading(false);
     });
 
-    // === ANAMNESI COMPLETA CON FOTO RISOLTE ===
     const anamnesiCollectionRef = getTenantSubcollection(db, 'clients', clientId, 'anamnesi');
     const anamnesiRef = doc(anamnesiCollectionRef.firestore, anamnesiCollectionRef.path, 'initial');
-    const unsubAnamnesi = onSnapshot(anamnesiRef, async (docSnap) => {
+    const unsubAnamnesi = onSnapshot(anamnesiRef, (docSnap) => {
       if (docSnap.exists()) {
-        let data = docSnap.data();
-
-        // RISOLVI FOTO
-        if (data.photoURLs) {
-          data.photoURLs = normalizePhotoURLs(data.photoURLs);
-          console.debug('[ClientDetail] Anamnesi photoURLs normalized:', data.photoURLs);
-        }
-
+        const data = docSnap.data();
+        if (data.photoURLs) data.photoURLs = normalizePhotoURLs(data.photoURLs);
         setAnamnesi(data);
       } else {
         setAnamnesi(null);
       }
     });
 
-    // === CHECKS CON FOTO RISOLTE ===
     const checksQuery = query(getTenantSubcollection(db, 'clients', clientId, 'checks'), orderBy('createdAt', 'desc'));
-    const unsubChecks = onSnapshot(checksQuery, async (snap) => {
+    const unsubChecks = onSnapshot(checksQuery, (snap) => {
       const checksData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
       const resolvedChecks = checksData.map((check) => {
-        if (check.photoURLs) {
-          check.photoURLs = normalizePhotoURLs(check.photoURLs);
-        }
+        if (check.photoURLs) check.photoURLs = normalizePhotoURLs(check.photoURLs);
         return check;
       });
-      console.debug('[ClientDetail] Checks photoURLs normalized');
       setChecks(resolvedChecks);
-    }, (error) => {
-      console.error('Errore caricamento checks:', error);
-    });
+    }, (err) => console.error('Errore caricamento checks:', err));
 
-    return () => {
-      unsubClient(); 
-      unsubAnamnesi(); 
-      unsubChecks(); 
-    };
+    // Carica pagamenti dalla subcollection
+    const paymentsQuery = query(getTenantSubcollection(db, 'clients', clientId, 'payments'), orderBy('paymentDate', 'desc'));
+    const unsubPayments = onSnapshot(paymentsQuery, (snap) => {
+      const paymentsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPayments(paymentsData);
+    }, (err) => console.error('Errore caricamento payments:', err));
+
+    return () => { unsubClient(); unsubAnamnesi(); unsubChecks(); unsubPayments(); };
   }, [clientId, navigate]);
 
   useEffect(() => {
-    // Recupera le rate dal documento cliente
     if (client && client.rate) setRates(client.rate);
-    // Recupera flag rateizzato
-    if (client && typeof client.rateizzato === 'boolean') setIsRateizzato(client.rateizzato);
-    // Permessi: admin/coach possono modificare
-    setCanEditRates(isAdmin || isCoach);
-  }, [client, isAdmin, isCoach]);
+  }, [client]);
+
+  const sortedPayments = useMemo(() => {
+    if (!payments.length) return [];
+    return payments
+      .map((p, i) => ({ ...p, originalIndex: i }))
+      .sort((a, b) => (toDate(b.paymentDate) || new Date(0)) - (toDate(a.paymentDate) || new Date(0)));
+  }, [payments]);
+
+  const latestCheck = checks?.[0];
+  const previousCheck = checks?.[1];
+  const toNumber = (val) => { const num = parseFloat(val); return Number.isFinite(num) ? num : null; };
+  const weightValue = toNumber(latestCheck?.weight);
+  const prevWeight = toNumber(previousCheck?.weight);
+  const weightDelta = weightValue !== null && prevWeight !== null ? weightValue - prevWeight : null;
+  const weightDeltaPct = weightDelta !== null && prevWeight ? ((weightDelta / prevWeight) * 100) : null;
+  const bodyFatValue = toNumber(latestCheck?.bodyFat);
+  const prevBodyFat = toNumber(previousCheck?.bodyFat);
+  const bodyFatDelta = bodyFatValue !== null && prevBodyFat !== null ? bodyFatValue - prevBodyFat : null;
+  const bodyFatDeltaPct = bodyFatDelta !== null && prevBodyFat ? ((bodyFatDelta / prevBodyFat) * 100) : null;
+  const lastCheckAt = latestCheck?.createdAt ? toDate(latestCheck.createdAt) : null;
+  // Calcola totali dalle rate (per il sistema di flagging pagamenti)
+  const paymentsTotal = rates.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+  const paymentsPaid = rates.filter(r => r.paid).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+  // Ultimo pagamento dalla lista rate pagate
+  const paidRates = rates.filter(r => r.paid).sort((a, b) => (toDate(b.paidDate) || new Date(0)) - (toDate(a.paidDate) || new Date(0)));
+  const lastPayment = paidRates[0];
+
+  const photoGallery = useMemo(() => {
+    const list = [];
+    checks.forEach((check) => {
+      if (check.photoURLs) {
+        Object.entries(check.photoURLs).forEach(([type, url]) => { if (url) list.push({ url, label: type, date: toDate(check.createdAt) }); });
+      }
+    });
+    if (anamnesi?.photoURLs) {
+      Object.entries(anamnesi.photoURLs).forEach(([type, url]) => { if (url) list.push({ url, label: `Anamnesi ${type}`, date: null }); });
+    }
+    return list.slice(0, 10);
+  }, [checks, anamnesi]);
+
+  const activityFeed = useMemo(() => {
+    const items = [];
+    
+    // Aggiungi checks
+    checks.forEach((c) => {
+      const note = c.notes || '';
+      const checkDate = toDate(c.createdAt) || toDate(c.lastUpdatedAt);
+      if (checkDate) {
+        items.push({ label: 'Check inviato', detail: note ? `Note: ${note.slice(0, 40)}${note.length > 40 ? '…' : ''}` : 'Aggiornato peso/metriche', date: checkDate, icon: 'check' });
+      }
+    });
+    
+    // Aggiungi pagamenti dalle rate pagate
+    rates.filter(r => r.paid).forEach((r) => {
+      const paymentDate = toDate(r.paidDate) || toDate(r.dueDate);
+      if (paymentDate) {
+        items.push({ label: 'Pagamento registrato', detail: `€${r.amount || 0}`, date: paymentDate, icon: 'payment' });
+      }
+    });
+    
+    // Aggiungi anamnesi se compilata
+    if (anamnesi?.createdAt || anamnesi?.submittedAt) {
+      const anamnesiDate = toDate(anamnesi.submittedAt) || toDate(anamnesi.createdAt);
+      if (anamnesiDate) {
+        items.push({ label: 'Anamnesi compilata', detail: 'Questionario iniziale completato', date: anamnesiDate, icon: 'anamnesi' });
+      }
+    }
+    
+    // Aggiungi creazione cliente
+    if (client?.createdAt) {
+      const createdDate = toDate(client.createdAt);
+      if (createdDate) {
+        items.push({ label: 'Cliente registrato', detail: 'Account creato sulla piattaforma', date: createdDate, icon: 'created' });
+      }
+    }
+    
+    return items.sort((a, b) => b.date - a.date).slice(0, 8);
+  }, [checks, rates, anamnesi, client]);
+
+  const formatDelta = (delta) => {
+    if (delta === null || delta === undefined) return 'N/D';
+    const fixed = Math.abs(delta).toFixed(1);
+    return `${delta > 0 ? '+' : '-'}${fixed}`;
+  };
+  const formatDeltaPct = (deltaPct) => {
+    if (deltaPct === null || deltaPct === undefined || !Number.isFinite(deltaPct)) return '';
+    const fixed = Math.abs(deltaPct).toFixed(1);
+    return `${deltaPct > 0 ? '+' : '-'}${fixed}%`;
+  };
+
+  const renderAnamnesiField = (label, value) => (
+    <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
+      <p className="text-xs text-slate-400">{label}</p>
+      <p className="text-sm text-white mt-1 whitespace-pre-wrap leading-snug">{value || 'N/D'}</p>
+    </div>
+  );
 
   const handleDelete = async () => {
     if (window.confirm(`Eliminare ${client?.name}?`)) {
-      try {
-        await deleteDoc(getTenantDoc(db, 'clients', clientId));
-        navigate('/clients');
-      } catch (err) {
-        alert("Errore eliminazione.");
-      }
+      try { await deleteDoc(getTenantDoc(db, 'clients', clientId)); navigate('/clients'); } catch { alert('Errore eliminazione.'); }
     }
   };
 
   const copyCredentialsToClipboard = () => {
-    const loginLink = 'https://www.flowfitpro.it/login';
-    const text = `Ciao ${client.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪 Tu come stai?\n\nLink: ${loginLink}\nEmail: ${client.email}\nPassword Temporanea: ${client.tempPassword || 'Contatta admin'}\n\n⚠️ IMPORTANTE: Al primo accesso ti verrà chiesto di impostare una password personale.`;
+    if (!client) return;
+    
+    let text;
+    if (magicLink) {
+      // Usa il Magic Link (preferito)
+      text = `Ciao ${client.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪\nTu come stai?\n\n🔗 LINK ACCESSO RAPIDO (valido 48h):\n${magicLink}\n\n⚠️ Clicca il link sopra per impostare la tua password e accedere direttamente!`;
+    } else {
+      // Fallback alle credenziali tradizionali
+      const loginLink = 'https://www.flowfitpro.it/login';
+      text = `Ciao ${client.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪\nTu come stai?\n\nLink: ${loginLink}\nEmail: ${client.email}\nPassword Temporanea: ${client.tempPassword || 'Contatta admin'}\n\n⚠️ IMPORTANTE: Al primo accesso ti verrà chiesto di impostare una password personale.`;
+    }
+    
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleRenewalSaved = () => {
-    // Il listener principale aggiornerà i dati
-  };
-
-  const handleEditSaved = () => {
-    // Il listener principale aggiornerà i dati
-  };
-
-  const handleExtendSaved = () => {
-    // Il listener principale aggiornerà i dati
+  const generateMagicLinkForClient = async () => {
+    if (!client || generatingLink) return;
+    
+    setGeneratingLink(true);
+    try {
+      const functions = getFunctions(undefined, 'europe-west1');
+      const generateMagicLink = httpsCallable(functions, 'generateMagicLink');
+      
+      const result = await generateMagicLink({
+        clientId: client.id,
+        tenantId: CURRENT_TENANT_ID,
+        email: client.email,
+        name: client.name
+      });
+      
+      if (result.data.success) {
+        setMagicLink(result.data.magicLink);
+        // Copia automaticamente negli appunti
+        navigator.clipboard.writeText(result.data.magicLink);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      } else {
+        alert('Errore nella generazione del Magic Link');
+      }
+    } catch (error) {
+      console.error('Errore generazione Magic Link:', error);
+      alert('Errore: ' + (error.message || 'Riprova più tardi'));
+    } finally {
+      setGeneratingLink(false);
+    }
   };
 
   const handleAddRate = async (rate) => {
@@ -675,333 +767,474 @@ export default function ClientDetail() {
     setRates(newRates);
     await updateDoc(getTenantDoc(db, 'clients', client.id), { rate: newRates });
   };
-  const handleRateizzatoChange = async (val) => {
-    setIsRateizzato(val);
-    await updateDoc(getTenantDoc(db, 'clients', client.id), { rateizzato: val });
-  };
 
   if (loading) return <div className="text-center text-slate-400 p-8">Caricamento...</div>;
   if (error) return <div className="text-center text-red-400 p-8">{error}</div>;
   if (!client) return null;
 
-  const sectionStyle = "bg-white/5 backdrop-blur-xl rounded-2xl border border-slate-700 p-6 shadow-lg border border-white/10";
-  const headingStyle = "font-bold mb-4 text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 flex items-center gap-2";
+  const tabs = [
+    { key: 'overview', label: 'Overview', icon: <FileText size={16} /> },
+    { key: 'check', label: 'Check & Foto', icon: <Calendar size={16} /> },
+    { key: 'payments', label: 'Pagamenti', icon: <CreditCard size={16} /> },
+    { key: 'metrics', label: 'Metriche', icon: <BarChart3 size={16} /> },
+    { key: 'anamnesi', label: 'Anamnesi', icon: <NotebookPen size={16} /> },
+  ];
 
-  return (
-    <ErrorBoundary>
-      <div className="min-h-screen overflow-x-hidden">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
-          <button onClick={() => navigate('/clients')} className="flex items-center gap-2 text-slate-400 hover:text-rose-400 mb-6">
-            <ArrowLeft size={18} /> Torna ai Clienti
-          </button>
+  const infoCard = (
+    <UnifiedCard>
+      <CardHeader 
+        icon={FileText}
+        title="Dettagli cliente"
+        subtitle="Client Details"
+        action={<PathStatusBadge status={client.statoPercorso} />}
+      />
 
-          <div className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-4 sm:p-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-50 break-words">{client.name}</h1>
-            <div className="flex flex-wrap gap-2 w-full md:w-auto">
-              <QuickNotifyButton userId={clientId} userName={client.name} userType="client" />
-              <button onClick={() => setShowEdit(true)} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm rounded-lg">
-                <Edit size={16} /> Modifica
-              </button>
-              <button onClick={() => setShowRenewal(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg">
-                <Plus size={16} /> Rinnovo
-              </button>
-              <button onClick={() => setShowExtend(true)} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm rounded-lg">
-                <CalendarDays size={16} /> Prolunga
-              </button>
-              <button onClick={handleDelete} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg">
-                <Trash2 size={16} /> Elimina
-              </button>
-            </div>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+          <InfoField icon={User} value={client.name} />
+          <div className="flex items-center gap-2">
+            <InfoField icon={Mail} value={client.email} />
+            <button 
+              onClick={generateMagicLinkForClient} 
+              disabled={generatingLink}
+              className="p-1.5 rounded-md border border-slate-700 text-slate-200 hover:text-blue-300 hover:border-blue-400 bg-slate-800 disabled:opacity-50"
+              title="Genera Magic Link"
+            >
+              {generatingLink ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
+            </button>
+            <button onClick={copyCredentialsToClipboard} className="p-1.5 rounded-md border border-slate-700 text-slate-200 hover:text-emerald-300 hover:border-emerald-400 bg-slate-800" title="Copia credenziali">
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+            </button>
           </div>
+          <InfoField icon={Phone} value={client.phone || 'N/D'} />
+          <InfoField icon={Calendar} value={`Scadenza: ${toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}`} />
+          <InfoField icon={Clock} value={`Ultimo check: ${lastCheckAt ? lastCheckAt.toLocaleString('it-IT') : 'N/D'}`} />
+          <InfoField icon={Activity} value={`Ultimo accesso: ${(() => {
+            // Prova lastActive, poi lastCheckAt, poi createdAt come fallback
+            const lastActiveDate = client.lastActive ? toDate(client.lastActive) : null;
+            if (lastActiveDate) return lastActiveDate.toLocaleString('it-IT');
+            if (lastCheckAt) return lastCheckAt.toLocaleString('it-IT');
+            const createdDate = client.createdAt ? toDate(client.createdAt) : null;
+            if (createdDate) return createdDate.toLocaleString('it-IT');
+            return 'N/D';
+          })()}`} />
+          <InfoField icon={DollarSign} value={`Prezzo: ${client.price ? `€${client.price}` : 'N/D'}`} />
+          <InfoField icon={FileText} value={`Anamnesi: ${anamnesi ? 'Compilata ✓' : 'Non inviata'}`} />
+          <div className="flex items-center gap-2">
+            <Tag size={16} className="text-slate-400" />
+            <span className="inline-flex items-center gap-2 flex-wrap">
+              <Badge variant="danger" size="sm">{client.tags?.[0] || 'Client'}</Badge>
+              {client.rateizzato && <Badge variant="success" size="sm">Rateizzato</Badge>}
+            </span>
+          </div>
+        </div>
 
+        <CardGrid cols={2}>
+          <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/60">
+            <div className="flex items-center gap-2 mb-1 text-slate-300">
+              <ClipboardList size={15} />
+              <span className="font-semibold text-white">Goal</span>
+            </div>
+            <p className="text-slate-200 leading-snug min-h-[48px]">{anamnesi?.mainGoal || 'Non impostato'}</p>
+          </div>
+          <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/60">
+            <div className="flex items-center gap-2 mb-1 text-slate-300">
+              <AlertTriangle size={15} />
+              <span className="font-semibold text-white">Infortuni</span>
+            </div>
+            <p className="text-slate-200 leading-snug min-h-[48px]">{anamnesi?.injuries || 'Non specificato'}</p>
+          </div>
+        </CardGrid>
+      </CardContent>
+    </UnifiedCard>
+  );
 
-          {/* Tabs */}
-          <div className="flex overflow-x-auto gap-2 mb-6 bg-slate-900/50 p-1 rounded-lg border border-slate-700 scrollbar-thin scrollbar-thumb-slate-600">
-            {['info', 'check', 'payments', 'anamnesi'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 text-sm rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${activeTab === tab ? 'bg-rose-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
+  const metricsCard = (
+    <UnifiedCard>
+      <CardHeaderSimple 
+        title="Metrics Avg"
+        subtitle="Ultimi check"
+      />
+      <CardContent>
+        <CardGrid cols={3}>
+          <DataCard 
+            label="Peso"
+            value={weightValue !== null ? formatWeight(weightValue) : 'N/D'}
+            delta={weightDelta !== null ? `${formatDelta(weightDelta)} ${formatDeltaPct(weightDeltaPct)}` : undefined}
+            deltaType="negative"
+          />
+          <DataCard 
+            label="Body Fat"
+            value={bodyFatValue !== null ? `${bodyFatValue}%` : 'N/D'}
+            delta={bodyFatDelta !== null ? `${formatDelta(bodyFatDelta)} ${formatDeltaPct(bodyFatDeltaPct)}` : undefined}
+            deltaType="negative"
+          />
+          <DataCard 
+            label="Check"
+            value={checks.length || 0}
+          />
+        </CardGrid>
+      </CardContent>
+    </UnifiedCard>
+  );
+
+  const checkCard = (
+    <UnifiedCard>
+      <CardHeaderSimple 
+        title="Check recenti"
+        subtitle="Ultimi 5"
+      />
+      <CardContent>
+        {checks.length > 0 ? (
+          <div className="space-y-3">
+            {checks.slice(0, 5).map((check) => (
+              <ListItemCard key={check.id}>
+                <div className="flex items-center justify-between text-sm text-slate-200">
+                  <span className="font-semibold">{toDate(check.createdAt)?.toLocaleDateString('it-IT') || 'N/D'}</span>
+                  <span className="text-slate-400">{toDate(check.createdAt)?.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) || ''}</span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                  {check.weight && <Badge variant="default" size="sm">Peso {formatWeight(check.weight)}</Badge>}
+                  {check.bodyFat && <Badge variant="default" size="sm">BF {check.bodyFat}%</Badge>}
+                  {check.notes && <Badge variant="default" size="sm">Note: {check.notes.slice(0, 30)}{check.notes.length > 30 ? '…' : ''}</Badge>}
+                </div>
+              </ListItemCard>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Calendar}
+            description="Nessun check disponibile."
+          />
+        )}
+      </CardContent>
+    </UnifiedCard>
+  );
+
+  const photosCard = (
+    <UnifiedCard>
+      <CardHeaderSimple 
+        title="Foto recenti"
+        subtitle="max 10"
+      />
+      <CardContent>
+        {photoGallery.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            {photoGallery.map((photo, idx) => (
+              <button 
+                key={idx} 
+                onClick={() => setZoomPhoto({ open: true, url: photo.url, alt: photo.label })} 
+                className="relative overflow-hidden rounded-lg group border border-slate-800 bg-slate-900/60"
               >
-                {tab === 'info' ? 'Informazioni' : tab === 'check' ? 'Check' : tab === 'payments' ? 'Pagamenti' : 'Anamnesi'}
+                <img src={photo.url} alt={photo.label} className="w-full h-24 object-cover transition-transform group-hover:scale-110" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
+                  <ZoomIn className="text-white opacity-0 group-hover:opacity-100" size={18} />
+                </div>
               </button>
             ))}
           </div>
+        ) : (
+          <EmptyState
+            icon={Image}
+            description="Nessuna foto caricata."
+          />
+        )}
+      </CardContent>
+    </UnifiedCard>
+  );
 
-          {/* === CHECK === */}
-          {activeTab === 'info' && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3"><User className="text-slate-400" size={18} /><p>Nome: <span className="font-semibold">{client.name}</span></p></div>
-              <div className="flex items-center gap-3">
-                <Mail className="text-slate-400" size={18} />
-                <div className="flex items-center gap-2">
-                  <p>Email: <span className="font-semibold">{client.email}</span></p>
-                  <button onClick={copyCredentialsToClipboard} className="p-2 text-slate-400 hover:text-emerald-400 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg">
-                    {copied ? <Check size={18} /> : <Copy size={18} />}
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center gap-3"><Phone className="text-slate-400" size={18} /><p>Telefono: <span className="font-semibold">{client.phone || 'N/D'}</span></p></div>
-              <div className="flex items-center gap-3"><Calendar className="text-slate-400" size={18} /><p>Scadenza: <span className="font-semibold">{toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}</span></p></div>
-              <div className="flex items-center gap-3"><DollarSign className="text-slate-400" size={18} /><p>Stato: <PathStatusBadge status={client.statoPercorso} /></p></div>
-              {/* Casella rateizzazione solo visuale */}
-              <div className="flex items-center gap-3 mt-2">
-                <label className="font-semibold text-slate-200 text-sm">Rateizzato:</label>
-                <span className={isRateizzato ? 'text-green-400' : 'text-red-400'}>{isRateizzato ? 'Sì' : 'No'}</span>
-              </div>
+  const paymentsCard = (
+    <UnifiedCard>
+      <CardHeaderSimple 
+        title="Pagamenti"
+        action={
+          <button 
+            onClick={() => setShowAmounts(!showAmounts)} 
+            className="flex items-center gap-2 px-3 py-1.5 border border-slate-700 text-slate-200 bg-slate-800 rounded-lg text-xs hover:bg-slate-700" 
+            title={showAmounts ? 'Nascondi importi' : 'Mostra importi'}
+          >
+            {showAmounts ? <EyeOff size={14} /> : <Eye size={14} />}
+            {showAmounts ? 'Nascondi' : 'Mostra'}
+          </button>
+        }
+      />
+      <CardContent>
+        <CardGrid cols={2} className="mb-3">
+          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+            <p className="text-xs text-slate-400">Pagato</p>
+            <p className="text-lg font-semibold text-white">{showAmounts ? `€${paymentsPaid.toFixed(0)}` : '€ •••'}</p>
+          </div>
+          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+            <p className="text-xs text-slate-400">Totale rate</p>
+            <p className="text-lg font-semibold text-white">{showAmounts ? `€${paymentsTotal.toFixed(0)}` : '€ •••'}</p>
+          </div>
+        </CardGrid>
+        <div className="text-sm text-slate-100">
+          <p className="text-slate-400 text-xs">Ultimo pagamento</p>
+          {lastPayment ? (
+            <div className="mt-1 flex items-center justify-between">
+              <span>{toDate(lastPayment.paidDate)?.toLocaleDateString('it-IT') || toDate(lastPayment.dueDate)?.toLocaleDateString('it-IT') || 'N/D'}</span>
+              <span className="font-semibold">{showAmounts ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(lastPayment.amount || 0) : '€ •••'}</span>
             </div>
-          )}
-          {activeTab === 'check' && (
-            <div className="space-y-4">
-              {checks.length > 0 ? checks.map(check => (
-                <div key={check.id} className="p-5 bg-slate-700/50 rounded-xl border border-slate-600">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
-                    <p className="text-sm font-medium text-slate-300">Data: {toDate(check.createdAt)?.toLocaleDateString('it-IT') || 'N/D'}</p>
-                    <p className="text-sm text-slate-300">Peso: <span className="font-semibold">{check.weight || 'N/D'} kg</span></p>
-                  </div>
-                  {check.notes && <p className="text-sm text-slate-400 mb-4 italic">&ldquo;{check.notes}&rdquo;</p>}
-                  {check.photoURLs && Object.values(check.photoURLs).some(Boolean) && (
-                    <div>
-                      <p className="text-xs text-slate-400 mb-3">Foto:</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {Object.entries(check.photoURLs).map(([type, url]) => url ? (
-                          <button
-                            key={type}
-                            onClick={() => setZoomPhoto({ open: true, url, alt: type })}
-                            className="relative group overflow-hidden rounded-xl"
-                          >
-                            <img src={url} alt={type} className="w-full h-40 sm:h-48 object-cover transition-transform duration-300 group-hover:scale-110" />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                              <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={28} />
-                            </div>
-                            <span className="absolute bottom-1 left-1 text-xs bg-black/70 text-white px-2 py-0.5 rounded">
-                              {type}
-                            </span>
-                          </button>
-                        ) : null)}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )) : <p className="text-center text-slate-400 py-8">Nessun check.</p>}
-            </div>
-          )}
-
-          {/* === PAGAMENTI === */}
-          {activeTab === 'payments' && (
-            <div className="space-y-4">
-              {/* Tabella rate modificabile */}
-              <div className="mb-6 p-4 bg-slate-900/60 rounded-xl border border-slate-700 flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <label className="font-semibold text-slate-200 text-sm">Rateizzato:</label>
-                  {(isAdmin || isCoach) ? (
-                    <input type="checkbox" checked={isRateizzato} onChange={e => handleRateizzatoChange(e.target.checked)} />
-                  ) : (
-                    <span className={isRateizzato ? 'text-green-400' : 'text-red-400'}>{isRateizzato ? 'Sì' : 'No'}</span>
-                  )}
-                </div>
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="flex-1">
-                    <RateTable 
-                      rates={rates} 
-                      canEdit={true} 
-                      onAdd={handleAddRate} 
-                      onUpdate={handleUpdateRate} 
-                      onDelete={handleDeleteRate}
-                      showAmounts={showAmounts}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2 min-w-[180px]">
-                    <div className="text-sm text-slate-300">Totale rate pagate:</div>
-                    <div className="text-lg font-bold text-emerald-400">
-                      {showAmounts ? `€${rates.filter(r => r.paid).reduce((sum, r) => sum + Number(r.amount || 0), 0)}` : '€ •••'}
-                    </div>
-                    <div className="text-sm text-slate-300 mt-4">Totale da pagare:</div>
-                    <div className="text-lg font-bold text-rose-400">
-                      {showAmounts ? `€${rates.reduce((sum, r) => sum + Number(r.amount || 0), 0)}` : '€ •••'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Pagamenti legacy */}
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
-                  <DollarSign size={18} />
-                  Storico Pagamenti
-                </h3>
-                <button
-                  onClick={() => setShowAmounts(!showAmounts)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs transition-colors"
-                  title={showAmounts ? "Nascondi importi" : "Mostra importi"}
-                >
-                  {showAmounts ? <EyeOff size={14} /> : <Eye size={14} />}
-                  {showAmounts ? 'Nascondi' : 'Mostra'}
-                </button>
-              </div>
-              {sortedPayments.length > 0 ? sortedPayments.map((p) => (
-                <div key={p.originalIndex} className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 relative group">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <p className="text-sm text-slate-400">Data: {toDate(p.paymentDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
-                      <p className="text-sm text-slate-200">
-                        Importo: {showAmounts ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(p.amount || 0) : '€ •••'}
-                      </p>
-                      <p className="text-sm text-slate-200">Durata: {p.duration}</p>
-                      <p className="text-sm text-slate-200">Metodo: {p.paymentMethod}</p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setEditingPaymentIndex(p.originalIndex);
-                        setEditPaymentData({
-                          amount: p.amount || 0,
-                          duration: p.duration || '',
-                          paymentMethod: p.paymentMethod || 'bonifico',
-                          paymentDate: p.paymentDate || new Date()
-                        });
-                        setShowEditPayment(true);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"
-                      title="Modifica pagamento"
-                    >
-                      <Edit size={16} />
-                    </button>
-                  </div>
-                </div>
-              )) : <p className="text-center text-slate-400">Nessun pagamento.</p>}
-            </div>
-          )}
-
-          {/* === ANAMNESI COMPLETA === */}
-          {activeTab === 'anamnesi' && (
-            <div className="space-y-8">
-              {anamnesi ? (
-                <>
-                  {/* DATI ANAGRAFICI */}
-                  <div className={sectionStyle}>
-                    <h4 className={headingStyle}><FileText size={16} /> Dati Anagrafici</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <AnamnesiField label="Nome" value={anamnesi.firstName} />
-                      <AnamnesiField label="Cognome" value={anamnesi.lastName} />
-                      <AnamnesiField label="Data di Nascita" value={anamnesi.birthDate} />
-                      <AnamnesiField label="Lavoro" value={anamnesi.job} />
-                      <AnamnesiField label="Peso (kg)" value={anamnesi.weight} />
-                      <AnamnesiField label="Altezza (cm)" value={anamnesi.height} />
-                    </div>
-                  </div>
-
-                  {/* ABITUDINI ALIMENTARI */}
-                  <div className={sectionStyle}>
-                    <h4 className={headingStyle}><FileText size={16} /> Abitudini Alimentari</h4>
-                    <div className="space-y-4">
-                      <AnamnesiField label="Pasti al giorno" value={anamnesi.mealsPerDay} />
-                      <AnamnesiField label="Tipo Colazione" value={anamnesi.breakfastType} />
-                      <AnamnesiField label="Alimenti preferiti" value={anamnesi.desiredFoods} />
-                      <AnamnesiField label="Alimenti da evitare" value={anamnesi.dislikedFoods} />
-                      <AnamnesiField label="Allergie/Intolleranze" value={anamnesi.intolerances} />
-                      <AnamnesiField label="Problemi di digestione" value={anamnesi.digestionIssues} />
-                    </div>
-                  </div>
-
-                  {/* ALLENAMENTO */}
-                  <div className={sectionStyle}>
-                    <h4 className={headingStyle}><FileText size={16} /> Allenamento</h4>
-                    <div className="space-y-4">
-                      <AnamnesiField label="Allenamenti a settimana" value={anamnesi.workoutsPerWeek} />
-                      <AnamnesiField label="Dettagli Allenamento" value={anamnesi.trainingDetails} />
-                      <AnamnesiField label="Orario e Durata" value={anamnesi.trainingTime} />
-                    </div>
-                  </div>
-
-                  {/* SALUTE E OBIETTIVI */}
-                  <div className={sectionStyle}>
-                    <h4 className={headingStyle}><FileText size={16} /> Salute e Obiettivi</h4>
-                    <div className="space-y-4">
-                      <AnamnesiField label="Infortuni o problematiche" value={anamnesi.injuries} />
-                      <AnamnesiField label="Farmaci" value={anamnesi.medications} />
-                      <AnamnesiField label="Integratori" value={anamnesi.supplements} />
-                      <AnamnesiField label="Obiettivo Principale" value={anamnesi.mainGoal} />
-                      <AnamnesiField label="Durata Percorso" value={anamnesi.programDuration} />
-                    </div>
-                  </div>
-
-                  {/* FOTO INIZIALI */}
-                  <div className={sectionStyle}>
-                    <h4 className={headingStyle}><FileText size={16} /> Foto Iniziali</h4>
-                    <p className="text-sm text-slate-400 mb-6">Caricate dal cliente al momento dell&apos;iscrizione.</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                      {['front', 'right', 'left', 'back'].map(type => (
-                        <div key={type} className="text-center">
-                          <h4 className="text-sm font-semibold text-slate-400 capitalize mb-2">
-                            {type === 'front' ? 'Frontale' : type === 'back' ? 'Posteriore' : `Laterale ${type === 'left' ? 'Sinistro' : 'Destro'}`}
-                          </h4>
-                          {anamnesi.photoURLs?.[type] ? (
-                            <button
-                              onClick={() => setZoomPhoto({ open: true, url: anamnesi.photoURLs[type], alt: type })}
-                              className="relative group overflow-hidden rounded-xl w-full h-48"
-                            >
-                              <img 
-                                src={anamnesi.photoURLs[type]} 
-                                alt={type} 
-                                className="w-full h-full object-cover transition-transform group-hover:scale-110" 
-                              />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
-                                <ZoomIn className="text-white opacity-0 group-hover:opacity-100" size={32} />
-                              </div>
-                            </button>
-                          ) : (
-                            <div className="flex justify-center items-center w-full h-48 bg-white/5 backdrop-blur-md rounded-lg text-slate-500">
-                              <span>Non caricata</span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <p className="text-center text-slate-400 py-8">Nessuna anamnesi compilata.</p>
-              )}
-            </div>
-          )}
-
-          {/* === RATE === */}
-          {activeTab === 'rates' && (
-            <div className="space-y-4">
-              <RateTable 
-                rates={rates} 
-                canEdit={canEditRates} 
-                onAdd={handleAddRate} 
-                onUpdate={handleUpdateRate} 
-                onDelete={handleDeleteRate} 
-              />
-            </div>
+          ) : (
+            <p className="text-slate-400 mt-1">Nessun pagamento registrato.</p>
           )}
         </div>
+      </CardContent>
+    </UnifiedCard>
+  );
 
-        {/* MODALI */}
-        <RenewalModal isOpen={showRenewal} onClose={() => setShowRenewal(false)} client={client} onSave={handleRenewalSaved} />
-        <EditClientModal isOpen={showEdit} onClose={() => setShowEdit(false)} client={client} onSave={handleEditSaved} />
-        <ExtendExpiryModal isOpen={showExtend} onClose={() => setShowExtend(false)} client={client} onSave={handleExtendSaved} />
-        <EditPaymentModal 
-          isOpen={showEditPayment} 
-          onClose={() => {
-            setShowEditPayment(false);
-            setEditingPaymentIndex(null);
-          }} 
-          payment={editingPaymentIndex !== null && client?.payments ? client.payments[editingPaymentIndex] : null}
-          paymentIndex={editingPaymentIndex}
-          client={client} 
-          onSave={handleRenewalSaved} 
-        />
-        <PhotoZoomModal 
-          isOpen={zoomPhoto.open} 
-          onClose={() => setZoomPhoto({ open: false, url: '', alt: '' })} 
-          imageUrl={zoomPhoto.url} 
-          alt={zoomPhoto.alt} 
-        />
-      </motion.div>
-    </div>
+  const activityCard = (
+    <UnifiedCard>
+      <CardHeader icon={Activity} title="Activity Log" />
+      <CardContent>
+        {activityFeed.length > 0 ? (
+          <div className="space-y-3">
+            {activityFeed.map((item, idx) => (
+              <div key={idx} className="flex items-start gap-3 text-sm text-slate-100">
+                <div className={`w-9 h-9 rounded-full border flex items-center justify-center flex-shrink-0 ${
+                  item.icon === 'payment' ? 'bg-emerald-900/30 border-emerald-700/50 text-emerald-400' :
+                  item.icon === 'anamnesi' ? 'bg-blue-900/30 border-blue-700/50 text-blue-400' :
+                  item.icon === 'created' ? 'bg-purple-900/30 border-purple-700/50 text-purple-400' :
+                  'bg-slate-900 border-slate-800 text-slate-200'
+                }`}>
+                  {item.icon === 'payment' ? <CreditCard size={16} /> : 
+                   item.icon === 'anamnesi' ? <FileText size={16} /> :
+                   item.icon === 'created' ? <User size={16} /> :
+                   <CheckCircle size={16} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-white">{item.label}</p>
+                  <p className="text-slate-400 text-xs">{item.date?.toLocaleString('it-IT')}</p>
+                  <p className="text-slate-200 text-sm mt-0.5 truncate">{item.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Activity}
+            description="Nessuna attività recente."
+          />
+        )}
+      </CardContent>
+    </UnifiedCard>
+  );
+
+  const anamnesiCard = (
+    <UnifiedCard>
+      <CardHeader icon={FileText} title="Anamnesi completa" />
+      <CardContent>
+        {anamnesi ? (
+          <div className="space-y-3">
+            <CardGrid cols={3}>
+              {renderAnamnesiField('Nome', anamnesi.firstName || client.name)}
+              {renderAnamnesiField('Cognome', anamnesi.lastName)}
+              {renderAnamnesiField('Data di nascita', anamnesi.birthDate)}
+            </CardGrid>
+            <CardGrid cols={3}>
+              {renderAnamnesiField('Lavoro', anamnesi.job)}
+              {renderAnamnesiField(`Peso (${weightLabel})`, anamnesi.weight ? formatWeight(anamnesi.weight) : null)}
+              {renderAnamnesiField(`Altezza (${lengthLabel})`, anamnesi.height ? formatLength(anamnesi.height) : null)}
+            </CardGrid>
+            <CardGrid cols={3}>
+              {renderAnamnesiField('Pasti al giorno', anamnesi.mealsPerDay)}
+              {renderAnamnesiField('Tipo colazione', anamnesi.breakfastType)}
+              {renderAnamnesiField('Durata percorso', anamnesi.programDuration)}
+            </CardGrid>
+            <CardGrid cols={3}>
+              {renderAnamnesiField('Alimenti preferiti', anamnesi.desiredFoods)}
+              {renderAnamnesiField('Alimenti da evitare', anamnesi.dislikedFoods)}
+              {renderAnamnesiField('Allergie / intolleranze', anamnesi.intolerances)}
+            </CardGrid>
+            <CardGrid cols={3}>
+              {renderAnamnesiField('Problemi digestione', anamnesi.digestionIssues)}
+              {renderAnamnesiField('Qualità del sonno', anamnesi.sleepQuality)}
+              {renderAnamnesiField('Note generali', anamnesi.note)}
+            </CardGrid>
+            <CardGrid cols={3}>
+              {renderAnamnesiField('Allenamenti a settimana', anamnesi.workoutsPerWeek)}
+              {renderAnamnesiField('Dettagli allenamento', anamnesi.trainingDetails)}
+              {renderAnamnesiField('Orario e durata', anamnesi.trainingTime)}
+            </CardGrid>
+            <CardGrid cols={3}>
+              {renderAnamnesiField('Infortuni / problematiche', anamnesi.injuries)}
+              {renderAnamnesiField('Farmaci', anamnesi.medications)}
+              {renderAnamnesiField('Integratori', anamnesi.supplements)}
+            </CardGrid>
+            <CardGrid cols={2}>
+              {renderAnamnesiField('Obiettivo principale', anamnesi.mainGoal)}
+              {renderAnamnesiField('Motivazione / dettagli', anamnesi.trainingDetails || anamnesi.programDuration)}
+            </CardGrid>
+            {anamnesi.photoURLs && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                {['front', 'right', 'left', 'back'].map((pos) => (
+                  <div key={pos} className="rounded-lg border border-slate-800 bg-slate-900 overflow-hidden text-xs text-slate-300">
+                    <div className="px-3 py-2 border-b border-slate-800 capitalize">
+                      {pos === 'front' ? 'Frontale' : pos === 'back' ? 'Posteriore' : `Laterale ${pos === 'left' ? 'Sinistra' : 'Destra'}`}
+                    </div>
+                    {anamnesi.photoURLs?.[pos] ? (
+                      <img src={anamnesi.photoURLs[pos]} alt={pos} className="w-full h-28 object-cover" />
+                    ) : (
+                      <div className="w-full h-28 bg-slate-800 flex items-center justify-center text-slate-500">Nessuna foto</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <EmptyState
+            icon={FileText}
+            title="Nessuna anamnesi"
+            description="Nessuna anamnesi disponibile per questo cliente."
+          />
+        )}
+      </CardContent>
+    </UnifiedCard>
+  );
+
+  return (
+    <ErrorBoundary>
+      <div className="min-h-screen bg-transparent">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full px-0 sm:px-0 py-0">
+          <button onClick={() => navigate('/clients')} className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 text-sm transition-colors">
+            <ArrowLeft size={18} /> Torna ai Clienti
+          </button>
+
+          <div className="space-y-6">
+            {/* Header Section */}
+            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-widest text-slate-500 font-medium">Profilo Cliente</p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white">{client.name}</h1>
+                    <span className="px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-400 text-xs font-medium">{client.tags?.[0] || 'Client'}</span>
+                    {client.rateizzato && <span className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-medium">Rateizzato</span>}
+                    {client.isOldClient && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-400 text-xs font-medium">
+                        <AlertTriangle size={12} /> Archiviato
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400 pt-1">
+                    <PathStatusBadge status={client.statoPercorso} />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/50 text-slate-300 text-xs">
+                      <Activity size={12} /> Check: {checks.length || 0}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/50 text-slate-300 text-xs">
+                      <Calendar size={12} /> Ultimo: {lastCheckAt ? lastCheckAt.toLocaleDateString('it-IT') : 'N/D'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-start lg:justify-end">
+                  <QuickNotifyButton userId={clientId} userName={client.name} userType="client" />
+                  {!isMobile && (
+                    <>
+                      <button onClick={() => setShowEdit(true)} className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm transition-colors"><Edit size={16} /> Modifica</button>
+                      <button onClick={() => setShowRenewal(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-lg transition-colors"><Plus size={16} /> Rinnovo</button>
+                      <button onClick={() => setShowExtend(true)} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm transition-colors"><CalendarDays size={16} /> Prolunga</button>
+                      <button onClick={handleDelete} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-sm transition-colors"><Trash2 size={16} /> Elimina</button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex overflow-x-auto gap-1 bg-slate-900/40 p-1.5 rounded-xl border border-slate-700/50 scrollbar-thin scrollbar-thumb-slate-700">
+              {tabs.map((tab) => (
+                <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm whitespace-nowrap transition-all ${activeTab === tab.key ? 'bg-blue-600 text-white font-medium shadow-lg shadow-blue-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}>
+                  {tab.icon}
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* CTA Banner */}
+            {!isMobile && (
+              <div className="rounded-xl border border-blue-500/20 bg-gradient-to-r from-blue-900/30 to-indigo-900/30 text-blue-50 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400"><Info size={20} /></div>
+                  <div>
+                    <p className="font-semibold text-sm sm:text-base text-white">Prova l'app come questo cliente</p>
+                    <p className="text-xs text-slate-400">Apri la vista cliente per verificare la customer experience.</p>
+                  </div>
+                </div>
+                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg text-sm transition-colors">Mostrami come →</button>
+              </div>
+            )}
+
+            {activeTab === 'overview' && (
+              <div className="grid grid-cols-1 xl:grid-cols-[1.35fr,1fr] gap-4 lg:gap-6">
+                <div className="space-y-4">
+                  {infoCard}
+                  {/* Card Prossima Chiamata */}
+                  <NextCallCard clientId={clientId} isAdmin={isAdmin} onSchedule={() => setShowScheduleCall(true)} />
+                  {checkCard}
+                  {activityCard}
+                </div>
+                <div className="space-y-4">
+                  {metricsCard}
+                  {photosCard}
+                  {paymentsCard}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'check' && (
+              <div className="grid grid-cols-1 xl:grid-cols-[1.1fr,1fr] gap-4 lg:gap-6">
+                {checkCard}
+                {photosCard}
+              </div>
+            )}
+
+            {activeTab === 'payments' && (
+              <div className="space-y-4">
+                {paymentsCard}
+                <RateTable rates={rates} canEdit={isAdmin} onAdd={handleAddRate} onUpdate={handleUpdateRate} onDelete={handleDeleteRate} showAmounts={showAmounts} />
+              </div>
+            )}
+            {activeTab === 'metrics' && metricsCard}
+
+            {activeTab === 'anamnesi' && anamnesiCard}
+
+            {isMobile && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+                <button onClick={() => setShowEdit(true)} className="px-3 py-2 border border-slate-700 bg-slate-900 text-slate-200 rounded-lg text-sm flex items-center justify-center gap-2"><Edit size={14} /> Modifica</button>
+                <button onClick={() => setShowRenewal(true)} className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm flex items-center justify-center gap-2"><Plus size={14} /> Rinnovo</button>
+                <button onClick={() => setShowExtend(true)} className="px-3 py-2 bg-cyan-600/80 text-white border border-cyan-500/60 rounded-lg text-sm flex items-center justify-center gap-2"><CalendarDays size={14} /> Prolunga</button>
+                <button onClick={handleDelete} className="px-3 py-2 bg-rose-600/80 text-white border border-rose-500/60 rounded-lg text-sm flex items-center justify-center gap-2"><Trash2 size={14} /> Elimina</button>
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        <AnimatePresence>
+          {showRenewal && <RenewalModal key="renewal" isOpen={showRenewal} onClose={() => setShowRenewal(false)} client={client} onSave={() => {}} />}
+          {showEdit && <EditClientModal key="edit" isOpen={showEdit} onClose={() => setShowEdit(false)} client={client} onSave={() => {}} />}
+          {showExtend && <ExtendExpiryModal key="extend" isOpen={showExtend} onClose={() => setShowExtend(false)} client={client} onSave={() => {}} />}
+          {showEditPayment && <EditPaymentModal
+            key="editPayment"
+            isOpen={showEditPayment}
+            onClose={() => { setShowEditPayment(false); setEditingPaymentIndex(null); }}
+            payment={editingPaymentIndex !== null && payments.length > editingPaymentIndex ? payments[editingPaymentIndex] : null}
+            client={client}
+            onSave={() => {}}
+          />}
+          {zoomPhoto?.open && <PhotoZoomModal key="zoom" isOpen={!!zoomPhoto?.open} onClose={() => setZoomPhoto({ open: false, url: '', alt: '' })} imageUrl={zoomPhoto?.url} alt={zoomPhoto?.alt} />}
+          {showScheduleCall && <ScheduleCallModal 
+            key="scheduleCall"
+            isOpen={showScheduleCall} 
+            onClose={() => setShowScheduleCall(false)} 
+            clientId={clientId}
+            clientName={client?.name}
+            existingCall={nextCall}
+            onSave={() => {}}
+          />}
+        </AnimatePresence>
+      </div>
     </ErrorBoundary>
   );
 }

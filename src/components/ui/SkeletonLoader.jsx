@@ -16,7 +16,7 @@ export const SkeletonCard = () => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-5 border border-slate-700/50 shadow-xl"
+    className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-5 border border-slate-700/50 shadow-glow"
   >
     <div className="flex items-center justify-between mb-3">
       <Skeleton width="w-12" height="h-12" className="rounded-lg" />
@@ -37,7 +37,7 @@ export const SkeletonList = ({ count = 5 }) => (
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: i * 0.05 }}
-        className="bg-slate-800/60 rounded-lg p-4 border border-slate-700/50"
+        className="bg-slate-800/60 rounded-lg p-4 border border-slate-700/50 shadow-glow"
       >
         <div className="flex items-center gap-3">
           <Skeleton width="w-12" height="h-12" className="rounded-full flex-shrink-0" />
@@ -54,7 +54,7 @@ export const SkeletonList = ({ count = 5 }) => (
 
 // Skeleton per Tabella
 export const SkeletonTable = ({ rows = 5, columns = 4 }) => (
-  <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 overflow-hidden">
+  <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 overflow-hidden shadow-glow">
     {/* Header */}
     <div className="bg-slate-900/60 p-4 border-b border-slate-700/50 flex gap-4">
       {Array.from({ length: columns }).map((_, i) => (
@@ -85,7 +85,7 @@ export const SkeletonProfile = () => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    className="bg-slate-800/60 rounded-xl p-6 border border-slate-700/50"
+    className="bg-slate-800/60 rounded-xl p-6 border border-slate-700/50 shadow-glow"
   >
     <div className="flex items-start gap-4 mb-6">
       <Skeleton width="w-24" height="h-24" className="rounded-full flex-shrink-0" />
@@ -120,7 +120,7 @@ export const SkeletonDashboard = () => (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="bg-slate-800/60 rounded-xl p-6 border border-slate-700/50"
+      className="bg-slate-800/60 rounded-xl p-6 border border-slate-700/50 shadow-glow"
     >
       <Skeleton width="w-48" height="h-6" className="mb-4" />
       <Skeleton width="w-full" height="h-64" />
@@ -136,7 +136,7 @@ export const SkeletonPost = () => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    className="bg-slate-800/60 rounded-xl p-4 border border-slate-700/50"
+    className="bg-slate-800/60 rounded-xl p-4 border border-slate-700/50 shadow-glow"
   >
     <div className="flex items-center gap-3 mb-4">
       <Skeleton width="w-10" height="h-10" className="rounded-full" />
@@ -162,7 +162,7 @@ export const SkeletonForm = ({ fields = 5 }) => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    className="bg-slate-800/60 rounded-xl p-6 border border-slate-700/50 space-y-4"
+    className="bg-slate-800/60 rounded-xl p-6 border border-slate-700/50 space-y-4 shadow-glow"
   >
     {Array.from({ length: fields }).map((_, i) => (
       <div key={i}>

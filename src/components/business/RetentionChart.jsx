@@ -156,7 +156,7 @@ export default function RetentionChart({ clients }) {
   };
 
   return (
-    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
+    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6 shadow-glow">
       <h3 className="text-lg font-semibold text-slate-200 mb-4">
         Retention Trend (Ultimi 6 Mesi)
       </h3>

@@ -6,7 +6,7 @@ import { GripVertical, X, Sliders } from 'lucide-react';
  */
 export default function DashboardWidget({ id, title, icon: Icon, children, onRemove, onConfig, className = '' }) {
   return (
-    <div className={`bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-2 sm:p-3 h-full flex flex-col ${className}`}>
+    <div className={`bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-2 sm:p-3 h-full flex flex-col shadow-glow ${className}`}>
       {/* Header con drag handle */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5 cursor-move drag-handle flex-1">

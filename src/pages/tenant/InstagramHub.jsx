@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Instagram, TrendingUp, Users, Heart, Settings,
-  BarChart3, MessageCircle, Image, Video, Send, ExternalLink,
+  BarChart3, MessageCircle, MessageSquare, Image, Video, Send, ExternalLink,
   RefreshCw, AlertCircle, CheckCircle, Calendar, Eye
 } from 'lucide-react';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -509,9 +509,23 @@ function MessagesTab() {
       <p className="text-slate-400 mb-6">
         La gestione dei messaggi Instagram verrà implementata nelle prossime versioni.
       </p>
-      <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/30 rounded-lg text-blue-400 text-sm">
-        <Calendar size={16} />
-        Coming Soon
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <button
+          onClick={() => window.open('https://www.instagram.com/direct/inbox/', '_blank', 'noopener,noreferrer')}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 rounded-lg text-blue-100 text-sm font-semibold shadow-glow"
+        >
+          <MessageSquare size={16} />
+          Apri Instagram Direct
+        </button>
+        <a
+          href="https://help.instagram.com/1068717813216421"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700/40 hover:bg-slate-700/60 border border-slate-600/60 rounded-lg text-slate-100 text-sm"
+        >
+          <Calendar size={16} />
+          Guida Messaggi IG
+        </a>
       </div>
     </div>
   );

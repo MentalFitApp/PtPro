@@ -2,6 +2,8 @@
  * Error Handler - Gestione centralizzata degli errori
  */
 
+import React from 'react';
+
 // Tipi di errore
 export const ErrorTypes = {
   AUTH: 'auth',

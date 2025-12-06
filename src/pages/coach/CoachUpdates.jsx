@@ -250,7 +250,7 @@ export default function CoachUpdates() {
             <ArrowLeft size={16} /><span>Torna alla Dashboard</span>
           </button>
         </motion.header>
-        <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700 mx-3 sm:mx-6">
+        <motion.div variants={itemVariants} className="bg-slate-800/60 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-slate-700 mx-3 sm:mx-6 shadow-glow">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-200"><Bell size={20} /> Ultimi Aggiornamenti</h2>
           <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
             <AnimatePresence>

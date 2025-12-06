@@ -22,7 +22,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm }) => (
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md bg-slate-900/80 rounded-2xl border border-slate-700 p-6 text-center shadow-2xl shadow-black/40"
+          className="w-full max-w-md bg-slate-900/80 rounded-2xl border border-slate-700 p-6 text-center shadow-glow"
         >
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-900/50 mb-4">
             <AlertTriangle className="h-6 w-6 text-red-400" />

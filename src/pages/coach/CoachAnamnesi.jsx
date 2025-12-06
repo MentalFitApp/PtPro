@@ -5,6 +5,7 @@ import { db, toDate, auth } from '../../firebase'
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { FileText, Calendar, ArrowLeft, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useUserPreferences } from '../../hooks/useUserPreferences';
 
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center py-8">
@@ -14,6 +15,7 @@ const LoadingSpinner = () => (
 
 export default function CoachAnamnesi() {
   const navigate = useNavigate();
+  const { formatWeight } = useUserPreferences();
   const [recentChecks, setRecentChecks] = useState([]);
   const [recentAnamnesi, setRecentAnamnesi] = useState([]);
   const [notification, setNotification] = useState('');
@@ -144,7 +146,7 @@ export default function CoachAnamnesi() {
       )}
 
       {/* ULTIMI CHECK */}
-      <div className="bg-slate-900/60 backdrop-blur-xl rounded-xl border border-slate-700 p-4">
+      <div className="bg-slate-900/60 backdrop-blur-xl rounded-xl border border-slate-700 p-4 shadow-glow">
         <h3 className="text-lg font-bold text-cyan-300 flex items-center gap-2 mb-3">
           <FileText size={18} /> Ultimi Check
         </h3>
@@ -163,7 +165,7 @@ export default function CoachAnamnesi() {
                     <p className="text-slate-400">{formatDate(check.date)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-emerald-400">{check.weight} kg</p>
+                    <p className="font-semibold text-emerald-400">{formatWeight(check.weight)}</p>
                     {check.notes && <p className="text-xs text-slate-400 line-clamp-1">{check.notes}</p>}
                   </div>
                 </div>
@@ -176,7 +178,7 @@ export default function CoachAnamnesi() {
       </div>
 
       {/* ULTIME ANAMNESI */}
-      <div className="bg-slate-900/60 backdrop-blur-xl rounded-xl border border-slate-700 p-4">
+      <div className="bg-slate-900/60 backdrop-blur-xl rounded-xl border border-slate-700 p-4 shadow-glow">
         <h3 className="text-lg font-bold text-amber-300 flex items-center gap-2 mb-3">
           <Calendar size={18} /> Nuove Anamnesi
         </h3>

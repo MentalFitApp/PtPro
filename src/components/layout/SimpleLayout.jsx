@@ -158,7 +158,7 @@ export default function SimpleLayout() {
 
         {/* CONTENUTO PRINCIPALE */}
         <div className="flex-1 transition-all duration-300 md:ml-72">
-          <main className="min-h-screen">
+          <main className="min-h-screen bg-slate-900/40 backdrop-blur-xl p-3 sm:p-4 lg:p-6">
             <Outlet />
           </main>
 

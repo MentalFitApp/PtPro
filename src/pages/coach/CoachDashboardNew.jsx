@@ -470,7 +470,7 @@ export default function CoachDashboardNew() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-2 mx-2 sm:mx-4"
+            className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700 p-2 mx-2 sm:mx-4 shadow-glow"
           >
             <p className="text-xs text-slate-400 mb-2">Mostra/Nascondi Metriche:</p>
             <div className="flex flex-wrap gap-1.5">

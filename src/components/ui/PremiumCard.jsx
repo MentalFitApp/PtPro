@@ -20,7 +20,7 @@ export const PremiumCard = ({
       animate={{ opacity: 1, y: 0 }}
       whileHover={hover ? { scale: 1.02, y: -4 } : {}}
       className={`
-        bg-slate-800/60 backdrop-blur-sm rounded-xl 
+        bg-slate-800/60 backdrop-blur-sm rounded-xl shadow-glow 
         border border-slate-700/50 shadow-xl
         ${gradient ? 'bg-gradient-to-br from-slate-800/60 to-slate-900/60' : ''}
         ${hover ? 'hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer' : ''}

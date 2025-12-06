@@ -45,7 +45,7 @@ const ForgotPassword = () => {
         <div className="min-h-screen flex items-center justify-center p-4">
             <AnimatedBackground />
             <motion.div 
-                className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-8 space-y-8 shadow-2xl shadow-black/20"
+                className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-8 space-y-8 shadow-glow"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}

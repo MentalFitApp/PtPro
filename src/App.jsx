@@ -8,10 +8,11 @@ import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { UserPreferencesProvider } from './hooks/useUserPreferences';
 import { getTenantDoc } from './config/tenant';
 
 // Import dinamici dei layout
-const MainLayout = React.lazy(() => import('./components/layout/MainLayout'));
+const ProLayout = React.lazy(() => import('./components/layout/ProLayout'));
 const SimpleLayout = React.lazy(() => import('./components/layout/SimpleLayout'));
 const GuidaLayout = React.lazy(() => import('./components/layout/GuidaLayout'));
 
@@ -24,9 +25,10 @@ import { ProtectedClientRoute } from './components/ProtectedClientRoute';
 const Login = React.lazy(() => import('./pages/auth/Login'));
 const ForgotPassword = React.lazy(() => import('./pages/auth/ForgotPassword'));
 const FirstAccess = React.lazy(() => import('./pages/auth/FirstAccess'));
+const SetupAccount = React.lazy(() => import('./pages/auth/SetupAccount'));
 
 // Admin Pages
-const AdminDashboard = React.lazy(() => import('./pages/admin/DashboardNew'));
+const AdminDashboard = React.lazy(() => import('./pages/admin/DashboardPro'));
 const Clients = React.lazy(() => import('./pages/admin/Clients'));
 const ClientDetail = React.lazy(() => import('./pages/admin/ClientDetail'));
 const EditClient = React.lazy(() => import('./pages/admin/EditClient'));
@@ -39,6 +41,7 @@ const Dipendenti = React.lazy(() => import('./pages/admin/Dipendenti'));
 const Statistiche = React.lazy(() => import('./pages/admin/Statistiche'));
 const StatisticheDashboard = React.lazy(() => import('./pages/admin/StatisticheDashboard'));
 const Profile = React.lazy(() => import('./pages/admin/Profile'));
+const Settings = React.lazy(() => import('./pages/admin/Settings'));
 const Analytics = React.lazy(() => import('./pages/admin/Analytics'));
 const CourseAdmin = React.lazy(() => import('./pages/admin/CourseAdmin'));
 const CourseContentManager = React.lazy(() => import('./pages/admin/CourseContentManager'));
@@ -48,6 +51,7 @@ const LandingEditor = React.lazy(() => import('./pages/admin/LandingEditor'));
 const LandingPagesList = React.lazy(() => import('./pages/admin/landingPages/LandingPagesList'));
 const CreateLandingPage = React.lazy(() => import('./pages/admin/landingPages/CreateLandingPage'));
 const LandingPageEditor = React.lazy(() => import('./pages/admin/landingPages/LandingPageEditor'));
+const ClientCallsCalendar = React.lazy(() => import('./pages/admin/ClientCallsCalendar'));
 
 // Platform CEO Pages
 const CEOPlatformDashboard = React.lazy(() => import('./pages/platform/CEOPlatformDashboard'));
@@ -68,6 +72,7 @@ const CoachAnamnesi = React.lazy(() => import('./pages/coach/CoachAnamnesi'));
 const CoachUpdates = React.lazy(() => import('./pages/coach/CoachUpdates'));
 const CoachClients = React.lazy(() => import('./pages/coach/CoachClients'));
 const CoachClientDetail = React.lazy(() => import('./pages/coach/CoachClientDetail'));
+const CoachAnalytics = React.lazy(() => import('./components/admin/CoachAnalytics'));
 
 // Collaboratore Pages
 const CollaboratoreDashboard = React.lazy(() => import('./pages/collaboratore/CollaboratoreDashboard'));
@@ -275,6 +280,7 @@ export default function App() {
               location.pathname === '/admin/dipendenti' ||
               location.pathname === '/statistiche' ||
               location.pathname === '/analytics' ||
+              location.pathname === '/coach-analytics' ||
               location.pathname === '/course-admin' ||
               location.pathname === '/notifications' ||
               location.pathname === '/alimentazione-allenamento' ||
@@ -289,6 +295,7 @@ export default function App() {
               location.pathname === '/coach' ||
               location.pathname === '/coach/clients' ||
               location.pathname.startsWith('/coach/client/') ||
+              location.pathname === '/coach/analytics' ||
               location.pathname === '/coach/anamnesi' ||
               location.pathname === '/coach/updates' ||
               location.pathname === '/coach/chat' ||
@@ -365,6 +372,7 @@ export default function App() {
     <ErrorBoundary>
     <ToastProvider>
     <ThemeProvider>
+    <UserPreferencesProvider>
       <Suspense fallback={<PageSpinner />}>
         <GlobalUploadBar />
         <PrivacyBanner />
@@ -379,6 +387,7 @@ export default function App() {
           <Route path="/guida" element={<GuidaMentalFit />} />
         </Route>
         <Route path="/login" element={<Login />} />
+        <Route path="/setup/:token" element={<SetupAccount />} />
         <Route path="/platform-login" element={<PlatformLogin />} />
         <Route path="/client/forgot-password" element={<ForgotPassword />} />
 
@@ -389,7 +398,7 @@ export default function App() {
 
         {/* === ROTTE ADMIN (SOLO ADMIN) === */}
 
-        <Route element={authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
+        <Route element={authInfo.isAdmin ? <ProLayout /> : <Navigate to="/login" replace />}>
           <Route path="/" element={<AdminDashboard />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/new-client" element={<NewClient />} />
@@ -401,6 +410,7 @@ export default function App() {
           <Route path="/collaboratori" element={<Collaboratori />} />
           <Route path="/collaboratore-detail" element={<CollaboratoreDetail />} />
           <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/calls-calendar" element={<ClientCallsCalendar />} />
           <Route path="/calendar-report/:date" element={<CalendarReport />} />
           <Route path="/business-history" element={<BusinessHistory />} />
           <Route path="/admin/dipendenti" element={<Dipendenti />} />
@@ -412,7 +422,9 @@ export default function App() {
           <Route path="/statistiche" element={<StatisticheDashboard />} />
           <Route path="/statistiche/legacy" element={<Statistiche />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/coach-analytics" element={<CoachAnalytics />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/alimentazione-allenamento" element={<AlimentazioneAllenamento />} />
           <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
@@ -427,7 +439,7 @@ export default function App() {
         </Route>
 
         {/* === ROTTE SUPERADMIN (SOLO SUPERADMIN) === */}
-        <Route element={authInfo.isAdmin ? <MainLayout /> : <Navigate to="/login" replace />}>
+        <Route element={authInfo.isAdmin ? <ProLayout /> : <Navigate to="/login" replace />}>
           <Route path="/platform-settings" element={<PlatformSettings />} />
 
           <Route path="/course-admin" element={<CourseAdmin />} />
@@ -437,12 +449,13 @@ export default function App() {
         </Route>
 
         {/* === ROTTE COACH (SOLO COACH) === */}
-        <Route element={authInfo.isCoach ? <MainLayout /> : <Navigate to="/login" replace />}>
+        <Route element={authInfo.isCoach ? <ProLayout /> : <Navigate to="/login" replace />}>
           <Route path="/coach" element={<CoachDashboard />} />
           <Route path="/coach/clients" element={<CoachClients />} />
           <Route path="/coach/client/:id" element={<CoachClientDetail />} />
           <Route path="/coach/anamnesi" element={<CoachAnamnesi />} />
           <Route path="/coach/updates" element={<CoachUpdates />} />
+          <Route path="/coach/analytics" element={<CoachAnalytics />} />
           <Route path="/coach/chat" element={<ModernChat />} />
           <Route path="/coach/profile" element={<Profile />} />
           <Route path="/coach/client/:clientId/checks" element={<ClientChecks />} />
@@ -452,7 +465,7 @@ export default function App() {
         </Route>
 
         {/* === ROTTE CLIENTI === */}
-        <Route element={authInfo.isClient ? <MainLayout /> : <Navigate to="/login" replace />}>
+        <Route element={authInfo.isClient ? <ProLayout /> : <Navigate to="/login" replace />}>
           <Route path="/client/onboarding" element={<OnboardingFlow />} />
           <Route path="/client/first-access" element={<FirstAccess />} />
           <Route path="/client/dashboard" element={<ClientDashboard />} />
@@ -472,7 +485,7 @@ export default function App() {
         </Route>
 
         {/* === ROTTE COLLABORATORI === */}
-        <Route element={authInfo.isCollaboratore ? <MainLayout /> : <Navigate to="/login" replace />}>
+        <Route element={authInfo.isCollaboratore ? <ProLayout /> : <Navigate to="/login" replace />}>
           <Route path="/collaboratore/first-access" element={<FirstAccess />} />
           <Route path="/collaboratore/dashboard" element={<CollaboratoreDashboard />} />
           <Route path="/collaboratore/calendar" element={<CalendarPage />} />
@@ -494,6 +507,7 @@ export default function App() {
         } />
       </Routes>
     </Suspense>
+    </UserPreferencesProvider>
     </ThemeProvider>
     </ToastProvider>
     </ErrorBoundary>

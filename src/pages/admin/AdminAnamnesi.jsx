@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase.js';
 import { getTenantSubcollection } from '../../config/tenant';
 import { ArrowLeft, FilePenLine, Camera } from 'lucide-react';
+import { useUserPreferences } from '../../hooks/useUserPreferences';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- COMPONENTI UI RIUTILIZZABILI ---
@@ -47,6 +48,7 @@ const AdminAnamnesi = () => {
   const navigate = useNavigate();
   const [anamnesiData, setAnamnesiData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { formatWeight, formatLength, weightLabel, lengthLabel } = useUserPreferences();
 
   useEffect(() => {
     const fetchAnamnesi = async () => {
@@ -83,7 +85,7 @@ const AdminAnamnesi = () => {
     );
   }
 
-  const sectionStyle = "bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6 shadow-lg";
+  const sectionStyle = "bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-700 p-6 shadow-glow";
   const headingStyle = "font-bold mb-4 text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 flex items-center gap-2";
 
   return (
@@ -95,7 +97,7 @@ const AdminAnamnesi = () => {
       </header>
       
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className={sectionStyle}><h4 className={headingStyle}><FilePenLine size={16} /> Dati Anagrafici</h4><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><ViewField label="Nome" value={anamnesiData.firstName} /><ViewField label="Cognome" value={anamnesiData.lastName} /><ViewField label="Data di Nascita" value={anamnesiData.birthDate} /><ViewField label="Lavoro" value={anamnesiData.job} /><ViewField label="Peso (kg)" value={anamnesiData.weight} /><ViewField label="Altezza (cm)" value={anamnesiData.height} /></div></div>
+        <div className={sectionStyle}><h4 className={headingStyle}><FilePenLine size={16} /> Dati Anagrafici</h4><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><ViewField label="Nome" value={anamnesiData.firstName} /><ViewField label="Cognome" value={anamnesiData.lastName} /><ViewField label="Data di Nascita" value={anamnesiData.birthDate} /><ViewField label="Lavoro" value={anamnesiData.job} /><ViewField label={`Peso (${weightLabel})`} value={anamnesiData.weight ? formatWeight(anamnesiData.weight) : null} /><ViewField label={`Altezza (${lengthLabel})`} value={anamnesiData.height ? formatLength(anamnesiData.height) : null} /></div></div>
         <div className={sectionStyle}><h4 className={headingStyle}><Camera size={16} /> Abitudini Alimentari</h4><div className="space-y-4"><ViewField label="Pasti al giorno" value={anamnesiData.mealsPerDay} /><ViewField label="Tipo Colazione" value={anamnesiData.breakfastType} /><ViewField label="Alimenti preferiti" value={anamnesiData.desiredFoods} /><ViewField label="Alimenti da evitare" value={anamnesiData.dislikedFoods} /><ViewField label="Allergie/Intolleranze" value={anamnesiData.intolerances} /><ViewField label="Problemi di digestione" value={anamnesiData.digestionIssues} /></div></div>
         <div className={sectionStyle}><h4 className={headingStyle}><FilePenLine size={16} /> Allenamento</h4><div className="space-y-4"><ViewField label="Allenamenti a settimana" value={anamnesiData.workoutsPerWeek} /><ViewField label="Dettagli Allenamento" value={anamnesiData.trainingDetails} /><ViewField label="Orario e Durata" value={anamnesiData.trainingTime} /></div></div>
         <div className={sectionStyle}><h4 className={headingStyle}><Camera size={16} /> Salute e Obiettivi</h4><div className="space-y-4"><ViewField label="Infortuni o problematiche" value={anamnesiData.injuries} /><ViewField label="Farmaci" value={anamnesiData.medications} /><ViewField label="Integratori" value={anamnesiData.supplements} /><ViewField label="Obiettivo Principale" value={anamnesiData.mainGoal} /><ViewField label="Durata Percorso" value={anamnesiData.programDuration} /></div></div>

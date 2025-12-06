@@ -5,8 +5,9 @@ import { db, firebaseConfig, auth } from '../../firebase.js';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc, collection } from 'firebase/firestore';
-import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
-import { Save, ArrowLeft, DollarSign, Copy, Check, X, AlertTriangle } from 'lucide-react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getTenantDoc, getTenantCollection, getTenantSubcollection, CURRENT_TENANT_ID } from '../../config/tenant';
+import { Save, ArrowLeft, DollarSign, Copy, Check, X, AlertTriangle, Link2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Notification = ({ message, type, onDismiss }) => (
@@ -66,7 +67,11 @@ export default function NewClient() {
   const [isRateizzato, setIsRateizzato] = useState(false);
   const [rates, setRates] = useState([]);
   const [newRate, setNewRate] = useState({ amount: '', dueDate: '', paid: false });
+  const [magicLink, setMagicLink] = useState(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
   const customStartDate = watch('customStartDate');
+
+  const functions = getFunctions(undefined, 'europe-west1');
 
   // PRECOMPILAZIONE DA COLLABORATORI – AGGIORNATO E CORRETTO
   useEffect(() => {
@@ -198,14 +203,35 @@ export default function NewClient() {
           duration: useCustomDate ? 'personalizzata' : `${parseInt(data.duration, 10)} mes${parseInt(data.duration, 10) > 1 ? 'i' : 'e'}`,
           paymentMethod: data.paymentMethod || 'N/A',
           paymentDate: serverTimestamp(),
-          isPast: isOldClient
+          // isPast NON va sul pagamento - il pagamento è fatto OGGI
+          // isOldClient resta sul documento cliente per indicare che è storico
+          createdAt: serverTimestamp()
         };
         console.log('Tentativo creazione pagamento:', { paymentRef: paymentRef.path, paymentData });
         await setDoc(paymentRef, paymentData);
         console.log('Documento pagamento creato:', paymentRef.path);
       }
 
-      setNewClientCredentials({ name: data.name, email: data.email.trim(), password: tempPassword });
+      setNewClientCredentials({ name: data.name, email: data.email.trim(), password: tempPassword, clientId: newUserId });
+      
+      // Genera automaticamente il Magic Link
+      try {
+        const generateMagicLink = httpsCallable(functions, 'generateMagicLink');
+        const linkResult = await generateMagicLink({
+          clientId: newUserId,
+          tenantId: CURRENT_TENANT_ID,
+          email: data.email.trim(),
+          name: data.name
+        });
+        if (linkResult.data.success) {
+          setMagicLink(linkResult.data.magicLink);
+          console.log('✅ Magic Link generato:', linkResult.data.magicLink);
+        }
+      } catch (linkError) {
+        console.error('⚠️ Errore generazione Magic Link:', linkError);
+        // Non blocchiamo, il cliente può comunque usare le credenziali normali
+      }
+      
       setShowSuccessModal(true);
       showNotification('Cliente creato con successo!', 'success');
       reset();
@@ -232,12 +258,27 @@ export default function NewClient() {
   };
 
   const copyToClipboard = () => {
-    const loginLink = 'https://www.flowfitpro.it/login';
-    const text = `Ciao ${newClientCredentials.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪 Tu come stai?\n\nLink: ${loginLink}\nEmail: ${newClientCredentials.email}\nPassword Temporanea: ${newClientCredentials.password}\n\n⚠️ IMPORTANTE: Al primo accesso ti verrà chiesto di impostare una password personale.`;
+    let text;
+    
+    if (magicLink) {
+      // Usa il Magic Link (preferito)
+      text = `Ciao ${newClientCredentials.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪 Tu come stai?\n\n🔗 LINK ACCESSO RAPIDO (valido 48h):\n${magicLink}\n\n⚠️ Clicca il link sopra per impostare la tua password e accedere direttamente!`;
+    } else {
+      // Fallback alle credenziali tradizionali
+      const loginLink = 'https://www.flowfitpro.it/login';
+      text = `Ciao ${newClientCredentials.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪 Tu come stai?\n\nLink: ${loginLink}\nEmail: ${newClientCredentials.email}\nPassword Temporanea: ${newClientCredentials.password}\n\n⚠️ IMPORTANTE: Al primo accesso ti verrà chiesto di impostare una password personale.`;
+    }
     
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const copyMagicLinkOnly = () => {
+    if (magicLink) {
+      navigator.clipboard.writeText(magicLink);
+      showNotification('Magic Link copiato!', 'success');
+    }
   };
 
   const copyPasswordOnly = () => {
@@ -256,20 +297,32 @@ export default function NewClient() {
     navigate('/clients');
   };
 
-  const inputStyle = "w-full p-2.5 bg-slate-700/50 border border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-rose-500 text-slate-200 placeholder:text-slate-500";
-  const labelStyle = "block mb-1 text-sm font-medium text-slate-300";
-  const sectionStyle = "bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6";
-  const headingStyle = "font-bold mb-4 text-lg text-rose-300 border-b border-rose-400/20 pb-2 flex items-center gap-2";
-  const errorStyle = "text-red-500 text-sm mt-1";
+  const inputStyle = "w-full p-3 bg-slate-800/40 border border-slate-700/50 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder:text-slate-500 transition-colors";
+  const labelStyle = "block mb-1.5 text-sm font-medium text-slate-300";
+  const sectionStyle = "bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6";
+  const headingStyle = "font-semibold mb-4 text-base text-white border-b border-slate-700/50 pb-3 flex items-center gap-2";
+  const errorStyle = "text-red-400 text-sm mt-1";
 
   return (
     <>
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
-      <motion.div className="w-full max-w-2xl mx-auto" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-slate-50">Onboarding Nuovo Cliente</h1>
-          <button onClick={() => navigate('/clients')} className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-slate-300 text-sm rounded-lg transition-colors"><ArrowLeft size={16}/> Torna Indietro</button>
+      <motion.div className="w-full max-w-2xl mx-auto px-4 sm:px-0" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        {/* Header */}
+        <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-semibold text-white">Onboarding Nuovo Cliente</h1>
+              <p className="text-sm text-slate-400 mt-1">Inserisci i dati per creare un nuovo cliente</p>
+            </div>
+            <button 
+              onClick={() => navigate('/clients')} 
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 text-slate-300 text-sm rounded-lg transition-colors"
+            >
+              <ArrowLeft size={16}/> Indietro
+            </button>
+          </div>
         </div>
+        
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className={sectionStyle}>
             <h4 className={headingStyle}>1. Anagrafica</h4>
@@ -429,56 +482,58 @@ export default function NewClient() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 mt-2">
-            <label className="font-semibold text-slate-200 text-sm">Rateizzato:</label>
-            <input type="checkbox" checked={isRateizzato} onChange={e => setIsRateizzato(e.target.checked)} />
+          <div className="flex items-center gap-3 mt-2 bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4">
+            <label className="font-medium text-white text-sm">Pagamento Rateizzato:</label>
+            <input type="checkbox" checked={isRateizzato} onChange={e => setIsRateizzato(e.target.checked)} className="rounded" />
           </div>
           {isRateizzato && (
-            <div className="mt-4 p-4 bg-slate-900/60 rounded-xl border border-slate-700 flex flex-col gap-3">
-              <h3 className="text-lg font-bold text-slate-200 mb-2">Rate iniziali</h3>
-              <table className="w-full text-xs bg-slate-800/60 rounded-xl border border-slate-700 mb-2">
-                <thead>
-                  <tr className="bg-slate-900/50">
-                    <th className="px-2 py-2">Importo</th>
-                    <th className="px-2 py-2">Scadenza</th>
-                    <th className="px-2 py-2">Pagata</th>
-                    <th className="px-2 py-2">Azioni</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
+              <h3 className="text-base font-semibold text-white mb-4">Rate iniziali</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-700/50">
+                      <th className="px-3 py-2 text-left text-slate-400 font-medium">Importo</th>
+                      <th className="px-3 py-2 text-left text-slate-400 font-medium">Scadenza</th>
+                      <th className="px-3 py-2 text-left text-slate-400 font-medium">Pagata</th>
+                      <th className="px-3 py-2 text-left text-slate-400 font-medium">Azioni</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                   {rates.length > 0 ? rates.map((rate, idx) => (
-                    <tr key={idx} className="border-b border-slate-700">
-                      <td className="px-2 py-2">€{rate.amount}</td>
-                      <td className="px-2 py-2">{rate.dueDate ? new Date(rate.dueDate).toLocaleDateString() : '-'}</td>
-                      <td className="px-2 py-2">
+                    <tr key={idx} className="border-b border-slate-700/50">
+                      <td className="px-3 py-2 text-white">€{rate.amount}</td>
+                      <td className="px-3 py-2 text-slate-300">{rate.dueDate ? new Date(rate.dueDate).toLocaleDateString() : '-'}</td>
+                      <td className="px-3 py-2">
                         <input type="checkbox" checked={rate.paid} onChange={() => {
                           const updated = rates.map((r, i) => i === idx ? { ...r, paid: !r.paid } : r);
                           setRates(updated);
-                        }} />
+                        }} className="rounded" />
                       </td>
-                      <td className="px-2 py-2">
-                        <button type="button" onClick={() => setRates(rates.filter((_, i) => i !== idx))} className="text-red-400 px-2">Elimina</button>
+                      <td className="px-3 py-2">
+                        <button type="button" onClick={() => setRates(rates.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-300 text-sm transition-colors">Elimina</button>
                       </td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={4} className="text-center py-2 text-slate-400">Nessuna rata</td></tr>
+                    <tr><td colSpan={4} className="text-center py-4 text-slate-400">Nessuna rata</td></tr>
                   )}
                 </tbody>
               </table>
-              <div className="flex gap-2 mt-3">
-                <input type="number" placeholder="Importo (€)" value={newRate.amount} onChange={e => setNewRate({ ...newRate, amount: e.target.value })} className="p-2 rounded bg-slate-700/50 border border-slate-600 text-white" />
-                <input type="date" value={newRate.dueDate} onChange={e => setNewRate({ ...newRate, dueDate: e.target.value })} className="p-2 rounded bg-slate-700/50 border border-slate-600 text-white" />
-                <button type="button" onClick={() => { if (newRate.amount && newRate.dueDate) { setRates([...rates, newRate]); setNewRate({ amount: '', dueDate: '', paid: false }); } }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded">Aggiungi rata</button>
+              </div>
+              <div className="flex flex-wrap gap-3 mt-4">
+                <input type="number" placeholder="Importo (€)" value={newRate.amount} onChange={e => setNewRate({ ...newRate, amount: e.target.value })} className="flex-1 min-w-[100px] p-3 rounded-lg bg-slate-800/40 border border-slate-700/50 text-white placeholder:text-slate-500" />
+                <input type="date" value={newRate.dueDate} onChange={e => setNewRate({ ...newRate, dueDate: e.target.value })} className="flex-1 min-w-[140px] p-3 rounded-lg bg-slate-800/40 border border-slate-700/50 text-white" />
+                <button type="button" onClick={() => { if (newRate.amount && newRate.dueDate) { setRates([...rates, newRate]); setNewRate({ amount: '', dueDate: '', paid: false }); } }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-lg font-medium transition-colors">Aggiungi rata</button>
               </div>
             </div>
           )}
-          <div className="flex justify-center md:justify-end pt-4 pb-4">
+          <div className="flex justify-center md:justify-end pt-2 pb-4">
             <motion.button
               type="submit"
               disabled={isSubmitting}
-              className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition disabled:opacity-50 font-semibold disabled:cursor-not-allowed"
-              whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
-              whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
+              className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:opacity-50 font-medium disabled:cursor-not-allowed"
+              whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+              whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
             >
               <Save size={18} /> {isSubmitting ? 'Creazione in corso...' : 'Crea Cliente'}
             </motion.button>
@@ -494,49 +549,70 @@ export default function NewClient() {
             className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4"
           >
             <motion.div
-              className="bg-slate-800/95 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 text-center w-full max-w-md shadow-2xl shadow-black/40"
+              className="bg-slate-900/95 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 text-center w-full max-w-md shadow-2xl"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
             >
-              <h2 className="text-xl font-bold text-slate-50">Cliente Creato!</h2>
-              <p className="text-slate-400 text-sm mt-2">Copia e invia le credenziali al cliente.</p>
-              <div className="mt-3 p-2 bg-amber-900/30 border border-amber-500/30 rounded-lg">
-                <p className="text-xs text-amber-300">
-                  💡 <strong>Importante:</strong> La password è lunga {newClientCredentials?.password?.length || 0} caratteri. 
-                  Assicurati che il cliente la copi ESATTAMENTE senza spazi.
-                </p>
-              </div>
-              <div className="my-6 space-y-3 text-left">
-                <div className="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
-                  <div className="flex items-center justify-between mb-1">
+              <h2 className="text-xl font-semibold text-white">Cliente Creato!</h2>
+              <p className="text-slate-400 text-sm mt-2">
+                {magicLink ? 'Invia il Magic Link al cliente per un accesso rapido.' : 'Copia e invia le credenziali al cliente.'}
+              </p>
+              
+              {/* Magic Link Section - Mostrato se disponibile */}
+              {magicLink && (
+                <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-left">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-emerald-400 font-medium">🔗 Magic Link (valido 48h)</p>
+                    <button
+                      onClick={copyMagicLinkOnly}
+                      className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
+                    >
+                      <Copy size={12} /> Copia
+                    </button>
+                  </div>
+                  <p className="font-mono text-emerald-300 text-xs break-all select-all">{magicLink}</p>
+                  <p className="text-xs text-emerald-400/70 mt-2">✨ Il cliente clicca il link → imposta password → accede!</p>
+                </div>
+              )}
+              
+              {/* Credenziali tradizionali - sempre visibili come backup */}
+              <div className={`my-4 space-y-3 text-left ${magicLink ? 'opacity-60' : ''}`}>
+                {magicLink && (
+                  <p className="text-xs text-slate-500 text-center mb-2">─── Credenziali di backup ───</p>
+                )}
+                <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/50">
+                  <div className="flex items-center justify-between mb-2">
                     <p className="text-xs text-slate-400">Email (Username)</p>
                     <button
                       onClick={copyEmailOnly}
-                      className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                      className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
                     >
                       <Copy size={12} /> Copia
                     </button>
                   </div>
-                  <p className="font-mono text-slate-200 break-all">{newClientCredentials.email}</p>
+                  <p className="font-mono text-white break-all text-sm">{newClientCredentials.email}</p>
                 </div>
-                <div className="bg-slate-700/50 p-3 rounded-lg border border-slate-600">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs text-slate-400">Password Temporanea</p>
-                    <button
-                      onClick={copyPasswordOnly}
-                      className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
-                    >
-                      <Copy size={12} /> Copia
-                    </button>
+                {!magicLink && (
+                  <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-slate-400">Password Temporanea</p>
+                      <button
+                        onClick={copyPasswordOnly}
+                        className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
+                      >
+                        <Copy size={12} /> Copia
+                      </button>
+                    </div>
+                    <p className="font-mono text-white break-all select-all">{newClientCredentials.password}</p>
+                    <p className="text-xs text-amber-400 mt-2">⚠️ Attenzione agli spazi! Copia esattamente</p>
                   </div>
-                  <p className="font-mono text-slate-200 break-all select-all">{newClientCredentials.password}</p>
-                  <p className="text-[10px] text-amber-400 mt-2">⚠️ Attenzione agli spazi! Copia esattamente</p>
-                </div>
+                )}
               </div>
+              
               <motion.button
                 onClick={copyToClipboard}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                className={`w-full py-3 ${magicLink ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-colors`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -546,7 +622,7 @@ export default function NewClient() {
                   </>
                 ) : (
                   <>
-                    <Copy size={16} /> Copia Credenziali
+                    <Copy size={16} /> {magicLink ? 'Copia Messaggio con Magic Link' : 'Copia Credenziali'}
                   </>
                 )}
               </motion.button>

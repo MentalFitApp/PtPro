@@ -69,7 +69,7 @@ const ClientPayments = () => {
           </button>
         </header>
 
-        <main className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6">
+        <main className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 shadow-glow">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="border-b border-white/10">

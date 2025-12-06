@@ -109,7 +109,7 @@ export default function WorkoutStreak({ compact = false }) {
 
   if (loading) {
     return (
-      <div className={`bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 ${compact ? 'p-4' : 'p-6'} animate-pulse`}>
+      <div className={`bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 ${compact ? 'p-4' : 'p-6'} animate-pulse shadow-glow`}>
         <div className="h-20 bg-slate-700 rounded"></div>
       </div>
     );
@@ -139,7 +139,7 @@ export default function WorkoutStreak({ compact = false }) {
   }
 
   return (
-    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6 space-y-6">
+    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 p-6 space-y-6 shadow-glow">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
