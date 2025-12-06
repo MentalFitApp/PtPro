@@ -1273,12 +1273,13 @@ exports.completeMagicLinkSetup = onCall(async (request) => {
       usedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    // Aggiorna il documento cliente per rimuovere la password temporanea
+    // Aggiorna il documento cliente per rimuovere la password temporanea e firstLogin
     const clientRef = db.collection('tenants').doc(tokenData.tenantId).collection('clients').doc(tokenData.clientId);
     await clientRef.update({
       tempPassword: admin.firestore.FieldValue.delete(),
       passwordSetAt: admin.firestore.FieldValue.serverTimestamp(),
-      accountActivated: true
+      accountActivated: true,
+      firstLogin: false  // IMPORTANTE: evita redirect a /first-access
     });
 
     console.log('✅ [MAGIC-LINK] Setup completato per:', tokenData.email);
