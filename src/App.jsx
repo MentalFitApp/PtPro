@@ -337,8 +337,8 @@ export default function App() {
             error: null
           });
 
-          const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId', '/platform-login', '/platform-dashboard', '/site', '/privacy', '/terms'];
-          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/') || location.pathname.startsWith('/platform') || location.pathname.startsWith('/site') || location.pathname === '/privacy' || location.pathname === '/terms');
+          const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId', '/platform-login', '/platform-dashboard', '/site', '/privacy', '/terms', '/setup'];
+          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/') || location.pathname.startsWith('/platform') || location.pathname.startsWith('/site') || location.pathname.startsWith('/setup/') || location.pathname === '/privacy' || location.pathname === '/terms');
           if (!isPublic && !initialAuthComplete) {
             const target = '/login';
             if (lastNavigated !== target) {
