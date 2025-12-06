@@ -8,6 +8,7 @@ import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
 import { ProSidebar, MobileSidebar } from './ProSidebar';
 import ThemeToggle from '../ui/ThemeToggle';
+import NotificationPermissionModal from '../notifications/NotificationPermissionModal';
 
 // === STELLE ANIMATE ===
 const AnimatedStars = () => {
@@ -554,6 +555,9 @@ export const ProLayout = () => {
       {isMobile && (
         <BottomNav role={role} currentPath={location.pathname} />
       )}
+
+      {/* Modale richiesta permessi notifiche */}
+      <NotificationPermissionModal />
     </div>
   );
 };

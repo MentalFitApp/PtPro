@@ -57,8 +57,9 @@ export default function NotificationPermissionModal() {
         // Ottieni e salva token FCM
         try {
           const messaging = getMessaging();
+          const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeDXSXKb4uffOVSupUGHQ4Q0l9Ato';
           const token = await getToken(messaging, {
-            vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
+            vapidKey: VAPID_KEY
           });
           
           if (token && auth.currentUser) {
@@ -67,9 +68,10 @@ export default function NotificationPermissionModal() {
               fcmTokenUpdatedAt: serverTimestamp(),
               notificationsEnabled: true
             }, { merge: true });
+            console.log('[FCM] Token salvato con successo');
           }
         } catch (fcmError) {
-          console.log('FCM token non disponibile:', fcmError);
+          console.error('[FCM] Errore token:', fcmError);
         }
         
         // Chiudi modal dopo animazione

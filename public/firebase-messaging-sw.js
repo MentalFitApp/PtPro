@@ -4,14 +4,14 @@
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
-// Configurazione Firebase
+// Configurazione Firebase - biondo-fitness-coach
 firebase.initializeApp({
-  apiKey: "AIzaSyDmHxREQJJN_b5oxAsL_2d17B4GVNdTb0U",
-  authDomain: "fitflow-16ed0.firebaseapp.com",
-  projectId: "fitflow-16ed0",
-  storageBucket: "fitflow-16ed0.appspot.com",
-  messagingSenderId: "1024596022893",
-  appId: "1:1024596022893:web:0cabe21ba697e97aec28c8"
+  apiKey: "AIzaSyDU4GmH6xLhrEd2jSkyATXJOasIyEfisXY",
+  authDomain: "biondo-fitness-coach.firebaseapp.com",
+  projectId: "biondo-fitness-coach",
+  storageBucket: "biondo-fitness-coach.firebasestorage.app",
+  messagingSenderId: "1086406111438",
+  appId: "1:1086406111438:web:1c8c3d9e49f1ffdb77609f"
 });
 
 const messaging = firebase.messaging();
