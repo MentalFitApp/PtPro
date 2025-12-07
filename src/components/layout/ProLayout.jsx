@@ -544,8 +544,9 @@ export const ProLayout = () => {
       >
         <main 
           className={`min-h-screen bg-slate-900/30 ${
-            isMobile ? 'pt-16 pb-20' : 'pt-14'
+            isMobile ? 'pb-20' : 'pt-14'
           }`}
+          style={isMobile ? { paddingTop: 'calc(64px + env(safe-area-inset-top, 0px))' } : undefined}
         >
           <Outlet />
         </main>
