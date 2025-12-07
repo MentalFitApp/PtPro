@@ -65,11 +65,15 @@ export const CardHeader = ({
 export const CardHeaderSimple = ({ 
   title, 
   subtitle,
+  action,
   className = '' 
 }) => (
-  <div className={`mb-4 ${className}`}>
-    <h3 className="text-lg font-semibold text-white">{title}</h3>
-    {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+  <div className={`mb-4 flex items-start justify-between ${className}`}>
+    <div>
+      <h3 className="text-lg font-semibold text-white">{title}</h3>
+      {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+    </div>
+    {action && <div className="flex-shrink-0">{action}</div>}
   </div>
 );
 
