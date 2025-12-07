@@ -560,7 +560,8 @@ export default function DashboardNew() {
     breakdown.sort((a, b) => b.date - a.date);
     setRevenueBreakdownData(breakdown);
     
-    const revenue = newClientsRevenue + renewalsRevenue; // Totale incassi (nuovi + rinnovi)
+    // revenue = solo nuovi clienti, rinnovi vanno separati
+    const revenue = newClientsRevenue;
     
     const activeClientsCount = activeClientsList.filter(c => {
       const exp = toDate(c.scadenza);
@@ -628,7 +629,7 @@ export default function DashboardNew() {
         key: 'revenue',
         props: {
           value: metrics.revenue,
-          label: 'Fatturato',
+          label: 'Nuovi Clienti',
           icon: DollarSign,
           gradientFrom: 'from-emerald-900/40',
           gradientTo: 'to-emerald-800/20',

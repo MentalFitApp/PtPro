@@ -106,39 +106,91 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
   const [method, setMethod] = useState(PAYMENT_METHODS.BONIFICO);
   const [customMethod, setCustomMethod] = useState('');
   const [manualExpiry, setManualExpiry] = useState('');
+  const [isRateizzato, setIsRateizzato] = useState(false);
+  const [rates, setRates] = useState([{ amount: '', dueDate: '' }]);
+  const [saving, setSaving] = useState(false);
+
+  const addRate = () => setRates([...rates, { amount: '', dueDate: '' }]);
+  const removeRate = (idx) => setRates(rates.filter((_, i) => i !== idx));
+  const updateRate = (idx, field, value) => {
+    const newRates = [...rates];
+    newRates[idx][field] = value;
+    setRates(newRates);
+  };
 
   const handleSave = async () => {
+    setSaving(true);
     try {
       const currentExpiry = toDate(client.scadenza) || new Date();
       const expiry = manualExpiry ? new Date(manualExpiry) : new Date(currentExpiry);
       if (!manualExpiry) expiry.setMonth(expiry.getMonth() + months);
       const paymentMethod = method === PAYMENT_METHODS.ALTRO ? customMethod : method;
-      const payment = {
-        amount: parseFloat(amount) || 0,
-        duration: manualExpiry ? 'Manuale' : `${months} mesi`,
-        paymentDate: new Date(),
-        paymentMethod,
-        createdAt: new Date()
-      };
+      
       // Aggiorna scadenza cliente
       const clientRef = getTenantDoc(db, 'clients', client.id);
-      await updateDoc(clientRef, { scadenza: expiry });
-      // Salva pagamento nella subcollection
-      const paymentsRef = getTenantSubcollection(db, 'clients', client.id, 'payments');
-      await addDoc(paymentsRef, payment);
+      await updateDoc(clientRef, { 
+        scadenza: expiry,
+        rateizzato: isRateizzato 
+      });
+      
+      if (isRateizzato) {
+        // Salva le rate nella subcollection rates
+        const ratesRef = getTenantSubcollection(db, 'clients', client.id, 'rates');
+        for (const rate of rates) {
+          if (rate.amount && rate.dueDate) {
+            await addDoc(ratesRef, {
+              amount: parseFloat(rate.amount) || 0,
+              dueDate: new Date(rate.dueDate),
+              paid: false,
+              createdAt: new Date(),
+              isRenewal: true // Marca come rinnovo
+            });
+          }
+        }
+      } else {
+        // Pagamento unico nella subcollection payments
+        const payment = {
+          amount: parseFloat(amount) || 0,
+          duration: manualExpiry ? 'Manuale' : `${months} mesi`,
+          paymentDate: new Date(),
+          paymentMethod,
+          createdAt: new Date(),
+          isRenewal: true // Marca come rinnovo
+        };
+        const paymentsRef = getTenantSubcollection(db, 'clients', client.id, 'payments');
+        await addDoc(paymentsRef, payment);
+      }
+      
       updateStatoPercorso(client.id);
       onSave?.();
       onClose();
     } catch (err) {
       console.error('Errore rinnovo:', err);
+      alert('Errore durante il salvataggio del rinnovo');
+    } finally {
+      setSaving(false);
     }
   };
+
+  // Reset form quando si apre
+  useEffect(() => {
+    if (isOpen) {
+      setMonths(3);
+      setAmount('');
+      setMethod(PAYMENT_METHODS.BONIFICO);
+      setCustomMethod('');
+      setManualExpiry('');
+      setIsRateizzato(false);
+      setRates([{ amount: '', dueDate: '' }]);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-[90] p-4">
-      <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-slate-900/90 rounded-2xl border border-slate-800 p-6 w-full max-w-md shadow-2xl">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-[90] p-0 md:p-4">
+      <motion.div initial={{ y: 30 }} animate={{ y: 0 }} exit={{ y: 30 }} className="bg-slate-900/95 rounded-t-3xl md:rounded-2xl border border-slate-800 p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-4 md:hidden" />
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-white">Rinnovo {client.name}</h3>
           <button onClick={onClose} className="text-slate-300 hover:text-rose-300"><X size={22} /></button>
@@ -151,23 +203,77 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
             </select>
           </div>
           <div>
-            <label className="block text-sm text-slate-300 mb-1">Oppure data manuale</label>
+            <label className="block text-sm text-slate-300 mb-1">Oppure data scadenza manuale</label>
             <input type="date" value={manualExpiry} onChange={e => setManualExpiry(e.target.value)} className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white" />
           </div>
-          <div>
-            <label className="block text-sm text-slate-300 mb-1">Importo</label>
-            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="es. 150" className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white" />
+          
+          {/* Toggle Rateizzato */}
+          <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+            <input 
+              type="checkbox" 
+              id="rateizzato" 
+              checked={isRateizzato} 
+              onChange={e => setIsRateizzato(e.target.checked)} 
+              className="w-5 h-5 rounded accent-emerald-500"
+            />
+            <label htmlFor="rateizzato" className="text-sm text-slate-200 cursor-pointer">Pagamento a rate</label>
           </div>
-          <div>
-            <label className="block text-sm text-slate-300 mb-1">Metodo</label>
-            <select value={method} onChange={e => setMethod(e.target.value)} className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white">
-              {Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
-            </select>
-            {method === PAYMENT_METHODS.ALTRO && (
-              <input type="text" value={customMethod} onChange={e => setCustomMethod(e.target.value)} placeholder="Specifica metodo" className="w-full mt-2 p-2 bg-slate-900 border border-slate-700 rounded-lg text-white" />
-            )}
-          </div>
-          <button onClick={handleSave} className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold shadow-sm">Salva Rinnovo</button>
+          
+          {isRateizzato ? (
+            <div className="space-y-3">
+              <label className="block text-sm text-slate-300">Rate</label>
+              {rates.map((rate, idx) => (
+                <div key={idx} className="flex gap-2 items-center">
+                  <input 
+                    type="number" 
+                    value={rate.amount} 
+                    onChange={e => updateRate(idx, 'amount', e.target.value)} 
+                    placeholder="Importo €" 
+                    className="flex-1 p-2 bg-slate-900 border border-slate-700 rounded-lg text-white"
+                  />
+                  <input 
+                    type="date" 
+                    value={rate.dueDate} 
+                    onChange={e => updateRate(idx, 'dueDate', e.target.value)} 
+                    className="flex-1 p-2 bg-slate-900 border border-slate-700 rounded-lg text-white"
+                  />
+                  {rates.length > 1 && (
+                    <button onClick={() => removeRate(idx)} className="p-2 text-rose-400 hover:text-rose-300">
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button onClick={addRate} className="text-sm text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+                <Plus size={16} /> Aggiungi rata
+              </button>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Importo totale</label>
+                <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="es. 150" className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white" />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Metodo pagamento</label>
+                <select value={method} onChange={e => setMethod(e.target.value)} className="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-white">
+                  {Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                </select>
+                {method === PAYMENT_METHODS.ALTRO && (
+                  <input type="text" value={customMethod} onChange={e => setCustomMethod(e.target.value)} placeholder="Specifica metodo" className="w-full mt-2 p-2 bg-slate-900 border border-slate-700 rounded-lg text-white" />
+                )}
+              </div>
+            </>
+          )}
+          
+          <button 
+            onClick={handleSave} 
+            disabled={saving}
+            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800 text-white rounded-lg font-semibold shadow-sm flex items-center justify-center gap-2"
+          >
+            {saving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+            {saving ? 'Salvataggio...' : 'Salva Rinnovo'}
+          </button>
         </div>
       </motion.div>
     </motion.div>
@@ -336,23 +442,27 @@ const ExtendExpiryModal = ({ isOpen, onClose, client, onSave }) => {
   );
 };
 
-const EditPaymentModal = ({ isOpen, onClose, payment, client, onSave }) => {
-  const [form, setForm] = useState({ amount: 0, duration: '', paymentMethod: PAYMENT_METHODS.BONIFICO, paymentDate: new Date() });
+const EditPaymentModal = ({ isOpen, onClose, payment, client, onSave, onDelete }) => {
+  const [form, setForm] = useState({ amount: 0, duration: '', paymentMethod: PAYMENT_METHODS.BONIFICO, paymentDate: '' });
   const [customMethod, setCustomMethod] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (payment) {
+      const pDate = toDate(payment.paymentDate);
       setForm({
         amount: payment.amount || 0,
         duration: payment.duration || '',
         paymentMethod: payment.paymentMethod || PAYMENT_METHODS.BONIFICO,
-        paymentDate: payment.paymentDate || new Date()
+        paymentDate: pDate ? pDate.toISOString().split('T')[0] : ''
       });
       if (payment.paymentMethod === PAYMENT_METHODS.ALTRO) setCustomMethod(payment.paymentMethod);
     }
   }, [payment]);
 
   const handleSave = async () => {
+    setSaving(true);
     try {
       if (!payment?.id) {
         console.error('ID pagamento non valido');
@@ -364,13 +474,32 @@ const EditPaymentModal = ({ isOpen, onClose, payment, client, onSave }) => {
         amount: parseFloat(form.amount) || 0,
         duration: form.duration,
         paymentMethod,
-        paymentDate: form.paymentDate
+        paymentDate: form.paymentDate ? new Date(form.paymentDate) : new Date()
       });
       onSave?.();
       onClose();
     } catch (err) {
       console.error('Errore modifica pagamento:', err);
       alert('Errore durante la modifica del pagamento');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Sei sicuro di voler eliminare questo pagamento?')) return;
+    setDeleting(true);
+    try {
+      if (!payment?.id) return;
+      const paymentRef = doc(getTenantSubcollection(db, 'clients', client.id, 'payments'), payment.id);
+      await deleteDoc(paymentRef);
+      onDelete?.();
+      onClose();
+    } catch (err) {
+      console.error('Errore eliminazione pagamento:', err);
+      alert('Errore durante l\'eliminazione del pagamento');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -378,30 +507,52 @@ const EditPaymentModal = ({ isOpen, onClose, payment, client, onSave }) => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-[90] p-0 md:p-4">
-      <motion.div initial={{ y: 30 }} animate={{ y: 0 }} exit={{ y: 30 }} className="bg-white border border-slate-200 w-full max-h-[90vh] overflow-y-auto rounded-t-3xl md:rounded-2xl p-6 shadow-2xl">
+      <motion.div initial={{ y: 30 }} animate={{ y: 0 }} exit={{ y: 30 }} className="bg-slate-900/95 border border-slate-800 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl md:rounded-2xl p-6 shadow-2xl">
+        <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-4 md:hidden" />
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-slate-900">Modifica Pagamento</h3>
-          <button onClick={onClose} className="text-slate-500 hover:text-rose-500"><X size={22} /></button>
+          <h3 className="text-xl font-bold text-white">Modifica Pagamento</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-rose-400"><X size={22} /></button>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-slate-600 mb-1">Importo (€)</label>
-            <input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800" />
+            <label className="block text-sm text-slate-300 mb-1">Importo (€)</label>
+            <input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="w-full p-2 bg-slate-800 border border-slate-700 rounded-lg text-white" />
           </div>
           <div>
-            <label className="block text-sm text-slate-600 mb-1">Durata</label>
-            <input type="text" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800" />
+            <label className="block text-sm text-slate-300 mb-1">Data pagamento</label>
+            <input type="date" value={form.paymentDate} onChange={e => setForm({ ...form, paymentDate: e.target.value })} className="w-full p-2 bg-slate-800 border border-slate-700 rounded-lg text-white" />
           </div>
           <div>
-            <label className="block text-sm text-slate-600 mb-1">Metodo Pagamento</label>
-            <select value={form.paymentMethod} onChange={e => setForm({ ...form, paymentMethod: e.target.value })} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-slate-800">
+            <label className="block text-sm text-slate-300 mb-1">Durata</label>
+            <input type="text" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} placeholder="es. 3 mesi" className="w-full p-2 bg-slate-800 border border-slate-700 rounded-lg text-white" />
+          </div>
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">Metodo Pagamento</label>
+            <select value={form.paymentMethod} onChange={e => setForm({ ...form, paymentMethod: e.target.value })} className="w-full p-2 bg-slate-800 border border-slate-700 rounded-lg text-white">
               {Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
             </select>
             {form.paymentMethod === PAYMENT_METHODS.ALTRO && (
-              <input type="text" value={customMethod} onChange={e => setCustomMethod(e.target.value)} className="w-full p-2 mt-2 bg-white border border-slate-200 rounded-lg text-slate-800" placeholder="Specifica metodo" />
+              <input type="text" value={customMethod} onChange={e => setCustomMethod(e.target.value)} className="w-full p-2 mt-2 bg-slate-800 border border-slate-700 rounded-lg text-white" placeholder="Specifica metodo" />
             )}
           </div>
-          <button onClick={handleSave} className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-sm">Salva Modifiche</button>
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={handleDelete} 
+              disabled={deleting}
+              className="flex-1 py-2 bg-rose-600/80 hover:bg-rose-600 disabled:bg-rose-800 text-white rounded-lg font-semibold flex items-center justify-center gap-2"
+            >
+              {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+              Elimina
+            </button>
+            <button 
+              onClick={handleSave} 
+              disabled={saving}
+              className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg font-semibold flex items-center justify-center gap-2"
+            >
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+              Salva
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
@@ -1163,21 +1314,66 @@ export default function ClientDetail() {
             <p className="text-lg font-semibold text-white">{showAmounts ? `€${paymentsPaid.toFixed(0)}` : '€ •••'}</p>
           </div>
           <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-            <p className="text-xs text-slate-400">Totale rate</p>
+            <p className="text-xs text-slate-400">Totale</p>
             <p className="text-lg font-semibold text-white">{showAmounts ? `€${paymentsTotal.toFixed(0)}` : '€ •••'}</p>
           </div>
         </CardGrid>
-        <div className="text-sm text-slate-100">
-          <p className="text-slate-400 text-xs">Ultimo pagamento</p>
-          {lastPayment ? (
-            <div className="mt-1 flex items-center justify-between">
-              <span>{toDate(lastPayment.paidDate)?.toLocaleDateString('it-IT') || toDate(lastPayment.dueDate)?.toLocaleDateString('it-IT') || 'N/D'}</span>
-              <span className="font-semibold">{showAmounts ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(lastPayment.amount || 0) : '€ •••'}</span>
+        
+        {/* Lista pagamenti dalla subcollection */}
+        {payments.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs text-slate-400 mb-2 font-medium">Storico pagamenti</p>
+            <div className="space-y-2">
+              {payments.map((payment, idx) => {
+                const pDate = toDate(payment.paymentDate);
+                return (
+                  <div 
+                    key={payment.id || idx} 
+                    className="flex items-center justify-between p-3 bg-slate-900/70 rounded-lg border border-slate-800 hover:border-slate-700 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-white">
+                          {showAmounts ? `€${payment.amount || 0}` : '€ •••'}
+                        </span>
+                        {payment.isRenewal && (
+                          <span className="px-1.5 py-0.5 text-[10px] bg-cyan-500/20 text-cyan-400 rounded">Rinnovo</span>
+                        )}
+                        {payment.duration && (
+                          <span className="text-xs text-slate-500">{payment.duration}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-slate-400">
+                          {pDate ? pDate.toLocaleDateString('it-IT') : 'N/D'}
+                        </span>
+                        {payment.paymentMethod && (
+                          <span className="text-xs text-slate-500">
+                            • {PAYMENT_METHOD_LABELS[payment.paymentMethod] || payment.paymentMethod}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditingPaymentIndex(idx);
+                        setShowEditPayment(true);
+                      }}
+                      className="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-colors"
+                      title="Modifica pagamento"
+                    >
+                      <Edit size={16} />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
-          ) : (
-            <p className="text-slate-400 mt-1">Nessun pagamento registrato.</p>
-          )}
-        </div>
+          </div>
+        )}
+        
+        {payments.length === 0 && !lastPayment && (
+          <p className="text-slate-400 text-sm mt-2">Nessun pagamento registrato.</p>
+        )}
       </CardContent>
     </UnifiedCard>
   );
@@ -1498,7 +1694,8 @@ export default function ClientDetail() {
             onClose={() => { setShowEditPayment(false); setEditingPaymentIndex(null); }}
             payment={editingPaymentIndex !== null && payments.length > editingPaymentIndex ? payments[editingPaymentIndex] : null}
             client={client}
-            onSave={() => {}}
+            onSave={() => { setEditingPaymentIndex(null); }}
+            onDelete={() => { setEditingPaymentIndex(null); }}
           />}
           {zoomPhoto?.open && <PhotoZoomModal key="zoom" isOpen={!!zoomPhoto?.open} onClose={() => setZoomPhoto({ open: false, url: '', alt: '' })} imageUrl={zoomPhoto?.url} alt={zoomPhoto?.alt} />}
           {showPhotoCompare && <PhotoCompare key="photoCompare" checks={checks} anamnesi={anamnesi} onClose={() => setShowPhotoCompare(false)} />}
