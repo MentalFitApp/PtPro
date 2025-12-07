@@ -55,6 +55,7 @@ const ClientCallsCalendar = React.lazy(() => import('./pages/admin/ClientCallsCa
 
 // Platform CEO Pages
 const CEOPlatformDashboard = React.lazy(() => import('./pages/platform/CEOPlatformDashboard'));
+const TenantDeepDive = React.lazy(() => import('./pages/platform/TenantDeepDive'));
 const PlatformLogin = React.lazy(() => import('./pages/platform/PlatformLogin'));
 
 // Client Pages
@@ -394,6 +395,9 @@ export default function App() {
         {/* === ROTTE PLATFORM CEO === */}
         <Route path="/platform-dashboard" element={
           authInfo.isPlatformCEO ? <CEOPlatformDashboard /> : <Navigate to="/platform-login" replace />
+        } />
+        <Route path="/platform/tenant/:tenantId" element={
+          authInfo.isPlatformCEO ? <TenantDeepDive /> : <Navigate to="/platform-login" replace />
         } />
 
         {/* === ROTTE ADMIN (SOLO ADMIN) === */}

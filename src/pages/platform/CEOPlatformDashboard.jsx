@@ -16,7 +16,8 @@ import {
   Home, Search, Filter, Download, Upload, Trash2, Edit3,
   Bell, Moon, Sun, Menu, X, Server, Globe, Lock, Unlock, Layout,
   FileText, ExternalLink, Calendar, Clock, ArrowUpRight, ArrowDownRight,
-  AlertTriangle, ChevronDown, MoreVertical, PieChart, Target, Wallet
+  AlertTriangle, ChevronDown, MoreVertical, PieChart, Target, Wallet,
+  Mail, Plus, Save
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageBuilder from '../../components/platform/PageBuilder';
@@ -260,18 +261,23 @@ export default function CEOPlatformDashboard() {
   const [platformStats, setPlatformStats] = useState({
     totalTenants: 0,
     activeTenants: 0,
-    totalRevenue: 0,
-    monthlyRecurring: 0,
+    // Platform Revenue (abbonamenti che i tenants pagano a noi)
+    platformRevenue: 0,          // Totale storico abbonamenti
+    monthlyRecurring: 0,          // MRR - abbonamenti mensili
+    annualRecurring: 0,           // ARR - proiezione annuale
+    // Tenants Revenue (incassi che i tenants fanno dai loro clienti)
+    tenantsRevenue: 0,            // Totale incassi clienti
+    tenantsRevenueThisMonth: 0,   // Incassi clienti questo mese
+    // Users stats
     totalUsers: 0,
     totalClients: 0,
     newTenantsThisMonth: 0,
     avgUsersPerTenant: 0,
-    // Nuove metriche
+    // Subscription stats
     expiringThisMonth: 0,
     trialTenants: 0,
     churnRate: 0,
-    avgRevenuePerTenant: 0,
-    totalPaymentsThisMonth: 0
+    avgRevenuePerTenant: 0
   });
 
   const [tenants, setTenants] = useState([]);
@@ -280,12 +286,15 @@ export default function CEOPlatformDashboard() {
   const [editingLanding, setEditingLanding] = useState(null);
   const [editingBranding, setEditingBranding] = useState(null);
   const [editingSubscription, setEditingSubscription] = useState(null);
+  const [editingTenant, setEditingTenant] = useState(null);  // Per edit/create tenant
+  const [showCreateTenant, setShowCreateTenant] = useState(false);
   const [showPageBuilder, setShowPageBuilder] = useState(false);
   const [currentTenantForBuilder, setCurrentTenantForBuilder] = useState(null);
   const [currentLandingBlocks, setCurrentLandingBlocks] = useState([]);
   const [editingLegalPage, setEditingLegalPage] = useState(null); // 'privacy' or 'terms'
   const [legalPageContent, setLegalPageContent] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'active', 'trial', 'expired'
+  const [actionLoading, setActionLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -439,28 +448,46 @@ export default function CEOPlatformDashboard() {
       });
       setAlerts(newAlerts);
 
-      // Calculate platform stats
+      // Calculate platform stats - SEPARAZIONE CHIARA
       const totalUsers = tenantsData.reduce((sum, t) => sum + t.users, 0);
       const totalClients = tenantsData.reduce((sum, t) => sum + t.clients, 0);
-      const totalRevenue = tenantsData.reduce((sum, t) => sum + parseFloat(t.revenue || 0), 0);
-      const totalMonthlyRevenue = tenantsData.reduce((sum, t) => sum + parseFloat(t.monthlyRevenue || 0), 0);
+      
+      // TENANTS REVENUE = Incassi che i trainers fanno dai loro clienti
+      const tenantsRevenue = tenantsData.reduce((sum, t) => sum + parseFloat(t.revenue || 0), 0);
+      const tenantsRevenueThisMonth = tenantsData.reduce((sum, t) => sum + parseFloat(t.monthlyRevenue || 0), 0);
+      
       const activeTenants = tenantsData.filter(t => t.status === 'active').length;
       const trialTenants = tenantsData.filter(t => t.plan === 'trial' || t.plan === 'free').length;
       const expiringThisMonth = tenantsData.filter(t => t.isExpiringSoon).length;
       
-      // MRR basato sui prezzi abbonamento
+      // PLATFORM REVENUE = MRR/ARR basato sui prezzi abbonamento dei tenants
       const mrr = tenantsData.reduce((sum, t) => {
-        if (t.status !== 'active') return sum;
-        let monthlyPrice = t.price || 0;
+        if (t.status !== 'active' || t.plan === 'free' || t.plan === 'trial') return sum;
+        let monthlyPrice = parseFloat(t.price) || 0;
         if (t.billingCycle === 'yearly') monthlyPrice = monthlyPrice / 12;
         return sum + monthlyPrice;
+      }, 0);
+      
+      // Calcola revenue storico della piattaforma (somma tutti i mesi di abbonamento)
+      const platformRevenue = tenantsData.reduce((sum, t) => {
+        if (t.plan === 'free' || t.plan === 'trial') return sum;
+        const startDate = t.subscription?.startDate?.toDate?.() || t.createdAt;
+        const monthsActive = Math.max(1, Math.floor((new Date() - startDate) / (30 * 24 * 60 * 60 * 1000)));
+        const monthlyPrice = t.billingCycle === 'yearly' ? (t.price || 0) / 12 : (t.price || 0);
+        return sum + (monthlyPrice * monthsActive);
       }, 0);
 
       setPlatformStats({
         totalTenants: tenantsData.length,
         activeTenants,
-        totalRevenue,
+        // Platform Revenue
+        platformRevenue,
         monthlyRecurring: mrr,
+        annualRecurring: mrr * 12,
+        // Tenants Revenue
+        tenantsRevenue,
+        tenantsRevenueThisMonth,
+        // Users
         totalUsers,
         totalClients,
         newTenantsThisMonth: tenantsData.filter(t => {
@@ -469,26 +496,28 @@ export default function CEOPlatformDashboard() {
           return t.createdAt > monthAgo;
         }).length,
         avgUsersPerTenant: tenantsData.length > 0 ? (totalUsers / tenantsData.length).toFixed(1) : 0,
+        // Subscriptions
         expiringThisMonth,
         trialTenants,
         churnRate: tenantsData.length > 0 ? ((tenantsData.filter(t => t.isExpired).length / tenantsData.length) * 100).toFixed(1) : 0,
-        avgRevenuePerTenant: tenantsData.length > 0 ? (totalRevenue / tenantsData.length).toFixed(0) : 0,
-        totalPaymentsThisMonth: totalMonthlyRevenue
+        avgRevenuePerTenant: activeTenants > 0 ? (mrr / activeTenants).toFixed(0) : 0
       });
 
-      // Genera dati revenue per grafico (ultimi 6 mesi)
+      // Genera dati revenue PIATTAFORMA per grafico (ultimi 6 mesi)
       const revenueByMonth = [];
       for (let i = 5; i >= 0; i--) {
         const date = new Date();
         date.setMonth(date.getMonth() - i);
         const monthName = date.toLocaleDateString('it-IT', { month: 'short' });
         
-        // Stima basata sul trend
-        const factor = 1 + (5 - i) * 0.15; // Crescita simulata 15% mese
+        // Stima basata sul MRR con crescita
+        const factor = 1 + (5 - i) * 0.12;
         revenueByMonth.push({
           month: monthName,
-          revenue: Math.round((totalRevenue / 6) * factor),
+          platformRevenue: Math.round(mrr * factor),
+          tenantsRevenue: Math.round((tenantsRevenueThisMonth || mrr * 2) * factor),
           tenants: Math.round(tenantsData.length * (0.7 + i * 0.05))
+        });
         });
       }
       setRevenueData(revenueByMonth);
@@ -740,6 +769,180 @@ export default function CEOPlatformDashboard() {
     a.href = url;
     a.download = `tenants-export-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
+  };
+
+  // === GESTIONE TENANTS ===
+  
+  // Crea nuovo tenant
+  const handleCreateTenant = async (tenantData) => {
+    setActionLoading(true);
+    try {
+      const tenantId = tenantData.id || tenantData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      
+      const tenantDoc = {
+        name: tenantData.name,
+        status: 'active',
+        plan: tenantData.plan || 'trial',
+        subscription: {
+          plan: tenantData.plan || 'trial',
+          status: 'active',
+          price: tenantData.price || 0,
+          billingCycle: tenantData.billingCycle || 'monthly',
+          startDate: serverTimestamp(),
+          endDate: tenantData.plan === 'trial' 
+            ? Timestamp.fromDate(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)) // 14 giorni trial
+            : null
+        },
+        owner: {
+          email: tenantData.ownerEmail || '',
+          name: tenantData.ownerName || ''
+        },
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      await setDoc(doc(db, 'tenants', tenantId), tenantDoc);
+      
+      // Crea collezioni base
+      await setDoc(doc(db, `tenants/${tenantId}/settings`, 'general'), {
+        tenantName: tenantData.name,
+        createdAt: serverTimestamp()
+      });
+
+      await loadPlatformData();
+      setShowCreateTenant(false);
+      alert(`✅ Tenant "${tenantData.name}" creato con successo!`);
+    } catch (error) {
+      console.error('Error creating tenant:', error);
+      alert('❌ Errore nella creazione del tenant: ' + error.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Modifica tenant
+  const handleUpdateTenant = async (tenantId, updates) => {
+    setActionLoading(true);
+    try {
+      await updateDoc(doc(db, 'tenants', tenantId), {
+        ...updates,
+        updatedAt: serverTimestamp()
+      });
+      
+      await loadPlatformData();
+      setEditingTenant(null);
+      alert('✅ Tenant aggiornato con successo!');
+    } catch (error) {
+      console.error('Error updating tenant:', error);
+      alert('❌ Errore nell\'aggiornamento: ' + error.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Sospendi tenant
+  const handleSuspendTenant = async (tenant) => {
+    if (!confirm(`Vuoi davvero SOSPENDERE il tenant "${tenant.name}"?\n\nGli utenti non potranno più accedere fino alla riattivazione.`)) {
+      return;
+    }
+    
+    setActionLoading(true);
+    try {
+      await updateDoc(doc(db, 'tenants', tenant.id), {
+        status: 'suspended',
+        'subscription.status': 'suspended',
+        suspendedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
+      await loadPlatformData();
+      setSelectedTenant(null);
+      alert(`⚠️ Tenant "${tenant.name}" sospeso.`);
+    } catch (error) {
+      console.error('Error suspending tenant:', error);
+      alert('❌ Errore nella sospensione: ' + error.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Riattiva tenant
+  const handleReactivateTenant = async (tenant) => {
+    if (!confirm(`Vuoi riattivare il tenant "${tenant.name}"?`)) {
+      return;
+    }
+    
+    setActionLoading(true);
+    try {
+      await updateDoc(doc(db, 'tenants', tenant.id), {
+        status: 'active',
+        'subscription.status': 'active',
+        reactivatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
+      await loadPlatformData();
+      setSelectedTenant(null);
+      alert(`✅ Tenant "${tenant.name}" riattivato!`);
+    } catch (error) {
+      console.error('Error reactivating tenant:', error);
+      alert('❌ Errore nella riattivazione: ' + error.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Elimina tenant (con conferma multipla)
+  const handleDeleteTenant = async (tenant) => {
+    const confirmText = prompt(
+      `⚠️ ATTENZIONE: Stai per ELIMINARE DEFINITIVAMENTE il tenant "${tenant.name}".\n\n` +
+      `Questo cancellerà TUTTI i dati: ${tenant.users} utenti, ${tenant.clients} clienti, tutti i programmi e pagamenti.\n\n` +
+      `Scrivi "${tenant.id}" per confermare:`
+    );
+    
+    if (confirmText !== tenant.id) {
+      alert('Eliminazione annullata. Il testo inserito non corrisponde.');
+      return;
+    }
+    
+    setActionLoading(true);
+    try {
+      // Elimina sottocollezioni principali
+      const subcollections = ['users', 'clients', 'settings', 'programs', 'payments'];
+      
+      for (const subcol of subcollections) {
+        const snap = await getDocs(query(collection(db, `tenants/${tenant.id}/${subcol}`), limit(500)));
+        const deletePromises = snap.docs.map(d => deleteDoc(d.ref));
+        await Promise.all(deletePromises);
+      }
+      
+      // Elimina il documento tenant
+      await deleteDoc(doc(db, 'tenants', tenant.id));
+      
+      await loadPlatformData();
+      setSelectedTenant(null);
+      alert(`🗑️ Tenant "${tenant.name}" eliminato definitivamente.`);
+    } catch (error) {
+      console.error('Error deleting tenant:', error);
+      alert('❌ Errore nell\'eliminazione: ' + error.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Naviga a TenantDeepDive per analytics dettagliate
+  const handleViewTenantAnalytics = (tenant) => {
+    navigate(`/platform/tenant/${tenant.id}`);
+  };
+
+  // Invia email al tenant
+  const handleContactTenant = (tenant) => {
+    const email = tenant.owner?.email || '';
+    if (email) {
+      window.open(`mailto:${email}?subject=FitFlow Platform - ${tenant.name}&body=Ciao,`, '_blank');
+    } else {
+      alert('Email del proprietario non disponibile.');
+    }
   };
 
   const filteredTenants = useMemo(() => {
@@ -1028,6 +1231,21 @@ export default function CEOPlatformDashboard() {
           {/* Tenants Page */}
           {activePage === 'tenants' && (
             <div className="space-y-6">
+              {/* Header with Create Button */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-white">Gestione Tenants</h1>
+                  <p className="text-slate-400">{tenants.length} tenants totali • {platformStats.activeTenants} attivi</p>
+                </div>
+                <button
+                  onClick={() => setShowCreateTenant(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Crea Tenant
+                </button>
+              </div>
+
               {/* Search Bar */}
               <div className="bg-slate-800/60 backdrop-blur-sm p-4 rounded-xl border border-slate-700/50">
                 <div className="flex flex-wrap items-center gap-4">
@@ -1698,12 +1916,12 @@ export default function CEOPlatformDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-2xl font-bold text-white">Revenue Dashboard</h1>
-                  <p className="text-slate-400">Entrate e fatturazione piattaforma</p>
+                  <p className="text-slate-400">Entrate abbonamenti e incassi tenants</p>
                 </div>
                 <button
                   onClick={() => {
                     const csvContent = [
-                      ['Tenant', 'Piano', 'Prezzo', 'Ciclo', 'Status', 'Revenue Totale'].join(','),
+                      ['Tenant', 'Piano', 'Abbonamento €/mo', 'Ciclo', 'Status', 'Incassi Clienti €'].join(','),
                       ...tenants.map(t => [
                         t.name,
                         t.plan,
@@ -1727,52 +1945,81 @@ export default function CEOPlatformDashboard() {
                 </button>
               </div>
 
-              {/* Revenue Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-green-600/20 to-emerald-600/20 backdrop-blur-sm p-4 rounded-xl border border-green-500/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="w-5 h-5 text-green-400" />
-                    <span className="text-sm text-slate-300">MRR</span>
+              {/* Revenue Sections - SEPARATI */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* PLATFORM REVENUE - Abbonamenti che i tenants pagano a TE */}
+                <div className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 p-6 rounded-xl border border-green-500/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Crown className="w-6 h-6 text-yellow-400" />
+                    <h3 className="text-lg font-bold text-white">Le TUE Entrate</h3>
                   </div>
-                  <p className="text-2xl font-bold text-white">€{platformStats.monthlyRecurring?.toLocaleString() || 0}</p>
-                  <p className="text-xs text-green-400 flex items-center gap-1 mt-1">
-                    <ArrowUpRight className="w-3 h-3" /> Monthly Recurring
-                  </p>
+                  <p className="text-xs text-slate-400 mb-4">Abbonamenti che i tenants pagano a te per usare la piattaforma</p>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-black/20 rounded-lg">
+                      <p className="text-sm text-slate-400">MRR</p>
+                      <p className="text-2xl font-bold text-green-400">€{platformStats.monthlyRecurring?.toLocaleString() || 0}</p>
+                      <p className="text-xs text-slate-500">Monthly Recurring Revenue</p>
+                    </div>
+                    <div className="p-4 bg-black/20 rounded-lg">
+                      <p className="text-sm text-slate-400">ARR</p>
+                      <p className="text-2xl font-bold text-green-400">€{platformStats.annualRecurring?.toLocaleString() || 0}</p>
+                      <p className="text-xs text-slate-500">Annual Recurring Revenue</p>
+                    </div>
+                    <div className="p-4 bg-black/20 rounded-lg">
+                      <p className="text-sm text-slate-400">Revenue Totale</p>
+                      <p className="text-2xl font-bold text-white">€{platformStats.platformRevenue?.toLocaleString() || 0}</p>
+                      <p className="text-xs text-slate-500">Storico abbonamenti</p>
+                    </div>
+                    <div className="p-4 bg-black/20 rounded-lg">
+                      <p className="text-sm text-slate-400">ARPU</p>
+                      <p className="text-2xl font-bold text-white">€{platformStats.avgRevenuePerTenant || 0}</p>
+                      <p className="text-xs text-slate-500">Avg per tenant/mese</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-600/20 to-blue-600/20 backdrop-blur-sm p-4 rounded-xl border border-purple-500/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Wallet className="w-5 h-5 text-purple-400" />
-                    <span className="text-sm text-slate-300">ARR</span>
+
+                {/* TENANTS REVENUE - Incassi che i trainer fanno dai loro clienti */}
+                <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 p-6 rounded-xl border border-blue-500/30">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="w-6 h-6 text-blue-400" />
+                    <h3 className="text-lg font-bold text-white">Incassi dei Tenants</h3>
                   </div>
-                  <p className="text-2xl font-bold text-white">€{((platformStats.monthlyRecurring || 0) * 12).toLocaleString()}</p>
-                  <p className="text-xs text-purple-400">Annual Recurring</p>
-                </div>
-                <div className="bg-slate-800/60 backdrop-blur-sm p-4 rounded-xl border border-slate-700/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CreditCard className="w-5 h-5 text-blue-400" />
-                    <span className="text-sm text-slate-300">Questo Mese</span>
+                  <p className="text-xs text-slate-400 mb-4">Pagamenti che i clienti fanno ai trainers sulla piattaforma</p>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-black/20 rounded-lg">
+                      <p className="text-sm text-slate-400">Questo Mese</p>
+                      <p className="text-2xl font-bold text-blue-400">€{platformStats.tenantsRevenueThisMonth?.toLocaleString() || 0}</p>
+                      <p className="text-xs text-slate-500">Incassi clienti</p>
+                    </div>
+                    <div className="p-4 bg-black/20 rounded-lg">
+                      <p className="text-sm text-slate-400">Totale Storico</p>
+                      <p className="text-2xl font-bold text-blue-400">€{platformStats.tenantsRevenue?.toLocaleString() || 0}</p>
+                      <p className="text-xs text-slate-500">Tutti i pagamenti</p>
+                    </div>
+                    <div className="p-4 bg-black/20 rounded-lg col-span-2">
+                      <p className="text-sm text-slate-400">Media per Tenant</p>
+                      <p className="text-2xl font-bold text-white">
+                        €{tenants.length > 0 ? Math.round(platformStats.tenantsRevenue / tenants.length) : 0}
+                      </p>
+                      <p className="text-xs text-slate-500">Incasso medio per trainer</p>
+                    </div>
                   </div>
-                  <p className="text-2xl font-bold text-white">€{platformStats.totalPaymentsThisMonth?.toLocaleString() || 0}</p>
-                  <p className="text-xs text-slate-400">Pagamenti clienti</p>
-                </div>
-                <div className="bg-slate-800/60 backdrop-blur-sm p-4 rounded-xl border border-slate-700/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-5 h-5 text-yellow-400" />
-                    <span className="text-sm text-slate-300">ARPU</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">€{platformStats.avgRevenuePerTenant || 0}</p>
-                  <p className="text-xs text-slate-400">Per tenant</p>
                 </div>
               </div>
 
-              {/* Revenue by Plan */}
+              {/* Revenue by Plan - PLATFORM REVENUE */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
-                  <h3 className="text-lg font-bold text-white mb-4">Revenue per Piano</h3>
+                  <h3 className="text-lg font-bold text-white mb-4">MRR per Piano</h3>
                   <div className="space-y-3">
                     {['enterprise', 'professional', 'starter'].map(plan => {
-                      const planTenants = tenants.filter(t => t.plan === plan);
-                      const planRevenue = planTenants.reduce((sum, t) => sum + (t.price || 0), 0);
+                      const planTenants = tenants.filter(t => t.plan === plan && t.status === 'active');
+                      const planMRR = planTenants.reduce((sum, t) => {
+                        const monthly = t.billingCycle === 'yearly' ? (t.price || 0) / 12 : (t.price || 0);
+                        return sum + monthly;
+                      }, 0);
                       const colors = {
                         enterprise: 'from-yellow-500 to-orange-500',
                         professional: 'from-purple-500 to-blue-500',
@@ -1782,13 +2029,13 @@ export default function CEOPlatformDashboard() {
                         <div key={plan} className="p-4 bg-slate-700/30 rounded-lg">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-white font-medium capitalize">{plan}</span>
-                            <span className="text-lg font-bold text-white">€{planRevenue}/mo</span>
+                            <span className="text-lg font-bold text-green-400">€{planMRR.toFixed(0)}/mo</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="flex-1 h-2 bg-slate-600 rounded-full overflow-hidden">
                               <div 
                                 className={`h-full bg-gradient-to-r ${colors[plan]} rounded-full`}
-                                style={{ width: `${platformStats.monthlyRecurring > 0 ? (planRevenue / platformStats.monthlyRecurring * 100) : 0}%` }}
+                                style={{ width: `${platformStats.monthlyRecurring > 0 ? (planMRR / platformStats.monthlyRecurring * 100) : 0}%` }}
                               />
                             </div>
                             <span className="text-xs text-slate-400">{planTenants.length} tenants</span>
@@ -2670,27 +2917,51 @@ export default function CEOPlatformDashboard() {
         )}
       </AnimatePresence>
 
-      {/* Tenant Details Modal */}
+      {/* Tenant Details Modal - CON FUNZIONI REALI */}
       <AnimatePresence>
         {selectedTenant && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
             onClick={() => setSelectedTenant(null)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-slate-800 rounded-2xl p-6 max-w-2xl w-full border border-slate-700"
+              className="bg-slate-800 rounded-2xl p-6 max-w-3xl w-full border border-slate-700 my-4"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Header */}
               <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-white">{selectedTenant.name}</h2>
-                  <p className="text-slate-400">{selectedTenant.id}</p>
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+                    <span className="text-white font-bold text-xl">{selectedTenant.name?.charAt(0) || 'T'}</span>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">{selectedTenant.name}</h2>
+                    <p className="text-slate-400 text-sm">{selectedTenant.id}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        selectedTenant.status === 'active' ? 'bg-green-500/20 text-green-400' :
+                        selectedTenant.status === 'suspended' ? 'bg-red-500/20 text-red-400' :
+                        'bg-slate-500/20 text-slate-400'
+                      }`}>
+                        {selectedTenant.status === 'active' ? 'Attivo' : 
+                         selectedTenant.status === 'suspended' ? 'Sospeso' : selectedTenant.status}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        selectedTenant.plan === 'enterprise' ? 'bg-yellow-500/20 text-yellow-400' :
+                        selectedTenant.plan === 'professional' ? 'bg-purple-500/20 text-purple-400' :
+                        selectedTenant.plan === 'starter' ? 'bg-blue-500/20 text-blue-400' :
+                        'bg-slate-500/20 text-slate-400'
+                      }`}>
+                        {selectedTenant.plan?.toUpperCase() || 'FREE'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <button
                   onClick={() => setSelectedTenant(null)}
@@ -2700,35 +2971,296 @@ export default function CEOPlatformDashboard() {
                 </button>
               </div>
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-700/50 rounded-lg">
-                    <p className="text-sm text-slate-400 mb-1">Total Users</p>
-                    <p className="text-2xl font-bold text-white">{selectedTenant.users}</p>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="p-4 bg-slate-700/50 rounded-lg text-center">
+                  <Users className="w-5 h-5 text-blue-400 mx-auto mb-1" />
+                  <p className="text-2xl font-bold text-white">{selectedTenant.users}</p>
+                  <p className="text-xs text-slate-400">Trainers</p>
+                </div>
+                <div className="p-4 bg-slate-700/50 rounded-lg text-center">
+                  <Users className="w-5 h-5 text-green-400 mx-auto mb-1" />
+                  <p className="text-2xl font-bold text-white">{selectedTenant.clients}</p>
+                  <p className="text-xs text-slate-400">Clienti</p>
+                </div>
+                <div className="p-4 bg-slate-700/50 rounded-lg text-center">
+                  <DollarSign className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
+                  <p className="text-2xl font-bold text-white">€{selectedTenant.revenue}</p>
+                  <p className="text-xs text-slate-400">Revenue Clienti</p>
+                </div>
+                <div className="p-4 bg-slate-700/50 rounded-lg text-center">
+                  <CreditCard className="w-5 h-5 text-purple-400 mx-auto mb-1" />
+                  <p className="text-2xl font-bold text-white">€{selectedTenant.price || 0}/mo</p>
+                  <p className="text-xs text-slate-400">Abbonamento</p>
+                </div>
+              </div>
+
+              {/* Info Details */}
+              <div className="bg-slate-700/30 rounded-lg p-4 mb-6">
+                <h4 className="text-sm font-medium text-slate-300 mb-3">Dettagli</h4>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Creato:</span>
+                    <span className="text-white">{selectedTenant.createdAt?.toLocaleDateString?.() || 'N/A'}</span>
                   </div>
-                  <div className="p-4 bg-slate-700/50 rounded-lg">
-                    <p className="text-sm text-slate-400 mb-1">Total Clients</p>
-                    <p className="text-2xl font-bold text-white">{selectedTenant.clients}</p>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Ciclo:</span>
+                    <span className="text-white">{selectedTenant.billingCycle === 'yearly' ? 'Annuale' : 'Mensile'}</span>
                   </div>
-                  <div className="p-4 bg-slate-700/50 rounded-lg">
-                    <p className="text-sm text-slate-400 mb-1">Revenue</p>
-                    <p className="text-2xl font-bold text-white">€{selectedTenant.revenue}</p>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Scadenza:</span>
+                    <span className={`${selectedTenant.isExpired ? 'text-red-400' : selectedTenant.isExpiringSoon ? 'text-yellow-400' : 'text-white'}`}>
+                      {selectedTenant.subscriptionEndDate?.toLocaleDateString?.() || 'Mai'}
+                    </span>
                   </div>
-                  <div className="p-4 bg-slate-700/50 rounded-lg">
-                    <p className="text-sm text-slate-400 mb-1">Status</p>
-                    <p className="text-2xl font-bold text-white capitalize">{selectedTenant.status}</p>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Owner:</span>
+                    <span className="text-white">{selectedTenant.owner?.email || 'N/A'}</span>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex gap-3">
-                  <button className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white preserve-white font-medium transition-colors">
-                    Manage Tenant
-                  </button>
-                  <button className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors">
+              {/* Action Buttons - FUNZIONI REALI */}
+              <div className="space-y-3">
+                {/* Primary Actions */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => handleViewTenantAnalytics(selectedTenant)}
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors"
+                  >
+                    <BarChart3 className="w-4 h-4" />
                     View Analytics
+                  </button>
+                  <button 
+                    onClick={() => handleEditSubscription(selectedTenant)}
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    Gestisci Abbonamento
+                  </button>
+                </div>
+
+                {/* Secondary Actions */}
+                <div className="grid grid-cols-3 gap-3">
+                  <button 
+                    onClick={() => handleContactTenant(selectedTenant)}
+                    className="flex items-center justify-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white text-sm transition-colors"
+                  >
+                    <Mail className="w-4 h-4" />
+                    Contatta
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setEditingTenant(selectedTenant);
+                      setSelectedTenant(null);
+                    }}
+                    className="flex items-center justify-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white text-sm transition-colors"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    Modifica
+                  </button>
+                  {selectedTenant.siteSlug && (
+                    <button 
+                      onClick={() => window.open(`/site/${selectedTenant.siteSlug}`, '_blank')}
+                      className="flex items-center justify-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white text-sm transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Landing
+                    </button>
+                  )}
+                </div>
+
+                {/* Danger Actions */}
+                <div className="pt-3 border-t border-slate-700/50 flex gap-3">
+                  {selectedTenant.status === 'active' ? (
+                    <button 
+                      onClick={() => handleSuspendTenant(selectedTenant)}
+                      disabled={actionLoading}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm transition-colors disabled:opacity-50"
+                    >
+                      <Lock className="w-4 h-4" />
+                      {actionLoading ? 'Attendere...' : 'Sospendi Tenant'}
+                    </button>
+                  ) : selectedTenant.status === 'suspended' ? (
+                    <button 
+                      onClick={() => handleReactivateTenant(selectedTenant)}
+                      disabled={actionLoading}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 rounded-lg text-green-400 text-sm transition-colors disabled:opacity-50"
+                    >
+                      <Unlock className="w-4 h-4" />
+                      {actionLoading ? 'Attendere...' : 'Riattiva Tenant'}
+                    </button>
+                  ) : null}
+                  <button 
+                    onClick={() => handleDeleteTenant(selectedTenant)}
+                    disabled={actionLoading}
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-400 text-sm transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Elimina
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create/Edit Tenant Modal */}
+      <AnimatePresence>
+        {(showCreateTenant || editingTenant) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => { setShowCreateTenant(false); setEditingTenant(null); }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-800 rounded-2xl p-6 max-w-lg w-full border border-slate-700"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white">
+                  {editingTenant ? 'Modifica Tenant' : 'Crea Nuovo Tenant'}
+                </h2>
+                <button
+                  onClick={() => { setShowCreateTenant(false); setEditingTenant(null); }}
+                  className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = {
+                  id: editingTenant?.id || '',
+                  name: formData.get('name'),
+                  plan: formData.get('plan'),
+                  price: parseFloat(formData.get('price')) || 0,
+                  billingCycle: formData.get('billingCycle'),
+                  ownerEmail: formData.get('ownerEmail'),
+                  ownerName: formData.get('ownerName')
+                };
+                
+                if (editingTenant) {
+                  handleUpdateTenant(editingTenant.id, {
+                    name: data.name,
+                    plan: data.plan,
+                    'subscription.plan': data.plan,
+                    'subscription.price': data.price,
+                    'subscription.billingCycle': data.billingCycle,
+                    'owner.email': data.ownerEmail,
+                    'owner.name': data.ownerName
+                  });
+                } else {
+                  handleCreateTenant(data);
+                }
+              }} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Nome Tenant *</label>
+                  <input
+                    name="name"
+                    type="text"
+                    required
+                    defaultValue={editingTenant?.name || ''}
+                    className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="Es: Palestra Fitness Roma"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Piano</label>
+                    <select
+                      name="plan"
+                      defaultValue={editingTenant?.plan || 'trial'}
+                      className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="trial">Trial (14gg)</option>
+                      <option value="free">Free</option>
+                      <option value="starter">Starter €29/mo</option>
+                      <option value="professional">Professional €79/mo</option>
+                      <option value="enterprise">Enterprise €199/mo</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Prezzo €/mo</label>
+                    <input
+                      name="price"
+                      type="number"
+                      step="0.01"
+                      defaultValue={editingTenant?.price || 0}
+                      className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Ciclo Fatturazione</label>
+                  <select
+                    name="billingCycle"
+                    defaultValue={editingTenant?.billingCycle || 'monthly'}
+                    className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="monthly">Mensile</option>
+                    <option value="yearly">Annuale</option>
+                  </select>
+                </div>
+
+                <div className="border-t border-slate-700 pt-4">
+                  <h4 className="text-sm font-medium text-slate-300 mb-3">Proprietario (opzionale)</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Nome</label>
+                      <input
+                        name="ownerName"
+                        type="text"
+                        defaultValue={editingTenant?.owner?.name || ''}
+                        className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="Mario Rossi"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">Email</label>
+                      <input
+                        name="ownerEmail"
+                        type="email"
+                        defaultValue={editingTenant?.owner?.email || ''}
+                        className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="email@esempio.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => { setShowCreateTenant(false); setEditingTenant(null); }}
+                    className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={actionLoading}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {actionLoading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    {editingTenant ? 'Salva Modifiche' : 'Crea Tenant'}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}
