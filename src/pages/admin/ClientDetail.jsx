@@ -702,18 +702,46 @@ export default function ClientDetail() {
     }
   };
 
-  const copyCredentialsToClipboard = () => {
+  const copyCredentialsToClipboard = async () => {
     if (!client) return;
     
-    let text;
-    if (magicLink) {
-      // Usa il Magic Link (preferito)
-      text = `Ciao ${client.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪\nTu come stai?\n\n🔗 LINK ACCESSO RAPIDO (valido 48h):\n${magicLink}\n\n⚠️ Clicca il link sopra per impostare la tua password e accedere direttamente!`;
-    } else {
-      // Fallback alle credenziali tradizionali
-      const loginLink = 'https://www.flowfitpro.it/login';
-      text = `Ciao ${client.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪\nTu come stai?\n\nLink: ${loginLink}\nEmail: ${client.email}\nPassword Temporanea: ${client.tempPassword || 'Contatta admin'}\n\n⚠️ IMPORTANTE: Al primo accesso ti verrà chiesto di impostare una password personale.`;
+    // Se non c'è magic link, generalo automaticamente
+    if (!magicLink) {
+      setGeneratingLink(true);
+      try {
+        const functions = getFunctions(undefined, 'europe-west1');
+        const generateMagicLinkFn = httpsCallable(functions, 'generateMagicLink');
+        
+        const result = await generateMagicLinkFn({
+          clientId: client.id,
+          tenantId: CURRENT_TENANT_ID,
+          email: client.email,
+          name: client.name
+        });
+        
+        if (result.data.success) {
+          const newMagicLink = result.data.magicLink;
+          setMagicLink(newMagicLink);
+          
+          // Copia messaggio con magic link
+          const text = `Ciao ${client.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪\nTu come stai?\n\n🔗 LINK ACCESSO RAPIDO (valido 48h):\n${newMagicLink}\n\n⚠️ Clicca il link sopra per impostare la tua password e accedere direttamente!`;
+          navigator.clipboard.writeText(text);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2500);
+        } else {
+          alert('Errore nella generazione del Magic Link');
+        }
+      } catch (error) {
+        console.error('Errore generazione Magic Link:', error);
+        alert('Errore: ' + (error.message || 'Riprova più tardi'));
+      } finally {
+        setGeneratingLink(false);
+      }
+      return;
     }
+    
+    // Usa il Magic Link già generato
+    const text = `Ciao ${client.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪\nTu come stai?\n\n🔗 LINK ACCESSO RAPIDO (valido 48h):\n${magicLink}\n\n⚠️ Clicca il link sopra per impostare la tua password e accedere direttamente!`;
     
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -1096,7 +1124,7 @@ export default function ClientDetail() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-transparent">
+      <div className="min-h-screen bg-transparent pt-4">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full px-0 sm:px-0 py-0">
           <button onClick={() => navigate('/clients')} className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 text-sm transition-colors">
             <ArrowLeft size={18} /> Torna ai Clienti

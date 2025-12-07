@@ -9,6 +9,7 @@ import { signOut } from 'firebase/auth';
 import { ProSidebar, MobileSidebar } from './ProSidebar';
 import ThemeToggle from '../ui/ThemeToggle';
 import NotificationPermissionModal from '../notifications/NotificationPermissionModal';
+import OnboardingWizard from '../onboarding/OnboardingWizard';
 
 // === STELLE ANIMATE ===
 const AnimatedStars = () => {
@@ -368,6 +369,7 @@ export const ProLayout = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [branding, setBranding] = useState(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Determina il ruolo basandosi sul path
   const getRole = () => {
@@ -429,6 +431,38 @@ export const ProLayout = () => {
     };
 
     loadBranding();
+  }, []);
+
+  // Verifica se mostrare onboarding per nuovi utenti
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        // Controlla se onboarding già completato/skippato
+        const onboardingKey = `onboarding_shown_${user.uid}`;
+        if (localStorage.getItem(onboardingKey)) return;
+
+        const { getDoc } = await import('firebase/firestore');
+        const { db } = await import('../../firebase');
+        const { getTenantDoc } = await import('../../config/tenant');
+        
+        const onboardingDoc = await getDoc(getTenantDoc(db, 'onboarding', user.uid));
+        
+        if (!onboardingDoc.exists()) {
+          // Mostra onboarding dopo un delay
+          setTimeout(() => setShowOnboarding(true), 1500);
+        } else {
+          // Segna come già visto
+          localStorage.setItem(onboardingKey, 'true');
+        }
+      } catch (error) {
+        console.debug('Could not check onboarding:', error);
+      }
+    };
+
+    checkOnboarding();
   }, []);
 
   // Funzioni profilo
@@ -559,6 +593,21 @@ export const ProLayout = () => {
 
       {/* Modale richiesta permessi notifiche */}
       <NotificationPermissionModal />
+
+      {/* Wizard onboarding per nuovi utenti */}
+      {showOnboarding && (
+        <OnboardingWizard 
+          role={role === 'client' ? 'client' : 'admin'}
+          onComplete={() => {
+            setShowOnboarding(false);
+            localStorage.setItem(`onboarding_shown_${auth.currentUser?.uid}`, 'true');
+          }}
+          onSkip={() => {
+            setShowOnboarding(false);
+            localStorage.setItem(`onboarding_shown_${auth.currentUser?.uid}`, 'true');
+          }}
+        />
+      )}
     </div>
   );
 };

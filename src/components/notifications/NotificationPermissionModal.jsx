@@ -15,8 +15,12 @@ export default function NotificationPermissionModal() {
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null); // 'granted' | 'denied' | null
+  const [userRole, setUserRole] = useState(null); // 'client' | 'admin' | 'coach'
 
   useEffect(() => {
+    // Determina ruolo utente
+    const role = sessionStorage.getItem('app_role') || 'client';
+    setUserRole(role);
     checkAndShowModal();
   }, []);
 
@@ -154,15 +158,21 @@ export default function NotificationPermissionModal() {
           <div className="p-6">
             {result === null && (
               <>
-                {/* Lista benefici */}
+                {/* Lista benefici - diversa per clienti vs admin/coach */}
                 <div className="space-y-3 mb-6">
-                  {[
+                  {(userRole === 'client' ? [
+                    { icon: '💬', text: 'Messaggi dal tuo coach' },
+                    { icon: '📋', text: 'Nuove schede e programmi' },
+                    { icon: '✅', text: 'Promemoria check settimanali' },
+                    { icon: '📅', text: 'Appuntamenti e scadenze' },
+                    { icon: '🎯', text: 'Progressi e obiettivi raggiunti' }
+                  ] : [
                     { icon: '🎯', text: 'Nuovi lead dalla landing page' },
                     { icon: '📞', text: 'Richieste chiamata dai clienti' },
                     { icon: '✅', text: 'Check e anamnesi compilate' },
                     { icon: '📅', text: 'Eventi e appuntamenti' },
                     { icon: '💰', text: 'Pagamenti ricevuti' }
-                  ].map((item, i) => (
+                  ]).map((item, i) => (
                     <motion.div
                       key={i}
                       initial={{ opacity: 0, x: -20 }}

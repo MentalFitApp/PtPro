@@ -88,12 +88,14 @@ exports.createDailyRoom = onCall(async (request) => {
 });
 
 // Cloud Function per inviare notifiche push via FCM
-exports.sendPushNotification = onDocumentCreated('notifications/{notificationId}', async (event) => {
+// ATTENZIONE: Trigger su path tenant-aware
+exports.sendPushNotification = onDocumentCreated('tenants/{tenantId}/notifications/{notificationId}', async (event) => {
   const notification = event.data.data();
-  const notificationId = event.params.notificationId;
-  const { userId, userType, title, body } = notification;
+  const { tenantId, notificationId } = event.params;
+  const { userId, userType, title, body, type } = notification;
 
   console.log('🔔 TRIGGER: Nuova notifica creata');
+  console.log('🏢 Tenant ID:', tenantId);
   console.log('📋 Notification ID:', notificationId);
   console.log('👤 User ID:', userId);
   console.log('🏷️ User Type:', userType);
@@ -101,21 +103,34 @@ exports.sendPushNotification = onDocumentCreated('notifications/{notificationId}
   console.log('💬 Body:', body);
 
   try {
-    // Recupera il token FCM dell'utente
-    console.log('🔍 Cercando token FCM per userId:', userId);
-    const tokenDoc = await db.collection('fcmTokens').doc(userId).get();
+    // Recupera il token FCM dell'utente DAL PATH TENANT
+    console.log('🔍 Cercando token FCM per userId:', userId, 'in tenant:', tenantId);
+    const tokenDoc = await db.collection('tenants').doc(tenantId).collection('fcmTokens').doc(userId).get();
     
     if (!tokenDoc.exists) {
       console.warn('⚠️ Nessun token FCM trovato per:', userId);
-      console.log('📂 Documenti disponibili in fcmTokens:', (await db.collection('fcmTokens').get()).size);
-      return null;
+      // Prova anche nel path legacy (collezione globale)
+      const legacyTokenDoc = await db.collection('fcmTokens').doc(userId).get();
+      if (!legacyTokenDoc.exists) {
+        console.warn('⚠️ Nessun token FCM neanche in path legacy');
+        return null;
+      }
+      console.log('✅ Token trovato in path legacy, usandolo...');
     }
 
-    const fcmToken = tokenDoc.data().token;
+    const tokenData = tokenDoc.exists ? tokenDoc.data() : (await db.collection('fcmTokens').doc(userId).get()).data();
+    const fcmToken = tokenData?.token;
+    
     console.log('✅ Token FCM recuperato:', fcmToken ? fcmToken.substring(0, 20) + '...' : 'NULL');
     
     if (!fcmToken) {
       console.warn('⚠️ Token FCM vuoto per:', userId);
+      return null;
+    }
+
+    // Controlla se le notifiche sono abilitate
+    if (tokenData.enabled === false) {
+      console.log('🔇 Notifiche disabilitate per utente:', userId);
       return null;
     }
 
@@ -128,21 +143,33 @@ exports.sendPushNotification = onDocumentCreated('notifications/{notificationId}
       data: {
         notificationId: notificationId,
         userId: userId,
-        userType: userType,
-        click_action: 'FLUTTER_NOTIFICATION_CLICK'
+        userType: userType || 'user',
+        type: type || 'default',
+        tenantId: tenantId
       },
       token: fcmToken,
       webpush: {
         notification: {
-          icon: '/PtPro/logo192.png',
-          badge: '/PtPro/logo192.png',
+          icon: '/logo192.PNG',
+          badge: '/logo192.PNG',
           tag: 'notification-' + notificationId,
-          requireInteraction: false,
+          requireInteraction: type === 'call_request',
           vibrate: [200, 100, 200]
         },
         fcmOptions: {
-          link: 'https://mentalfitapp.github.io/PtPro/#/'
+          link: 'https://flowfitpro.it/'
         }
+      },
+      // Android specifico
+      android: {
+        notification: {
+          icon: 'ic_notification',
+          color: '#3b82f6',
+          sound: 'default',
+          priority: 'high',
+          channelId: 'ptpro_notifications'
+        },
+        priority: 'high'
       }
     };
 
@@ -162,7 +189,7 @@ exports.sendPushNotification = onDocumentCreated('notifications/{notificationId}
     if (error.code === 'messaging/invalid-registration-token' || 
         error.code === 'messaging/registration-token-not-registered') {
       console.log('🗑️ Token non valido, rimozione...');
-      await db.collection('fcmTokens').doc(userId).delete();
+      await db.collection('tenants').doc(tenantId).collection('fcmTokens').doc(userId).delete();
     }
     
     return null;
