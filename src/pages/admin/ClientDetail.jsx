@@ -48,6 +48,7 @@ import { db, toDate, updateStatoPercorso } from '../../firebase';
 import { getTenantDoc, getTenantSubcollection, CURRENT_TENANT_ID } from '../../config/tenant';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
 import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
+import { useToast } from '../../contexts/ToastContext';
 import ProgressCharts from '../../components/client/ProgressCharts';
 import PhotoCompare from '../../components/client/PhotoCompare';
 import { 
@@ -572,10 +573,25 @@ const PhotoZoomModal = ({ isOpen, onClose, imageUrl, alt }) => {
   );
 };
 
-const RateTable = React.memo(({ rates, canEdit, onAdd, onUpdate, onDelete, showAmounts }) => {
+const RateTable = React.memo(({ rates, canEdit, onAdd, onUpdate, onDelete, showAmounts, onRatePaymentToggled }) => {
   const [newRate, setNewRate] = useState({ amount: '', dueDate: '', paid: false });
   const [editIdx, setEditIdx] = useState(null);
   const [editRate, setEditRate] = useState({ amount: '', dueDate: '' });
+  const [togglingIdx, setTogglingIdx] = useState(null);
+
+  const handleTogglePaid = async (idx, rate) => {
+    setTogglingIdx(idx);
+    try {
+      const update = { ...rate, paid: !rate.paid };
+      update.paidDate = update.paid ? new Date().toISOString() : null;
+      await onUpdate(idx, update);
+      if (onRatePaymentToggled) {
+        onRatePaymentToggled(update.paid, rate.amount);
+      }
+    } finally {
+      setTogglingIdx(null);
+    }
+  };
 
   return (
     <div className="mt-4">
@@ -610,15 +626,14 @@ const RateTable = React.memo(({ rates, canEdit, onAdd, onUpdate, onDelete, showA
                       <input 
                         type="checkbox" 
                         checked={rate.paid} 
-                        onChange={() => {
-                          const update = { ...rate, paid: !rate.paid };
-                          update.paidDate = update.paid ? new Date().toISOString() : null;
-                          onUpdate(idx, update);
-                        }} 
-                        className="w-4 h-4 accent-emerald-500 cursor-pointer"
+                        disabled={togglingIdx === idx}
+                        onChange={() => handleTogglePaid(idx, rate)} 
+                        className="w-4 h-4 accent-emerald-500 cursor-pointer disabled:opacity-50"
                       />
                     )}
-                    {rate.paid ? (
+                    {togglingIdx === idx ? (
+                      <span className="text-cyan-300 text-xs animate-pulse">Salvataggio...</span>
+                    ) : rate.paid ? (
                       <span className="text-emerald-300 text-xs">{rate.paidDate ? new Date(rate.paidDate).toLocaleDateString('it-IT') : 'Pagata'}</span>
                     ) : (
                       <span className="text-rose-300 text-xs">Da pagare</span>
@@ -663,6 +678,7 @@ const RateTable = React.memo(({ rates, canEdit, onAdd, onUpdate, onDelete, showA
 export default function ClientDetail() {
   const { clientId } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const { formatWeight, formatLength, weightLabel, lengthLabel } = useUserPreferences();
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1726,7 +1742,21 @@ export default function ClientDetail() {
             {activeTab === 'payments' && (
               <div className="space-y-4">
                 {paymentsCard}
-                <RateTable rates={rates} canEdit={isAdmin} onAdd={handleAddRate} onUpdate={handleUpdateRate} onDelete={handleDeleteRate} showAmounts={showAmounts} />
+                <RateTable 
+                  rates={rates} 
+                  canEdit={isAdmin} 
+                  onAdd={handleAddRate} 
+                  onUpdate={handleUpdateRate} 
+                  onDelete={handleDeleteRate} 
+                  showAmounts={showAmounts}
+                  onRatePaymentToggled={(isPaid, amount) => {
+                    if (isPaid) {
+                      toast.success(`Rata di €${amount} segnata come pagata! ✓`);
+                    } else {
+                      toast.info(`Rata di €${amount} segnata come da pagare`);
+                    }
+                  }}
+                />
               </div>
             )}
             {activeTab === 'metrics' && metricsCard}

@@ -239,7 +239,32 @@ export default function DashboardNew() {
           });
         }
 
-        // 4. FALLBACK LEGACY: carica da subcollection se array è vuoto
+        // 4. Rate pagate dalla subcollection 'rates' (nuovo sistema rinnovi)
+        getDocs(getTenantSubcollection(db, 'clients', clientId, 'rates')).then(ratesSnap => {
+          const ratesPayments = [];
+          ratesSnap.docs.forEach(rateDoc => {
+            const rateData = rateDoc.data();
+            if (rateData.paid && rateData.paidDate) {
+              const paidDate = rateData.paidDate?.toDate ? rateData.paidDate.toDate() : rateData.paidDate;
+              ratesPayments.push({
+                id: `subcol_rate_${clientId}_${rateDoc.id}`,
+                clientId,
+                clientName,
+                amount: parseFloat(rateData.amount) || 0,
+                paymentDate: paidDate,
+                duration: 'Rata',
+                paymentMethod: 'Rateizzato',
+                isRate: true,
+                isRenewal: rateData.isRenewal || false
+              });
+            }
+          });
+          if (ratesPayments.length > 0) {
+            setPayments(prev => [...prev, ...ratesPayments]);
+          }
+        });
+
+        // 5. FALLBACK LEGACY: carica da subcollection se array è vuoto
         if ((!clientData.payments || clientData.payments.length === 0) && !hasRates) {
           // Questa chiamata async è ok, verrà eseguita in parallelo
           getDocs(getTenantSubcollection(db, 'clients', clientId, 'payments')).then(paymentsSnap => {
