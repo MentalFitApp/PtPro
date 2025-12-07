@@ -210,7 +210,7 @@ export default function DashboardPro() {
     return () => unsub();
   }, []);
 
-  // Load ALL payments (from rates + subcollection) - SOLO clienti attivi
+  // Load ALL payments (from rates + subcollection) - Include anche clienti "vecchi" per rinnovi
   useEffect(() => {
     const loadPayments = async () => {
       const allPayments = [];
@@ -219,37 +219,42 @@ export default function DashboardPro() {
       // Process each client
       for (const clientDoc of clientsSnap.docs) {
         const data = clientDoc.data();
-        
-        // Skip clienti vecchi/archiviati (come vecchia dashboard)
-        if (data.isOldClient) continue;
+        const isOldClient = data.isOldClient === true;
         
         const clientId = clientDoc.id;
         const clientName = data.name || 'Cliente';
         
-        // 1. Payments from rates (flagged as paid)
-        (data.rate || []).forEach(rate => {
-          if (rate.paid && rate.paidDate) {
-            const rateDate = toDate(rate.paidDate);
-            if (rateDate) {
-              allPayments.push({
-                id: `rate-${clientId}-${rate.paidDate}`,
-                clientId,
-                clientName,
-                amount: parseFloat(rate.amount) || 0,
-                date: rateDate.toISOString(),
-                source: 'rate'
-              });
+        // 1. Payments from rates array (legacy - flagged as paid)
+        // Solo per clienti NON vecchi
+        if (!isOldClient) {
+          (data.rate || []).forEach(rate => {
+            if (rate.paid && rate.paidDate) {
+              const rateDate = toDate(rate.paidDate);
+              if (rateDate) {
+                allPayments.push({
+                  id: `rate-${clientId}-${rate.paidDate}`,
+                  clientId,
+                  clientName,
+                  amount: parseFloat(rate.amount) || 0,
+                  date: rateDate.toISOString(),
+                  source: 'rate',
+                  isRenewal: false
+                });
+              }
             }
-          }
-        });
+          });
+        }
         
-        // 2. Payments from subcollection
+        // 2. Payments from subcollection 'payments'
+        // Include anche clienti vecchi se hanno isRenewal=true
         try {
           const paymentsSnap = await getDocs(getTenantSubcollection(db, 'clients', clientId, 'payments'));
           paymentsSnap.docs.forEach(payDoc => {
             const payData = payDoc.data();
-            // NON skippiamo più isPast - usiamo solo la data del pagamento per filtrare
-            // isPast indica solo che il cliente è stato importato come storico
+            const isRenewal = payData.isRenewal === true;
+            
+            // Skip clienti vecchi SOLO se non è un rinnovo
+            if (isOldClient && !isRenewal) return;
             
             const payDate = toDate(payData.paymentDate || payData.date || payData.createdAt);
             console.log(`💰 Payment found for ${clientName}:`, {
@@ -257,7 +262,7 @@ export default function DashboardPro() {
               amount: payData.amount,
               paymentDate: payData.paymentDate,
               parsedDate: payDate,
-              isPast: payData.isPast
+              isRenewal: isRenewal
             });
             
             if (payDate) {
@@ -267,14 +272,49 @@ export default function DashboardPro() {
                 clientName,
                 amount: parseFloat(payData.amount) || 0,
                 date: payDate.toISOString(),
-                source: 'subcollection'
+                source: 'subcollection',
+                isRenewal: isRenewal
               });
-            } else {
-              console.warn(`⚠️ Payment senza data valida per ${clientName}:`, payData);
             }
           });
         } catch (e) {
           console.error(`❌ Error loading payments for ${clientName}:`, e);
+        }
+        
+        // 3. Rate pagate dalla subcollection 'rates' (NUOVO - rinnovi rateali)
+        try {
+          const ratesSnap = await getDocs(getTenantSubcollection(db, 'clients', clientId, 'rates'));
+          ratesSnap.docs.forEach(rateDoc => {
+            const rateData = rateDoc.data();
+            
+            // Solo rate pagate
+            if (!rateData.paid || !rateData.paidDate) return;
+            
+            const paidDate = rateData.paidDate?.toDate ? rateData.paidDate.toDate() : toDate(rateData.paidDate);
+            const isRenewal = rateData.isRenewal === true;
+            
+            console.log(`💳 Rate subcollection found for ${clientName}:`, {
+              id: rateDoc.id,
+              amount: rateData.amount,
+              paidDate: paidDate,
+              isRenewal: isRenewal
+            });
+            
+            if (paidDate) {
+              allPayments.push({
+                id: `subcol-rate-${clientId}-${rateDoc.id}`,
+                clientId,
+                clientName,
+                amount: parseFloat(rateData.amount) || 0,
+                date: paidDate.toISOString(),
+                source: 'rates-subcollection',
+                isRenewal: isRenewal,
+                isRate: true
+              });
+            }
+          });
+        } catch (e) {
+          console.error(`❌ Error loading rates for ${clientName}:`, e);
         }
       }
       
@@ -483,8 +523,9 @@ export default function DashboardPro() {
       }))
     });
     
-    // Calcola rinnovi (clienti con più di un pagamento)
-    // Raggruppa pagamenti per cliente
+    // Calcola rinnovi
+    // PRIORITÀ: usa il flag isRenewal se presente
+    // Altrimenti: se il cliente ha più di un pagamento e non è il primo
     const paymentsByClient = {};
     payments.forEach(p => {
       if (!paymentsByClient[p.clientId]) paymentsByClient[p.clientId] = [];
@@ -493,9 +534,15 @@ export default function DashboardPro() {
     
     let renewalsRevenue = 0;
     periodPayments.forEach(p => {
+      // PRIORITÀ: usa il flag isRenewal se presente
+      if (p.isRenewal === true) {
+        renewalsRevenue += p.amount || 0;
+        console.log(`🔄 Rinnovo (flag): ${p.clientName} €${p.amount}`);
+        return;
+      }
+      
+      // Fallback: controlla se non è il primo pagamento del cliente
       const clientPayments = paymentsByClient[p.clientId] || [];
-      // Se il cliente ha più di un pagamento, questo è un rinnovo
-      // (a meno che non sia il primo pagamento in ordine cronologico)
       const sortedPayments = clientPayments.sort((a, b) => new Date(a.date) - new Date(b.date));
       const firstPaymentDate = sortedPayments[0]?.date;
       const currentPaymentDate = new Date(p.date).toISOString();
@@ -503,8 +550,11 @@ export default function DashboardPro() {
       // Se non è il primo pagamento del cliente, è un rinnovo
       if (firstPaymentDate && currentPaymentDate !== new Date(firstPaymentDate).toISOString()) {
         renewalsRevenue += p.amount || 0;
+        console.log(`🔄 Rinnovo (ordine): ${p.clientName} €${p.amount}`);
       }
     });
+    
+    console.log(`📊 Rinnovi totali: €${renewalsRevenue}`);
     
     const newClientsThisMonth = clients.filter(c => {
       const start = toDate(c.startDate) || toDate(c.createdAt);
@@ -561,13 +611,31 @@ export default function DashboardPro() {
     
     sortedPayments.forEach(p => {
       const date = new Date(p.date);
+      
+      // Determina il tipo di attività
+      let subtitle = 'Pagamento';
+      let color = 'emerald';
+      
+      if (p.isRenewal) {
+        if (p.isRate) {
+          subtitle = 'Rata rinnovo pagata';
+          color = 'cyan';
+        } else {
+          subtitle = 'Rinnovo';
+          color = 'cyan';
+        }
+      } else if (p.source === 'rate' || p.source === 'rates-subcollection' || p.isRate) {
+        subtitle = 'Rata pagata';
+        color = 'purple';
+      }
+      
       activities.push({
         type: 'payment',
         icon: DollarSign,
         title: `€${p.amount} da ${p.clientName}`,
-        subtitle: p.source === 'rate' ? 'Rata pagata' : 'Pagamento',
+        subtitle: subtitle,
         time: date,
-        color: 'emerald'
+        color: color
       });
     });
     
