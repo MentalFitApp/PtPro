@@ -953,13 +953,17 @@ export default function CalendarPage() {
                             <div
                               onClick={() => {
                                 if (event.type === 'lead') {
+                                  // Chiudi il modal del giorno e apri dettagli lead
+                                  setShowEventModal(false);
                                   setSelectedLead(event);
                                   setShowLeadDetails(true);
+                                } else {
+                                  // Per call/meeting: passa alla modalità modifica
+                                  handleEditEvent(event);
+                                  setModalShowDayEvents(false);
                                 }
                               }}
-                              className={`bg-slate-800/70 p-3 rounded-lg border border-slate-600 flex justify-between items-start shadow-glow ${
-                                event.type === 'lead' ? 'cursor-pointer hover:bg-slate-800/90' : ''
-                              }`}
+                              className={`bg-slate-800/70 p-3 rounded-lg border border-slate-600 flex justify-between items-start shadow-glow cursor-pointer hover:bg-slate-800/90 transition-colors`}
                             >
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
@@ -983,9 +987,9 @@ export default function CalendarPage() {
                                   )}
                                 </div>
                                 {event.note && <p className="text-sm text-slate-300 mt-1">{event.note}</p>}
-                                {event.type === 'lead' && event.leadData && (
-                                  <p className="text-xs text-slate-400 mt-1">Click per dettagli →</p>
-                                )}
+                                <p className="text-xs text-slate-400 mt-1">
+                                  {event.type === 'lead' ? 'Click per dettagli →' : 'Click per modificare →'}
+                                </p>
                               </div>
                               {event.type !== 'lead' && (isAdmin || userRole) && (
                                 <div className="flex gap-2">
