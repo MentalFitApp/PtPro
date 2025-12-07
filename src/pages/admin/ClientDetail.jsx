@@ -37,7 +37,9 @@ import {
   Link2,
   Loader2,
   Camera,
-  Upload
+  Upload,
+  TrendingUp,
+  ArrowLeftRight
 } from 'lucide-react';
 import { uploadToR2 } from '../../cloudflareStorage';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
@@ -46,6 +48,8 @@ import { db, toDate, updateStatoPercorso } from '../../firebase';
 import { getTenantDoc, getTenantSubcollection, CURRENT_TENANT_ID } from '../../config/tenant';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
 import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
+import ProgressCharts from '../../components/client/ProgressCharts';
+import PhotoCompare from '../../components/client/PhotoCompare';
 import { 
   UnifiedCard, 
   CardHeader, 
@@ -526,6 +530,7 @@ export default function ClientDetail() {
   const [activeTab, setActiveTab] = useState('overview');
   const [rates, setRates] = useState([]);
   const [zoomPhoto, setZoomPhoto] = useState({ open: false, url: '', alt: '' });
+  const [showPhotoCompare, setShowPhotoCompare] = useState(false);
   const [showScheduleCall, setShowScheduleCall] = useState(false);
   const [nextCall, setNextCall] = useState(null);
   const [magicLink, setMagicLink] = useState(null);
@@ -1060,11 +1065,38 @@ export default function ClientDetail() {
     </UnifiedCard>
   );
 
+  // Card Progressione con grafici
+  const progressCard = (
+    <UnifiedCard>
+      <CardHeaderSimple 
+        title="Progressione"
+        subtitle="Andamento peso e BF"
+        action={
+          <div className="flex items-center gap-1">
+            <TrendingUp size={16} className="text-blue-400" />
+          </div>
+        }
+      />
+      <CardContent>
+        <ProgressCharts checks={checks} />
+      </CardContent>
+    </UnifiedCard>
+  );
+
   const photosCard = (
     <UnifiedCard>
       <CardHeaderSimple 
         title="Foto recenti"
         subtitle="max 10"
+        action={
+          <button 
+            onClick={() => setShowPhotoCompare(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors border border-slate-700"
+          >
+            <ArrowLeftRight size={14} />
+            Confronta
+          </button>
+        }
       />
       <CardContent>
         {photoGallery.length > 0 ? (
@@ -1397,6 +1429,7 @@ export default function ClientDetail() {
                   {/* Card Prossima Chiamata */}
                   <NextCallCard clientId={clientId} isAdmin={isAdmin} onSchedule={() => setShowScheduleCall(true)} />
                   {checkCard}
+                  {progressCard}
                   {activityCard}
                 </div>
                 <div className="space-y-4">
@@ -1409,7 +1442,10 @@ export default function ClientDetail() {
 
             {activeTab === 'check' && (
               <div className="grid grid-cols-1 xl:grid-cols-[1.1fr,1fr] gap-4 lg:gap-6">
-                {checkCard}
+                <div className="space-y-4">
+                  {checkCard}
+                  {progressCard}
+                </div>
                 {photosCard}
               </div>
             )}
@@ -1448,6 +1484,7 @@ export default function ClientDetail() {
             onSave={() => {}}
           />}
           {zoomPhoto?.open && <PhotoZoomModal key="zoom" isOpen={!!zoomPhoto?.open} onClose={() => setZoomPhoto({ open: false, url: '', alt: '' })} imageUrl={zoomPhoto?.url} alt={zoomPhoto?.alt} />}
+          {showPhotoCompare && <PhotoCompare key="photoCompare" checks={checks} anamnesi={anamnesi} onClose={() => setShowPhotoCompare(false)} />}
           {showScheduleCall && <ScheduleCallModal 
             key="scheduleCall"
             isOpen={showScheduleCall} 
