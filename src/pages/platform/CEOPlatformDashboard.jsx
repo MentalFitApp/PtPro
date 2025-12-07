@@ -22,6 +22,10 @@ import {
 import { useNavigate } from 'react-router-dom';
 import PageBuilder from '../../components/platform/PageBuilder';
 import LinkAccountBanner from '../../components/LinkAccountBanner';
+import { 
+  Card, CardContainer, SectionHeader, PageHeader, MiniStat, MiniStatCard,
+  ProgressBar, Badge, ActionButton, EmptyState, Modal 
+} from '../../components/platform/PlatformUIComponents';
 
 // === ANIMATED STARS BACKGROUND ===
 const AnimatedStars = () => {
@@ -517,7 +521,6 @@ export default function CEOPlatformDashboard() {
           platformRevenue: Math.round(mrr * factor),
           tenantsRevenue: Math.round((tenantsRevenueThisMonth || mrr * 2) * factor),
           tenants: Math.round(tenantsData.length * (0.7 + i * 0.05))
-        });
         });
       }
       setRevenueData(revenueByMonth);
@@ -1094,7 +1097,7 @@ export default function CEOPlatformDashboard() {
 
               {/* Alerts Section */}
               {alerts.length > 0 && (
-                <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+                <CardContainer>
                   <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                     <Bell className="text-amber-400" size={20} />
                     Avvisi ({alerts.length})
@@ -1131,13 +1134,13 @@ export default function CEOPlatformDashboard() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </CardContainer>
               )}
 
               {/* Revenue Chart & Top Tenants */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Mini Revenue Chart */}
-                <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+                <CardContainer>
                   <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                     <BarChart3 className="text-green-400" size={20} />
                     Revenue Trend (6 mesi)
@@ -1153,10 +1156,10 @@ export default function CEOPlatformDashboard() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </CardContainer>
 
                 {/* Top Tenants by Revenue */}
-                <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+                <CardContainer>
                   <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                     <Crown className="text-yellow-400" size={20} />
                     Top Tenants per Revenue
@@ -1183,11 +1186,11 @@ export default function CEOPlatformDashboard() {
                         </div>
                       ))}
                   </div>
-                </div>
+                </CardContainer>
               </div>
 
               {/* Quick Actions */}
-              <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+              <CardContainer>
                 <h2 className="text-lg font-bold text-white mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <button 
@@ -1224,7 +1227,7 @@ export default function CEOPlatformDashboard() {
                     )}
                   </button>
                 </div>
-              </div>
+              </CardContainer>
             </div>
           )}
 
@@ -1676,12 +1679,7 @@ export default function CEOPlatformDashboard() {
           {/* Analytics Page */}
           {activePage === 'analytics' && (
             <div className="space-y-6">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-white">Platform Analytics</h1>
-                  <p className="text-slate-400">Metriche e KPI della piattaforma</p>
-                </div>
+              <PageHeader title="Platform Analytics" description="Metriche e KPI della piattaforma">
                 <button
                   onClick={loadPlatformData}
                   className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
@@ -1689,65 +1687,50 @@ export default function CEOPlatformDashboard() {
                   <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                   Aggiorna
                 </button>
-              </div>
+              </PageHeader>
 
               {/* KPI Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-slate-800/60 backdrop-blur-sm p-4 rounded-xl border border-slate-700/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className="w-5 h-5 text-green-400" />
-                    <span className="text-sm text-slate-400">Conversione</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">
-                    {platformStats.totalClients > 0 
-                      ? ((platformStats.activeTenants / platformStats.totalTenants) * 100).toFixed(1) 
-                      : 0}%
-                  </p>
-                  <p className="text-xs text-slate-500">Trial → Attivi</p>
-                </div>
-                <div className="bg-slate-800/60 backdrop-blur-sm p-4 rounded-xl border border-slate-700/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-5 h-5 text-blue-400" />
-                    <span className="text-sm text-slate-400">Avg Clients</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">
-                    {tenants.length > 0 ? (platformStats.totalClients / tenants.length).toFixed(1) : 0}
-                  </p>
-                  <p className="text-xs text-slate-500">Per tenant</p>
-                </div>
-                <div className="bg-slate-800/60 backdrop-blur-sm p-4 rounded-xl border border-slate-700/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-5 h-5 text-purple-400" />
-                    <span className="text-sm text-slate-400">Churn Rate</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">{platformStats.churnRate}%</p>
-                  <p className="text-xs text-slate-500">Mensile</p>
-                </div>
-                <div className="bg-slate-800/60 backdrop-blur-sm p-4 rounded-xl border border-slate-700/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="w-5 h-5 text-yellow-400" />
-                    <span className="text-sm text-slate-400">ARPU</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">€{platformStats.avgRevenuePerTenant}</p>
-                  <p className="text-xs text-slate-500">Avg Revenue/Tenant</p>
-                </div>
+                <MiniStat 
+                  icon={<Target />} 
+                  label="Conversione" 
+                  value={`${platformStats.totalTenants > 0 ? ((platformStats.activeTenants / platformStats.totalTenants) * 100).toFixed(1) : 0}%`}
+                  sublabel="Trial → Attivi"
+                  color="green"
+                />
+                <MiniStat 
+                  icon={<Users />} 
+                  label="Avg Clients" 
+                  value={tenants.length > 0 ? (platformStats.totalClients / tenants.length).toFixed(1) : 0}
+                  sublabel="Per tenant"
+                  color="blue"
+                />
+                <MiniStat 
+                  icon={<TrendingUp />} 
+                  label="Churn Rate" 
+                  value={`${platformStats.churnRate}%`}
+                  sublabel="Mensile"
+                  color="purple"
+                />
+                <MiniStat 
+                  icon={<DollarSign />} 
+                  label="ARPU" 
+                  value={`€${platformStats.avgRevenuePerTenant}`}
+                  sublabel="Avg Revenue/Tenant"
+                  color="yellow"
+                />
               </div>
 
               {/* Revenue Trend Chart */}
-              <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
-                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-purple-400" />
-                  Trend Revenue (Ultimi 6 mesi)
-                </h2>
+              <Card>
+                <SectionHeader icon={<BarChart3 className="text-purple-400" />} title="Trend Revenue (Ultimi 6 mesi)" />
                 <div className="flex items-end gap-2 h-48">
                   {revenueData.map((item, idx) => (
                     <div key={idx} className="flex-1 flex flex-col items-center gap-2">
                       <div 
                         className="w-full bg-gradient-to-t from-purple-600 to-blue-500 rounded-t-lg transition-all hover:from-purple-500 hover:to-blue-400"
-                        style={{ 
-                          height: `${Math.max(10, (item.revenue / Math.max(...revenueData.map(r => r.revenue))) * 160)}px` 
-                        }}
-                        title={`€${item.revenue}`}
+                        style={{ height: `${Math.max(10, (item.platformRevenue / Math.max(...revenueData.map(r => r.platformRevenue || 1))) * 160)}px` }}
+                        title={`€${item.platformRevenue}`}
                       />
                       <span className="text-xs text-slate-400 capitalize">{item.month}</span>
                     </div>
@@ -1755,52 +1738,39 @@ export default function CEOPlatformDashboard() {
                 </div>
                 <div className="mt-4 pt-4 border-t border-slate-700/50 grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-lg font-bold text-white">€{revenueData.reduce((s, r) => s + r.revenue, 0).toLocaleString()}</p>
+                    <p className="text-lg font-bold text-white">€{revenueData.reduce((s, r) => s + (r.platformRevenue || 0), 0).toLocaleString()}</p>
                     <p className="text-xs text-slate-400">Revenue Totale</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-green-400">+{revenueData.length > 1 ? (((revenueData[revenueData.length-1]?.revenue || 0) / (revenueData[0]?.revenue || 1) - 1) * 100).toFixed(0) : 0}%</p>
+                    <p className="text-lg font-bold text-green-400">+{revenueData.length > 1 ? (((revenueData[revenueData.length-1]?.platformRevenue || 0) / (revenueData[0]?.platformRevenue || 1) - 1) * 100).toFixed(0) : 0}%</p>
                     <p className="text-xs text-slate-400">Crescita 6 mesi</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-white">€{(revenueData.reduce((s, r) => s + r.revenue, 0) / 6).toFixed(0)}</p>
+                    <p className="text-lg font-bold text-white">€{(revenueData.reduce((s, r) => s + (r.platformRevenue || 0), 0) / 6).toFixed(0)}</p>
                     <p className="text-xs text-slate-400">Media Mensile</p>
                   </div>
                 </div>
-              </div>
-
+              </Card>
               {/* Tenant Distribution */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+                <CardContainer>
                   <h3 className="text-lg font-bold text-white mb-4">Distribuzione Piani</h3>
                   <div className="space-y-3">
-                    {['starter', 'professional', 'enterprise', 'free', 'trial'].map(plan => {
+                    {[
+                      { plan: 'starter', color: 'bg-blue-500' },
+                      { plan: 'professional', color: 'bg-purple-500' },
+                      { plan: 'enterprise', color: 'bg-yellow-500' },
+                      { plan: 'free', color: 'bg-slate-500' },
+                      { plan: 'trial', color: 'bg-green-500' }
+                    ].map(({ plan, color }) => {
                       const count = tenants.filter(t => t.plan === plan).length;
                       const percent = tenants.length > 0 ? (count / tenants.length * 100) : 0;
-                      const colors = {
-                        starter: 'bg-blue-500',
-                        professional: 'bg-purple-500',
-                        enterprise: 'bg-yellow-500',
-                        free: 'bg-slate-500',
-                        trial: 'bg-green-500'
-                      };
-                      return (
-                        <div key={plan} className="flex items-center gap-3">
-                          <span className="text-sm text-slate-300 w-24 capitalize">{plan}</span>
-                          <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${colors[plan] || 'bg-slate-500'} rounded-full transition-all`}
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-white w-12 text-right">{count}</span>
-                        </div>
-                      );
+                      return <ProgressBarItem key={plan} label={plan} value={count} percent={percent} color={color} />;
                     })}
                   </div>
-                </div>
+                </CardContainer>
 
-                <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+                <CardContainer>
                   <h3 className="text-lg font-bold text-white mb-4">Status Abbonamenti</h3>
                   <div className="space-y-3">
                     {[
@@ -1817,21 +1787,10 @@ export default function CEOPlatformDashboard() {
                             ? tenants.filter(t => t.plan === 'trial' || t.plan === 'free').length
                             : tenants.filter(t => t.status === status && !t.isExpired).length;
                       const percent = tenants.length > 0 ? (count / tenants.length * 100) : 0;
-                      return (
-                        <div key={status} className="flex items-center gap-3">
-                          <span className="text-sm text-slate-300 w-24">{label}</span>
-                          <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${color} rounded-full transition-all`}
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-white w-12 text-right">{count}</span>
-                        </div>
-                      );
+                      return <ProgressBarItem key={status} label={label} value={count} percent={percent} color={color} />;
                     })}
                   </div>
-                </div>
+                </CardContainer>
               </div>
             </div>
           )}
@@ -1839,46 +1798,21 @@ export default function CEOPlatformDashboard() {
           {/* Users Page */}
           {activePage === 'users' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h1 className="text-2xl font-bold text-white">Platform Users</h1>
-                  <p className="text-slate-400">Utenti e clienti della piattaforma</p>
-                </div>
-              </div>
-              <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+              <PageHeader 
+                title="Platform Users"
+                subtitle="Utenti e clienti della piattaforma"
+              />
+              <CardContainer>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                  <div className="p-4 bg-slate-700/30 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users className="w-5 h-5 text-blue-400" />
-                      <span className="text-sm text-slate-400">Trainers</span>
-                    </div>
-                    <p className="text-2xl font-bold text-white">{platformStats.totalUsers}</p>
-                  </div>
-                  <div className="p-4 bg-slate-700/30 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users className="w-5 h-5 text-green-400" />
-                      <span className="text-sm text-slate-400">Clienti</span>
-                    </div>
-                    <p className="text-2xl font-bold text-white">{platformStats.totalClients}</p>
-                  </div>
-                  <div className="p-4 bg-slate-700/30 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="w-5 h-5 text-purple-400" />
-                      <span className="text-sm text-slate-400">Avg/Tenant</span>
-                    </div>
-                    <p className="text-2xl font-bold text-white">{platformStats.avgUsersPerTenant}</p>
-                  </div>
-                  <div className="p-4 bg-slate-700/30 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Activity className="w-5 h-5 text-yellow-400" />
-                      <span className="text-sm text-slate-400">Ratio C/T</span>
-                    </div>
-                    <p className="text-2xl font-bold text-white">
-                      {platformStats.totalUsers > 0 
-                        ? (platformStats.totalClients / platformStats.totalUsers).toFixed(1) 
-                        : 0}
-                    </p>
-                  </div>
+                  <MiniStatCard icon={Users} label="Trainers" value={platformStats.totalUsers} iconColor="text-blue-400" />
+                  <MiniStatCard icon={Users} label="Clienti" value={platformStats.totalClients} iconColor="text-green-400" />
+                  <MiniStatCard icon={TrendingUp} label="Avg/Tenant" value={platformStats.avgUsersPerTenant} iconColor="text-purple-400" />
+                  <MiniStatCard 
+                    icon={Activity} 
+                    label="Ratio C/T" 
+                    value={platformStats.totalUsers > 0 ? (platformStats.totalClients / platformStats.totalUsers).toFixed(1) : 0}
+                    iconColor="text-yellow-400"
+                  />
                 </div>
                 
                 {/* Top Tenants by Users */}
@@ -1906,7 +1840,7 @@ export default function CEOPlatformDashboard() {
                       </div>
                     ))}
                 </div>
-              </div>
+              </CardContainer>
             </div>
           )}
 
@@ -2011,7 +1945,7 @@ export default function CEOPlatformDashboard() {
 
               {/* Revenue by Plan - PLATFORM REVENUE */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+                <CardContainer>
                   <h3 className="text-lg font-bold text-white mb-4">MRR per Piano</h3>
                   <div className="space-y-3">
                     {['enterprise', 'professional', 'starter'].map(plan => {
@@ -2044,9 +1978,9 @@ export default function CEOPlatformDashboard() {
                       );
                     })}
                   </div>
-                </div>
+                </CardContainer>
 
-                <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+                <CardContainer>
                   <h3 className="text-lg font-bold text-white mb-4">Top Tenants per Revenue</h3>
                   <div className="space-y-2">
                     {[...tenants]
@@ -2065,7 +1999,7 @@ export default function CEOPlatformDashboard() {
                         </div>
                       ))}
                   </div>
-                </div>
+                </CardContainer>
               </div>
 
               {/* Revenue Table */}
@@ -2124,42 +2058,30 @@ export default function CEOPlatformDashboard() {
           {/* Alerts Page */}
           {activePage === 'alerts' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-white">Centro Avvisi</h1>
-                  <p className="text-slate-400">{alerts.length} avvisi attivi</p>
-                </div>
-                <button
-                  onClick={loadPlatformData}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                >
-                  <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                  Aggiorna
-                </button>
-              </div>
+              <PageHeader 
+                title="Centro Avvisi"
+                subtitle={`${alerts.length} avvisi attivi`}
+                action={
+                  <button
+                    onClick={loadPlatformData}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                    Aggiorna
+                  </button>
+                }
+              />
 
               {/* Alert Stats */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-red-500/10 backdrop-blur-sm p-4 rounded-xl border border-red-500/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="w-5 h-5 text-red-400" />
-                    <span className="text-sm text-red-300">Critici</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">{alerts.filter(a => a.type === 'error').length}</p>
+                  <MiniStatCard icon={AlertTriangle} label="Critici" value={alerts.filter(a => a.type === 'error').length} iconColor="text-red-400" />
                 </div>
                 <div className="bg-yellow-500/10 backdrop-blur-sm p-4 rounded-xl border border-yellow-500/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Bell className="w-5 h-5 text-yellow-400" />
-                    <span className="text-sm text-yellow-300">Attenzione</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">{alerts.filter(a => a.type === 'warning').length}</p>
+                  <MiniStatCard icon={Bell} label="Attenzione" value={alerts.filter(a => a.type === 'warning').length} iconColor="text-yellow-400" />
                 </div>
                 <div className="bg-blue-500/10 backdrop-blur-sm p-4 rounded-xl border border-blue-500/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="w-5 h-5 text-blue-400" />
-                    <span className="text-sm text-blue-300">Info</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">{alerts.filter(a => a.type === 'info').length}</p>
+                  <MiniStatCard icon={AlertCircle} label="Info" value={alerts.filter(a => a.type === 'info').length} iconColor="text-blue-400" />
                 </div>
               </div>
 
@@ -2244,11 +2166,15 @@ export default function CEOPlatformDashboard() {
           {/* Database Page */}
           {activePage === 'database' && (
             <div className="space-y-6">
-              <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
-                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <PageHeader 
+                title="Database Management"
+                subtitle="Gestione dati piattaforma"
+              />
+              <CardContainer>
+                <div className="flex items-center gap-2 mb-4">
                   <Database className="w-6 h-6 text-blue-400" />
-                  Database Management
-                </h2>
+                  <h2 className="text-lg font-bold text-white">Statistiche Database</h2>
+                </div>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
                     <div>
@@ -2265,22 +2191,20 @@ export default function CEOPlatformDashboard() {
                     <p className="text-2xl font-bold text-white">{tenants.length * 711}</p>
                   </div>
                 </div>
-              </div>
+              </CardContainer>
             </div>
           )}
 
           {/* Settings Page */}
           {activePage === 'settings' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-white">Platform Settings</h1>
-                  <p className="text-slate-400">Configurazione globale della piattaforma</p>
-                </div>
-              </div>
+              <PageHeader 
+                title="Platform Settings"
+                subtitle="Configurazione globale della piattaforma"
+              />
 
               {/* Platform Info */}
-              <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+              <CardContainer>
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                   <Crown className="w-5 h-5 text-yellow-500" />
                   Informazioni Piattaforma
@@ -2303,10 +2227,10 @@ export default function CEOPlatformDashboard() {
                     <p className="text-white font-medium">{new Date().toLocaleDateString()}</p>
                   </div>
                 </div>
-              </div>
+              </CardContainer>
 
               {/* Pricing Plans */}
-              <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+              <CardContainer>
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                   <CreditCard className="w-5 h-5 text-purple-400" />
                   Piani Disponibili
@@ -2343,36 +2267,24 @@ export default function CEOPlatformDashboard() {
                     </ul>
                   </div>
                 </div>
-              </div>
+              </CardContainer>
 
               {/* Platform Stats Summary */}
-              <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+              <CardContainer>
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-green-400" />
                   Riepilogo Platform
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-slate-700/30 rounded-lg">
-                    <p className="text-3xl font-bold text-white">{platformStats.totalTenants}</p>
-                    <p className="text-sm text-slate-400">Tenants</p>
-                  </div>
-                  <div className="text-center p-4 bg-slate-700/30 rounded-lg">
-                    <p className="text-3xl font-bold text-white">{platformStats.totalUsers}</p>
-                    <p className="text-sm text-slate-400">Trainers</p>
-                  </div>
-                  <div className="text-center p-4 bg-slate-700/30 rounded-lg">
-                    <p className="text-3xl font-bold text-white">{platformStats.totalClients}</p>
-                    <p className="text-sm text-slate-400">Clienti</p>
-                  </div>
-                  <div className="text-center p-4 bg-slate-700/30 rounded-lg">
-                    <p className="text-3xl font-bold text-green-400">€{platformStats.monthlyRecurring?.toLocaleString() || 0}</p>
-                    <p className="text-sm text-slate-400">MRR</p>
-                  </div>
+                  <MiniStatCard icon={Users} label="Tenants" value={platformStats.totalTenants} iconColor="text-blue-400" />
+                  <MiniStatCard icon={Users} label="Trainers" value={platformStats.totalUsers} iconColor="text-purple-400" />
+                  <MiniStatCard icon={Users} label="Clienti" value={platformStats.totalClients} iconColor="text-green-400" />
+                  <MiniStatCard icon={DollarSign} label="MRR" value={`€${platformStats.monthlyRecurring?.toLocaleString() || 0}`} iconColor="text-green-400" />
                 </div>
-              </div>
+              </CardContainer>
 
               {/* Quick Actions */}
-              <div className="bg-slate-800/60 backdrop-blur-sm p-6 rounded-xl border border-slate-700/50">
+              <CardContainer>
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                   <Zap className="w-5 h-5 text-yellow-400" />
                   Azioni Rapide
