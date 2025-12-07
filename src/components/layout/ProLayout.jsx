@@ -150,16 +150,6 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
                       <Settings size={16} />
                       <span>Impostazioni</span>
                     </button>
-                    <button
-                      onClick={onNavigateBilling}
-                      className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <CreditCard size={16} />
-                        <span>Pagamenti e Piani</span>
-                      </div>
-                      <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">Standard</span>
-                    </button>
                     <div className="my-1 border-t border-slate-700/50" />
                     <button
                       onClick={onLogout}
@@ -242,16 +232,6 @@ const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSetti
                   >
                     <Settings size={16} />
                     <span>Impostazioni</span>
-                  </button>
-                  <button
-                    onClick={onNavigateBilling}
-                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <CreditCard size={16} />
-                      <span>Pagamenti e Piani</span>
-                    </div>
-                    <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">Standard</span>
                   </button>
                   <div className="my-1 border-t border-slate-700/50" />
                   <button
