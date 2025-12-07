@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../../firebase'
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { collection, query, where, onSnapshot, updateDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { getMessaging, getToken } from 'firebase/messaging';
 import { Bell, BellOff, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const VAPID_KEY = 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeDXSXKb4uffOVSupUGHQ4Q0l9Ato';
 
 export default function NotificationPanel({ userType = 'client' }) {
   const [notifications, setNotifications] = useState([]);
@@ -86,25 +88,46 @@ export default function NotificationPanel({ userType = 'client' }) {
         
         try {
           console.log('📱 Ottenendo token FCM...');
-          // Salva il token FCM su Firestore
           const messaging = getMessaging();
           console.log('Messaging instance:', messaging ? 'OK' : 'NULL');
           
           const token = await getToken(messaging, {
-            vapidKey: 'BKagOny0KQcd-p9DC2P4pDlZ3Owv1L-n6bqqQWTUl_G2aS9qLJMIvZo3aDlN6hG1IqJeM5HJqVxD4Cc5sqUZqAU'
+            vapidKey: VAPID_KEY
           });
           
           if (token) {
             console.log('✅ Token FCM ottenuto:', token);
-            console.log('💾 Salvando token su Firestore...');
-            // Usa setDoc con merge per creare/aggiornare il documento
-            await setDoc(doc(db, 'fcmTokens', auth.currentUser.uid), {
-              token,
-              userType,
-              updatedAt: serverTimestamp()
-            }, { merge: true });
+            console.log('💾 Salvando token su Firestore nella collezione fcmTokens...');
+            
+            const userId = auth.currentUser.uid;
+            const tokenRef = getTenantDoc(db, 'fcmTokens', userId);
+            const existingDoc = await getDoc(tokenRef);
+            
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            
+            if (existingDoc.exists()) {
+              await updateDoc(tokenRef, {
+                token: token,
+                userType,
+                updatedAt: serverTimestamp(),
+                platform: isIOS ? 'ios' : 'android/web',
+                isPWA: isPWA
+              });
+            } else {
+              await setDoc(tokenRef, {
+                userId,
+                token: token,
+                userType,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                platform: isIOS ? 'ios' : 'android/web',
+                isPWA: isPWA,
+                enabled: true
+              });
+            }
             console.log('✅ Token salvato su Firestore con successo!');
-            alert('✅ Notifiche attivate con successo! Token: ' + token.substring(0, 20) + '...');
+            alert('✅ Notifiche attivate con successo!');
           } else {
             console.warn('⚠️ Nessun token FCM ottenuto');
             alert('⚠️ Notifiche browser attive, ma FCM token non disponibile');

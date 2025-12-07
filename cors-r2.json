@@ -1,0 +1,31 @@
+{
+  "CORSRules": [
+    {
+      "AllowedOrigins": [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "https://mentalfitapp.github.io",
+        "https://miniature-cod-6vvj6wv5rxr2597w-5173.app.github.dev",
+        "https://fitflowpro.vercel.app",
+        "https://www.flowfitpro.it",
+        "https://flowfitpro.it"
+      ],
+      "AllowedMethods": [
+        "GET",
+        "PUT",
+        "POST",
+        "DELETE",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "*"
+      ],
+      "ExposeHeaders": [
+        "ETag",
+        "Content-Length"
+      ],
+      "MaxAgeSeconds": 3600
+    }
+  ]
+}

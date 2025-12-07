@@ -5,11 +5,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, X, Check, BellOff, Smartphone } from 'lucide-react';
 import { requestNotificationPermissionOnFirstLogin, isFirstLogin } from '../../services/notificationService';
-import { auth } from '../../firebase';
+import { auth, db } from '../../firebase';
 import { getMessaging, getToken } from 'firebase/messaging';
-import { setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { setDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 import { getTenantDoc } from '../../config/tenant';
+
+const VAPID_KEY = 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeDXSXKb4uffOVSupUGHQ4Q0l9Ato';
 
 export default function NotificationPermissionModal() {
   const [showModal, setShowModal] = useState(false);
@@ -58,21 +59,40 @@ export default function NotificationPermissionModal() {
       if (permission === 'granted') {
         setResult('granted');
         
-        // Ottieni e salva token FCM
+        // Ottieni e salva token FCM nella collezione corretta
         try {
           const messaging = getMessaging();
-          const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeDXSXKb4uffOVSupUGHQ4Q0l9Ato';
           const token = await getToken(messaging, {
             vapidKey: VAPID_KEY
           });
           
           if (token && auth.currentUser) {
-            await setDoc(getTenantDoc(db, 'users', auth.currentUser.uid), {
-              fcmToken: token,
-              fcmTokenUpdatedAt: serverTimestamp(),
-              notificationsEnabled: true
-            }, { merge: true });
-            console.log('[FCM] Token salvato con successo');
+            const userId = auth.currentUser.uid;
+            const tokenRef = getTenantDoc(db, 'fcmTokens', userId);
+            const existingDoc = await getDoc(tokenRef);
+            
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            
+            if (existingDoc.exists()) {
+              await updateDoc(tokenRef, {
+                token: token,
+                updatedAt: serverTimestamp(),
+                platform: isIOS ? 'ios' : 'android/web',
+                isPWA: isPWA
+              });
+            } else {
+              await setDoc(tokenRef, {
+                userId,
+                token: token,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                platform: isIOS ? 'ios' : 'android/web',
+                isPWA: isPWA,
+                enabled: true
+              });
+            }
+            console.log('[FCM] Token salvato con successo nella collezione fcmTokens');
           }
         } catch (fcmError) {
           console.error('[FCM] Errore token:', fcmError);

@@ -1,6 +1,7 @@
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+import { getTenantDoc } from '../config/tenant';
 
 const VAPID_KEY = 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeDXSXKb4uffOVSupUGHQ4Q0l9Ato';
 
@@ -26,14 +27,33 @@ export const requestNotificationPermission = async (userId) => {
     const token = await getToken(messaging, { vapidKey: VAPID_KEY });
     
     if (token) {
-      // Salva token su Firestore per l'utente
-      await setDoc(doc(db, 'fcmTokens', userId), {
-        token,
-        userId,
-        updatedAt: new Date()
-      });
+      // Salva token nella collezione tenant corretta
+      const tokenRef = getTenantDoc(db, 'fcmTokens', userId);
+      const existingDoc = await getDoc(tokenRef);
       
-      console.log('Token FCM ottenuto:', token);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      
+      if (existingDoc.exists()) {
+        await updateDoc(tokenRef, {
+          token: token,
+          updatedAt: serverTimestamp(),
+          platform: isIOS ? 'ios' : 'android/web',
+          isPWA: isPWA
+        });
+      } else {
+        await setDoc(tokenRef, {
+          userId,
+          token: token,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          platform: isIOS ? 'ios' : 'android/web',
+          isPWA: isPWA,
+          enabled: true
+        });
+      }
+      
+      console.log('[FCM] Token salvato per:', userId);
       return token;
     }
     
