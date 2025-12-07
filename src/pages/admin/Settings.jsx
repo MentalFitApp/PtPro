@@ -2,17 +2,20 @@
 // Pagina Impostazioni completa stile HubFit con tabs
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, getDoc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from 'firebase/auth';
+import { getMessaging, getToken } from 'firebase/messaging';
 import { db, auth } from '../../firebase';
 import { getTenantDoc } from '../../config/tenant';
 import { uploadToR2 } from '../../cloudflareStorage';
 import { useTenantBranding } from '../../hooks/useTenantBranding';
 import { 
   User, Camera, Mail, Lock, Bell, AlertTriangle, Palette,
-  ArrowLeft, Save, Trash2, Eye, EyeOff, Check, Globe, Scale, Ruler
+  ArrowLeft, Save, Trash2, Eye, EyeOff, Check, Globe, Scale, Ruler, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const VAPID_KEY = 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeDXSXKb4uffOVSupUGHQ4Q0l9Ato';
 
 // ============ TABS ============
 const TABS = {
@@ -291,6 +294,93 @@ export default function Settings() {
   };
 
   // ============ NOTIFICATIONS HANDLERS ============
+  const [enablingPush, setEnablingPush] = useState(false);
+  const [pushStatus, setPushStatus] = useState(null); // 'granted' | 'denied' | 'default'
+
+  // Check permessi push all'avvio
+  useEffect(() => {
+    if (typeof Notification !== 'undefined') {
+      setPushStatus(Notification.permission);
+    }
+  }, []);
+
+  // Toggle notifiche push con richiesta permessi browser
+  const handleTogglePush = async () => {
+    // Se le notifiche sono già attive, disattivale solo localmente
+    if (notifications.push) {
+      setNotifications(n => ({ ...n, push: false }));
+      // Disabilita in Firestore ma non elimina il token
+      try {
+        const tokenRef = getTenantDoc(db, 'fcmTokens', currentUser.uid);
+        await setDoc(tokenRef, { enabled: false }, { merge: true });
+      } catch (e) {
+        console.error('Errore disabilitazione token:', e);
+      }
+      return;
+    }
+
+    // Altrimenti, richiedi i permessi del browser
+    setEnablingPush(true);
+    try {
+      // Verifica supporto
+      if (typeof Notification === 'undefined') {
+        alert('Il tuo browser non supporta le notifiche push');
+        return;
+      }
+
+      // Richiedi permesso
+      const permission = await Notification.requestPermission();
+      setPushStatus(permission);
+
+      if (permission === 'granted') {
+        // Ottieni token FCM
+        const messaging = getMessaging();
+        const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+
+        if (token) {
+          // Salva token in Firestore
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+          const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+          const tokenRef = getTenantDoc(db, 'fcmTokens', currentUser.uid);
+          const existingDoc = await getDoc(tokenRef);
+
+          if (existingDoc.exists()) {
+            await updateDoc(tokenRef, {
+              token: token,
+              updatedAt: serverTimestamp(),
+              platform: isIOS ? 'ios' : 'android/web',
+              isPWA: isPWA,
+              enabled: true
+            });
+          } else {
+            await setDoc(tokenRef, {
+              userId: currentUser.uid,
+              token: token,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+              platform: isIOS ? 'ios' : 'android/web',
+              isPWA: isPWA,
+              enabled: true
+            });
+          }
+
+          setNotifications(n => ({ ...n, push: true }));
+          console.log('[FCM] Token salvato:', token.substring(0, 30) + '...');
+        } else {
+          alert('Non è stato possibile ottenere il token. Prova a ricaricare la pagina.');
+        }
+      } else if (permission === 'denied') {
+        alert('Hai negato i permessi per le notifiche. Puoi cambiarli dalle impostazioni del browser.');
+      }
+    } catch (error) {
+      console.error('Errore attivazione push:', error);
+      alert('Errore durante l\'attivazione delle notifiche: ' + error.message);
+    } finally {
+      setEnablingPush(false);
+    }
+  };
+
   const saveNotifications = async () => {
     setSaving(true);
     try {
@@ -758,30 +848,56 @@ export default function Settings() {
                     Generale
                   </h4>
                   <div className="space-y-3">
-                    {[
-                      { key: 'push', label: 'Notifiche Push', desc: 'Notifiche sul browser/dispositivo', icon: '🔔' },
-                      { key: 'email', label: 'Notifiche Email', desc: 'Ricevi aggiornamenti via email', icon: '📧' },
-                    ].map(item => (
-                      <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 hover:bg-slate-900/50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl">{item.icon}</span>
-                          <div>
-                            <p className="text-white font-medium">{item.label}</p>
-                            <p className="text-xs text-slate-500">{item.desc}</p>
-                          </div>
+                    {/* Toggle Notifiche Push - con richiesta permessi browser */}
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 hover:bg-slate-900/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">🔔</span>
+                        <div>
+                          <p className="text-white font-medium">Notifiche Push</p>
+                          <p className="text-xs text-slate-500">
+                            {pushStatus === 'denied' 
+                              ? '⚠️ Bloccate dal browser - Abilita dalle impostazioni' 
+                              : 'Notifiche sul browser/dispositivo'}
+                          </p>
                         </div>
-                        <button
-                          onClick={() => setNotifications(n => ({ ...n, [item.key]: !n[item.key] }))}
-                          className={`w-12 h-6 rounded-full transition-colors relative ${
-                            notifications[item.key] ? 'bg-blue-500' : 'bg-slate-700'
-                          }`}
-                        >
-                          <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                            notifications[item.key] ? 'right-1' : 'left-1'
-                          }`} />
-                        </button>
                       </div>
-                    ))}
+                      <button
+                        onClick={handleTogglePush}
+                        disabled={enablingPush || pushStatus === 'denied'}
+                        className={`w-12 h-6 rounded-full transition-colors relative ${
+                          notifications.push ? 'bg-blue-500' : 'bg-slate-700'
+                        } ${(enablingPush || pushStatus === 'denied') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {enablingPush ? (
+                          <Loader2 size={14} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white animate-spin" />
+                        ) : (
+                          <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                            notifications.push ? 'right-1' : 'left-1'
+                          }`} />
+                        )}
+                      </button>
+                    </div>
+                    
+                    {/* Toggle Email */}
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 hover:bg-slate-900/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">📧</span>
+                        <div>
+                          <p className="text-white font-medium">Notifiche Email</p>
+                          <p className="text-xs text-slate-500">Ricevi aggiornamenti via email</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setNotifications(n => ({ ...n, email: !n.email }))}
+                        className={`w-12 h-6 rounded-full transition-colors relative ${
+                          notifications.email ? 'bg-blue-500' : 'bg-slate-700'
+                        }`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                          notifications.email ? 'right-1' : 'left-1'
+                        }`} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
