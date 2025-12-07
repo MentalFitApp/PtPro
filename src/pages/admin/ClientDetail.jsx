@@ -679,7 +679,8 @@ export default function ClientDetail() {
   const [showAmounts, setShowAmounts] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
-  const [rates, setRates] = useState([]);
+  const [legacyRates, setLegacyRates] = useState([]);  // Rate dal campo client.rate (legacy)
+  const [subcollectionRates, setSubcollectionRates] = useState([]);  // Rate dalla subcollection rates
   const [zoomPhoto, setZoomPhoto] = useState({ open: false, url: '', alt: '' });
   const [showPhotoCompare, setShowPhotoCompare] = useState(false);
   const [showScheduleCall, setShowScheduleCall] = useState(false);
@@ -763,12 +764,39 @@ export default function ClientDetail() {
       setPayments(paymentsData);
     }, (err) => console.error('Errore caricamento payments:', err));
 
-    return () => { unsubClient(); unsubAnamnesi(); unsubChecks(); unsubPayments(); };
+    // Carica rate dalla subcollection rates (nuove rate da rinnovo)
+    const ratesQuery = query(getTenantSubcollection(db, 'clients', clientId, 'rates'), orderBy('dueDate', 'asc'));
+    const unsubRates = onSnapshot(ratesQuery, (snap) => {
+      const ratesData = snap.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          amount: data.amount,
+          dueDate: data.dueDate ? (data.dueDate.toDate ? data.dueDate.toDate().toISOString().split('T')[0] : data.dueDate) : '',
+          paid: data.paid || false,
+          paidDate: data.paidDate ? (data.paidDate.toDate ? data.paidDate.toDate().toISOString() : data.paidDate) : null,
+          isRenewal: data.isRenewal || false,
+          fromSubcollection: true  // Flag per identificare rate dalla subcollection
+        };
+      });
+      setSubcollectionRates(ratesData);
+    }, (err) => console.error('Errore caricamento rates:', err));
+
+    return () => { unsubClient(); unsubAnamnesi(); unsubChecks(); unsubPayments(); unsubRates(); };
   }, [clientId, navigate]);
 
+  // Carica rate legacy dal campo client.rate
   useEffect(() => {
-    if (client && client.rate) setRates(client.rate);
+    if (client && client.rate) setLegacyRates(client.rate);
   }, [client]);
+
+  // Combina rate legacy e subcollection
+  const rates = useMemo(() => {
+    // Prima le legacy (senza id, senza fromSubcollection)
+    const legacy = legacyRates.map((r, idx) => ({ ...r, legacyIndex: idx }));
+    // Poi le subcollection (con id, con fromSubcollection)
+    return [...legacy, ...subcollectionRates];
+  }, [legacyRates, subcollectionRates]);
 
   const sortedPayments = useMemo(() => {
     if (!payments.length) return [];
@@ -1067,19 +1095,51 @@ export default function ClientDetail() {
   };
 
   const handleAddRate = async (rate) => {
-    const newRates = [...rates, rate];
-    setRates(newRates);
-    await updateDoc(getTenantDoc(db, 'clients', client.id), { rate: newRates });
+    // Aggiungi sempre alla subcollection rates (nuovo sistema)
+    const ratesRef = getTenantSubcollection(db, 'clients', client.id, 'rates');
+    await addDoc(ratesRef, {
+      amount: parseFloat(rate.amount) || 0,
+      dueDate: rate.dueDate ? new Date(rate.dueDate) : null,
+      paid: rate.paid || false,
+      paidDate: rate.paidDate ? new Date(rate.paidDate) : null,
+      createdAt: new Date(),
+      isRenewal: false
+    });
   };
+  
   const handleUpdateRate = async (idx, updatedRate) => {
-    const newRates = rates.map((r, i) => i === idx ? { ...r, ...updatedRate } : r);
-    setRates(newRates);
-    await updateDoc(getTenantDoc(db, 'clients', client.id), { rate: newRates });
+    const rate = rates[idx];
+    if (rate.fromSubcollection && rate.id) {
+      // Update nella subcollection
+      const rateRef = doc(getTenantSubcollection(db, 'clients', client.id, 'rates'), rate.id);
+      await updateDoc(rateRef, {
+        amount: parseFloat(updatedRate.amount) || rate.amount,
+        dueDate: updatedRate.dueDate ? new Date(updatedRate.dueDate) : (rate.dueDate ? new Date(rate.dueDate) : null),
+        paid: updatedRate.paid ?? rate.paid,
+        paidDate: updatedRate.paidDate ? new Date(updatedRate.paidDate) : (updatedRate.paid && !rate.paidDate ? new Date() : null)
+      });
+    } else {
+      // Update nel campo legacy client.rate
+      const legacyIdx = rate.legacyIndex;
+      const newLegacyRates = legacyRates.map((r, i) => i === legacyIdx ? { ...r, ...updatedRate } : r);
+      setLegacyRates(newLegacyRates);
+      await updateDoc(getTenantDoc(db, 'clients', client.id), { rate: newLegacyRates });
+    }
   };
+  
   const handleDeleteRate = async (idx) => {
-    const newRates = rates.filter((_, i) => i !== idx);
-    setRates(newRates);
-    await updateDoc(getTenantDoc(db, 'clients', client.id), { rate: newRates });
+    const rate = rates[idx];
+    if (rate.fromSubcollection && rate.id) {
+      // Delete dalla subcollection
+      const rateRef = doc(getTenantSubcollection(db, 'clients', client.id, 'rates'), rate.id);
+      await deleteDoc(rateRef);
+    } else {
+      // Delete dal campo legacy client.rate
+      const legacyIdx = rate.legacyIndex;
+      const newLegacyRates = legacyRates.filter((_, i) => i !== legacyIdx);
+      setLegacyRates(newLegacyRates);
+      await updateDoc(getTenantDoc(db, 'clients', client.id), { rate: newLegacyRates });
+    }
   };
 
   if (loading) return <div className="text-center text-slate-400 p-8">Caricamento...</div>;
