@@ -1202,7 +1202,7 @@ export default function ClientDetail() {
             <InfoField icon={Phone} value={client.phone || 'N/D'} />
             {client.phone && (
               <WhatsAppButton 
-                client={{ ...client, id: id }} 
+                client={{ ...client, id: clientId }} 
                 tenantId={CURRENT_TENANT_ID} 
                 variant="icon"
               />

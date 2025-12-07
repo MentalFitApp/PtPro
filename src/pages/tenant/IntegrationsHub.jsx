@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import OAuthButton from '../../components/integrations/OAuthButton';
 
 // === INTEGRATION CONFIGS ===
@@ -556,6 +556,7 @@ const ConnectModal = ({ isOpen, onClose, integration, onSuccess, onError }) => {
 // === MAIN COMPONENT ===
 export default function IntegrationsHub() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const tenantId = localStorage.getItem('tenantId');
   
   const [loading, setLoading] = useState(true);
@@ -564,6 +565,17 @@ export default function IntegrationsHub() {
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [selectedIntegration, setSelectedIntegration] = useState(null);
   const [showWhatsAppSettings, setShowWhatsAppSettings] = useState(false);
+
+  // Apri WhatsApp settings se navigato con ?tab=whatsapp
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'whatsapp') {
+      setShowWhatsAppSettings(true);
+      // Rimuovi il parametro dall'URL
+      searchParams.delete('tab');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     loadIntegrations();

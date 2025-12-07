@@ -1,11 +1,12 @@
 // src/components/integrations/WhatsAppButton.jsx
-// Bottone per invio WhatsApp con template precompilati
-import React, { useState, useEffect } from 'react';
+// Bottone per invio WhatsApp con template precompilati e personalizzabili
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Send, X, ChevronDown, Zap, Edit3, ExternalLink } from 'lucide-react';
+import { MessageCircle, Send, X, ChevronDown, Zap, Edit3, ExternalLink, Settings } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../firebase';
+import { useNavigate } from 'react-router-dom';
 
 const DEFAULT_TEMPLATES = [
   {
@@ -41,10 +42,42 @@ export default function WhatsAppButton({
   const [trainerName, setTrainerName] = useState('Il tuo trainer');
   const [loading, setLoading] = useState(false);
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadConfig();
   }, [tenantId]);
+
+  // Calcola posizione dropdown quando si apre
+  useEffect(() => {
+    if (showDropdown && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const dropdownWidth = 280;
+      const dropdownHeight = 320;
+      
+      let left = rect.left;
+      let top = rect.bottom + 8;
+      
+      // Se esce a destra, posiziona a sinistra del bottone
+      if (left + dropdownWidth > windowWidth - 20) {
+        left = rect.right - dropdownWidth;
+      }
+      
+      // Se esce in basso, posiziona sopra il bottone
+      if (top + dropdownHeight > windowHeight - 20) {
+        top = rect.top - dropdownHeight - 8;
+      }
+      
+      // Assicurati che non esca a sinistra
+      if (left < 20) left = 20;
+      
+      setDropdownPosition({ top, left });
+    }
+  }, [showDropdown]);
 
   const loadConfig = async () => {
     if (!tenantId) return;
@@ -138,13 +171,72 @@ export default function WhatsAppButton({
     window.open(`https://wa.me/${phone}`, '_blank');
   };
 
+  const goToSettings = () => {
+    setShowDropdown(false);
+    navigate('/integrations?tab=whatsapp');
+  };
+
   if (!client?.phone) return null;
+
+  const DropdownContent = () => (
+    <>
+      <div className="p-3 border-b border-slate-700 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-white">Invia WhatsApp</p>
+          <p className="text-xs text-slate-400">{client.name}</p>
+        </div>
+        <button
+          onClick={goToSettings}
+          className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors"
+          title="Personalizza messaggi"
+        >
+          <Settings size={14} className="text-slate-400" />
+        </button>
+      </div>
+      
+      <div className="max-h-48 overflow-y-auto">
+        {templates.map(template => (
+          <button
+            key={template.id}
+            onClick={() => handleSendViaLink(template)}
+            className="w-full p-3 text-left hover:bg-slate-700/50 transition-colors border-b border-slate-700/50 last:border-0"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-white">{template.name}</span>
+              <ExternalLink size={12} className="text-slate-500" />
+            </div>
+            <p className="text-xs text-slate-400 mt-1 line-clamp-2">
+              {formatMessage(template).substring(0, 60)}...
+            </p>
+          </button>
+        ))}
+      </div>
+
+      <div className="p-2 border-t border-slate-700 bg-slate-800/50 space-y-2">
+        <button
+          onClick={handleQuickSend}
+          className="w-full py-2 px-3 bg-green-600 hover:bg-green-500 text-white text-sm rounded-lg flex items-center justify-center gap-2 transition-colors"
+        >
+          <MessageCircle size={14} />
+          Apri Chat Vuota
+        </button>
+        <button
+          onClick={goToSettings}
+          className="w-full py-1.5 px-3 text-slate-400 hover:text-white text-xs rounded-lg flex items-center justify-center gap-1 transition-colors"
+        >
+          <Edit3 size={12} />
+          Personalizza messaggi
+        </button>
+      </div>
+    </>
+  );
 
   // Variante icona semplice
   if (variant === 'icon') {
     return (
-      <div className="relative">
+      <div className="relative inline-block">
         <button
+          ref={buttonRef}
           onClick={() => setShowDropdown(!showDropdown)}
           className={`p-1.5 rounded-md border border-green-700 text-green-400 hover:text-green-300 hover:border-green-500 bg-slate-800 ${className}`}
           title="Invia WhatsApp"
@@ -156,47 +248,20 @@ export default function WhatsAppButton({
           {showDropdown && (
             <>
               <div 
-                className="fixed inset-0 z-40" 
+                className="fixed inset-0 z-[9998]" 
                 onClick={() => setShowDropdown(false)}
               />
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute right-0 top-full mt-2 w-64 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden"
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                style={{ 
+                  top: dropdownPosition.top, 
+                  left: dropdownPosition.left 
+                }}
+                className="fixed w-72 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-[9999] overflow-hidden"
               >
-                <div className="p-3 border-b border-slate-700">
-                  <p className="text-sm font-medium text-white">Invia WhatsApp</p>
-                  <p className="text-xs text-slate-400">{client.name}</p>
-                </div>
-                
-                <div className="max-h-64 overflow-y-auto">
-                  {templates.map(template => (
-                    <button
-                      key={template.id}
-                      onClick={() => handleSendViaLink(template)}
-                      className="w-full p-3 text-left hover:bg-slate-700/50 transition-colors border-b border-slate-700/50 last:border-0"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-white">{template.name}</span>
-                        <ExternalLink size={12} className="text-slate-500" />
-                      </div>
-                      <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                        {formatMessage(template).substring(0, 60)}...
-                      </p>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="p-2 border-t border-slate-700 bg-slate-800/50">
-                  <button
-                    onClick={handleQuickSend}
-                    className="w-full py-2 px-3 bg-green-600 hover:bg-green-500 text-white text-sm rounded-lg flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <MessageCircle size={14} />
-                    Apri Chat Vuota
-                  </button>
-                </div>
+                <DropdownContent />
               </motion.div>
             </>
           )}
@@ -222,6 +287,7 @@ export default function WhatsAppButton({
   return (
     <div className={`relative ${className}`}>
       <button
+        ref={buttonRef}
         onClick={() => setShowDropdown(!showDropdown)}
         className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-xl font-medium transition-all shadow-lg hover:shadow-green-500/25"
       >
@@ -234,28 +300,41 @@ export default function WhatsAppButton({
         {showDropdown && (
           <>
             <div 
-              className="fixed inset-0 z-40" 
+              className="fixed inset-0 z-[9998]" 
               onClick={() => setShowDropdown(false)}
             />
             <motion.div
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="absolute right-0 top-full mt-2 w-80 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden"
+              style={{ 
+                top: dropdownPosition.top, 
+                left: dropdownPosition.left 
+              }}
+              className="fixed w-80 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-[9999] overflow-hidden"
             >
               <div className="p-4 border-b border-slate-700 bg-gradient-to-r from-green-600/10 to-transparent">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-green-600/20 flex items-center justify-center">
-                    <MessageCircle size={20} className="text-green-400" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-green-600/20 flex items-center justify-center">
+                      <MessageCircle size={20} className="text-green-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-white">{client.name}</p>
+                      <p className="text-xs text-slate-400">{client.phone}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-white">{client.name}</p>
-                    <p className="text-xs text-slate-400">{client.phone}</p>
-                  </div>
+                  <button
+                    onClick={goToSettings}
+                    className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                    title="Personalizza messaggi"
+                  >
+                    <Settings size={16} className="text-slate-400" />
+                  </button>
                 </div>
               </div>
               
-              <div className="p-2 max-h-64 overflow-y-auto">
+              <div className="p-2 max-h-48 overflow-y-auto">
                 <p className="px-2 py-1 text-xs text-slate-500 uppercase tracking-wider">
                   Seleziona Template
                 </p>
@@ -283,19 +362,28 @@ export default function WhatsAppButton({
                 ))}
               </div>
 
-              <div className="p-3 border-t border-slate-700 bg-slate-800/50 flex gap-2">
+              <div className="p-3 border-t border-slate-700 bg-slate-800/50 space-y-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleQuickSend}
+                    className="flex-1 py-2 px-3 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Edit3 size={14} />
+                    Scrivi Messaggio
+                  </button>
+                  <button
+                    onClick={() => setShowDropdown(false)}
+                    className="py-2 px-3 bg-slate-700 hover:bg-slate-600 text-slate-400 rounded-lg transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
                 <button
-                  onClick={handleQuickSend}
-                  className="flex-1 py-2 px-3 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  onClick={goToSettings}
+                  className="w-full py-1.5 text-slate-400 hover:text-white text-xs flex items-center justify-center gap-1 transition-colors"
                 >
-                  <Edit3 size={14} />
-                  Scrivi Messaggio
-                </button>
-                <button
-                  onClick={() => setShowDropdown(false)}
-                  className="py-2 px-3 bg-slate-700 hover:bg-slate-600 text-slate-400 rounded-lg transition-colors"
-                >
-                  <X size={16} />
+                  <Settings size={12} />
+                  Personalizza template messaggi
                 </button>
               </div>
             </motion.div>
