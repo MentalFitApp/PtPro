@@ -627,12 +627,31 @@ export default function ClientDetail() {
   const bodyFatDelta = bodyFatValue !== null && prevBodyFat !== null ? bodyFatValue - prevBodyFat : null;
   const bodyFatDeltaPct = bodyFatDelta !== null && prevBodyFat ? ((bodyFatDelta / prevBodyFat) * 100) : null;
   const lastCheckAt = latestCheck?.createdAt ? toDate(latestCheck.createdAt) : null;
-  // Calcola totali dalle rate (per il sistema di flagging pagamenti)
-  const paymentsTotal = rates.reduce((sum, r) => sum + Number(r.amount || 0), 0);
-  const paymentsPaid = rates.filter(r => r.paid).reduce((sum, r) => sum + Number(r.amount || 0), 0);
-  // Ultimo pagamento dalla lista rate pagate
+  
+  // Calcola totali pagamenti
+  // Pagato = somma pagamenti subcollection + rate pagate
+  const paymentsFromSubcollection = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const paidFromRates = rates.filter(r => r.paid).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+  const paymentsPaid = paymentsFromSubcollection + paidFromRates;
+  
+  // Totale = client.price se esiste, altrimenti somma rate, altrimenti somma pagamenti
+  const ratesTotalAmount = rates.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+  const paymentsTotal = client?.price ? Number(client.price) : (ratesTotalAmount > 0 ? ratesTotalAmount : paymentsFromSubcollection);
+  
+  // Ultimo pagamento dalla lista rate pagate o pagamenti subcollection
   const paidRates = rates.filter(r => r.paid).sort((a, b) => (toDate(b.paidDate) || new Date(0)) - (toDate(a.paidDate) || new Date(0)));
-  const lastPayment = paidRates[0];
+  const sortedSubcollectionPayments = [...payments].sort((a, b) => (toDate(b.paymentDate) || new Date(0)) - (toDate(a.paymentDate) || new Date(0)));
+  const lastRatePayment = paidRates[0];
+  const lastSubcollectionPayment = sortedSubcollectionPayments[0];
+  // Scegli il più recente tra rate e subcollection
+  const lastPayment = (() => {
+    if (!lastRatePayment && !lastSubcollectionPayment) return null;
+    if (!lastRatePayment) return { ...lastSubcollectionPayment, paidDate: lastSubcollectionPayment.paymentDate };
+    if (!lastSubcollectionPayment) return lastRatePayment;
+    const rateDate = toDate(lastRatePayment.paidDate) || new Date(0);
+    const subDate = toDate(lastSubcollectionPayment.paymentDate) || new Date(0);
+    return rateDate > subDate ? lastRatePayment : { ...lastSubcollectionPayment, paidDate: lastSubcollectionPayment.paymentDate };
+  })();
 
   const photoGallery = useMemo(() => {
     const list = [];

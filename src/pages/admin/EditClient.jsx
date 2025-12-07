@@ -51,7 +51,8 @@ export default function EditClient() {
       email: '',
       phone: '',
       status: 'attivo',
-      scadenza: ''
+      scadenza: '',
+      price: ''
     }
   });
   const [clientName, setClientName] = useState('');
@@ -82,7 +83,8 @@ export default function EditClient() {
             email: clientData.email || '',
             phone: clientData.phone || '',
             status: clientData.status || 'attivo',
-            scadenza: formatDateForInput(clientData.scadenza)
+            scadenza: formatDateForInput(clientData.scadenza),
+            price: clientData.price || ''
           });
         } else {
           showNotification('Cliente non trovato.', 'error');
@@ -108,6 +110,7 @@ export default function EditClient() {
         phone: data.phone || null,
         status: data.status,
         scadenza: data.scadenza ? new Date(data.scadenza) : null,
+        price: data.price ? parseFloat(data.price) : null,
       };
       await updateDoc(clientRef, updatedData);
       showNotification('Cliente aggiornato con successo!', 'success');
@@ -229,6 +232,20 @@ export default function EditClient() {
                 />
                 {errors.scadenza && <p className={errorStyle}>{errors.scadenza.message}</p>}
               </div>
+            </div>
+            <div>
+              <label className={labelStyle}>Prezzo Abbonamento (€)</label>
+              <input 
+                type="number" 
+                step="0.01"
+                min="0"
+                placeholder="Es. 150"
+                {...register('price', { 
+                  min: { value: 0, message: 'Il prezzo non può essere negativo' }
+                })} 
+                className={inputStyle} 
+              />
+              {errors.price && <p className={errorStyle}>{errors.price.message}</p>}
             </div>
             <div className="flex justify-end gap-3 pt-5">
               <motion.button

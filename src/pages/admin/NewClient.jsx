@@ -164,6 +164,14 @@ export default function NewClient() {
       const newUserId = userCredential.user.uid;
       console.log('Utente creato con UID:', newUserId);
 
+      // Calcola il prezzo totale
+      let totalPrice = 0;
+      if (isRateizzato && rates.length > 0) {
+        totalPrice = rates.reduce((sum, rate) => sum + (parseFloat(rate.amount) || 0), 0);
+      } else if (data.paymentAmount) {
+        totalPrice = parseFloat(data.paymentAmount) || 0;
+      }
+
       const newClientRef = getTenantDoc(db, 'clients', newUserId);
       const clientData = {
         ...data,
@@ -183,7 +191,8 @@ export default function NewClient() {
         tempPassword: tempPassword,
         isOldClient,
         assignedCoaches: [auth.currentUser.uid],
-        statoPercorso: 'Attivo'
+        statoPercorso: 'Attivo',
+        price: totalPrice > 0 ? totalPrice : null
       };
       
       console.log('🔍 DEBUG - Tentativo scrittura documento cliente:', {
