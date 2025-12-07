@@ -597,22 +597,6 @@ export default function CEOPlatformDashboard() {
     }
   };
 
-  // Elimina tenant
-  const handleDeleteTenant = async (tenant) => {
-    if (!confirm(`⚠️ Sei sicuro di voler eliminare il tenant "${tenant.name || tenant.id}"? Questa azione è irreversibile!`)) {
-      return;
-    }
-    
-    try {
-      await deleteDoc(doc(db, 'tenants', tenant.id));
-      await loadPlatformData();
-      alert('✅ Tenant eliminato con successo');
-    } catch (error) {
-      console.error('Error deleting tenant:', error);
-      alert('❌ Errore nell\'eliminazione del tenant');
-    }
-  };
-
   // Apri Page Builder per tenant specifico
   const handleOpenPageBuilder = async (tenant) => {
     try {
@@ -1765,7 +1749,15 @@ export default function CEOPlatformDashboard() {
                     ].map(({ plan, color }) => {
                       const count = tenants.filter(t => t.plan === plan).length;
                       const percent = tenants.length > 0 ? (count / tenants.length * 100) : 0;
-                      return <ProgressBarItem key={plan} label={plan} value={count} percent={percent} color={color} />;
+                      return (
+                        <div key={plan} className="flex items-center gap-3">
+                          <span className="text-sm text-slate-400 w-24 capitalize">{plan}</span>
+                          <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                            <div className={`h-full ${color}`} style={{ width: `${percent}%` }} />
+                          </div>
+                          <span className="text-sm text-white w-8 text-right">{count}</span>
+                        </div>
+                      );
                     })}
                   </div>
                 </CardContainer>
@@ -1787,7 +1779,15 @@ export default function CEOPlatformDashboard() {
                             ? tenants.filter(t => t.plan === 'trial' || t.plan === 'free').length
                             : tenants.filter(t => t.status === status && !t.isExpired).length;
                       const percent = tenants.length > 0 ? (count / tenants.length * 100) : 0;
-                      return <ProgressBarItem key={status} label={label} value={count} percent={percent} color={color} />;
+                      return (
+                        <div key={status} className="flex items-center gap-3">
+                          <span className="text-sm text-slate-400 w-24">{label}</span>
+                          <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                            <div className={`h-full ${color}`} style={{ width: `${percent}%` }} />
+                          </div>
+                          <span className="text-sm text-white w-8 text-right">{count}</span>
+                        </div>
+                      );
                     })}
                   </div>
                 </CardContainer>
@@ -2334,7 +2334,7 @@ export default function CEOPlatformDashboard() {
                     <p className="text-xs text-slate-400">Gestione DB</p>
                   </button>
                 </div>
-              </div>
+              </CardContainer>
             </div>
           )}
 
