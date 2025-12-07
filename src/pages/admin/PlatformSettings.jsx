@@ -52,6 +52,7 @@ const DEFAULT_GLOBAL_SETTINGS = {
   allowSelfRegistration: true,
   autoApproveBookings: true,
   requirePaymentForAccess: false,
+  requireAnamnesiOnFirstAccess: false,
   welcomeVideo: {
     enabled: false,
     url: '',
@@ -862,6 +863,23 @@ export default function PlatformSettings() {
                     }`}
                   >
                     {globalSettings.requirePaymentForAccess ? 'Abilitato' : 'Disabilitato'}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-slate-100">Anamnesi Obbligatoria al Primo Accesso</p>
+                    <p className="text-xs text-slate-400">I nuovi clienti devono compilare l'anamnesi prima di poter usare l'app</p>
+                  </div>
+                  <button
+                    onClick={() => setGlobalSettings(prev => ({ ...prev, requireAnamnesiOnFirstAccess: !prev.requireAnamnesiOnFirstAccess }))}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                      globalSettings.requireAnamnesiOnFirstAccess
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-700 text-slate-400'
+                    }`}
+                  >
+                    {globalSettings.requireAnamnesiOnFirstAccess ? 'Abilitato' : 'Disabilitato'}
                   </button>
                 </div>
               </div>

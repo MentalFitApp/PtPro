@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, signOut } from 'firebase/auth';
-import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../../firebase.js';
 import { useNavigate, Link } from 'react-router-dom';
 import { getTenantDoc, getTenantSubcollection } from '../../config/tenant';
@@ -12,6 +12,7 @@ import HabitTracker from '../../components/client/HabitTracker';
 import WorkoutStreak from '../../components/client/WorkoutStreak';
 import CelebrationMoments from '../../components/client/CelebrationMoments';
 import BlockedAccess from '../../components/client/BlockedAccess';
+import AnamnesiRequiredModal from '../../components/client/AnamnesiRequiredModal';
 import LinkAccountBanner from '../../components/LinkAccountBanner';
 import { NextCallCard, RequestCallCard } from '../../components/calls/CallScheduler';
 
@@ -73,6 +74,8 @@ const ClientDashboard = () => {
   const [isAndroid, setIsAndroid] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockMessage, setBlockMessage] = useState('');
+  const [requireAnamnesi, setRequireAnamnesi] = useState(false);
+  const [hasAnamnesi, setHasAnamnesi] = useState(true); // Default true per non bloccare durante caricamento
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
@@ -105,9 +108,41 @@ const ClientDashboard = () => {
       setError('Il caricamento sta impiegando troppo tempo. Riprova o contatta il supporto.');
     }, 8000);
 
+    // Verifica impostazione anamnesi obbligatoria e se cliente ha già compilato
+    const checkAnamnesiRequirement = async () => {
+      try {
+        // Carica impostazioni globali piattaforma
+        const settingsRef = getTenantDoc(db, 'platform_settings', 'global');
+        const settingsSnap = await getDoc(settingsRef);
+        
+        if (settingsSnap.exists()) {
+          const settings = settingsSnap.data();
+          if (settings.requireAnamnesiOnFirstAccess) {
+            setRequireAnamnesi(true);
+            
+            // Verifica se il cliente ha già compilato l'anamnesi
+            const anamnesiRef = getTenantSubcollection(db, 'clients', user.uid, 'anamnesi');
+            const anamnesiQuery = query(anamnesiRef, limit(1));
+            const anamnesiSnap = await getDocs(anamnesiQuery);
+            
+            const clientHasAnamnesi = anamnesiSnap.docs.length > 0;
+            setHasAnamnesi(clientHasAnamnesi);
+            console.log('ClientDashboard: Anamnesi obbligatoria, cliente ha anamnesi:', clientHasAnamnesi);
+          }
+        }
+      } catch (error) {
+        console.error('ClientDashboard: Errore verifica anamnesi:', error);
+        // In caso di errore, non blocchiamo il cliente
+        setHasAnamnesi(true);
+      }
+    };
+
     // Carica dati cliente
     const fetchClientData = async () => {
       try {
+        // Prima verifica requisito anamnesi
+        await checkAnamnesiRequirement();
+        
         const clientDocRef = getTenantDoc(db, 'clients', user.uid);
         const docSnap = await getDoc(clientDocRef);
         if (docSnap.exists()) {
@@ -206,6 +241,11 @@ const ClientDashboard = () => {
   // Mostra schermata di blocco se il cliente è archiviato con blockAppAccess
   if (isBlocked) {
     return <BlockedAccess message={blockMessage} />;
+  }
+
+  // Mostra modal anamnesi obbligatoria se l'impostazione è attiva e il cliente non ha compilato
+  if (requireAnamnesi && !hasAnamnesi) {
+    return <AnamnesiRequiredModal clientName={clientData?.name} />;
   }
   
   if (!clientData) {
