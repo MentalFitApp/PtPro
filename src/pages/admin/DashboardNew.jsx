@@ -99,7 +99,9 @@ export default function DashboardNew() {
   const { branding } = useTenantBranding();
   const [activeTab, setActiveTab] = useState('overview');
   const [clients, setClients] = useState([]);
-  const [payments, setPayments] = useState([]);
+  const [legacyPayments, setLegacyPayments] = useState([]); // Pagamenti da array nel documento
+  const [subcolPayments, setSubcolPayments] = useState([]); // Pagamenti da subcollection payments
+  const [subcolRates, setSubcolRates] = useState([]); // Rate pagate da subcollection rates
   const [leads, setLeads] = useState([]);
   const [activityFeed, setActivityFeed] = useState([]);
   const [lastViewed, setLastViewed] = useState(null);
@@ -110,6 +112,12 @@ export default function DashboardNew() {
   const [revenueBreakdownData, setRevenueBreakdownData] = useState([]);
   const [userName, setUserName] = useState('');
   const [currentPhotoURL, setCurrentPhotoURL] = useState(null);
+  
+  // Combina tutti i pagamenti
+  const payments = useMemo(() => {
+    return [...legacyPayments, ...subcolPayments, ...subcolRates];
+  }, [legacyPayments, subcolPayments, subcolRates]);
+  
   const [visibleMetrics, setVisibleMetrics] = useState({
     revenue: true,
     renewalsRevenue: true,
@@ -190,29 +198,27 @@ export default function DashboardNew() {
     return () => unsub();
   }, []);
 
-  // Carica tutti i pagamenti (array payments + rate pagate) - LISTENER IN TEMPO REALE
+  // Carica pagamenti LEGACY (array nel documento client) - LISTENER IN TEMPO REALE
   useEffect(() => {
     const unsubscribe = onSnapshot(getTenantCollection(db, 'clients'), (snapshot) => {
-      const allPayments = [];
+      const allLegacyPayments = [];
       
       snapshot.docs.forEach(clientDoc => {
         const clientData = clientDoc.data();
         const clientId = clientDoc.id;
         const clientName = clientData.name || 'Cliente';
 
-        // 1. Verifica se cliente usa sistema rateale
+        // Verifica se cliente usa sistema rateale
         const hasRates = clientData.rate && Array.isArray(clientData.rate) && clientData.rate.length > 0;
         const isRateizzato = clientData.rateizzato === true;
 
-        // 2. Pagamenti da array 'payments'
+        // Pagamenti da array 'payments'
         if (clientData.payments && Array.isArray(clientData.payments)) {
           clientData.payments.forEach((p, index) => {
-             // Salta SOLO i pagamenti con metodo 'rateizzato' se ci sono rate definite
-             // Gli altri pagamenti (bonifico, paypal, ecc.) devono essere contati
              if (p.paymentMethod === PAYMENT_METHODS.RATEIZZATO && hasRates && isRateizzato) {
                return;
              }
-             allPayments.push({
+             allLegacyPayments.push({
                id: `pay_${clientId}_${index}`,
                clientId,
                clientName,
@@ -221,11 +227,11 @@ export default function DashboardNew() {
           });
         }
 
-        // 3. Rate pagate da array 'rate' (solo se cliente è flaggato come rateizzato)
+        // Rate pagate da array 'rate' (legacy)
         if (hasRates && isRateizzato) {
           clientData.rate.forEach((r, index) => {
             if (r.paid && r.paidDate) {
-              allPayments.push({
+              allLegacyPayments.push({
                 id: `rate_${clientId}_${index}`,
                 clientId,
                 clientName,
@@ -238,61 +244,92 @@ export default function DashboardNew() {
             }
           });
         }
-
-        // 4. Rate pagate dalla subcollection 'rates' (nuovo sistema rinnovi)
-        getDocs(getTenantSubcollection(db, 'clients', clientId, 'rates')).then(ratesSnap => {
-          const ratesPayments = [];
-          ratesSnap.docs.forEach(rateDoc => {
-            const rateData = rateDoc.data();
-            if (rateData.paid && rateData.paidDate) {
-              const paidDate = rateData.paidDate?.toDate ? rateData.paidDate.toDate() : rateData.paidDate;
-              ratesPayments.push({
-                id: `subcol_rate_${clientId}_${rateDoc.id}`,
-                clientId,
-                clientName,
-                amount: parseFloat(rateData.amount) || 0,
-                paymentDate: paidDate,
-                duration: 'Rata',
-                paymentMethod: 'Rateizzato',
-                isRate: true,
-                isRenewal: rateData.isRenewal || false
-              });
-            }
-          });
-          if (ratesPayments.length > 0) {
-            setPayments(prev => [...prev, ...ratesPayments]);
-          }
-        });
-
-        // 5. Pagamenti dalla subcollection 'payments' (SEMPRE, non solo fallback)
-        // Questo include i rinnovi con bonifico/paypal ecc. salvati da RenewalModal
-        getDocs(getTenantSubcollection(db, 'clients', clientId, 'payments')).then(paymentsSnap => {
-          const subcolPayments = [];
-          paymentsSnap.docs.forEach(payDoc => {
-            const payData = payDoc.data();
-            const paymentDate = payData.paymentDate?.toDate ? payData.paymentDate.toDate() : payData.paymentDate;
-            subcolPayments.push({
-              id: `subcol_pay_${clientId}_${payDoc.id}`,
-              clientId,
-              clientName,
-              amount: parseFloat(payData.amount) || 0,
-              paymentDate: paymentDate,
-              duration: payData.duration || '',
-              paymentMethod: payData.paymentMethod || 'N/D',
-              isRenewal: payData.isRenewal || false,
-              createdAt: payData.createdAt
-            });
-          });
-          if (subcolPayments.length > 0) {
-            setPayments(prev => [...prev, ...subcolPayments]);
-          }
-        });
       });
 
-      setPayments(allPayments);
+      setLegacyPayments(allLegacyPayments);
     });
 
     return () => unsubscribe();
+  }, []);
+
+  // Carica pagamenti e rate dalle SUBCOLLECTION (listener separati per ogni cliente)
+  useEffect(() => {
+    let unsubscribers = [];
+    
+    const setupSubcollectionListeners = async () => {
+      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+      
+      clientsSnap.docs.forEach(clientDoc => {
+        const clientId = clientDoc.id;
+        const clientName = clientDoc.data().name || 'Cliente';
+        
+        // Listener per subcollection payments
+        const unsubPayments = onSnapshot(
+          getTenantSubcollection(db, 'clients', clientId, 'payments'),
+          (paymentsSnap) => {
+            const clientPayments = paymentsSnap.docs.map(payDoc => {
+              const payData = payDoc.data();
+              const paymentDate = payData.paymentDate?.toDate ? payData.paymentDate.toDate() : payData.paymentDate;
+              return {
+                id: `subcol_pay_${clientId}_${payDoc.id}`,
+                clientId,
+                clientName,
+                amount: parseFloat(payData.amount) || 0,
+                paymentDate: paymentDate,
+                duration: payData.duration || '',
+                paymentMethod: payData.paymentMethod || 'N/D',
+                isRenewal: payData.isRenewal || false,
+                createdAt: payData.createdAt
+              };
+            });
+            
+            setSubcolPayments(prev => {
+              // Rimuovi vecchi pagamenti di questo cliente e aggiungi i nuovi
+              const filtered = prev.filter(p => !p.id.includes(`subcol_pay_${clientId}_`));
+              return [...filtered, ...clientPayments];
+            });
+          }
+        );
+        unsubscribers.push(unsubPayments);
+        
+        // Listener per subcollection rates
+        const unsubRates = onSnapshot(
+          getTenantSubcollection(db, 'clients', clientId, 'rates'),
+          (ratesSnap) => {
+            const clientRates = ratesSnap.docs
+              .map(rateDoc => {
+                const rateData = rateDoc.data();
+                if (!rateData.paid || !rateData.paidDate) return null;
+                
+                const paidDate = rateData.paidDate?.toDate ? rateData.paidDate.toDate() : rateData.paidDate;
+                return {
+                  id: `subcol_rate_${clientId}_${rateDoc.id}`,
+                  clientId,
+                  clientName,
+                  amount: parseFloat(rateData.amount) || 0,
+                  paymentDate: paidDate,
+                  duration: 'Rata',
+                  paymentMethod: 'Rateizzato',
+                  isRate: true,
+                  isRenewal: rateData.isRenewal || false
+                };
+              })
+              .filter(Boolean);
+            
+            setSubcolRates(prev => {
+              // Rimuovi vecchie rate di questo cliente e aggiungi le nuove
+              const filtered = prev.filter(r => !r.id.includes(`subcol_rate_${clientId}_`));
+              return [...filtered, ...clientRates];
+            });
+          }
+        );
+        unsubscribers.push(unsubRates);
+      });
+    };
+    
+    setupSubcollectionListeners();
+    
+    return () => unsubscribers.forEach(unsub => unsub());
   }, []);
 
   // Last viewed
@@ -320,7 +357,7 @@ export default function DashboardNew() {
       
       clientsSnapshot.forEach(clientDoc => {
         const clientData = clientDoc.data();
-        if (clientData.isOldClient) return;
+        // NON escludiamo clienti "vecchi" - potrebbero rinnovare!
         
         // Listener per pagamenti dalla subcollection payments
         const paymentsQuery = query(
@@ -557,16 +594,19 @@ export default function DashboardNew() {
       return lDate && lDate >= rangeDate;
     });
 
-    // Calcola incassi ESATTAMENTE come vecchia dashboard
-    // Raggruppa TUTTI i pagamenti per cliente (SOLO clienti attivi, non vecchi)
+    // Calcola incassi
+    // Raggruppa TUTTI i pagamenti per cliente
+    // NOTA: includiamo anche i clienti "vecchi" se hanno rinnovi/rate nel periodo
     const activeClientIds = new Set(activeClientsList.map(c => c.id));
     
     const paymentsByClient = {};
     payments.forEach(p => {
       if (!p.clientId || p.isPast) return;
       
-      // IMPORTANTE: Considera solo pagamenti di clienti NON vecchi
-      if (!activeClientIds.has(p.clientId)) return;
+      // Includi SEMPRE i pagamenti con isRenewal o isRate (rinnovi e rate pagate)
+      // Escludi solo pagamenti di nuovi clienti "vecchi"
+      const isRenewalOrRate = p.isRenewal === true || p.isRate === true;
+      if (!activeClientIds.has(p.clientId) && !isRenewalOrRate) return;
       
       if (!paymentsByClient[p.clientId]) paymentsByClient[p.clientId] = [];
       paymentsByClient[p.clientId].push(p);
