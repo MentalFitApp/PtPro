@@ -1031,16 +1031,16 @@ export default function CEOPlatformDashboard() {
                 />
                 <StatCard
                   title="Revenue Totale"
-                  value={`€${platformStats.totalRevenue.toLocaleString()}`}
-                  subtitle={`€${platformStats.avgRevenuePerTenant} avg/tenant`}
+                  value={`€${(platformStats.totalRevenue || 0).toLocaleString()}`}
+                  subtitle={`€${platformStats.avgRevenuePerTenant || 0} avg/tenant`}
                   icon={<DollarSign />}
                   color="yellow"
                   trend={18}
                 />
                 <StatCard
                   title="MRR"
-                  value={`€${platformStats.monthlyRecurring.toFixed(0)}`}
-                  subtitle={`€${platformStats.totalPaymentsThisMonth} questo mese`}
+                  value={`€${(platformStats.monthlyRecurring || 0).toFixed(0)}`}
+                  subtitle={`€${platformStats.totalPaymentsThisMonth || 0} questo mese`}
                   icon={<TrendingUp />}
                   color="blue"
                   trend={8}
@@ -1331,7 +1331,7 @@ export default function CEOPlatformDashboard() {
                   <div className="flex items-center justify-between mb-2">
                     <Wallet className="w-8 h-8 text-blue-400" />
                   </div>
-                  <p className="text-3xl font-bold text-white mb-1">€{platformStats.monthlyRecurring.toFixed(0)}</p>
+                  <p className="text-3xl font-bold text-white mb-1">€{(platformStats.monthlyRecurring || 0).toFixed(0)}</p>
                   <p className="text-sm text-slate-400">MRR Attuale</p>
                 </div>
               </div>

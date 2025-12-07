@@ -39,10 +39,12 @@ import {
   Camera,
   Upload,
   TrendingUp,
-  ArrowLeftRight
+  ArrowLeftRight,
+  MessageCircle
 } from 'lucide-react';
 import { uploadToR2 } from '../../cloudflareStorage';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
+import WhatsAppButton from '../../components/integrations/WhatsAppButton';
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, CLIENT_STATUS_STYLES, CLIENT_STATUS_LABELS, CLIENT_STATUS, DURATION_OPTIONS } from '../../constants/payments';
 import { db, toDate, updateStatoPercorso } from '../../firebase';
 import { getTenantDoc, getTenantSubcollection, CURRENT_TENANT_ID } from '../../config/tenant';
@@ -1196,7 +1198,16 @@ export default function ClientDetail() {
               {copied ? <Check size={14} /> : <Copy size={14} />}
             </button>
           </div>
-          <InfoField icon={Phone} value={client.phone || 'N/D'} />
+          <div className="flex items-center gap-2">
+            <InfoField icon={Phone} value={client.phone || 'N/D'} />
+            {client.phone && (
+              <WhatsAppButton 
+                client={{ ...client, id: id }} 
+                tenantId={CURRENT_TENANT_ID} 
+                variant="icon"
+              />
+            )}
+          </div>
           <InfoField icon={Calendar} value={`Scadenza: ${toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}`} />
           <InfoField icon={Clock} value={`Ultimo check: ${lastCheckAt ? lastCheckAt.toLocaleString('it-IT') : 'N/D'}`} />
           <InfoField icon={Activity} value={`Ultimo accesso: ${(() => {

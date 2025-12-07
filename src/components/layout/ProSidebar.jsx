@@ -10,7 +10,7 @@ import { defaultBranding } from '../../config/tenantBranding';
 import {
   Home, Users, MessageSquare, FileText, Calendar, Settings,
   ChevronRight, ChevronLeft, BarChart3, BellRing, UserCheck,
-  BookOpen, Target, Activity, Plus, Palette, Layout, Instagram,
+  BookOpen, Target, Activity, Plus, Palette, Layout, Link2,
   Dumbbell, Utensils, Shield, CreditCard, LogOut, HelpCircle,
   Zap, Package, Menu, X
 } from 'lucide-react';
@@ -59,7 +59,7 @@ const getNavConfig = (role, isSuperAdmin = false) => {
           items: [
             { to: '/admin/branding', icon: Palette, label: 'Branding' },
             { to: '/landing-pages', icon: Layout, label: 'Landing Pages' },
-            { to: '/instagram', icon: Instagram, label: 'Instagram' },
+            { to: '/integrations', icon: Link2, label: 'Integrazioni' },
             { to: '/platform-settings', icon: Settings, label: 'Piattaforma' },
           ]
         }

@@ -40,6 +40,12 @@ export default function OAuthButton({
       icon: '📷',
       authUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
       scopes: ['instagram_basic', 'instagram_manage_insights', 'instagram_manage_comments', 'pages_show_list', 'pages_read_engagement', 'business_management']
+    },
+    whatsapp: {
+      name: 'WhatsApp Business',
+      icon: '💬',
+      authUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
+      scopes: ['whatsapp_business_management', 'whatsapp_business_messaging', 'business_management']
     }
   };
 

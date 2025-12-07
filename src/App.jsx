@@ -94,6 +94,7 @@ const Community = React.lazy(() => import('./pages/community/Community'));
 
 // Tenant Pages
 const InstagramHub = React.lazy(() => import('./pages/tenant/InstagramHub'));
+const IntegrationsHub = React.lazy(() => import('./pages/tenant/IntegrationsHub'));
 const OAuthCallback = React.lazy(() => import('./pages/OAuthCallback'));
 
 // Courses
@@ -438,6 +439,7 @@ export default function App() {
           <Route path="/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<LessonPlayer />} />
           <Route path="/community" element={<Community />} />
           <Route path="/instagram" element={<InstagramHub />} />
+          <Route path="/integrations" element={<IntegrationsHub />} />
           <Route path="/oauth/callback" element={<OAuthCallback />} />
 
         </Route>

@@ -4,7 +4,7 @@ import {
   Home, Users, MessageSquare, FileText, Bell,
   Calendar, Settings, ChevronLeft, ChevronRight, BarChart3, BellRing,
   UserCheck, BookOpen, Target, Activity, GraduationCap, Plus, Menu, X, Palette, Globe, Instagram,
-  Dumbbell, Utensils, Shield, Layout, MoreHorizontal
+  Dumbbell, Utensils, Shield, Layout, MoreHorizontal, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isSuperAdmin } from '../../utils/superadmin';
@@ -123,7 +123,7 @@ const adminNavConfig = {
       items: [
         { to: '/admin/branding', icon: <Palette size={18} />, label: 'Branding' },
         { to: '/landing-pages', icon: <Layout size={18} />, label: 'Landing Pages' },
-        { to: '/instagram', icon: <Instagram size={18} />, label: 'Instagram' },
+        { to: '/integrations', icon: <Zap size={18} />, label: 'Integrazioni' },
         { to: '/platform-settings', icon: <Settings size={18} />, label: 'Piattaforma' },
       ]
     }
@@ -423,7 +423,7 @@ const getRoleNavConfig = (isCoach, isClient, isCollaboratore) => {
       { to: '/courses', label: 'Corsi', Icon: BookOpen },
       { to: '/community', label: 'Community', Icon: Users },
       { to: '/landing-pages', label: 'Landing Pages', Icon: Layout },
-      { to: '/instagram', label: 'Instagram', Icon: Instagram },
+      { to: '/integrations', label: 'Integrazioni', Icon: Zap },
       { to: '/updates', label: 'Novità', Icon: BellRing },
       { to: '/analytics', label: 'Analytics', Icon: BarChart3 },
       { to: '/notifications', label: 'Notifiche', Icon: Bell },

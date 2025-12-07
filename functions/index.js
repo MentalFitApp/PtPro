@@ -523,6 +523,11 @@ exports.exchangeOAuthToken = onCall(
           tokenUrl: 'https://api.instagram.com/oauth/access_token',
           clientId: process.env.INSTAGRAM_CLIENT_ID,
           clientSecret: process.env.INSTAGRAM_CLIENT_SECRET
+        },
+        whatsapp: {
+          tokenUrl: 'https://graph.facebook.com/v18.0/oauth/access_token',
+          clientId: process.env.FACEBOOK_APP_ID,
+          clientSecret: process.env.FACEBOOK_APP_SECRET
         }
       };
 
@@ -1322,3 +1327,437 @@ exports.completeMagicLinkSetup = onCall(async (request) => {
     throw new Error(error.message || 'Errore nel completamento del setup');
   }
 });
+
+// ============================================
+// WHATSAPP BUSINESS API INTEGRATION
+// ============================================
+
+// Invia messaggio WhatsApp manuale
+exports.sendWhatsAppMessage = onCall(
+  { region: 'europe-west1' },
+  async (request) => {
+    try {
+      const { tenantId, clientId, templateId, customMessage } = request.data;
+
+      if (!tenantId || !clientId) {
+        throw new Error('tenantId e clientId sono richiesti');
+      }
+
+      console.log(`📱 Invio WhatsApp per tenant ${tenantId}, client ${clientId}`);
+
+      // Leggi configurazione WhatsApp del tenant
+      const whatsappConfig = await db.doc(`tenants/${tenantId}/integrations/whatsapp`).get();
+      
+      if (!whatsappConfig.exists || !whatsappConfig.data().enabled) {
+        throw new Error('WhatsApp non configurato per questo tenant');
+      }
+
+      const { access_token, phone_number_id } = whatsappConfig.data();
+
+      // Leggi dati cliente
+      const clientDoc = await db.doc(`tenants/${tenantId}/clients/${clientId}`).get();
+      if (!clientDoc.exists) {
+        throw new Error('Cliente non trovato');
+      }
+
+      const client = clientDoc.data();
+      const clientPhone = client.phone?.replace(/[^0-9]/g, '');
+
+      if (!clientPhone) {
+        throw new Error('Numero di telefono cliente non valido');
+      }
+
+      // Leggi template messaggio
+      let messageText = customMessage;
+      
+      if (!messageText && templateId) {
+        const templatesDoc = await db.doc(`tenants/${tenantId}/settings/whatsapp_templates`).get();
+        if (templatesDoc.exists) {
+          const template = templatesDoc.data().templates?.find(t => t.id === templateId);
+          if (template) {
+            // Leggi dati trainer per personalizzazione
+            const tenantDoc = await db.doc(`tenants/${tenantId}`).get();
+            const trainerName = tenantDoc.data()?.ownerName || tenantDoc.data()?.name || 'Il tuo trainer';
+            
+            messageText = template.message
+              .replace(/{nome}/g, client.name || client.displayName || 'Cliente')
+              .replace(/{trainer_name}/g, trainerName)
+              .replace(/{ora}/g, new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }))
+              .replace(/{data}/g, new Date().toLocaleDateString('it-IT'));
+          }
+        }
+      }
+
+      if (!messageText) {
+        throw new Error('Nessun messaggio da inviare');
+      }
+
+      // Invia messaggio via WhatsApp Cloud API
+      const response = await fetch(
+        `https://graph.facebook.com/v18.0/${phone_number_id}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: clientPhone,
+            type: 'text',
+            text: { body: messageText }
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('❌ Errore WhatsApp API:', error);
+        throw new Error(error.error?.message || 'Errore invio messaggio');
+      }
+
+      const result = await response.json();
+      console.log('✅ Messaggio WhatsApp inviato:', result);
+
+      // Log invio
+      await db.collection(`tenants/${tenantId}/whatsapp_logs`).add({
+        clientId,
+        clientName: client.name || client.displayName,
+        clientPhone,
+        templateId: templateId || 'custom',
+        message: messageText,
+        status: 'sent',
+        messageId: result.messages?.[0]?.id,
+        sentAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      return { 
+        success: true, 
+        messageId: result.messages?.[0]?.id,
+        message: 'Messaggio inviato con successo!'
+      };
+
+    } catch (error) {
+      console.error('💥 Errore sendWhatsAppMessage:', error);
+      throw new Error(error.message);
+    }
+  }
+);
+
+// Genera link WhatsApp (fallback senza API)
+exports.generateWhatsAppLink = onCall(
+  { region: 'europe-west1' },
+  async (request) => {
+    try {
+      const { tenantId, clientId, templateId } = request.data;
+
+      if (!tenantId || !clientId) {
+        throw new Error('tenantId e clientId sono richiesti');
+      }
+
+      // Leggi dati cliente
+      const clientDoc = await db.doc(`tenants/${tenantId}/clients/${clientId}`).get();
+      if (!clientDoc.exists) {
+        throw new Error('Cliente non trovato');
+      }
+
+      const client = clientDoc.data();
+      let clientPhone = client.phone?.replace(/[^0-9]/g, '');
+
+      // Aggiungi prefisso Italia se manca
+      if (clientPhone && !clientPhone.startsWith('39') && clientPhone.length === 10) {
+        clientPhone = '39' + clientPhone;
+      }
+
+      if (!clientPhone) {
+        throw new Error('Numero di telefono cliente non valido');
+      }
+
+      // Leggi template messaggio
+      let messageText = '';
+      
+      if (templateId) {
+        const templatesDoc = await db.doc(`tenants/${tenantId}/settings/whatsapp_templates`).get();
+        if (templatesDoc.exists) {
+          const template = templatesDoc.data().templates?.find(t => t.id === templateId);
+          if (template) {
+            // Leggi dati trainer
+            const tenantDoc = await db.doc(`tenants/${tenantId}`).get();
+            const trainerName = tenantDoc.data()?.ownerName || tenantDoc.data()?.name || 'Il tuo trainer';
+            
+            messageText = template.message
+              .replace(/{nome}/g, client.name || client.displayName || 'Cliente')
+              .replace(/{trainer_name}/g, trainerName)
+              .replace(/{ora}/g, new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }))
+              .replace(/{data}/g, new Date().toLocaleDateString('it-IT'));
+          }
+        }
+      }
+
+      // Genera link WhatsApp
+      const encodedMessage = encodeURIComponent(messageText);
+      const whatsappLink = `https://wa.me/${clientPhone}${messageText ? `?text=${encodedMessage}` : ''}`;
+
+      return { 
+        success: true, 
+        link: whatsappLink,
+        phone: clientPhone,
+        message: messageText
+      };
+
+    } catch (error) {
+      console.error('💥 Errore generateWhatsAppLink:', error);
+      throw new Error(error.message);
+    }
+  }
+);
+
+// Scheduler: Controlla scadenze e invia messaggi automatici
+exports.checkExpiringSubscriptions = onSchedule(
+  {
+    schedule: 'every day 09:00',
+    timeZone: 'Europe/Rome',
+    region: 'europe-west1'
+  },
+  async (context) => {
+    console.log('🔔 Controllo scadenze abbonamenti...');
+
+    try {
+      // Ottieni tutti i tenant con WhatsApp attivo
+      const tenantsSnap = await db.collection('tenants').get();
+      
+      for (const tenantDoc of tenantsSnap.docs) {
+        const tenantId = tenantDoc.id;
+        
+        // Verifica se WhatsApp è configurato
+        const whatsappConfig = await db.doc(`tenants/${tenantId}/integrations/whatsapp`).get();
+        if (!whatsappConfig.exists || !whatsappConfig.data().enabled) {
+          continue;
+        }
+
+        // Leggi template
+        const templatesDoc = await db.doc(`tenants/${tenantId}/settings/whatsapp_templates`).get();
+        if (!templatesDoc.exists) continue;
+        
+        const templates = templatesDoc.data().templates || [];
+        const expiringTemplates = templates.filter(t => 
+          t.enabled && 
+          t.type === 'automatic' && 
+          t.trigger === 'subscription_expiring'
+        );
+
+        if (expiringTemplates.length === 0) continue;
+
+        // Leggi clienti con abbonamento attivo
+        const clientsSnap = await db.collection(`tenants/${tenantId}/clients`)
+          .where('status', '==', 'active')
+          .get();
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (const clientDoc of clientsSnap.docs) {
+          const client = clientDoc.data();
+          const clientPhone = client.phone?.replace(/[^0-9]/g, '');
+          
+          if (!clientPhone || !client.subscriptionEnd) continue;
+
+          const expirationDate = client.subscriptionEnd.toDate ? 
+            client.subscriptionEnd.toDate() : 
+            new Date(client.subscriptionEnd);
+          
+          const daysUntilExpiration = Math.ceil(
+            (expirationDate - today) / (1000 * 60 * 60 * 24)
+          );
+
+          // Trova template corrispondente ai giorni
+          const matchingTemplate = expiringTemplates.find(t => 
+            t.triggerDays === daysUntilExpiration
+          );
+
+          if (matchingTemplate) {
+            // Verifica se non abbiamo già inviato questo messaggio
+            const existingLog = await db.collection(`tenants/${tenantId}/whatsapp_logs`)
+              .where('clientId', '==', clientDoc.id)
+              .where('templateId', '==', matchingTemplate.id)
+              .where('sentAt', '>=', admin.firestore.Timestamp.fromDate(
+                new Date(today.getTime() - 24 * 60 * 60 * 1000)
+              ))
+              .limit(1)
+              .get();
+
+            if (existingLog.empty) {
+              console.log(`📱 Invio reminder scadenza a ${client.name} (${daysUntilExpiration} giorni)`);
+              
+              // Invia messaggio (usa la funzione sendWhatsAppMessage internamente)
+              try {
+                const tenantData = tenantDoc.data();
+                const trainerName = tenantData.ownerName || tenantData.name || 'Il tuo trainer';
+                
+                const messageText = matchingTemplate.message
+                  .replace(/{nome}/g, client.name || client.displayName || 'Cliente')
+                  .replace(/{trainer_name}/g, trainerName);
+
+                const { access_token, phone_number_id } = whatsappConfig.data();
+
+                const response = await fetch(
+                  `https://graph.facebook.com/v18.0/${phone_number_id}/messages`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${access_token}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      messaging_product: 'whatsapp',
+                      recipient_type: 'individual',
+                      to: clientPhone.startsWith('39') ? clientPhone : '39' + clientPhone,
+                      type: 'text',
+                      text: { body: messageText }
+                    })
+                  }
+                );
+
+                if (response.ok) {
+                  const result = await response.json();
+                  
+                  await db.collection(`tenants/${tenantId}/whatsapp_logs`).add({
+                    clientId: clientDoc.id,
+                    clientName: client.name || client.displayName,
+                    clientPhone,
+                    templateId: matchingTemplate.id,
+                    message: messageText,
+                    status: 'sent',
+                    messageId: result.messages?.[0]?.id,
+                    automatic: true,
+                    trigger: 'subscription_expiring',
+                    daysUntilExpiration,
+                    sentAt: admin.firestore.FieldValue.serverTimestamp()
+                  });
+
+                  console.log(`✅ Messaggio inviato a ${client.name}`);
+                }
+              } catch (sendError) {
+                console.error(`❌ Errore invio a ${client.name}:`, sendError);
+              }
+            }
+          }
+        }
+      }
+
+      console.log('✅ Controllo scadenze completato');
+    } catch (error) {
+      console.error('💥 Errore checkExpiringSubscriptions:', error);
+    }
+  }
+);
+
+// Scheduler: Auguri di compleanno
+exports.sendBirthdayWishes = onSchedule(
+  {
+    schedule: 'every day 08:00',
+    timeZone: 'Europe/Rome',
+    region: 'europe-west1'
+  },
+  async (context) => {
+    console.log('🎂 Controllo compleanni...');
+
+    try {
+      const today = new Date();
+      const todayMonth = today.getMonth() + 1;
+      const todayDay = today.getDate();
+
+      const tenantsSnap = await db.collection('tenants').get();
+      
+      for (const tenantDoc of tenantsSnap.docs) {
+        const tenantId = tenantDoc.id;
+        
+        // Verifica WhatsApp attivo
+        const whatsappConfig = await db.doc(`tenants/${tenantId}/integrations/whatsapp`).get();
+        if (!whatsappConfig.exists || !whatsappConfig.data().enabled) continue;
+
+        // Leggi template compleanno
+        const templatesDoc = await db.doc(`tenants/${tenantId}/settings/whatsapp_templates`).get();
+        if (!templatesDoc.exists) continue;
+        
+        const birthdayTemplate = templatesDoc.data().templates?.find(t => 
+          t.enabled && t.type === 'automatic' && t.trigger === 'birthday'
+        );
+
+        if (!birthdayTemplate) continue;
+
+        // Cerca clienti con compleanno oggi
+        const clientsSnap = await db.collection(`tenants/${tenantId}/clients`)
+          .where('status', '==', 'active')
+          .get();
+
+        for (const clientDoc of clientsSnap.docs) {
+          const client = clientDoc.data();
+          
+          if (!client.birthDate || !client.phone) continue;
+
+          const birthDate = client.birthDate.toDate ? 
+            client.birthDate.toDate() : 
+            new Date(client.birthDate);
+
+          if (birthDate.getMonth() + 1 === todayMonth && birthDate.getDate() === todayDay) {
+            const clientPhone = client.phone.replace(/[^0-9]/g, '');
+            
+            console.log(`🎂 Compleanno di ${client.name}!`);
+
+            try {
+              const tenantData = tenantDoc.data();
+              const trainerName = tenantData.ownerName || tenantData.name || 'Il tuo trainer';
+              
+              const messageText = birthdayTemplate.message
+                .replace(/{nome}/g, client.name || client.displayName || 'Cliente')
+                .replace(/{trainer_name}/g, trainerName);
+
+              const { access_token, phone_number_id } = whatsappConfig.data();
+
+              const response = await fetch(
+                `https://graph.facebook.com/v18.0/${phone_number_id}/messages`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${access_token}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    messaging_product: 'whatsapp',
+                    recipient_type: 'individual',
+                    to: clientPhone.startsWith('39') ? clientPhone : '39' + clientPhone,
+                    type: 'text',
+                    text: { body: messageText }
+                  })
+                }
+              );
+
+              if (response.ok) {
+                await db.collection(`tenants/${tenantId}/whatsapp_logs`).add({
+                  clientId: clientDoc.id,
+                  clientName: client.name,
+                  clientPhone,
+                  templateId: birthdayTemplate.id,
+                  message: messageText,
+                  status: 'sent',
+                  automatic: true,
+                  trigger: 'birthday',
+                  sentAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+                console.log(`✅ Auguri inviati a ${client.name}`);
+              }
+            } catch (sendError) {
+              console.error(`❌ Errore invio auguri a ${client.name}:`, sendError);
+            }
+          }
+        }
+      }
+
+      console.log('✅ Controllo compleanni completato');
+    } catch (error) {
+      console.error('💥 Errore sendBirthdayWishes:', error);
+    }
+  }
+);
