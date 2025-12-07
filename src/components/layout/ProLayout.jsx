@@ -597,7 +597,7 @@ export const ProLayout = () => {
       {/* Wizard onboarding per nuovi utenti */}
       {showOnboarding && (
         <OnboardingWizard 
-          role={role === 'client' ? 'client' : 'admin'}
+          role={sessionStorage.getItem('app_role') || 'client'}
           onComplete={() => {
             setShowOnboarding(false);
             localStorage.setItem(`onboarding_shown_${auth.currentUser?.uid}`, 'true');

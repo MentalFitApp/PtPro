@@ -17,8 +17,8 @@ const ONBOARDING_STEPS = {
   admin: [
     {
       id: 'welcome',
-      title: 'Benvenuto su PtPro! 🎉',
-      description: 'Questa breve guida ti aiuterà a configurare il tuo spazio di lavoro e iniziare a gestire i tuoi clienti.',
+      title: 'Benvenuto su FitFlow! 🎉',
+      description: 'Questa breve guida ti aiuterà a configurare il tuo spazio di lavoro e iniziare a gestire il tuo business.',
       icon: Sparkles,
       color: 'cyan'
     },
@@ -32,16 +32,24 @@ const ONBOARDING_STEPS = {
     },
     {
       id: 'clients',
-      title: 'Aggiungi il tuo primo Cliente',
-      description: 'Inizia aggiungendo un cliente. Potrai poi assegnargli schede allenamento, diete e monitorare i suoi progressi.',
+      title: 'Gestisci i tuoi Clienti',
+      description: 'Aggiungi clienti, assegna schede allenamento e diete, monitora i loro progressi.',
       icon: Users,
       color: 'emerald',
-      action: { label: 'Aggiungi Cliente', path: '/clients' }
+      action: { label: 'Vai ai Clienti', path: '/clients' }
+    },
+    {
+      id: 'collaborators',
+      title: 'Aggiungi Collaboratori',
+      description: 'Invita coach e collaboratori per aiutarti a gestire i clienti. Definisci i permessi di accesso.',
+      icon: Users,
+      color: 'blue',
+      action: { label: 'Gestisci Team', path: '/collaboratori' }
     },
     {
       id: 'calendar',
       title: 'Organizza il tuo Calendario',
-      description: 'Programma chiamate, appuntamenti e promemoria per non perdere mai un check-in con i tuoi clienti.',
+      description: 'Programma chiamate, appuntamenti e promemoria. Non perdere mai un check-in!',
       icon: Calendar,
       color: 'amber',
       action: { label: 'Vai al Calendario', path: '/calendar' }
@@ -49,7 +57,7 @@ const ONBOARDING_STEPS = {
     {
       id: 'notifications',
       title: 'Attiva le Notifiche Push',
-      description: 'Ricevi notifiche in tempo reale per messaggi, check dei clienti e promemoria importanti.',
+      description: 'Ricevi notifiche in tempo reale per nuovi lead, messaggi e check dei clienti.',
       icon: Bell,
       color: 'rose',
       action: { label: 'Attiva Notifiche', type: 'notification' }
@@ -57,7 +65,55 @@ const ONBOARDING_STEPS = {
     {
       id: 'complete',
       title: 'Sei pronto! 🚀',
-      description: 'Hai completato la configurazione iniziale. Esplora tutte le funzionalità e inizia a far crescere il tuo business.',
+      description: 'Hai completato la configurazione. Esplora tutte le funzionalità e fai crescere il tuo business!',
+      icon: Check,
+      color: 'emerald'
+    }
+  ],
+  coach: [
+    {
+      id: 'welcome',
+      title: 'Benvenuto su FitFlow! 💪',
+      description: 'Sei stato aggiunto come Coach. Ecco come iniziare a gestire i tuoi clienti.',
+      icon: Sparkles,
+      color: 'cyan'
+    },
+    {
+      id: 'clients',
+      title: 'I tuoi Clienti',
+      description: 'Visualizza i clienti a te assegnati. Puoi vedere i loro progressi, check e comunicare con loro.',
+      icon: Users,
+      color: 'emerald',
+      action: { label: 'Vai ai Clienti', path: '/coach/clients' }
+    },
+    {
+      id: 'calendar',
+      title: 'Il tuo Calendario',
+      description: 'Programma le chiamate e gli appuntamenti con i tuoi clienti.',
+      icon: Calendar,
+      color: 'amber',
+      action: { label: 'Vai al Calendario', path: '/coach/calendar' }
+    },
+    {
+      id: 'chat',
+      title: 'Chat con i Clienti',
+      description: 'Comunica direttamente con i tuoi clienti. Puoi anche fare videochiamate!',
+      icon: MessageSquare,
+      color: 'blue',
+      action: { label: 'Apri Chat', path: '/coach/chat' }
+    },
+    {
+      id: 'notifications',
+      title: 'Attiva le Notifiche',
+      description: 'Ricevi notifiche quando i clienti caricano check o ti scrivono.',
+      icon: Bell,
+      color: 'rose',
+      action: { label: 'Attiva Notifiche', type: 'notification' }
+    },
+    {
+      id: 'complete',
+      title: 'Tutto pronto! 🎯',
+      description: 'Ora puoi iniziare a seguire i tuoi clienti. Buon lavoro!',
       icon: Check,
       color: 'emerald'
     }
