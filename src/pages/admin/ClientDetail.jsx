@@ -1,7 +1,7 @@
 // src/pages/admin/ClientDetail.jsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, orderBy, query, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import { doc, onSnapshot, orderBy, query, updateDoc, deleteDoc, addDoc, setDoc, getDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -35,8 +35,11 @@ import {
   NotebookPen,
   CheckCircle,
   Link2,
-  Loader2
+  Loader2,
+  Camera,
+  Upload
 } from 'lucide-react';
+import { uploadToR2 } from '../../cloudflareStorage';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, CLIENT_STATUS_STYLES, CLIENT_STATUS_LABELS, CLIENT_STATUS, DURATION_OPTIONS } from '../../constants/payments';
 import { db, toDate, updateStatoPercorso } from '../../firebase';
@@ -527,6 +530,11 @@ export default function ClientDetail() {
   const [nextCall, setNextCall] = useState(null);
   const [magicLink, setMagicLink] = useState(null);
   const [generatingLink, setGeneratingLink] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(null); // 'front' | 'back' | 'left' | 'right' | null
+  const [showNewCheck, setShowNewCheck] = useState(false);
+  const [newCheckData, setNewCheckData] = useState({ weight: '', bodyFat: '', notes: '', photos: {} });
+  const [uploadingCheckPhoto, setUploadingCheckPhoto] = useState(null);
+  const photoInputRef = useRef(null);
 
   let userRole = null;
   try { userRole = sessionStorage.getItem('app_role') || JSON.parse(localStorage.getItem('user'))?.role || null; } catch {}
@@ -780,6 +788,92 @@ export default function ClientDetail() {
     }
   };
 
+  // Upload foto anamnesi da admin
+  const handleAnamnesiPhotoUpload = async (position, file) => {
+    if (!file || !clientId) return;
+    
+    setUploadingPhoto(position);
+    try {
+      // Upload su R2
+      const photoUrl = await uploadToR2(file, clientId, 'anamnesi_photos', null, true);
+      
+      // Aggiorna o crea documento anamnesi
+      const anamnesiCollectionRef = getTenantSubcollection(db, 'clients', clientId, 'anamnesi');
+      const anamnesiDocRef = doc(anamnesiCollectionRef.firestore, anamnesiCollectionRef.path, 'initial');
+      
+      const currentAnamnesi = anamnesi || {};
+      const currentPhotos = currentAnamnesi.photoURLs || { front: null, right: null, left: null, back: null };
+      
+      const updatedPhotos = {
+        ...currentPhotos,
+        [position]: photoUrl
+      };
+      
+      await setDoc(anamnesiDocRef, {
+        ...currentAnamnesi,
+        photoURLs: updatedPhotos,
+        updatedAt: new Date(),
+        updatedBy: 'admin'
+      }, { merge: true });
+      
+      // Aggiorna stato locale
+      setAnamnesi(prev => ({
+        ...prev,
+        photoURLs: updatedPhotos
+      }));
+      
+    } catch (error) {
+      console.error('Errore upload foto anamnesi:', error);
+      alert('Errore nel caricamento: ' + error.message);
+    } finally {
+      setUploadingPhoto(null);
+    }
+  };
+
+  // Upload foto per nuovo check
+  const handleCheckPhotoUpload = async (position, file) => {
+    if (!file) return;
+    
+    setUploadingCheckPhoto(position);
+    try {
+      const photoUrl = await uploadToR2(file, clientId, 'check_photos', null, true);
+      setNewCheckData(prev => ({
+        ...prev,
+        photos: { ...prev.photos, [position]: photoUrl }
+      }));
+    } catch (error) {
+      console.error('Errore upload foto check:', error);
+      alert('Errore nel caricamento: ' + error.message);
+    } finally {
+      setUploadingCheckPhoto(null);
+    }
+  };
+
+  // Salva nuovo check
+  const handleSaveNewCheck = async () => {
+    if (!clientId) return;
+    
+    try {
+      const checksRef = getTenantSubcollection(db, 'clients', clientId, 'checks');
+      
+      await addDoc(checksRef, {
+        weight: newCheckData.weight ? parseFloat(newCheckData.weight) : null,
+        bodyFat: newCheckData.bodyFat ? parseFloat(newCheckData.bodyFat) : null,
+        notes: newCheckData.notes || '',
+        photoURLs: Object.keys(newCheckData.photos).length > 0 ? newCheckData.photos : null,
+        createdAt: new Date(),
+        createdBy: 'admin',
+        source: 'admin_upload'
+      });
+      
+      setShowNewCheck(false);
+      setNewCheckData({ weight: '', bodyFat: '', notes: '', photos: {} });
+    } catch (error) {
+      console.error('Errore salvataggio check:', error);
+      alert('Errore nel salvataggio: ' + error.message);
+    }
+  };
+
   const handleAddRate = async (rate) => {
     const newRates = [...rates, rate];
     setRates(newRates);
@@ -911,6 +1005,14 @@ export default function ClientDetail() {
       <CardHeaderSimple 
         title="Check recenti"
         subtitle="Ultimi 5"
+        action={
+          <button 
+            onClick={() => setShowNewCheck(true)}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+          >
+            <Plus size={14} /> Aggiungi Check
+          </button>
+        }
       />
       <CardContent>
         {checks.length > 0 ? (
@@ -1094,29 +1196,102 @@ export default function ClientDetail() {
               {renderAnamnesiField('Obiettivo principale', anamnesi.mainGoal)}
               {renderAnamnesiField('Motivazione / dettagli', anamnesi.trainingDetails || anamnesi.programDuration)}
             </CardGrid>
-            {anamnesi.photoURLs && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            
+            {/* Foto Anamnesi - con possibilità di upload da admin */}
+            <div className="pt-4">
+              <p className="text-sm font-medium text-slate-300 mb-3">Foto Anamnesi</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {['front', 'right', 'left', 'back'].map((pos) => (
                   <div key={pos} className="rounded-lg border border-slate-800 bg-slate-900 overflow-hidden text-xs text-slate-300">
-                    <div className="px-3 py-2 border-b border-slate-800 capitalize">
-                      {pos === 'front' ? 'Frontale' : pos === 'back' ? 'Posteriore' : `Laterale ${pos === 'left' ? 'Sinistra' : 'Destra'}`}
+                    <div className="px-3 py-2 border-b border-slate-800 capitalize flex items-center justify-between">
+                      <span>{pos === 'front' ? 'Frontale' : pos === 'back' ? 'Posteriore' : `Laterale ${pos === 'left' ? 'Sinistra' : 'Destra'}`}</span>
+                      <label className="cursor-pointer p-1 hover:bg-slate-700 rounded transition-colors">
+                        {uploadingPhoto === pos ? (
+                          <Loader2 size={14} className="animate-spin text-blue-400" />
+                        ) : (
+                          <Upload size={14} className="text-slate-400 hover:text-blue-400" />
+                        )}
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleAnamnesiPhotoUpload(pos, file);
+                            e.target.value = '';
+                          }}
+                          disabled={uploadingPhoto !== null}
+                        />
+                      </label>
                     </div>
-                    {anamnesi.photoURLs?.[pos] ? (
-                      <img src={anamnesi.photoURLs[pos]} alt={pos} className="w-full h-28 object-cover" />
+                    {anamnesi?.photoURLs?.[pos] ? (
+                      <img 
+                        src={anamnesi.photoURLs[pos]} 
+                        alt={pos} 
+                        className="w-full h-28 object-cover cursor-pointer hover:opacity-80 transition-opacity" 
+                        onClick={() => setZoomPhoto({ open: true, url: anamnesi.photoURLs[pos], alt: pos })}
+                      />
                     ) : (
-                      <div className="w-full h-28 bg-slate-800 flex items-center justify-center text-slate-500">Nessuna foto</div>
+                      <div className="w-full h-28 bg-slate-800 flex items-center justify-center text-slate-500">
+                        <Camera size={20} />
+                      </div>
                     )}
                   </div>
                 ))}
               </div>
-            )}
+            </div>
           </div>
         ) : (
-          <EmptyState
-            icon={FileText}
-            title="Nessuna anamnesi"
-            description="Nessuna anamnesi disponibile per questo cliente."
-          />
+          /* Se non c'è anamnesi, mostra comunque le foto con possibilità di upload */
+          <div className="space-y-4">
+            <EmptyState
+              icon={FileText}
+              title="Nessuna anamnesi testuale"
+              description="Il cliente non ha ancora compilato l'anamnesi."
+            />
+            <div className="pt-2">
+              <p className="text-sm font-medium text-slate-300 mb-3">Carica foto anamnesi manualmente</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {['front', 'right', 'left', 'back'].map((pos) => (
+                  <div key={pos} className="rounded-lg border border-slate-800 bg-slate-900 overflow-hidden text-xs text-slate-300">
+                    <div className="px-3 py-2 border-b border-slate-800 capitalize flex items-center justify-between">
+                      <span>{pos === 'front' ? 'Frontale' : pos === 'back' ? 'Posteriore' : `Laterale ${pos === 'left' ? 'Sinistra' : 'Destra'}`}</span>
+                      <label className="cursor-pointer p-1 hover:bg-slate-700 rounded transition-colors">
+                        {uploadingPhoto === pos ? (
+                          <Loader2 size={14} className="animate-spin text-blue-400" />
+                        ) : (
+                          <Upload size={14} className="text-slate-400 hover:text-blue-400" />
+                        )}
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleAnamnesiPhotoUpload(pos, file);
+                            e.target.value = '';
+                          }}
+                          disabled={uploadingPhoto !== null}
+                        />
+                      </label>
+                    </div>
+                    {anamnesi?.photoURLs?.[pos] ? (
+                      <img 
+                        src={anamnesi.photoURLs[pos]} 
+                        alt={pos} 
+                        className="w-full h-28 object-cover cursor-pointer hover:opacity-80 transition-opacity" 
+                        onClick={() => setZoomPhoto({ open: true, url: anamnesi.photoURLs[pos], alt: pos })}
+                      />
+                    ) : (
+                      <div className="w-full h-28 bg-slate-800 flex items-center justify-center text-slate-500">
+                        <Camera size={20} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
       </CardContent>
     </UnifiedCard>
@@ -1263,6 +1438,130 @@ export default function ClientDetail() {
             existingCall={nextCall}
             onSave={() => {}}
           />}
+          
+          {/* Modale Nuovo Check */}
+          {showNewCheck && (
+            <motion.div
+              key="newCheck"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowNewCheck(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-white">Nuovo Check</h3>
+                  <button onClick={() => setShowNewCheck(false)} className="p-2 hover:bg-slate-800 rounded-lg">
+                    <X size={20} className="text-slate-400" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-slate-400 mb-1">Peso (kg)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={newCheckData.weight}
+                        onChange={(e) => setNewCheckData(prev => ({ ...prev, weight: e.target.value }))}
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                        placeholder="Es: 75.5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-slate-400 mb-1">Body Fat (%)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={newCheckData.bodyFat}
+                        onChange={(e) => setNewCheckData(prev => ({ ...prev, bodyFat: e.target.value }))}
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                        placeholder="Es: 15.0"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-slate-400 mb-1">Note</label>
+                    <textarea
+                      value={newCheckData.notes}
+                      onChange={(e) => setNewCheckData(prev => ({ ...prev, notes: e.target.value }))}
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white resize-none"
+                      rows={3}
+                      placeholder="Note opzionali..."
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-slate-400 mb-2">Foto Check</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {['front', 'right', 'left', 'back'].map((pos) => (
+                        <div key={pos} className="rounded-lg border border-slate-700 bg-slate-800 overflow-hidden">
+                          <div className="text-xs text-center py-1 border-b border-slate-700 text-slate-400 capitalize">
+                            {pos === 'front' ? 'Front' : pos === 'back' ? 'Back' : pos === 'left' ? 'Left' : 'Right'}
+                          </div>
+                          {newCheckData.photos[pos] ? (
+                            <div className="relative">
+                              <img src={newCheckData.photos[pos]} alt={pos} className="w-full h-20 object-cover" />
+                              <button 
+                                onClick={() => setNewCheckData(prev => ({ ...prev, photos: { ...prev.photos, [pos]: undefined } }))}
+                                className="absolute top-1 right-1 p-1 bg-red-600 rounded-full"
+                              >
+                                <X size={10} className="text-white" />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="flex items-center justify-center h-20 cursor-pointer hover:bg-slate-700 transition-colors">
+                              {uploadingCheckPhoto === pos ? (
+                                <Loader2 size={20} className="animate-spin text-blue-400" />
+                              ) : (
+                                <Camera size={20} className="text-slate-500" />
+                              )}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleCheckPhotoUpload(pos, file);
+                                  e.target.value = '';
+                                }}
+                                disabled={uploadingCheckPhoto !== null}
+                              />
+                            </label>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={() => setShowNewCheck(false)}
+                    className="flex-1 py-2.5 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800 transition-colors"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    onClick={handleSaveNewCheck}
+                    disabled={!newCheckData.weight && !newCheckData.bodyFat && Object.keys(newCheckData.photos).length === 0}
+                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Salva Check
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
     </ErrorBoundary>
