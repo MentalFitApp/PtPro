@@ -537,7 +537,13 @@ export default function ClientDetail() {
   const [generatingLink, setGeneratingLink] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(null); // 'front' | 'back' | 'left' | 'right' | null
   const [showNewCheck, setShowNewCheck] = useState(false);
-  const [newCheckData, setNewCheckData] = useState({ weight: '', bodyFat: '', notes: '', photos: {} });
+  const [newCheckData, setNewCheckData] = useState({ 
+    weight: '', 
+    bodyFat: '', 
+    notes: '', 
+    photos: {},
+    checkDate: new Date().toISOString().split('T')[0] // Data del check (default oggi)
+  });
   const [uploadingCheckPhoto, setUploadingCheckPhoto] = useState(null);
   const photoInputRef = useRef(null);
 
@@ -880,18 +886,29 @@ export default function ClientDetail() {
     try {
       const checksRef = getTenantSubcollection(db, 'clients', clientId, 'checks');
       
+      // Usa la data selezionata o oggi
+      const checkDate = newCheckData.checkDate 
+        ? new Date(newCheckData.checkDate + 'T12:00:00') // Mezzogiorno per evitare problemi timezone
+        : new Date();
+      
       await addDoc(checksRef, {
         weight: newCheckData.weight ? parseFloat(newCheckData.weight) : null,
         bodyFat: newCheckData.bodyFat ? parseFloat(newCheckData.bodyFat) : null,
         notes: newCheckData.notes || '',
         photoURLs: Object.keys(newCheckData.photos).length > 0 ? newCheckData.photos : null,
-        createdAt: new Date(),
+        createdAt: checkDate,
         createdBy: 'admin',
         source: 'admin_upload'
       });
       
       setShowNewCheck(false);
-      setNewCheckData({ weight: '', bodyFat: '', notes: '', photos: {} });
+      setNewCheckData({ 
+        weight: '', 
+        bodyFat: '', 
+        notes: '', 
+        photos: {},
+        checkDate: new Date().toISOString().split('T')[0]
+      });
     } catch (error) {
       console.error('Errore salvataggio check:', error);
       alert('Errore nel salvataggio: ' + error.message);
@@ -1520,6 +1537,19 @@ export default function ClientDetail() {
                 </div>
                 
                 <div className="space-y-4">
+                  {/* Data del check */}
+                  <div>
+                    <label className="block text-sm text-slate-400 mb-1">Data Check</label>
+                    <input
+                      type="date"
+                      value={newCheckData.checkDate}
+                      onChange={(e) => setNewCheckData(prev => ({ ...prev, checkDate: e.target.value }))}
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                      max={new Date().toISOString().split('T')[0]}
+                    />
+                    <p className="text-xs text-slate-500 mt-1">Seleziona la data in cui è stato effettuato il check</p>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-slate-400 mb-1">Peso (kg)</label>
