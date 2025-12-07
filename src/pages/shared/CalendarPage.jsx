@@ -575,18 +575,24 @@ export default function CalendarPage() {
                         <div
                           key={event.id}
                           onClick={(e) => {
+                            e.stopPropagation();
                             if (event.type === 'lead') {
-                              e.stopPropagation();
                               setSelectedLead(event);
                               setShowLeadDetails(true);
+                            } else {
+                              // Per call, meeting, altri eventi: apri modal modifica
+                              handleEditEvent(event);
+                              setSelectedDate(day);
+                              setModalShowDayEvents(false);
+                              setShowEventModal(true);
                             }
                           }}
-                          className={`w-2 h-2 rounded-full ${
+                          className={`w-2 h-2 rounded-full cursor-pointer hover:ring-2 ${
                             event.type === 'lead'
-                              ? 'bg-emerald-500 cursor-pointer hover:ring-2 hover:ring-emerald-400'
+                              ? 'bg-emerald-500 hover:ring-emerald-400'
                               : event.type === 'call'
-                              ? 'bg-blue-500'
-                              : 'bg-purple-500'
+                              ? 'bg-blue-500 hover:ring-blue-400'
+                              : 'bg-purple-500 hover:ring-purple-400'
                           }`}
                           title={`${event.time} - ${event.title}`}
                         />
@@ -626,8 +632,26 @@ export default function CalendarPage() {
                       dayEvents.map(ev => (
                         <div
                           key={ev.id}
-                          onClick={() => { if (ev.type === 'lead') { setSelectedLead(ev); setShowLeadDetails(true); } }}
-                          className={`px-2 py-1 rounded cursor-pointer ${ev.type === 'lead' ? 'bg-emerald-600/80 text-emerald-100 hover:bg-emerald-500/80' : ev.type === 'call' ? 'bg-blue-600/80 text-blue-100' : 'bg-purple-600/80 text-purple-100'}`}
+                          onClick={() => { 
+                            if (ev.type === 'lead') { 
+                              setSelectedLead(ev); 
+                              setShowLeadDetails(true); 
+                            } else {
+                              // Per call, meeting, altri eventi: apri modal modifica
+                              handleEditEvent(ev);
+                              setSelectedDate(d.getDate());
+                              setCurrentDate(d);
+                              setModalShowDayEvents(false);
+                              setShowEventModal(true);
+                            }
+                          }}
+                          className={`px-2 py-1 rounded cursor-pointer transition-colors ${
+                            ev.type === 'lead' 
+                              ? 'bg-emerald-600/80 text-emerald-100 hover:bg-emerald-500/80' 
+                              : ev.type === 'call' 
+                              ? 'bg-blue-600/80 text-blue-100 hover:bg-blue-500/80' 
+                              : 'bg-purple-600/80 text-purple-100 hover:bg-purple-500/80'
+                          }`}
                           title={ev.title}
                         >
                           <div className="text-[11px] font-mono opacity-90">{ev.time}</div>
