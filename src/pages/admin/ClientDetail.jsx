@@ -1124,15 +1124,17 @@ export default function ClientDetail() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-transparent pt-4">
+      <div className="min-h-screen bg-transparent">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full px-0 sm:px-0 py-0">
-          <button onClick={() => navigate('/clients')} className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 text-sm transition-colors">
-            <ArrowLeft size={18} /> Torna ai Clienti
-          </button>
 
           <div className="space-y-6">
             {/* Header Section */}
             <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
+              {/* Breadcrumb / Back button */}
+              <button onClick={() => navigate('/clients')} className="flex items-center gap-2 text-slate-400 hover:text-white mb-4 text-sm transition-colors">
+                <ArrowLeft size={16} /> Torna ai Clienti
+              </button>
+              
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div className="space-y-2">
                   <p className="text-xs uppercase tracking-widest text-slate-500 font-medium">Profilo Cliente</p>
