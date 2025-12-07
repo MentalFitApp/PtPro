@@ -549,7 +549,7 @@ export default function DashboardPro() {
           subtitle: 'Nuovo cliente',
           time: date,
           color: 'blue',
-          onClick: () => navigate(`/clients/${c.id}`)
+          onClick: () => navigate(`/client/${c.id}`)
         });
       }
     });
@@ -648,7 +648,7 @@ export default function DashboardPro() {
               title={`${callRequests.length} richieste di chiamata`}
               subtitle={callRequests[0]?.clientName}
               color="cyan"
-              action={() => navigate(`/clients/${callRequests[0]?.clientId}`)}
+              action={() => navigate(`/client/${callRequests[0]?.clientId}`)}
               actionLabel="Rispondi"
             />
           )}
@@ -808,7 +808,7 @@ export default function DashboardPro() {
                         <ClientRow 
                           key={client.id} 
                           client={client} 
-                          onClick={() => navigate(`/clients/${client.id}`)}
+                          onClick={() => navigate(`/client/${client.id}`)}
                         />
                       ))
                     ) : (
@@ -842,7 +842,7 @@ export default function DashboardPro() {
                               ? `Scaduto ${Math.abs(daysLeft)} giorni fa` 
                               : `Scade tra ${daysLeft} giorni - ${exp?.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}`
                             }
-                            onClick={() => navigate(`/clients/${client.id}`)}
+                            onClick={() => navigate(`/client/${client.id}`)}
                           />
                         );
                       })
@@ -875,7 +875,7 @@ export default function DashboardPro() {
                         return (
                           <div 
                             key={idx}
-                            onClick={() => navigate(`/clients/${call.clientId}`)}
+                            onClick={() => navigate(`/client/${call.clientId}`)}
                             className="flex items-center gap-3 p-3 hover:bg-slate-800/50 cursor-pointer transition-colors"
                           >
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -929,7 +929,7 @@ export default function DashboardPro() {
                           key={item.id}
                           client={{ name: item.clientName, id: item.clientId }}
                           subtitle={`${toDate(item.createdAt)?.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }) || ''} - ${item.type || 'Anamnesi'}`}
-                          onClick={() => navigate(`/clients/${item.clientId}?tab=anamnesi`)}
+                          onClick={() => navigate(`/client/${item.clientId}?tab=anamnesi`)}
                         />
                       ))
                     ) : (
@@ -948,7 +948,7 @@ export default function DashboardPro() {
                           key={item.id}
                           client={{ name: item.clientName, id: item.clientId }}
                           subtitle={`${toDate(item.createdAt)?.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }) || ''} - ${item.weight ? formatWeight(item.weight) : 'Check-in'}`}
-                          onClick={() => navigate(`/clients/${item.clientId}?tab=checks`)}
+                          onClick={() => navigate(`/client/${item.clientId}?tab=checks`)}
                         />
                       ))
                     ) : (
@@ -978,7 +978,7 @@ export default function DashboardPro() {
                     return (
                       <div 
                         key={idx}
-                        onClick={() => navigate(`/clients/${call.clientId}`)}
+                        onClick={() => navigate(`/client/${call.clientId}`)}
                         className="flex items-center gap-3 p-2 rounded-lg bg-slate-900/50 cursor-pointer hover:bg-slate-800/50 transition-colors"
                       >
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -1012,7 +1012,7 @@ export default function DashboardPro() {
                 Azioni rapide
               </h2>
               <div className="grid grid-cols-3 gap-2">
-                <QuickAction icon={Plus} label="Nuovo Cliente" onClick={() => navigate('/clients/new')} color="emerald" />
+                <QuickAction icon={Plus} label="Nuovo Cliente" onClick={() => navigate('/new-client')} color="emerald" />
                 <QuickAction icon={Calendar} label="Calendario" onClick={() => navigate('/calendar')} color="blue" />
                 <QuickAction icon={BarChart2} label="Analytics" onClick={() => navigate('/analytics')} color="purple" />
               </div>
