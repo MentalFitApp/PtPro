@@ -264,24 +264,29 @@ export default function DashboardNew() {
           }
         });
 
-        // 5. FALLBACK LEGACY: carica da subcollection se array è vuoto
-        if ((!clientData.payments || clientData.payments.length === 0) && !hasRates) {
-          // Questa chiamata async è ok, verrà eseguita in parallelo
-          getDocs(getTenantSubcollection(db, 'clients', clientId, 'payments')).then(paymentsSnap => {
-            const legacyPayments = [];
-            paymentsSnap.docs.forEach(payDoc => {
-              legacyPayments.push({
-                id: payDoc.id,
-                clientId,
-                clientName,
-                ...payDoc.data()
-              });
+        // 5. Pagamenti dalla subcollection 'payments' (SEMPRE, non solo fallback)
+        // Questo include i rinnovi con bonifico/paypal ecc. salvati da RenewalModal
+        getDocs(getTenantSubcollection(db, 'clients', clientId, 'payments')).then(paymentsSnap => {
+          const subcolPayments = [];
+          paymentsSnap.docs.forEach(payDoc => {
+            const payData = payDoc.data();
+            const paymentDate = payData.paymentDate?.toDate ? payData.paymentDate.toDate() : payData.paymentDate;
+            subcolPayments.push({
+              id: `subcol_pay_${clientId}_${payDoc.id}`,
+              clientId,
+              clientName,
+              amount: parseFloat(payData.amount) || 0,
+              paymentDate: paymentDate,
+              duration: payData.duration || '',
+              paymentMethod: payData.paymentMethod || 'N/D',
+              isRenewal: payData.isRenewal || false,
+              createdAt: payData.createdAt
             });
-            if (legacyPayments.length > 0) {
-              setPayments(prev => [...prev, ...legacyPayments]);
-            }
           });
-        }
+          if (subcolPayments.length > 0) {
+            setPayments(prev => [...prev, ...subcolPayments]);
+          }
+        });
       });
 
       setPayments(allPayments);
@@ -307,7 +312,7 @@ export default function DashboardNew() {
     if (!lastViewed) return;
     let unsubs = [];
 
-    // PAGAMENTI (Nuovi Clienti + Rinnovi)
+    // PAGAMENTI (Nuovi Clienti + Rinnovi) dalla subcollection payments
     const setupPaymentsListener = async () => {
       const now = new Date();
       const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -317,9 +322,10 @@ export default function DashboardNew() {
         const clientData = clientDoc.data();
         if (clientData.isOldClient) return;
         
+        // Listener per pagamenti dalla subcollection payments
         const paymentsQuery = query(
           getTenantSubcollection(db, 'clients', clientDoc.id, 'payments'),
-          orderBy('paymentDate', 'asc') // Ordina per vedere i precedenti
+          orderBy('paymentDate', 'asc')
         );
         
         const unsubPayment = onSnapshot(paymentsQuery, (paymentsSnap) => {
@@ -330,13 +336,19 @@ export default function DashboardNew() {
             const paymentDate = toDate(paymentData.paymentDate);
             if (paymentDate && paymentDate >= currentMonthStart && !paymentData.isPast) {
               
-              // Controlla se ci sono pagamenti PRECEDENTI
-              const previousPayments = allPayments.slice(0, index).filter(p => {
-                const prevDate = toDate(p.paymentDate);
-                return prevDate && prevDate < paymentDate && !p.isPast;
-              });
+              // PRIORITÀ: usa il flag isRenewal se presente
+              let isRenewalPayment = paymentData.isRenewal === true;
               
-              if (previousPayments.length > 0) {
+              if (!isRenewalPayment) {
+                // Altrimenti controlla se ci sono pagamenti PRECEDENTI
+                const previousPayments = allPayments.slice(0, index).filter(p => {
+                  const prevDate = toDate(p.paymentDate);
+                  return prevDate && prevDate < paymentDate && !p.isPast;
+                });
+                isRenewalPayment = previousPayments.length > 0;
+              }
+              
+              if (isRenewalPayment) {
                 // È un RINNOVO
                 activities.push({
                   type: ACTIVITY_TYPES.RENEWAL,
@@ -366,6 +378,42 @@ export default function DashboardNew() {
           });
         });
         unsubs.push(unsubPayment);
+        
+        // Listener per rate pagate dalla subcollection rates
+        const ratesQuery = query(
+          getTenantSubcollection(db, 'clients', clientDoc.id, 'rates'),
+          orderBy('dueDate', 'asc')
+        );
+        
+        const unsubRates = onSnapshot(ratesQuery, (ratesSnap) => {
+          const rateActivities = [];
+          
+          ratesSnap.docs.forEach(rateDoc => {
+            const rateData = rateDoc.data();
+            if (rateData.paid && rateData.paidDate) {
+              const paidDate = toDate(rateData.paidDate);
+              if (paidDate && paidDate >= currentMonthStart) {
+                rateActivities.push({
+                  type: ACTIVITY_TYPES.RENEWAL,
+                  clientId: clientDoc.id,
+                  clientName: clientData.name || 'Cliente',
+                  description: `Rata pagata (${rateData.amount}€)`,
+                  date: rateData.paidDate,
+                  isRate: true
+                });
+              }
+            }
+          });
+          
+          setActivityFeed(prev => {
+            // Rimuovi vecchie rate activities per questo cliente
+            const filtered = prev.filter(i => 
+              !(i.type === 'renewal' && i.isRate && i.clientId === clientDoc.id)
+            );
+            return [...filtered, ...rateActivities];
+          });
+        });
+        unsubs.push(unsubRates);
       });
     };
 
@@ -549,14 +597,21 @@ export default function DashboardNew() {
         
         const amount = parseFloat(payment.amount) || 0;
         
-        // Controlla se ci sono pagamenti PRECEDENTI a questo
-        const previousPayments = clientPayments.filter(p => {
-          const prevDate = toDate(p.paymentDate);
-          return prevDate && prevDate < paymentDate && !p.isPast;
-        });
+        // PRIORITÀ: usa il flag isRenewal se presente
+        // Altrimenti controlla se ci sono pagamenti precedenti
+        let isRenewalPayment = payment.isRenewal === true;
+        
+        if (!isRenewalPayment) {
+          // Controlla se ci sono pagamenti PRECEDENTI a questo
+          const previousPayments = clientPayments.filter(p => {
+            const prevDate = toDate(p.paymentDate);
+            return prevDate && prevDate < paymentDate && !p.isPast;
+          });
+          isRenewalPayment = previousPayments.length > 0;
+        }
         
         let type = PAYMENT_TYPES.NEW_CLIENT;
-        if (previousPayments.length > 0) {
+        if (isRenewalPayment) {
           // È un rinnovo
           renewalsRevenue += amount;
           renewalsCount++;
