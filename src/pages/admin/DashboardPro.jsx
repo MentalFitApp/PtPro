@@ -503,7 +503,7 @@ export default function DashboardPro() {
       expiringCount: expiringClients.filter(c => (toDate(c.scadenza) - now) / (1000 * 60 * 60 * 24) > 0).length,
       expiredCount: expiringClients.filter(c => toDate(c.scadenza) < now).length,
       expiringClients,
-      periodRevenue,
+      periodRevenue: periodRevenue - renewalsRevenue, // Incasso ESCLUSI i rinnovi
       renewalsRevenue,
       periodLabel,
       newClients: newClientsThisMonth.length,
