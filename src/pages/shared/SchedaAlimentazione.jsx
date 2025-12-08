@@ -12,6 +12,8 @@ import { saveFeedback, saveDoNotShowPreference, shouldShowFeedbackPopup } from '
 import { auth } from '../../firebase';
 import { useToast } from '../../contexts/ToastContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { useEscapeKey } from '../../hooks/useKeyboardShortcut';
 
 const OBIETTIVI = ['Definizione', 'Massa', 'Mantenimento', 'Dimagrimento', 'Sportivo'];
 const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
@@ -28,6 +30,14 @@ const SchedaAlimentazione = () => {
   const [clientName, setClientName] = useState('');
   const [clientData, setClientData] = useState(null);
   const [anamnesisData, setAnamnesisData] = useState(null);
+  
+  // Document title e keyboard shortcuts
+  useDocumentTitle(clientName ? `Scheda Alimentare - ${clientName}` : 'Scheda Alimentare');
+  useEscapeKey(() => {
+    setShowAddAlimento({ pastoIndex: null });
+    setShowSavePresetModal(false);
+    setShowImportPresetModal(false);
+  });
   
   const [schedaData, setSchedaData] = useState({
     obiettivo: '',

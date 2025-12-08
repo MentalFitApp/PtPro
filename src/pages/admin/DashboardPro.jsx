@@ -10,6 +10,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTenantBranding } from '../../hooks/useTenantBranding';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
 import { SkeletonCard, SkeletonList } from '../../components/ui/SkeletonLoader';
+import { useDebounce } from '../../hooks/useDebounce';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import {
   TrendingUp, TrendingDown, Users, DollarSign, Calendar, 
   ChevronRight, LogOut, User, Bell, Search, Plus,
@@ -167,12 +169,16 @@ export default function DashboardPro() {
   const [showRevenue, setShowRevenue] = useState(true);
   const [callRequests, setCallRequests] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [activeTab, setActiveTab] = useState(TAB_TYPES.CLIENTS);
   const [recentAnamnesi, setRecentAnamnesi] = useState([]);
   const [recentChecks, setRecentChecks] = useState([]);
   const [revenueTimeRange, setRevenueTimeRange] = useState(TIME_RANGES.MONTH);
   const [upcomingCalls, setUpcomingCalls] = useState([]);
   const [showRenewalsOnly, setShowRenewalsOnly] = useState(false);
+  
+  // Document title dinamico
+  useDocumentTitle('Dashboard');
 
   // Auth check
   useEffect(() => {
@@ -585,13 +591,13 @@ export default function DashboardPro() {
 
   // Filtered clients for search
   const filteredClients = useMemo(() => {
-    if (!searchQuery) return clients.filter(c => !c.isOldClient).slice(0, 5);
-    const q = searchQuery.toLowerCase();
+    if (!debouncedSearch) return clients.filter(c => !c.isOldClient).slice(0, 5);
+    const q = debouncedSearch.toLowerCase();
     return clients.filter(c => 
       c.name?.toLowerCase().includes(q) || 
       c.email?.toLowerCase().includes(q)
     ).slice(0, 8);
-  }, [clients, searchQuery]);
+  }, [clients, debouncedSearch]);
 
   const handleLogout = () => signOut(auth).then(() => navigate('/login'));
 

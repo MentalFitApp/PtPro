@@ -1148,11 +1148,7 @@ html, body {
   /* Convert explicit white text inside converted slate containers to theme text
      This avoids many components having `text-white` on light backgrounds while
      preserving intentional white text elsewhere (e.g. colored buttons). */
-  [data-theme="light"] .bg-slate-800 .text-white,
-  [data-theme="light"] .bg-slate-800 \.text-white,
-  [data-theme="light"] .bg-slate-800 \.text-white\/:not\(\),
-  [data-theme="light"] .bg-slate-800 \\:not\(\),
-  [data-theme="light"] .bg-slate-800 \\* {
+  [data-theme="light"] .bg-slate-800 .text-white {
     color: var(--text-primary) !important;
   }
 

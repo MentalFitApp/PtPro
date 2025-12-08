@@ -16,6 +16,7 @@ import AnamnesiRequiredModal from '../../components/client/AnamnesiRequiredModal
 import LinkAccountBanner from '../../components/LinkAccountBanner';
 import { NextCallCard, RequestCallCard } from '../../components/calls/CallScheduler';
 import { SkeletonCard, SkeletonList } from '../../components/ui/SkeletonLoader';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-slate-900 px-4 py-6 space-y-4">
@@ -88,6 +89,9 @@ const ClientDashboard = () => {
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
+  
+  // Document title dinamico
+  useDocumentTitle('La mia Dashboard');
 
   useEffect(() => {
     if (!user) {

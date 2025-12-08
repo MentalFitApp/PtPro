@@ -9,6 +9,8 @@ import { requestNotificationPermission, checkNotificationPermission, scheduleEve
 import { notifyNewEvent } from '../../services/notificationService';
 import CalendarNotesPanel from '../../components/calendar/CalendarNotesPanel';
 import { useToast } from '../../contexts/ToastContext';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { useEscapeKey } from '../../hooks/useKeyboardShortcut';
 
 export default function CalendarPage() {
   const navigate = useNavigate();
@@ -33,6 +35,13 @@ export default function CalendarPage() {
   const [modalShowDayEvents, setModalShowDayEvents] = useState(true);
   const dayViewRef = React.useRef(null);
   const [leadStatuses, setLeadStatuses] = useState([]);
+  
+  // Document title e keyboard shortcuts
+  useDocumentTitle('Calendario');
+  useEscapeKey(() => {
+    setShowEventModal(false);
+    setShowLeadDetails(false);
+  });
 
   // Carica status lead dinamici
   useEffect(() => {

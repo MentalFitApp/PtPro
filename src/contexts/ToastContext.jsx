@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
-const ToastContext = createContext();
+// Esporta il context per uso diretto con useContext (es. in hooks che potrebbero essere usati fuori dal provider)
+export const ToastContext = createContext();
 
 export const useToast = () => {
   const context = useContext(ToastContext);

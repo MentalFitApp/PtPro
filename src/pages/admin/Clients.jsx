@@ -21,6 +21,8 @@ import { useToast } from '../../contexts/ToastContext';
 import { EmptyClients } from '../../components/ui/EmptyState';
 import FilterPanel, { FilterSection, FilterCheckbox, FilterDateRange } from '../../components/layout/FilterPanel';
 import KanbanBoard, { KanbanCard } from '../../components/layout/KanbanBoard';
+import { useDebounce } from '../../hooks/useDebounce';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 // --- COMPONENTI UI ---
 const Notification = ({ message, type, onDismiss }) => (
@@ -214,6 +216,7 @@ export default function Clients() {
   const [loading, setLoading] = useState(true);
   const [clientToDelete, setClientToDelete] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300); // Debounce 300ms per performance
   const [filter, setFilter] = useState('all');
   const [sortField, setSortField] = useState('startDate');
   const [sortDirection, setSortDirection] = useState('desc');
@@ -231,6 +234,9 @@ export default function Clients() {
   const [selectedClients, setSelectedClients] = useState([]);
   const [showArchived, setShowArchived] = useState(false);
   const toast = useToast();
+  
+  // Document title dinamico
+  useDocumentTitle('Clienti');
   
   // --- NUOVI STATI PER FILTER PANEL E KANBAN ---
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
@@ -481,8 +487,8 @@ export default function Clients() {
       if (showArchived && !client.isArchived) return false;
 
       const matchesSearch = 
-        (client.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (client.email || '').toLowerCase().includes(searchQuery.toLowerCase());
+        (client.name || '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        (client.email || '').toLowerCase().includes(debouncedSearch.toLowerCase());
 
       if (!matchesSearch) return false;
 
@@ -517,7 +523,7 @@ export default function Clients() {
     });
 
     return filtered;
-  }, [clients, searchQuery, filter, sortField, sortDirection, anamnesiStatus]);
+  }, [clients, debouncedSearch, filter, sortField, sortDirection, anamnesiStatus, showArchived]);
 
   // --- CALENDARIO ISCRIZIONI (CLIENTI AGGIUNTI) ---
   const giorniMese = eachDayOfInterval({

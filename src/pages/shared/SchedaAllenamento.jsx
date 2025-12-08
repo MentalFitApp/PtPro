@@ -7,6 +7,8 @@ import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../..
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore';
 import { exportWorkoutCardToPDF } from '../../utils/pdfExport';
 import { useToast } from '../../contexts/ToastContext';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { useEscapeKey } from '../../hooks/useKeyboardShortcut';
 
 const OBIETTIVI = ['Forza', 'Massa', 'Definizione', 'Resistenza', 'Ricomposizione'];
 const LIVELLI = ['Principiante', 'Intermedio', 'Avanzato'];
@@ -20,6 +22,14 @@ const SchedaAllenamento = () => {
   const [saving, setSaving] = useState(false);
   const [clientName, setClientName] = useState('');
   const [availableExercises, setAvailableExercises] = useState([]);
+  
+  // Document title e keyboard shortcuts
+  useDocumentTitle(clientName ? `Scheda Allenamento - ${clientName}` : 'Scheda Allenamento');
+  useEscapeKey(() => {
+    setShowAddEsercizio(false);
+    setShowSavePresetModal(false);
+    setShowImportPresetModal(false);
+  });
   
   // View/Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);

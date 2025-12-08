@@ -13,6 +13,7 @@ import {
 import { motion } from 'framer-motion';
 import RevenueChart from '../../components/business/RevenueChart';
 import RetentionChart from '../../components/business/RetentionChart';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 // Stat Card Component
 const StatCard = ({ title, value, icon, trend, trendValue, isCurrency = false, isPercentage = false, subtitle }) => {
@@ -58,6 +59,9 @@ export default function Analytics() {
   const [courses, setCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
   const [activeTab, setActiveTab] = useState('business'); // business, courses
+  
+  // Document title
+  useDocumentTitle('Analytics');
 
   // Check role
   useEffect(() => {

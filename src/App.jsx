@@ -12,6 +12,7 @@ import { ConfirmProvider } from './contexts/ConfirmContext';
 import { TenantProvider } from './contexts/TenantContext';
 import { UserPreferencesProvider } from './hooks/useUserPreferences';
 import { getTenantDoc } from './config/tenant';
+import useOnlineStatus from './hooks/useOnlineStatus';
 
 // Import dinamici dei layout
 const ProLayout = React.lazy(() => import('./components/layout/ProLayout'));
@@ -123,6 +124,12 @@ const AuthSpinner = () => (
     <p className="mt-4 text-sm">Verifica autenticazione...</p>
   </div>
 );
+
+// Componente interno per hook che richiedono i context providers
+function OnlineStatusMonitor() {
+  useOnlineStatus({ showToast: true });
+  return null;
+}
 
 export default function App() {
   const [authInfo, setAuthInfo] = useState({
@@ -379,6 +386,7 @@ export default function App() {
     <ThemeProvider>
     <TenantProvider>
     <UserPreferencesProvider>
+      <OnlineStatusMonitor />
       <Suspense fallback={<PageSpinner />}>
         <GlobalUploadBar />
         <PrivacyBanner />

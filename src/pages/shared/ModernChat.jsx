@@ -12,6 +12,9 @@ import { getTenantCollection, getTenantDoc } from '../../config/tenant';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../../contexts/ToastContext';
+import { useDebounce } from '../../hooks/useDebounce';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { useEscapeKey } from '../../hooks/useKeyboardShortcut';
 import {
   Send, Video, Phone, Search, Menu, Archive, Settings, Bell,
   Plus, X, ArrowLeft, Check, CheckCheck, Clock, User, Users,
@@ -41,11 +44,20 @@ export default function ModernChat() {
   const [sidebarOpen, setSidebarOpen] = useState(true); // Desktop sidebar
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile menu
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [showChatMenu, setShowChatMenu] = useState(false);
   const [showMessageMenu, setShowMessageMenu] = useState(null); // ID del messaggio
   const [replyTo, setReplyTo] = useState(null);
   const [selectedMessages, setSelectedMessages] = useState([]);
+  
+  // Document title e keyboard shortcuts
+  useDocumentTitle('Chat');
+  useEscapeKey(() => {
+    setShowNewChatModal(false);
+    setShowChatMenu(false);
+    setShowEmojiPicker(false);
+  });
   
   // ===== MEDIA & UPLOAD =====
   const [uploading, setUploading] = useState(false);
