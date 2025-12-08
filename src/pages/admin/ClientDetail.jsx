@@ -842,8 +842,21 @@ export default function ClientDetail() {
   const estimatedBodyFat = useMemo(() => {
     const weight = weightValue || toNumber(anamnesi?.weight);
     const height = toNumber(anamnesi?.height);
-    const age = toNumber(anamnesi?.age);
     const gender = anamnesi?.gender;
+    
+    // Calcola età dalla data di nascita
+    let age = null;
+    if (anamnesi?.birthDate) {
+      const birth = new Date(anamnesi.birthDate);
+      if (!isNaN(birth.getTime())) {
+        const today = new Date();
+        age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+          age--;
+        }
+      }
+    }
     
     if (!weight || !height || !age || !gender) return null;
     

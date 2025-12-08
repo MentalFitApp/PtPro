@@ -245,6 +245,23 @@ const ClientAnamnesi = () => {
   const sectionStyle = "bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 shadow-glow";
   const headingStyle = "font-bold mb-4 text-lg text-cyan-300 border-b border-cyan-400/20 pb-2 flex items-center gap-2";
 
+  // Calcola età dalla data di nascita
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return 'Non specificata';
+    const birth = new Date(birthDate);
+    if (isNaN(birth.getTime())) return 'Non specificata';
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return `${age} anni`;
+  };
+
+  // Verifica se manca il sesso nell'anamnesi esistente
+  const needsGenderUpdate = anamnesiData && !anamnesiData.gender && !isEditing;
+
   const ViewField = ({ label, value }) => (
     <div className="mb-4">
       <h4 className="text-sm font-semibold text-slate-400">{label}</h4>
@@ -291,6 +308,31 @@ const ClientAnamnesi = () => {
         </button>
       </header>
 
+      {/* Banner per aggiungere il sesso mancante */}
+      {needsGenderUpdate && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 bg-amber-500/20 border border-amber-500/50 rounded-xl flex items-center justify-between gap-4 flex-wrap"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-amber-500/30 flex items-center justify-center">
+              <FilePenLine size={20} className="text-amber-400" />
+            </div>
+            <div>
+              <p className="text-amber-200 font-medium">Completa la tua anamnesi</p>
+              <p className="text-amber-300/70 text-sm">Aggiungi il tuo sesso per permetterci di calcolare meglio i tuoi progressi</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold rounded-lg transition-colors text-sm"
+          >
+            Aggiorna ora
+          </button>
+        </motion.div>
+      )}
+
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         {isEditing ? (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -303,14 +345,13 @@ const ClientAnamnesi = () => {
                 <div><label className={labelStyle}>Cognome</label><input {...register('lastName')} className={inputStyle} /></div>
                 <div><label className={labelStyle}>Data di Nascita</label><input type="date" {...register('birthDate')} className={inputStyle} /></div>
                 <div>
-                  <label className={labelStyle}>Sesso</label>
-                  <select {...register('gender')} className={inputStyle}>
+                  <label className={labelStyle}>Sesso <span className="text-red-400">*</span></label>
+                  <select {...register('gender', { required: true })} className={inputStyle}>
                     <option value="">Seleziona...</option>
                     <option value="male">Maschio</option>
                     <option value="female">Femmina</option>
                   </select>
                 </div>
-                <div><label className={labelStyle}>Età</label><input type="number" {...register('age')} className={inputStyle} placeholder="Es. 30" min="10" max="100" /></div>
                 <div><label className={labelStyle}>Che lavoro fai?</label><input {...register('job')} className={inputStyle} placeholder="Es. Impiegato, studente..." /></div>
                 <div><label className={labelStyle}>Peso (kg)</label><input type="number" step="0.1" {...register('weight')} className={inputStyle} placeholder="Es. 75.5" /></div>
                 <div><label className={labelStyle}>Altezza (cm)</label><input type="number" {...register('height')} className={inputStyle} placeholder="Es. 180" /></div>
@@ -421,7 +462,7 @@ const ClientAnamnesi = () => {
                   <ViewField label="Cognome" value={anamnesiData.lastName} />
                   <ViewField label="Data di Nascita" value={anamnesiData.birthDate} />
                   <ViewField label="Sesso" value={anamnesiData.gender === 'male' ? 'Maschio' : anamnesiData.gender === 'female' ? 'Femmina' : 'Non specificato'} />
-                  <ViewField label="Età" value={anamnesiData.age ? `${anamnesiData.age} anni` : 'Non specificata'} />
+                  <ViewField label="Età" value={calculateAge(anamnesiData.birthDate)} />
                   <ViewField label="Lavoro" value={anamnesiData.job} />
                   <ViewField label="Peso" value={formatWeight(anamnesiData.weight)} />
                   <ViewField label="Altezza" value={formatLength(anamnesiData.height)} />

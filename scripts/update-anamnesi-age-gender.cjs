@@ -1,6 +1,6 @@
 // scripts/update-anamnesi-age-gender.cjs
-// Script per aggiornare le anamnesi esistenti richiedendo età e sesso
-// I clienti che hanno già compilato l'anamnesi dovranno aggiungere questi nuovi campi
+// Script per identificare le anamnesi esistenti che mancano del campo sesso
+// I clienti vedranno un banner per completare l'anamnesi
 
 const admin = require('firebase-admin');
 
@@ -14,15 +14,15 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-async function updateAnamnesiWithAgeGender() {
-  console.log('🔍 Cercando anamnesi da aggiornare...\n');
+async function checkAnamnesiMissingGender() {
+  console.log('🔍 Cercando anamnesi senza sesso specificato...\n');
   
   // Ottieni tutti i tenant
   const tenantsSnap = await db.collection('tenants').get();
   
   let totalAnamnesi = 0;
-  let needsUpdate = 0;
-  let updated = 0;
+  let missingGender = 0;
+  const clientsNeedingUpdate = [];
   
   for (const tenantDoc of tenantsSnap.docs) {
     const tenantId = tenantDoc.id;
@@ -44,47 +44,20 @@ async function updateAnamnesiWithAgeGender() {
         totalAnamnesi++;
         const anamnesiData = anamnesiSnap.data();
         
-        // Verifica se manca età o sesso
-        const hasAge = anamnesiData.age !== undefined && anamnesiData.age !== null && anamnesiData.age !== '';
-        const hasGender = anamnesiData.gender !== undefined && anamnesiData.gender !== null && anamnesiData.gender !== '';
+        // Verifica se manca il sesso
+        const hasGender = anamnesiData.gender && (anamnesiData.gender === 'male' || anamnesiData.gender === 'female');
         
-        if (!hasAge || !hasGender) {
-          needsUpdate++;
-          console.log(`  ⚠️  ${clientName} - manca: ${!hasAge ? 'età' : ''} ${!hasGender ? 'sesso' : ''}`);
-          
-          // Calcola età dalla data di nascita se presente
-          let calculatedAge = null;
-          if (anamnesiData.birthDate) {
-            const birthDate = new Date(anamnesiData.birthDate);
-            if (!isNaN(birthDate.getTime())) {
-              const today = new Date();
-              let age = today.getFullYear() - birthDate.getFullYear();
-              const monthDiff = today.getMonth() - birthDate.getMonth();
-              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-              }
-              calculatedAge = age;
-            }
-          }
-          
-          // Prepara update
-          const updateData = {
-            needsAgeGenderUpdate: true, // Flag per mostrare prompt al cliente
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-          };
-          
-          // Se abbiamo calcolato l'età, la aggiungiamo
-          if (calculatedAge && !hasAge) {
-            updateData.age = calculatedAge;
-            console.log(`    📊 Età calcolata dalla data di nascita: ${calculatedAge} anni`);
-          }
-          
-          // Aggiorna il documento
-          await anamnesiRef.update(updateData);
-          updated++;
-          console.log(`    ✅ Flaggato per aggiornamento`);
+        if (!hasGender) {
+          missingGender++;
+          clientsNeedingUpdate.push({
+            tenant: tenantId,
+            clientId,
+            clientName,
+            hasBirthDate: !!anamnesiData.birthDate
+          });
+          console.log(`  ⚠️  ${clientName} - manca sesso`);
         } else {
-          console.log(`  ✓ ${clientName} - completa (età: ${anamnesiData.age}, sesso: ${anamnesiData.gender})`);
+          console.log(`  ✓ ${clientName} - completa (sesso: ${anamnesiData.gender})`);
         }
       }
     }
@@ -94,13 +67,21 @@ async function updateAnamnesiWithAgeGender() {
   console.log('📊 RIEPILOGO');
   console.log('='.repeat(50));
   console.log(`Anamnesi totali trovate: ${totalAnamnesi}`);
-  console.log(`Anamnesi che necessitano aggiornamento: ${needsUpdate}`);
-  console.log(`Anamnesi flaggate per update: ${updated}`);
-  console.log('\nI clienti vedranno un avviso per completare età e sesso al prossimo accesso.');
+  console.log(`Anamnesi senza sesso: ${missingGender}`);
+  
+  if (clientsNeedingUpdate.length > 0) {
+    console.log('\n📝 Clienti che vedranno il banner:');
+    clientsNeedingUpdate.forEach(c => {
+      console.log(`   - ${c.clientName} (${c.tenant})`);
+    });
+    console.log('\nI clienti vedranno automaticamente un banner per completare l\'anamnesi.');
+  } else {
+    console.log('\n✅ Tutte le anamnesi hanno il sesso specificato!');
+  }
 }
 
 // Esegui
-updateAnamnesiWithAgeGender()
+checkAnamnesiMissingGender()
   .then(() => {
     console.log('\n✅ Script completato!');
     process.exit(0);
