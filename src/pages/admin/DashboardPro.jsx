@@ -869,9 +869,10 @@ export default function DashboardPro() {
                   <>
                     {upcomingCalls.length > 0 ? (
                       upcomingCalls.map((call, idx) => {
-                        const isToday = call.scheduledAt.toDateString() === new Date().toDateString();
-                        const isTomorrow = call.scheduledAt.toDateString() === new Date(Date.now() + 86400000).toDateString();
-                        const timeLabel = isToday ? 'Oggi' : isTomorrow ? 'Domani' : call.scheduledAt.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' });
+                        const scheduledDate = toDate(call.scheduledAt) || new Date();
+                        const isToday = scheduledDate.toDateString() === new Date().toDateString();
+                        const isTomorrow = scheduledDate.toDateString() === new Date(Date.now() + 86400000).toDateString();
+                        const timeLabel = isToday ? 'Oggi' : isTomorrow ? 'Domani' : scheduledDate.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' });
                         
                         return (
                           <div 
@@ -887,7 +888,7 @@ export default function DashboardPro() {
                             <div className="flex-1 min-w-0">
                               <p className="text-sm text-white font-medium truncate">{call.clientName}</p>
                               <p className="text-xs text-slate-400">
-                                {timeLabel} alle {call.scheduledAt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                {timeLabel} alle {scheduledDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
@@ -975,7 +976,8 @@ export default function DashboardPro() {
                 </h2>
                 <div className="space-y-2">
                   {upcomingCalls.slice(0, 4).map((call, idx) => {
-                    const isToday = call.scheduledAt.toDateString() === new Date().toDateString();
+                    const scheduledDate = toDate(call.scheduledAt) || new Date();
+                    const isToday = scheduledDate.toDateString() === new Date().toDateString();
                     return (
                       <div 
                         key={idx}
@@ -990,8 +992,8 @@ export default function DashboardPro() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-white font-medium truncate">{call.clientName}</p>
                           <p className="text-xs text-slate-400">
-                            {isToday ? 'Oggi' : call.scheduledAt.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
-                            {' '}{call.scheduledAt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                            {isToday ? 'Oggi' : scheduledDate.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
+                            {' '}{scheduledDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full ${

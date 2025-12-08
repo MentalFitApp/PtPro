@@ -104,22 +104,54 @@ export default function ModernChat() {
   useEffect(() => {
     if (!currentUser || !userRole) return;
 
-    const usersRef = getTenantCollection(db, 'users');
-    const unsubscribe = onSnapshot(usersRef, (snapshot) => {
-      const users = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(u => {
-          if (u.id === currentUser.uid) return false;
-          // Client vede solo admin/coach
-          if (userRole === 'client') {
-            return u.role === 'admin' || u.role === 'coach';
-          }
-          return true;
-        });
-      setAllUsers(users);
-    });
+    const loadUsers = async () => {
+      try {
+        // Carica i ruoli da roles/admins e roles/coaches
+        const [adminDoc, coachDoc] = await Promise.all([
+          getDoc(getTenantDoc(db, 'roles', 'admins')),
+          getDoc(getTenantDoc(db, 'roles', 'coaches'))
+        ]);
+        
+        const adminUids = adminDoc.exists() ? (adminDoc.data().uids || []) : [];
+        const coachUids = coachDoc.exists() ? (coachDoc.data().uids || []) : [];
+        
+        // Carica tutti i profili utente
+        const usersSnapshot = await getDocs(getTenantCollection(db, 'users'));
+        let usersData = usersSnapshot.docs
+          .map(docSnap => {
+            const data = docSnap.data();
+            // Determina il ruolo basandosi su roles collection
+            let computedRole = 'client';
+            if (adminUids.includes(docSnap.id)) {
+              computedRole = 'admin';
+            } else if (coachUids.includes(docSnap.id)) {
+              computedRole = 'coach';
+            }
+            return {
+              id: docSnap.id,
+              ...data,
+              role: computedRole, // Sovrascrive con il ruolo corretto
+            };
+          })
+          .filter(u => u.displayName && u.id !== currentUser.uid); // Escludi te stesso
 
-    return () => unsubscribe();
+        // Filtra in base al ruolo dell'utente corrente
+        if (userRole === 'client') {
+          // I clienti vedono solo admin e coach
+          usersData = usersData.filter(u => u.role === 'admin' || u.role === 'coach');
+        } else if (userRole === 'coach') {
+          // I coach vedono admin e clienti (non altri coach)
+          usersData = usersData.filter(u => u.role === 'admin' || u.role === 'client');
+        }
+        // Gli admin vedono tutti (già filtrato solo currentUser)
+        
+        setAllUsers(usersData);
+      } catch (error) {
+        console.error('Errore caricamento utenti:', error);
+      }
+    };
+
+    loadUsers();
   }, [currentUser, userRole]);
 
   // ===== LOAD CHATS =====

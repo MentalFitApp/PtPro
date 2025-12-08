@@ -290,14 +290,18 @@ const Login = () => {
 
   const handleResetPassword = async () => {
     if (!email) {
-      setError('Inserisci un\'email per reimpostare la password.');
+      setError('Inserisci un\'email per reimpostare la password.\n\n⚠️ Se hai fatto accesso con Google, non hai una password da reimpostare. Usa il pulsante "Accedi con Google".');
       return;
     }
     try {
       await sendPasswordResetEmail(auth, email);
-      setError('Email di reimpostazione inviata. Controlla la posta.');
+      setError('✅ Email di reimpostazione inviata! Controlla la posta (anche spam).\n\n💡 Se non ricevi nulla, probabilmente hai creato l\'account con Google. In quel caso usa "Accedi con Google".');
     } catch (error) {
-      setError('Errore invio email: ' + error.message);
+      if (error.code === 'auth/user-not-found') {
+        setError('Nessun account trovato con questa email.\n\n💡 Se hai usato Google per registrarti, prova con "Accedi con Google".');
+      } else {
+        setError('Errore invio email: ' + error.message);
+      }
     }
   };
 
@@ -522,10 +526,14 @@ const Login = () => {
             <button
               onClick={handleResetPassword}
               className="text-sm text-slate-400 hover:text-cyan-400 transition-colors font-medium inline-flex items-center gap-2 group"
+              title="Solo per account email/password. Gli account Google non hanno password."
             >
               <Lock size={14} className="group-hover:rotate-12 transition-transform" />
               Password dimenticata?
             </button>
+            <p className="text-xs text-slate-600 mt-1">
+              (solo per accesso con email/password)
+            </p>
           </div>
         </motion.div>
 
