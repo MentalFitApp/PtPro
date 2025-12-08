@@ -836,6 +836,29 @@ export default function ClientDetail() {
   const bodyFatDeltaPct = bodyFatDelta !== null && prevBodyFat ? ((bodyFatDelta / prevBodyFat) * 100) : null;
   const lastCheckAt = latestCheck?.createdAt ? toDate(latestCheck.createdAt) : null;
   
+  // Calcolo Body Fat stimato usando BMI (formula Deurenberg)
+  // BF% = (1.20 × BMI) + (0.23 × età) − (10.8 × sesso) − 5.4
+  // dove sesso = 1 per maschi, 0 per femmine
+  const estimatedBodyFat = useMemo(() => {
+    const weight = weightValue || toNumber(anamnesi?.weight);
+    const height = toNumber(anamnesi?.height);
+    const age = toNumber(anamnesi?.age);
+    const gender = anamnesi?.gender;
+    
+    if (!weight || !height || !age || !gender) return null;
+    
+    // Calcola BMI
+    const heightInMeters = height / 100;
+    const bmi = weight / (heightInMeters * heightInMeters);
+    
+    // Formula Deurenberg
+    const genderFactor = gender === 'male' ? 1 : 0;
+    const bf = (1.20 * bmi) + (0.23 * age) - (10.8 * genderFactor) - 5.4;
+    
+    // Limita a valori ragionevoli
+    return Math.max(3, Math.min(50, Math.round(bf * 10) / 10));
+  }, [weightValue, anamnesi]);
+
   // Calcola totali pagamenti
   // Pagato = somma pagamenti subcollection + rate pagate
   const paymentsFromSubcollection = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
@@ -1265,8 +1288,8 @@ export default function ClientDetail() {
             deltaType="negative"
           />
           <DataCard 
-            label="Body Fat"
-            value={bodyFatValue !== null ? `${bodyFatValue}%` : 'N/D'}
+            label={bodyFatValue !== null ? "Body Fat" : "Body Fat (stima)"}
+            value={bodyFatValue !== null ? `${bodyFatValue}%` : (estimatedBodyFat !== null ? `~${estimatedBodyFat}%` : 'N/D')}
             delta={bodyFatDelta !== null ? `${formatDelta(bodyFatDelta)} ${formatDeltaPct(bodyFatDeltaPct)}` : undefined}
             deltaType="negative"
           />

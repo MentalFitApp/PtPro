@@ -235,7 +235,7 @@ const ClientAnamnesi = () => {
   }, [anamnesiData]);
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-900 flex justify-center items-center">
+    <div className="min-h-screen flex justify-center items-center">
       <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
     </div>
   );
@@ -279,7 +279,7 @@ const ClientAnamnesi = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
 
       <header className="flex justify-between items-center mb-8 flex-col sm:flex-row gap-4">
@@ -302,9 +302,18 @@ const ClientAnamnesi = () => {
                 <div><label className={labelStyle}>Nome</label><input {...register('firstName')} className={inputStyle} /></div>
                 <div><label className={labelStyle}>Cognome</label><input {...register('lastName')} className={inputStyle} /></div>
                 <div><label className={labelStyle}>Data di Nascita</label><input type="date" {...register('birthDate')} className={inputStyle} /></div>
+                <div>
+                  <label className={labelStyle}>Sesso</label>
+                  <select {...register('gender')} className={inputStyle}>
+                    <option value="">Seleziona...</option>
+                    <option value="male">Maschio</option>
+                    <option value="female">Femmina</option>
+                  </select>
+                </div>
+                <div><label className={labelStyle}>Età</label><input type="number" {...register('age')} className={inputStyle} placeholder="Es. 30" min="10" max="100" /></div>
                 <div><label className={labelStyle}>Che lavoro fai?</label><input {...register('job')} className={inputStyle} placeholder="Es. Impiegato, studente..." /></div>
-                <div><label className={labelStyle}>Peso</label><input type="number" step="0.1" {...register('weight')} className={inputStyle} placeholder="Es. 75.5" /></div>
-                <div><label className={labelStyle}>Altezza</label><input type="number" {...register('height')} className={inputStyle} placeholder="Es. 180" /></div>
+                <div><label className={labelStyle}>Peso (kg)</label><input type="number" step="0.1" {...register('weight')} className={inputStyle} placeholder="Es. 75.5" /></div>
+                <div><label className={labelStyle}>Altezza (cm)</label><input type="number" {...register('height')} className={inputStyle} placeholder="Es. 180" /></div>
               </div>
             </div>
 
@@ -411,6 +420,8 @@ const ClientAnamnesi = () => {
                   <ViewField label="Nome" value={anamnesiData.firstName} />
                   <ViewField label="Cognome" value={anamnesiData.lastName} />
                   <ViewField label="Data di Nascita" value={anamnesiData.birthDate} />
+                  <ViewField label="Sesso" value={anamnesiData.gender === 'male' ? 'Maschio' : anamnesiData.gender === 'female' ? 'Femmina' : 'Non specificato'} />
+                  <ViewField label="Età" value={anamnesiData.age ? `${anamnesiData.age} anni` : 'Non specificata'} />
                   <ViewField label="Lavoro" value={anamnesiData.job} />
                   <ViewField label="Peso" value={formatWeight(anamnesiData.weight)} />
                   <ViewField label="Altezza" value={formatLength(anamnesiData.height)} />
