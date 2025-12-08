@@ -574,8 +574,9 @@ export default function DashboardPro() {
     return activities
       .sort((a, b) => b.time - a.time)
       .slice(0, 20)
-      .map(a => ({
+      .map((a, idx) => ({
         ...a,
+        id: `${a.type}-${a.timeRaw?.getTime() || idx}-${idx}`, // ID univoco per evitare warning chiavi duplicate
         timeRaw: a.time,
         time: a.time.toLocaleDateString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
       }));
@@ -1030,7 +1031,7 @@ export default function DashboardPro() {
                   {recentActivity.length > 0 ? (
                     recentActivity.map((item, idx) => (
                       <TimelineItem
-                        key={idx}
+                        key={item.id || `activity-${idx}`}
                         icon={item.icon}
                         title={item.title}
                         subtitle={item.subtitle}

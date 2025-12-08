@@ -35,13 +35,24 @@ const getR2Client = () => {
 /**
  * Comprimi un'immagine prima dell'upload
  * Riduce la dimensione del file del 70-80% mantenendo buona qualità
+ * Converte automaticamente HEIC/HEIF in JPEG per compatibilità browser
  * 
  * @param {File} file - File immagine da comprimere
- * @returns {Promise<File>} - File compresso
+ * @returns {Promise<File>} - File compresso (sempre in formato JPEG per HEIC, altrimenti originale)
  */
 export const compressImage = async (file) => {
-  // Se non è un'immagine o è già piccola, ritorna il file originale
-  if (!file.type.startsWith('image/') || file.size < 200 * 1024) {
+  // Se non è un'immagine, ritorna il file originale
+  if (!file.type.startsWith('image/')) {
+    return file;
+  }
+
+  // Determina se è un file HEIC/HEIF (formato iPhone)
+  const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || 
+                 file.name?.toLowerCase().endsWith('.heic') || 
+                 file.name?.toLowerCase().endsWith('.heif');
+
+  // Se è già piccola e non è HEIC, ritorna il file originale
+  if (file.size < 200 * 1024 && !isHeic) {
     return file;
   }
 
@@ -50,11 +61,12 @@ export const compressImage = async (file) => {
       maxSizeMB: 1, // Dimensione massima 1MB
       maxWidthOrHeight: 1920, // Massima larghezza/altezza 1920px
       useWebWorker: true, // Usa Web Worker per performance migliori
-      fileType: file.type, // Mantieni il tipo originale
+      // IMPORTANTE: Converti HEIC in JPEG, altrimenti mantieni il tipo originale
+      fileType: isHeic ? 'image/jpeg' : file.type,
     };
 
     const compressedFile = await imageCompression(file, options);
-    console.log(`Compressione: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedFile.size / 1024).toFixed(2)}KB (${(((file.size - compressedFile.size) / file.size) * 100).toFixed(0)}% riduzione)`);
+    console.log(`Compressione${isHeic ? ' (HEIC→JPEG)' : ''}: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedFile.size / 1024).toFixed(2)}KB (${(((file.size - compressedFile.size) / file.size) * 100).toFixed(0)}% riduzione)`);
     
     return compressedFile;
   } catch (error) {
@@ -114,7 +126,10 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
     }
 
     // Crea nome file unico
-    const fileExtension = file.name.split('.').pop();
+    // Se era HEIC/HEIF e è stato convertito a JPEG, usa estensione .jpg
+    const originalExtension = file.name.split('.').pop().toLowerCase();
+    const isHeicFile = originalExtension === 'heic' || originalExtension === 'heif';
+    const fileExtension = isHeicFile ? 'jpg' : originalExtension;
     const fileName = `${uuidv4()}.${fileExtension}`;
     const fileKey = `clients/${clientId}/${folder}/${fileName}`;
 
