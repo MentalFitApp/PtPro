@@ -6,7 +6,7 @@ import { getTenantSubcollection, getTenantDoc } from '../../config/tenant';
 import { notifyNewCheck } from '../../services/notificationService';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircle2, ImageOff } from 'lucide-react';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -178,6 +178,7 @@ const ImageModal = ({ isOpen, imageUrl, onClose }) => (
 const CheckDetails = ({ check, handleEditClick, formatWeight }) => {
   const [photoURLs, setPhotoURLs] = useState({});
   const [modalImage, setModalImage] = useState(null);
+  const [failedPhotos, setFailedPhotos] = useState({});
   const isEditable = check.createdAt ? (new Date() - check.createdAt.toDate()) / (1000 * 60 * 60) < 2 : false; // 2 ore
 
   useEffect(() => {
@@ -187,11 +188,12 @@ const CheckDetails = ({ check, handleEditClick, formatWeight }) => {
         // Just use them directly (all new uploads will be R2 URLs starting with http)
         const normalized = normalizePhotoURLs(check.photoURLs);
         setPhotoURLs(normalized);
+        setFailedPhotos({}); // Reset failed photos quando cambiano i photoURLs
         console.debug('[ClientChecks] Normalized photoURLs for check', check.id, normalized);
       }
     };
     loadPhotos();
-  }, [check.photoURLs]);
+  }, [check.photoURLs, check.id]);
 
   return (
     <div>
@@ -228,7 +230,7 @@ const CheckDetails = ({ check, handleEditClick, formatWeight }) => {
                 <h5 className="text-sm font-semibold text-slate-400 capitalize">
                   {type === 'front' ? 'Frontale' : type === 'back' ? 'Posteriore' : `Laterale ${type === 'left' ? 'Sinistro' : 'Destro'}`}
                 </h5>
-                {photoURLs[type] ? (
+                {photoURLs[type] && !failedPhotos[type] ? (
                   <button
                     onClick={() => setModalImage(photoURLs[type])}
                     className="block w-full h-48 overflow-hidden rounded-lg transition-all duration-300 group-hover:shadow-lg group-hover:shadow-cyan-500/20 cursor-pointer"
@@ -237,10 +239,23 @@ const CheckDetails = ({ check, handleEditClick, formatWeight }) => {
                       src={photoURLs[type]}
                       alt={type}
                       className="w-full h-full object-cover rounded-lg hover:opacity-90 transition-opacity"
+                      onError={() => {
+                        console.warn(`[ClientChecks] Failed to load photo for ${type}:`, photoURLs[type]);
+                        setFailedPhotos(prev => ({ ...prev, [type]: true }));
+                      }}
                     />
                   </button>
                 ) : (
-                  <div className="w-full h-48 bg-slate-700/50 rounded-lg text-slate-500 flex items-center justify-center">Foto non disponibile</div>
+                  <div className="w-full h-48 bg-slate-700/50 rounded-lg text-slate-500 flex flex-col items-center justify-center gap-2">
+                    {failedPhotos[type] ? (
+                      <>
+                        <ImageOff size={24} />
+                        <span className="text-xs">Errore caricamento</span>
+                      </>
+                    ) : (
+                      <span className="text-xs">Foto non disponibile</span>
+                    )}
+                  </div>
                 )}
               </div>
             ))}

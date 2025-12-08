@@ -1398,7 +1398,16 @@ export default function ClientDetail() {
                 onClick={() => setZoomPhoto({ open: true, url: photo.url, alt: photo.label })} 
                 className="relative overflow-hidden rounded-lg group border border-slate-800 bg-slate-900/60"
               >
-                <img src={photo.url} alt={photo.label} className="w-full h-24 object-cover transition-transform group-hover:scale-110" />
+                <img 
+                  src={photo.url} 
+                  alt={photo.label} 
+                  className="w-full h-24 object-cover transition-transform group-hover:scale-110" 
+                  onError={(e) => {
+                    console.warn('[ClientDetail] Failed to load photo:', photo.url);
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = '<div class="w-full h-24 flex items-center justify-center text-slate-500 text-xs">Errore caricamento</div>';
+                  }}
+                />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
                   <ZoomIn className="text-white opacity-0 group-hover:opacity-100" size={18} />
                 </div>
