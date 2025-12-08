@@ -479,14 +479,17 @@ export const ProLayout = () => {
   }, []);
 
   // Verifica se mostrare onboarding per nuovi utenti
+  // TOUR_VERSION: incrementa per forzare reset del tour per tutti gli utenti
+  const TOUR_VERSION = 2;
+  
   useEffect(() => {
     const checkOnboarding = async () => {
       const user = auth.currentUser;
       if (!user) return;
 
       try {
-        // Controlla se onboarding già completato/skippato
-        const onboardingKey = `onboarding_shown_${user.uid}`;
+        // Controlla se onboarding già completato per questa versione
+        const onboardingKey = `onboarding_shown_${user.uid}_v${TOUR_VERSION}`;
         if (localStorage.getItem(onboardingKey)) return;
 
         const { getDoc } = await import('firebase/firestore');
@@ -495,11 +498,14 @@ export const ProLayout = () => {
         
         const onboardingDoc = await getDoc(getTenantDoc(db, 'onboarding', user.uid));
         
-        if (!onboardingDoc.exists()) {
+        // Se non esiste doc, o se la versione è vecchia, mostra il tour
+        const savedVersion = onboardingDoc.exists() ? (onboardingDoc.data().tourVersion || 1) : 0;
+        
+        if (savedVersion < TOUR_VERSION) {
           // Mostra onboarding dopo un delay
           setTimeout(() => setShowOnboarding(true), 1500);
         } else {
-          // Segna come già visto
+          // Segna come già visto per questa versione
           localStorage.setItem(onboardingKey, 'true');
         }
       } catch (error) {

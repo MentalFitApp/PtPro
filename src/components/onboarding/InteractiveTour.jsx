@@ -431,6 +431,9 @@ export default function InteractiveTour({ role = 'admin', onComplete, onSkip }) 
     }
   };
   
+  // Versione del tour - deve corrispondere a TOUR_VERSION in ProLayout
+  const TOUR_VERSION = 2;
+  
   const handleComplete = async () => {
     setIsActive(false);
     
@@ -441,8 +444,11 @@ export default function InteractiveTour({ role = 'admin', onComplete, onSkip }) 
         await setDoc(getTenantDoc(db, 'onboarding', user.uid), {
           completedAt: new Date(),
           role,
-          skipped: false
+          skipped: false,
+          tourVersion: TOUR_VERSION
         });
+        // Aggiorna localStorage
+        localStorage.setItem(`onboarding_shown_${user.uid}_v${TOUR_VERSION}`, 'true');
       }
     } catch (error) {
       console.error('Error saving tour completion:', error);
@@ -461,8 +467,11 @@ export default function InteractiveTour({ role = 'admin', onComplete, onSkip }) 
         await setDoc(getTenantDoc(db, 'onboarding', user.uid), {
           completedAt: new Date(),
           role,
-          skipped: true
+          skipped: true,
+          tourVersion: TOUR_VERSION
         });
+        // Aggiorna localStorage
+        localStorage.setItem(`onboarding_shown_${user.uid}_v${TOUR_VERSION}`, 'true');
       }
     } catch (error) {
       console.error('Error saving tour skip:', error);
