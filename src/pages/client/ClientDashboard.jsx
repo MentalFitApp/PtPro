@@ -4,7 +4,7 @@ import { doc, getDoc, getDocs, collection, query, orderBy, onSnapshot, limit } f
 import { db } from '../../firebase.js';
 import { useNavigate, Link } from 'react-router-dom';
 import { getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone, TrendingUp, Target, Dumbbell, Utensils, Phone } from 'lucide-react';
+import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone, TrendingUp, Target, Dumbbell, Utensils, Phone, UserCircle, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
 import { useTenantBranding } from '../../hooks/useTenantBranding';
@@ -76,6 +76,7 @@ const ClientDashboard = () => {
   const [blockMessage, setBlockMessage] = useState('');
   const [requireAnamnesi, setRequireAnamnesi] = useState(false);
   const [hasAnamnesi, setHasAnamnesi] = useState(true); // Default true per non bloccare durante caricamento
+  const [needsGenderUpdate, setNeedsGenderUpdate] = useState(false); // Banner per aggiungere sesso
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
@@ -127,7 +128,27 @@ const ClientDashboard = () => {
             
             const clientHasAnamnesi = anamnesiSnap.docs.length > 0;
             setHasAnamnesi(clientHasAnamnesi);
+            
+            // Se ha l'anamnesi, controlla se manca il sesso
+            if (clientHasAnamnesi && anamnesiSnap.docs[0]) {
+              const anamnesiData = anamnesiSnap.docs[0].data();
+              if (!anamnesiData.gender) {
+                setNeedsGenderUpdate(true);
+              }
+            }
             console.log('ClientDashboard: Anamnesi obbligatoria, cliente ha anamnesi:', clientHasAnamnesi);
+          }
+        } else {
+          // Anche senza impostazioni, controlla se manca il sesso nell'anamnesi esistente
+          const anamnesiRef = getTenantSubcollection(db, 'clients', user.uid, 'anamnesi');
+          const anamnesiQuery = query(anamnesiRef, limit(1));
+          const anamnesiSnap = await getDocs(anamnesiQuery);
+          
+          if (anamnesiSnap.docs.length > 0 && anamnesiSnap.docs[0]) {
+            const anamnesiData = anamnesiSnap.docs[0].data();
+            if (!anamnesiData.gender) {
+              setNeedsGenderUpdate(true);
+            }
           }
         }
       } catch (error) {
@@ -336,6 +357,43 @@ const ClientDashboard = () => {
         <motion.div variants={itemVariants}>
           <LinkAccountBanner />
         </motion.div>
+
+        {/* BANNER COMPLETA ANAMNESI - Sesso mancante */}
+        {needsGenderUpdate && (
+          <motion.div 
+            variants={itemVariants} 
+            className="mb-3 sm:mb-4 bg-gradient-to-r from-purple-600/90 to-indigo-600/90 backdrop-blur-sm text-white rounded-xl p-4 border border-purple-500/30 shadow-lg"
+          >
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-white/20 rounded-lg flex-shrink-0">
+                <UserCircle size={24} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-sm sm:text-base mb-1">Completa la tua Anamnesi</h3>
+                <p className="text-xs sm:text-sm text-purple-100 opacity-90">
+                  Aggiungi il tuo sesso per permetterci di calcolare meglio i tuoi progressi
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/client/anamnesi')}
+                  className="px-3 py-1.5 bg-white text-purple-700 font-semibold text-xs sm:text-sm rounded-lg hover:bg-purple-50 transition-colors"
+                >
+                  Completa
+                </motion.button>
+                <button
+                  onClick={() => setNeedsGenderUpdate(false)}
+                  className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+                  title="Chiudi"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* PULSANTI PWA - Versione Compatta */}
         {showPWAInstall && (
