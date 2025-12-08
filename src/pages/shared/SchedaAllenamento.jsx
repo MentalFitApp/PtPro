@@ -6,6 +6,7 @@ import { db } from '../../firebase';
 import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit } from 'firebase/firestore';
 import { exportWorkoutCardToPDF } from '../../utils/pdfExport';
+import { useToast } from '../../contexts/ToastContext';
 
 const OBIETTIVI = ['Forza', 'Massa', 'Definizione', 'Resistenza', 'Ricomposizione'];
 const LIVELLI = ['Principiante', 'Intermedio', 'Avanzato'];
@@ -14,6 +15,7 @@ const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Vene
 const SchedaAllenamento = () => {
   const { clientId } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [clientName, setClientName] = useState('');
@@ -149,14 +151,14 @@ const SchedaAllenamento = () => {
         });
       }
 
-      alert('Scheda salvata con successo!');
+      toast.success('Scheda salvata con successo!');
       
       // Switch to view mode after saving
       setSchedaExists(true);
       setIsEditMode(false);
     } catch (error) {
       console.error('Errore salvataggio:', error);
-      alert('Errore nel salvataggio della scheda');
+      toast.error('Errore nel salvataggio della scheda');
     }
     setSaving(false);
   };
@@ -259,7 +261,7 @@ const SchedaAllenamento = () => {
 
   const handleSaveAsPreset = async () => {
     if (!presetName.trim()) {
-      alert('Inserisci un nome per il preset');
+      toast.warning('Inserisci un nome per il preset');
       return;
     }
     
@@ -270,12 +272,12 @@ const SchedaAllenamento = () => {
         data: schedaData,
         createdAt: new Date()
       });
-      alert('Preset salvato con successo!');
+      toast.success('Preset salvato con successo!');
       setShowSavePresetModal(false);
       setPresetName('');
     } catch (error) {
       console.error('Errore salvataggio preset:', error);
-      alert('Errore nel salvataggio del preset');
+      toast.error('Errore nel salvataggio del preset');
     }
   };
 
@@ -309,7 +311,7 @@ const SchedaAllenamento = () => {
 
   const handleCopyPrevious = () => {
     if (!previousCard) {
-      alert('Nessuna scheda precedente trovata');
+      toast.info('Nessuna scheda precedente trovata');
       return;
     }
     
@@ -780,6 +782,7 @@ const SchedaAllenamento = () => {
           {showAddEsercizio && (
             <AddEsercizioModal
               availableExercises={availableExercises}
+              toast={toast}
               onAdd={(esercizio) => {
                 addEsercizio(esercizio);
                 setShowAddEsercizio(false);
@@ -1000,7 +1003,7 @@ const SchedaAllenamento = () => {
 };
 
 // Add Exercise Modal Component
-const AddEsercizioModal = ({ availableExercises, onAdd, onCancel }) => {
+const AddEsercizioModal = ({ availableExercises, onAdd, onCancel, toast }) => {
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -1010,7 +1013,7 @@ const AddEsercizioModal = ({ availableExercises, onAdd, onCancel }) => {
 
   const handleAdd = () => {
     if (!selectedExercise) {
-      alert('Seleziona un esercizio');
+      toast?.warning('Seleziona un esercizio');
       return;
     }
     onAdd({

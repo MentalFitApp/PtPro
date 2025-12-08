@@ -13,6 +13,8 @@ import { doc, getDoc, setDoc, updateDoc, collection, getDocs, deleteDoc } from '
 import { db, auth } from '../../firebase';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import OAuthButton from '../../components/integrations/OAuthButton';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 // === INTEGRATION CONFIGS ===
 const INTEGRATIONS = {
@@ -310,6 +312,7 @@ const IntegrationCard = ({
 
 // === WHATSAPP SETTINGS MODAL ===
 const WhatsAppSettingsModal = ({ isOpen, onClose, templates, onSaveTemplates }) => {
+  const toast = useToast();
   const [editingTemplates, setEditingTemplates] = useState([]);
   const [activeTemplate, setActiveTemplate] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -330,10 +333,11 @@ const WhatsAppSettingsModal = ({ isOpen, onClose, templates, onSaveTemplates }) 
     setSaving(true);
     try {
       await onSaveTemplates(editingTemplates);
+      toast.success('Template salvati con successo');
       onClose();
     } catch (error) {
       console.error('Errore salvataggio template:', error);
-      alert('Errore durante il salvataggio');
+      toast.error('Errore durante il salvataggio');
     } finally {
       setSaving(false);
     }
@@ -558,6 +562,8 @@ export default function IntegrationsHub() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tenantId = localStorage.getItem('tenantId');
+  const toast = useToast();
+  const { confirmAction } = useConfirm();
   
   const [loading, setLoading] = useState(true);
   const [integrationStatuses, setIntegrationStatuses] = useState({});
@@ -620,7 +626,12 @@ export default function IntegrationsHub() {
   };
 
   const handleDisconnect = async (integrationId) => {
-    if (!confirm(`Sei sicuro di voler disconnettere ${INTEGRATIONS[integrationId]?.name}?`)) return;
+    const ok = await confirmAction(
+      `Sei sicuro di voler disconnettere ${INTEGRATIONS[integrationId]?.name}?`,
+      'Disconnetti Integrazione',
+      'Disconnetti'
+    );
+    if (!ok) return;
     
     try {
       const integrationRef = doc(db, `tenants/${tenantId}/integrations/${integrationId}`);
@@ -632,10 +643,10 @@ export default function IntegrationsHub() {
       });
       
       await loadIntegrations();
-      alert('✅ Integrazione disconnessa con successo');
+      toast.success('Integrazione disconnessa con successo');
     } catch (error) {
       console.error('Errore disconnessione:', error);
-      alert('❌ Errore durante la disconnessione');
+      toast.error('Errore durante la disconnessione');
     }
   };
 
@@ -664,7 +675,7 @@ export default function IntegrationsHub() {
 
   const handleOAuthError = (error) => {
     console.error('Errore OAuth:', error);
-    alert('❌ Errore durante la connessione');
+    toast.error('Errore durante la connessione');
   };
 
   if (loading) {

@@ -5,6 +5,8 @@ import { db, auth } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, or, getDoc, setDoc } from 'firebase/firestore';
 import { getTenantCollection, getTenantDoc } from '../config/tenant';
 import { uploadToR2 } from '../cloudflareStorage';
+import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 const ATTREZZI = [
   'Bilanciere',
@@ -39,6 +41,8 @@ const GRUPPI_MUSCOLARI = [
 ];
 
 const ListaEsercizi = ({ onBack }) => {
+  const toast = useToast();
+  const { confirmDelete } = useConfirm();
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,7 +85,7 @@ const ListaEsercizi = ({ onBack }) => {
       loadExercises(); // Ricarica con nuove impostazioni
     } catch (error) {
       console.error('Errore salvataggio settings:', error);
-      alert('Errore nel salvataggio delle impostazioni');
+      toast.error('Errore nel salvataggio delle impostazioni');
     }
   };
 
@@ -150,13 +154,13 @@ const ListaEsercizi = ({ onBack }) => {
     if (!file) return;
 
     if (!file.type.startsWith('video/')) {
-      alert('Seleziona un file video valido');
+      toast.warning('Seleziona un file video valido');
       return;
     }
 
     // Limite 50MB per video
     if (file.size > 50 * 1024 * 1024) {
-      alert('Il video non può superare i 50MB');
+      toast.warning('Il video non può superare i 50MB');
       return;
     }
 
@@ -165,7 +169,7 @@ const ListaEsercizi = ({ onBack }) => {
 
   const handleAddExercise = async () => {
     if (!formData.nome || !formData.attrezzo || !formData.gruppoMuscolare) {
-      alert('Compila i campi obbligatori (nome, attrezzo, gruppo muscolare)');
+      toast.warning('Compila i campi obbligatori (nome, attrezzo, gruppo muscolare)');
       return;
     }
 
@@ -190,7 +194,7 @@ const ListaEsercizi = ({ onBack }) => {
           console.log('✅ Video caricato:', videoUrl);
         } catch (uploadError) {
           console.error('❌ Errore upload video:', uploadError);
-          alert(`Errore upload video: ${uploadError.message}`);
+          toast.error(`Errore upload video: ${uploadError.message}`);
           setUploadingVideo(false);
           return;
         }
@@ -216,7 +220,7 @@ const ListaEsercizi = ({ onBack }) => {
       loadExercises();
     } catch (error) {
       console.error('Errore nell\'aggiunta dell\'esercizio:', error);
-      alert(`Errore nell\'aggiunta dell\'esercizio: ${error.message}`);
+      toast.error(`Errore nell'aggiunta dell'esercizio: ${error.message}`);
     } finally {
       setUploadingVideo(false);
       setUploadProgress(0);
@@ -225,7 +229,7 @@ const ListaEsercizi = ({ onBack }) => {
 
   const handleUpdateExercise = async () => {
     if (!formData.nome || !formData.attrezzo || !formData.gruppoMuscolare) {
-      alert('Compila i campi obbligatori (nome, attrezzo, gruppo muscolare)');
+      toast.warning('Compila i campi obbligatori (nome, attrezzo, gruppo muscolare)');
       return;
     }
 
@@ -247,7 +251,7 @@ const ListaEsercizi = ({ onBack }) => {
           console.log('✅ Video aggiornato:', videoUrl);
         } catch (uploadError) {
           console.error('❌ Errore upload video:', uploadError);
-          alert(`Errore upload video: ${uploadError.message}`);
+          toast.error(`Errore upload video: ${uploadError.message}`);
           setUploadingVideo(false);
           return;
         }
@@ -270,7 +274,7 @@ const ListaEsercizi = ({ onBack }) => {
       loadExercises();
     } catch (error) {
       console.error('Errore nell\'aggiornamento dell\'esercizio:', error);
-      alert(`Errore nell\'aggiornamento dell\'esercizio: ${error.message}`);
+      toast.error(`Errore nell'aggiornamento dell'esercizio: ${error.message}`);
     } finally {
       setUploadingVideo(false);
       setUploadProgress(0);
@@ -278,7 +282,8 @@ const ListaEsercizi = ({ onBack }) => {
   };
 
   const handleDeleteExercise = async (exercise) => {
-    if (!confirm('Sei sicuro di voler eliminare questo esercizio?')) return;
+    const confirmed = await confirmDelete('questo esercizio');
+    if (!confirmed) return;
 
     try {
       const exerciseRef = exercise.source === 'global'
@@ -286,9 +291,10 @@ const ListaEsercizi = ({ onBack }) => {
         : getTenantDoc(db, 'exercises', exercise.id);
       await deleteDoc(exerciseRef);
       loadExercises();
+      toast.success('Esercizio eliminato');
     } catch (error) {
       console.error('Errore nell\'eliminazione dell\'esercizio:', error);
-      alert('Errore nell\'eliminazione dell\'esercizio');
+      toast.error('Errore nell\'eliminazione dell\'esercizio');
     }
   };
 

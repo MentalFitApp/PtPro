@@ -6,6 +6,7 @@ import { BookOpen, Search, Filter, Grid, List, GraduationCap } from 'lucide-reac
 import { AnimatePresence } from 'framer-motion';
 import CourseCard from './CourseCard';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * Dashboard principale per i corsi - mostra tutti i corsi disponibili
@@ -13,6 +14,7 @@ import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../..
 export default function CourseDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
   const [courses, setCourses] = useState([]);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -134,10 +136,10 @@ export default function CourseDashboard() {
       // Ricarica iscrizioni
       await loadUserEnrollments(user.uid);
 
-      alert('Iscrizione completata! Ora puoi accedere al corso.');
+      toast.success('Iscrizione completata! Ora puoi accedere al corso.');
     } catch (error) {
       console.error('Error enrolling:', error);
-      alert('Errore durante l\'iscrizione. Riprova.');
+      toast.error('Errore durante l\'iscrizione. Riprova.');
     }
   };
 

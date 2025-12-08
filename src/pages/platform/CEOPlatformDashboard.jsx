@@ -22,6 +22,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import PageBuilder from '../../components/platform/PageBuilder';
 import LinkAccountBanner from '../../components/LinkAccountBanner';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import { 
   Card, CardContainer, SectionHeader, PageHeader, MiniStat, MiniStatCard,
   ProgressBar, Badge, ActionButton, EmptyState, Modal 
@@ -254,6 +256,8 @@ const TenantCard = ({ tenant, onViewDetails }) => (
 );
 
 export default function CEOPlatformDashboard() {
+  const toast = useToast();
+  const { confirmDelete, confirmAction } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [isPlatformCEO, setIsPlatformCEO] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -557,7 +561,7 @@ export default function CEOPlatformDashboard() {
       });
     } catch (error) {
       console.error('Error loading landing config:', error);
-      alert('Errore nel caricamento della configurazione');
+      toast.error('Errore nel caricamento della configurazione');
     }
   };
 
@@ -577,10 +581,10 @@ export default function CEOPlatformDashboard() {
       // Ricarica tenant
       await loadPlatformData();
       setEditingLanding(null);
-      alert('✅ Landing page aggiornata con successo!');
+      toast.success('Landing page aggiornata con successo!');
     } catch (error) {
       console.error('Error saving landing:', error);
-      alert('❌ Errore nel salvataggio');
+      toast.error('Errore nel salvataggio');
     }
   };
 
@@ -590,10 +594,10 @@ export default function CEOPlatformDashboard() {
       const newStatus = tenant.status === 'active' ? 'draft' : 'active';
       await updateDoc(doc(db, 'tenants', tenant.id), { status: newStatus });
       await loadPlatformData();
-      alert(`✅ Sito ${newStatus === 'active' ? 'pubblicato' : 'messo in bozza'}!`);
+      toast.success(`Sito ${newStatus === 'active' ? 'pubblicato' : 'messo in bozza'}!`);
     } catch (error) {
       console.error('Error toggling status:', error);
-      alert('❌ Errore nel cambio di status');
+      toast.error('Errore nel cambio di status');
     }
   };
 
@@ -607,7 +611,7 @@ export default function CEOPlatformDashboard() {
       setShowPageBuilder(true);
     } catch (error) {
       console.error('Error loading page builder:', error);
-      alert('❌ Errore nel caricamento del builder');
+      toast.error('Errore nel caricamento del builder');
     }
   };
 
@@ -631,10 +635,10 @@ export default function CEOPlatformDashboard() {
       setCurrentTenantForBuilder(null);
       setCurrentLandingBlocks([]);
       await loadPlatformData();
-      alert('✅ Landing page aggiornata con successo!');
+      toast.success('Landing page aggiornata con successo!');
     } catch (error) {
       console.error('Error saving from builder:', error);
-      alert('❌ Errore nel salvataggio');
+      toast.error('Errore nel salvataggio');
     }
   };
 
@@ -657,7 +661,7 @@ export default function CEOPlatformDashboard() {
       });
     } catch (error) {
       console.error('Error loading branding:', error);
-      alert('Errore nel caricamento del branding');
+      toast.error('Errore nel caricamento del branding');
     }
   };
 
@@ -667,10 +671,10 @@ export default function CEOPlatformDashboard() {
       const { tenantId, config } = editingBranding;
       await setDoc(doc(db, 'tenants', tenantId, 'settings', 'branding'), config, { merge: true });
       setEditingBranding(null);
-      alert('✅ Branding aggiornato con successo!');
+      toast.success('Branding aggiornato con successo!');
     } catch (error) {
       console.error('Error saving branding:', error);
-      alert('❌ Errore nel salvataggio del branding');
+      toast.error('Errore nel salvataggio del branding');
     }
   };
 
@@ -687,10 +691,10 @@ export default function CEOPlatformDashboard() {
       // Ricarica i dati aggiornati
       await loadPlatformData();
       
-      alert('✅ Statistiche aggiornate con successo!');
+      toast.success('Statistiche aggiornate con successo!');
     } catch (error) {
       console.error('❌ Errore refresh stats:', error);
-      alert('⚠️ Errore durante l\'aggiornamento. Ricarico comunque i dati...');
+      toast.warning('Errore durante l\'aggiornamento. Ricarico comunque i dati...');
       await loadPlatformData();
     } finally {
       setRefreshing(false);
@@ -727,10 +731,10 @@ export default function CEOPlatformDashboard() {
       
       await loadPlatformData();
       setEditingSubscription(null);
-      alert('✅ Abbonamento aggiornato con successo!');
+      toast.success('Abbonamento aggiornato con successo!');
     } catch (error) {
       console.error('Error saving subscription:', error);
-      alert('❌ Errore nel salvataggio dell\'abbonamento');
+      toast.error('Errore nel salvataggio dell\'abbonamento');
     }
   };
 
@@ -798,10 +802,10 @@ export default function CEOPlatformDashboard() {
 
       await loadPlatformData();
       setShowCreateTenant(false);
-      alert(`✅ Tenant "${tenantData.name}" creato con successo!`);
+      toast.success(`Tenant "${tenantData.name}" creato con successo!`);
     } catch (error) {
       console.error('Error creating tenant:', error);
-      alert('❌ Errore nella creazione del tenant: ' + error.message);
+      toast.error('Errore nella creazione del tenant: ' + error.message);
     } finally {
       setActionLoading(false);
     }
@@ -818,10 +822,10 @@ export default function CEOPlatformDashboard() {
       
       await loadPlatformData();
       setEditingTenant(null);
-      alert('✅ Tenant aggiornato con successo!');
+      toast.success('Tenant aggiornato con successo!');
     } catch (error) {
       console.error('Error updating tenant:', error);
-      alert('❌ Errore nell\'aggiornamento: ' + error.message);
+      toast.error('Errore nell\'aggiornamento: ' + error.message);
     } finally {
       setActionLoading(false);
     }
@@ -829,9 +833,12 @@ export default function CEOPlatformDashboard() {
 
   // Sospendi tenant
   const handleSuspendTenant = async (tenant) => {
-    if (!confirm(`Vuoi davvero SOSPENDERE il tenant "${tenant.name}"?\n\nGli utenti non potranno più accedere fino alla riattivazione.`)) {
-      return;
-    }
+    const ok = await confirmAction(
+      `Vuoi davvero SOSPENDERE il tenant "${tenant.name}"?\n\nGli utenti non potranno più accedere fino alla riattivazione.`,
+      'Sospendi Tenant',
+      'Sospendi'
+    );
+    if (!ok) return;
     
     setActionLoading(true);
     try {
@@ -844,10 +851,10 @@ export default function CEOPlatformDashboard() {
       
       await loadPlatformData();
       setSelectedTenant(null);
-      alert(`⚠️ Tenant "${tenant.name}" sospeso.`);
+      toast.warning(`Tenant "${tenant.name}" sospeso.`);
     } catch (error) {
       console.error('Error suspending tenant:', error);
-      alert('❌ Errore nella sospensione: ' + error.message);
+      toast.error('Errore nella sospensione: ' + error.message);
     } finally {
       setActionLoading(false);
     }
@@ -855,9 +862,8 @@ export default function CEOPlatformDashboard() {
 
   // Riattiva tenant
   const handleReactivateTenant = async (tenant) => {
-    if (!confirm(`Vuoi riattivare il tenant "${tenant.name}"?`)) {
-      return;
-    }
+    const ok = await confirmAction(`Vuoi riattivare il tenant "${tenant.name}"?`, 'Riattiva Tenant', 'Riattiva');
+    if (!ok) return;
     
     setActionLoading(true);
     try {
@@ -870,10 +876,10 @@ export default function CEOPlatformDashboard() {
       
       await loadPlatformData();
       setSelectedTenant(null);
-      alert(`✅ Tenant "${tenant.name}" riattivato!`);
+      toast.success(`Tenant "${tenant.name}" riattivato!`);
     } catch (error) {
       console.error('Error reactivating tenant:', error);
-      alert('❌ Errore nella riattivazione: ' + error.message);
+      toast.error('Errore nella riattivazione: ' + error.message);
     } finally {
       setActionLoading(false);
     }
@@ -881,16 +887,10 @@ export default function CEOPlatformDashboard() {
 
   // Elimina tenant (con conferma multipla)
   const handleDeleteTenant = async (tenant) => {
-    const confirmText = prompt(
-      `⚠️ ATTENZIONE: Stai per ELIMINARE DEFINITIVAMENTE il tenant "${tenant.name}".\n\n` +
-      `Questo cancellerà TUTTI i dati: ${tenant.users} utenti, ${tenant.clients} clienti, tutti i programmi e pagamenti.\n\n` +
-      `Scrivi "${tenant.id}" per confermare:`
+    const ok = await confirmDelete(
+      `il tenant "${tenant.name}" (${tenant.users} utenti, ${tenant.clients} clienti, tutti i programmi e pagamenti)`
     );
-    
-    if (confirmText !== tenant.id) {
-      alert('Eliminazione annullata. Il testo inserito non corrisponde.');
-      return;
-    }
+    if (!ok) return;
     
     setActionLoading(true);
     try {
@@ -908,10 +908,10 @@ export default function CEOPlatformDashboard() {
       
       await loadPlatformData();
       setSelectedTenant(null);
-      alert(`🗑️ Tenant "${tenant.name}" eliminato definitivamente.`);
+      toast.success(`Tenant "${tenant.name}" eliminato definitivamente.`);
     } catch (error) {
       console.error('Error deleting tenant:', error);
-      alert('❌ Errore nell\'eliminazione: ' + error.message);
+      toast.error('Errore nell\'eliminazione: ' + error.message);
     } finally {
       setActionLoading(false);
     }
@@ -928,7 +928,7 @@ export default function CEOPlatformDashboard() {
     if (email) {
       window.open(`mailto:${email}?subject=FitFlow Platform - ${tenant.name}&body=Ciao,`, '_blank');
     } else {
-      alert('Email del proprietario non disponibile.');
+      toast.warning('Email del proprietario non disponibile.');
     }
   };
 
@@ -2492,7 +2492,7 @@ export default function CEOPlatformDashboard() {
                       setEditingSubscription(null);
                     } catch (error) {
                       console.error('Error updating subscription:', error);
-                      alert('Errore durante l\'aggiornamento');
+                      toast.error('Errore durante l\'aggiornamento');
                     }
                   }}
                   className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"

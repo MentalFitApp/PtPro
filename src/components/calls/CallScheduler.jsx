@@ -7,9 +7,13 @@ import { getTenantSubcollection } from '../../config/tenant';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, Calendar, Clock, X, Check, Trash2, Video } from 'lucide-react';
 import { notifyCallRequest } from '../../services/notificationService';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 // Modal per schedulare una chiamata (usato da Admin in ClientDetail)
 export const ScheduleCallModal = ({ isOpen, onClose, clientId, clientName, existingCall, onSave }) => {
+  const toast = useToast();
+  const { confirmDelete } = useConfirm();
   const [date, setDate] = useState('');
   const [time, setTime] = useState('10:00');
   const [duration, setDuration] = useState('30');
@@ -63,14 +67,15 @@ export const ScheduleCallModal = ({ isOpen, onClose, clientId, clientName, exist
       onClose();
     } catch (err) {
       console.error('Errore salvataggio chiamata:', err);
-      alert('Errore nel salvataggio della chiamata');
+      toast.error('Errore nel salvataggio della chiamata');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Eliminare questa chiamata programmata?')) return;
+    const confirmed = await confirmDelete('questa chiamata programmata');
+    if (!confirmed) return;
     
     try {
       const callRef = doc(getTenantSubcollection(db, 'clients', clientId, 'calls'), 'next');
@@ -328,7 +333,7 @@ export const RequestCallCard = ({ clientId, clientName }) => {
       }
     } catch (err) {
       console.error('Errore richiesta chiamata:', err);
-      alert('Errore nell\'invio della richiesta');
+      toast.error('Errore nell\'invio della richiesta');
     } finally {
       setRequesting(false);
     }

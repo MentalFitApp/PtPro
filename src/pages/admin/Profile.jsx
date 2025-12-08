@@ -7,9 +7,11 @@ import { uploadToR2 } from '../../cloudflareStorage';
 import { User, Camera, Mail, Phone, Briefcase, Save, ArrowLeft, Upload } from 'lucide-react';
 import { motion } from 'framer-motion';
 import LinkAccountCard from '../../components/LinkAccountCard';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function Profile() {
   const navigate = useNavigate();
+  const toast = useToast();
   const currentUser = auth.currentUser;
 
   const [profile, setProfile] = useState({
@@ -86,13 +88,13 @@ export default function Profile() {
 
     // Validazione tipo file
     if (!file.type.startsWith('image/')) {
-      alert('Per favore seleziona un\'immagine valida');
+      toast.warning('Per favore seleziona un\'immagine valida');
       return;
     }
 
     // Validazione dimensione (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('L\'immagine deve essere inferiore a 5MB');
+      toast.warning('L\'immagine deve essere inferiore a 5MB');
       return;
     }
 
@@ -120,7 +122,7 @@ export default function Profile() {
       setProfile(prev => ({ ...prev, photoURL }));
     } catch (error) {
       console.error('Errore upload immagine:', error);
-      alert('Errore durante il caricamento dell\'immagine: ' + error.message);
+      toast.error('Errore durante il caricamento dell\'immagine: ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -128,7 +130,7 @@ export default function Profile() {
 
   const handleSave = async () => {
     if (!profile.displayName.trim()) {
-      alert('Il nome è obbligatorio');
+      toast.warning('Il nome è obbligatorio');
       return;
     }
 
@@ -155,11 +157,11 @@ export default function Profile() {
       
       await setDoc(userRef, dataToSave, { merge: true });
 
-      alert('Profilo salvato con successo!');
+      toast.success('Profilo salvato con successo!');
       // Non navigo via, rimango nella pagina profilo
     } catch (error) {
       console.error('Errore salvataggio profilo:', error);
-      alert('Errore durante il salvataggio del profilo');
+      toast.error('Errore durante il salvataggio del profilo');
     } finally {
       setSaving(false);
     }

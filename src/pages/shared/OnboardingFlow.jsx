@@ -6,9 +6,11 @@ import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../..
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Play, SkipForward, Check, ChevronRight, Camera, User, MessageSquare, FileText, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useToast } from '../../contexts/ToastContext';
 
 const OnboardingFlow = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -159,7 +161,7 @@ const OnboardingFlow = () => {
       nextStep();
     } catch (error) {
       console.error('Error uploading photo:', error);
-      alert('Errore nel caricamento della foto');
+      toast.error('Errore nel caricamento della foto');
     }
   };
 
@@ -192,7 +194,7 @@ const OnboardingFlow = () => {
       nextStep();
     } catch (error) {
       console.error('Error creating presentation post:', error);
-      alert('Errore nella pubblicazione del post');
+      toast.error('Errore nella pubblicazione del post');
     }
   };
 
@@ -210,7 +212,7 @@ const OnboardingFlow = () => {
       navigate('/client/dashboard');
     } catch (error) {
       console.error('Error completing onboarding:', error);
-      alert('Errore nel completamento dell\'onboarding');
+      toast.error('Errore nel completamento dell\'onboarding');
     }
   };
 

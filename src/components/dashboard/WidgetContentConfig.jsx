@@ -3,11 +3,13 @@ import { X, Save, Eye, EyeOff } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getTenantDoc } from '../../config/tenant';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * Componente per configurare quali dati mostrare nei widget della dashboard
  */
 function WidgetContentConfig({ widgetId, widgetName, onClose, onSave }) {
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState({
@@ -94,11 +96,11 @@ function WidgetContentConfig({ widgetId, widgetName, onClose, onSave }) {
       });
       
       if (onSave) onSave(config);
-      alert('Configurazione widget salvata!');
+      toast.success('Configurazione widget salvata!');
       onClose();
     } catch (error) {
       console.error('Errore salvataggio:', error);
-      alert('Errore nel salvataggio');
+      toast.error('Errore nel salvataggio');
     } finally {
       setSaving(false);
     }

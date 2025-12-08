@@ -5,10 +5,12 @@ import { db } from '../../firebase';
 import { uploadToR2 } from '../../cloudflareStorage';
 import { Play, Upload, CheckCircle, XCircle } from 'lucide-react';
 import CountdownTimer from '../admin/landingPages/components/CountdownTimer';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function PublicLandingPage() {
   const { tenantSlug, slug } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const [page, setPage] = useState(null);
   const [tenantId, setTenantId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -160,7 +162,7 @@ export default function PublicLandingPage() {
     // Valida dimensione (max 1GB)
     const maxSize = 1024 * 1024 * 1024; // 1GB
     if (file.size > maxSize) {
-      alert('Il video non può superare 1GB');
+      toast.error('Il video non può superare 1GB');
       return;
     }
 
@@ -197,7 +199,7 @@ export default function PublicLandingPage() {
       }
     } catch (err) {
       console.error('Video upload error:', err);
-      alert('Errore durante l\'upload: ' + err.message);
+      toast.error('Errore durante l\'upload: ' + err.message);
     } finally {
       setUploadingVideo(false);
     }

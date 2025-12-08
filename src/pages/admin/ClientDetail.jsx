@@ -51,6 +51,7 @@ import { getTenantDoc, getTenantSubcollection, CURRENT_TENANT_ID } from '../../c
 import { useUserPreferences } from '../../hooks/useUserPreferences';
 import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
 import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import ProgressCharts from '../../components/client/ProgressCharts';
 import PhotoCompare from '../../components/client/PhotoCompare';
 import { 
@@ -104,6 +105,7 @@ const PathStatusBadge = ({ status }) => {
 };
 
 const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
+  const toast = useToast();
   const [months, setMonths] = useState(3);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState(PAYMENT_METHODS.BONIFICO);
@@ -169,7 +171,7 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
       onClose();
     } catch (err) {
       console.error('Errore rinnovo:', err);
-      alert('Errore durante il salvataggio del rinnovo');
+      toast.error('Errore durante il salvataggio del rinnovo');
     } finally {
       setSaving(false);
     }
@@ -284,6 +286,7 @@ const RenewalModal = ({ isOpen, onClose, client, onSave }) => {
 };
 
 const EditClientModal = ({ isOpen, onClose, client, onSave }) => {
+  const toast = useToast();
   const initialDate = client?.scadenza ? toDate(client.scadenza) : null;
   const [form, setForm] = useState({
     name: client.name || '',
@@ -326,7 +329,7 @@ const EditClientModal = ({ isOpen, onClose, client, onSave }) => {
       onClose();
     } catch (err) {
       console.error('Errore modifica:', err);
-      alert('Errore durante il salvataggio.');
+      toast.error('Errore durante il salvataggio.');
     }
   };
 
@@ -446,6 +449,8 @@ const ExtendExpiryModal = ({ isOpen, onClose, client, onSave }) => {
 };
 
 const EditPaymentModal = ({ isOpen, onClose, payment, client, onSave, onDelete }) => {
+  const toast = useToast();
+  const { confirmDelete } = useConfirm();
   const [form, setForm] = useState({ amount: 0, duration: '', paymentMethod: PAYMENT_METHODS.BONIFICO, paymentDate: '' });
   const [customMethod, setCustomMethod] = useState('');
   const [saving, setSaving] = useState(false);
@@ -483,14 +488,15 @@ const EditPaymentModal = ({ isOpen, onClose, payment, client, onSave, onDelete }
       onClose();
     } catch (err) {
       console.error('Errore modifica pagamento:', err);
-      alert('Errore durante la modifica del pagamento');
+      toast.error('Errore durante la modifica del pagamento');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm('Sei sicuro di voler eliminare questo pagamento?')) return;
+    const ok = await confirmDelete('questo pagamento');
+    if (!ok) return;
     setDeleting(true);
     try {
       if (!payment?.id) return;
@@ -500,7 +506,7 @@ const EditPaymentModal = ({ isOpen, onClose, payment, client, onSave, onDelete }
       onClose();
     } catch (err) {
       console.error('Errore eliminazione pagamento:', err);
-      alert('Errore durante l\'eliminazione del pagamento');
+      toast.error('Errore durante l\'eliminazione del pagamento');
     } finally {
       setDeleting(false);
     }
@@ -969,7 +975,7 @@ export default function ClientDetail() {
 
   const handleDelete = async () => {
     if (window.confirm(`Eliminare ${client?.name}?`)) {
-      try { await deleteDoc(getTenantDoc(db, 'clients', clientId)); navigate('/clients'); } catch { alert('Errore eliminazione.'); }
+      try { await deleteDoc(getTenantDoc(db, 'clients', clientId)); navigate('/clients'); } catch { toast.error('Errore eliminazione.'); }
     }
   };
 
@@ -1000,11 +1006,11 @@ export default function ClientDetail() {
           setCopied(true);
           setTimeout(() => setCopied(false), 2500);
         } else {
-          alert('Errore nella generazione del Magic Link');
+          toast.error('Errore nella generazione del Magic Link');
         }
       } catch (error) {
         console.error('Errore generazione Magic Link:', error);
-        alert('Errore: ' + (error.message || 'Riprova più tardi'));
+        toast.error('Errore: ' + (error.message || 'Riprova più tardi'));
       } finally {
         setGeneratingLink(false);
       }
@@ -1041,11 +1047,11 @@ export default function ClientDetail() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
       } else {
-        alert('Errore nella generazione del Magic Link');
+        toast.error('Errore nella generazione del Magic Link');
       }
     } catch (error) {
       console.error('Errore generazione Magic Link:', error);
-      alert('Errore: ' + (error.message || 'Riprova più tardi'));
+      toast.error('Errore: ' + (error.message || 'Riprova più tardi'));
     } finally {
       setGeneratingLink(false);
     }
@@ -1087,7 +1093,7 @@ export default function ClientDetail() {
       
     } catch (error) {
       console.error('Errore upload foto anamnesi:', error);
-      alert('Errore nel caricamento: ' + error.message);
+      toast.error('Errore nel caricamento: ' + error.message);
     } finally {
       setUploadingPhoto(null);
     }
@@ -1106,7 +1112,7 @@ export default function ClientDetail() {
       }));
     } catch (error) {
       console.error('Errore upload foto check:', error);
-      alert('Errore nel caricamento: ' + error.message);
+      toast.error('Errore nel caricamento: ' + error.message);
     } finally {
       setUploadingCheckPhoto(null);
     }
@@ -1144,7 +1150,7 @@ export default function ClientDetail() {
       });
     } catch (error) {
       console.error('Errore salvataggio check:', error);
-      alert('Errore nel salvataggio: ' + error.message);
+      toast.error('Errore nel salvataggio: ' + error.message);
     }
   };
 

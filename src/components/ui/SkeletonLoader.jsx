@@ -28,6 +28,28 @@ export const SkeletonCard = () => (
   </motion.div>
 );
 
+// Skeleton per Stats (griglia di statistiche)
+export const SkeletonStats = ({ count = 4 }) => (
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    {Array.from({ length: count }).map((_, i) => (
+      <motion.div
+        key={i}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: i * 0.05 }}
+        className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 shadow-glow"
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <Skeleton width="w-8" height="h-8" className="rounded-lg" />
+          <Skeleton width="w-16" height="h-3" />
+        </div>
+        <Skeleton width="w-12" height="h-6" className="mb-1" />
+        <Skeleton width="w-20" height="h-3" />
+      </motion.div>
+    ))}
+  </div>
+);
+
 // Skeleton per Lista
 export const SkeletonList = ({ count = 5 }) => (
   <div className="space-y-3">

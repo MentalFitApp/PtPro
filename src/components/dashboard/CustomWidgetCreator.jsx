@@ -3,11 +3,15 @@ import { X, Save, Plus, Trash2, Target, TrendingUp, Users, Calendar, DollarSign 
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getTenantDoc } from '../../config/tenant';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 /**
  * Componente per creare widget personalizzati con metriche selezionabili
  */
 function CustomWidgetCreator({ onClose, onSave }) {
+  const toast = useToast();
+  const { confirmDelete } = useConfirm();
   const [loading, setLoading] = useState(false);
   const [widgetName, setWidgetName] = useState('');
   const [selectedMetrics, setSelectedMetrics] = useState([]);
@@ -115,11 +119,11 @@ function CustomWidgetCreator({ onClose, onSave }) {
 
   const handleSaveWidget = async () => {
     if (!widgetName.trim()) {
-      alert('Inserisci un nome per il widget');
+      toast.warning('Inserisci un nome per il widget');
       return;
     }
     if (selectedMetrics.length === 0) {
-      alert('Seleziona almeno una metrica');
+      toast.warning('Seleziona almeno una metrica');
       return;
     }
 
@@ -139,19 +143,20 @@ function CustomWidgetCreator({ onClose, onSave }) {
         updatedAt: new Date().toISOString(),
       });
 
-      alert('Widget creato con successo!');
+      toast.success('Widget creato con successo!');
       onSave(newWidget);
       onClose();
     } catch (error) {
       console.error('Errore salvataggio widget:', error);
-      alert('Errore nel salvataggio del widget');
+      toast.error('Errore nel salvataggio del widget');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteWidget = async (widgetId) => {
-    if (!confirm('Eliminare questo widget personalizzato?')) return;
+    const confirmed = await confirmDelete('questo widget personalizzato');
+    if (!confirmed) return;
 
     try {
       const updatedWidgets = customWidgets.filter(w => w.id !== widgetId);
@@ -160,10 +165,10 @@ function CustomWidgetCreator({ onClose, onSave }) {
         updatedAt: new Date().toISOString(),
       });
       setCustomWidgets(updatedWidgets);
-      alert('Widget eliminato');
+      toast.success('Widget eliminato');
     } catch (error) {
       console.error('Errore eliminazione widget:', error);
-      alert('Errore nell\'eliminazione del widget');
+      toast.error('Errore nell\'eliminazione del widget');
     }
   };
 

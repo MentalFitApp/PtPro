@@ -8,6 +8,8 @@ import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ConfirmProvider } from './contexts/ConfirmContext';
+import { TenantProvider } from './contexts/TenantContext';
 import { UserPreferencesProvider } from './hooks/useUserPreferences';
 import { getTenantDoc } from './config/tenant';
 
@@ -373,7 +375,9 @@ export default function App() {
   return (
     <ErrorBoundary>
     <ToastProvider>
+    <ConfirmProvider>
     <ThemeProvider>
+    <TenantProvider>
     <UserPreferencesProvider>
       <Suspense fallback={<PageSpinner />}>
         <GlobalUploadBar />
@@ -514,7 +518,9 @@ export default function App() {
       </Routes>
     </Suspense>
     </UserPreferencesProvider>
+    </TenantProvider>
     </ThemeProvider>
+    </ConfirmProvider>
     </ToastProvider>
     </ErrorBoundary>
   );

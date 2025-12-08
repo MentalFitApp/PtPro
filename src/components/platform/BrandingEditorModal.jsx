@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, Palette, Image as ImageIcon, Type } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function BrandingEditorModal({ tenant, onClose, onSave }) {
+  const toast = useToast();
   const [config, setConfig] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -29,7 +31,7 @@ export default function BrandingEditorModal({ tenant, onClose, onSave }) {
       onClose();
     } catch (error) {
       console.error('Error saving:', error);
-      alert('❌ Errore nel salvataggio');
+      toast.error('Errore nel salvataggio');
     } finally {
       setSaving(false);
     }

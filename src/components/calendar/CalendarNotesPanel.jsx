@@ -11,6 +11,8 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { getTenantCollection, getTenantDoc } from '../../config/tenant';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 // Colori per priorità
 const PRIORITY_COLORS = {
@@ -21,6 +23,8 @@ const PRIORITY_COLORS = {
 };
 
 export default function CalendarNotesPanel({ currentDate }) {
+  const toast = useToast();
+  const { confirmDelete } = useConfirm();
   // Converti currentDate in formato string YYYY-MM-DD (fix fuso orario)
   const getDateString = (date) => {
     if (!date) return null;
@@ -123,7 +127,7 @@ export default function CalendarNotesPanel({ currentDate }) {
       setShowAddForm(false);
     } catch (error) {
       console.error('Error saving note:', error);
-      alert('❌ Errore nel salvataggio della nota');
+      toast.error('Errore nel salvataggio della nota');
     }
   };
 
@@ -140,13 +144,14 @@ export default function CalendarNotesPanel({ currentDate }) {
   };
 
   const handleDelete = async (noteId) => {
-    if (!confirm('Eliminare questa nota?')) return;
+    const confirmed = await confirmDelete('questa nota');
+    if (!confirmed) return;
 
     try {
       await deleteDoc(getTenantDoc(db, 'calendarNotes', noteId));
     } catch (error) {
       console.error('Error deleting note:', error);
-      alert('❌ Errore nell\'eliminazione');
+      toast.error('Errore nell\'eliminazione');
     }
   };
 

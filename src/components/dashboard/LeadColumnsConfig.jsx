@@ -3,11 +3,13 @@ import { X, Plus, Save, GripVertical, Eye, EyeOff } from 'lucide-react';
 import { doc, getDoc, setDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getTenantDoc, getTenantCollection } from '../../config/tenant';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * Componente per configurare le colonne visibili nella tabella leads
  */
 export default function LeadColumnsConfig({ onClose, onSave }) {
+  const toast = useToast();
   const [columns, setColumns] = useState([
     { id: 'name', label: 'Nome', visible: true, locked: true },
     { id: 'number', label: 'Telefono', visible: true, locked: false },
@@ -43,7 +45,7 @@ export default function LeadColumnsConfig({ onClose, onSave }) {
 
   const handleAddColumn = () => {
     if (!newColumn.label.trim() || !newColumn.field.trim()) {
-      alert('Inserisci sia il nome che il campo');
+      toast.warning('Inserisci sia il nome che il campo');
       return;
     }
     
@@ -64,7 +66,7 @@ export default function LeadColumnsConfig({ onClose, onSave }) {
   const handleRemoveColumn = (id) => {
     const column = columns.find(c => c.id === id);
     if (column && column.locked) {
-      alert('Non puoi rimuovere colonne bloccate');
+      toast.warning('Non puoi rimuovere colonne bloccate');
       return;
     }
     setColumns(columns.filter(c => c.id !== id));
@@ -117,19 +119,19 @@ export default function LeadColumnsConfig({ onClose, onSave }) {
         if (updatePromises.length > 0) {
           await Promise.all(updatePromises);
           console.log(`✅ ${updatePromises.length} leads aggiornati con nuovi campi`);
-          alert(`Colonne salvate! ${updatePromises.length} leads aggiornati con i nuovi campi.`);
+          toast.success(`Colonne salvate! ${updatePromises.length} leads aggiornati con i nuovi campi.`);
         } else {
-          alert('Configurazione colonne salvata!');
+          toast.success('Configurazione colonne salvata!');
         }
       } else {
-        alert('Configurazione colonne salvata!');
+        toast.success('Configurazione colonne salvata!');
       }
       
       if (onSave) onSave(columns);
       onClose();
     } catch (error) {
       console.error('Errore salvataggio configurazione:', error);
-      alert('Errore nel salvataggio: ' + error.message);
+      toast.error('Errore nel salvataggio: ' + error.message);
     } finally {
       setSaving(false);
     }

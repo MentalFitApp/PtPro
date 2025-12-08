@@ -12,9 +12,13 @@ import {
   collection, getDocs, doc, setDoc, deleteDoc, 
   Timestamp, query, orderBy, limit 
 } from 'firebase/firestore';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 export default function BackupRecovery() {
   const navigate = useNavigate();
+  const toast = useToast();
+  const { confirmAction } = useConfirm();
   
   const [loading, setLoading] = useState(true);
   const [backups, setBackups] = useState([]);
@@ -170,12 +174,12 @@ export default function BackupRecovery() {
       }, { merge: true });
       
       setBackupProgress(100);
-      alert('✅ Backup completato e scaricato con successo!');
+      toast.success('Backup completato e scaricato con successo!');
       loadBackups();
       
     } catch (error) {
       console.error('Error creating backup:', error);
-      alert('❌ Errore durante la creazione del backup');
+      toast.error('Errore durante la creazione del backup');
     } finally {
       setIsBackingUp(false);
       setBackupProgress(0);
@@ -183,12 +187,23 @@ export default function BackupRecovery() {
   };
 
   const handleRestoreBackup = async (backup) => {
-    if (!confirm(`ATTENZIONE: Ripristinare il backup ${backup.id}? Questa operazione SOVRASCRIVERÀ i dati attuali!`)) return;
-    if (!confirm('Sei ASSOLUTAMENTE sicuro? Questa azione è IRREVERSIBILE!')) return;
+    const ok1 = await confirmAction(
+      `Ripristinare il backup ${backup.id}? Questa operazione SOVRASCRIVERÀ i dati attuali!`,
+      'Ripristina Backup',
+      'Ripristina'
+    );
+    if (!ok1) return;
+    
+    const ok2 = await confirmAction(
+      'Sei ASSOLUTAMENTE sicuro? Questa azione è IRREVERSIBILE!',
+      'Conferma Ripristino',
+      'Conferma'
+    );
+    if (!ok2) return;
     
     try {
       setIsRestoring(true);
-      alert('La funzionalità di restore richiede l\'upload del file di backup. Per sicurezza, questa operazione deve essere eseguita manualmente.');
+      toast.info('La funzionalità di restore richiede l\'upload del file di backup. Per sicurezza, questa operazione deve essere eseguita manualmente.');
       
       // In production, this would:
       // 1. Read the backup file
@@ -199,27 +214,28 @@ export default function BackupRecovery() {
       
     } catch (error) {
       console.error('Error restoring backup:', error);
-      alert('❌ Errore durante il ripristino');
+      toast.error('Errore durante il ripristino');
     } finally {
       setIsRestoring(false);
     }
   };
 
   const handleDeleteBackup = async (backupId) => {
-    if (!confirm('Eliminare questo backup?')) return;
+    const ok = await confirmAction('Eliminare questo backup?', 'Elimina Backup', 'Elimina');
+    if (!ok) return;
     
     try {
       await deleteDoc(doc(db, 'platform_backups', backupId));
       loadBackups();
-      alert('✅ Backup eliminato');
+      toast.success('Backup eliminato');
     } catch (error) {
       console.error('Error deleting backup:', error);
-      alert('❌ Errore nell\'eliminazione');
+      toast.error('Errore nell\'eliminazione');
     }
   };
 
   const handleDownloadBackup = async (backup) => {
-    alert('Download del backup in corso...');
+    toast.info('Download del backup in corso...');
     // In production, this would download from cloud storage
   };
 
@@ -235,7 +251,7 @@ export default function BackupRecovery() {
         updatedBy: auth.currentUser.uid
       }, { merge: true });
       
-      alert(`✅ Backup automatici ${newEnabled ? 'attivati' : 'disattivati'}`);
+      toast.success(`Backup automatici ${newEnabled ? 'attivati' : 'disattivati'}`);
     } catch (error) {
       console.error('Error toggling schedule:', error);
     }

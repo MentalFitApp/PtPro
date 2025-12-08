@@ -11,6 +11,7 @@ import { db, storage } from '../../firebase';
 import { getTenantCollection, getTenantDoc } from '../../config/tenant';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../../contexts/ToastContext';
 import {
   Send, Video, Phone, Search, Menu, Archive, Settings, Bell,
   Plus, X, ArrowLeft, Check, CheckCheck, Clock, User, Users,
@@ -24,6 +25,7 @@ export default function ModernChat() {
   const navigate = useNavigate();
   const auth = getAuth();
   const currentUser = auth.currentUser;
+  const toast = useToast();
 
   // ===== STATI PRINCIPALI =====
   const [chats, setChats] = useState([]);
@@ -320,7 +322,7 @@ export default function ModernChat() {
       scrollToBottom();
     } catch (error) {
       console.error('Errore invio messaggio:', error);
-      alert('Errore durante l\'invio del messaggio');
+      toast.error('Errore durante l\'invio del messaggio');
     }
   };
 
@@ -399,7 +401,7 @@ export default function ModernChat() {
       setShowNewChatModal(false);
     } catch (error) {
       console.error('Errore creazione chat:', error);
-      alert('Errore durante la creazione della chat');
+      toast.error('Errore durante la creazione della chat');
     }
   };
 
@@ -440,7 +442,7 @@ export default function ModernChat() {
       scrollToBottom();
     } catch (error) {
       console.error('Errore upload file:', error);
-      alert('Errore durante l\'upload del file');
+      toast.error('Errore durante l\'upload del file');
     } finally {
       setUploading(false);
     }
@@ -487,7 +489,7 @@ export default function ModernChat() {
       audioRecorderRef.current = interval;
     } catch (error) {
       console.error('Errore registrazione audio:', error);
-      alert('Errore durante la registrazione audio');
+      toast.error('Errore durante la registrazione audio');
     }
   };
 

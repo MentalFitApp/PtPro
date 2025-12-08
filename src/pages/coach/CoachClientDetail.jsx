@@ -38,6 +38,8 @@ import { db, toDate, updateStatoPercorso, auth } from '../../firebase';
 import { getTenantDoc, getTenantSubcollection, CURRENT_TENANT_ID } from '../../config/tenant';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
 import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import { 
   UnifiedCard, 
   CardHeader, 
@@ -88,6 +90,7 @@ const PathStatusBadge = ({ status }) => {
 };
 
 const EditClientModal = ({ isOpen, onClose, client, onSave }) => {
+  const toast = useToast();
   const initialDate = client?.scadenza ? toDate(client.scadenza) : null;
   const [form, setForm] = useState({
     name: client?.name || '',
@@ -127,7 +130,7 @@ const EditClientModal = ({ isOpen, onClose, client, onSave }) => {
       onClose();
     } catch (err) {
       console.error('Errore modifica:', err);
-      alert('Errore durante il salvataggio.');
+      toast.error('Errore durante il salvataggio.');
     }
   };
 
@@ -256,6 +259,8 @@ export default function CoachClientDetail() {
   const params = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
+  const { confirmDelete } = useConfirm();
   const { formatWeight, formatLength, weightLabel, lengthLabel } = useUserPreferences();
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -416,8 +421,9 @@ export default function CoachClientDetail() {
   );
 
   const handleDelete = async () => {
-    if (window.confirm(`Eliminare ${client?.name}?`)) {
-      try { await deleteDoc(getTenantDoc(db, 'clients', clientId)); navigate('/coach/clients'); } catch { alert('Errore eliminazione.'); }
+    const confirmed = await confirmDelete(client?.name);
+    if (confirmed) {
+      try { await deleteDoc(getTenantDoc(db, 'clients', clientId)); navigate('/coach/clients'); } catch { toast.error('Errore eliminazione.'); }
     }
   };
 
@@ -448,11 +454,11 @@ export default function CoachClientDetail() {
           setCopied(true);
           setTimeout(() => setCopied(false), 2500);
         } else {
-          alert('Errore nella generazione del Magic Link');
+          toast.error('Errore nella generazione del Magic Link');
         }
       } catch (error) {
         console.error('Errore generazione Magic Link:', error);
-        alert('Errore: ' + (error.message || 'Riprova più tardi'));
+        toast.error('Errore: ' + (error.message || 'Riprova più tardi'));
       } finally {
         setGeneratingLink(false);
       }
@@ -489,11 +495,11 @@ export default function CoachClientDetail() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
       } else {
-        alert('Errore nella generazione del Magic Link');
+        toast.error('Errore nella generazione del Magic Link');
       }
     } catch (error) {
       console.error('Errore generazione Magic Link:', error);
-      alert('Errore: ' + (error.message || 'Riprova più tardi'));
+      toast.error('Errore: ' + (error.message || 'Riprova più tardi'));
     } finally {
       setGeneratingLink(false);
     }

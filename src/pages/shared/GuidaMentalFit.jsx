@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import coverImage from '../../assets/cover-mentalfit.jpg'; // Assicurati che l'immagine sia in src/assets/
+import { useToast } from '../../contexts/ToastContext';
 
 // IL TUO EDITOR PERSONALE È QUI
 // Questa è la versione ultra-completa della guida, basata sul documento originale.
@@ -79,6 +80,7 @@ const PageContainer = ({ pageData, isVisible, isRenderingPdf }) => {
 
 
 const GuidaMentalFit = () => {
+    const toast = useToast();
     const [currentPage, setCurrentPage] = useState(0);
     const [leadCaptured, setLeadCaptured] = useState(false);
     const [nome, setNome] = useState('');
@@ -92,7 +94,7 @@ const GuidaMentalFit = () => {
     const handleLeadSubmit = (e) => {
         e.preventDefault();
         if (!nome || !telefono) {
-            alert('Per favore, compila almeno nome e telefono.');
+            toast.warning('Per favore, compila almeno nome e telefono.');
             return;
         }
         setIsSubmitting(true);
@@ -112,12 +114,12 @@ const GuidaMentalFit = () => {
                     setLeadCaptured(true);
                 } else {
                     console.error("Errore restituito da Google Script: ", data.error);
-                    alert('Si è verificato un errore. Assicurati che lo script sia configurato correttamente e riprova.');
+                    toast.error('Si è verificato un errore. Assicurati che lo script sia configurato correttamente e riprova.');
                 }
             })
             .catch(error => {
                 console.error("Errore nell'invio del modulo: ", error);
-                alert('Si è verificato un errore di connessione. Riprova.');
+                toast.error('Si è verificato un errore di connessione. Riprova.');
             })
             .finally(() => {
                 setIsSubmitting(false);

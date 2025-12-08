@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Check, X, Info, ChevronDown, Search, AlertTriangle } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { useToast } from '../contexts/ToastContext';
 
 /**
  * Smart Food Swap Enhanced Component
@@ -237,6 +238,7 @@ export default function SmartFoodSwapEnhanced({
   onSwap,
   onCancel 
 }) {
+  const toast = useToast();
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedFood, setSelectedFood] = useState(null);
@@ -451,7 +453,7 @@ export default function SmartFoodSwapEnhanced({
   const handleConfirm = () => {
     // Blocca solo se la sostituzione NON è valida (errori veri)
     if (!isValidSwap) {
-      alert('Impossibile salvare: i macros sono fuori dal range consentito dal tuo coach.\n\n' + validationError.join('\n'));
+      toast.error('Impossibile salvare: i macros sono fuori dal range consentito dal tuo coach.\n\n' + validationError.join('\n'));
       return;
     }
 

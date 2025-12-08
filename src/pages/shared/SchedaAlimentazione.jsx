@@ -10,6 +10,8 @@ import AINutritionAssistant from '../../components/AINutritionAssistant';
 import { convertToGrams, inferUnitFromName } from '../../utils/nutritionUnits';
 import { saveFeedback, saveDoNotShowPreference, shouldShowFeedbackPopup } from '../../services/aiFeedbackService';
 import { auth } from '../../firebase';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 const OBIETTIVI = ['Definizione', 'Massa', 'Mantenimento', 'Dimagrimento', 'Sportivo'];
 const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
@@ -19,6 +21,8 @@ const SchedaAlimentazione = () => {
   const { clientId } = useParams();
   const navigate = useNavigate();
   const currentUser = auth.currentUser;
+  const toast = useToast();
+  const { confirmDelete } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [clientName, setClientName] = useState('');
@@ -183,10 +187,10 @@ const SchedaAlimentazione = () => {
       };
       
       localStorage.setItem(autosavedKey, JSON.stringify(draftData));
-      alert('✅ Bozza salvata in locale!');
+      toast.success('Bozza salvata in locale!');
     } catch (error) {
       console.error('Errore salvataggio bozza:', error);
-      alert('Errore nel salvataggio della bozza');
+      toast.error('Errore nel salvataggio della bozza');
     }
   };
 
@@ -209,14 +213,14 @@ const SchedaAlimentazione = () => {
       const autosavedKey = `scheda_alimentazione_draft_${clientId}`;
       localStorage.removeItem(autosavedKey);
       
-      alert('🗑️ Scheda eliminata con successo!');
+      toast.success('Scheda eliminata con successo!');
       setShowDeleteModal(false);
       
       // Ricarica la pagina o torna indietro
       navigate('/alimentazione-allenamento');
     } catch (error) {
       console.error('Errore eliminazione scheda:', error);
-      alert('Errore nell\'eliminazione della scheda');
+      toast.error('Errore nell\'eliminazione della scheda');
     }
     setDeleting(false);
   };
@@ -224,7 +228,7 @@ const SchedaAlimentazione = () => {
   const handleSendToClient = async () => {
     // Validazione
     if (!schedaData.obiettivo) {
-      alert('⚠️ Seleziona un obiettivo prima di inviare la scheda');
+      toast.warning('Seleziona un obiettivo prima di inviare la scheda');
       return;
     }
     
@@ -234,7 +238,7 @@ const SchedaAlimentazione = () => {
     );
     
     if (!hasContent) {
-      alert('⚠️ Aggiungi almeno un alimento prima di inviare la scheda');
+      toast.warning('Aggiungi almeno un alimento prima di inviare la scheda');
       return;
     }
     
@@ -280,7 +284,7 @@ const SchedaAlimentazione = () => {
       const autosavedKey = `scheda_alimentazione_draft_${clientId}`;
       localStorage.removeItem(autosavedKey);
       
-      alert('📨 Scheda inviata con successo al cliente!');
+      toast.success('Scheda inviata con successo al cliente!');
       
       // Passa in modalità visualizzazione dopo il salvataggio
       setSchedaExists(true);
@@ -295,7 +299,7 @@ const SchedaAlimentazione = () => {
       }
     } catch (error) {
       console.error('Errore invio scheda:', error);
-      alert('Errore nell\'invio della scheda al cliente');
+      toast.error('Errore nell\'invio della scheda al cliente');
     }
     setSaving(false);
   };
@@ -310,7 +314,7 @@ const SchedaAlimentazione = () => {
 
   const handleApplyCompleteSchedule = (aiResult) => {
     if (!aiResult.schedaCompleta) {
-      alert('Errore: nessuna scheda generata dall\'AI');
+      toast.error('Nessuna scheda generata dall\'AI');
       return;
     }
 
@@ -328,12 +332,12 @@ const SchedaAlimentazione = () => {
     // Cambia al primo giorno per vedere i risultati
     setSelectedDay('Lunedì');
     
-    alert(`✅ Scheda completa di 7 giorni generata!\n\n📊 Macros giornalieri:\n• Calorie: ${aiResult.macrosTotaliGiornalieri?.calorie || 'N/D'}\n• Proteine: ${aiResult.macrosTotaliGiornalieri?.proteine || 'N/D'}g\n• Carboidrati: ${aiResult.macrosTotaliGiornalieri?.carboidrati || 'N/D'}g\n• Grassi: ${aiResult.macrosTotaliGiornalieri?.grassi || 'N/D'}g\n\nRicordati di salvare la scheda!`);
+    toast.success('Scheda completa di 7 giorni generata! Ricordati di salvare.');
   };
 
   const handleApplyAISuggestion = (suggestion) => {
     if (!suggestion.azione) {
-      alert('Nessuna azione specificata in questo suggerimento');
+      toast.warning('Nessuna azione specificata in questo suggerimento');
       return;
     }
     
@@ -351,7 +355,7 @@ const SchedaAlimentazione = () => {
         // Aggiungi alimento a un pasto specifico
         const pastoIndex = dati.pastoNome ? findPastoIndex(dati.pastoNome) : 0;
         if (pastoIndex === -1) {
-          alert(`Pasto "${dati.pastoNome}" non trovato`);
+          toast.error(`Pasto "${dati.pastoNome}" non trovato`);
           return;
         }
         
@@ -375,7 +379,7 @@ const SchedaAlimentazione = () => {
             tipo: 'add_food'
           }]);
           
-          alert(`✅ Alimento "${nuovoAlimento.nome}" aggiunto a ${schedaData.giorni[selectedDay].pasti[pastoIndex].nome}`);
+          toast.success(`Alimento "${nuovoAlimento.nome}" aggiunto a ${schedaData.giorni[selectedDay].pasti[pastoIndex].nome}`);
         }
         break;
       }
@@ -384,7 +388,7 @@ const SchedaAlimentazione = () => {
         // Sostituisci un alimento con un altro
         const pastoIndex = dati.pastoNome ? findPastoIndex(dati.pastoNome) : -1;
         if (pastoIndex === -1) {
-          alert(`Pasto "${dati.pastoNome}" non trovato`);
+          toast.error(`Pasto "${dati.pastoNome}" non trovato`);
           return;
         }
         
@@ -425,7 +429,7 @@ const SchedaAlimentazione = () => {
           tipo: 'replace_food'
         }]);
         
-        alert(`✅ Sostituito "${dati.alimentoDaRimuovere}" con "${dati.alimentoDaAggiungere?.nome}" nel ${dati.pastoNome}`);
+        toast.success(`Sostituito "${dati.alimentoDaRimuovere}" con "${dati.alimentoDaAggiungere?.nome}" nel ${dati.pastoNome}`);
         break;
       }
       
@@ -433,7 +437,7 @@ const SchedaAlimentazione = () => {
         // Rimuovi un alimento
         const pastoIndex = dati.pastoNome ? findPastoIndex(dati.pastoNome) : -1;
         if (pastoIndex === -1) {
-          alert(`Pasto "${dati.pastoNome}" non trovato`);
+          toast.error(`Pasto "${dati.pastoNome}" non trovato`);
           return;
         }
         
@@ -446,9 +450,9 @@ const SchedaAlimentazione = () => {
           
           if (alimentoIndex !== -1) {
             pasto.alimenti.splice(alimentoIndex, 1);
-            alert(`✅ Rimosso "${dati.alimentoDaRimuovere}" dal ${dati.pastoNome}`);
+            toast.success(`Rimosso "${dati.alimentoDaRimuovere}" dal ${dati.pastoNome}`);
           } else {
-            alert(`Alimento "${dati.alimentoDaRimuovere}" non trovato`);
+            toast.error(`Alimento "${dati.alimentoDaRimuovere}" non trovato`);
           }
           
           return newData;
@@ -465,13 +469,13 @@ const SchedaAlimentazione = () => {
             ? `${prev.integrazione}\n\n• ${integratore}` 
             : `• ${integratore}`
         }));
-        alert(`✅ Integratore aggiunto: ${integratore}`);
+        toast.success(`Integratore aggiunto: ${integratore}`);
         break;
       }
         
       default:
         console.warn('Tipo di azione non riconosciuto:', tipo);
-        alert(`Azione "${tipo}" non supportata`);
+        toast.warning(`Azione "${tipo}" non supportata`);
     }
   };
 
@@ -592,7 +596,7 @@ const SchedaAlimentazione = () => {
 
   const handleSaveAsPreset = async () => {
     if (!presetName.trim()) {
-      alert('Inserisci un nome per il preset');
+      toast.warning('Inserisci un nome per il preset');
       return;
     }
     
@@ -603,12 +607,12 @@ const SchedaAlimentazione = () => {
         data: schedaData,
         createdAt: new Date()
       });
-      alert('Preset salvato con successo!');
+      toast.success('Preset salvato con successo!');
       setShowSavePresetModal(false);
       setPresetName('');
     } catch (error) {
       console.error('Errore salvataggio preset:', error);
-      alert('Errore nel salvataggio del preset');
+      toast.error('Errore nel salvataggio del preset');
     }
   };
 
@@ -642,7 +646,7 @@ const SchedaAlimentazione = () => {
 
   const handleCopyPrevious = () => {
     if (!previousCard) {
-      alert('Nessuna scheda precedente trovata');
+      toast.info('Nessuna scheda precedente trovata');
       return;
     }
     
@@ -1155,7 +1159,7 @@ const SchedaAlimentazione = () => {
                     setLoading(false);
                   } catch (error) {
                     console.error('Errore AI Integratori:', error);
-                    alert('Errore generazione consigli integratori: ' + error.message);
+                    toast.error('Errore generazione consigli integratori: ' + error.message);
                     setLoading(false);
                   }
                 }}
@@ -1442,7 +1446,7 @@ const SchedaAlimentazione = () => {
                       }
                       setAppliedSuggestions([]);
                       setShowFeedbackModal(false);
-                      alert('✅ Grazie! I tuoi feedback aiuteranno a migliorare i suggerimenti futuri');
+                      toast.success('Grazie! I tuoi feedback aiuteranno a migliorare i suggerimenti futuri');
                     }}
                     className="px-6 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white preserve-white rounded-xl font-medium transition-all flex items-center justify-center gap-3 shadow-lg"
                   >
@@ -1469,7 +1473,7 @@ const SchedaAlimentazione = () => {
                       }
                       setAppliedSuggestions([]);
                       setShowFeedbackModal(false);
-                      alert('📝 Grazie per il feedback! Lavoreremo per migliorare');
+                      toast.info('Grazie per il feedback! Lavoreremo per migliorare');
                     }}
                     className="px-6 py-4 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl font-medium transition-all flex items-center justify-center gap-3"
                   >
@@ -1493,7 +1497,7 @@ const SchedaAlimentazione = () => {
                       }
                       setAppliedSuggestions([]);
                       setShowFeedbackModal(false);
-                      alert('🚫 Questi tipi di suggerimenti non verranno più mostrati');
+                      toast.info('Questi tipi di suggerimenti non verranno più mostrati');
                     }}
                     className="px-6 py-4 bg-red-600/20 hover:bg-red-600/30 text-red-300 border border-red-500/30 rounded-xl font-medium transition-all flex items-center justify-center gap-3"
                   >
@@ -1588,7 +1592,7 @@ const SchedaAlimentazione = () => {
                   <button
                     onClick={() => {
                       if (selectedDaysForDuplication.length === 0) {
-                        alert('Seleziona almeno un giorno!');
+                        toast.warning('Seleziona almeno un giorno!');
                         return;
                       }
                       duplicateDayToOthers(selectedDaysForDuplication);
@@ -1979,7 +1983,7 @@ const AddAlimentoForm = ({ onAdd, onCancel }) => {
 
   const handleSubmit = () => {
     if (!formData.nome || !formData.quantita) {
-      alert('Inserisci almeno nome e quantità');
+      toast.warning('Inserisci almeno nome e quantità');
       return;
     }
     onAdd({

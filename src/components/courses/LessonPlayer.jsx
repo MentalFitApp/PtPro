@@ -6,6 +6,7 @@ import { ArrowLeft, Play, Pause, CheckCircle, ChevronRight, ChevronLeft, Clock }
 
 import MediaViewer from '../ui/MediaViewer';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * Player per visualizzare e completare le lezioni
@@ -14,6 +15,7 @@ export default function LessonPlayer() {
   const { courseId, moduleId, lessonId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
   const [lesson, setLesson] = useState(null);
   const [course, setCourse] = useState(null);
   const [module, setModule] = useState(null);
@@ -143,10 +145,10 @@ export default function LessonPlayer() {
       }
 
       setCompleted(true);
-      alert('Lezione completata! 🎉');
+      toast.success('Lezione completata! 🎉');
     } catch (error) {
       console.error('Error marking lesson complete:', error);
-      alert('Errore nel salvare il progresso. Riprova.');
+      toast.error('Errore nel salvare il progresso. Riprova.');
     }
   };
 

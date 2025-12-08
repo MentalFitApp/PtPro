@@ -5,6 +5,7 @@ import { db, auth } from '../../firebase';
 import { ArrowLeft, BookOpen, Play, CheckCircle, Clock, Users, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * Pagina dettaglio di un corso con moduli e lezioni
@@ -13,6 +14,7 @@ export default function CourseDetail() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
   const [course, setCourse] = useState(null);
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -119,16 +121,16 @@ export default function CourseDetail() {
       });
 
       setIsEnrolled(true);
-      alert('Iscrizione completata! Ora puoi accedere alle lezioni.');
+      toast.success('Iscrizione completata! Ora puoi accedere alle lezioni.');
     } catch (error) {
       console.error('Error enrolling:', error);
-      alert('Errore durante l\'iscrizione. Riprova.');
+      toast.error('Errore durante l\'iscrizione. Riprova.');
     }
   };
 
   const handleLessonClick = (moduleId, lessonId) => {
     if (!isEnrolled) {
-      alert('Devi prima iscriverti al corso per accedere alle lezioni.');
+      toast.warning('Devi prima iscriverti al corso per accedere alle lezioni.');
       return;
     }
 

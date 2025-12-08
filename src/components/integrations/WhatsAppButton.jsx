@@ -7,6 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../contexts/ToastContext';
 
 const DEFAULT_TEMPLATES = [
   {
@@ -37,6 +38,7 @@ export default function WhatsAppButton({
   onSuccess,
   onError
 }) {
+  const toast = useToast();
   const [showDropdown, setShowDropdown] = useState(false);
   const [templates, setTemplates] = useState(DEFAULT_TEMPLATES);
   const [trainerName, setTrainerName] = useState('Il tuo trainer');
@@ -123,7 +125,7 @@ export default function WhatsAppButton({
   const handleSendViaLink = (template) => {
     const phone = getPhoneNumber();
     if (!phone) {
-      alert('Numero di telefono non valido');
+      toast.warning('Numero di telefono non valido');
       return;
     }
 
@@ -150,7 +152,7 @@ export default function WhatsAppButton({
         customMessage: formatMessage(template)
       });
       
-      alert('✅ Messaggio inviato con successo!');
+      toast.success('Messaggio inviato con successo!');
       setShowDropdown(false);
       onSuccess?.();
     } catch (error) {
@@ -165,7 +167,7 @@ export default function WhatsAppButton({
   const handleQuickSend = () => {
     const phone = getPhoneNumber();
     if (!phone) {
-      alert('Numero di telefono non valido');
+      toast.warning('Numero di telefono non valido');
       return;
     }
     window.open(`https://wa.me/${phone}`, '_blank');

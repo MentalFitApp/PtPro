@@ -3,11 +3,13 @@ import { X, Plus, Save, GripVertical } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getTenantDoc } from '../../config/tenant';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * Componente per configurare gli status/checkmark dei leads
  */
 export default function LeadStatusConfig({ onClose, onSave }) {
+  const toast = useToast();
   const [statuses, setStatuses] = useState([
     { id: 'showUp', label: 'Show Up', color: 'green', enabled: true },
     { id: 'chiuso', label: 'Chiuso', color: 'rose', enabled: true },
@@ -67,7 +69,7 @@ export default function LeadStatusConfig({ onClose, onSave }) {
     // Non rimuovere gli status di default
     const status = statuses.find(s => s.id === id);
     if (status && !status.custom) {
-      alert('Non puoi rimuovere gli status predefiniti');
+      toast.warning('Non puoi rimuovere gli status predefiniti');
       return;
     }
     setStatuses(statuses.filter(s => s.id !== id));
@@ -88,10 +90,10 @@ export default function LeadStatusConfig({ onClose, onSave }) {
       });
       
       if (onSave) onSave(statuses);
-      alert('Configurazione salvata con successo!');
+      toast.success('Configurazione salvata con successo!');
     } catch (error) {
       console.error('Errore salvataggio configurazione:', error);
-      alert('Errore nel salvataggio');
+      toast.error('Errore nel salvataggio');
     } finally {
       setSaving(false);
     }

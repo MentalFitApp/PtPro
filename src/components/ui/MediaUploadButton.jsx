@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Image, Video, Mic, FileText, X, Upload } from 'lucide-react';
 import { uploadImage, uploadVideo, uploadAudio, VoiceRecorder, formatDuration } from '../../utils/mediaUpload';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * Componente riutilizzabile per upload media
@@ -16,6 +17,7 @@ export default function MediaUploadButton({
   showLabel = true,
   className = ''
 }) {
+  const toast = useToast();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [recording, setRecording] = useState(false);
@@ -43,7 +45,7 @@ export default function MediaUploadButton({
       onUploadComplete(result);
       setShowOptions(false);
     } catch (error) {
-      alert(error.message || 'Errore durante il caricamento');
+      toast.error(error.message || 'Errore durante il caricamento');
     } finally {
       setUploading(false);
       if (imageInputRef.current) imageInputRef.current.value = '';
@@ -65,7 +67,7 @@ export default function MediaUploadButton({
       onUploadComplete(result);
       setShowOptions(false);
     } catch (error) {
-      alert(error.message || 'Errore durante il caricamento');
+      toast.error(error.message || 'Errore durante il caricamento');
     } finally {
       setUploading(false);
       if (videoInputRef.current) videoInputRef.current.value = '';
@@ -87,7 +89,7 @@ export default function MediaUploadButton({
       onUploadComplete(result);
       setShowOptions(false);
     } catch (error) {
-      alert(error.message || 'Errore durante il caricamento');
+      toast.error(error.message || 'Errore durante il caricamento');
     } finally {
       setUploading(false);
       if (audioInputRef.current) audioInputRef.current.value = '';
@@ -105,7 +107,7 @@ export default function MediaUploadButton({
         setRecordingTime(prev => prev + 1);
       }, 1000);
     } catch (error) {
-      alert(error.message || 'Impossibile accedere al microfono');
+      toast.error(error.message || 'Impossibile accedere al microfono');
     }
   };
 
@@ -129,7 +131,7 @@ export default function MediaUploadButton({
       onUploadComplete(result);
       setShowOptions(false);
     } catch (error) {
-      alert(error.message || 'Errore durante il salvataggio');
+      toast.error(error.message || 'Errore durante il salvataggio');
     } finally {
       setUploading(false);
     }

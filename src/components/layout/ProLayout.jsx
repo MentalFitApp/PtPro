@@ -480,7 +480,7 @@ export const ProLayout = () => {
 
   // Verifica se mostrare onboarding per nuovi utenti
   // TOUR_VERSION: incrementa per forzare reset del tour per tutti gli utenti
-  const TOUR_VERSION = 2;
+  const TOUR_VERSION = 3;
   
   useEffect(() => {
     const checkOnboarding = async () => {

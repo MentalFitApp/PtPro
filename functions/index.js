@@ -2,7 +2,9 @@ const { onCall } = require('firebase-functions/v2/https');
 const { onDocumentCreated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { setGlobalOptions } = require('firebase-functions/v2');
+const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
+const { enforceRateLimit, validators, validateInput, requireAuth, sanitizeObject } = require('./security');
 
 admin.initializeApp();
 
@@ -11,14 +13,20 @@ const db = admin.firestore();
 // Configura region europea
 setGlobalOptions({ region: 'europe-west1' });
 
+// Definisci i secrets (devono essere creati in Firebase Console o via CLI)
+const dailyApiKey = defineSecret('DAILY_API_KEY');
+const facebookAppSecret = defineSecret('FACEBOOK_APP_SECRET');
+
 exports.getUidByEmail = onCall(async (request) => {
-  const email = request.data?.email?.trim().toLowerCase();
+  // Rate limiting
+  enforceRateLimit(request, 'getUidByEmail');
+  
+  // Validazione input
+  const { email } = validateInput(request.data, {
+    email: validators.email
+  });
 
   console.log('EMAIL RICEVUTA NELLA FUNZIONE:', email);
-
-  if (!email) {
-    throw new Error('Email mancante');
-  }
 
   try {
     const userRecord = await admin.auth().getUserByEmail(email);
@@ -35,15 +43,29 @@ exports.getUidByEmail = onCall(async (request) => {
 });
 
 // Cloud Function per creare stanze Daily.co
-exports.createDailyRoom = onCall(async (request) => {
+// Usa secret invece di API key hardcoded
+exports.createDailyRoom = onCall(
+  { secrets: [dailyApiKey] },
+  async (request) => {
+  // Rate limiting
+  enforceRateLimit(request, 'createDailyRoom');
+  
+  // Richiede autenticazione
+  requireAuth(request);
+  
   console.log('📞 createDailyRoom called with data:', request.data);
   
-  const { roomName, properties } = request.data;
-  const DAILY_API_KEY = '76a471284c7f6c54eaa60016b63debb0ded806396a21f64d834f7f874432a85d';
+  // Validazione input
+  const { roomName, properties } = validateInput(request.data, {
+    roomName: validators.nonEmptyString,
+    properties: validators.optional(validators.object)
+  });
+  
+  const DAILY_API_KEY = dailyApiKey.value();
 
-  if (!roomName) {
-    console.error('❌ roomName mancante');
-    throw new Error('roomName è richiesto');
+  if (!DAILY_API_KEY) {
+    console.error('❌ DAILY_API_KEY secret non configurato');
+    throw new Error('Configurazione server mancante');
   }
 
   try {
@@ -358,16 +380,103 @@ exports.updateStatsOnUserChange = onDocumentWritten(
   }
 );
 
+// ============================================
+// USER-TENANT MAPPING (per login veloce)
+// ============================================
+
+/**
+ * Helper: Aggiorna il mapping user_tenants per un utente
+ * Chiamato quando viene creato/modificato un client, collaboratore, o ruolo
+ */
+async function updateUserTenantMapping(userId, tenantId, role) {
+  try {
+    await db.collection('user_tenants').doc(userId).set({
+      tenantId,
+      role, // 'client', 'collaboratore', 'admin', 'coach', 'superadmin'
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    console.log(`✅ User-tenant mapping aggiornato: ${userId} → ${tenantId} (${role})`);
+  } catch (error) {
+    console.error(`❌ Errore aggiornamento user-tenant mapping:`, error);
+  }
+}
+
+/**
+ * Trigger: Quando viene creato un CLIENT, crea mapping user_tenants
+ */
+exports.onClientCreated = onDocumentCreated(
+  'tenants/{tenantId}/clients/{clientId}',
+  async (event) => {
+    const { tenantId, clientId } = event.params;
+    console.log(`🆕 Nuovo client creato: ${clientId} in tenant ${tenantId}`);
+    await updateUserTenantMapping(clientId, tenantId, 'client');
+  }
+);
+
+/**
+ * Trigger: Quando viene creato un COLLABORATORE, crea mapping user_tenants
+ */
+exports.onCollaboratoreCreated = onDocumentCreated(
+  'tenants/{tenantId}/collaboratori/{collaboratoreId}',
+  async (event) => {
+    const { tenantId, collaboratoreId } = event.params;
+    console.log(`🆕 Nuovo collaboratore creato: ${collaboratoreId} in tenant ${tenantId}`);
+    await updateUserTenantMapping(collaboratoreId, tenantId, 'collaboratore');
+  }
+);
+
+/**
+ * Trigger: Quando viene modificato il documento ROLES (admins/coaches/superadmins)
+ * Aggiorna mapping per tutti gli utenti nel ruolo
+ */
+exports.onRolesChanged = onDocumentWritten(
+  'tenants/{tenantId}/roles/{roleType}',
+  async (event) => {
+    const { tenantId, roleType } = event.params;
+    const afterData = event.data?.after?.data();
+    
+    if (!afterData?.uids || !Array.isArray(afterData.uids)) {
+      return;
+    }
+    
+    console.log(`🔄 Ruoli ${roleType} modificati in tenant ${tenantId}: ${afterData.uids.length} utenti`);
+    
+    // Mappa roleType a role name
+    const roleMap = {
+      'admins': 'admin',
+      'coaches': 'coach', 
+      'superadmins': 'superadmin'
+    };
+    const role = roleMap[roleType] || roleType;
+    
+    // Aggiorna mapping per tutti gli utenti nel ruolo
+    await Promise.all(
+      afterData.uids.map(uid => updateUserTenantMapping(uid, tenantId, role))
+    );
+  }
+);
+
 /**
  * Callable function: permette di triggare manualmente l'aggregazione
  * Utile per testing o refresh immediato
+ * SECURITY: Richiede autenticazione admin o Platform CEO
  */
 exports.triggerStatsAggregation = onCall(
   { cors: true },
   async (request) => {
-    const tenantId = request.data?.tenantId;
+    // Rate limiting - operazione pesante, limita a 5 per 5 minuti
+    enforceRateLimit(request, 'triggerStatsAggregation');
+    
+    // Richiede autenticazione
+    requireAuth(request);
+    
+    // Validazione input (tenantId è opzionale)
+    const { tenantId } = validateInput(request.data || {}, {
+      tenantId: validators.optional(validators.tenantId)
+    });
     
     console.log('🎯 Aggregazione manuale richiesta', tenantId ? `per tenant: ${tenantId}` : 'per tutti i tenant');
+    console.log('👤 Richiesta da:', request.auth.uid);
     
     try {
       if (tenantId) {
@@ -405,11 +514,21 @@ exports.manychatProxy = onCall(
     cors: true
   },
   async (request) => {
-    const { tenantId, endpoint, method = 'GET', body } = request.data;
-  
-  if (!tenantId) {
-    throw new Error('tenantId è richiesto');
-  }
+    // Rate limiting
+    enforceRateLimit(request, 'manychatProxy');
+    
+    // Richiede autenticazione
+    requireAuth(request);
+    
+    // Validazione input
+    const { tenantId, endpoint, method, body } = validateInput(request.data, {
+      tenantId: validators.tenantId,
+      endpoint: validators.nonEmptyString,
+      method: validators.optional(validators.oneOf(['GET', 'POST', 'PUT', 'DELETE'])),
+      body: validators.optional(validators.object)
+    });
+    
+    const httpMethod = method || 'GET';
 
   try {
     // Recupera configurazione ManyChat dal tenant
@@ -434,7 +553,7 @@ exports.manychatProxy = onCall(
     let finalUrl = url;
     let finalBody = body || {};
     
-    if (method === 'POST') {
+    if (httpMethod === 'POST') {
       finalBody = { ...finalBody, page_id: parseInt(pageId) };
     } else {
       finalUrl = url.includes('?') 
@@ -442,16 +561,16 @@ exports.manychatProxy = onCall(
         : `${url}?page_id=${pageId}`;
     }
 
-    console.log('🔗 ManyChat API Call:', method, finalUrl);
+    console.log('🔗 ManyChat API Call:', httpMethod, finalUrl);
 
     // Fai la richiesta a ManyChat
     const response = await fetch(finalUrl, {
-      method,
+      method: httpMethod,
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
-      body: method === 'POST' ? JSON.stringify(finalBody) : undefined
+      body: httpMethod === 'POST' ? JSON.stringify(finalBody) : undefined
     });
 
     // Ottieni il testo della risposta per debug
@@ -482,20 +601,29 @@ exports.manychatProxy = onCall(
 );
 
 // OAuth Token Exchange - Gestisce lo scambio code->token per tutti i provider
+// SECURITY: Richiede autenticazione, rate limit stretto
 exports.exchangeOAuthToken = onCall(
   {
     region: 'europe-west1',
     secrets: ['INSTAGRAM_CLIENT_ID', 'INSTAGRAM_CLIENT_SECRET']
   },
   async (request) => {
+    // Rate limiting stretto - solo 5 richieste per minuto (operazione sensibile)
+    enforceRateLimit(request, 'exchangeOAuthToken');
+    
+    // Richiede autenticazione
+    requireAuth(request);
+    
     try {
-      const { provider, code, tenantId, redirectUri } = request.data;
+      // Validazione input
+      const { provider, code, tenantId, redirectUri } = validateInput(request.data, {
+        provider: validators.nonEmptyString,
+        code: validators.nonEmptyString,
+        tenantId: validators.tenantId,
+        redirectUri: validators.optional(validators.nonEmptyString)
+      });
 
-      if (!provider || !code || !tenantId) {
-        throw new Error('Parametri mancanti');
-      }
-
-      console.log(`🔐 OAuth exchange per ${provider}, tenant: ${tenantId}`);
+      console.log(`🔐 OAuth exchange per ${provider}, tenant: ${tenantId}, user: ${request.auth.uid}`);
 
       // Configurazioni provider
       const providerConfigs = {
@@ -610,19 +738,27 @@ exports.exchangeOAuthToken = onCall(
 );
 
 // Instagram Proxy - Proxy per chiamate API Instagram Graph
+// SECURITY: Rate limiting, autenticazione, validazione input
 exports.instagramProxy = onCall(
   {
     region: 'europe-west1'
   },
   async (request) => {
+    // Rate limiting
+    enforceRateLimit(request, 'instagramProxy');
+    
+    // Richiede autenticazione
+    requireAuth(request);
+    
     try {
-      const { tenantId, endpoint, params } = request.data;
+      // Validazione input
+      const { tenantId, endpoint, params } = validateInput(request.data, {
+        tenantId: validators.tenantId,
+        endpoint: validators.nonEmptyString,
+        params: validators.optional(validators.nonEmptyString)
+      });
 
-      if (!tenantId || !endpoint) {
-        throw new Error('tenantId ed endpoint sono richiesti');
-      }
-
-      console.log(`📞 Instagram API call: ${endpoint} per tenant ${tenantId}`);
+      console.log(`📞 Instagram API call: ${endpoint} per tenant ${tenantId}, user: ${request.auth.uid}`);
 
       // Leggi access token da Firestore
       const integrationDoc = await db
@@ -677,19 +813,28 @@ exports.instagramProxy = onCall(
 );
 
 // Sincronizzazione manuale Instagram (singolo tenant)
+// SECURITY: Rate limiting, autenticazione, validazione input
 exports.manualSyncInstagram = onCall(
   {
     region: 'europe-west1'
   },
   async (request) => {
+    // Rate limiting
+    enforceRateLimit(request, 'manualSyncInstagram');
+    
+    // Richiede autenticazione
+    requireAuth(request);
+    
     try {
-      const tenantId = request.auth?.token?.tenantId || request.data?.tenantId;
+      // Validazione input (tenantId può venire da auth o data)
+      const tenantId = request.auth?.token?.tenantId || 
+        (request.data?.tenantId ? validateInput({ tenantId: request.data.tenantId }, { tenantId: validators.tenantId }).tenantId : null);
       
       if (!tenantId) {
         throw new Error('Tenant ID non trovato');
       }
 
-      console.log(`🔄 Sync manuale Instagram per tenant: ${tenantId}`);
+      console.log(`🔄 Sync manuale Instagram per tenant: ${tenantId}, user: ${request.auth.uid}`);
 
       // Leggi configurazione Instagram
       const integrationDoc = await db
@@ -740,19 +885,28 @@ exports.manualSyncInstagram = onCall(
 );
 
 // Funzione callable per sincronizzazione manuale (singolo tenant)
+// SECURITY: Rate limiting, autenticazione, validazione input
 exports.manualSyncManyChat = onCall(
   {
     region: 'europe-west1'
   },
   async (request) => {
+    // Rate limiting
+    enforceRateLimit(request, 'manualSyncManyChat');
+    
+    // Richiede autenticazione
+    requireAuth(request);
+    
     try {
-      const tenantId = request.auth?.token?.tenantId || request.data?.tenantId;
+      // Validazione input (tenantId può venire da auth o data)
+      const tenantId = request.auth?.token?.tenantId || 
+        (request.data?.tenantId ? validateInput({ tenantId: request.data.tenantId }, { tenantId: validators.tenantId }).tenantId : null);
       
       if (!tenantId) {
         throw new Error('Tenant ID non trovato');
       }
 
-      console.log(`🔄 Sync manuale per tenant: ${tenantId}`);
+      console.log(`🔄 Sync manuale per tenant: ${tenantId}, user: ${request.auth.uid}`);
 
       // Leggi configurazione ManyChat
       const integrationDoc = await db
@@ -1139,15 +1293,24 @@ exports.autoArchiveInactiveClients = onSchedule({
 /**
  * Genera un Magic Link per un cliente
  * Il link permette al cliente di impostare la propria password senza conoscere quella temporanea
+ * SECURITY: Richiede autenticazione (solo admin/coach possono generare), rate limiting
  */
 exports.generateMagicLink = onCall(async (request) => {
-  const { clientId, tenantId, email, name } = request.data;
+  // Rate limiting
+  enforceRateLimit(request, 'generateMagicLink');
+  
+  // Richiede autenticazione (coach/admin genera per cliente)
+  requireAuth(request);
+  
+  // Validazione input
+  const { clientId, tenantId, email, name } = validateInput(request.data, {
+    clientId: validators.nonEmptyString,
+    tenantId: validators.tenantId,
+    email: validators.email,
+    name: validators.optional(validators.nonEmptyString)
+  });
 
-  console.log('🔗 [MAGIC-LINK] Generazione link per:', email);
-
-  if (!clientId || !tenantId || !email) {
-    throw new Error('Parametri mancanti: clientId, tenantId e email sono richiesti');
-  }
+  console.log('🔗 [MAGIC-LINK] Generazione link per:', email, 'da:', request.auth.uid);
 
   try {
     // Genera un token univoco (32 caratteri hex)
@@ -1193,15 +1356,18 @@ exports.generateMagicLink = onCall(async (request) => {
 /**
  * Valida un Magic Link token
  * Ritorna i dati del cliente se il token è valido
+ * SECURITY: Rate limiting (no auth - validazione pre-login), validazione input
  */
 exports.validateMagicLink = onCall(async (request) => {
-  const { token } = request.data;
+  // Rate limiting (importante per prevenire brute force)
+  enforceRateLimit(request, 'validateMagicLink');
+  
+  // Validazione input
+  const { token } = validateInput(request.data, {
+    token: validators.nonEmptyString
+  });
 
   console.log('🔍 [MAGIC-LINK] Validazione token:', token?.substring(0, 8) + '...');
-
-  if (!token) {
-    throw new Error('Token mancante');
-  }
 
   try {
     const tokenRef = db.collection('magicLinks').doc(token);
@@ -1246,15 +1412,19 @@ exports.validateMagicLink = onCall(async (request) => {
 
 /**
  * Completa il setup account: imposta la nuova password e marca il token come usato
+ * SECURITY: Rate limiting stretto (sensibile), validazione input
  */
 exports.completeMagicLinkSetup = onCall(async (request) => {
-  const { token, newPassword } = request.data;
+  // Rate limiting stretto (operazione sensibile)
+  enforceRateLimit(request, 'completeMagicLinkSetup');
+  
+  // Validazione input
+  const { token, newPassword } = validateInput(request.data, {
+    token: validators.nonEmptyString,
+    newPassword: validators.nonEmptyString
+  });
 
   console.log('🔐 [MAGIC-LINK] Completamento setup per token:', token?.substring(0, 8) + '...');
-
-  if (!token || !newPassword) {
-    throw new Error('Token e password sono richiesti');
-  }
 
   if (newPassword.length < 6) {
     throw new Error('La password deve essere di almeno 6 caratteri');
@@ -1333,17 +1503,26 @@ exports.completeMagicLinkSetup = onCall(async (request) => {
 // ============================================
 
 // Invia messaggio WhatsApp manuale
+// SECURITY: Rate limiting, autenticazione, validazione input
 exports.sendWhatsAppMessage = onCall(
   { region: 'europe-west1' },
   async (request) => {
+    // Rate limiting
+    enforceRateLimit(request, 'sendWhatsAppMessage');
+    
+    // Richiede autenticazione
+    requireAuth(request);
+    
     try {
-      const { tenantId, clientId, templateId, customMessage } = request.data;
+      // Validazione input
+      const { tenantId, clientId, templateId, customMessage } = validateInput(request.data, {
+        tenantId: validators.tenantId,
+        clientId: validators.nonEmptyString,
+        templateId: validators.optional(validators.nonEmptyString),
+        customMessage: validators.optional(validators.nonEmptyString)
+      });
 
-      if (!tenantId || !clientId) {
-        throw new Error('tenantId e clientId sono richiesti');
-      }
-
-      console.log(`📱 Invio WhatsApp per tenant ${tenantId}, client ${clientId}`);
+      console.log(`📱 Invio WhatsApp per tenant ${tenantId}, client ${clientId}, user: ${request.auth.uid}`);
 
       // Leggi configurazione WhatsApp del tenant
       const whatsappConfig = await db.doc(`tenants/${tenantId}/integrations/whatsapp`).get();
@@ -1446,15 +1625,23 @@ exports.sendWhatsAppMessage = onCall(
 );
 
 // Genera link WhatsApp (fallback senza API)
+// SECURITY: Rate limiting, autenticazione, validazione input
 exports.generateWhatsAppLink = onCall(
   { region: 'europe-west1' },
   async (request) => {
+    // Rate limiting
+    enforceRateLimit(request, 'generateWhatsAppLink');
+    
+    // Richiede autenticazione
+    requireAuth(request);
+    
     try {
-      const { tenantId, clientId, templateId } = request.data;
-
-      if (!tenantId || !clientId) {
-        throw new Error('tenantId e clientId sono richiesti');
-      }
+      // Validazione input
+      const { tenantId, clientId, templateId } = validateInput(request.data, {
+        tenantId: validators.tenantId,
+        clientId: validators.nonEmptyString,
+        templateId: validators.optional(validators.nonEmptyString)
+      });
 
       // Leggi dati cliente
       const clientDoc = await db.doc(`tenants/${tenantId}/clients/${clientId}`).get();

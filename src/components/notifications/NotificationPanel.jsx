@@ -5,10 +5,12 @@ import { collection, query, where, onSnapshot, updateDoc, doc, setDoc, getDoc, s
 import { getMessaging, getToken } from 'firebase/messaging';
 import { Bell, BellOff, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../../contexts/ToastContext';
 
 const VAPID_KEY = 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeDXSXKb4uffOVSupUGHQ4Q0l9Ato';
 
 export default function NotificationPanel({ userType = 'client' }) {
+  const toast = useToast();
   const [notifications, setNotifications] = useState([]);
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
@@ -74,7 +76,7 @@ export default function NotificationPanel({ userType = 'client' }) {
     try {
       // Verifica supporto API Notification
       if (typeof Notification === 'undefined') {
-        alert('⚠️ Le notifiche browser non sono supportate su questo dispositivo. Riceverai comunque le notifiche in-app!');
+        toast.warning('Le notifiche browser non sono supportate su questo dispositivo. Riceverai comunque le notifiche in-app!');
         setIsNotificationsEnabled(true); // Attiva pannello notifiche in-app comunque
         return;
       }
@@ -127,24 +129,24 @@ export default function NotificationPanel({ userType = 'client' }) {
               });
             }
             console.log('✅ Token salvato su Firestore con successo!');
-            alert('✅ Notifiche attivate con successo!');
+            toast.success('Notifiche attivate con successo!');
           } else {
             console.warn('⚠️ Nessun token FCM ottenuto');
-            alert('⚠️ Notifiche browser attive, ma FCM token non disponibile');
+            toast.warning('Notifiche browser attive, ma FCM token non disponibile');
           }
         } catch (fcmError) {
           console.error('❌ Errore FCM token:', fcmError);
           console.error('Dettagli errore:', fcmError.code, fcmError.message);
-          alert('❌ Errore FCM: ' + fcmError.message);
+          toast.error('Errore FCM: ' + fcmError.message);
           // Le notifiche browser funzionano comunque anche senza FCM
         }
       } else {
         console.warn('⚠️ Permesso notifica negato');
-        alert('⚠️ Permesso notifica negato');
+        toast.warning('Permesso notifica negato');
       }
     } catch (error) {
       console.error('❌ Errore attivazione notifiche:', error);
-      alert('❌ Errore: ' + error.message);
+      toast.error('Errore: ' + error.message);
     }
   };
 

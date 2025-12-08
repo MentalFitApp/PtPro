@@ -10,11 +10,13 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
 import DailyIframe from '@daily-co/daily-js';
 import { DailyProvider, useParticipantIds, useParticipant, useDaily, useScreenShare, useLocalParticipant, useVideoTrack, useAudioTrack } from '@daily-co/daily-react';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function UnifiedChat() {
   const navigate = useNavigate();
   const auth = getAuth();
   const currentUser = auth.currentUser;
+  const toast = useToast();
 
   // Stati principali
   const [chats, setChats] = useState([]);
@@ -347,7 +349,7 @@ export default function UnifiedChat() {
       }, 100);
     } catch (error) {
       console.error('Errore creazione chat:', error);
-      alert('Errore durante la creazione della chat');
+      toast.error('Errore durante la creazione della chat');
     }
   };
 
@@ -375,7 +377,7 @@ export default function UnifiedChat() {
       setNewMessage('');
     } catch (error) {
       console.error('Errore invio messaggio:', error);
-      alert('Errore durante l\'invio del messaggio');
+      toast.error('Errore durante l\'invio del messaggio');
     } finally {
       setSending(false);
     }
@@ -517,7 +519,7 @@ export default function UnifiedChat() {
       initializeDailyCall(roomUrl);
     } catch (error) {
       console.error('Errore avvio videocall:', error);
-      alert('Errore durante l\'avvio della videochiamata');
+      toast.error('Errore durante l\'avvio della videochiamata');
     }
   };
 
@@ -598,7 +600,7 @@ export default function UnifiedChat() {
       initializeDailyCall(roomUrl);
     } catch (error) {
       console.error('Errore avvio chiamata vocale:', error);
-      alert('Errore durante l\'avvio della chiamata');
+      toast.error('Errore durante l\'avvio della chiamata');
     }
   };
 
@@ -617,7 +619,7 @@ export default function UnifiedChat() {
       return true;
     } catch (error) {
       console.error('Errore richiesta permessi media:', error);
-      alert('Per partecipare alla videochiamata è necessario consentire l\'accesso a videocamera e microfono.');
+      toast.warning('Per partecipare alla videochiamata è necessario consentire l\'accesso a videocamera e microfono.');
       return false;
     }
   };
@@ -720,7 +722,7 @@ export default function UnifiedChat() {
       });
     } catch (error) {
       console.error('Errore upload immagine:', error);
-      alert('Errore durante l\'invio dell\'immagine');
+      toast.error('Errore durante l\'invio dell\'immagine');
     } finally {
       setUploading(false);
     }
@@ -748,7 +750,7 @@ export default function UnifiedChat() {
       setIsRecording(true);
     } catch (error) {
       console.error('Errore registrazione audio:', error);
-      alert('Impossibile accedere al microfono');
+      toast.error('Impossibile accedere al microfono');
     }
   };
 
@@ -784,7 +786,7 @@ export default function UnifiedChat() {
       });
     } catch (error) {
       console.error('Errore upload audio:', error);
-      alert('Errore durante l\'invio del messaggio vocale');
+      toast.error('Errore durante l\'invio del messaggio vocale');
     } finally {
       setUploading(false);
     }

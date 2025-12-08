@@ -9,6 +9,7 @@ import { db, auth } from '../../firebase';
 import { getTenantDoc } from '../../config/tenant';
 import { uploadToR2 } from '../../cloudflareStorage';
 import { useTenantBranding } from '../../hooks/useTenantBranding';
+import { useToast } from '../../contexts/ToastContext';
 import { 
   User, Camera, Mail, Lock, Bell, AlertTriangle, Palette,
   ArrowLeft, Save, Trash2, Eye, EyeOff, Check, Globe, Scale, Ruler, Loader2
@@ -50,6 +51,7 @@ const TabButton = ({ active, icon: Icon, label, onClick, danger }) => (
 // ============ MAIN COMPONENT ============
 export default function Settings() {
   const navigate = useNavigate();
+  const toast = useToast();
   const currentUser = auth.currentUser;
   const { branding, updateBranding, loading: brandingLoading } = useTenantBranding();
   
@@ -173,12 +175,12 @@ export default function Settings() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Per favore seleziona un\'immagine valida');
+      toast.warning('Per favore seleziona un\'immagine valida');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('L\'immagine deve essere inferiore a 5MB');
+      toast.warning('L\'immagine deve essere inferiore a 5MB');
       return;
     }
 
@@ -205,7 +207,7 @@ export default function Settings() {
       }
     } catch (error) {
       console.error('Errore upload:', error);
-      alert('Errore durante il caricamento: ' + error.message);
+      toast.error('Errore durante il caricamento: ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -213,7 +215,7 @@ export default function Settings() {
 
   const saveProfile = async () => {
     if (!profile.displayName.trim()) {
-      alert('Il nome è obbligatorio');
+      toast.warning('Il nome è obbligatorio');
       return;
     }
 
@@ -233,10 +235,10 @@ export default function Settings() {
         updatedAt: serverTimestamp()
       }, { merge: true });
       
-      alert('Profilo salvato con successo!');
+      toast.success('Profilo salvato con successo!');
     } catch (error) {
       console.error('Errore salvataggio:', error);
-      alert('Errore durante il salvataggio');
+      toast.error('Errore durante il salvataggio');
     } finally {
       setSaving(false);
     }
@@ -247,10 +249,10 @@ export default function Settings() {
     setSaving(true);
     try {
       await updateBranding(brandingForm);
-      alert('Branding salvato con successo!');
+      toast.success('Branding salvato con successo!');
     } catch (error) {
       console.error('Errore salvataggio branding:', error);
-      alert('Errore durante il salvataggio');
+      toast.error('Errore durante il salvataggio');
     } finally {
       setSaving(false);
     }
@@ -259,17 +261,17 @@ export default function Settings() {
   // ============ PASSWORD HANDLERS ============
   const changePassword = async () => {
     if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      alert('Compila tutti i campi');
+      toast.warning('Compila tutti i campi');
       return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('Le password non coincidono');
+      toast.warning('Le password non coincidono');
       return;
     }
 
     if (passwordForm.newPassword.length < 6) {
-      alert('La password deve essere di almeno 6 caratteri');
+      toast.warning('La password deve essere di almeno 6 caratteri');
       return;
     }
 
@@ -280,13 +282,13 @@ export default function Settings() {
       await updatePassword(currentUser, passwordForm.newPassword);
       
       setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
-      alert('Password cambiata con successo!');
+      toast.success('Password cambiata con successo!');
     } catch (error) {
       console.error('Errore cambio password:', error);
       if (error.code === 'auth/wrong-password') {
-        alert('Password attuale non corretta');
+        toast.error('Password attuale non corretta');
       } else {
-        alert('Errore: ' + error.message);
+        toast.error('Errore: ' + error.message);
       }
     } finally {
       setSaving(false);
@@ -324,7 +326,7 @@ export default function Settings() {
     try {
       // Verifica supporto
       if (typeof Notification === 'undefined') {
-        alert('Il tuo browser non supporta le notifiche push');
+        toast.warning('Il tuo browser non supporta le notifiche push');
         return;
       }
 
@@ -368,14 +370,14 @@ export default function Settings() {
           setNotifications(n => ({ ...n, push: true }));
           console.log('[FCM] Token salvato:', token.substring(0, 30) + '...');
         } else {
-          alert('Non è stato possibile ottenere il token. Prova a ricaricare la pagina.');
+          toast.warning('Non è stato possibile ottenere il token. Prova a ricaricare la pagina.');
         }
       } else if (permission === 'denied') {
-        alert('Hai negato i permessi per le notifiche. Puoi cambiarli dalle impostazioni del browser.');
+        toast.warning('Hai negato i permessi per le notifiche. Puoi cambiarli dalle impostazioni del browser.');
       }
     } catch (error) {
       console.error('Errore attivazione push:', error);
-      alert('Errore durante l\'attivazione delle notifiche: ' + error.message);
+      toast.error('Errore durante l\'attivazione delle notifiche: ' + error.message);
     } finally {
       setEnablingPush(false);
     }
@@ -386,10 +388,10 @@ export default function Settings() {
     try {
       const userRef = getTenantDoc(db, 'users', currentUser.uid);
       await setDoc(userRef, { notifications }, { merge: true });
-      alert('Preferenze notifiche salvate!');
+      toast.success('Preferenze notifiche salvate!');
     } catch (error) {
       console.error('Errore salvataggio notifiche:', error);
-      alert('Errore durante il salvataggio');
+      toast.error('Errore durante il salvataggio');
     } finally {
       setSaving(false);
     }
@@ -425,9 +427,9 @@ export default function Settings() {
     } catch (error) {
       console.error('Errore eliminazione account:', error);
       if (error.code === 'auth/wrong-password') {
-        alert('Password non corretta');
+        toast.error('Password non corretta');
       } else {
-        alert('Errore: ' + error.message);
+        toast.error('Errore: ' + error.message);
       }
     }
   };

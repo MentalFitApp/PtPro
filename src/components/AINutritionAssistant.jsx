@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X, Lightbulb, TrendingUp, Clock, Plus, Zap, Loader2, Calendar } from 'lucide-react';
 import { generateNutritionSuggestions, generateCompleteSchedule } from '../services/aiNutritionAssistant';
+import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 const AINutritionAssistant = ({ 
   clientData, 
@@ -13,6 +15,8 @@ const AINutritionAssistant = ({
   contextType = 'general',
   coachId = null
 }) => {
+  const toast = useToast();
+  const { confirmAction } = useConfirm();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
@@ -45,9 +49,13 @@ const AINutritionAssistant = ({
   const handleGenerateCompleteSchedule = async (mode = 'full') => {
     const isTemplate = mode === 'template';
     
-    if (!confirm(`🤖 ${isTemplate ? 'Generare template veloce' : 'Generare scheda personalizzata'} di 7 giorni?\n\nQuesto sostituirà tutti i pasti attuali.`)) {
-      return;
-    }
+    const confirmed = await confirmAction({
+      title: isTemplate ? 'Generare template veloce?' : 'Generare scheda personalizzata?',
+      message: 'Verrà generata una scheda di 7 giorni. Questo sostituirà tutti i pasti attuali.',
+      confirmText: 'Genera',
+      type: 'warning'
+    });
+    if (!confirmed) return;
 
     setGeneratingComplete(true);
     setError(null);
@@ -75,7 +83,7 @@ const AINutritionAssistant = ({
       
       if (onApplyCompleteSchedule && result.schedaCompleta) {
         onApplyCompleteSchedule(result);
-        alert(`✅ Scheda ${isTemplate ? 'template' : 'personalizzata'} generata con successo!`);
+        toast.success(`Scheda ${isTemplate ? 'template' : 'personalizzata'} generata con successo!`);
         setIsOpen(false);
       }
     } catch (err) {

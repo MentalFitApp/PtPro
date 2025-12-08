@@ -187,17 +187,42 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
 const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0 }) => {
   const Icon = item.icon;
   
-  // Genera tour ID dalla path
+  // Genera tour ID dalla path - mappa completa per tutti i ruoli
   const getTourId = (path) => {
-    if (path === '/' || path.includes('dashboard')) return 'dashboard';
-    if (path.includes('client')) return 'clients';
-    if (path.includes('chat')) return 'chat';
-    if (path.includes('calendar')) return 'calendar';
-    if (path.includes('branding')) return 'branding';
-    if (path.includes('anamnesi')) return 'anamnesi';
-    if (path.includes('allenamento') || path.includes('scheda')) return 'workout';
-    if (path.includes('alimentazione') || path.includes('dieta')) return 'diet';
-    if (path.includes('check')) return 'checks';
+    // Dashboard
+    if (path === '/' || path === '/coach' || path === '/client/dashboard' || path === '/collaboratore/dashboard') return 'dashboard';
+    
+    // Admin routes
+    if (path === '/clients') return 'clients';
+    if (path === '/chat' || path.includes('/chat')) return 'chat';
+    if (path === '/calendar' || path.includes('/calendar')) return 'calendar';
+    if (path === '/collaboratori') return 'collaboratori';
+    if (path === '/alimentazione-allenamento') return 'schede';
+    if (path === '/community' || path.includes('/community')) return 'community';
+    if (path === '/analytics' || path === '/statistiche' || path === '/business-history') return 'analytics';
+    if (path.includes('/branding')) return 'branding';
+    if (path === '/landing-pages') return 'landing';
+    if (path === '/integrations') return 'integrations';
+    
+    // Coach routes
+    if (path === '/coach/clients') return 'clients';
+    if (path === '/coach/chat') return 'chat';
+    if (path === '/coach/anamnesi') return 'anamnesi';
+    if (path === '/coach/schede') return 'schede';
+    if (path === '/coach/updates') return 'updates';
+    
+    // Client routes
+    if (path === '/client/scheda-allenamento') return 'workout';
+    if (path === '/client/scheda-alimentazione') return 'diet';
+    if (path === '/client/chat') return 'chat';
+    if (path === '/client/community') return 'community';
+    if (path === '/client/anamnesi') return 'anamnesi';
+    if (path === '/client/checks') return 'checks';
+    if (path === '/client/payments') return 'payments';
+    
+    // Collaboratore routes
+    if (path === '/collaboratore/calendar') return 'calendar';
+    
     return null;
   };
   

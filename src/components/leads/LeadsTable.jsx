@@ -5,11 +5,13 @@ import { db } from '../../firebase';
 import { Edit2, Save, X, Settings, Columns, FileText } from 'lucide-react';
 import LeadStatusConfig from '../dashboard/LeadStatusConfig';
 import LeadColumnsConfig from '../dashboard/LeadColumnsConfig';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
  * Tabella leads con checkmarks dinamici e personalizzabili
  */
 export default function LeadsTable({ leads, leadStatuses, columns = [], onRefresh, showConfig = false }) {
+  const toast = useToast();
   const [editingLead, setEditingLead] = useState(null);
   const [showStatusConfig, setShowStatusConfig] = useState(false);
   const [showColumnsConfig, setShowColumnsConfig] = useState(false);
@@ -37,7 +39,7 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
       });
     } catch (error) {
       console.error('Errore aggiornamento status lead:', error);
-      alert('Errore nell\'aggiornamento');
+      toast.error('Errore nell\'aggiornamento');
     }
   };
 

@@ -15,10 +15,18 @@ import BlockedAccess from '../../components/client/BlockedAccess';
 import AnamnesiRequiredModal from '../../components/client/AnamnesiRequiredModal';
 import LinkAccountBanner from '../../components/LinkAccountBanner';
 import { NextCallCard, RequestCallCard } from '../../components/calls/CallScheduler';
+import { SkeletonCard, SkeletonList } from '../../components/ui/SkeletonLoader';
 
 const LoadingSpinner = () => (
-  <div className="min-h-screen bg-slate-900 flex justify-center items-center">
-    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
+  <div className="min-h-screen bg-slate-900 px-4 py-6 space-y-4">
+    <div className="h-8 w-48 bg-slate-700/50 rounded-lg animate-pulse" />
+    <div className="grid grid-cols-2 gap-3">
+      <SkeletonCard />
+      <SkeletonCard />
+      <SkeletonCard />
+      <SkeletonCard />
+    </div>
+    <SkeletonList count={3} />
   </div>
 );
 

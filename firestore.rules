@@ -560,6 +560,15 @@ service cloud.firestore {
       allow create, update, delete: if isPlatformCEO(); // Solo platform CEO può modificare
     }
 
+    // ==================== USER-TENANT MAPPING (globale) ====================
+    // Mappa userId → tenantId per login veloce e sicuro
+    match /user_tenants/{userId} {
+      // L'utente può leggere SOLO il proprio documento
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Solo Cloud Functions (admin SDK) possono scrivere
+      allow write: if false;
+    }
+
     // ==================== BLOCCA TUTTO IL RESTO ====================
     match /{document=**} {
       allow read, write: if false;

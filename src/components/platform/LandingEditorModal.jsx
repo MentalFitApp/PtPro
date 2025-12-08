@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, Globe, Image, Type, Layout } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function LandingEditorModal({ tenant, onClose, onSave }) {
+  const toast = useToast();
   const [config, setConfig] = useState(null);
   const [activeTab, setActiveTab] = useState('general');
   const [saving, setSaving] = useState(false);
@@ -26,7 +28,7 @@ export default function LandingEditorModal({ tenant, onClose, onSave }) {
       onClose();
     } catch (error) {
       console.error('Error saving:', error);
-      alert('❌ Errore nel salvataggio');
+      toast.error('Errore nel salvataggio');
     } finally {
       setSaving(false);
     }

@@ -13,6 +13,8 @@ import {
   collection, getDocs, query, where, orderBy, 
   limit, doc, updateDoc, deleteDoc, Timestamp
 } from 'firebase/firestore';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 // Privacy utilities
 const maskEmail = (email) => {
@@ -28,6 +30,8 @@ const maskUID = (uid) => {
 
 export default function GlobalUserManagement() {
   const navigate = useNavigate();
+  const toast = useToast();
+  const { confirmDelete, confirmAction } = useConfirm();
   
   const [loading, setLoading] = useState(true);
   const [privacyMode, setPrivacyMode] = useState(true);
@@ -190,7 +194,8 @@ export default function GlobalUserManagement() {
   }, [allUsers, searchTerm, filterRole, filterStatus, sortBy]);
 
   const handleSuspendUser = async (user) => {
-    if (!confirm(`Sospendere l'utente ${user.email}?`)) return;
+    const ok = await confirmAction(`Sospendere l'utente ${user.email}?`, 'Sospendi Utente', 'Sospendi');
+    if (!ok) return;
     
     try {
       const userRef = doc(db, `tenants/${user.tenantId}/users`, user.id);
@@ -202,15 +207,16 @@ export default function GlobalUserManagement() {
       
       // Reload users
       loadAllUsers();
-      alert('✅ Utente sospeso con successo');
+      toast.success('Utente sospeso con successo');
     } catch (error) {
       console.error('Error suspending user:', error);
-      alert('❌ Errore nella sospensione');
+      toast.error('Errore nella sospensione');
     }
   };
 
   const handleDeleteUser = async (user) => {
-    if (!confirm(`ATTENZIONE: Eliminare definitivamente l'utente ${user.email}? Questa azione è IRREVERSIBILE!`)) return;
+    const ok = await confirmDelete(`l'utente ${user.email}`);
+    if (!ok) return;
     
     try {
       const userRef = doc(db, `tenants/${user.tenantId}/users`, user.id);
@@ -218,20 +224,21 @@ export default function GlobalUserManagement() {
       
       // Reload users
       loadAllUsers();
-      alert('✅ Utente eliminato con successo');
+      toast.success('Utente eliminato con successo');
     } catch (error) {
       console.error('Error deleting user:', error);
-      alert('❌ Errore nell\'eliminazione');
+      toast.error('Errore nell\'eliminazione');
     }
   };
 
   const handleBulkAction = async (action) => {
     if (selectedUsers.length === 0) {
-      alert('Seleziona almeno un utente');
+      toast.warning('Seleziona almeno un utente');
       return;
     }
     
-    if (!confirm(`Eseguire l'azione "${action}" su ${selectedUsers.length} utenti?`)) return;
+    const ok = await confirmAction(`Eseguire l'azione "${action}" su ${selectedUsers.length} utenti?`, 'Azione Multipla', 'Esegui');
+    if (!ok) return;
     
     try {
       for (const userId of selectedUsers) {
@@ -257,10 +264,10 @@ export default function GlobalUserManagement() {
       setSelectedUsers([]);
       setShowBulkActions(false);
       loadAllUsers();
-      alert('✅ Azione bulk completata');
+      toast.success('Azione bulk completata');
     } catch (error) {
       console.error('Error performing bulk action:', error);
-      alert('❌ Errore nell\'azione bulk');
+      toast.error('Errore nell\'azione bulk');
     }
   };
 

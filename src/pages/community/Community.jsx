@@ -23,6 +23,8 @@ import {
 } from 'firebase/firestore';
 import { uploadToR2 } from '../../cloudflareStorage';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 const LEVELS = [
   { name: "Rookie", min: 0, color: "gray-500", next: 10, icon: Shield },
@@ -42,6 +44,8 @@ const CHANNELS = [
 ];
 
 export default function Community() {
+  const toast = useToast();
+  const { confirmDelete } = useConfirm();
   const [posts, setPosts] = useState([]);
   const [channels, setChannels] = useState(CHANNELS);
   const [selectedChannel, setSelectedChannel] = useState("wins");
@@ -307,7 +311,8 @@ export default function Community() {
 
   // Elimina post
   const deletePost = async (postId) => {
-    if (!window.confirm('Vuoi eliminare questo post?')) return;
+    const confirmed = await confirmDelete('questo post');
+    if (!confirmed) return;
     try {
       // Trova il post per ottenere l'autore
       const post = posts.find(p => p.id === postId);
@@ -323,9 +328,10 @@ export default function Community() {
       await updateDoc(authorRef, {
         posts: increment(-1)
       });
+      toast.success('Post eliminato');
     } catch (error) {
       console.error('Errore eliminazione post:', error);
-      alert('Errore durante l\'eliminazione del post');
+      toast.error('Errore durante l\'eliminazione del post');
     }
   };
 
@@ -367,7 +373,7 @@ export default function Community() {
       console.log("Post inviato con successo");
     } catch (error) {
       console.error("Errore invio post:", error);
-      alert("Errore nell'invio del messaggio. Verifica i permessi Firestore.");
+      toast.error("Errore nell'invio del messaggio. Verifica i permessi Firestore.");
     }
   };
 
@@ -377,7 +383,7 @@ export default function Community() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Seleziona un file immagine valido');
+      toast.warning('Seleziona un file immagine valido');
       return;
     }
 
@@ -393,7 +399,7 @@ export default function Community() {
       await sendPost(url, 'image');
     } catch (error) {
       console.error('Errore upload immagine:', error);
-      alert('Errore durante l\'upload dell\'immagine');
+      toast.error('Errore durante l\'upload dell\'immagine');
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -429,7 +435,7 @@ export default function Community() {
           await sendPost(url, 'audio');
         } catch (error) {
           console.error('Errore upload audio:', error);
-          alert('Errore durante l\'upload dell\'audio');
+          toast.error('Errore durante l\'upload dell\'audio');
         } finally {
           setIsUploading(false);
           setUploadProgress(0);
@@ -443,7 +449,7 @@ export default function Community() {
       setIsRecordingAudio(true);
     } catch (error) {
       console.error('Errore avvio registrazione:', error);
-      alert('Impossibile accedere al microfono');
+      toast.error('Impossibile accedere al microfono');
     }
   };
 
@@ -621,7 +627,7 @@ export default function Community() {
       setShowGroupCall(true);
     } catch (error) {
       console.error('❌ Errore avvio group call:', error);
-      alert(`Errore creazione live: ${error.message || 'Errore sconosciuto'}`);
+      toast.error(`Errore creazione live: ${error.message || 'Errore sconosciuto'}`);
     }
   };
 
@@ -746,7 +752,7 @@ export default function Community() {
       setEditingProfile(null);
     } catch (error) {
       console.error("❌ Errore salvataggio profilo:", error);
-      alert(`Errore durante il salvataggio: ${error.message || 'Errore sconosciuto'}. Controlla la console per dettagli.`);
+      toast.error(`Errore durante il salvataggio: ${error.message || 'Errore sconosciuto'}`);
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -758,12 +764,12 @@ export default function Community() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Seleziona un file immagine valido');
+      toast.warning('Seleziona un file immagine valido');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('L\'immagine non può superare i 5MB');
+      toast.warning('L\'immagine non può superare i 5MB');
       return;
     }
 
@@ -776,12 +782,12 @@ export default function Community() {
   // Completa onboarding profilo
   const completeProfileSetup = async () => {
     if (!profileData.displayName.trim()) {
-      alert("Inserisci il tuo nome");
+      toast.warning("Inserisci il tuo nome");
       return;
     }
 
     if (!selectedProfilePhoto && !profileData.photoURL.trim()) {
-      alert("Carica una foto profilo");
+      toast.warning("Carica una foto profilo");
       return;
     }
     
@@ -867,7 +873,7 @@ export default function Community() {
       }
     } catch (error) {
       console.error("❌ Errore setup profilo:", error);
-      alert(`Errore durante il salvataggio: ${error.message || 'Errore sconosciuto'}. Controlla la console per dettagli.`);
+      toast.error(`Errore durante il salvataggio: ${error.message || 'Errore sconosciuto'}`);
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -2922,7 +2928,7 @@ export default function Community() {
                                       setCommunitySettings(prev => ({ ...prev, introVideoUrl: url }));
                                     } catch (error) {
                                       console.error('Errore upload video:', error);
-                                      alert('Errore durante l\'upload del video');
+                                      toast.error('Errore durante l\'upload del video');
                                     } finally {
                                       setUploadingVideo(false);
                                       setUploadProgress(0);

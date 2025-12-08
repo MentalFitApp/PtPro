@@ -16,52 +16,90 @@ const TOUR_STEPS = {
       id: 'welcome',
       type: 'modal',
       title: 'Benvenuto su FitFlow! 🎉',
-      description: 'Ti guiderò attraverso le funzionalità principali. Clicca "Avanti" per iniziare il tour.',
+      description: 'Ti guiderò attraverso le funzionalità principali della tua piattaforma. Clicca "Iniziamo" per scoprire tutto!',
     },
     {
       id: 'dashboard',
       selector: '[data-tour="dashboard"]',
       title: 'La tua Dashboard',
-      description: 'Qui vedi le statistiche principali: clienti attivi, incassi, scadenze e molto altro.',
-      position: 'bottom'
+      description: 'Panoramica completa: clienti attivi, incassi del mese, scadenze imminenti e attività recenti. Tutto a colpo d\'occhio!',
+      position: 'right'
     },
     {
       id: 'clients',
       selector: '[data-tour="clients"]',
-      fallbackSelector: 'a[href="/clients"], button:contains("Clienti")',
       title: 'Gestione Clienti',
-      description: 'Qui trovi tutti i tuoi clienti. Puoi aggiungerne di nuovi, assegnare schede e monitorare i progressi.',
+      description: 'Aggiungi nuovi clienti, assegna schede di allenamento e alimentazione, monitora i progressi e gestisci gli abbonamenti.',
       position: 'right'
     },
     {
       id: 'chat',
       selector: '[data-tour="chat"]',
-      fallbackSelector: 'a[href="/chat"], button:contains("Chat")',
-      title: 'Messaggi',
-      description: 'Comunica direttamente con i tuoi clienti. Vedrai una notifica quando ricevi nuovi messaggi.',
+      title: 'Chat in Tempo Reale',
+      description: 'Comunica direttamente con i tuoi clienti. Riceverai notifiche push per i nuovi messaggi!',
       position: 'right'
     },
     {
       id: 'calendar',
       selector: '[data-tour="calendar"]',
-      fallbackSelector: 'a[href="/calendar"]',
-      title: 'Calendario',
-      description: 'Organizza le chiamate e gli appuntamenti con i clienti. Non dimenticare mai un check-in!',
+      title: 'Calendario Appuntamenti',
+      description: 'Pianifica chiamate, check-in e sessioni. Integrazione con Google Calendar disponibile!',
+      position: 'right'
+    },
+    {
+      id: 'collaboratori',
+      selector: '[data-tour="collaboratori"]',
+      title: 'Collaboratori',
+      description: 'Aggiungi coach e collaboratori al tuo team. Assegna loro clienti e monitora il loro lavoro.',
+      position: 'right'
+    },
+    {
+      id: 'schede',
+      selector: '[data-tour="schede"]',
+      title: 'Schede Allenamento',
+      description: 'Crea e assegna schede personalizzate con esercizi dal nostro database di 1.300+ esercizi.',
+      position: 'right'
+    },
+    {
+      id: 'community',
+      selector: '[data-tour="community"]',
+      title: 'Community',
+      description: 'Crea una community per i tuoi clienti: post, interazioni e contenuti esclusivi.',
+      position: 'right'
+    },
+    {
+      id: 'analytics',
+      selector: '[data-tour="analytics"]',
+      title: 'Analytics & Revenue',
+      description: 'Monitora la crescita del business: revenue, retention dei clienti e trend mensili.',
       position: 'right'
     },
     {
       id: 'branding',
       selector: '[data-tour="branding"]',
-      fallbackSelector: 'a[href*="branding"]',
       title: 'Personalizza il Brand',
-      description: 'Aggiungi il tuo logo e personalizza i colori per dare un aspetto professionale.',
+      description: 'Carica il tuo logo, scegli i colori e personalizza l\'app con il tuo brand.',
+      position: 'right'
+    },
+    {
+      id: 'landing',
+      selector: '[data-tour="landing"]',
+      title: 'Landing Pages',
+      description: 'Crea landing page professionali con AI per acquisire nuovi clienti. Lead generation automatica!',
+      position: 'right'
+    },
+    {
+      id: 'integrations',
+      selector: '[data-tour="integrations"]',
+      title: 'Integrazioni',
+      description: 'Collega Instagram, ManyChat, Google Calendar, Daily.co per videochiamate e molto altro.',
       position: 'right'
     },
     {
       id: 'complete',
       type: 'modal',
-      title: 'Tour completato! 🚀',
-      description: 'Ora conosci le basi. Esplora liberamente e fai crescere il tuo business!',
+      title: 'Sei pronto a partire! 🚀',
+      description: 'Hai scoperto le funzionalità principali. Inizia aggiungendo i tuoi primi clienti e fai crescere il tuo business!',
     }
   ],
   coach: [
@@ -69,30 +107,48 @@ const TOUR_STEPS = {
       id: 'welcome',
       type: 'modal',
       title: 'Benvenuto Coach! 💪',
-      description: 'Ecco una breve guida per iniziare a seguire i tuoi clienti.',
+      description: 'Ecco una breve guida per gestire al meglio i clienti che ti sono stati assegnati.',
+    },
+    {
+      id: 'dashboard',
+      selector: '[data-tour="dashboard"]',
+      title: 'La tua Dashboard',
+      description: 'Visualizza i clienti attivi, le scadenze e le attività recenti dei tuoi clienti.',
+      position: 'right'
     },
     {
       id: 'clients',
       selector: '[data-tour="clients"]',
-      fallbackSelector: 'a[href*="clients"]',
       title: 'I tuoi Clienti',
-      description: 'Qui vedi i clienti che ti sono stati assegnati. Clicca su uno per vedere i dettagli.',
+      description: 'Vedi i clienti assegnati a te. Clicca su uno per accedere ai dettagli, schede e check.',
       position: 'right'
     },
     {
       id: 'chat',
       selector: '[data-tour="chat"]',
-      fallbackSelector: 'a[href*="chat"]',
       title: 'Chat',
-      description: 'Scrivi ai tuoi clienti e ricevi aggiornamenti in tempo reale.',
+      description: 'Comunica con i tuoi clienti. Il pallino blu indica messaggi non letti.',
       position: 'right'
     },
     {
       id: 'anamnesi',
       selector: '[data-tour="anamnesi"]',
-      fallbackSelector: 'a[href*="anamnesi"]',
-      title: 'Anamnesi',
-      description: 'Qui trovi le anamnesi compilate dai clienti. Il pallino indica nuove compilazioni.',
+      title: 'Anamnesi Clienti',
+      description: 'Visualizza le anamnesi compilate. Il pallino indica nuove compilazioni da controllare.',
+      position: 'right'
+    },
+    {
+      id: 'schede',
+      selector: '[data-tour="schede"]',
+      title: 'Gestione Schede',
+      description: 'Crea e assegna schede di allenamento ai tuoi clienti.',
+      position: 'right'
+    },
+    {
+      id: 'updates',
+      selector: '[data-tour="updates"]',
+      title: 'Aggiornamenti',
+      description: 'Leggi le novità e gli annunci pubblicati dall\'admin.',
       position: 'right'
     },
     {
@@ -106,54 +162,98 @@ const TOUR_STEPS = {
     {
       id: 'welcome',
       type: 'modal',
-      title: 'Ciao! 👋',
-      description: 'Benvenuto nella tua area personale. Ti mostrerò come usare l\'app.',
+      title: 'Benvenuto nella tua Area! 👋',
+      description: 'Questa è la tua app personale per seguire allenamenti, alimentazione e comunicare con il tuo coach.',
+    },
+    {
+      id: 'dashboard',
+      selector: '[data-tour="dashboard"]',
+      title: 'La tua Dashboard',
+      description: 'Panoramica dei tuoi progressi: streak allenamenti, prossime attività e statistiche.',
+      position: 'right'
     },
     {
       id: 'workout',
       selector: '[data-tour="workout"]',
-      fallbackSelector: 'a[href*="allenamento"], a[href*="scheda"]',
-      title: 'I tuoi Allenamenti',
-      description: 'Qui trovi la tua scheda allenamento. Segui gli esercizi e registra i progressi.',
+      title: 'Scheda Allenamento',
+      description: 'La tua scheda allenamento personalizzata. Segui gli esercizi con video dimostrativi!',
       position: 'right'
     },
     {
       id: 'diet',
       selector: '[data-tour="diet"]',
-      fallbackSelector: 'a[href*="alimentazione"], a[href*="dieta"]',
       title: 'Piano Alimentare',
-      description: 'Consulta il tuo piano alimentare giornaliero personalizzato dal tuo coach.',
-      position: 'right'
-    },
-    {
-      id: 'checks',
-      selector: '[data-tour="checks"]',
-      fallbackSelector: 'a[href*="check"]',
-      title: 'Check Settimanali',
-      description: 'Carica le tue foto e il peso ogni settimana. Il coach monitorerà i progressi!',
-      position: 'right'
-    },
-    {
-      id: 'anamnesi',
-      selector: '[data-tour="anamnesi"]',
-      fallbackSelector: 'a[href*="anamnesi"]',
-      title: 'La tua Anamnesi',
-      description: 'Compila il questionario iniziale per personalizzare il tuo percorso.',
+      description: 'Il tuo piano alimentare giornaliero con pasti, ricette e alternative personalizzate.',
       position: 'right'
     },
     {
       id: 'chat',
       selector: '[data-tour="chat"]',
-      fallbackSelector: 'a[href*="chat"]',
-      title: 'Contatta il Coach',
-      description: 'Scrivi al tuo coach per qualsiasi domanda o dubbio.',
+      title: 'Chat con il Coach',
+      description: 'Scrivi al tuo coach per domande, dubbi o aggiornamenti. Risposta entro 24h!',
+      position: 'right'
+    },
+    {
+      id: 'community',
+      selector: '[data-tour="community"]',
+      title: 'Community',
+      description: 'Connettiti con gli altri clienti, leggi post motivazionali e condividi i tuoi progressi.',
+      position: 'right'
+    },
+    {
+      id: 'anamnesi',
+      selector: '[data-tour="anamnesi"]',
+      title: 'La tua Anamnesi',
+      description: 'Compila il questionario per permettere al coach di personalizzare il tuo percorso.',
+      position: 'right'
+    },
+    {
+      id: 'checks',
+      selector: '[data-tour="checks"]',
+      title: 'Check Settimanali',
+      description: 'Carica le tue foto e il peso ogni settimana. Il coach monitorerà i tuoi progressi!',
+      position: 'right'
+    },
+    {
+      id: 'payments',
+      selector: '[data-tour="payments"]',
+      title: 'Abbonamento',
+      description: 'Visualizza lo stato del tuo abbonamento e lo storico dei pagamenti.',
       position: 'right'
     },
     {
       id: 'complete',
       type: 'modal',
-      title: 'Pronto per iniziare! 💪',
-      description: 'Ora conosci l\'app. Inizia il tuo percorso verso i tuoi obiettivi!',
+      title: 'Inizia il tuo percorso! 💪',
+      description: 'Sei pronto per raggiungere i tuoi obiettivi. Consulta la scheda allenamento e inizia subito!',
+    }
+  ],
+  collaboratore: [
+    {
+      id: 'welcome',
+      type: 'modal',
+      title: 'Benvenuto nel Team! 🤝',
+      description: 'Come collaboratore, hai accesso agli strumenti per gestire i clienti e supportare il business.',
+    },
+    {
+      id: 'dashboard',
+      selector: '[data-tour="dashboard"]',
+      title: 'Dashboard Collaboratore',
+      description: 'Visualizza le tue statistiche, clienti seguiti e attività recenti.',
+      position: 'right'
+    },
+    {
+      id: 'calendar',
+      selector: '[data-tour="calendar"]',
+      title: 'Calendario',
+      description: 'Gestisci i tuoi appuntamenti e le chiamate con i clienti.',
+      position: 'right'
+    },
+    {
+      id: 'complete',
+      type: 'modal',
+      title: 'Pronto a iniziare! 🎯',
+      description: 'Esplora la piattaforma e inizia a supportare il team. Buon lavoro!',
     }
   ]
 };
@@ -432,7 +532,7 @@ export default function InteractiveTour({ role = 'admin', onComplete, onSkip }) 
   };
   
   // Versione del tour - deve corrispondere a TOUR_VERSION in ProLayout
-  const TOUR_VERSION = 2;
+  const TOUR_VERSION = 3;
   
   const handleComplete = async () => {
     setIsActive(false);

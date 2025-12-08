@@ -5,6 +5,8 @@ import { db, auth } from '../../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
 import { isSuperAdmin, isAdmin } from '../../utils/superadmin';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import { 
   BookOpen, Plus, Edit, Trash2, Eye, EyeOff, Video, FileText, 
   Save, X, Upload, GraduationCap, Settings, Users, BarChart3,
@@ -23,6 +25,8 @@ import { AnimatePresence, motion } from 'framer-motion';
  */
 export default function CourseAdmin() {
   const navigate = useNavigate();
+  const toast = useToast();
+  const { confirmDelete } = useConfirm();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNewCourseModal, setShowNewCourseModal] = useState(false);
@@ -106,7 +110,7 @@ export default function CourseAdmin() {
 
   const handleCreateCourse = async () => {
     if (!newCourse.title.trim()) {
-      alert('Inserisci un titolo per il corso');
+      toast.warning('Inserisci un titolo per il corso');
       return;
     }
 
@@ -149,10 +153,10 @@ export default function CourseAdmin() {
       });
       
       setShowNewCourseModal(false);
-      alert('Corso creato con successo!');
+      toast.success('Corso creato con successo!');
     } catch (error) {
       console.error('Error creating course:', error);
-      alert('Errore nella creazione del corso: ' + error.message);
+      toast.error('Errore nella creazione del corso: ' + error.message);
     }
   };
 
@@ -187,24 +191,23 @@ export default function CourseAdmin() {
 
       setShowEditCourseModal(false);
       setSelectedCourse(null);
-      alert('Corso aggiornato con successo!');
+      toast.success('Corso aggiornato con successo!');
     } catch (error) {
       console.error('Error updating course:', error);
-      alert('Errore nell\'aggiornamento del corso: ' + error.message);
+      toast.error('Errore nell\'aggiornamento del corso: ' + error.message);
     }
   };
 
   const handleDeleteCourse = async (courseId) => {
-    if (!window.confirm('Sei sicuro di voler eliminare questo corso? Questa azione non può essere annullata.')) {
-      return;
-    }
+    const confirmed = await confirmDelete('questo corso');
+    if (!confirmed) return;
 
     try {
       await deleteDoc(doc(db, 'courses', courseId));
-      alert('Corso eliminato con successo');
+      toast.success('Corso eliminato con successo');
     } catch (error) {
       console.error('Error deleting course:', error);
-      alert('Errore nell\'eliminazione del corso: ' + error.message);
+      toast.error('Errore nell\'eliminazione del corso: ' + error.message);
     }
   };
 
@@ -216,7 +219,7 @@ export default function CourseAdmin() {
       });
     } catch (error) {
       console.error('Error toggling course visibility:', error);
-      alert('Errore nel cambio di visibilità: ' + error.message);
+      toast.error('Errore nel cambio di visibilità: ' + error.message);
     }
   };
 

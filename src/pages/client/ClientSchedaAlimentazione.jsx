@@ -9,10 +9,14 @@ import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../..
 import { exportNutritionCardToPDF } from '../../utils/pdfExport';
 import SmartFoodSwapEnhanced from '../../components/SmartFoodSwapEnhanced';
 import { useFeaturePermission } from '../../components/ProtectedClientRoute';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
 
 const ClientSchedaAlimentazione = () => {
+  const toast = useToast();
+  const { confirmAction } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [schedaData, setSchedaData] = useState(null);
   const [selectedDay, setSelectedDay] = useState('Lunedì');
@@ -160,14 +164,18 @@ const ClientSchedaAlimentazione = () => {
       setSwapModalData(null);
     } catch (error) {
       console.error('Errore nella sostituzione:', error);
-      alert('Errore durante la sostituzione dell\'alimento');
+      toast.error('Errore durante la sostituzione dell\'alimento');
     }
   };
 
   const handleResetScheda = async () => {
-    if (!window.confirm('Sei sicuro di voler ripristinare la scheda originale del coach? Tutte le modifiche andranno perse.')) {
-      return;
-    }
+    const confirmed = await confirmAction({
+      title: 'Ripristinare scheda originale?',
+      message: 'Sei sicuro di voler ripristinare la scheda originale del coach? Tutte le modifiche andranno perse.',
+      confirmText: 'Ripristina',
+      type: 'warning'
+    });
+    if (!confirmed) return;
 
     try {
       const user = auth.currentUser;
@@ -178,7 +186,7 @@ const ClientSchedaAlimentazione = () => {
       const schedaSnap = await getDoc(schedaRef);
       
       if (!schedaSnap.exists()) {
-        alert('Scheda non trovata');
+        toast.warning('Scheda non trovata');
         return;
       }
 
@@ -197,13 +205,13 @@ const ClientSchedaAlimentazione = () => {
           giorni: originalData.originalGiorni
         });
 
-        alert('✅ Scheda ripristinata correttamente!');
+        toast.success('Scheda ripristinata correttamente!');
       } else {
-        alert('⚠️ Non è disponibile una versione originale da ripristinare. La scheda potrebbe non essere mai stata modificata.');
+        toast.warning('Non è disponibile una versione originale da ripristinare. La scheda potrebbe non essere mai stata modificata.');
       }
     } catch (error) {
       console.error('Errore nel ripristino:', error);
-      alert('Errore durante il ripristino della scheda');
+      toast.error('Errore durante il ripristino della scheda');
     }
   };
 

@@ -9,6 +9,7 @@ import { signOut } from "firebase/auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTenantBranding } from '../../hooks/useTenantBranding';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
+import { SkeletonCard, SkeletonList } from '../../components/ui/SkeletonLoader';
 import {
   TrendingUp, TrendingDown, Users, DollarSign, Calendar, 
   ChevronRight, LogOut, User, Bell, Search, Plus,
@@ -596,8 +597,17 @@ export default function DashboardPro() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen pb-20">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 space-y-4 sm:space-y-6">
+          <div className="h-8 w-32 bg-slate-700/50 rounded-lg animate-pulse" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+          <SkeletonList count={4} />
+        </div>
       </div>
     );
   }

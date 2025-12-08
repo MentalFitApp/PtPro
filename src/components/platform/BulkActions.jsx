@@ -7,8 +7,10 @@ import {
 } from 'lucide-react';
 import { updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { useToast } from '../../contexts/ToastContext';
 
 const BulkActions = ({ tenants, selectedTenantIds, onSelectionChange, onActionComplete }) => {
+  const toast = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
@@ -90,7 +92,7 @@ const BulkActions = ({ tenants, selectedTenantIds, onSelectionChange, onActionCo
       
     } catch (error) {
       console.error('Bulk action error:', error);
-      alert('Errore durante l\'operazione: ' + error.message);
+      toast.error('Errore durante l\'operazione: ' + error.message);
     } finally {
       setIsProcessing(false);
       setPendingAction(null);

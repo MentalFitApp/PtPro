@@ -8,9 +8,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { requestNotificationPermission, checkNotificationPermission, scheduleEventNotifications, setupForegroundMessageListener } from '../../utils/notifications';
 import { notifyNewEvent } from '../../services/notificationService';
 import CalendarNotesPanel from '../../components/calendar/CalendarNotesPanel';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function CalendarPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -243,7 +245,7 @@ export default function CalendarPage() {
 
   const handleAddEvent = async () => {
     if (!newEvent.title || (!newEvent.allDay && !newEvent.time)) {
-      alert(newEvent.allDay ? 'Inserisci il titolo' : 'Inserisci titolo e ora');
+      toast.warning(newEvent.allDay ? 'Inserisci il titolo' : 'Inserisci titolo e ora');
       return;
     }
 
@@ -265,7 +267,7 @@ export default function CalendarPage() {
           const startM = sh * 60 + sm;
           const endM = eh * 60 + em;
           if (endM <= startM) {
-            alert('L\'ora di fine deve essere successiva all\'inizio');
+            toast.warning('L\'ora di fine deve essere successiva all\'inizio');
             return;
           }
           duration = endM - startM;
@@ -304,7 +306,7 @@ export default function CalendarPage() {
       setModalShowDayEvents(true);
     } catch (error) {
       console.error('Errore aggiunta evento:', error);
-      alert('Errore nell\'aggiungere l\'evento');
+      toast.error('Errore nell\'aggiungere l\'evento');
     }
   };
 
@@ -327,7 +329,7 @@ export default function CalendarPage() {
           const startM = sh * 60 + sm;
           const endM = eh * 60 + em;
           if (endM <= startM) {
-            alert('L\'ora di fine deve essere successiva all\'inizio');
+            toast.warning('L\'ora di fine deve essere successiva all\'inizio');
             return;
           }
           duration = endM - startM;
@@ -388,13 +390,13 @@ export default function CalendarPage() {
   const handleToggleNotifications = async () => {
     if (notificationsEnabled) {
       // Le notifiche sono già attive, informa l'utente
-      alert('Le notifiche sono attive! Puoi disattivarle dalle impostazioni del browser.');
+      toast.info('Le notifiche sono attive! Puoi disattivarle dalle impostazioni del browser.');
     } else {
       // Richiedi permesso notifiche
       const token = await requestNotificationPermission(auth.currentUser.uid);
       if (token) {
         setNotificationsEnabled(true);
-        alert('✅ Notifiche attivate! Riceverai promemoria per le tue chiamate.');
+        toast.success('Notifiche attivate! Riceverai promemoria per le tue chiamate.');
         
         // Programma notifiche per eventi di oggi
         const today = new Date().toISOString().split('T')[0];
@@ -403,7 +405,7 @@ export default function CalendarPage() {
           scheduleEventNotifications(todayEvents);
         }
       } else {
-        alert('❌ Permesso notifiche negato. Abilitale dalle impostazioni del browser.');
+        toast.error('Permesso notifiche negato. Abilitale dalle impostazioni del browser.');
       }
     }
   };
@@ -1278,7 +1280,7 @@ export default function CalendarPage() {
                             setEditingLeadDetails(true);
                           } catch (err) {
                             console.error('Errore caricamento lead:', err);
-                            alert('Errore nel caricamento dei dati del lead');
+                            toast.error('Errore nel caricamento dei dati del lead');
                           }
                         }}
                         className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold py-3 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition-all"
@@ -1387,7 +1389,7 @@ export default function CalendarPage() {
                       onClick={async () => {
                         try {
                           if (!selectedLead.leadId) {
-                            alert('Lead non collegato (leadId mancante).');
+                            toast.warning('Lead non collegato (leadId mancante).');
                             return;
                           }
                           // Aggiorna lead con status dinamici
@@ -1430,7 +1432,7 @@ export default function CalendarPage() {
                           setEditingLeadDetails(false);
                         } catch (err) {
                           console.error('Errore aggiornamento lead/evento:', err);
-                          alert('Errore nel salvataggio.');
+                          toast.error('Errore nel salvataggio.');
                         }
                       }}
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl"

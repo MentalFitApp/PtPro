@@ -4,6 +4,8 @@ import { ChevronRight, Plus, Search, Edit2, Trash2, X, Save } from 'lucide-react
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { getTenantSubcollection } from '../config/tenant';
+import { useToast } from '../contexts/ToastContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 
 const CATEGORIES = [
   'Antipasti',
@@ -27,6 +29,8 @@ const CATEGORIES = [
 ];
 
 const ListaAlimenti = ({ onBack }) => {
+  const toast = useToast();
+  const { confirmDelete } = useConfirm();
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -123,7 +127,7 @@ const ListaAlimenti = ({ onBack }) => {
 
   const handleAddFood = async () => {
     if (!formData.nome || !formData.kcal || !formData.proteine || !formData.carboidrati || !formData.grassi) {
-      alert('Compila tutti i campi');
+      toast.warning('Compila tutti i campi');
       return;
     }
 
@@ -142,13 +146,13 @@ const ListaAlimenti = ({ onBack }) => {
       loadFoods();
     } catch (error) {
       console.error('Errore nell\'aggiunta dell\'alimento:', error);
-      alert('Errore nell\'aggiunta dell\'alimento');
+      toast.error('Errore nell\'aggiunta dell\'alimento');
     }
   };
 
   const handleUpdateFood = async () => {
     if (!formData.nome || !formData.kcal || !formData.proteine || !formData.carboidrati || !formData.grassi) {
-      alert('Compila tutti i campi');
+      toast.warning('Compila tutti i campi');
       return;
     }
 
@@ -167,12 +171,13 @@ const ListaAlimenti = ({ onBack }) => {
       loadFoods();
     } catch (error) {
       console.error('Errore nell\'aggiornamento dell\'alimento:', error);
-      alert('Errore nell\'aggiornamento dell\'alimento');
+      toast.error('Errore nell\'aggiornamento dell\'alimento');
     }
   };
 
   const handleDeleteFood = async (foodId) => {
-    if (!confirm('Sei sicuro di voler eliminare questo alimento?')) return;
+    const confirmed = await confirmDelete('questo alimento');
+    if (!confirmed) return;
 
     try {
       const foodRef = doc(getTenantSubcollection(db, 'alimenti', selectedCategory, 'items'), foodId);
@@ -180,7 +185,7 @@ const ListaAlimenti = ({ onBack }) => {
       loadFoods();
     } catch (error) {
       console.error('Errore nell\'eliminazione dell\'alimento:', error);
-      alert('Errore nell\'eliminazione dell\'alimento');
+      toast.error('Errore nell\'eliminazione dell\'alimento');
     }
   };
 

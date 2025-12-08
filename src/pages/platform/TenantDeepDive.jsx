@@ -29,6 +29,8 @@ import {
   Legend,
   Filler
 } from 'chart.js';
+import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 ChartJS.register(
   CategoryScale,
@@ -58,6 +60,8 @@ const maskUID = (uid) => {
 export default function TenantDeepDive() {
   const navigate = useNavigate();
   const { tenantId } = useParams();
+  const toast = useToast();
+  const { confirmAction } = useConfirm();
   
   const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState(null);
@@ -300,7 +304,8 @@ export default function TenantDeepDive() {
   }, [users, userSearch, sortBy]);
 
   const handleSuspendTenant = async () => {
-    if (!confirm('Sei sicuro di voler sospendere questo tenant?')) return;
+    const ok = await confirmAction('Sei sicuro di voler sospendere questo tenant?', 'Sospendi Tenant', 'Sospendi');
+    if (!ok) return;
     
     try {
       await updateDoc(doc(db, 'tenants', tenantId), {
@@ -310,10 +315,10 @@ export default function TenantDeepDive() {
       });
       
       setTenant(prev => ({ ...prev, status: 'suspended' }));
-      alert('Tenant sospeso con successo');
+      toast.success('Tenant sospeso con successo');
     } catch (error) {
       console.error('Error suspending tenant:', error);
-      alert('Errore durante la sospensione');
+      toast.error('Errore durante la sospensione');
     }
   };
 
@@ -325,10 +330,10 @@ export default function TenantDeepDive() {
       });
       
       setTenant(prev => ({ ...prev, status: 'active' }));
-      alert('Tenant attivato con successo');
+      toast.success('Tenant attivato con successo');
     } catch (error) {
       console.error('Error activating tenant:', error);
-      alert('Errore durante l\'attivazione');
+      toast.error('Errore durante l\'attivazione');
     }
   };
 

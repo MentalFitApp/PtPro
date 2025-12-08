@@ -9,10 +9,12 @@ import {
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import OAuthButton from '../../components/integrations/OAuthButton';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function InstagramHub() {
   const currentUser = auth.currentUser;
   const userTenantId = localStorage.getItem('tenantId');
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [instagramConfig, setInstagramConfig] = useState(null);
@@ -137,10 +139,10 @@ export default function InstagramHub() {
       await manualSyncInstagram();
       await fetchInstagramData();
       
-      alert('✅ Sincronizzazione completata!');
+      toast.success('Sincronizzazione completata!');
     } catch (error) {
       console.error('❌ Errore sincronizzazione:', error);
-      alert('❌ Errore durante la sincronizzazione');
+      toast.error('Errore durante la sincronizzazione');
     } finally {
       setSyncing(false);
     }
@@ -153,7 +155,7 @@ export default function InstagramHub() {
 
   const handleOAuthError = (error) => {
     console.error('❌ Errore OAuth Instagram:', error);
-    alert('❌ Errore durante la connessione con Instagram');
+    toast.error('Errore durante la connessione con Instagram');
   };
 
   if (loading) {
@@ -549,11 +551,11 @@ function SettingsTab({ config, onRefresh }) {
         disconnectedAt: new Date()
       });
       
-      alert('✅ Instagram disconnesso con successo');
+      toast.success('Instagram disconnesso con successo');
       window.location.reload();
     } catch (error) {
       console.error('❌ Errore disconnessione:', error);
-      alert('❌ Errore durante la disconnessione');
+      toast.error('Errore durante la disconnessione');
     } finally {
       setDisconnecting(false);
     }

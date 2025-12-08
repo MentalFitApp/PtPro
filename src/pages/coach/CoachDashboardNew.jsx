@@ -11,7 +11,9 @@ import { uploadPhoto } from "../../cloudflareStorage";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTenantBranding } from '../../hooks/useTenantBranding';
 import { useCountUp } from '../../hooks/useCountUp';
+import { SkeletonCard, SkeletonList, SkeletonStats } from '../../components/ui/SkeletonLoader';
 import LinkAccountBanner from '../../components/LinkAccountBanner';
+import { useToast } from '../../contexts/ToastContext';
 import {
   Users, Calendar, Target, Eye, EyeOff, Settings, BarChart3, Clock, 
   CheckCircle, AlertCircle, Plus, LogOut, User, X, FileText, 
@@ -89,6 +91,7 @@ function AnimatedMetricCard({ value, label, icon: Icon, gradientFrom, gradientTo
 export default function CoachDashboardNew() {
   const navigate = useNavigate();
   const { branding } = useTenantBranding();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [clients, setClients] = useState([]);
   const [activityFeed, setActivityFeed] = useState([]);
@@ -135,11 +138,11 @@ export default function CoachDashboardNew() {
     const file = event.target.files[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        alert('Seleziona un file immagine valido');
+        toast.warning('Seleziona un file immagine valido');
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        alert("L'immagine non può superare i 5MB");
+        toast.warning("L'immagine non può superare i 5MB");
         return;
       }
       setSelectedPhotoFile(file);
@@ -337,8 +340,20 @@ export default function CoachDashboardNew() {
   }, []);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    <div className="min-h-screen overflow-x-hidden w-full">
+      <div className="w-full max-w-[100vw] py-2 sm:py-4 space-y-2 sm:space-y-4 overflow-x-hidden mx-1.5 sm:mx-4">
+        <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-lg p-2 sm:p-5">
+          <div className="h-8 w-48 bg-slate-700/50 rounded-lg animate-pulse mb-2" />
+          <div className="h-4 w-32 bg-slate-700/50 rounded animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <SkeletonList count={5} />
+      </div>
     </div>
   );
 
@@ -991,10 +1006,10 @@ export default function CoachDashboardNew() {
                       setSelectedPhotoFile(null);
                       setPhotoPreview(null);
                       setShowProfileModal(false);
-                      alert('Profilo aggiornato!');
+                      toast.success('Profilo aggiornato!');
                     } catch (error) {
                       console.error('Errore aggiornamento profilo:', error);
-                      alert('Errore durante aggiornamento profilo');
+                      toast.error('Errore durante aggiornamento profilo');
                     }
                   }}
                   className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm preserve-white"

@@ -10,9 +10,11 @@ import {
 import { db, auth } from '../../firebase';
 import { doc, getDoc, setDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { invalidateSubscriptionPlansCache } from '../../config/subscriptionPlans';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function SystemConfiguration() {
   const navigate = useNavigate();
+  const toast = useToast();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -146,10 +148,10 @@ export default function SystemConfiguration() {
       invalidateSubscriptionPlansCache();
       
       setHasChanges(false);
-      alert('✅ Configurazione salvata con successo! Le modifiche sono ora attive.');
+      toast.success('Configurazione salvata con successo! Le modifiche sono ora attive.');
     } catch (error) {
       console.error('Error saving configuration:', error);
-      alert('❌ Errore nel salvataggio della configurazione');
+      toast.error('Errore nel salvataggio della configurazione');
     } finally {
       setSaving(false);
     }

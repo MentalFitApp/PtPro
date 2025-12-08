@@ -2,10 +2,99 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, db } from '../../firebase';
-import { doc, getDoc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, setDoc, collection, getDocs } from 'firebase/firestore';
 import { Lock, Mail, Eye, EyeOff, ArrowLeft, Zap, Crown, LogIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getTenantDoc, CURRENT_TENANT_ID } from '../../config/tenant';
+import { getTenantDoc, setCurrentTenantId, getCurrentTenantId, DEFAULT_TENANT_ID } from '../../config/tenant';
+
+/**
+ * Cerca in quale tenant esiste l'utente
+ * 
+ * STRATEGIA (in ordine di priorità):
+ * 1. Controlla user_tenants/{userId} - mapping veloce e sicuro (nuovi utenti)
+ * 2. Fallback: cerca nel tenant già salvato o default (utenti esistenti)
+ * 
+ * Il sistema è retrocompatibile: funziona anche se user_tenants non esiste ancora.
+ */
+async function findUserTenant(userId) {
+  try {
+    // 1. PRIMA: Controlla user_tenants (mapping veloce)
+    try {
+      const userTenantRef = doc(db, 'user_tenants', userId);
+      const userTenantDoc = await getDoc(userTenantRef);
+      if (userTenantDoc.exists() && userTenantDoc.data()?.tenantId) {
+        const tenantId = userTenantDoc.data().tenantId;
+        console.log('✅ Tenant trovato in user_tenants:', tenantId);
+        return tenantId;
+      }
+    } catch (e) {
+      // user_tenants potrebbe non esistere ancora per utenti vecchi
+      console.log('ℹ️ user_tenants non disponibile, usando fallback');
+    }
+
+    // 2. FALLBACK: Usa tenant già salvato o cerca manualmente
+    const savedTenant = getCurrentTenantId();
+    const tenantsToCheck = savedTenant ? [savedTenant] : [DEFAULT_TENANT_ID];
+    
+    for (const tenantId of tenantsToCheck) {
+      // Check client
+      try {
+        const clientRef = doc(db, 'tenants', tenantId, 'clients', userId);
+        const clientDoc = await getDoc(clientRef);
+        if (clientDoc.exists()) {
+          console.log('✅ Utente trovato come client in:', tenantId);
+          return tenantId;
+        }
+      } catch (e) { /* continue */ }
+
+      // Check collaboratore
+      try {
+        const collabRef = doc(db, 'tenants', tenantId, 'collaboratori', userId);
+        const collabDoc = await getDoc(collabRef);
+        if (collabDoc.exists()) {
+          console.log('✅ Utente trovato come collaboratore in:', tenantId);
+          return tenantId;
+        }
+      } catch (e) { /* continue */ }
+
+      // Check admin
+      try {
+        const adminRef = doc(db, 'tenants', tenantId, 'roles', 'admins');
+        const adminDoc = await getDoc(adminRef);
+        if (adminDoc.exists() && adminDoc.data()?.uids?.includes(userId)) {
+          console.log('✅ Utente trovato come admin in:', tenantId);
+          return tenantId;
+        }
+      } catch (e) { /* continue */ }
+
+      // Check coach
+      try {
+        const coachRef = doc(db, 'tenants', tenantId, 'roles', 'coaches');
+        const coachDoc = await getDoc(coachRef);
+        if (coachDoc.exists() && coachDoc.data()?.uids?.includes(userId)) {
+          console.log('✅ Utente trovato come coach in:', tenantId);
+          return tenantId;
+        }
+      } catch (e) { /* continue */ }
+      
+      // Check superadmin
+      try {
+        const superadminRef = doc(db, 'tenants', tenantId, 'roles', 'superadmins');
+        const superadminDoc = await getDoc(superadminRef);
+        if (superadminDoc.exists() && superadminDoc.data()?.uids?.includes(userId)) {
+          console.log('✅ Utente trovato come superadmin in:', tenantId);
+          return tenantId;
+        }
+      } catch (e) { /* continue */ }
+    }
+
+    // Se niente funziona, usa il tenant salvato o default
+    return savedTenant || DEFAULT_TENANT_ID;
+  } catch (error) {
+    console.log('ℹ️ Ricerca tenant: usando default');
+    return getCurrentTenantId() || DEFAULT_TENANT_ID;
+  }
+}
 
 // === ANIMATED STARS BACKGROUND ===
 const AnimatedStars = () => {
@@ -60,23 +149,18 @@ const Login = () => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user && isInitialCheck) {
         try {
-          // Salva tenantId in localStorage (usa CURRENT_TENANT_ID come fallback)
+          // Cerca il tenant per questo utente
           let tenantId = localStorage.getItem('tenantId');
           if (!tenantId) {
-            // Prova a recuperarlo da users collection
-            try {
-              const userDoc = await getDoc(doc(db, 'users', user.uid));
-              if (userDoc.exists() && userDoc.data()?.tenantId) {
-                tenantId = userDoc.data().tenantId;
-              } else {
-                tenantId = CURRENT_TENANT_ID; // Fallback al tenant configurato
-              }
-              localStorage.setItem('tenantId', tenantId);
-              console.log('✅ TenantId salvato:', tenantId);
-            } catch (err) {
-              tenantId = CURRENT_TENANT_ID;
-              localStorage.setItem('tenantId', tenantId);
-              console.debug('Using default tenantId:', tenantId);
+            console.log('🔍 Cercando tenant per utente:', user.uid);
+            tenantId = await findUserTenant(user.uid);
+            if (tenantId) {
+              setCurrentTenantId(tenantId);
+              console.log('✅ TenantId trovato e salvato:', tenantId);
+            } else {
+              // Usa il tenant corrente (fallback)
+              tenantId = getCurrentTenantId();
+              console.log('⚠️ Usando tenant di default:', tenantId);
             }
           }
 
@@ -97,7 +181,8 @@ const Login = () => {
           const isCollaboratore = collabDoc.exists();
 
           console.log('🔍 Login check:', { 
-            uid: user.uid, 
+            uid: user.uid,
+            tenantId: getCurrentTenantId(),
             isAdmin, 
             isCoach, 
             isClient, 
@@ -144,18 +229,16 @@ const Login = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Salva tenantId in localStorage
-      let tenantId = CURRENT_TENANT_ID; // Usa tenant configurato come default
-      try {
-        const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-        if (userDoc.exists() && userDoc.data()?.tenantId) {
-          tenantId = userDoc.data().tenantId;
-        }
-      } catch (err) {
-        console.debug('Using default tenantId from config');
+      // Cerca e salva il tenant per questo utente
+      console.log('🔍 Cercando tenant per utente:', userCredential.user.uid);
+      let tenantId = await findUserTenant(userCredential.user.uid);
+      if (tenantId) {
+        setCurrentTenantId(tenantId);
+        console.log('✅ TenantId trovato al login:', tenantId);
+      } else {
+        tenantId = getCurrentTenantId();
+        console.log('⚠️ Usando tenant di default:', tenantId);
       }
-      localStorage.setItem('tenantId', tenantId);
-      console.log('✅ TenantId salvato al login:', tenantId);
 
       const adminDocRef = getTenantDoc(db, 'roles', 'admins');
       const coachDocRef = getTenantDoc(db, 'roles', 'coaches');
@@ -221,18 +304,16 @@ const Login = () => {
       
       const userCredential = await signInWithPopup(auth, provider);
       
-      // Salva tenantId in localStorage
-      let tenantId = CURRENT_TENANT_ID;
-      try {
-        const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-        if (userDoc.exists() && userDoc.data()?.tenantId) {
-          tenantId = userDoc.data().tenantId;
-        }
-      } catch (err) {
-        console.debug('Using default tenantId from config');
+      // Cerca e salva il tenant per questo utente
+      console.log('🔍 Cercando tenant per utente Google:', userCredential.user.uid);
+      let tenantId = await findUserTenant(userCredential.user.uid);
+      if (tenantId) {
+        setCurrentTenantId(tenantId);
+        console.log('✅ TenantId trovato al login Google:', tenantId);
+      } else {
+        tenantId = getCurrentTenantId();
+        console.log('⚠️ Usando tenant di default:', tenantId);
       }
-      localStorage.setItem('tenantId', tenantId);
-      console.log('✅ TenantId salvato al login Google:', tenantId);
 
       // Verifica ruolo
       const adminDocRef = getTenantDoc(db, 'roles', 'admins');
