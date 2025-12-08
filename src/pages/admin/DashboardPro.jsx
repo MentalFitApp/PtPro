@@ -210,233 +210,200 @@ export default function DashboardPro() {
     return () => unsub();
   }, []);
 
-  // Load ALL payments (from rates + subcollection) - Include anche clienti "vecchi" per rinnovi
+  // OPTIMIZED: Load all dashboard data in parallel
   useEffect(() => {
-    const loadPayments = async () => {
-      const allPayments = [];
-      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
-      
-      // Process each client
-      for (const clientDoc of clientsSnap.docs) {
-        const data = clientDoc.data();
-        const isOldClient = data.isOldClient === true;
+    let isMounted = true;
+    
+    const loadAllDashboardData = async () => {
+      try {
+        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
         
-        const clientId = clientDoc.id;
-        const clientName = data.name || 'Cliente';
-        
-        // 1. Payments from rates array (legacy - flagged as paid)
-        // Solo per clienti NON vecchi
-        if (!isOldClient) {
-          (data.rate || []).forEach(rate => {
-            if (rate.paid && rate.paidDate) {
-              const rateDate = toDate(rate.paidDate);
-              if (rateDate) {
-                allPayments.push({
-                  id: `rate-${clientId}-${rate.paidDate}`,
+        // Prepare all promises for parallel execution
+        const allPromises = clientsSnap.docs.map(async (clientDoc) => {
+          const clientId = clientDoc.id;
+          const data = clientDoc.data();
+          const clientName = data.name || 'Cliente';
+          const isOldClient = data.isOldClient === true;
+          
+          const result = {
+            payments: [],
+            callRequests: [],
+            upcomingCalls: [],
+            anamnesi: [],
+            checks: []
+          };
+          
+          try {
+            // Load payments, rates, calls, anamnesi, checks in parallel for each client
+            const [paymentsSnap, ratesSnap, callsSnap, anamnesiSnap, checksSnap] = await Promise.all([
+              getDocs(getTenantSubcollection(db, 'clients', clientId, 'payments')).catch(() => ({ docs: [] })),
+              getDocs(getTenantSubcollection(db, 'clients', clientId, 'rates')).catch(() => ({ docs: [] })),
+              getDocs(getTenantSubcollection(db, 'clients', clientId, 'calls')).catch(() => ({ docs: [] })),
+              getDocs(query(getTenantSubcollection(db, 'clients', clientId, 'anamnesi'), orderBy('createdAt', 'desc'), limit(1))).catch(() => ({ docs: [] })),
+              getDocs(query(getTenantSubcollection(db, 'clients', clientId, 'checks'), orderBy('createdAt', 'desc'), limit(2))).catch(() => ({ docs: [] }))
+            ]);
+            
+            // Process payments from subcollection
+            paymentsSnap.docs.forEach(payDoc => {
+              const payData = payDoc.data();
+              const isRenewal = payData.isRenewal === true;
+              if (isOldClient && !isRenewal) return;
+              
+              const payDate = toDate(payData.paymentDate || payData.date || payData.createdAt);
+              if (payDate) {
+                result.payments.push({
+                  id: payDoc.id,
                   clientId,
                   clientName,
-                  amount: parseFloat(rate.amount) || 0,
-                  date: rateDate.toISOString(),
-                  source: 'rate',
-                  isRenewal: false
+                  amount: parseFloat(payData.amount) || 0,
+                  date: payDate.toISOString(),
+                  source: 'subcollection',
+                  isRenewal
                 });
               }
-            }
-          });
-        }
-        
-        // 2. Payments from subcollection 'payments'
-        // Include anche clienti vecchi se hanno isRenewal=true
-        try {
-          const paymentsSnap = await getDocs(getTenantSubcollection(db, 'clients', clientId, 'payments'));
-          paymentsSnap.docs.forEach(payDoc => {
-            const payData = payDoc.data();
-            const isRenewal = payData.isRenewal === true;
-            
-            // Skip clienti vecchi SOLO se non è un rinnovo
-            if (isOldClient && !isRenewal) return;
-            
-            const payDate = toDate(payData.paymentDate || payData.date || payData.createdAt);
-            console.log(`💰 Payment found for ${clientName}:`, {
-              id: payDoc.id,
-              amount: payData.amount,
-              paymentDate: payData.paymentDate,
-              parsedDate: payDate,
-              isRenewal: isRenewal
             });
             
-            if (payDate) {
-              allPayments.push({
-                id: payDoc.id,
-                clientId,
-                clientName,
-                amount: parseFloat(payData.amount) || 0,
-                date: payDate.toISOString(),
-                source: 'subcollection',
-                isRenewal: isRenewal
-              });
-            }
-          });
-        } catch (e) {
-          console.error(`❌ Error loading payments for ${clientName}:`, e);
-        }
-        
-        // 3. Rate pagate dalla subcollection 'rates' (NUOVO - rinnovi rateali)
-        try {
-          const ratesSnap = await getDocs(getTenantSubcollection(db, 'clients', clientId, 'rates'));
-          ratesSnap.docs.forEach(rateDoc => {
-            const rateData = rateDoc.data();
-            
-            // Solo rate pagate
-            if (!rateData.paid || !rateData.paidDate) return;
-            
-            const paidDate = rateData.paidDate?.toDate ? rateData.paidDate.toDate() : toDate(rateData.paidDate);
-            const isRenewal = rateData.isRenewal === true;
-            
-            console.log(`💳 Rate subcollection found for ${clientName}:`, {
-              id: rateDoc.id,
-              amount: rateData.amount,
-              paidDate: paidDate,
-              isRenewal: isRenewal
-            });
-            
-            if (paidDate) {
-              allPayments.push({
-                id: `subcol-rate-${clientId}-${rateDoc.id}`,
-                clientId,
-                clientName,
-                amount: parseFloat(rateData.amount) || 0,
-                date: paidDate.toISOString(),
-                source: 'rates-subcollection',
-                isRenewal: isRenewal,
-                isRate: true
-              });
-            }
-          });
-        } catch (e) {
-          console.error(`❌ Error loading rates for ${clientName}:`, e);
-        }
-      }
-      
-      console.log('📦 Total payments loaded:', allPayments.length, allPayments);
-      setPayments(allPayments);
-    };
-    
-    // Carica pagamenti inizialmente
-    loadPayments();
-    
-    // Ricarica quando cambiano i clienti (listener realtime)
-    const unsub = onSnapshot(getTenantCollection(db, 'clients'), () => {
-      loadPayments();
-    });
-    
-    return () => unsub();
-  }, []);
-
-  // Load call requests
-  useEffect(() => {
-    const loadRequests = async () => {
-      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
-      const requests = [];
-      const scheduled = [];
-      const now = new Date();
-      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      
-      for (const clientDoc of clientsSnap.docs) {
-        try {
-          const callsSnap = await getDocs(getTenantSubcollection(db, 'clients', clientDoc.id, 'calls'));
-          callsSnap.forEach(callDoc => {
-            const data = callDoc.data();
-            if (callDoc.id === 'request' && data?.status === 'pending') {
-              requests.push({
-                clientId: clientDoc.id,
-                clientName: clientDoc.data().name || 'Cliente',
-                ...data
-              });
-            }
-            if (callDoc.id === 'next' && data?.scheduledAt) {
-              const scheduledDate = toDate(data.scheduledAt);
-              if (scheduledDate && scheduledDate >= now && scheduledDate <= nextWeek) {
-                scheduled.push({
-                  clientId: clientDoc.id,
-                  clientName: clientDoc.data().name || 'Cliente',
-                  scheduledAt: scheduledDate,
-                  ...data
+            // Process rates
+            ratesSnap.docs.forEach(rateDoc => {
+              const rateData = rateDoc.data();
+              if (!rateData.paid || !rateData.paidDate) return;
+              
+              const paidDate = rateData.paidDate?.toDate ? rateData.paidDate.toDate() : toDate(rateData.paidDate);
+              if (paidDate) {
+                result.payments.push({
+                  id: `subcol-rate-${clientId}-${rateDoc.id}`,
+                  clientId,
+                  clientName,
+                  amount: parseFloat(rateData.amount) || 0,
+                  date: paidDate.toISOString(),
+                  source: 'rates-subcollection',
+                  isRenewal: rateData.isRenewal === true,
+                  isRate: true
                 });
               }
+            });
+            
+            // Process legacy rates from client doc
+            if (!isOldClient) {
+              (data.rate || []).forEach(rate => {
+                if (rate.paid && rate.paidDate) {
+                  const rateDate = toDate(rate.paidDate);
+                  if (rateDate) {
+                    result.payments.push({
+                      id: `rate-${clientId}-${rate.paidDate}`,
+                      clientId,
+                      clientName,
+                      amount: parseFloat(rate.amount) || 0,
+                      date: rateDate.toISOString(),
+                      source: 'rate',
+                      isRenewal: false
+                    });
+                  }
+                }
+              });
             }
-          });
-        } catch (e) {}
-      }
-      setCallRequests(requests);
-      setUpcomingCalls(scheduled.sort((a, b) => a.scheduledAt - b.scheduledAt));
-    };
-    loadRequests();
-    const interval = setInterval(loadRequests, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Load recent anamnesi
-  useEffect(() => {
-    const loadAnamnesi = async () => {
-      const anamnesiList = [];
-      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
-      
-      for (const clientDoc of clientsSnap.docs) {
-        try {
-          const anamnesiSnap = await getDocs(
-            query(getTenantSubcollection(db, 'clients', clientDoc.id, 'anamnesi'), orderBy('createdAt', 'desc'), limit(1))
-          );
-          anamnesiSnap.docs.forEach(doc => {
-            anamnesiList.push({
-              id: doc.id,
-              clientId: clientDoc.id,
-              clientName: clientDoc.data().name || 'Cliente',
-              ...doc.data()
+            
+            // Process calls
+            const now = new Date();
+            const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            
+            callsSnap.docs.forEach(callDoc => {
+              const callData = callDoc.data();
+              if (callDoc.id === 'request' && callData?.status === 'pending') {
+                result.callRequests.push({
+                  clientId,
+                  clientName,
+                  ...callData
+                });
+              }
+              if (callDoc.id === 'next' && callData?.scheduledAt) {
+                const scheduledDate = toDate(callData.scheduledAt);
+                if (scheduledDate && scheduledDate >= now && scheduledDate <= nextWeek) {
+                  result.upcomingCalls.push({
+                    clientId,
+                    clientName,
+                    scheduledAt: scheduledDate,
+                    ...callData
+                  });
+                }
+              }
             });
-          });
-        } catch (e) {}
-      }
-      
-      setRecentAnamnesi(
-        anamnesiList
-          .sort((a, b) => (toDate(b.createdAt) || 0) - (toDate(a.createdAt) || 0))
-          .slice(0, 10)
-      );
-    };
-    loadAnamnesi();
-  }, []);
-
-  // Load recent checks
-  useEffect(() => {
-    const loadChecks = async () => {
-      const checksList = [];
-      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
-      
-      for (const clientDoc of clientsSnap.docs) {
-        try {
-          const checksSnap = await getDocs(
-            query(getTenantSubcollection(db, 'clients', clientDoc.id, 'checks'), orderBy('createdAt', 'desc'), limit(2))
-          );
-          checksSnap.docs.forEach(doc => {
-            checksList.push({
-              id: doc.id,
-              clientId: clientDoc.id,
-              clientName: clientDoc.data().name || 'Cliente',
-              ...doc.data()
+            
+            // Process anamnesi
+            anamnesiSnap.docs.forEach(doc => {
+              result.anamnesi.push({
+                id: doc.id,
+                clientId,
+                clientName,
+                ...doc.data()
+              });
             });
-          });
-        } catch (e) {}
+            
+            // Process checks
+            checksSnap.docs.forEach(doc => {
+              result.checks.push({
+                id: doc.id,
+                clientId,
+                clientName,
+                ...doc.data()
+              });
+            });
+          } catch (e) {
+            // Silently fail for individual clients
+          }
+          
+          return result;
+        });
+        
+        // Wait for all clients to be processed
+        const results = await Promise.all(allPromises);
+        
+        if (!isMounted) return;
+        
+        // Aggregate results
+        const allPayments = [];
+        const allCallRequests = [];
+        const allUpcomingCalls = [];
+        const allAnamnesi = [];
+        const allChecks = [];
+        
+        results.forEach(r => {
+          allPayments.push(...r.payments);
+          allCallRequests.push(...r.callRequests);
+          allUpcomingCalls.push(...r.upcomingCalls);
+          allAnamnesi.push(...r.anamnesi);
+          allChecks.push(...r.checks);
+        });
+        
+        // Update states
+        setPayments(allPayments);
+        setCallRequests(allCallRequests);
+        setUpcomingCalls(allUpcomingCalls.sort((a, b) => a.scheduledAt - b.scheduledAt));
+        setRecentAnamnesi(
+          allAnamnesi
+            .sort((a, b) => (toDate(b.createdAt) || 0) - (toDate(a.createdAt) || 0))
+            .slice(0, 10)
+        );
+        setRecentChecks(
+          allChecks
+            .sort((a, b) => (toDate(b.createdAt) || 0) - (toDate(a.createdAt) || 0))
+            .slice(0, 10)
+        );
+      } catch (error) {
+        console.error('Dashboard data load error:', error);
       }
-      
-      setRecentChecks(
-        checksList
-          .sort((a, b) => (toDate(b.createdAt) || 0) - (toDate(a.createdAt) || 0))
-          .slice(0, 10)
-      );
     };
-    loadChecks();
-  }, []);
+    
+    loadAllDashboardData();
+    
+    // Refresh data every 30 seconds
+    const interval = setInterval(loadAllDashboardData, 30000);
+    
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [clients.length]); // Re-run when clients change
 
   // Computed metrics
   const metrics = useMemo(() => {
@@ -486,42 +453,11 @@ export default function DashboardPro() {
     }
     
     // Incasso nel periodo selezionato
-    console.log('🔍 Filtering payments:', {
-      totalPayments: payments.length,
-      periodStart: periodStart.toISOString(),
-      periodEnd: periodEnd.toISOString()
-    });
-    
     const periodPayments = payments.filter(p => {
       const d = new Date(p.date);
-      const inRange = d >= periodStart && d <= periodEnd;
-      console.log(`💳 Payment ${p.clientName} €${p.amount}:`, {
-        date: p.date,
-        parsed: d.toISOString(),
-        start: periodStart.toISOString(),
-        end: periodEnd.toISOString(),
-        inRange,
-        checkStart: d >= periodStart,
-        checkEnd: d <= periodEnd
-      });
-      return inRange;
+      return d >= periodStart && d <= periodEnd;
     });
     const periodRevenue = periodPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    
-    // Debug: log pagamenti nel periodo
-    console.log('📊 Dashboard Metrics:', {
-      periodStart: periodStart.toISOString(),
-      periodEnd: periodEnd.toISOString(),
-      totalPaymentsLoaded: payments.length,
-      periodPaymentsCount: periodPayments.length,
-      periodRevenue,
-      paymentsDetails: periodPayments.map(p => ({ 
-        client: p.clientName, 
-        amount: p.amount, 
-        date: p.date,
-        source: p.source 
-      }))
-    });
     
     // Calcola rinnovi
     // PRIORITÀ: usa il flag isRenewal se presente
@@ -537,7 +473,6 @@ export default function DashboardPro() {
       // PRIORITÀ: usa il flag isRenewal se presente
       if (p.isRenewal === true) {
         renewalsRevenue += p.amount || 0;
-        console.log(`🔄 Rinnovo (flag): ${p.clientName} €${p.amount}`);
         return;
       }
       
@@ -550,11 +485,8 @@ export default function DashboardPro() {
       // Se non è il primo pagamento del cliente, è un rinnovo
       if (firstPaymentDate && currentPaymentDate !== new Date(firstPaymentDate).toISOString()) {
         renewalsRevenue += p.amount || 0;
-        console.log(`🔄 Rinnovo (ordine): ${p.clientName} €${p.amount}`);
       }
     });
-    
-    console.log(`📊 Rinnovi totali: €${renewalsRevenue}`);
     
     const newClientsThisMonth = clients.filter(c => {
       const start = toDate(c.startDate) || toDate(c.createdAt);

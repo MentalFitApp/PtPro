@@ -7,7 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { isSuperAdmin } from '../../utils/superadmin';
 import { defaultBranding } from '../../config/tenantBranding';
-import { useUnreadMessages } from '../../hooks/useUnreadNotifications';
+import { useUnreadMessages, useUnreadAnamnesi, useUnreadChecks } from '../../hooks/useUnreadNotifications';
 import {
   Home, Users, MessageSquare, FileText, Calendar, Settings,
   ChevronRight, ChevronLeft, BarChart3, BellRing, UserCheck,
@@ -187,9 +187,26 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
 const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0 }) => {
   const Icon = item.icon;
   
+  // Genera tour ID dalla path
+  const getTourId = (path) => {
+    if (path === '/' || path.includes('dashboard')) return 'dashboard';
+    if (path.includes('client')) return 'clients';
+    if (path.includes('chat')) return 'chat';
+    if (path.includes('calendar')) return 'calendar';
+    if (path.includes('branding')) return 'branding';
+    if (path.includes('anamnesi')) return 'anamnesi';
+    if (path.includes('allenamento') || path.includes('scheda')) return 'workout';
+    if (path.includes('alimentazione') || path.includes('dieta')) return 'diet';
+    if (path.includes('check')) return 'checks';
+    return null;
+  };
+  
+  const tourId = getTourId(item.to);
+  
   return (
     <motion.button
       onClick={onClick}
+      data-tour={tourId}
       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
         isActive
           ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
@@ -327,8 +344,10 @@ export const ProSidebar = ({
   const [userIsSuperAdmin, setUserIsSuperAdmin] = useState(false);
   const user = auth.currentUser;
   
-  // Hook per messaggi non letti
+  // Hook per notifiche non lette
   const { unreadCount: unreadMessages } = useUnreadMessages();
+  const { unreadCount: unreadAnamnesi } = useUnreadAnamnesi();
+  const { unreadCount: unreadChecks } = useUnreadChecks();
 
   const navConfig = getNavConfig(role, userIsSuperAdmin);
   
@@ -337,6 +356,12 @@ export const ProSidebar = ({
     '/chat': unreadMessages,
     '/coach/chat': unreadMessages,
     '/client/chat': unreadMessages,
+    // Badge per anamnesi (admin e coach)
+    '/coach/anamnesi': unreadAnamnesi,
+    '/admin/anamnesi': unreadAnamnesi,
+    // Badge per check/statistiche
+    '/statistiche': unreadChecks,
+    '/coach/checks': unreadChecks,
   };
 
   // Carica branding

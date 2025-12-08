@@ -9,7 +9,7 @@ import { signOut } from 'firebase/auth';
 import { ProSidebar, MobileSidebar } from './ProSidebar';
 import ThemeToggle from '../ui/ThemeToggle';
 import NotificationPermissionModal from '../notifications/NotificationPermissionModal';
-import OnboardingWizard from '../onboarding/OnboardingWizard';
+import InteractiveTour from '../onboarding/InteractiveTour';
 import { useUnreadMessages } from '../../hooks/useUnreadNotifications';
 
 // === STELLE ANIMATE ===
@@ -639,9 +639,9 @@ export const ProLayout = () => {
       {/* Modale richiesta permessi notifiche */}
       <NotificationPermissionModal />
 
-      {/* Wizard onboarding per nuovi utenti */}
+      {/* Tour interattivo per nuovi utenti */}
       {showOnboarding && (
-        <OnboardingWizard 
+        <InteractiveTour 
           role={sessionStorage.getItem('app_role') || 'client'}
           onComplete={() => {
             setShowOnboarding(false);

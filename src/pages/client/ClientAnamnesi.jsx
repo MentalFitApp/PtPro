@@ -91,6 +91,7 @@ const ClientAnamnesi = () => {
   const [photos, setPhotos] = useState({ front: null, right: null, left: null, back: null });
   const [photoPreviews, setPhotoPreviews] = useState({ front: null, right: null, left: null, back: null });
   const [notification, setNotification] = useState({ message: '', type: '' });
+  const [userName, setUserName] = useState('');
   // Helper per mostrare barra solo se ci sono file da caricare
   const photosToUploadExists = (obj) => Object.values(obj).some(f => f);
   const r2PublicBase = import.meta.env.VITE_R2_PUBLIC_URL || (import.meta.env.VITE_R2_ACCOUNT_ID ? `https://pub-${import.meta.env.VITE_R2_ACCOUNT_ID}.r2.dev` : '');
@@ -123,6 +124,15 @@ const ClientAnamnesi = () => {
     }
     const fetchAnamnesi = async () => {
       try {
+        // Fetch nome utente dal doc cliente
+        const clientDoc = await getDoc(getTenantDoc(db, 'clients', user.uid));
+        if (clientDoc.exists()) {
+          const clientData = clientDoc.data();
+          setUserName(clientData.name || clientData.displayName || user.displayName || 'Te');
+        } else {
+          setUserName(user.displayName || 'Te');
+        }
+        
         const anamnesiCollectionRef = getTenantSubcollection(db, 'clients', user.uid, 'anamnesi');
         const anamnesiRef = doc(anamnesiCollectionRef.firestore, anamnesiCollectionRef.path, 'initial');
         const docSnap = await getDoc(anamnesiRef);
@@ -225,7 +235,7 @@ const ClientAnamnesi = () => {
   }, [anamnesiData]);
 
   if (loading) return (
-    <div className="min-h-screen flex justify-center items-center">
+    <div className="min-h-screen bg-slate-900 flex justify-center items-center">
       <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
     </div>
   );
@@ -269,11 +279,13 @@ const ClientAnamnesi = () => {
   );
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-slate-900 p-4 sm:p-6 lg:p-8">
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
 
       <header className="flex justify-between items-center mb-8 flex-col sm:flex-row gap-4">
-        <h1 className="text-3xl sm:text-4xl font-bold text-white">Anamnesi Cliente</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-white">
+          La mia Anamnesi
+        </h1>
         <button onClick={() => navigate('/client/dashboard')} className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-sm font-semibold rounded-lg transition-colors border border-slate-600">
           <ArrowLeft size={16} /> Torna alla dashboard
         </button>
