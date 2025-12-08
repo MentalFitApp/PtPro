@@ -39,6 +39,14 @@ export default defineConfig({
 
   build: {
     chunkSizeWarningLimit: 1500,
+    // Rimuove console.log in produzione
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {

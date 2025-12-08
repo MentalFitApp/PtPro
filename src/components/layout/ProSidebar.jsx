@@ -7,6 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { isSuperAdmin } from '../../utils/superadmin';
 import { defaultBranding } from '../../config/tenantBranding';
+import { useUnreadMessages } from '../../hooks/useUnreadNotifications';
 import {
   Home, Users, MessageSquare, FileText, Calendar, Settings,
   ChevronRight, ChevronLeft, BarChart3, BellRing, UserCheck,
@@ -183,7 +184,7 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
 };
 
 // === NAV ITEM ===
-const NavItem = ({ item, isActive, isCollapsed, onClick }) => {
+const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0 }) => {
   const Icon = item.icon;
   
   return (
@@ -198,16 +199,28 @@ const NavItem = ({ item, isActive, isCollapsed, onClick }) => {
       whileTap={{ scale: 0.98 }}
       title={isCollapsed ? item.label : undefined}
     >
-      <Icon size={18} className="flex-shrink-0" />
+      <div className="relative">
+        <Icon size={18} className="flex-shrink-0" />
+        {badge > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
+      </div>
       {!isCollapsed && (
-        <span className="truncate font-medium">{item.label}</span>
+        <span className="truncate font-medium flex-1">{item.label}</span>
+      )}
+      {!isCollapsed && badge > 0 && (
+        <span className="min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+          {badge > 99 ? '99+' : badge}
+        </span>
       )}
     </motion.button>
   );
 };
 
 // === SEZIONE NAV ===
-const NavSection = ({ section, isCollapsed, currentPath, onNavigate }) => {
+const NavSection = ({ section, isCollapsed, currentPath, onNavigate, badges = {} }) => {
   return (
     <div className="mb-4">
       {!isCollapsed && (
@@ -229,6 +242,7 @@ const NavSection = ({ section, isCollapsed, currentPath, onNavigate }) => {
               isActive={isActive}
               isCollapsed={isCollapsed}
               onClick={() => onNavigate(item.to)}
+              badge={badges[item.to] || 0}
             />
           );
         })}
@@ -312,8 +326,18 @@ export const ProSidebar = ({
   const [branding, setBranding] = useState(defaultBranding);
   const [userIsSuperAdmin, setUserIsSuperAdmin] = useState(false);
   const user = auth.currentUser;
+  
+  // Hook per messaggi non letti
+  const { unreadCount: unreadMessages } = useUnreadMessages();
 
   const navConfig = getNavConfig(role, userIsSuperAdmin);
+  
+  // Badge per le varie voci di menu
+  const badges = {
+    '/chat': unreadMessages,
+    '/coach/chat': unreadMessages,
+    '/client/chat': unreadMessages,
+  };
 
   // Carica branding
   useEffect(() => {
@@ -406,6 +430,7 @@ export const ProSidebar = ({
             isCollapsed={isCollapsed}
             currentPath={location.pathname}
             onNavigate={(to) => navigate(to)}
+            badges={badges}
           />
         ))}
       </nav>
