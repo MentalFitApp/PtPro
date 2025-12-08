@@ -10,6 +10,7 @@ import { ProSidebar, MobileSidebar } from './ProSidebar';
 import ThemeToggle from '../ui/ThemeToggle';
 import NotificationPermissionModal from '../notifications/NotificationPermissionModal';
 import OnboardingWizard from '../onboarding/OnboardingWizard';
+import { useUnreadMessages } from '../../hooks/useUnreadNotifications';
 
 // === STELLE ANIMATE ===
 const AnimatedStars = () => {
@@ -252,8 +253,15 @@ const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSetti
 };
 
 // === BOTTOM NAV (Mobile) ===
-const BottomNav = ({ role, currentPath }) => {
+const BottomNav = ({ role, currentPath, unreadMessages = 0 }) => {
   const navigate = useNavigate();
+  
+  // Haptic feedback per touch
+  const triggerHaptic = () => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(10); // Vibrazione leggera 10ms
+    }
+  };
   
   // Configurazione icone per ruolo
   const getNavItems = () => {
@@ -264,14 +272,14 @@ const BottomNav = ({ role, currentPath }) => {
           { to: '/client/scheda-allenamento', icon: Dumbbell, label: 'Workout' },
           { to: '/client/scheda-alimentazione', icon: Utensils, label: 'Dieta' },
           { to: '/client/checks', icon: Activity, label: 'Check' },
-          { to: '/client/chat', icon: MessageSquare, label: 'Chat' },
+          { to: '/client/chat', icon: MessageSquare, label: 'Chat', hasBadge: true },
         ];
       case 'coach':
         return [
           { to: '/coach', icon: Home, label: 'Home' },
           { to: '/coach/clients', icon: Users, label: 'Clienti' },
           { to: '/coach/anamnesi', icon: Activity, label: 'Anamnesi' },
-          { to: '/coach/chat', icon: MessageSquare, label: 'Chat' },
+          { to: '/coach/chat', icon: MessageSquare, label: 'Chat', hasBadge: true },
         ];
       case 'collaboratore':
         return [
@@ -283,7 +291,7 @@ const BottomNav = ({ role, currentPath }) => {
           { to: '/', icon: Home, label: 'Home' },
           { to: '/clients', icon: Users, label: 'Clienti' },
           { to: '/calendar', icon: Calendar, label: 'Calendario' },
-          { to: '/chat', icon: MessageSquare, label: 'Chat' },
+          { to: '/chat', icon: MessageSquare, label: 'Chat', hasBadge: true },
         ];
     }
   };
@@ -297,33 +305,89 @@ const BottomNav = ({ role, currentPath }) => {
     return currentPath.startsWith(path);
   };
 
+  const handleNavClick = (to) => {
+    triggerHaptic();
+    navigate(to);
+  };
+
   return (
     <motion.nav
       initial={{ y: 100 }}
       animate={{ y: 0 }}
-      className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-slate-900/95 backdrop-blur-xl border-t border-slate-700/50"
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-gradient-to-t from-slate-900 via-slate-900/98 to-slate-900/95 backdrop-blur-xl border-t border-slate-700/30"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="flex items-center justify-around px-2 py-2">
+      <div className="flex items-center justify-around px-1 py-1.5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.to);
+          const showBadge = item.hasBadge && unreadMessages > 0;
           
           return (
-            <button
+            <motion.button
               key={item.to}
-              onClick={() => navigate(item.to)}
-              className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all min-w-[60px] ${
+              onClick={() => handleNavClick(item.to)}
+              whileTap={{ scale: 0.9 }}
+              className={`relative flex flex-col items-center justify-center py-2 px-3 rounded-2xl transition-colors min-w-[56px] ${
                 active 
-                  ? 'text-blue-400 bg-blue-500/10' 
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'text-blue-400' 
+                  : 'text-slate-500 active:text-slate-300'
               }`}
             >
-              <Icon size={20} className={active ? 'text-blue-400' : ''} />
-              <span className={`text-[10px] mt-1 font-medium ${active ? 'text-blue-400' : ''}`}>
+              {/* Glow effect per item attivo */}
+              {active && (
+                <motion.div 
+                  layoutId="bottomNavActiveGlow"
+                  className="absolute inset-0 bg-blue-500/15 rounded-2xl"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+              
+              {/* Icona con animazione */}
+              <motion.div 
+                className="relative"
+                animate={{ 
+                  y: active ? -2 : 0,
+                  scale: active ? 1.1 : 1 
+                }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              >
+                <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+                
+                {/* Badge notifiche */}
+                {showBadge && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-red-500 rounded-full flex items-center justify-center"
+                  >
+                    <span className="text-[10px] font-bold text-white">
+                      {unreadMessages > 9 ? '9+' : unreadMessages}
+                    </span>
+                  </motion.span>
+                )}
+              </motion.div>
+              
+              {/* Label */}
+              <motion.span 
+                className={`text-[10px] mt-1 font-medium transition-colors ${
+                  active ? 'text-blue-400' : 'text-slate-500'
+                }`}
+                animate={{ opacity: active ? 1 : 0.8 }}
+              >
                 {item.label}
-              </span>
-            </button>
+              </motion.span>
+              
+              {/* Dot indicator per item attivo */}
+              {active && (
+                <motion.div
+                  layoutId="bottomNavActiveDot"
+                  className="absolute -bottom-0.5 w-1 h-1 bg-blue-400 rounded-full"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+            </motion.button>
           );
         })}
       </div>
@@ -338,6 +402,7 @@ const AUTH_PAGES = ['/login', '/register', '/reset-password', '/first-access'];
 export const ProLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const unreadCount = useUnreadMessages();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem('sidebarCollapsed') === 'true';
@@ -568,7 +633,7 @@ export const ProLayout = () => {
 
       {/* Bottom Nav (Mobile Only) */}
       {isMobile && (
-        <BottomNav role={role} currentPath={location.pathname} />
+        <BottomNav role={role} currentPath={location.pathname} unreadMessages={unreadCount} />
       )}
 
       {/* Modale richiesta permessi notifiche */}

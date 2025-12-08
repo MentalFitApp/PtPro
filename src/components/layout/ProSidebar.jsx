@@ -447,16 +447,6 @@ export const ProSidebar = ({
           </button>
         </div>
       )}
-
-      {/* User Menu */}
-      <div className="p-3 border-t border-slate-700/50">
-        <UserMenu
-          isCollapsed={isCollapsed}
-          user={user}
-          onLogout={handleLogout}
-          onNavigateProfile={handleNavigateProfile}
-        />
-      </div>
     </motion.aside>
   );
 };
