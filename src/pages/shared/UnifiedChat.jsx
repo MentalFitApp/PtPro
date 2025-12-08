@@ -157,13 +157,33 @@ export default function UnifiedChat() {
   useEffect(() => {
     const loadUsers = async () => {
       try {
+        // Carica i ruoli da roles/admins e roles/coaches
+        const [adminDoc, coachDoc] = await Promise.all([
+          getDoc(getTenantDoc(db, 'roles', 'admins')),
+          getDoc(getTenantDoc(db, 'roles', 'coaches'))
+        ]);
+        
+        const adminUids = adminDoc.exists() ? (adminDoc.data().uids || []) : [];
+        const coachUids = coachDoc.exists() ? (coachDoc.data().uids || []) : [];
+        
         // Carica tutti i profili utente
         const usersSnapshot = await getDocs(getTenantCollection(db, 'users'));
         let usersData = usersSnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
+          .map(doc => {
+            const data = doc.data();
+            // Determina il ruolo basandosi su roles collection
+            let role = 'client';
+            if (adminUids.includes(doc.id)) {
+              role = 'admin';
+            } else if (coachUids.includes(doc.id)) {
+              role = 'coach';
+            }
+            return {
+              id: doc.id,
+              ...data,
+              role, // Sovrascrive con il ruolo corretto
+            };
+          })
           .filter(u => u.displayName && u.id !== currentUser.uid); // Escludi te stesso
 
         // Filtra in base al ruolo dell'utente corrente

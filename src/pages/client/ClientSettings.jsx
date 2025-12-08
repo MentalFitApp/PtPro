@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Download, Trash2, Link as LinkIcon } from 'lucide-react';
+import { Shield, Download, Trash2, Link as LinkIcon, Settings } from 'lucide-react';
 import GDPRSettings from '../../components/settings/GDPRSettings';
 import LinkAccountCard from '../../components/LinkAccountCard';
+import ChangeEmailCard from '../../components/settings/ChangeEmailCard';
 
 /**
  * Pagina Impostazioni Client
@@ -43,6 +44,16 @@ const ClientSettings = () => {
           </p>
 
           <LinkAccountCard />
+        </motion.div>
+
+        {/* Cambio Email */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-6"
+        >
+          <ChangeEmailCard />
         </motion.div>
 
         {/* Privacy e GDPR */}
