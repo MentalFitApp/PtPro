@@ -172,8 +172,8 @@ exports.sendPushNotification = onDocumentCreated('tenants/{tenantId}/notificatio
       token: fcmToken,
       webpush: {
         notification: {
-          icon: '/logo192.PNG',
-          badge: '/logo192.PNG',
+          icon: '/logo192.png',
+          badge: '/logo192.png',
           tag: 'notification-' + notificationId,
           requireInteraction: type === 'call_request',
           vibrate: [200, 100, 200]

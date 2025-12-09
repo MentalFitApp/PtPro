@@ -176,7 +176,7 @@ export default function LandingEditor() {
                   type="text"
                   value={config?.branding?.logoUrl || ''}
                   onChange={(e) => updateField('branding.logoUrl', e.target.value)}
-                  placeholder="/logo192.PNG o URL esterno"
+                  placeholder="/logo192.png o URL esterno"
                   className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500"
                 />
               </div>

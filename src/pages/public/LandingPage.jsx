@@ -153,7 +153,7 @@ const defaultLandingConfig = {
     buttonText: "Inizia Ora - È Gratis"
   },
   branding: {
-    logoUrl: "/logo192.PNG",
+    logoUrl: "/logo192.png",
     appName: "FitFlow",
     primaryColor: "#3b82f6",
     accentColor: "#60a5fa"

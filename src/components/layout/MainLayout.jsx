@@ -270,7 +270,7 @@ const MobileMenu = ({ isOpen, setIsOpen, isCoach, isCollaboratore, isClient, use
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/30">
                   <img 
-                    src="/logo192.PNG" 
+                    src="/logo192.png" 
                     alt="FitFlow"
                     className="w-full h-full object-cover"
                   />
@@ -621,7 +621,7 @@ const SidebarLogo = ({ isCollapsed }) => {
     ) : (
       <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 mx-auto shadow-lg shadow-blue-500/30">
         <img 
-          src="/logo192.PNG" 
+          src="/logo192.png" 
           alt="FitFlow"
           className="w-full h-full object-cover"
         />
@@ -639,7 +639,7 @@ const SidebarLogo = ({ isCollapsed }) => {
     <>
       <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/30">
         <img 
-          src="/logo192.PNG" 
+          src="/logo192.png" 
           alt="FitFlow"
           className="w-full h-full object-cover"
         />
@@ -980,7 +980,7 @@ export default function MainLayout() {
                     <>
                       <div className="w-6 h-6 rounded-lg overflow-hidden ring-1 ring-blue-500/30">
                         <img 
-                          src="/logo192.PNG" 
+                          src="/logo192.png" 
                           alt="FitFlow"
                           className="w-full h-full object-cover"
                         />

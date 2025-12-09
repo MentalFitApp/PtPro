@@ -98,7 +98,7 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
               <>
                 <div className="w-7 h-7 rounded-lg overflow-hidden ring-1 ring-blue-500/30">
                   <img 
-                    src="/logo192.PNG" 
+                    src="/logo192.png" 
                     alt="FitFlow"
                     className="w-full h-full object-cover"
                   />

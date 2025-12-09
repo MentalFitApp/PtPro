@@ -156,7 +156,7 @@ export default function BrandingEditorModal({ tenant, onClose, onSave }) {
                 value={config.logoUrl || ''}
                 onChange={(e) => setConfig({ ...config, logoUrl: e.target.value })}
                 className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                placeholder="/logo192.PNG o URL esterno"
+                placeholder="/logo192.png o URL esterno"
               />
               {config.logoUrl && (
                 <div className="mt-2 p-2 bg-slate-700/30 rounded-lg flex items-center gap-2">

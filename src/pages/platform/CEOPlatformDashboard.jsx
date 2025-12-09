@@ -554,7 +554,7 @@ export default function CEOPlatformDashboard() {
         tenantName: tenant.name || tenant.id,
         config: landingDoc.exists() ? landingDoc.data() : {
           hero: { title: '', subtitle: '', ctaPrimary: 'Inizia Ora', ctaSecondary: 'Scopri di più' },
-          branding: { appName: tenant.name || 'FitFlow', logoUrl: '/logo192.PNG' },
+          branding: { appName: tenant.name || 'FitFlow', logoUrl: '/logo192.png' },
           siteSlug: tenant.siteSlug || tenant.id,
           enabled: true
         }
@@ -2657,7 +2657,7 @@ export default function CEOPlatformDashboard() {
                         }
                       })}
                       className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="/logo192.PNG"
+                      placeholder="/logo192.png"
                     />
                   </div>
                 </div>

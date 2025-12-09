@@ -63,8 +63,8 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = notification.title || `${getNotificationIcon(type)} PtPro`;
   const notificationOptions = {
     body: notification.body || 'Hai una nuova notifica',
-    icon: notification.icon || '/logo192.PNG',
-    badge: '/logo192.PNG',
+    icon: notification.icon || '/logo192.png',
+    badge: '/logo192.png',
     tag: data.tag || type,
     data: {
       ...data,

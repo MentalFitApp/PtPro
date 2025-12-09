@@ -149,7 +149,7 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
     ) : (
       <div className="w-9 h-9 rounded-lg overflow-hidden ring-2 ring-blue-500/30 mx-auto">
         <img 
-          src="/logo192.PNG" 
+          src="/logo192.png" 
           alt="FitFlow"
           className="w-full h-full object-cover"
         />
@@ -169,7 +169,7 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
         <>
           <div className="w-9 h-9 rounded-lg overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/20">
             <img 
-              src="/logo192.PNG" 
+              src="/logo192.png" 
               alt="FitFlow"
               className="w-full h-full object-cover"
             />

@@ -14,7 +14,7 @@ export default function LandingEditorModal({ tenant, onClose, onSave }) {
     if (tenant) {
       setConfig(tenant.config || {
         hero: { title: '', subtitle: '', ctaPrimary: 'Inizia Ora', ctaSecondary: 'Scopri di più' },
-        branding: { appName: tenant.tenantName, logoUrl: '/logo192.PNG' },
+        branding: { appName: tenant.tenantName, logoUrl: '/logo192.png' },
         siteSlug: tenant.tenantId,
         enabled: true
       });
@@ -246,7 +246,7 @@ export default function LandingEditorModal({ tenant, onClose, onSave }) {
                       branding: { ...config.branding, logoUrl: e.target.value }
                     })}
                     className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="/logo192.PNG"
+                    placeholder="/logo192.png"
                   />
                 </div>
 

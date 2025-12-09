@@ -457,7 +457,7 @@ const Login = () => {
               />
               <div className="relative w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-blue-500/30 shadow-xl shadow-blue-500/30">
                 <img 
-                  src="/logo192.PNG" 
+                  src="/logo192.png" 
                   alt="FitFlow Logo" 
                   className="w-full h-full object-cover"
                 />

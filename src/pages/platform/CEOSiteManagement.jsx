@@ -48,7 +48,7 @@ export async function loadLandingConfig(tenantId) {
         ],
         branding: {
           appName: tenantData?.name || 'FitFlow',
-          logoUrl: '/logo192.PNG',
+          logoUrl: '/logo192.png',
           primaryColor: '#3b82f6',
           accentColor: '#60a5fa'
         },
@@ -215,7 +215,7 @@ export async function createTenant(tenantData) {
       },
       branding: {
         appName: tenantData.name,
-        logoUrl: '/logo192.PNG'
+        logoUrl: '/logo192.png'
       },
       enabled: false
     });
