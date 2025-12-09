@@ -1,13 +1,16 @@
 {
-  "name": "FitFlow",
+  "name": "FitFlow - Personal Trainer App",
   "short_name": "FitFlow",
-  "description": "Area personale coaching - FitFlow Pro Manager",
+  "description": "Gestisci i tuoi clienti, schede allenamento e piani alimentari. L'app completa per Personal Trainer e Coach.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#06b6d4",
   "orientation": "portrait-primary",
+  "categories": ["health", "fitness", "lifestyle"],
+  "lang": "it-IT",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/logo192.png",
@@ -20,6 +23,21 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Home",
+      "url": "/dashboard",
+      "icons": [{ "src": "/logo192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Chat",
+      "short_name": "Chat",
+      "url": "/chat",
+      "icons": [{ "src": "/logo192.png", "sizes": "192x192" }]
     }
   ]
 }
