@@ -2,6 +2,7 @@
 // Pagina Impostazioni completa stile HubFit con tabs
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { WebOnlyBanner } from '../../components/subscription/WebOnlyNotice';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from 'firebase/auth';
 import { getMessaging, getToken } from 'firebase/messaging';
@@ -456,6 +457,13 @@ export default function Settings() {
           </button>
           <h1 className="text-xl sm:text-2xl font-bold text-white">Impostazioni</h1>
         </div>
+
+        {/* Web Only Banner per pagamenti */}
+        <WebOnlyBanner
+          title="Gestione Abbonamento"
+          message="Per gestire il tuo abbonamento, fatture e metodi di pagamento, accedi dal browser web."
+          className="mb-6"
+        />
 
         {/* Tabs */}
         <div className="flex items-center gap-1 border-b border-slate-700/50 mb-6 overflow-x-auto">

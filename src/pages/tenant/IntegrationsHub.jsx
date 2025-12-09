@@ -2,6 +2,7 @@
 // Pagina centralizzata per gestire tutte le integrazioni del trainer
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { WebOnlyBanner } from '../../components/subscription/WebOnlyNotice';
 import {
   MessageCircle, Instagram, Calendar, Mail, CreditCard, Video,
   CheckCircle, XCircle, AlertCircle, Settings, ExternalLink,
@@ -688,6 +689,13 @@ export default function IntegrationsHub() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* Web Only Banner per Stripe/Pagamenti */}
+      <WebOnlyBanner
+        title="Configurazione Pagamenti"
+        message="Per collegare Stripe e gestire i pagamenti, accedi dal browser web."
+        className="mb-6"
+      />
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-2">
