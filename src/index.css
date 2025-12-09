@@ -7,6 +7,30 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* ========================================
+   MOBILE OPTIMIZATION
+   ======================================== */
+/* Faster tap response on mobile */
+button, a, [role="button"], input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* Prevent text selection on interactive elements */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Smooth scrolling for iOS */
+.scroll-smooth {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide tap highlight on Android */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Scrollbar hide utility */
 @layer utilities {
   .scrollbar-hide {
