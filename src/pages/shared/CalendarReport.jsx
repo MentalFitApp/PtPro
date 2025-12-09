@@ -102,8 +102,8 @@ export default function CalendarReport() {
       if (!report) return null;
       return {
         id: collab.id,
-        name: collab.name || collab.email.split('@')[0],
-        role: collab.role || 'N/D',
+        name: collab.name || collab.nome || collab.email?.split('@')[0] || 'Sconosciuto',
+        role: collab.ruolo || collab.role || 'N/D',
         photoURL: collab.photoURL || '/default-avatar.png',
         gender: collab.gender || 'M',
         report
