@@ -1009,13 +1009,27 @@ const SchedaAlimentazione = () => {
                                   <input
                                     type="number"
                                     value={alimento.quantita}
+                                    onFocus={(e) => e.target.select()}
                                     onChange={(e) => {
-                                      const newQuantita = parseFloat(e.target.value) || 0;
+                                      const val = e.target.value;
+                                      // Permetti campo vuoto durante digitazione
+                                      const newQuantita = val === '' ? '' : parseFloat(val);
                                       setSchedaData(prev => {
                                         const newData = JSON.parse(JSON.stringify(prev));
                                         newData.giorni[selectedDay].pasti[pastoIndex].alimenti[alimentoIndex].quantita = newQuantita;
                                         return newData;
                                       });
+                                    }}
+                                    onBlur={(e) => {
+                                      // Al blur, se vuoto o NaN, imposta a 0
+                                      const val = parseFloat(e.target.value);
+                                      if (isNaN(val) || e.target.value === '') {
+                                        setSchedaData(prev => {
+                                          const newData = JSON.parse(JSON.stringify(prev));
+                                          newData.giorni[selectedDay].pasti[pastoIndex].alimenti[alimentoIndex].quantita = 0;
+                                          return newData;
+                                        });
+                                      }
                                     }}
                                     disabled={!isEditMode}
                                     className="w-16 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-200 text-sm focus:outline-none focus:border-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed"

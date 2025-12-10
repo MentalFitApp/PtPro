@@ -1063,7 +1063,7 @@ export default function ClientDetail({ role: propRole }) {
           setMagicLink(newMagicLink);
           
           // Copia messaggio con magic link
-          const text = `Ciao ${client.name}, ti invio il link per entrare nel tuo profilo personale potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪\nTu come stai, stai trovando difficolta a seguire il programma, e sopratutto vedi miglioramenti ?\n\n🔗 LINK ACCESSO RAPIDO (valido 48h):\n${newMagicLink}\n\n⚠️ Clicca il link sopra per impostare la tua password e accedere direttamente!\n\n📌 Questo poi è il link che dovrai usare ogni volta che vorrai entrare nella tua area personale:\nhttps://www.flowfitpro.it/login`;
+          const text = `Ciao ${client.name}, ti invio il link per entrare nel tuo profilo personale dove potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪\nTu come stai, stai trovando difficoltà a seguire il programma, e soprattutto vedi miglioramenti?\n\n🔗 LINK ACCESSO RAPIDO (valido 48h):\n${newMagicLink}\n\n⚠️ Clicca il link sopra per impostare la tua password e accedere direttamente!\n\n📌 Questo poi è il link che dovrai usare ogni volta che vorrai entrare nella tua area personale:\nhttps://www.flowfitpro.it/login`;
           navigator.clipboard.writeText(text);
           setCopied(true);
           setTimeout(() => setCopied(false), 2500);
@@ -1080,7 +1080,7 @@ export default function ClientDetail({ role: propRole }) {
     }
     
     // Usa il Magic Link già generato
-    const text = `Ciao ${client.name}, ti invio il link per entrare nel tuo profilo personale potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪\nTu come stai, stai trovando difficolta a seguire il programma, e sopratutto vedi miglioramenti ?\n\n🔗 LINK ACCESSO RAPIDO (valido 48h):\n${magicLink}\n\n⚠️ Clicca il link sopra per impostare la tua password e accedere direttamente!\n\n📌 Questo poi è il link che dovrai usare ogni volta che vorrai entrare nella tua area personale:\nhttps://www.flowfitpro.it/login`;
+    const text = `Ciao ${client.name}, ti invio il link per entrare nel tuo profilo personale dove potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪\nTu come stai, stai trovando difficoltà a seguire il programma, e soprattutto vedi miglioramenti?\n\n🔗 LINK ACCESSO RAPIDO (valido 48h):\n${magicLink}\n\n⚠️ Clicca il link sopra per impostare la tua password e accedere direttamente!\n\n📌 Questo poi è il link che dovrai usare ogni volta che vorrai entrare nella tua area personale:\nhttps://www.flowfitpro.it/login`;
     
     navigator.clipboard.writeText(text);
     setCopied(true);
