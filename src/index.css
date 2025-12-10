@@ -31,6 +31,34 @@ button, a, [role="button"], input, select, textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ========================================
+   iOS SAFARI COMPATIBILITY FIXES
+   ======================================== */
+/* Fix backdrop-blur not working on iOS Safari */
+.backdrop-blur-sm,
+.backdrop-blur-md,
+.backdrop-blur-lg,
+.backdrop-blur-xl {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Ensure background colors are solid fallback on iOS */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .bg-slate-800\/60,
+  .bg-slate-800\/80,
+  .bg-slate-900\/60,
+  .bg-slate-900\/80 {
+    background-color: rgb(30 41 59) !important;
+  }
+}
+
+/* Fix for iOS gradient text */
+.bg-gradient-to-r.bg-clip-text {
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
 /* Scrollbar hide utility */
 @layer utilities {
   .scrollbar-hide {

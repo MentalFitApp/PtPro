@@ -96,12 +96,56 @@ const AdminAnamnesi = () => {
         <button onClick={() => navigate('/clients')} className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-700/70 border border-slate-600 text-slate-300 text-sm font-semibold rounded-lg transition-colors"><ArrowLeft size={16} /><span>Torna ai Clienti</span></button>
       </header>
       
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className={sectionStyle}><h4 className={headingStyle}><FilePenLine size={16} /> Dati Anagrafici</h4><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><ViewField label="Nome" value={anamnesiData.firstName} /><ViewField label="Cognome" value={anamnesiData.lastName} /><ViewField label="Data di Nascita" value={anamnesiData.birthDate} /><ViewField label="Lavoro" value={anamnesiData.job} /><ViewField label={`Peso (${weightLabel})`} value={anamnesiData.weight ? formatWeight(anamnesiData.weight) : null} /><ViewField label={`Altezza (${lengthLabel})`} value={anamnesiData.height ? formatLength(anamnesiData.height) : null} /></div></div>
-        <div className={sectionStyle}><h4 className={headingStyle}><Camera size={16} /> Abitudini Alimentari</h4><div className="space-y-4"><ViewField label="Pasti al giorno" value={anamnesiData.mealsPerDay} /><ViewField label="Tipo Colazione" value={anamnesiData.breakfastType} /><ViewField label="Alimenti preferiti" value={anamnesiData.desiredFoods} /><ViewField label="Alimenti da evitare" value={anamnesiData.dislikedFoods} /><ViewField label="Allergie/Intolleranze" value={anamnesiData.intolerances} /><ViewField label="Problemi di digestione" value={anamnesiData.digestionIssues} /></div></div>
-        <div className={sectionStyle}><h4 className={headingStyle}><FilePenLine size={16} /> Allenamento</h4><div className="space-y-4"><ViewField label="Allenamenti a settimana" value={anamnesiData.workoutsPerWeek} /><ViewField label="Dettagli Allenamento" value={anamnesiData.trainingDetails} /><ViewField label="Orario e Durata" value={anamnesiData.trainingTime} /></div></div>
-        <div className={sectionStyle}><h4 className={headingStyle}><Camera size={16} /> Salute e Obiettivi</h4><div className="space-y-4"><ViewField label="Infortuni o problematiche" value={anamnesiData.injuries} /><ViewField label="Farmaci" value={anamnesiData.medications} /><ViewField label="Integratori" value={anamnesiData.supplements} /><ViewField label="Obiettivo Principale" value={anamnesiData.mainGoal} /><ViewField label="Durata Percorso" value={anamnesiData.programDuration} /></div></div>
-        <div className={sectionStyle}><h4 className={headingStyle}><Camera size={16} /> Foto Iniziali</h4><ViewPhotos urls={anamnesiData.photoURLs} /></div>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+        <div className={sectionStyle}>
+          <h4 className={headingStyle}><FilePenLine size={16} /> Dati Anagrafici</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <ViewField label="Nome" value={anamnesiData.firstName} />
+            <ViewField label="Cognome" value={anamnesiData.lastName} />
+            <ViewField label="Sesso" value={anamnesiData.gender === 'M' ? 'Maschio' : anamnesiData.gender === 'F' ? 'Femmina' : 'Non specificato'} />
+            <ViewField label="Data di Nascita" value={anamnesiData.birthDate} />
+            <ViewField label="Lavoro" value={anamnesiData.job} />
+            <ViewField label={`Peso (${weightLabel})`} value={anamnesiData.weight ? formatWeight(anamnesiData.weight) : null} />
+            <ViewField label={`Altezza (${lengthLabel})`} value={anamnesiData.height ? formatLength(anamnesiData.height) : null} />
+          </div>
+        </div>
+        
+        <div className={sectionStyle}>
+          <h4 className={headingStyle}><Camera size={16} /> Abitudini Alimentari</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <ViewField label="Pasti al giorno" value={anamnesiData.mealsPerDay} />
+            <ViewField label="Tipo Colazione" value={anamnesiData.breakfastType} />
+            <ViewField label="Alimenti preferiti" value={anamnesiData.desiredFoods} />
+            <ViewField label="Alimenti da evitare" value={anamnesiData.dislikedFoods} />
+            <ViewField label="Allergie/Intolleranze" value={anamnesiData.intolerances} />
+            <ViewField label="Problemi di digestione" value={anamnesiData.digestionIssues} />
+          </div>
+        </div>
+        
+        <div className={sectionStyle}>
+          <h4 className={headingStyle}><FilePenLine size={16} /> Allenamento</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <ViewField label="Allenamenti a settimana" value={anamnesiData.workoutsPerWeek} />
+            <ViewField label="Dettagli Allenamento" value={anamnesiData.trainingDetails} />
+            <ViewField label="Orario e Durata" value={anamnesiData.trainingTime} />
+          </div>
+        </div>
+        
+        <div className={sectionStyle}>
+          <h4 className={headingStyle}><Camera size={16} /> Salute e Obiettivi</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <ViewField label="Infortuni o problematiche" value={anamnesiData.injuries} />
+            <ViewField label="Farmaci" value={anamnesiData.medications} />
+            <ViewField label="Integratori" value={anamnesiData.supplements} />
+            <ViewField label="Obiettivo Principale" value={anamnesiData.mainGoal} />
+            <ViewField label="Durata Percorso" value={anamnesiData.programDuration} />
+          </div>
+        </div>
+        
+        <div className={sectionStyle}>
+          <h4 className={headingStyle}><Camera size={16} /> Foto Iniziali</h4>
+          <ViewPhotos urls={anamnesiData.photoURLs} />
+        </div>
       </motion.div>
     </div>
   );

@@ -718,10 +718,11 @@ export default function CoachClientDetail() {
       <CardContent>
         {anamnesi ? (
           <div className="space-y-3">
-            <CardGrid cols={3}>
+            <CardGrid cols={4}>
               {renderAnamnesiField('Nome', anamnesi.firstName || client.name)}
               {renderAnamnesiField('Cognome', anamnesi.lastName)}
               {renderAnamnesiField('Data di nascita', anamnesi.birthDate)}
+              {renderAnamnesiField('Sesso', anamnesi.gender === 'M' ? 'Maschio' : anamnesi.gender === 'F' ? 'Femmina' : anamnesi.gender === 'male' ? 'Maschio' : anamnesi.gender === 'female' ? 'Femmina' : 'Non specificato')}
             </CardGrid>
             <CardGrid cols={3}>
               {renderAnamnesiField('Lavoro', anamnesi.job)}

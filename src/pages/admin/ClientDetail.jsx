@@ -842,6 +842,30 @@ export default function ClientDetail() {
   const bodyFatDeltaPct = bodyFatDelta !== null && prevBodyFat ? ((bodyFatDelta / prevBodyFat) * 100) : null;
   const lastCheckAt = latestCheck?.createdAt ? toDate(latestCheck.createdAt) : null;
   
+  // Calcola se ha fatto workout oggi
+  const todayWorkout = useMemo(() => {
+    if (!client) return { done: false, streak: 0 };
+    const todayStr = new Date().toISOString().split('T')[0];
+    const habits = client.habits || {};
+    const workoutLog = client.workoutLog || {};
+    const doneToday = (habits[todayStr]?.workout >= 1) || (workoutLog[todayStr]?.completed === true);
+    
+    // Calcola streak
+    let streak = 0;
+    let checkDate = new Date();
+    for (let i = 0; i < 365; i++) {
+      const dateStr = checkDate.toISOString().split('T')[0];
+      const hadWorkout = (habits[dateStr]?.workout >= 1) || (workoutLog[dateStr]?.completed === true);
+      if (hadWorkout) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return { done: doneToday, streak };
+  }, [client]);
+  
   // Calcolo Body Fat stimato usando BMI (formula Deurenberg)
   // BF% = (1.20 × BMI) + (0.23 × età) − (10.8 × sesso) − 5.4
   // dove sesso = 1 per maschi, 0 per femmine
@@ -1252,6 +1276,20 @@ export default function ClientDetail() {
           </div>
           <InfoField icon={Calendar} value={`Scadenza: ${toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}`} />
           <InfoField icon={Clock} value={`Ultimo check: ${lastCheckAt ? lastCheckAt.toLocaleString('it-IT') : 'N/D'}`} />
+          
+          {/* Indicatore Workout Oggi */}
+          <div className="flex items-center gap-2">
+            <Activity size={16} className={todayWorkout.done ? 'text-emerald-400' : 'text-slate-400'} />
+            <span className={`text-sm ${todayWorkout.done ? 'text-emerald-400' : 'text-slate-400'}`}>
+              Workout oggi: {todayWorkout.done ? '✓ Fatto' : '✗ Non fatto'}
+              {todayWorkout.streak > 0 && (
+                <span className="ml-2 px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-full text-xs">
+                  🔥 {todayWorkout.streak} giorni
+                </span>
+              )}
+            </span>
+          </div>
+          
           <InfoField icon={Activity} value={`Ultimo accesso: ${(() => {
             // Prova lastActive, poi lastCheckAt, poi createdAt come fallback
             const lastActiveDate = client.lastActive ? toDate(client.lastActive) : null;
@@ -1559,10 +1597,11 @@ export default function ClientDetail() {
       <CardContent>
         {anamnesi ? (
           <div className="space-y-3">
-            <CardGrid cols={3}>
+            <CardGrid cols={4}>
               {renderAnamnesiField('Nome', anamnesi.firstName || client.name)}
               {renderAnamnesiField('Cognome', anamnesi.lastName)}
               {renderAnamnesiField('Data di nascita', anamnesi.birthDate)}
+              {renderAnamnesiField('Sesso', anamnesi.gender === 'M' ? 'Maschio' : anamnesi.gender === 'F' ? 'Femmina' : anamnesi.gender === 'male' ? 'Maschio' : anamnesi.gender === 'female' ? 'Femmina' : 'Non specificato')}
             </CardGrid>
             <CardGrid cols={3}>
               {renderAnamnesiField('Lavoro', anamnesi.job)}
