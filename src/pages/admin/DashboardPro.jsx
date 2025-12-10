@@ -468,7 +468,8 @@ export default function DashboardPro() {
     
     // Calcola rinnovi
     // PRIORITÀ: usa il flag isRenewal se presente
-    // Altrimenti: se il cliente ha più di un pagamento e non è il primo
+    // Le rate (isRate: true) NON sono rinnovi a meno che non abbiano isRenewal: true
+    // Altrimenti: se non è una rata e il cliente ha più di un pagamento "principale", conta come rinnovo
     const paymentsByClient = {};
     payments.forEach(p => {
       if (!paymentsByClient[p.clientId]) paymentsByClient[p.clientId] = [];
@@ -477,19 +478,30 @@ export default function DashboardPro() {
     
     let renewalsRevenue = 0;
     periodPayments.forEach(p => {
-      // PRIORITÀ: usa il flag isRenewal se presente
+      // PRIORITÀ: usa il flag isRenewal se esplicitamente presente
       if (p.isRenewal === true) {
         renewalsRevenue += p.amount || 0;
         return;
       }
       
-      // Fallback: controlla se non è il primo pagamento del cliente
+      // Le rate NON sono rinnovi a meno che non abbiano isRenewal: true (già gestito sopra)
+      // Le rate fanno parte del primo abbonamento rateizzato
+      if (p.isRate === true || p.source === 'rate' || p.source === 'rates-subcollection') {
+        // È una rata, non conta come rinnovo se non ha isRenewal
+        return;
+      }
+      
+      // Fallback per pagamenti "principali" (non rate): controlla se non è il primo pagamento
       const clientPayments = paymentsByClient[p.clientId] || [];
-      const sortedPayments = clientPayments.sort((a, b) => new Date(a.date) - new Date(b.date));
+      // Considera solo i pagamenti principali (non rate) per determinare se è il primo
+      const mainPayments = clientPayments.filter(pay => 
+        !pay.isRate && pay.source !== 'rate' && pay.source !== 'rates-subcollection'
+      );
+      const sortedPayments = mainPayments.sort((a, b) => new Date(a.date) - new Date(b.date));
       const firstPaymentDate = sortedPayments[0]?.date;
       const currentPaymentDate = new Date(p.date).toISOString();
       
-      // Se non è il primo pagamento del cliente, è un rinnovo
+      // Se non è il primo pagamento principale del cliente, è un rinnovo
       if (firstPaymentDate && currentPaymentDate !== new Date(firstPaymentDate).toISOString()) {
         renewalsRevenue += p.amount || 0;
       }

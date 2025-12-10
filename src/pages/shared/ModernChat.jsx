@@ -623,6 +623,15 @@ export default function ModernChat() {
         <div className="p-4 border-b border-slate-700">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xl font-bold text-white">Chat</h2>
+            {/* Pulsante Nuova Chat - visibile su mobile */}
+            <button
+              onClick={() => setShowNewChatModal(true)}
+              className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
+              title="Nuova chat"
+            >
+              <Plus className="text-white" size={18} />
+              <span className="text-white text-sm hidden sm:inline">Nuova</span>
+            </button>
           </div>
 
           {/* Search */}
