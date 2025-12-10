@@ -151,8 +151,15 @@ export default function ModernChat() {
 
         // Filtra in base al ruolo dell'utente corrente
         if (userRole === 'client') {
-          // I clienti vedono solo admin e coach
-          usersData = usersData.filter(u => u.role === 'admin' || u.role === 'coach');
+          // I clienti vedono solo admin (con visibleInChat=true) e coach
+          usersData = usersData.filter(u => {
+            if (u.role === 'coach') return true; // Coach sempre visibili
+            if (u.role === 'admin') {
+              // Admin visibili solo se visibleInChat !== false (default true)
+              return u.visibleInChat !== false;
+            }
+            return false;
+          });
         } else if (userRole === 'coach') {
           // I coach vedono admin e clienti (non altri coach)
           usersData = usersData.filter(u => u.role === 'admin' || u.role === 'client');

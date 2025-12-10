@@ -40,7 +40,8 @@ import {
   Upload,
   TrendingUp,
   ArrowLeftRight,
-  MessageCircle
+  MessageCircle,
+  Heart
 } from 'lucide-react';
 import { uploadToR2 } from '../../cloudflareStorage';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
@@ -56,6 +57,7 @@ import ProgressCharts from '../../components/client/ProgressCharts';
 import PhotoCompare from '../../components/client/PhotoCompare';
 import WorkoutStreak from '../../components/client/WorkoutStreak';
 import WorkoutCalendarModal from '../../components/client/WorkoutCalendarModal';
+import ClientHabitsOverview from '../../components/admin/ClientHabitsOverview';
 import { 
   UnifiedCard, 
   CardHeader, 
@@ -1245,6 +1247,7 @@ export default function ClientDetail({ role: propRole }) {
   // Tabs - filtra 'payments' se non è admin
   const allTabs = [
     { key: 'overview', label: 'Overview', icon: <FileText size={16} /> },
+    { key: 'habits', label: 'Abitudini', icon: <Heart size={16} /> },
     { key: 'check', label: 'Check & Foto', icon: <Calendar size={16} /> },
     { key: 'payments', label: 'Pagamenti', icon: <CreditCard size={16} />, adminOnly: true },
     { key: 'metrics', label: 'Metriche', icon: <BarChart3 size={16} /> },
@@ -1290,26 +1293,6 @@ export default function ClientDetail({ role: propRole }) {
           </div>
           <InfoField icon={Calendar} value={`Scadenza: ${toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}`} />
           <InfoField icon={Clock} value={`Ultimo check: ${lastCheckAt ? lastCheckAt.toLocaleString('it-IT') : 'N/D'}`} />
-          
-          {/* Indicatore Workout Oggi - Cliccabile per vedere calendario */}
-          <div 
-            onClick={() => setShowWorkoutCalendar(true)}
-            className="flex items-center gap-2 cursor-pointer hover:bg-slate-800/50 rounded-md px-1 py-0.5 transition-colors"
-            title="Clicca per vedere il calendario allenamenti"
-          >
-            <Activity size={16} className={todayWorkout.done ? 'text-emerald-400' : 'text-slate-400'} />
-            <span className={`text-sm ${todayWorkout.done ? 'text-emerald-400' : 'text-slate-400'}`}>
-              Workout oggi: {todayWorkout.done ? '✓ Fatto' : '✗ Non fatto'}
-              {todayWorkout.streak > 0 && (
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setShowWorkoutCalendar(true); }}
-                  className="ml-2 px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-full text-xs hover:bg-orange-500/30 transition-colors"
-                >
-                  🔥 {todayWorkout.streak} giorni
-                </button>
-              )}
-            </span>
-          </div>
           
           <InfoField icon={Activity} value={`Ultimo accesso: ${(() => {
             // Prova lastActive, poi lastCheckAt, poi createdAt come fallback
@@ -1859,6 +1842,13 @@ export default function ClientDetail({ role: propRole }) {
                 </div>
                 {photosCard}
               </div>
+            )}
+
+            {activeTab === 'habits' && (
+              <ClientHabitsOverview 
+                client={client} 
+                onOpenCalendar={() => setShowWorkoutCalendar(true)} 
+              />
             )}
 
             {activeTab === 'payments' && (

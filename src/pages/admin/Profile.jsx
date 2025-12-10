@@ -4,7 +4,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { getTenantDoc } from '../../config/tenant';
 import { uploadToR2 } from '../../cloudflareStorage';
-import { User, Camera, Mail, Phone, Briefcase, Save, ArrowLeft, Upload } from 'lucide-react';
+import { User, Camera, Mail, Phone, Briefcase, Save, ArrowLeft, Upload, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import LinkAccountCard from '../../components/LinkAccountCard';
 import { useToast } from '../../contexts/ToastContext';
@@ -21,6 +21,7 @@ export default function Profile() {
     phone: '',
     bio: '',
     role: '', // 'admin', 'coach', 'client'
+    visibleInChat: true, // Se admin può essere contattato in chat dai clienti
   });
 
   const [loading, setLoading] = useState(true);
@@ -62,6 +63,7 @@ export default function Profile() {
           phone: data.phone || '',
           bio: data.bio || '',
           role: userRole,
+          visibleInChat: data.visibleInChat !== false, // Default true se non specificato
         });
         setPreviewImage(data.photoURL || currentUser.photoURL);
       } else {
@@ -147,6 +149,7 @@ export default function Profile() {
         phone: profile.phone || '',
         bio: profile.bio || '',
         role: profile.role,
+        visibleInChat: profile.visibleInChat,
         updatedAt: serverTimestamp(),
       };
       
@@ -306,6 +309,54 @@ export default function Profile() {
                   Il ruolo è assegnato automaticamente
                 </p>
               </div>
+
+              {/* Visibilità Chat - Solo per Admin */}
+              {profile.role === 'admin' && (
+                <div className="p-4 bg-slate-800/30 border border-slate-700/50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-500/20 rounded-lg">
+                        <MessageCircle size={18} className="text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">Visibile in Chat</p>
+                        <p className="text-xs text-slate-400">I clienti possono contattarti direttamente</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setProfile(prev => ({ ...prev, visibleInChat: !prev.visibleInChat }))}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${
+                        profile.visibleInChat ? 'bg-blue-600' : 'bg-slate-700'
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                        profile.visibleInChat ? 'translate-x-7' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
+                  {!profile.visibleInChat && (
+                    <p className="text-xs text-amber-400 mt-2">
+                      ⚠️ I clienti non ti vedranno nella lista chat
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Info per Coach */}
+              {profile.role === 'coach' && (
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500/20 rounded-lg">
+                      <MessageCircle size={18} className="text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-emerald-400">Sempre visibile in Chat</p>
+                      <p className="text-xs text-slate-400">Come coach, i tuoi clienti possono sempre contattarti</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm text-slate-300 mb-2 font-medium">
