@@ -54,6 +54,8 @@ import { useToast } from '../../contexts/ToastContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import ProgressCharts from '../../components/client/ProgressCharts';
 import PhotoCompare from '../../components/client/PhotoCompare';
+import WorkoutStreak from '../../components/client/WorkoutStreak';
+import WorkoutCalendarModal from '../../components/client/WorkoutCalendarModal';
 import { 
   UnifiedCard, 
   CardHeader, 
@@ -708,6 +710,7 @@ export default function ClientDetail({ role: propRole }) {
   const [zoomPhoto, setZoomPhoto] = useState({ open: false, url: '', alt: '' });
   const [showPhotoCompare, setShowPhotoCompare] = useState(false);
   const [showScheduleCall, setShowScheduleCall] = useState(false);
+  const [showWorkoutCalendar, setShowWorkoutCalendar] = useState(false);
   const [nextCall, setNextCall] = useState(null);
   const [magicLink, setMagicLink] = useState(null);
   const [generatingLink, setGeneratingLink] = useState(false);
@@ -1288,15 +1291,22 @@ export default function ClientDetail({ role: propRole }) {
           <InfoField icon={Calendar} value={`Scadenza: ${toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}`} />
           <InfoField icon={Clock} value={`Ultimo check: ${lastCheckAt ? lastCheckAt.toLocaleString('it-IT') : 'N/D'}`} />
           
-          {/* Indicatore Workout Oggi */}
-          <div className="flex items-center gap-2">
+          {/* Indicatore Workout Oggi - Cliccabile per vedere calendario */}
+          <div 
+            onClick={() => setShowWorkoutCalendar(true)}
+            className="flex items-center gap-2 cursor-pointer hover:bg-slate-800/50 rounded-md px-1 py-0.5 transition-colors"
+            title="Clicca per vedere il calendario allenamenti"
+          >
             <Activity size={16} className={todayWorkout.done ? 'text-emerald-400' : 'text-slate-400'} />
             <span className={`text-sm ${todayWorkout.done ? 'text-emerald-400' : 'text-slate-400'}`}>
               Workout oggi: {todayWorkout.done ? '✓ Fatto' : '✗ Non fatto'}
               {todayWorkout.streak > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-full text-xs">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setShowWorkoutCalendar(true); }}
+                  className="ml-2 px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-full text-xs hover:bg-orange-500/30 transition-colors"
+                >
                   🔥 {todayWorkout.streak} giorni
-                </span>
+                </button>
               )}
             </span>
           </div>
@@ -1910,6 +1920,14 @@ export default function ClientDetail({ role: propRole }) {
             existingCall={nextCall}
             onSave={() => {}}
           />}
+          
+          {/* Modale Calendario Workout */}
+          <WorkoutCalendarModal 
+            key="workoutCalendar"
+            isOpen={showWorkoutCalendar}
+            onClose={() => setShowWorkoutCalendar(false)}
+            clientId={clientId}
+          />
           
           {/* Modale Nuovo Check */}
           {showNewCheck && (

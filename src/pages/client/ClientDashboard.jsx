@@ -435,8 +435,8 @@ const ClientDashboard = () => {
         )}
 
         <main className="w-full space-y-3 sm:space-y-4">
-          {/* Stats Compatte in Grid - Mobile: 2 colonne, Desktop: 4 colonne */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          {/* Stats Compatte in Grid - Mobile: 2 colonne, Desktop: 5 colonne */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
             {/* Scadenza */}
             <motion.div variants={itemVariants} className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-2 sm:p-2.5">
               <div className="flex items-center justify-between mb-0.5">
@@ -458,7 +458,7 @@ const ClientDashboard = () => {
             </motion.div>
 
             {/* Piano */}
-            <motion.div variants={itemVariants} className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-2 sm:p-2.5 col-span-2 lg:col-span-1">
+            <motion.div variants={itemVariants} className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-2 sm:p-2.5">
               <div className="flex items-center justify-between mb-0.5">
                 <span className="text-[9px] sm:text-xs text-slate-400 truncate">Piano</span>
                 <Briefcase className="text-purple-400 flex-shrink-0" size={12} />
@@ -469,7 +469,12 @@ const ClientDashboard = () => {
               <div className="text-[9px] sm:text-xs text-slate-400 truncate">attivo</div>
             </motion.div>
 
-            {/* Età (se disponibile) o altra stat */}
+            {/* Streak Workout - Mini */}
+            <motion.div variants={itemVariants}>
+              <WorkoutStreak mini />
+            </motion.div>
+
+            {/* Età (se disponibile) */}
             {clientData.age && (
               <motion.div variants={itemVariants} className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-2 sm:p-2.5">
                 <div className="flex items-center justify-between mb-0.5">
@@ -481,11 +486,6 @@ const ClientDashboard = () => {
               </motion.div>
             )}
           </div>
-
-          {/* Workout Streak */}
-          <motion.div variants={itemVariants}>
-            <WorkoutStreak compact />
-          </motion.div>
 
           {/* Sezione Chiamate */}
           <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
