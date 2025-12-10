@@ -48,6 +48,10 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
   const [filterStatus, setFilterStatus] = useState(''); // '', 'attiva', 'scaduta', 'in_scadenza'
   const [activeTab, setActiveTab] = useState(initialFilter || 'tutti'); // 'tutti', 'nuovi', 'alimentazione_scade', 'allenamento_scade', 'scaduti'
   const [selectedClientInfo, setSelectedClientInfo] = useState(null); // For client info modal
+  
+  // Determina ruolo per navigazione corretta
+  const userRole = sessionStorage.getItem('app_role');
+  const isCoach = userRole === 'coach';
 
   useEffect(() => {
     loadClients();
@@ -420,7 +424,7 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
                       </div>
                     </div>
                     <button
-                      onClick={() => navigate(`/scheda-allenamento/${client.id}`)}
+                      onClick={() => navigate(isCoach ? `/coach/scheda-allenamento/${client.id}` : `/scheda-allenamento/${client.id}`)}
                       className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex-shrink-0 font-medium"
                     >
                       Apri
@@ -449,7 +453,7 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
                       </div>
                     </div>
                     <button
-                      onClick={() => navigate(`/scheda-alimentazione/${client.id}`)}
+                      onClick={() => navigate(isCoach ? `/coach/scheda-alimentazione/${client.id}` : `/scheda-alimentazione/${client.id}`)}
                       className="text-xs px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex-shrink-0 font-medium"
                     >
                       Apri

@@ -315,7 +315,10 @@ export default function App() {
               location.pathname === '/coach/checks' ||
               location.pathname === '/coach/updates' ||
               location.pathname === '/coach/chat' ||
-              location.pathname.startsWith('/coach/client/') ||
+              location.pathname === '/coach/schede' ||
+              location.pathname === '/coach/profile' ||
+              location.pathname.startsWith('/coach/scheda-alimentazione/') ||
+              location.pathname.startsWith('/coach/scheda-allenamento/') ||
               location.pathname === '/profile'
             )) ||
             (isCurrentUserAClient && (location.pathname.startsWith('/client/') || location.pathname === '/profile')) ||
@@ -476,7 +479,7 @@ export default function App() {
         {/* === ROTTE COACH (SOLO COACH) === */}
         <Route element={authInfo.isCoach ? <ProLayout /> : <Navigate to="/login" replace />}>
           <Route path="/coach" element={<CoachDashboard />} />
-          <Route path="/coach/clients" element={<CoachClients />} />
+          <Route path="/coach/clients" element={<Clients role="coach" />} />
           <Route path="/coach/client/:clientId" element={<ClientDetail role="coach" />} />
           <Route path="/coach/client/:id/anamnesi" element={<AdminAnamnesi />} />
           <Route path="/coach/anamnesi" element={<CoachAnamnesiList />} />
@@ -487,8 +490,8 @@ export default function App() {
           <Route path="/coach/profile" element={<Profile />} />
           <Route path="/coach/client/:clientId/checks" element={<ClientChecks />} />
           <Route path="/coach/schede" element={<AlimentazioneAllenamento />} />
-          <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
-          <Route path="/scheda-allenamento/:clientId" element={<SchedaAllenamento />} />
+          <Route path="/coach/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
+          <Route path="/coach/scheda-allenamento/:clientId" element={<SchedaAllenamento />} />
         </Route>
 
         {/* === ROTTE CLIENTI === */}

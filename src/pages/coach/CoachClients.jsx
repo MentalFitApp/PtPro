@@ -62,7 +62,7 @@ export default function CoachClients() {
   const [anamnesiStatus, setAnamnesiStatus] = useState({});
   const [viewMode, setViewMode] = useState('list');
   const [stats, setStats] = useState({ total: 0, expiring: 0, expired: 0 });
-  const [showCalendar, setShowCalendar] = useState(true);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [calendarType, setCalendarType] = useState('iscrizioni');
   const [meseCalendario, setMeseCalendario] = useState(new Date());
   const [dayModalOpen, setDayModalOpen] = useState(false);

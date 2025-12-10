@@ -210,7 +210,7 @@ const MainLayout = ({ children, title, actions, filters, sortButtons, viewToggle
   );
 };
 
-export default function Clients() {
+export default function Clients({ role: propRole }) {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -228,6 +228,14 @@ export default function Clients() {
   const [calendarType, setCalendarType] = useState('iscrizioni'); // 'iscrizioni' o 'scadenze'
   const [paymentsTotals, setPaymentsTotals] = useState({});
   const [dayModalOpen, setDayModalOpen] = useState(false);
+  
+  // Determina ruolo: prop > sessionStorage > localStorage
+  let userRole = propRole;
+  if (!userRole) {
+    try { userRole = sessionStorage.getItem('app_role') || JSON.parse(localStorage.getItem('user'))?.role || null; } catch {}
+  }
+  const isAdmin = userRole === 'admin' || !userRole; // Default admin se non specificato
+  const isCoach = userRole === 'coach';
   const [dayModalDate, setDayModalDate] = useState(null);
   const [dayModalClients, setDayModalClients] = useState([]);
   const [stats, setStats] = useState({ total: 0, expiring: 0, expired: 0 });
@@ -268,6 +276,9 @@ export default function Clients() {
     setSelectedClients([]);
     toast.success('Operazione completata con successo!');
   };
+
+  // Path per navigare ai dettagli cliente (diverso per admin/coach)
+  const getClientPath = (clientId) => isCoach ? `/coach/client/${clientId}` : `/client/${clientId}`;
 
   const openDayModal = (giorno) => {
     let clientsForDay;
@@ -347,7 +358,8 @@ export default function Clients() {
   // --- CARICA CLIENTI ---
   useEffect(() => {
     const role = sessionStorage.getItem('app_role');
-    if (role !== 'admin') {
+    // Permetti accesso ad admin e coach
+    if (role !== 'admin' && role !== 'coach') {
       signOut(auth).then(() => navigate('/login'));
       return;
     }
@@ -397,22 +409,24 @@ export default function Clients() {
           console.debug('Impossibile salvare badge clients:', e);
         }
 
-        // Calcolo totale incasso dalle rate pagate + payments collection usando service
-        const paymentsTotalsTemp = {};
-        const paymentsPromises = clientList.map(async client => {
-          // Totale dalle rate pagate
-          const rateArr = Array.isArray(client.rate) ? client.rate : [];
-          const rateSum = rateArr.filter(r => r.paid).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+        // Calcolo totale incasso dalle rate pagate + payments collection usando service (solo per admin)
+        if (isAdmin) {
+          const paymentsTotalsTemp = {};
+          const paymentsPromises = clientList.map(async client => {
+            // Totale dalle rate pagate
+            const rateArr = Array.isArray(client.rate) ? client.rate : [];
+            const rateSum = rateArr.filter(r => r.paid).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+            
+            // Totale dalla collection payments usando service
+            const payments = await getClientPayments(db, client.id).catch(() => []);
+            const paymentsSum = payments.reduce((acc, payment) => acc + (Number(payment.amount) || 0), 0);
+            
+            paymentsTotalsTemp[client.id] = rateSum + paymentsSum;
+          });
           
-          // Totale dalla collection payments usando service
-          const payments = await getClientPayments(db, client.id).catch(() => []);
-          const paymentsSum = payments.reduce((acc, payment) => acc + (Number(payment.amount) || 0), 0);
-          
-          paymentsTotalsTemp[client.id] = rateSum + paymentsSum;
-        });
-        
-        await Promise.all(paymentsPromises);
-        setPaymentsTotals(paymentsTotalsTemp);
+          await Promise.all(paymentsPromises);
+          setPaymentsTotals(paymentsTotalsTemp);
+        }
 
         clientList.forEach(client => updateStatoPercorso(client.id));
         setClients(clientList);
@@ -427,7 +441,7 @@ export default function Clients() {
     });
 
     return () => unsub();
-  }, [navigate]);
+  }, [navigate, isAdmin]);
 
   const handleDelete = async () => {
     if (!clientToDelete) return;
@@ -623,12 +637,16 @@ export default function Clients() {
           placeholder="Cerca..."
         />
       </div>
-      <button onClick={() => navigate("/new-client")} className="flex items-center gap-1.5 px-2 py-1.5 bg-rose-600 hover:bg-rose-700 text-white preserve-white text-xs sm:text-sm font-medium rounded-lg transition-colors">
-        <UserPlus size={14} /> Nuovo
-      </button>
-      <button onClick={() => exportToCSV(clients)} className="flex items-center gap-1.5 px-2 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white preserve-white text-xs sm:text-sm font-medium rounded-lg transition-colors">
-        <Download size={14} /> CSV
-      </button>
+      {isAdmin && (
+        <button onClick={() => navigate("/new-client")} className="flex items-center gap-1.5 px-2 py-1.5 bg-rose-600 hover:bg-rose-700 text-white preserve-white text-xs sm:text-sm font-medium rounded-lg transition-colors">
+          <UserPlus size={14} /> Nuovo
+        </button>
+      )}
+      {isAdmin && (
+        <button onClick={() => exportToCSV(clients)} className="flex items-center gap-1.5 px-2 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white preserve-white text-xs sm:text-sm font-medium rounded-lg transition-colors">
+          <Download size={14} /> CSV
+        </button>
+      )}
       <SavedFilters
         currentFilters={{ searchQuery, filter, sortField, sortDirection }}
         onApplyFilter={(savedFilter) => {
@@ -844,16 +862,20 @@ export default function Clients() {
           </div>
 
           {/* Action Buttons Mobile */}
-          <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className={`grid ${isAdmin ? 'grid-cols-3' : 'grid-cols-1'} gap-2 mb-3`}>
             <button onClick={() => setFilterPanelOpen(true)} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
               <Filter size={16} />
             </button>
-            <button onClick={() => navigate("/new-client")} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-rose-600 hover:bg-rose-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
-              <UserPlus size={16} />
-            </button>
-            <button onClick={() => exportToCSV(clients)} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
-              <Download size={16} />
-            </button>
+            {isAdmin && (
+              <button onClick={() => navigate("/new-client")} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-rose-600 hover:bg-rose-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
+                <UserPlus size={16} />
+              </button>
+            )}
+            {isAdmin && (
+              <button onClick={() => exportToCSV(clients)} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
+                <Download size={16} />
+              </button>
+            )}
           </div>
 
           {/* View Toggle Mobile */}
@@ -1036,9 +1058,11 @@ export default function Clients() {
                             <button onClick={(e) => { e.stopPropagation(); navigate(`/edit/${c.id}`); }} className="text-cyan-400 hover:text-cyan-300">
                               <FilePenLine size={14} />
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); setClientToDelete(c); }} className="text-red-400 hover:text-red-300">
-                              <Trash2 size={14} />
-                            </button>
+                            {isAdmin && (
+                              <button onClick={(e) => { e.stopPropagation(); setClientToDelete(c); }} className="text-red-400 hover:text-red-300">
+                                <Trash2 size={14} />
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1117,9 +1141,11 @@ export default function Clients() {
                         <p className="text-xs text-slate-500 truncate">{c.phone || 'Telefono non presente'}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-[11px] px-2 py-1 rounded-full bg-cyan-900/50 text-cyan-200 border border-cyan-600/50 inline-block mb-1">
-                          €{totalPayments.toFixed(2)}
-                        </span>
+                        {isAdmin && (
+                          <span className="text-[11px] px-2 py-1 rounded-full bg-cyan-900/50 text-cyan-200 border border-cyan-600/50 inline-block mb-1">
+                            €{totalPayments.toFixed(2)}
+                          </span>
+                        )}
                         <p className={`text-xs font-medium ${expiryColor}`}>
                           {expiry ? expiry.toLocaleDateString('it-IT') : 'N/D'}
                         </p>
@@ -1143,7 +1169,7 @@ export default function Clients() {
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => navigate(`/client/${c.id}`)}
+                        onClick={() => navigate(getClientPath(c.id))}
                         className="w-full py-2.5 rounded-lg bg-rose-600 text-white preserve-white text-sm font-semibold hover:bg-rose-700 transition"
                       >
                         Dettagli
@@ -1198,7 +1224,7 @@ export default function Clients() {
                     return (
                       <tr 
                         key={c.id} 
-                        onClick={() => navigate(`/client/${c.id}`)}
+                        onClick={() => navigate(getClientPath(c.id))}
                         className={`border-b border-slate-700/30 transition-colors hover:bg-slate-800/50 cursor-pointer ${selectedClients.includes(c.id) ? 'bg-blue-500/10' : ''}`}
                       >
                         <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
@@ -1211,7 +1237,7 @@ export default function Clients() {
                         </td>
                         <td className="px-4 py-3.5 font-medium text-slate-100">
                           <div className="flex items-center justify-between gap-3">
-                            <button onClick={(e) => { e.stopPropagation(); navigate(`/client/${c.id}`); }} className="text-left hover:text-blue-400 transition-colors truncate flex items-center gap-2">
+                            <button onClick={(e) => { e.stopPropagation(); navigate(getClientPath(c.id)); }} className="text-left hover:text-blue-400 transition-colors truncate flex items-center gap-2">
                               {c.name || "-"}
                               {c.isArchived && (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded bg-slate-700/50 text-slate-400 border border-slate-600/50">
@@ -1219,9 +1245,11 @@ export default function Clients() {
                                 </span>
                               )}
                             </button>
-                            <span className="text-xs px-2 py-1 rounded-md bg-cyan-500/10 text-cyan-400 font-medium">
-                              €{totalPayments.toFixed(2)}
-                            </span>
+                            {isAdmin && (
+                              <span className="text-xs px-2 py-1 rounded-md bg-cyan-500/10 text-cyan-400 font-medium">
+                                €{totalPayments.toFixed(2)}
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="px-4 py-3.5 text-slate-300">{toDate(c.startDate)?.toLocaleDateString('it-IT') || 'N/D'}</td>
@@ -1260,14 +1288,16 @@ export default function Clients() {
                             >
                               <FilePenLine size={16}/>
                             </button>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setClientToDelete(c); }}
-                              className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700/50 rounded-lg transition-all"
-                              title="Elimina"
-                            >
-                              <Trash2 size={16}/>
-                            </button>
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setClientToDelete(c); }}
+                                className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700/50 rounded-lg transition-all"
+                                title="Elimina"
+                              >
+                                <Trash2 size={16}/>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1276,7 +1306,7 @@ export default function Clients() {
                   {filteredAndSortedClients.length === 0 && (
                     <tr>
                       <td colSpan="5" className="py-12">
-                        <EmptyClients onAddClient={() => navigate('/new-client')} />
+                        <EmptyClients onAddClient={isAdmin ? () => navigate('/new-client') : null} />
                       </td>
                     </tr>
                   )}
@@ -1313,8 +1343,10 @@ export default function Clients() {
                       <p className="text-xs text-slate-500">{c.phone || 'N/D'}</p>
                     </div>
                     <div className="flex gap-1">
-                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/client/${c.id}`); }} className="text-xs text-cyan-400 hover:text-cyan-300">Dettagli</button>
-                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setClientToDelete(c); }} className="text-xs text-red-400 hover:text-red-300">Elimina</button>
+                      <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(getClientPath(c.id)); }} className="text-xs text-cyan-400 hover:text-cyan-300">Dettagli</button>
+                      {isAdmin && (
+                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setClientToDelete(c); }} className="text-xs text-red-400 hover:text-red-300">Elimina</button>
+                      )}
                     </div>
                   </div>
 
@@ -1333,7 +1365,9 @@ export default function Clients() {
                         </span>
                       </div>
                     )}
-                    <div className="flex justify-between"><span className="text-slate-400">Pagamenti</span><span className="font-medium text-cyan-400">€{totalPayments.toFixed(2)}</span></div>
+                    {isAdmin && (
+                      <div className="flex justify-between"><span className="text-slate-400">Pagamenti</span><span className="font-medium text-cyan-400">€{totalPayments.toFixed(2)}</span></div>
+                    )}
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-white/10"><AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} /></div>
@@ -1418,12 +1452,12 @@ export default function Clients() {
                     </div>
                   }
                   subtitle={client.email}
-                  badge={
+                  badge={isAdmin ? (
                     <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-full text-xs font-bold">
                       €{(paymentsTotals[client.id] || 0).toFixed(0)}
                     </span>
-                  }
-                  onClick={() => navigate(`/client/${client.id}`)}
+                  ) : null}
+                  onClick={() => navigate(getClientPath(client.id))}
                   actions={
                     <>
                       <button
@@ -1517,10 +1551,12 @@ export default function Clients() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs px-2 py-1 rounded-full bg-cyan-900/40 text-cyan-300 border border-cyan-600/50">
-                          €{(paymentsTotals[c.id] ?? 0).toFixed(2)}
-                        </span>
-                        <button onClick={() => navigate(`/client/${c.id}`)} className="px-3 py-1.5 text-xs rounded-lg bg-rose-600 hover:bg-rose-700 text-white preserve-white transition-colors">
+                        {isAdmin && (
+                          <span className="text-xs px-2 py-1 rounded-full bg-cyan-900/40 text-cyan-300 border border-cyan-600/50">
+                            €{(paymentsTotals[c.id] ?? 0).toFixed(2)}
+                          </span>
+                        )}
+                        <button onClick={() => navigate(getClientPath(c.id))} className="px-3 py-1.5 text-xs rounded-lg bg-rose-600 hover:bg-rose-700 text-white preserve-white transition-colors">
                           Dettagli
                         </button>
                       </div>

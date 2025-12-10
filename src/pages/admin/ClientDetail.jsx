@@ -44,7 +44,9 @@ import {
   MessageCircle,
   Heart,
   Dumbbell,
-  UtensilsCrossed
+  UtensilsCrossed,
+  CalendarClock,
+  XCircle
 } from 'lucide-react';
 import { uploadToR2 } from '../../cloudflareStorage';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
@@ -736,6 +738,11 @@ export default function ClientDetail({ role: propRole }) {
   });
   const [uploadingCheckPhoto, setUploadingCheckPhoto] = useState(null);
   const photoInputRef = useRef(null);
+  
+  // State per schede
+  const [schedaAllenamento, setSchedaAllenamento] = useState(null);
+  const [schedaAlimentazione, setSchedaAlimentazione] = useState(null);
+  const [schedeLoading, setSchedeLoading] = useState(true);
 
   // Determina ruolo: prop > sessionStorage > localStorage
   // Se propRole è passato dalla route (es. role="coach"), usalo sempre
@@ -838,7 +845,23 @@ export default function ClientDetail({ role: propRole }) {
       setSubcollectionRates(ratesData);
     }, (err) => console.error('Errore caricamento rates:', err));
 
-    return () => { unsubClient(); unsubAnamnesi(); unsubChecks(); unsubPayments(); unsubRates(); };
+    // Carica scheda allenamento
+    const schedaAllenRef = getTenantDoc(db, 'schede_allenamento', clientId);
+    const unsubSchedaAllen = onSnapshot(schedaAllenRef, (docSnap) => {
+      setSchedaAllenamento(docSnap.exists() ? docSnap.data() : null);
+      setSchedeLoading(false);
+    }, (err) => {
+      console.error('Errore caricamento scheda allenamento:', err);
+      setSchedeLoading(false);
+    });
+
+    // Carica scheda alimentazione
+    const schedaAlimRef = getTenantDoc(db, 'schede_alimentazione', clientId);
+    const unsubSchedaAlim = onSnapshot(schedaAlimRef, (docSnap) => {
+      setSchedaAlimentazione(docSnap.exists() ? docSnap.data() : null);
+    }, (err) => console.error('Errore caricamento scheda alimentazione:', err));
+
+    return () => { unsubClient(); unsubAnamnesi(); unsubChecks(); unsubPayments(); unsubRates(); unsubSchedaAllen(); unsubSchedaAlim(); };
   }, [clientId, navigate]);
 
   // Carica rate legacy dal campo client.rate
@@ -1906,46 +1929,178 @@ export default function ClientDetail({ role: propRole }) {
             {activeTab === 'schede' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Card Scheda Allenamento */}
-                <div 
-                  onClick={() => navigate(`/scheda-allenamento/${clientId}`)}
-                  className="bg-gradient-to-br from-blue-900/40 to-slate-800/40 border border-blue-600/30 rounded-2xl p-6 cursor-pointer hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all group"
-                >
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-xl bg-blue-600/20 flex items-center justify-center">
-                      <Dumbbell className="text-blue-400" size={28} />
+                {(() => {
+                  // Verifica se ci sono esercizi in almeno un giorno
+                  const giorni = schedaAllenamento?.giorni;
+                  const hasEsercizi = giorni && Object.values(giorni).some(g => g?.esercizi && g.esercizi.length > 0);
+                  const hasScheda = schedaAllenamento && hasEsercizi;
+                  const scadenza = client?.schedaAllenamento?.scadenza;
+                  const scadenzaDate = scadenza?.toDate ? scadenza.toDate() : (scadenza ? new Date(scadenza) : null);
+                  const now = new Date();
+                  const isScaduta = scadenzaDate && scadenzaDate < now;
+                  const giorniRimanenti = scadenzaDate ? Math.ceil((scadenzaDate - now) / (1000 * 60 * 60 * 24)) : null;
+                  const durataSettimane = schedaAllenamento?.durataSettimane;
+                  const createdAt = schedaAllenamento?.createdAt || schedaAllenamento?.updatedAt;
+                  const createdDate = createdAt?.toDate ? createdAt.toDate() : (createdAt ? new Date(createdAt) : null);
+                  
+                  return (
+                    <div 
+                      onClick={() => navigate(isCoach ? `/coach/scheda-allenamento/${clientId}` : `/scheda-allenamento/${clientId}`)}
+                      className="bg-gradient-to-br from-blue-900/40 to-slate-800/40 border border-blue-600/30 rounded-2xl p-6 cursor-pointer hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all group"
+                    >
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-14 h-14 rounded-xl bg-blue-600/20 flex items-center justify-center relative">
+                          <Dumbbell className="text-blue-400" size={28} />
+                          {hasScheda && (
+                            <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${isScaduta ? 'bg-rose-500' : 'bg-emerald-500'}`}>
+                              {isScaduta ? <XCircle size={12} className="text-white" /> : <Check size={12} className="text-white" />}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-white">Scheda Allenamento</h3>
+                          {schedeLoading ? (
+                            <p className="text-slate-400 text-sm">Caricamento...</p>
+                          ) : hasScheda ? (
+                            <p className={`text-sm ${isScaduta ? 'text-rose-400' : giorniRimanenti !== null && giorniRimanenti <= 7 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                              {isScaduta 
+                                ? `Scaduta da ${Math.abs(giorniRimanenti)} giorni` 
+                                : giorniRimanenti !== null 
+                                  ? `${giorniRimanenti} giorni rimanenti` 
+                                  : 'Scheda attiva'}
+                            </p>
+                          ) : (
+                            <p className="text-amber-400 text-sm">Nessuna scheda creata</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Dettagli scheda */}
+                      {hasScheda && !schedeLoading && (
+                        <div className="space-y-2 mb-4 bg-slate-900/50 rounded-lg p-3">
+                          {createdDate && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar size={14} className="text-slate-500" />
+                              <span className="text-slate-400">Assegnata:</span>
+                              <span className="text-slate-200">{createdDate.toLocaleDateString('it-IT')}</span>
+                            </div>
+                          )}
+                          {durataSettimane && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Clock size={14} className="text-slate-500" />
+                              <span className="text-slate-400">Durata:</span>
+                              <span className="text-slate-200">{durataSettimane} settimane</span>
+                            </div>
+                          )}
+                          {scadenzaDate && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <CalendarClock size={14} className={isScaduta ? 'text-rose-500' : giorniRimanenti <= 7 ? 'text-amber-500' : 'text-emerald-500'} />
+                              <span className="text-slate-400">Scadenza:</span>
+                              <span className={isScaduta ? 'text-rose-400 font-medium' : giorniRimanenti <= 7 ? 'text-amber-400 font-medium' : 'text-emerald-400'}>
+                                {scadenzaDate.toLocaleDateString('it-IT')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-blue-400 text-sm group-hover:text-blue-300 transition-colors">
+                          {hasScheda ? 'Modifica scheda →' : 'Crea scheda →'}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-white">Scheda Allenamento</h3>
-                      <p className="text-slate-400 text-sm">Crea e gestisci il programma di allenamento</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-blue-400 text-sm group-hover:text-blue-300 transition-colors">
-                      Apri scheda →
-                    </span>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 {/* Card Scheda Alimentazione */}
-                <div 
-                  onClick={() => navigate(`/scheda-alimentazione/${clientId}`)}
-                  className="bg-gradient-to-br from-emerald-900/40 to-slate-800/40 border border-emerald-600/30 rounded-2xl p-6 cursor-pointer hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10 transition-all group"
-                >
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-xl bg-emerald-600/20 flex items-center justify-center">
-                      <UtensilsCrossed className="text-emerald-400" size={28} />
+                {(() => {
+                  // Verifica se ci sono alimenti in almeno un pasto di almeno un giorno
+                  const giorni = schedaAlimentazione?.giorni;
+                  const hasAlimenti = giorni && Object.values(giorni).some(g => 
+                    g?.pasti && g.pasti.some(p => p?.alimenti && p.alimenti.length > 0)
+                  );
+                  const hasScheda = schedaAlimentazione && hasAlimenti;
+                  const scadenza = client?.schedaAlimentazione?.scadenza;
+                  const scadenzaDate = scadenza?.toDate ? scadenza.toDate() : (scadenza ? new Date(scadenza) : null);
+                  const now = new Date();
+                  const isScaduta = scadenzaDate && scadenzaDate < now;
+                  const giorniRimanenti = scadenzaDate ? Math.ceil((scadenzaDate - now) / (1000 * 60 * 60 * 24)) : null;
+                  const durataSettimane = schedaAlimentazione?.durataSettimane;
+                  const createdAt = schedaAlimentazione?.createdAt;
+                  const updatedAt = schedaAlimentazione?.updatedAt;
+                  const dateToShow = updatedAt || createdAt;
+                  const dateObj = dateToShow?.toDate ? dateToShow.toDate() : (dateToShow ? new Date(dateToShow) : null);
+                  
+                  return (
+                    <div 
+                      onClick={() => navigate(isCoach ? `/coach/scheda-alimentazione/${clientId}` : `/scheda-alimentazione/${clientId}`)}
+                      className="bg-gradient-to-br from-emerald-900/40 to-slate-800/40 border border-emerald-600/30 rounded-2xl p-6 cursor-pointer hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10 transition-all group"
+                    >
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-14 h-14 rounded-xl bg-emerald-600/20 flex items-center justify-center relative">
+                          <UtensilsCrossed className="text-emerald-400" size={28} />
+                          {hasScheda && (
+                            <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${isScaduta ? 'bg-rose-500' : giorniRimanenti !== null && giorniRimanenti <= 7 ? 'bg-amber-500' : 'bg-emerald-500'}`}>
+                              {isScaduta ? <XCircle size={12} className="text-white" /> : <Check size={12} className="text-white" />}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-white">Scheda Alimentazione</h3>
+                          {schedeLoading ? (
+                            <p className="text-slate-400 text-sm">Caricamento...</p>
+                          ) : hasScheda ? (
+                            <p className={`text-sm ${isScaduta ? 'text-rose-400' : giorniRimanenti !== null && giorniRimanenti <= 7 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                              {isScaduta 
+                                ? `Scaduta da ${Math.abs(giorniRimanenti)} giorni` 
+                                : giorniRimanenti !== null 
+                                  ? `${giorniRimanenti} giorni rimanenti` 
+                                  : 'Scheda attiva'}
+                            </p>
+                          ) : (
+                            <p className="text-amber-400 text-sm">Nessuna scheda creata</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Dettagli scheda */}
+                      {hasScheda && !schedeLoading && (
+                        <div className="space-y-2 mb-4 bg-slate-900/50 rounded-lg p-3">
+                          {dateObj && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar size={14} className="text-slate-500" />
+                              <span className="text-slate-400">{updatedAt ? 'Aggiornata:' : 'Assegnata:'}</span>
+                              <span className="text-slate-200">{dateObj.toLocaleDateString('it-IT')}</span>
+                            </div>
+                          )}
+                          {durataSettimane && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Clock size={14} className="text-slate-500" />
+                              <span className="text-slate-400">Durata:</span>
+                              <span className="text-slate-200">{durataSettimane} settimane</span>
+                            </div>
+                          )}
+                          {scadenzaDate && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <CalendarClock size={14} className={isScaduta ? 'text-rose-500' : giorniRimanenti <= 7 ? 'text-amber-500' : 'text-emerald-500'} />
+                              <span className="text-slate-400">Scadenza:</span>
+                              <span className={isScaduta ? 'text-rose-400 font-medium' : giorniRimanenti <= 7 ? 'text-amber-400 font-medium' : 'text-emerald-400'}>
+                                {scadenzaDate.toLocaleDateString('it-IT')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-emerald-400 text-sm group-hover:text-emerald-300 transition-colors">
+                          {hasScheda ? 'Modifica scheda →' : 'Crea scheda →'}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-white">Scheda Alimentazione</h3>
-                      <p className="text-slate-400 text-sm">Crea e gestisci il piano alimentare</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-emerald-400 text-sm group-hover:text-emerald-300 transition-colors">
-                      Apri scheda →
-                    </span>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
             )}
 

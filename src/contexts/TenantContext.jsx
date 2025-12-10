@@ -160,16 +160,19 @@ export function TenantProvider({ children }) {
         const clientRef = doc(db, 'tenants', savedTenantId, 'clients', userId);
         const collabRef = doc(db, 'tenants', savedTenantId, 'collaboratori', userId);
         const adminRef = doc(db, 'tenants', savedTenantId, 'roles', 'admins');
+        const coachRef = doc(db, 'tenants', savedTenantId, 'roles', 'coaches');
         
-        const [clientDoc, collabDoc, adminDoc] = await Promise.all([
+        const [clientDoc, collabDoc, adminDoc, coachDoc] = await Promise.all([
           getDoc(clientRef).catch(() => ({ exists: () => false })),
           getDoc(collabRef).catch(() => ({ exists: () => false })),
-          getDoc(adminRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) }))
+          getDoc(adminRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) })),
+          getDoc(coachRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) }))
         ]);
 
         const isInTenant = clientDoc.exists() || 
                           collabDoc.exists() || 
-                          (adminDoc.exists() && adminDoc.data()?.uids?.includes(userId));
+                          (adminDoc.exists() && adminDoc.data()?.uids?.includes(userId)) ||
+                          (coachDoc.exists() && coachDoc.data()?.uids?.includes(userId));
 
         if (isInTenant) {
           console.log('✅ Tenant salvato confermato:', savedTenantId);
