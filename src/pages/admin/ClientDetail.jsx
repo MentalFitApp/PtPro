@@ -683,7 +683,7 @@ const RateTable = React.memo(({ rates, canEdit, onAdd, onUpdate, onDelete, showA
   );
 }, (prevProps, nextProps) => JSON.stringify(prevProps.rates) === JSON.stringify(nextProps.rates) && prevProps.canEdit === nextProps.canEdit && prevProps.showAmounts === nextProps.showAmounts);
 
-export default function ClientDetail() {
+export default function ClientDetail({ role: propRole }) {
   const { clientId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -723,10 +723,19 @@ export default function ClientDetail() {
   const [uploadingCheckPhoto, setUploadingCheckPhoto] = useState(null);
   const photoInputRef = useRef(null);
 
-  let userRole = null;
-  try { userRole = sessionStorage.getItem('app_role') || JSON.parse(localStorage.getItem('user'))?.role || null; } catch {}
+  // Determina ruolo: prop > sessionStorage > localStorage
+  let userRole = propRole || null;
+  if (!userRole) {
+    try { userRole = sessionStorage.getItem('app_role') || JSON.parse(localStorage.getItem('user'))?.role || null; } catch {}
+  }
   const isAdmin = userRole === 'admin';
   const isCoach = userRole === 'coach';
+  
+  // Permessi basati sul ruolo
+  const canManagePayments = isAdmin; // Solo admin può gestire pagamenti
+  const canDeleteClient = isAdmin;   // Solo admin può eliminare clienti
+  const canEditClient = isAdmin || isCoach; // Entrambi possono modificare
+  const backPath = isCoach ? '/coach/clients' : '/clients'; // Path di ritorno
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -738,7 +747,7 @@ export default function ClientDetail() {
   useEffect(() => {
     if (!clientId) {
       setError('ID cliente non valido.');
-      setTimeout(() => navigate('/clients'), 3000);
+      setTimeout(() => navigate(backPath), 3000);
       return;
     }
 
@@ -750,12 +759,12 @@ export default function ClientDetail() {
         updateStatoPercorso(clientId);
       } else {
         setError('Cliente non trovato.');
-        setTimeout(() => navigate('/clients'), 3000);
+        setTimeout(() => navigate(backPath), 3000);
       }
       setLoading(false);
     }, () => {
       setError('Errore caricamento.');
-      setTimeout(() => navigate('/clients'), 3000);
+      setTimeout(() => navigate(backPath), 3000);
       setLoading(false);
     });
 
@@ -999,7 +1008,7 @@ export default function ClientDetail() {
 
   const handleDelete = async () => {
     if (window.confirm(`Eliminare ${client?.name}?`)) {
-      try { await deleteDoc(getTenantDoc(db, 'clients', clientId)); navigate('/clients'); } catch { toast.error('Errore eliminazione.'); }
+      try { await deleteDoc(getTenantDoc(db, 'clients', clientId)); navigate(backPath); } catch { toast.error('Errore eliminazione.'); }
     }
   };
 
@@ -1230,13 +1239,15 @@ export default function ClientDetail() {
   if (error) return <div className="text-center text-red-400 p-8">{error}</div>;
   if (!client) return null;
 
-  const tabs = [
+  // Tabs - filtra 'payments' se non è admin
+  const allTabs = [
     { key: 'overview', label: 'Overview', icon: <FileText size={16} /> },
     { key: 'check', label: 'Check & Foto', icon: <Calendar size={16} /> },
-    { key: 'payments', label: 'Pagamenti', icon: <CreditCard size={16} /> },
+    { key: 'payments', label: 'Pagamenti', icon: <CreditCard size={16} />, adminOnly: true },
     { key: 'metrics', label: 'Metriche', icon: <BarChart3 size={16} /> },
     { key: 'anamnesi', label: 'Anamnesi', icon: <NotebookPen size={16} /> },
   ];
+  const tabs = allTabs.filter(tab => !tab.adminOnly || canManagePayments);
 
   const infoCard = (
     <UnifiedCard>
@@ -1747,7 +1758,7 @@ export default function ClientDetail() {
             {/* Header Section */}
             <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
               {/* Breadcrumb / Back button */}
-              <button onClick={() => navigate('/clients')} className="flex items-center gap-2 text-slate-400 hover:text-white mb-4 text-sm transition-colors">
+              <button onClick={() => navigate(backPath)} className="flex items-center gap-2 text-slate-400 hover:text-white mb-4 text-sm transition-colors">
                 <ArrowLeft size={16} /> Torna ai Clienti
               </button>
               
@@ -1778,10 +1789,10 @@ export default function ClientDetail() {
                   <QuickNotifyButton userId={clientId} userName={client.name} userType="client" />
                   {!isMobile && (
                     <>
-                      <button onClick={() => setShowEdit(true)} className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm transition-colors"><Edit size={16} /> Modifica</button>
-                      <button onClick={() => setShowRenewal(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-lg transition-colors"><Plus size={16} /> Rinnovo</button>
+                      {canEditClient && <button onClick={() => setShowEdit(true)} className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm transition-colors"><Edit size={16} /> Modifica</button>}
+                      {canManagePayments && <button onClick={() => setShowRenewal(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-lg transition-colors"><Plus size={16} /> Rinnovo</button>}
                       <button onClick={() => setShowExtend(true)} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm transition-colors"><CalendarDays size={16} /> Prolunga</button>
-                      <button onClick={handleDelete} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-sm transition-colors"><Trash2 size={16} /> Elimina</button>
+                      {canDeleteClient && <button onClick={handleDelete} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-sm transition-colors"><Trash2 size={16} /> Elimina</button>}
                     </>
                   )}
                 </div>
@@ -1866,10 +1877,10 @@ export default function ClientDetail() {
 
             {isMobile && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
-                <button onClick={() => setShowEdit(true)} className="px-3 py-2 border border-slate-700 bg-slate-900 text-slate-200 rounded-lg text-sm flex items-center justify-center gap-2"><Edit size={14} /> Modifica</button>
-                <button onClick={() => setShowRenewal(true)} className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm flex items-center justify-center gap-2"><Plus size={14} /> Rinnovo</button>
+                {canEditClient && <button onClick={() => setShowEdit(true)} className="px-3 py-2 border border-slate-700 bg-slate-900 text-slate-200 rounded-lg text-sm flex items-center justify-center gap-2"><Edit size={14} /> Modifica</button>}
+                {canManagePayments && <button onClick={() => setShowRenewal(true)} className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm flex items-center justify-center gap-2"><Plus size={14} /> Rinnovo</button>}
                 <button onClick={() => setShowExtend(true)} className="px-3 py-2 bg-cyan-600/80 text-white border border-cyan-500/60 rounded-lg text-sm flex items-center justify-center gap-2"><CalendarDays size={14} /> Prolunga</button>
-                <button onClick={handleDelete} className="px-3 py-2 bg-rose-600/80 text-white border border-rose-500/60 rounded-lg text-sm flex items-center justify-center gap-2"><Trash2 size={14} /> Elimina</button>
+                {canDeleteClient && <button onClick={handleDelete} className="px-3 py-2 bg-rose-600/80 text-white border border-rose-500/60 rounded-lg text-sm flex items-center justify-center gap-2"><Trash2 size={14} /> Elimina</button>}
               </div>
             )}
           </div>

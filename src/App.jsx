@@ -75,7 +75,7 @@ const CoachDashboard = React.lazy(() => import('./pages/coach/CoachDashboardNew'
 const CoachAnamnesi = React.lazy(() => import('./pages/coach/CoachAnamnesi'));
 const CoachUpdates = React.lazy(() => import('./pages/coach/CoachUpdates'));
 const CoachClients = React.lazy(() => import('./pages/coach/CoachClients'));
-const CoachClientDetail = React.lazy(() => import('./pages/coach/CoachClientDetail'));
+// CoachClientDetail rimosso - usiamo ClientDetail con role="coach"
 const CoachAnalytics = React.lazy(() => import('./components/admin/CoachAnalytics'));
 
 // Collaboratore Pages
@@ -470,7 +470,7 @@ export default function App() {
         <Route element={authInfo.isCoach ? <ProLayout /> : <Navigate to="/login" replace />}>
           <Route path="/coach" element={<CoachDashboard />} />
           <Route path="/coach/clients" element={<CoachClients />} />
-          <Route path="/coach/client/:id" element={<CoachClientDetail />} />
+          <Route path="/coach/client/:clientId" element={<ClientDetail role="coach" />} />
           <Route path="/coach/anamnesi" element={<CoachAnamnesi />} />
           <Route path="/coach/updates" element={<CoachUpdates />} />
           <Route path="/coach/analytics" element={<CoachAnalytics />} />
