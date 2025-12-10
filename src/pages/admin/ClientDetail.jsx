@@ -1,6 +1,6 @@
 // src/pages/admin/ClientDetail.jsx
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, onSnapshot, orderBy, query, updateDoc, deleteDoc, addDoc, setDoc, getDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,6 +32,7 @@ import {
   Tag,
   ClipboardList,
   Moon,
+  Monitor,
   NotebookPen,
   CheckCircle,
   Link2,
@@ -50,7 +51,9 @@ import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, CLIENT_STATUS_STYLES, CLIENT_ST
 import { db, toDate, updateStatoPercorso } from '../../firebase';
 import { getTenantDoc, getTenantSubcollection, CURRENT_TENANT_ID } from '../../config/tenant';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
+import { useUnreadAnamnesi, useUnreadChecks } from '../../hooks/useUnreadNotifications';
 import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
+import { formatDeviceInfo } from '../../utils/deviceInfo';
 import { useToast } from '../../contexts/ToastContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import ProgressCharts from '../../components/client/ProgressCharts';
@@ -690,8 +693,12 @@ const RateTable = React.memo(({ rates, canEdit, onAdd, onUpdate, onDelete, showA
 export default function ClientDetail({ role: propRole }) {
   const { clientId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'overview';
   const toast = useToast();
   const { formatWeight, formatLength, weightLabel, lengthLabel } = useUserPreferences();
+  const { markAsRead: markAnamnesiAsRead } = useUnreadAnamnesi();
+  const { markClientChecksAsRead } = useUnreadChecks();
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [checks, setChecks] = useState([]);
@@ -706,7 +713,7 @@ export default function ClientDetail({ role: propRole }) {
   const [editingPaymentIndex, setEditingPaymentIndex] = useState(null);
   const [showAmounts, setShowAmounts] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [legacyRates, setLegacyRates] = useState([]);  // Rate dal campo client.rate (legacy)
   const [subcollectionRates, setSubcollectionRates] = useState([]);  // Rate dalla subcollection rates
   const [zoomPhoto, setZoomPhoto] = useState({ open: false, url: '', alt: '' });
@@ -729,7 +736,8 @@ export default function ClientDetail({ role: propRole }) {
   const photoInputRef = useRef(null);
 
   // Determina ruolo: prop > sessionStorage > localStorage
-  let userRole = propRole || null;
+  // Se propRole è passato dalla route (es. role="coach"), usalo sempre
+  let userRole = propRole;
   if (!userRole) {
     try { userRole = sessionStorage.getItem('app_role') || JSON.parse(localStorage.getItem('user'))?.role || null; } catch {}
   }
@@ -741,6 +749,14 @@ export default function ClientDetail({ role: propRole }) {
   const canDeleteClient = isAdmin;   // Solo admin può eliminare clienti
   const canEditClient = isAdmin || isCoach; // Entrambi possono modificare
   const backPath = isCoach ? '/coach/clients' : '/clients'; // Path di ritorno
+
+  // Marca anamnesi e checks come letti quando si entra nella pagina del cliente
+  useEffect(() => {
+    if (clientId) {
+      markAnamnesiAsRead(clientId);
+      markClientChecksAsRead(clientId);
+    }
+  }, [clientId]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -922,9 +938,17 @@ export default function ClientDetail({ role: propRole }) {
   const paidFromRates = rates.filter(r => r.paid).reduce((sum, r) => sum + Number(r.amount || 0), 0);
   const paymentsPaid = paymentsFromSubcollection + paidFromRates;
   
-  // Totale = client.price se esiste, altrimenti somma rate, altrimenti somma pagamenti
+  // Totale = somma di tutti gli impegni:
+  // - Se ci sono rate: somma rate (rappresenta il piano di pagamento)
+  // - + pagamenti dalla subcollection (pagamenti extra/iniziali)
+  // - Se non ci sono rate né pagamenti: usa client.price
   const ratesTotalAmount = rates.reduce((sum, r) => sum + Number(r.amount || 0), 0);
-  const paymentsTotal = client?.price ? Number(client.price) : (ratesTotalAmount > 0 ? ratesTotalAmount : paymentsFromSubcollection);
+  const clientPrice = client?.price ? Number(client.price) : 0;
+  
+  // Totale = rate + pagamenti subcollection (entrambi contano)
+  // Se non ci sono né rate né pagamenti, usa client.price
+  const sumOfAll = ratesTotalAmount + paymentsFromSubcollection;
+  const paymentsTotal = sumOfAll > 0 ? sumOfAll : clientPrice;
   
   // Ultimo pagamento dalla lista rate pagate o pagamenti subcollection
   const paidRates = rates.filter(r => r.paid).sort((a, b) => (toDate(b.paidDate) || new Date(0)) - (toDate(a.paidDate) || new Date(0)));
@@ -1303,7 +1327,10 @@ export default function ClientDetail({ role: propRole }) {
             if (createdDate) return createdDate.toLocaleString('it-IT');
             return 'N/D';
           })()}`} />
-          <InfoField icon={DollarSign} value={`Prezzo: ${client.price ? `€${client.price}` : 'N/D'}`} />
+          {client.lastDevice && (
+            <InfoField icon={Monitor} value={`Dispositivo: ${formatDeviceInfo(client.lastDevice)}`} />
+          )}
+          {canManagePayments && <InfoField icon={DollarSign} value={`Prezzo: ${client.price ? `€${client.price}` : 'N/D'}`} />}
           <InfoField icon={FileText} value={`Anamnesi: ${anamnesi ? 'Compilata ✓' : 'Non inviata'}`} />
           <div className="flex items-center gap-2">
             <Tag size={16} className="text-slate-400" />
@@ -1829,7 +1856,7 @@ export default function ClientDetail({ role: propRole }) {
                 <div className="space-y-4">
                   {metricsCard}
                   {photosCard}
-                  {paymentsCard}
+                  {canManagePayments && paymentsCard}
                 </div>
               </div>
             )}

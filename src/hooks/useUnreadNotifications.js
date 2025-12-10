@@ -99,9 +99,10 @@ export function useUnreadMessages() {
 }
 
 // Hook per anamnesi non lette (per admin/coach)
+// Traccia per clientId dato che ogni cliente ha una sola anamnesi in /anamnesi/initial
 export function useUnreadAnamnesi() {
   const [unreadCount, setUnreadCount] = useState(0);
-  const [unreadIds, setUnreadIds] = useState([]);
+  const [unreadIds, setUnreadIds] = useState([]); // Array di clientId con anamnesi non lette
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -121,57 +122,89 @@ export function useUnreadAnamnesi() {
       return;
     }
 
-    // Legge gli ID già visti dal localStorage
+    // Legge i clientId le cui anamnesi sono già state viste
     const viewedKey = `viewed_anamnesi_${tenantId}_${user.uid}`;
-    const viewedIds = JSON.parse(localStorage.getItem(viewedKey) || '[]');
+    const viewedClientIds = JSON.parse(localStorage.getItem(viewedKey) || '[]');
 
-    // Query per anamnesi
-    const anamnesiRef = collection(db, `tenants/${tenantId}/anamnesi`);
-    
-    const unsubscribe = onSnapshot(anamnesiRef, 
-      (snapshot) => {
+    // Legge il timestamp dell'ultimo aggiornamento per ogni anamnesi vista
+    const timestampsKey = `anamnesi_timestamps_${tenantId}_${user.uid}`;
+    const viewedTimestamps = JSON.parse(localStorage.getItem(timestampsKey) || '{}');
+
+    // Per ora carichiamo periodicamente - questo potrebbe essere ottimizzato
+    const loadAnamnesi = async () => {
+      try {
+        const { getDocs, collection, doc, getDoc } = await import('firebase/firestore');
+        const clientsRef = collection(db, `tenants/${tenantId}/clients`);
+        const clientsSnap = await getDocs(clientsRef);
+        
         const unread = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          const id = doc.id;
-          // Considera non letta se non è nella lista dei visti E ha data recente (ultimi 7 giorni)
-          const createdAt = data.createdAt?.toDate?.() || data.updatedAt?.toDate?.() || new Date(0);
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        for (const clientDoc of clientsSnap.docs) {
+          const clientData = clientDoc.data();
+          if (clientData.isOldClient) continue;
           
-          if (!viewedIds.includes(id) && createdAt > sevenDaysAgo) {
-            unread.push(id);
+          const anamRef = doc(db, `tenants/${tenantId}/clients/${clientDoc.id}/anamnesi/initial`);
+          const anamSnap = await getDoc(anamRef);
+          
+          if (anamSnap.exists()) {
+            const anamData = anamSnap.data();
+            const updatedAt = anamData.submittedAt?.toDate?.() || anamData.updatedAt?.toDate?.() || anamData.completedAt?.toDate?.() || anamData.createdAt?.toDate?.() || new Date(0);
+            
+            // È non letta se:
+            // 1. Il clientId non è nella lista dei visti, OPPURE
+            // 2. L'anamnesi è stata aggiornata dopo l'ultimo timestamp visto
+            const lastViewedTimestamp = viewedTimestamps[clientDoc.id] || 0;
+            const isUpdatedAfterView = updatedAt.getTime() > lastViewedTimestamp;
+            
+            if (updatedAt > sevenDaysAgo && (!viewedClientIds.includes(clientDoc.id) || isUpdatedAfterView)) {
+              unread.push(clientDoc.id);
+            }
           }
-        });
+        }
+        
         setUnreadIds(unread);
         setUnreadCount(unread.length);
         setLoading(false);
-      },
-      (error) => {
+      } catch (error) {
         console.error('Errore caricamento anamnesi:', error);
         setUnreadCount(0);
         setUnreadIds([]);
         setLoading(false);
       }
-    );
-
-    return () => unsubscribe();
+    };
+    
+    loadAnamnesi();
+    
+    // Ricarica ogni 5 minuti
+    const interval = setInterval(loadAnamnesi, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
   }, []);
 
-  const markAsRead = (anamnesiId) => {
+  const markAsRead = (clientId) => {
     const user = auth.currentUser;
     const tenantId = localStorage.getItem('tenantId');
     if (!user || !tenantId) return;
 
     const viewedKey = `viewed_anamnesi_${tenantId}_${user.uid}`;
-    const viewedIds = JSON.parse(localStorage.getItem(viewedKey) || '[]');
+    const viewedClientIds = JSON.parse(localStorage.getItem(viewedKey) || '[]');
     
-    if (!viewedIds.includes(anamnesiId)) {
-      viewedIds.push(anamnesiId);
-      localStorage.setItem(viewedKey, JSON.stringify(viewedIds));
-      setUnreadIds(prev => prev.filter(id => id !== anamnesiId));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+    const timestampsKey = `anamnesi_timestamps_${tenantId}_${user.uid}`;
+    const viewedTimestamps = JSON.parse(localStorage.getItem(timestampsKey) || '{}');
+    
+    if (!viewedClientIds.includes(clientId)) {
+      viewedClientIds.push(clientId);
+      localStorage.setItem(viewedKey, JSON.stringify(viewedClientIds));
     }
+    
+    // Salva il timestamp corrente per questo clientId
+    viewedTimestamps[clientId] = Date.now();
+    localStorage.setItem(timestampsKey, JSON.stringify(viewedTimestamps));
+    
+    setUnreadIds(prev => prev.filter(id => id !== clientId));
+    setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
   const markAllAsRead = () => {
@@ -180,8 +213,17 @@ export function useUnreadAnamnesi() {
     if (!user || !tenantId) return;
 
     const viewedKey = `viewed_anamnesi_${tenantId}_${user.uid}`;
+    const timestampsKey = `anamnesi_timestamps_${tenantId}_${user.uid}`;
+    
     const allIds = [...new Set([...JSON.parse(localStorage.getItem(viewedKey) || '[]'), ...unreadIds])];
     localStorage.setItem(viewedKey, JSON.stringify(allIds));
+    
+    // Aggiorna tutti i timestamp
+    const viewedTimestamps = JSON.parse(localStorage.getItem(timestampsKey) || '{}');
+    const now = Date.now();
+    unreadIds.forEach(id => { viewedTimestamps[id] = now; });
+    localStorage.setItem(timestampsKey, JSON.stringify(viewedTimestamps));
+    
     setUnreadIds([]);
     setUnreadCount(0);
   };
@@ -190,9 +232,10 @@ export function useUnreadAnamnesi() {
 }
 
 // Hook per check non letti (per admin/coach)
+// Traccia per checkId completo (clientId_checkId)
 export function useUnreadChecks() {
   const [unreadCount, setUnreadCount] = useState(0);
-  const [unreadIds, setUnreadIds] = useState([]);
+  const [unreadIds, setUnreadIds] = useState([]); // Array di checkId con format "clientId_checkDocId"
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -216,37 +259,53 @@ export function useUnreadChecks() {
     const viewedKey = `viewed_checks_${tenantId}_${user.uid}`;
     const viewedIds = JSON.parse(localStorage.getItem(viewedKey) || '[]');
 
-    // Query per check (collectionGroup per tutte le sottocollection)
-    const checksRef = collection(db, `tenants/${tenantId}/checks`);
-    
-    const unsubscribe = onSnapshot(checksRef, 
-      (snapshot) => {
+    // Carica checks da tutti i clienti
+    const loadChecks = async () => {
+      try {
+        const { getDocs, collection, query, orderBy, limit } = await import('firebase/firestore');
+        const clientsRef = collection(db, `tenants/${tenantId}/clients`);
+        const clientsSnap = await getDocs(clientsRef);
+        
         const unread = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          const id = doc.id;
-          // Considera non letto se non è nella lista dei visti E ha data recente (ultimi 7 giorni)
-          const createdAt = data.createdAt?.toDate?.() || data.date?.toDate?.() || new Date(0);
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        for (const clientDoc of clientsSnap.docs) {
+          const clientData = clientDoc.data();
+          if (clientData.isOldClient) continue;
           
-          if (!viewedIds.includes(id) && createdAt > sevenDaysAgo) {
-            unread.push(id);
-          }
-        });
+          const checksRef = collection(db, `tenants/${tenantId}/clients/${clientDoc.id}/checks`);
+          const checksQuery = query(checksRef, orderBy('createdAt', 'desc'), limit(10));
+          const checksSnap = await getDocs(checksQuery);
+          
+          checksSnap.docs.forEach(checkDoc => {
+            const checkData = checkDoc.data();
+            const fullId = `${clientDoc.id}_${checkDoc.id}`;
+            const createdAt = checkData.createdAt?.toDate?.() || checkData.date?.toDate?.() || new Date(0);
+            
+            if (createdAt > sevenDaysAgo && !viewedIds.includes(fullId)) {
+              unread.push(fullId);
+            }
+          });
+        }
+        
         setUnreadIds(unread);
         setUnreadCount(unread.length);
         setLoading(false);
-      },
-      (error) => {
+      } catch (error) {
         console.error('Errore caricamento checks:', error);
         setUnreadCount(0);
         setUnreadIds([]);
         setLoading(false);
       }
-    );
-
-    return () => unsubscribe();
+    };
+    
+    loadChecks();
+    
+    // Ricarica ogni 5 minuti
+    const interval = setInterval(loadChecks, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const markAsRead = (checkId) => {
@@ -264,6 +323,25 @@ export function useUnreadChecks() {
       setUnreadCount(prev => Math.max(0, prev - 1));
     }
   };
+  
+  // Segna tutti i check di un cliente come letti
+  const markClientChecksAsRead = (clientId) => {
+    const user = auth.currentUser;
+    const tenantId = localStorage.getItem('tenantId');
+    if (!user || !tenantId) return;
+
+    const viewedKey = `viewed_checks_${tenantId}_${user.uid}`;
+    const viewedIds = JSON.parse(localStorage.getItem(viewedKey) || '[]');
+    
+    // Trova tutti gli unreadIds che appartengono a questo cliente
+    const clientCheckIds = unreadIds.filter(id => id.startsWith(`${clientId}_`));
+    
+    const newViewedIds = [...new Set([...viewedIds, ...clientCheckIds])];
+    localStorage.setItem(viewedKey, JSON.stringify(newViewedIds));
+    
+    setUnreadIds(prev => prev.filter(id => !id.startsWith(`${clientId}_`)));
+    setUnreadCount(prev => Math.max(0, prev - clientCheckIds.length));
+  };
 
   const markAllAsRead = () => {
     const user = auth.currentUser;
@@ -277,7 +355,7 @@ export function useUnreadChecks() {
     setUnreadCount(0);
   };
 
-  return { unreadCount, unreadIds, loading, markAsRead, markAllAsRead };
+  return { unreadCount, unreadIds, loading, markAsRead, markClientChecksAsRead, markAllAsRead };
 }
 
 export default useUnreadNotifications;

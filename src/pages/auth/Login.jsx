@@ -6,6 +6,7 @@ import { doc, getDoc, updateDoc, serverTimestamp, setDoc, collection, getDocs } 
 import { Lock, Mail, Eye, EyeOff, ArrowLeft, Zap, Crown, LogIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getTenantDoc, setCurrentTenantId, getCurrentTenantId, DEFAULT_TENANT_ID } from '../../config/tenant';
+import { getDeviceInfo } from '../../utils/deviceInfo';
 
 /**
  * Cerca in quale tenant esiste l'utente
@@ -256,10 +257,14 @@ const Login = () => {
       const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
       const isCollaboratore = collabDoc.exists();
 
-      // Aggiorna lastActive nel documento client
+      // Aggiorna lastActive e deviceInfo nel documento client
       if (isClient && clientDoc.exists()) {
         try {
-          await updateDoc(clientDocRef, { lastActive: serverTimestamp() });
+          const deviceInfo = getDeviceInfo();
+          await updateDoc(clientDocRef, { 
+            lastActive: serverTimestamp(),
+            lastDevice: deviceInfo
+          });
         } catch (e) {
           console.debug('Could not update lastActive:', e.message);
         }
@@ -332,10 +337,14 @@ const Login = () => {
       const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
       const isCollaboratore = collabDoc.exists();
 
-      // Aggiorna lastActive nel documento client
+      // Aggiorna lastActive e deviceInfo nel documento client
       if (isClient && clientDoc.exists()) {
         try {
-          await updateDoc(clientDocRef, { lastActive: serverTimestamp() });
+          const deviceInfo = getDeviceInfo();
+          await updateDoc(clientDocRef, { 
+            lastActive: serverTimestamp(),
+            lastDevice: deviceInfo
+          });
         } catch (e) {
           console.debug('Could not update lastActive:', e.message);
         }

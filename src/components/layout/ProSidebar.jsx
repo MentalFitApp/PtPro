@@ -42,9 +42,10 @@ const getNavConfig = (role, isSuperAdmin = false) => {
         {
           title: 'Contenuti',
           items: [
+            { to: '/admin/checks', icon: Activity, label: 'Check', hasBadge: 'checks' },
+            { to: '/admin/anamnesi', icon: FileText, label: 'Anamnesi', hasBadge: 'anamnesi' },
             { to: '/courses', icon: BookOpen, label: 'Corsi' },
             { to: '/community', icon: Users, label: 'Community' },
-            { to: '/updates', icon: BellRing, label: 'Novità' },
           ]
         },
         {
@@ -79,7 +80,8 @@ const getNavConfig = (role, isSuperAdmin = false) => {
         {
           title: 'Gestione',
           items: [
-            { to: '/coach/anamnesi', icon: FileText, label: 'Anamnesi' },
+            { to: '/coach/checks', icon: Activity, label: 'Check', hasBadge: 'checks' },
+            { to: '/coach/anamnesi', icon: FileText, label: 'Anamnesi', hasBadge: 'anamnesi' },
             { to: '/coach/schede', icon: Target, label: 'Schede' },
           ]
         },
@@ -384,9 +386,10 @@ export const ProSidebar = ({
     // Badge per anamnesi (admin e coach)
     '/coach/anamnesi': unreadAnamnesi,
     '/admin/anamnesi': unreadAnamnesi,
-    // Badge per check/statistiche
-    '/statistiche': unreadChecks,
+    // Badge per check
+    '/admin/checks': unreadChecks,
     '/coach/checks': unreadChecks,
+    '/statistiche': unreadChecks,
   };
 
   // Carica branding

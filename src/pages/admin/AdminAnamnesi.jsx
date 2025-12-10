@@ -5,6 +5,7 @@ import { db } from '../../firebase.js';
 import { getTenantSubcollection } from '../../config/tenant';
 import { ArrowLeft, FilePenLine, Camera } from 'lucide-react';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
+import { useUnreadAnamnesi } from '../../hooks/useUnreadNotifications';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- COMPONENTI UI RIUTILIZZABILI ---
@@ -44,11 +45,19 @@ const ViewPhotos = ({ urls }) => (
 );
 
 const AdminAnamnesi = () => {
-  const { uid } = useParams(); // UID del cliente dalla URL
+  const { id: uid } = useParams(); // UID del cliente dalla URL (param è :id)
   const navigate = useNavigate();
   const [anamnesiData, setAnamnesiData] = useState(null);
   const [loading, setLoading] = useState(true);
   const { formatWeight, formatLength, weightLabel, lengthLabel } = useUserPreferences();
+  const { markAsRead: markAnamnesiAsRead } = useUnreadAnamnesi();
+
+  // Marca come letta quando si apre la pagina
+  useEffect(() => {
+    if (uid) {
+      markAnamnesiAsRead(uid);
+    }
+  }, [uid]);
 
   useEffect(() => {
     const fetchAnamnesi = async () => {

@@ -37,6 +37,8 @@ const ClientDetail = React.lazy(() => import('./pages/admin/ClientDetail'));
 const EditClient = React.lazy(() => import('./pages/admin/EditClient'));
 const NewClient = React.lazy(() => import('./pages/admin/NewClient'));
 const AdminAnamnesi = React.lazy(() => import('./pages/admin/AdminAnamnesi'));
+const AdminChecksList = React.lazy(() => import('./pages/admin/AdminChecksList'));
+const AdminAnamnesiList = React.lazy(() => import('./pages/admin/AdminAnamnesiList'));
 const BusinessHistory = React.lazy(() => import('./pages/admin/BusinessHistory'));
 const Collaboratori = React.lazy(() => import('./pages/admin/Collaboratori'));
 const CollaboratoreDetail = React.lazy(() => import('./pages/admin/CollaboratoreDetail'));
@@ -73,6 +75,8 @@ const ClientSchedaAllenamento = React.lazy(() => import('./pages/client/ClientSc
 // Coach Pages
 const CoachDashboard = React.lazy(() => import('./pages/coach/CoachDashboardNew'));
 const CoachAnamnesi = React.lazy(() => import('./pages/coach/CoachAnamnesi'));
+const CoachAnamnesiList = React.lazy(() => import('./pages/coach/CoachAnamnesiList'));
+const CoachChecksList = React.lazy(() => import('./pages/coach/CoachChecksList'));
 const CoachUpdates = React.lazy(() => import('./pages/coach/CoachUpdates'));
 const CoachClients = React.lazy(() => import('./pages/coach/CoachClients'));
 // CoachClientDetail rimosso - usiamo ClientDetail con role="coach"
@@ -308,6 +312,7 @@ export default function App() {
               location.pathname.startsWith('/coach/client/') ||
               location.pathname === '/coach/analytics' ||
               location.pathname === '/coach/anamnesi' ||
+              location.pathname === '/coach/checks' ||
               location.pathname === '/coach/updates' ||
               location.pathname === '/coach/chat' ||
               location.pathname.startsWith('/coach/client/') ||
@@ -422,6 +427,8 @@ export default function App() {
           <Route path="/client/:clientId" element={<ClientDetail />} />
           <Route path="/edit/:id" element={<EditClient />} />
           <Route path="/updates" element={<Updates />} />
+          <Route path="/admin/checks" element={<AdminChecksList />} />
+          <Route path="/admin/anamnesi" element={<AdminAnamnesiList />} />
           <Route path="/chat" element={<ModernChat />} />
           <Route path="/client/:id/anamnesi" element={<AdminAnamnesi />} />
           <Route path="/collaboratori" element={<Collaboratori />} />
@@ -471,7 +478,9 @@ export default function App() {
           <Route path="/coach" element={<CoachDashboard />} />
           <Route path="/coach/clients" element={<CoachClients />} />
           <Route path="/coach/client/:clientId" element={<ClientDetail role="coach" />} />
-          <Route path="/coach/anamnesi" element={<CoachAnamnesi />} />
+          <Route path="/coach/client/:id/anamnesi" element={<AdminAnamnesi />} />
+          <Route path="/coach/anamnesi" element={<CoachAnamnesiList />} />
+          <Route path="/coach/checks" element={<CoachChecksList />} />
           <Route path="/coach/updates" element={<CoachUpdates />} />
           <Route path="/coach/analytics" element={<CoachAnalytics />} />
           <Route path="/coach/chat" element={<ModernChat />} />
