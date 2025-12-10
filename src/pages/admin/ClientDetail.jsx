@@ -42,7 +42,9 @@ import {
   TrendingUp,
   ArrowLeftRight,
   MessageCircle,
-  Heart
+  Heart,
+  Dumbbell,
+  UtensilsCrossed
 } from 'lucide-react';
 import { uploadToR2 } from '../../cloudflareStorage';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
@@ -1273,6 +1275,7 @@ export default function ClientDetail({ role: propRole }) {
     { key: 'overview', label: 'Overview', icon: <FileText size={16} /> },
     { key: 'habits', label: 'Abitudini', icon: <Heart size={16} /> },
     { key: 'check', label: 'Check & Foto', icon: <Calendar size={16} /> },
+    { key: 'schede', label: 'Schede', icon: <Dumbbell size={16} /> },
     { key: 'payments', label: 'Pagamenti', icon: <CreditCard size={16} />, adminOnly: true },
     { key: 'metrics', label: 'Metriche', icon: <BarChart3 size={16} /> },
     { key: 'anamnesi', label: 'Anamnesi', icon: <NotebookPen size={16} /> },
@@ -1899,6 +1902,52 @@ export default function ClientDetail({ role: propRole }) {
               </div>
             )}
             {activeTab === 'metrics' && metricsCard}
+
+            {activeTab === 'schede' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Card Scheda Allenamento */}
+                <div 
+                  onClick={() => navigate(`/scheda-allenamento/${clientId}`)}
+                  className="bg-gradient-to-br from-blue-900/40 to-slate-800/40 border border-blue-600/30 rounded-2xl p-6 cursor-pointer hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all group"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-14 h-14 rounded-xl bg-blue-600/20 flex items-center justify-center">
+                      <Dumbbell className="text-blue-400" size={28} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Scheda Allenamento</h3>
+                      <p className="text-slate-400 text-sm">Crea e gestisci il programma di allenamento</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-blue-400 text-sm group-hover:text-blue-300 transition-colors">
+                      Apri scheda →
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card Scheda Alimentazione */}
+                <div 
+                  onClick={() => navigate(`/scheda-alimentazione/${clientId}`)}
+                  className="bg-gradient-to-br from-emerald-900/40 to-slate-800/40 border border-emerald-600/30 rounded-2xl p-6 cursor-pointer hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10 transition-all group"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-14 h-14 rounded-xl bg-emerald-600/20 flex items-center justify-center">
+                      <UtensilsCrossed className="text-emerald-400" size={28} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Scheda Alimentazione</h3>
+                      <p className="text-slate-400 text-sm">Crea e gestisci il piano alimentare</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-emerald-400 text-sm group-hover:text-emerald-300 transition-colors">
+                      Apri scheda →
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {activeTab === 'anamnesi' && anamnesiCard}
 
