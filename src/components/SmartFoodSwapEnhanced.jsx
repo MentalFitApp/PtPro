@@ -1,18 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Check, X, Info, ChevronDown, Search, AlertTriangle } from 'lucide-react';
-import { db } from '../firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { RefreshCw, Check, X, Info, ChevronDown, Search, AlertTriangle, Star, Clock, Sparkles, TrendingUp, Filter } from 'lucide-react';
+import { db, auth } from '../firebase';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { getTenantSubcollection, CURRENT_TENANT_ID } from '../config/tenant';
 import { useToast } from '../contexts/ToastContext';
 
 /**
- * Smart Food Swap Enhanced Component
- * Uses platform_foods database from Firestore
- * Validates macros within allowed range (±10%)
- * Smart categorization: only shows foods of the same nutritional category
+ * Smart Food Swap Enhanced Component v2.0
+ * 
+ * MIGLIORAMENTI:
+ * - Caching alimenti in memoria (evita ricaricamenti)
+ * - Algoritmo match intelligente con score 0-100%
+ * - Considera allergie/intolleranze del cliente
+ * - Ricerca fuzzy (trova anche con typo)
+ * - Ottimizzazione grammi (arrotondamento umano)
+ * - Storico sostituzioni recenti
+ * - Ordinamento per "best fit"
  */
 
-// Categorie nutrizionali intelligenti con regole precise
+// === CACHE GLOBALE ALIMENTI ===
+let foodsCache = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minuti
+
+// === CATEGORIE NUTRIZIONALI ===
 const NUTRITIONAL_CATEGORIES = {
   CARNI_BIANCHE: {
     name: 'Carni Bianche',
@@ -142,6 +154,75 @@ const NUTRITIONAL_CATEGORIES = {
   }
 };
 
+// === PAROLE CHIAVE ALLERGIE/INTOLLERANZE ===
+const ALLERGY_KEYWORDS = {
+  'lattosio': ['latte', 'latticini', 'yogurt', 'formaggio', 'mozzarella', 'ricotta', 'panna', 'burro', 'gelato'],
+  'glutine': ['pasta', 'pane', 'farina', 'grano', 'orzo', 'segale', 'farro', 'crackers', 'biscotti', 'pizza'],
+  'uova': ['uova', 'uovo', 'albume', 'tuorlo', 'maionese'],
+  'frutta a guscio': ['noci', 'mandorle', 'nocciole', 'pistacchi', 'anacardi', 'arachidi'],
+  'arachidi': ['arachidi', 'burro di arachidi'],
+  'soia': ['soia', 'tofu', 'edamame', 'tempeh', 'latte di soia'],
+  'pesce': ['pesce', 'salmone', 'tonno', 'merluzzo', 'orata', 'branzino', 'sgombro'],
+  'crostacei': ['gamberi', 'aragosta', 'granchio', 'scampi', 'astice'],
+  'molluschi': ['cozze', 'vongole', 'calamari', 'polpo', 'seppia', 'ostriche'],
+  'sedano': ['sedano'],
+  'senape': ['senape'],
+  'sesamo': ['sesamo', 'tahini'],
+};
+
+// === FUNZIONI UTILITY ===
+
+// Ricerca Fuzzy - trova match anche con typo
+const fuzzyMatch = (text, pattern) => {
+  if (!text || !pattern) return false;
+  const textLower = text.toLowerCase();
+  const patternLower = pattern.toLowerCase();
+  
+  // Match esatto
+  if (textLower.includes(patternLower)) return true;
+  
+  // Varianti comuni
+  const variants = {
+    'yogurt': ['yoghurt', 'iogurt'],
+    'pollo': ['polo', 'polletto'],
+    'tacchino': ['tachino'],
+    'mozzarella': ['mozarella', 'mozzerella'],
+    'parmigiano': ['parmigiano reggiano', 'grana'],
+    'prosciutto': ['proscuitto', 'prosciuto'],
+  };
+  
+  for (const [key, alts] of Object.entries(variants)) {
+    if (patternLower === key || alts.some(a => patternLower.includes(a))) {
+      if (textLower.includes(key) || alts.some(a => textLower.includes(a))) {
+        return true;
+      }
+    }
+  }
+  
+  // Levenshtein distance semplificato per typo
+  if (patternLower.length >= 4) {
+    let matches = 0;
+    for (let i = 0; i < patternLower.length; i++) {
+      if (textLower.includes(patternLower[i])) matches++;
+    }
+    if (matches / patternLower.length >= 0.7) {
+      let lastIdx = -1;
+      let orderedMatches = 0;
+      for (const char of patternLower) {
+        const idx = textLower.indexOf(char, lastIdx + 1);
+        if (idx > lastIdx) {
+          orderedMatches++;
+          lastIdx = idx;
+        }
+      }
+      if (orderedMatches / patternLower.length >= 0.6) return true;
+    }
+  }
+  
+  return false;
+};
+
+// Determina categoria nutrizionale
 const determineNutritionalCategory = (food) => {
   const foodName = (food.nome || '').toLowerCase();
   const protein = food.proteine || 0;
@@ -149,7 +230,7 @@ const determineNutritionalCategory = (food) => {
   const fat = food.grassi || 0;
   const calories = food.kcal || 0;
 
-  // Cerca match per keywords (più preciso)
+  // Cerca match per keywords
   for (const [key, catData] of Object.entries(NUTRITIONAL_CATEGORIES)) {
     if (catData.keywords?.some(keyword => foodName.includes(keyword))) {
       return key;
@@ -159,7 +240,6 @@ const determineNutritionalCategory = (food) => {
   // Cerca match per categoria database
   for (const [key, catData] of Object.entries(NUTRITIONAL_CATEGORIES)) {
     if (catData.categories.includes(food.category)) {
-      // Verifica che rispetti le regole della categoria
       const rules = catData.rules;
       const matches = 
         (!rules.minProtein || protein >= rules.minProtein) &&
@@ -175,50 +255,23 @@ const determineNutritionalCategory = (food) => {
     }
   }
 
-  // Fallback: classificazione basata su macros dominanti con regole stringenti
-  
-  // Verdure (basse calorie, bassi grassi)
+  // Fallback basato su macros
   if (calories < 50 && protein < 5 && fat < 1) return 'VERDURE';
-  
-  // Grassi puri
   if (fat > 80 && protein < 2 && carbs < 2) return 'GRASSI_CONDIMENTI';
-  
-  // Burri e creme
   if (fat > 40 && protein > 15) return 'BURRI_CREME';
-  
-  // Frutta secca
   if (fat > 40 && protein > 10 && carbs < 30) return 'FRUTTA_SECCA';
-  
-  // Cereali e pasta
   if (carbs > 60 && protein < 15 && fat < 5) return 'CEREALI_PASTA';
-  
-  // Pane
   if (carbs > 45 && carbs < 60 && protein < 12) return 'PANE';
-  
-  // Patate
   if (carbs > 15 && carbs < 25 && protein < 3 && fat < 1) return 'PATATE_TUBERI';
-  
-  // Frutta
   if (carbs > 8 && protein < 2 && fat < 1 && calories < 100) return 'FRUTTA_FRESCA';
-  
-  // Formaggi stagionati
   if (protein > 20 && fat > 20 && carbs < 5) return 'FORMAGGI_STAGIONATI';
-  
-  // Formaggi freschi
   if (protein > 8 && fat > 5 && carbs < 5) return 'FORMAGGI_FRESCHI';
-  
-  // Latticini magri
   if (protein > 3 && fat < 5 && carbs > 3) return 'LATTICINI_MAGRI';
-  
-  // Legumi
   if (protein > 6 && carbs > 15 && fat < 5) return 'LEGUMI';
-  
-  // Carni/Pesci
   if (protein > 18 && carbs < 2) {
     if (fat < 10) return 'CARNI_BIANCHE';
     if (fat > 10) return 'CARNI_ROSSE';
   }
-  
   if (protein > 15 && carbs < 2) {
     if (fat < 5) return 'PESCE_MAGRO';
     if (fat > 5) return 'PESCE_GRASSO';
@@ -227,12 +280,67 @@ const determineNutritionalCategory = (food) => {
   return 'ALTRO';
 };
 
+// Controlla se un alimento contiene allergeni
+const containsAllergen = (foodName, allergyText) => {
+  if (!allergyText || allergyText.toLowerCase() === 'nessuna') return false;
+  
+  const foodLower = foodName.toLowerCase();
+  const allergyLower = allergyText.toLowerCase();
+  
+  for (const [allergen, keywords] of Object.entries(ALLERGY_KEYWORDS)) {
+    if (allergyLower.includes(allergen)) {
+      if (keywords.some(kw => foodLower.includes(kw))) {
+        return true;
+      }
+    }
+  }
+  
+  // Check diretto per parole nell'allergia
+  const allergyWords = allergyLower.split(/[,\s]+/).filter(w => w.length > 2);
+  for (const word of allergyWords) {
+    if (foodLower.includes(word)) return true;
+  }
+  
+  return false;
+};
+
+// Arrotonda grammi a quantità umane
+const roundToHumanQuantity = (grams) => {
+  if (grams <= 20) return Math.round(grams / 5) * 5;
+  if (grams <= 50) return Math.round(grams / 5) * 5;
+  if (grams <= 100) return Math.round(grams / 10) * 10;
+  if (grams <= 250) return Math.round(grams / 25) * 25;
+  return Math.round(grams / 50) * 50;
+};
+
+// Calcola score di compatibilità (0-100)
+const calculateMatchScore = (food, targetMacros, neededGrams) => {
+  const gramsRatio = neededGrams / 100;
+  const macros = {
+    calories: (food.kcal || 0) * gramsRatio,
+    proteins: (food.proteine || 0) * gramsRatio,
+    carbs: (food.carboidrati || 0) * gramsRatio,
+    fats: (food.grassi || 0) * gramsRatio,
+  };
+  
+  const caloriesDiff = Math.abs(macros.calories - targetMacros.calories) / (targetMacros.calories || 1);
+  const proteinsDiff = Math.abs(macros.proteins - targetMacros.proteins) / (targetMacros.proteins || 1);
+  const carbsDiff = Math.abs(macros.carbs - targetMacros.carbs) / (targetMacros.carbs || 1);
+  const fatsDiff = Math.abs(macros.fats - targetMacros.fats) / (targetMacros.fats || 1);
+  
+  const weightedDiff = (caloriesDiff * 0.35) + (proteinsDiff * 0.30) + (carbsDiff * 0.20) + (fatsDiff * 0.15);
+  const score = Math.max(0, Math.round((1 - weightedDiff) * 100));
+  
+  return score;
+};
+
+// === COMPONENTE PRINCIPALE ===
 export default function SmartFoodSwapEnhanced({ 
   currentFood,
   currentGrams, 
   currentMacros,
-  targetMacros, // Macros obiettivo del coach
-  allowedVariance = 0.15, // ±15% di variazione consentita
+  targetMacros,
+  allowedVariance = 0.15,
   mealDay,
   mealName,
   onSwap,
@@ -251,80 +359,25 @@ export default function SmartFoodSwapEnhanced({
   const [validationError, setValidationError] = useState(null);
   const [suggestedAlternatives, setSuggestedAlternatives] = useState([]);
   const [isValidSwap, setIsValidSwap] = useState(true);
+  const [clientIntolerances, setClientIntolerances] = useState('');
+  const [clientDislikedFoods, setClientDislikedFoods] = useState('');
+  const [recentSwaps, setRecentSwaps] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('score');
 
-  useEffect(() => {
-    loadFoods();
-  }, []);
+  const currentNutritionalCategory = useMemo(() => 
+    determineNutritionalCategory(currentFood), 
+    [currentFood]
+  );
 
-  const loadFoods = async () => {
-    try {
-      const foodsRef = collection(db, 'platform_foods');
-      const snapshot = await getDocs(foodsRef);
-      
-      const foodsList = [];
-      const categoriesSet = new Set();
-      
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const foodData = {
-          id: doc.id,
-          nome: data.name || data.nome,
-          kcal: data.calories || data.kcal,
-          proteine: data.protein || data.proteine,
-          carboidrati: data.carbs || data.carboidrati,
-          grassi: data.fat || data.grassi,
-          category: data.category,
-          categoryName: data.categoryName
-        };
-        foodsList.push(foodData);
-        if (data.category) categoriesSet.add(data.category);
-      });
-      
-      // Determina la categoria nutrizionale dell'alimento corrente
-      const currentFoodData = {
-        nome: currentFood.nome,
-        kcal: currentFood.kcal,
-        proteine: currentFood.proteine,
-        carboidrati: currentFood.carboidrati,
-        grassi: currentFood.grassi,
-        category: currentFood.category
-      };
-      
-      const currentNutritionalCategory = determineNutritionalCategory(currentFoodData);
-      
-      // Filtra solo alimenti della stessa categoria nutrizionale
-      const compatibleFoods = foodsList.filter(food => {
-        const foodNutritionalCategory = determineNutritionalCategory(food);
-        return foodNutritionalCategory === currentNutritionalCategory;
-      });
-      
-      setFoods(compatibleFoods);
-      
-      // Estrai le categorie uniche dagli alimenti compatibili
-      const compatibleCategories = new Set();
-      compatibleFoods.forEach(food => {
-        if (food.category) compatibleCategories.add(food.category);
-      });
-      setCategories(Array.from(compatibleCategories).sort());
-      
-      // Pre-seleziona il cibo attuale
-      const current = compatibleFoods.find(f => f.nome === currentFood.nome);
-      if (current) {
-        setSelectedFood(current);
-        setSelectedCategory(current.category || '');
-      }
-    } catch (error) {
-      console.error('Errore caricamento alimenti:', error);
-    }
-    setLoading(false);
-  };
-
-  const calculateNewGramsAndMacros = (food) => {
-    // Calcola grammi necessari per mantenere circa le stesse calorie
-    const factor = currentMacros.calories / (food.kcal || 1);
-    const neededGrams = Math.round(currentGrams * factor);
+  const calculateNewGramsAndMacros = useCallback((food) => {
+    const targetCalories = targetMacros?.calories || currentMacros.calories;
+    const caloriesPer100g = food.kcal || 1;
+    let neededGrams = Math.round((targetCalories / caloriesPer100g) * 100);
     
-    // Calcola nuovi macros con i nuovi grammi
+    neededGrams = roundToHumanQuantity(neededGrams);
+    neededGrams = Math.max(10, Math.min(500, neededGrams));
+    
     const gramsRatio = neededGrams / 100;
     const macros = {
       calories: Math.round((food.kcal || 0) * gramsRatio),
@@ -334,103 +387,174 @@ export default function SmartFoodSwapEnhanced({
     };
     
     return { neededGrams, macros };
-  };
+  }, [targetMacros, currentMacros]);
 
-  const validateMacrosInRange = (macros) => {
-    if (!targetMacros) return { valid: true }; // Nessuna validazione se non ci sono target
+  const validateMacrosInRange = useCallback((macros) => {
+    if (!targetMacros) return { valid: true };
     
     const errors = [];
     const warnings = [];
     const tolerance = allowedVariance;
     
     let validCount = 0;
-    let totalChecks = 4;
     
-    // Valida calorie (priorità massima)
     const caloriesMin = targetMacros.calories * (1 - tolerance);
     const caloriesMax = targetMacros.calories * (1 + tolerance);
     const caloriesValid = macros.calories >= caloriesMin && macros.calories <= caloriesMax;
-    if (caloriesValid) {
-      validCount++;
-    } else {
-      errors.push(`Calorie fuori range: ${Math.round(caloriesMin)}-${Math.round(caloriesMax)} kcal`);
-    }
+    if (caloriesValid) validCount++;
+    else errors.push(`Calorie: ${Math.round(caloriesMin)}-${Math.round(caloriesMax)} kcal (attuale: ${macros.calories})`);
     
-    // Valida proteine
     const proteinsMin = targetMacros.proteins * (1 - tolerance);
     const proteinsMax = targetMacros.proteins * (1 + tolerance);
-    const proteinsValid = macros.proteins >= proteinsMin && macros.proteins <= proteinsMax;
-    if (proteinsValid) {
-      validCount++;
-    } else {
-      warnings.push(`Proteine: ${Math.round(proteinsMin)}-${Math.round(proteinsMax)}g (attuale: ${Math.round(macros.proteins)}g)`);
-    }
+    if (macros.proteins >= proteinsMin && macros.proteins <= proteinsMax) validCount++;
+    else warnings.push(`Proteine: ${proteinsMin.toFixed(1)}-${proteinsMax.toFixed(1)}g (attuale: ${macros.proteins}g)`);
     
-    // Valida carboidrati
     const carbsMin = targetMacros.carbs * (1 - tolerance);
     const carbsMax = targetMacros.carbs * (1 + tolerance);
-    const carbsValid = macros.carbs >= carbsMin && macros.carbs <= carbsMax;
-    if (carbsValid) {
-      validCount++;
-    } else {
-      warnings.push(`Carboidrati: ${Math.round(carbsMin)}-${Math.round(carbsMax)}g (attuale: ${Math.round(macros.carbs)}g)`);
-    }
+    if (macros.carbs >= carbsMin && macros.carbs <= carbsMax) validCount++;
+    else warnings.push(`Carboidrati: ${carbsMin.toFixed(1)}-${carbsMax.toFixed(1)}g (attuale: ${macros.carbs}g)`);
     
-    // Valida grassi
     const fatsMin = targetMacros.fats * (1 - tolerance);
     const fatsMax = targetMacros.fats * (1 + tolerance);
-    const fatsValid = macros.fats >= fatsMin && macros.fats <= fatsMax;
-    if (fatsValid) {
-      validCount++;
-    } else {
-      warnings.push(`Grassi: ${Math.round(fatsMin)}-${Math.round(fatsMax)}g (attuale: ${Math.round(macros.fats)}g)`);
-    }
+    if (macros.fats >= fatsMin && macros.fats <= fatsMax) validCount++;
+    else warnings.push(`Grassi: ${fatsMin.toFixed(1)}-${fatsMax.toFixed(1)}g (attuale: ${macros.fats}g)`);
     
-    // Sostituzione valida se:
-    // 1. Le calorie sono nel range (priorità), oppure
-    // 2. Almeno 3 su 4 macro sono nel range
     const isValid = caloriesValid || validCount >= 3;
     
     return {
       valid: isValid,
       errors: isValid ? [] : errors,
-      warnings: isValid ? warnings : [], // Mostra warnings solo se valido
-      validCount,
-      totalChecks
+      warnings: isValid ? warnings : [],
+      validCount
     };
-  };
+  }, [targetMacros, allowedVariance]);
 
-  const findBestAlternatives = () => {
-    // Trova i 3 alimenti più vicini ai macros target
-    const alternatives = foods
-      .filter(f => f.id !== selectedFood?.id) // Escludi quello selezionato
-      .map(food => {
-        const { neededGrams, macros } = calculateNewGramsAndMacros(food);
-        const validation = validateMacrosInRange(macros);
-        
-        // Calcola "score" di vicinanza ai target
-        const caloriesDiff = Math.abs(macros.calories - targetMacros.calories);
-        const proteinsDiff = Math.abs(macros.proteins - targetMacros.proteins);
-        const carbsDiff = Math.abs(macros.carbs - targetMacros.carbs);
-        const fatsDiff = Math.abs(macros.fats - targetMacros.fats);
-        const totalDiff = caloriesDiff + proteinsDiff + carbsDiff + fatsDiff;
-        
-        return {
-          food,
-          grams: neededGrams,
-          macros,
-          isValid: validation.valid,
-          score: totalDiff
-        };
-      })
-      .filter(alt => alt.isValid) // Solo alternative valide
-      .sort((a, b) => a.score - b.score) // Ordina per vicinanza
-      .slice(0, 3); // Prendi i migliori 3
+  const processAndSetFoods = useCallback((foodsList) => {
+    const compatibleFoods = foodsList.filter(food => {
+      const foodCategory = determineNutritionalCategory(food);
+      return foodCategory === currentNutritionalCategory;
+    });
     
-    return alternatives;
+    const safeFoods = compatibleFoods.filter(food => {
+      const hasAllergen = containsAllergen(food.nome, clientIntolerances);
+      const isDisliked = clientDislikedFoods && food.nome.toLowerCase().includes(clientDislikedFoods.toLowerCase());
+      return !hasAllergen && !isDisliked;
+    });
+    
+    const foodsWithScore = safeFoods.map(food => {
+      const { neededGrams } = calculateNewGramsAndMacros(food);
+      const score = calculateMatchScore(food, targetMacros || currentMacros, neededGrams);
+      return { ...food, matchScore: score };
+    });
+    
+    setFoods(foodsWithScore);
+    
+    const categoriesSet = new Set();
+    foodsWithScore.forEach(food => {
+      if (food.category) categoriesSet.add(food.category);
+    });
+    setCategories(Array.from(categoriesSet).sort());
+    
+    const current = foodsWithScore.find(f => f.nome === currentFood.nome);
+    if (current) {
+      setSelectedFood(current);
+      const { neededGrams, macros } = calculateNewGramsAndMacros(current);
+      setCalculatedGrams(neededGrams);
+      setNewMacros(macros);
+      const validation = validateMacrosInRange(macros);
+      setIsValidSwap(validation.valid);
+      if (!validation.valid) {
+        setValidationError(validation.errors);
+      }
+    } else if (foodsWithScore.length > 0) {
+      const sorted = [...foodsWithScore].sort((a, b) => b.matchScore - a.matchScore);
+      setSuggestedAlternatives(sorted.slice(0, 3).map(f => {
+        const { neededGrams, macros } = calculateNewGramsAndMacros(f);
+        return { food: f, grams: neededGrams, macros, score: f.matchScore };
+      }));
+    }
+  }, [currentNutritionalCategory, clientIntolerances, clientDislikedFoods, targetMacros, currentMacros, currentFood, calculateNewGramsAndMacros, validateMacrosInRange]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Carica alimenti (con cache)
+      await loadFoods();
+      
+      // Carica anamnesi del client per allergie
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          const initialRef = doc(db, `tenants/${CURRENT_TENANT_ID}/clients/${user.uid}/anamnesi/initial`);
+          const initialSnap = await getDoc(initialRef);
+          
+          if (initialSnap.exists()) {
+            const anamData = initialSnap.data();
+            setClientIntolerances(anamData.intolerances || anamData.allergie || anamData.intolleranze || '');
+            setClientDislikedFoods(anamData.dislikedFoods || anamData.cibiEvitare || '');
+          }
+        } catch (err) {
+          console.debug('Anamnesi non trovata:', err);
+        }
+        
+        // Carica storico sostituzioni recenti da localStorage
+        const swapHistoryKey = `food_swaps_${user.uid}`;
+        const history = JSON.parse(localStorage.getItem(swapHistoryKey) || '[]');
+        setRecentSwaps(history.slice(0, 5));
+      }
+    } catch (error) {
+      console.error('Errore caricamento dati:', error);
+    }
+    setLoading(false);
   };
 
-  const handleFoodChange = (food) => {
+  const loadFoods = async () => {
+    const now = Date.now();
+    if (foodsCache && (now - cacheTimestamp) < CACHE_DURATION) {
+      processAndSetFoods(foodsCache);
+      return;
+    }
+    
+    try {
+      const foodsRef = collection(db, 'platform_foods');
+      const snapshot = await getDocs(foodsRef);
+      
+      const foodsList = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        foodsList.push({
+          id: docSnap.id,
+          nome: data.name || data.nome,
+          kcal: data.calories || data.kcal,
+          proteine: data.protein || data.proteine,
+          carboidrati: data.carbs || data.carboidrati,
+          grassi: data.fat || data.grassi,
+          category: data.category,
+          categoryName: data.categoryName
+        });
+      });
+      
+      foodsCache = foodsList;
+      cacheTimestamp = now;
+      
+      processAndSetFoods(foodsList);
+    } catch (error) {
+      console.error('Errore caricamento alimenti:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (foodsCache && !loading) {
+      processAndSetFoods(foodsCache);
+    }
+  }, [clientIntolerances, clientDislikedFoods, processAndSetFoods, loading]);
+
+  const handleFoodChange = useCallback((food) => {
     const { neededGrams, macros } = calculateNewGramsAndMacros(food);
     const validation = validateMacrosInRange(macros);
     
@@ -439,22 +563,44 @@ export default function SmartFoodSwapEnhanced({
     setNewMacros(macros);
     setIsValidSwap(validation.valid);
     
-    // Mostra errori solo se non è valido, altrimenti mostra warnings se presenti
     if (!validation.valid) {
       setValidationError(validation.errors);
-      const alternatives = findBestAlternatives();
+      const alternatives = foods
+        .filter(f => f.id !== food.id)
+        .map(f => {
+          const { neededGrams: g, macros: m } = calculateNewGramsAndMacros(f);
+          const v = validateMacrosInRange(m);
+          return { food: f, grams: g, macros: m, isValid: v.valid, score: f.matchScore };
+        })
+        .filter(a => a.isValid)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
       setSuggestedAlternatives(alternatives);
     } else {
       setValidationError(validation.warnings.length > 0 ? validation.warnings : null);
       setSuggestedAlternatives([]);
     }
-  };
+  }, [foods, calculateNewGramsAndMacros, validateMacrosInRange]);
 
   const handleConfirm = () => {
-    // Blocca solo se la sostituzione NON è valida (errori veri)
     if (!isValidSwap) {
-      toast.error('Impossibile salvare: i macros sono fuori dal range consentito dal tuo coach.\n\n' + validationError.join('\n'));
+      toast.error('Impossibile salvare: macros fuori range.\n\n' + validationError?.join('\n'));
       return;
+    }
+
+    const user = auth.currentUser;
+    if (user) {
+      const swapHistoryKey = `food_swaps_${user.uid}`;
+      const history = JSON.parse(localStorage.getItem(swapHistoryKey) || '[]');
+      const newSwap = {
+        from: currentFood.nome,
+        to: selectedFood.nome,
+        grams: calculatedGrams,
+        date: new Date().toISOString(),
+        meal: mealName
+      };
+      history.unshift(newSwap);
+      localStorage.setItem(swapHistoryKey, JSON.stringify(history.slice(0, 20)));
     }
 
     onSwap({
@@ -468,19 +614,30 @@ export default function SmartFoodSwapEnhanced({
     });
   };
 
-  const filteredFoods = foods.filter(food => {
-    const matchesSearch = searchTerm === '' || 
-      food.nome.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === '' || food.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredFoods = useMemo(() => {
+    let result = foods.filter(food => {
+      const matchesSearch = searchTerm === '' || fuzzyMatch(food.nome, searchTerm);
+      const matchesCategory = selectedCategory === '' || food.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+    
+    if (sortBy === 'score') {
+      result.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+    } else if (sortBy === 'name') {
+      result.sort((a, b) => a.nome.localeCompare(b.nome));
+    } else if (sortBy === 'calories') {
+      result.sort((a, b) => a.kcal - b.kcal);
+    }
+    
+    return result;
+  }, [foods, searchTerm, selectedCategory, sortBy]);
 
-  const macroDifference = {
+  const macroDifference = useMemo(() => ({
     calories: newMacros.calories - currentMacros.calories,
     proteins: Math.round((newMacros.proteins - currentMacros.proteins) * 10) / 10,
     carbs: Math.round((newMacros.carbs - currentMacros.carbs) * 10) / 10,
     fats: Math.round((newMacros.fats - currentMacros.fats) * 10) / 10,
-  };
+  }), [newMacros, currentMacros]);
 
   if (loading) {
     return (
@@ -502,87 +659,145 @@ export default function SmartFoodSwapEnhanced({
         className="bg-slate-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-700"
       >
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-slate-800 to-slate-900 p-6 border-b border-slate-700 z-10">
+        <div className="sticky top-0 bg-gradient-to-r from-slate-800 to-slate-900 p-4 sm:p-6 border-b border-slate-700 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <RefreshCw className="text-rose-400" size={24} />
               <div>
-                <h2 className="text-xl font-bold text-slate-100">Sostituisci Alimento</h2>
-                <p className="text-sm text-slate-400">
+                <h2 className="text-lg sm:text-xl font-bold text-slate-100">Sostituisci Alimento</h2>
+                <p className="text-xs sm:text-sm text-slate-400">
                   {mealName} - {mealDay}
                 </p>
               </div>
             </div>
-            <button
-              onClick={onCancel}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
-            >
+            <button onClick={onCancel} className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
               <X size={20} className="text-slate-400" />
             </button>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Current Food Info */}
-          <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
-            <p className="text-sm text-slate-400 mb-2">Alimento attuale:</p>
-            <div className="flex items-center justify-between">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+          {/* Alimento Corrente */}
+          <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 border border-slate-700">
+            <p className="text-xs sm:text-sm text-slate-400 mb-2">Alimento attuale:</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
-                <p className="text-lg font-semibold text-slate-100">{currentFood.nome}</p>
-                <p className="text-sm text-slate-400">{currentGrams}g</p>
+                <p className="text-base sm:text-lg font-semibold text-slate-100">{currentFood.nome}</p>
+                <p className="text-xs sm:text-sm text-slate-400">{currentGrams}g</p>
                 <p className="text-xs text-emerald-400 mt-1">
-                  Categoria: {NUTRITIONAL_CATEGORIES[determineNutritionalCategory(currentFood)]?.name || 'Generale'}
+                  Categoria: {NUTRITIONAL_CATEGORIES[currentNutritionalCategory]?.name || 'Generale'}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-slate-500">Macros attuali:</p>
-                <div className="flex gap-3 mt-1">
-                  <span className="text-xs text-slate-300">{currentMacros.calories} kcal</span>
-                  <span className="text-xs text-blue-400">P: {currentMacros.proteins}g</span>
-                  <span className="text-xs text-amber-400">C: {currentMacros.carbs}g</span>
-                  <span className="text-xs text-rose-400">F: {currentMacros.fats}g</span>
+              <div className="text-left sm:text-right">
+                <p className="text-xs text-slate-500">Macros target:</p>
+                <div className="flex gap-2 sm:gap-3 mt-1 text-xs">
+                  <span className="text-slate-300">{currentMacros.calories} kcal</span>
+                  <span className="text-blue-400">P: {currentMacros.proteins}g</span>
+                  <span className="text-amber-400">C: {currentMacros.carbs}g</span>
+                  <span className="text-rose-400">F: {currentMacros.fats}g</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Info sulla categorizzazione */}
+          {/* Info Allergie */}
+          {clientIntolerances && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-300">
+                Esclusi alimenti con: {clientIntolerances}
+              </p>
+            </div>
+          )}
+
+          {/* Info Categoria */}
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex items-start gap-2">
             <Info size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-blue-300">
-              Vengono mostrati solo alimenti compatibili della categoria "{NUTRITIONAL_CATEGORIES[determineNutritionalCategory(currentFood)]?.name}". 
-              Questo garantisce sostituzioni nutrizionalmente sensate.
+              Mostrati solo alimenti compatibili "{NUTRITIONAL_CATEGORIES[currentNutritionalCategory]?.name}".
+              Ordinati per compatibilità macro.
             </p>
           </div>
 
-          {/* Search and Filter */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
-              <input
-                type="text"
-                placeholder="Cerca alimento..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-rose-500"
-              />
+          {/* Sostituzioni Recenti */}
+          {recentSwaps.length > 0 && (
+            <div className="bg-slate-900/30 rounded-lg p-3 border border-slate-700">
+              <p className="text-xs text-slate-400 mb-2 flex items-center gap-1">
+                <Clock size={12} /> Sostituzioni recenti:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {recentSwaps.slice(0, 3).map((swap, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      const food = foods.find(f => f.nome === swap.to);
+                      if (food) handleFoodChange(food);
+                    }}
+                    className="text-xs px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors"
+                  >
+                    {swap.to}
+                  </button>
+                ))}
+              </div>
             </div>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-rose-500"
-            >
-              <option value="">Tutte le categorie</option>
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+          )}
+
+          {/* Search & Filters */}
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Cerca alimento (anche con errori)..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-rose-500"
+                />
+              </div>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`p-2 rounded-lg border transition-colors ${showFilters ? 'bg-rose-500/20 border-rose-500' : 'bg-slate-900 border-slate-700'}`}
+              >
+                <Filter size={18} className={showFilters ? 'text-rose-400' : 'text-slate-400'} />
+              </button>
+            </div>
+            
+            {showFilters && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                className="grid grid-cols-2 gap-3"
+              >
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-rose-500"
+                >
+                  <option value="">Tutte le categorie</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-rose-500"
+                >
+                  <option value="score">⭐ Migliore match</option>
+                  <option value="name">A-Z Nome</option>
+                  <option value="calories">🔥 Calorie</option>
+                </select>
+              </motion.div>
+            )}
           </div>
 
           {/* Foods List */}
-          <div className="max-h-96 overflow-y-auto space-y-2">
+          <div className="max-h-64 sm:max-h-96 overflow-y-auto space-y-2">
             {filteredFoods.length === 0 ? (
-              <p className="text-center text-slate-400 py-8">Nessun alimento trovato</p>
+              <p className="text-center text-slate-400 py-8">
+                Nessun alimento trovato. Prova con un altro termine.
+              </p>
             ) : (
               filteredFoods.map(food => (
                 <button
@@ -594,17 +809,30 @@ export default function SmartFoodSwapEnhanced({
                       : 'border-slate-700 bg-slate-900/50 hover:border-slate-600'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-slate-100">{food.nome}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-slate-100 truncate">{food.nome}</p>
+                        {food.matchScore >= 90 && (
+                          <span className="flex-shrink-0 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] rounded-full flex items-center gap-1">
+                            <Star size={10} fill="currentColor" /> Top
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-400">{food.category || 'N/D'}</p>
                     </div>
-                    <div className="text-right text-xs">
+                    <div className="text-right text-xs flex-shrink-0">
+                      <div className="flex items-center gap-1 mb-1">
+                        <TrendingUp size={12} className={food.matchScore >= 80 ? 'text-emerald-400' : food.matchScore >= 60 ? 'text-amber-400' : 'text-slate-400'} />
+                        <span className={food.matchScore >= 80 ? 'text-emerald-400' : food.matchScore >= 60 ? 'text-amber-400' : 'text-slate-400'}>
+                          {food.matchScore}%
+                        </span>
+                      </div>
                       <p className="text-slate-300">{food.kcal} kcal/100g</p>
-                      <div className="flex gap-2 mt-1">
-                        <span className="text-blue-400">P:{food.proteine}g</span>
-                        <span className="text-amber-400">C:{food.carboidrati}g</span>
-                        <span className="text-rose-400">F:{food.grassi}g</span>
+                      <div className="flex gap-1 mt-1">
+                        <span className="text-blue-400">P:{food.proteine}</span>
+                        <span className="text-amber-400">C:{food.carboidrati}</span>
+                        <span className="text-rose-400">F:{food.grassi}</span>
                       </div>
                     </div>
                   </div>
@@ -616,82 +844,63 @@ export default function SmartFoodSwapEnhanced({
           {/* New Macros Preview */}
           {selectedFood && (
             <div className={`rounded-xl p-4 border-2 ${
-              validationError 
+              !isValidSwap 
                 ? 'bg-red-500/10 border-red-500' 
                 : 'bg-emerald-500/10 border-emerald-500'
             }`}>
               <div className="flex items-start gap-3">
-                {validationError ? (
+                {!isValidSwap ? (
                   <AlertTriangle className="text-red-400 flex-shrink-0" size={20} />
                 ) : (
                   <Check className="text-emerald-400 flex-shrink-0" size={20} />
                 )}
                 <div className="flex-1">
-                  <p className="font-medium text-slate-100 mb-2">Nuovo alimento:</p>
+                  <p className="font-medium text-slate-100 mb-1">Nuovo alimento:</p>
                   <p className="text-lg font-bold text-slate-100">{selectedFood.nome} - {calculatedGrams}g</p>
                   
-                  <div className="grid grid-cols-4 gap-3 mt-3">
+                  <div className="grid grid-cols-4 gap-2 sm:gap-3 mt-3">
                     <div>
-                      <p className="text-xs text-slate-400">Calorie</p>
-                      <p className={`text-lg font-bold ${validationError ? 'text-red-400' : 'text-slate-100'}`}>
-                        {newMacros.calories}
-                      </p>
-                      <p className={`text-xs ${macroDifference.calories >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <p className="text-[10px] sm:text-xs text-slate-400">Calorie</p>
+                      <p className="text-sm sm:text-lg font-bold text-slate-100">{newMacros.calories}</p>
+                      <p className={`text-[10px] sm:text-xs ${macroDifference.calories >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {macroDifference.calories >= 0 ? '+' : ''}{macroDifference.calories}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">Proteine</p>
-                      <p className={`text-lg font-bold ${validationError ? 'text-red-400' : 'text-blue-400'}`}>
-                        {newMacros.proteins}g
-                      </p>
-                      <p className={`text-xs ${macroDifference.proteins >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <p className="text-[10px] sm:text-xs text-slate-400">Proteine</p>
+                      <p className="text-sm sm:text-lg font-bold text-blue-400">{newMacros.proteins}g</p>
+                      <p className={`text-[10px] sm:text-xs ${macroDifference.proteins >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {macroDifference.proteins >= 0 ? '+' : ''}{macroDifference.proteins}g
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">Carboidrati</p>
-                      <p className={`text-lg font-bold ${validationError ? 'text-red-400' : 'text-amber-400'}`}>
-                        {newMacros.carbs}g
-                      </p>
-                      <p className={`text-xs ${macroDifference.carbs >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <p className="text-[10px] sm:text-xs text-slate-400">Carbo</p>
+                      <p className="text-sm sm:text-lg font-bold text-amber-400">{newMacros.carbs}g</p>
+                      <p className={`text-[10px] sm:text-xs ${macroDifference.carbs >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {macroDifference.carbs >= 0 ? '+' : ''}{macroDifference.carbs}g
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">Grassi</p>
-                      <p className={`text-lg font-bold ${validationError ? 'text-red-400' : 'text-rose-400'}`}>
-                        {newMacros.fats}g
-                      </p>
-                      <p className={`text-xs ${macroDifference.fats >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <p className="text-[10px] sm:text-xs text-slate-400">Grassi</p>
+                      <p className="text-sm sm:text-lg font-bold text-rose-400">{newMacros.fats}g</p>
+                      <p className={`text-[10px] sm:text-xs ${macroDifference.fats >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {macroDifference.fats >= 0 ? '+' : ''}{macroDifference.fats}g
                       </p>
                     </div>
                   </div>
 
-                  {validationError && (
-                    <div className={`mt-3 space-y-2 ${suggestedAlternatives.length > 0 ? 'bg-red-500/10 border border-red-500/30' : 'bg-amber-500/10 border border-amber-500/30'} rounded-lg p-3`}>
-                      <p className={`text-sm font-medium ${suggestedAlternatives.length > 0 ? 'text-red-400' : 'text-amber-400'}`}>
-                        {suggestedAlternatives.length > 0 ? '⚠️ Macros fuori range' : 'ℹ️ Nota sui macros'}
+                  {validationError && validationError.length > 0 && (
+                    <div className={`mt-3 p-3 rounded-lg ${!isValidSwap ? 'bg-red-500/10 border border-red-500/30' : 'bg-amber-500/10 border border-amber-500/30'}`}>
+                      <p className={`text-xs font-medium ${!isValidSwap ? 'text-red-400' : 'text-amber-400'} mb-1`}>
+                        {!isValidSwap ? '⚠️ Macros fuori range' : 'ℹ️ Nota'}
                       </p>
                       {validationError.map((err, idx) => (
-                        <p key={idx} className={`text-xs ${suggestedAlternatives.length > 0 ? 'text-red-300' : 'text-amber-300'}`}>• {err}</p>
+                        <p key={idx} className="text-xs text-slate-300">• {err}</p>
                       ))}
-                      {suggestedAlternatives.length === 0 && (
-                        <p className="text-xs text-slate-400 mt-2">
-                          ✅ Sostituzione valida, ma alcuni macro non sono perfettamente centrati (entro ±{allowedVariance * 100}%)
-                        </p>
-                      )}
-                      {suggestedAlternatives.length > 0 && (
-                        <p className="text-xs text-slate-400 mt-2">
-                          Il tuo coach ha impostato un limite del ±{allowedVariance * 100}% sui macros
-                        </p>
-                      )}
                       
-                      {/* Suggested Alternatives */}
                       {suggestedAlternatives.length > 0 && (
-                        <div className="mt-4 pt-3 border-t border-red-400/30">
-                          <p className="text-sm font-medium text-emerald-400 mb-2">💡 Consigliati invece:</p>
+                        <div className="mt-3 pt-3 border-t border-slate-600">
+                          <p className="text-xs font-medium text-emerald-400 mb-2">💡 Alternative consigliate:</p>
                           <div className="space-y-2">
                             {suggestedAlternatives.map((alt, idx) => (
                               <button
@@ -702,15 +911,10 @@ export default function SmartFoodSwapEnhanced({
                                 <div className="flex items-center justify-between">
                                   <div>
                                     <p className="text-sm font-medium text-slate-100">{alt.food.nome}</p>
-                                    <p className="text-xs text-slate-400">{alt.grams}g</p>
+                                    <p className="text-xs text-slate-400">{alt.grams}g • Score: {alt.score}%</p>
                                   </div>
-                                  <div className="text-right text-xs">
-                                    <div className="flex gap-2">
-                                      <span className="text-slate-300">{alt.macros.calories}kcal</span>
-                                      <span className="text-blue-400">P:{alt.macros.proteins}g</span>
-                                      <span className="text-amber-400">C:{alt.macros.carbs}g</span>
-                                      <span className="text-rose-400">F:{alt.macros.fats}g</span>
-                                    </div>
+                                  <div className="text-right text-xs flex gap-2">
+                                    <span className="text-slate-300">{alt.macros.calories}kcal</span>
                                   </div>
                                 </div>
                               </button>
@@ -735,7 +939,7 @@ export default function SmartFoodSwapEnhanced({
             />
             <div>
               <p className="text-sm font-medium text-slate-200">Applica a tutti i giorni</p>
-              <p className="text-xs text-slate-400">La sostituzione verrà applicata a tutti i giorni della settimana</p>
+              <p className="text-xs text-slate-400">La sostituzione verrà applicata a tutta la settimana</p>
             </div>
           </label>
 
@@ -747,7 +951,7 @@ export default function SmartFoodSwapEnhanced({
               className="flex-1 px-6 py-3 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2"
             >
               <Check size={18} />
-              Conferma Sostituzione
+              Conferma
             </button>
             <button
               onClick={onCancel}

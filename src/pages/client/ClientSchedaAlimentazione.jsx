@@ -274,16 +274,18 @@ const ClientSchedaAlimentazione = () => {
                 </div>
               ) : null}
               
-              {/* Pulsante Reset Scheda */}
-              <button
-                onClick={handleResetScheda}
-                className="flex items-center gap-1.5 lg:gap-2 px-2.5 lg:px-4 py-1.5 lg:py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-xs lg:text-sm rounded-lg lg:rounded-xl transition-all shadow-lg"
-                title="Ripristina scheda originale del coach"
-              >
-                <RotateCcw size={14} className="lg:hidden" />
-                <RotateCcw size={18} className="hidden lg:block" />
-                <span className="hidden sm:inline">Reset</span>
-              </button>
+              {/* Pulsante Reset Scheda - mostra solo se esiste originalGiorni */}
+              {schedaData.originalGiorni && (
+                <button
+                  onClick={handleResetScheda}
+                  className="flex items-center gap-1.5 lg:gap-2 px-2.5 lg:px-4 py-1.5 lg:py-2.5 bg-amber-700 hover:bg-amber-600 text-white text-xs lg:text-sm rounded-lg lg:rounded-xl transition-all shadow-lg"
+                  title="Ripristina scheda originale del coach"
+                >
+                  <RotateCcw size={14} className="lg:hidden" />
+                  <RotateCcw size={18} className="hidden lg:block" />
+                  <span className="hidden sm:inline">Reset</span>
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
