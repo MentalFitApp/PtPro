@@ -176,6 +176,8 @@ export default function DashboardPro() {
   const [revenueTimeRange, setRevenueTimeRange] = useState(TIME_RANGES.MONTH);
   const [upcomingCalls, setUpcomingCalls] = useState([]);
   const [showRenewalsOnly, setShowRenewalsOnly] = useState(false);
+  const [showRevenueModal, setShowRevenueModal] = useState(false);
+  const [revenueModalType, setRevenueModalType] = useState('incasso'); // 'incasso' | 'rinnovi'
   
   // Document title dinamico
   useDocumentTitle('Dashboard');
@@ -526,7 +528,10 @@ export default function DashboardPro() {
       renewalsRevenue,
       periodLabel,
       newClients: newClientsThisMonth.length,
-      retention
+      retention,
+      // Aggiungi liste dettagliate per il modal
+      renewalPaymentsList: periodPayments.filter(p => p.isRenewal === true),
+      regularPaymentsList: periodPayments.filter(p => p.isRenewal !== true)
     };
   }, [clients, payments, revenueTimeRange]);
 
@@ -737,7 +742,13 @@ export default function DashboardPro() {
                         <ChevronLeft size={16} />
                       </button>
                       
-                      <div className="flex-1 text-center">
+                      <div 
+                        className="flex-1 text-center cursor-pointer hover:bg-slate-700/30 rounded-xl py-2 transition-colors"
+                        onClick={() => {
+                          setRevenueModalType(showRenewalsOnly ? 'rinnovi' : 'incasso');
+                          setShowRevenueModal(true);
+                        }}
+                      >
                         <p className="text-2xl sm:text-3xl font-bold text-white mb-1">
                           {showRevenue 
                             ? `€${(showRenewalsOnly ? metrics.renewalsRevenue : metrics.periodRevenue).toLocaleString()}` 
@@ -746,6 +757,7 @@ export default function DashboardPro() {
                         </p>
                         <p className={`text-xs sm:text-sm ${showRenewalsOnly ? 'text-cyan-400' : 'text-slate-400'}`}>
                           {showRenewalsOnly ? `Rinnovi ${metrics.periodLabel}` : `Incasso ${metrics.periodLabel}`}
+                          <span className="ml-1 opacity-60">• Dettagli</span>
                         </p>
                       </div>
                       
@@ -1080,6 +1092,159 @@ export default function DashboardPro() {
           </div>
         </div>
       </div>
+
+      {/* Modal Dettaglio Incassi/Rinnovi */}
+      <AnimatePresence>
+        {showRevenueModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowRevenueModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden"
+            >
+              {/* Header */}
+              <div className={`p-4 border-b border-slate-700/50 flex items-center justify-between ${revenueModalType === 'rinnovi' ? 'bg-cyan-900/30' : 'bg-emerald-900/30'}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${revenueModalType === 'rinnovi' ? 'bg-cyan-500/20' : 'bg-emerald-500/20'}`}>
+                    {revenueModalType === 'rinnovi' ? (
+                      <RefreshCw size={20} className="text-cyan-400" />
+                    ) : (
+                      <DollarSign size={20} className="text-emerald-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">
+                      {revenueModalType === 'rinnovi' ? 'Dettaglio Rinnovi' : 'Dettaglio Incassi'}
+                    </h3>
+                    <p className="text-sm text-slate-400">{metrics.periodLabel} corrente</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowRevenueModal(false)}
+                  className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-4 overflow-y-auto max-h-[60vh]">
+                {revenueModalType === 'rinnovi' ? (
+                  // Lista Rinnovi
+                  <div className="space-y-2">
+                    {metrics.renewalPaymentsList?.length > 0 ? (
+                      <>
+                        <div className="flex items-center justify-between text-sm text-slate-400 px-2 pb-2 border-b border-slate-700/50">
+                          <span>Totale Rinnovi</span>
+                          <span className="text-cyan-400 font-bold">€{metrics.renewalsRevenue?.toLocaleString()}</span>
+                        </div>
+                        {metrics.renewalPaymentsList.map((p, idx) => (
+                          <div
+                            key={p.id || idx}
+                            onClick={() => { setShowRevenueModal(false); navigate(`/client/${p.clientId}`); }}
+                            className="flex items-center justify-between p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 cursor-pointer transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm">
+                                {p.clientName?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-white">{p.clientName}</p>
+                                <p className="text-xs text-slate-400">
+                                  {new Date(p.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                                  {p.isRate && ' • Rata'}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-cyan-400 font-bold">€{p.amount?.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="text-center py-8 text-slate-500">
+                        <RefreshCw size={32} className="mx-auto mb-2 opacity-50" />
+                        <p>Nessun rinnovo in questo periodo</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Lista Incassi Normali
+                  <div className="space-y-2">
+                    {metrics.regularPaymentsList?.length > 0 ? (
+                      <>
+                        <div className="flex items-center justify-between text-sm text-slate-400 px-2 pb-2 border-b border-slate-700/50">
+                          <span>Totale Incassi (esclusi rinnovi)</span>
+                          <span className="text-emerald-400 font-bold">€{metrics.periodRevenue?.toLocaleString()}</span>
+                        </div>
+                        {metrics.regularPaymentsList.map((p, idx) => (
+                          <div
+                            key={p.id || idx}
+                            onClick={() => { setShowRevenueModal(false); navigate(`/client/${p.clientId}`); }}
+                            className="flex items-center justify-between p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 cursor-pointer transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center text-white font-bold text-sm">
+                                {p.clientName?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-white">{p.clientName}</p>
+                                <p className="text-xs text-slate-400">
+                                  {new Date(p.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                                  {p.isRate && ' • Rata'}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-emerald-400 font-bold">€{p.amount?.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="text-center py-8 text-slate-500">
+                        <DollarSign size={32} className="mx-auto mb-2 opacity-50" />
+                        <p>Nessun incasso in questo periodo</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer con toggle */}
+              <div className="p-4 border-t border-slate-700/50 flex justify-center gap-2">
+                <button
+                  onClick={() => setRevenueModalType('incasso')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    revenueModalType === 'incasso'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <DollarSign size={14} className="inline mr-1" />
+                  Incassi
+                </button>
+                <button
+                  onClick={() => setRevenueModalType('rinnovi')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    revenueModalType === 'rinnovi'
+                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <RefreshCw size={14} className="inline mr-1" />
+                  Rinnovi
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
