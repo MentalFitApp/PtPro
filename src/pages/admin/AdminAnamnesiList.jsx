@@ -11,7 +11,8 @@ import {
   ClipboardList, Activity, Heart, AlertCircle
 } from 'lucide-react';
 import { useUnreadAnamnesi } from '../../hooks/useUnreadNotifications';
-import { UnifiedCard, CardHeaderSimple, CardContent, Badge } from '../../components/ui/UnifiedCard';
+import { UnifiedCard, CardHeaderSimple, CardContent } from '../../components/ui/UnifiedCard';
+import { Badge } from '../../components/ui/Badge';
 
 export default function AdminAnamnesiList() {
   const navigate = useNavigate();

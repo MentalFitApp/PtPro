@@ -17,7 +17,7 @@ const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-2xl border-t border-white/10 z-50 md:hidden safe-area-bottom">
+    <div className="fixed bottom-0 left-0 right-0 bg-theme-bg-secondary/90 backdrop-blur-2xl border-t border-theme z-50 md:hidden safe-area-bottom">
       <div className="px-2 py-2">
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hidden snap-x snap-mandatory pb-1">
           {links.map(link => (
@@ -27,7 +27,7 @@ const BottomNav = () => {
               className={`flex flex-col items-center justify-center min-w-[56px] max-w-[64px] h-14 px-2 rounded-xl transition-all snap-center flex-shrink-0 ${
                 location.pathname === link.to || location.pathname.startsWith(link.to + '/')
                   ? 'text-blue-400 bg-blue-600/20 border border-blue-500/40'
-                  : 'text-slate-400 hover:text-blue-400'
+                  : 'text-theme-text-secondary hover:text-blue-500'
               }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -57,15 +57,15 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="hidden md:flex fixed left-0 top-0 h-screen w-72 bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-40 flex-col transition-all duration-300 shadow-2xl">
-      <div className="p-6 border-b border-slate-700/50">
+    <aside className="hidden md:flex fixed left-0 top-0 h-screen w-72 bg-theme-bg-secondary/85 backdrop-blur-xl border-r border-theme z-40 flex-col transition-all duration-300 shadow-2xl">
+      <div className="p-6 border-b border-theme">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
             <UsersRound className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white">FitFlow Pro</h1>
-            <p className="text-xs text-slate-400">Client Area</p>
+            <h1 className="text-lg font-bold text-theme-text-primary">FitFlow Pro</h1>
+            <p className="text-xs text-theme-text-secondary">Client Area</p>
           </div>
         </div>
       </div>
@@ -78,7 +78,7 @@ const Sidebar = () => {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
               location.pathname === link.to || location.pathname.startsWith(link.to + '/')
                 ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                : 'text-theme-text-secondary hover:text-theme-text-primary hover:bg-theme-bg-tertiary/60'
             }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -159,7 +159,7 @@ export default function SimpleLayout() {
 
         {/* CONTENUTO PRINCIPALE */}
         <div className="flex-1 transition-all duration-300 md:ml-72">
-          <main className="min-h-screen bg-slate-900/40 backdrop-blur-xl p-3 sm:p-4 lg:p-6">
+          <main className="min-h-screen bg-theme-bg-primary/35 backdrop-blur-xl p-3 sm:p-4 lg:p-6">
             <Outlet />
           </main>
 

@@ -385,7 +385,7 @@ const Spotlight = ({ target, children, position = 'bottom' }) => {
 // Componente Modal
 const TourModal = ({ children }) => {
   return createPortal(
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -396,7 +396,7 @@ const TourModal = ({ children }) => {
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="relative z-10 w-full max-w-md"
+        className="relative z-10 w-full max-w-sm sm:max-w-md my-auto"
       >
         {children}
       </motion.div>
@@ -587,31 +587,31 @@ export default function InteractiveTour({ role = 'admin', onComplete, onSkip }) 
     return (
       <AnimatePresence>
         <TourModal>
-          <div className="bg-slate-800/95 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden">
-            <div className="p-8 text-center">
+          <div className="bg-slate-800/95 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="p-5 sm:p-6 text-center">
               <motion.div
                 initial={{ scale: 0.5, rotate: -10 }}
                 animate={{ scale: 1, rotate: 0 }}
-                className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30"
+                className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30"
               >
-                <Sparkles size={36} className="text-white" />
+                <Sparkles size={28} className="text-white" />
               </motion.div>
               
-              <h2 className="text-2xl font-bold text-white mb-3">{step.title}</h2>
-              <p className="text-slate-400 mb-8">{step.description}</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">{step.title}</h2>
+              <p className="text-sm sm:text-base text-slate-400 mb-5">{step.description}</p>
               
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
                 {!isLastStep ? (
                   <>
                     <button
                       onClick={handleSkip}
-                      className="px-6 py-3 text-slate-400 hover:text-white transition-colors"
+                      className="order-2 sm:order-1 px-4 py-2 text-slate-400 hover:text-white transition-colors text-sm"
                     >
                       Salta tour
                     </button>
                     <button
                       onClick={handleNext}
-                      className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold rounded-xl shadow-lg transition-all flex items-center gap-2"
+                      className="order-1 sm:order-2 w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
                     >
                       Iniziamo <ChevronRight size={18} />
                     </button>
@@ -619,9 +619,9 @@ export default function InteractiveTour({ role = 'admin', onComplete, onSkip }) 
                 ) : (
                   <button
                     onClick={handleComplete}
-                    className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-xl shadow-lg transition-all flex items-center gap-2"
+                    className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
                   >
-                    Inizia ad usare l'app <Check size={18} />
+                    Inizia <Check size={18} />
                   </button>
                 )}
               </div>

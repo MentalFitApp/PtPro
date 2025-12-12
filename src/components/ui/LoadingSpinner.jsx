@@ -96,34 +96,43 @@ export const ContentLoader = ({
     className={`flex flex-col items-center justify-center ${minHeight} w-full`}
   >
     <LoadingSpinner size="lg" variant="primary" />
-    <p className="mt-4 text-slate-400 text-sm">{text}</p>
+    <p className="mt-4 text-theme-text-tertiary text-sm">{text}</p>
   </motion.div>
 );
 
-// Dots loading animation (alternativa allo spinner)
-export const LoadingDots = ({ size = 'md', className = '' }) => {
+// Dots loading animation (alternativa allo spinner) - Enhanced
+export const LoadingDots = ({ size = 'md', variant = 'primary', className = '' }) => {
   const dotSizes = {
     sm: 'w-1.5 h-1.5',
     md: 'w-2 h-2',
     lg: 'w-3 h-3'
   };
+
+  const dotColors = {
+    primary: 'bg-blue-500',
+    secondary: 'bg-slate-400',
+    success: 'bg-emerald-500',
+    white: 'bg-white',
+  };
   
   const dotSize = dotSizes[size] || dotSizes.md;
+  const dotColor = dotColors[variant] || dotColors.primary;
   
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
+    <div className={`flex items-center gap-1.5 ${className}`}>
       {[0, 1, 2].map((i) => (
         <motion.div
           key={i}
-          className={`${dotSize} bg-blue-500 rounded-full`}
+          className={`${dotSize} ${dotColor} rounded-full`}
           animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.5, 1, 0.5]
+            scale: [1, 1.3, 1],
+            opacity: [0.4, 1, 0.4]
           }}
           transition={{
-            duration: 0.8,
+            duration: 0.9,
             repeat: Infinity,
-            delay: i * 0.15
+            delay: i * 0.12,
+            ease: 'easeInOut',
           }}
         />
       ))}
@@ -131,7 +140,7 @@ export const LoadingDots = ({ size = 'md', className = '' }) => {
   );
 };
 
-// Pulse loading per immagini/avatar
+// Pulse loading per immagini/avatar - Enhanced
 export const PulseLoader = ({ 
   size = 'md', 
   shape = 'circle',
@@ -146,8 +155,8 @@ export const PulseLoader = ({
   
   const shapeClasses = {
     circle: 'rounded-full',
-    square: 'rounded-lg',
-    card: 'rounded-xl w-full h-48'
+    square: 'rounded-xl',
+    card: 'rounded-2xl w-full h-48'
   };
   
   return (
@@ -155,11 +164,22 @@ export const PulseLoader = ({
       className={`
         ${sizeClasses[size] || sizeClasses.md} 
         ${shapeClasses[shape] || shapeClasses.circle}
-        bg-slate-700/50 animate-pulse
+        bg-theme-bg-tertiary/50 animate-pulse
         ${className}
       `}
     />
   );
 };
+
+// Modern shimmer loader
+export const ShimmerLoader = ({ className = '', height = 'h-4' }) => (
+  <div className={`${height} rounded-lg overflow-hidden bg-theme-bg-tertiary/30 ${className}`}>
+    <motion.div
+      className="h-full w-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+      animate={{ x: ['-100%', '200%'] }}
+      transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+    />
+  </div>
+);
 
 export default LoadingSpinner;

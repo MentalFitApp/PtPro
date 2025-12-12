@@ -23,8 +23,8 @@ export const ProCard = ({
   return (
     <Component
       onClick={onClick}
-      className={`bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl ${paddingClasses[padding]} ${
-        hover || onClick ? 'hover:bg-slate-800/70 hover:border-slate-600/50 transition-all cursor-pointer' : ''
+      className={`bg-theme-bg-secondary/70 backdrop-blur-sm border border-theme rounded-xl ${paddingClasses[padding]} ${
+        hover || onClick ? 'hover:bg-theme-bg-tertiary/70 transition-all cursor-pointer' : ''
       } ${className}`}
       whileHover={onClick ? { scale: 1.01 } : undefined}
       whileTap={onClick ? { scale: 0.99 } : undefined}
@@ -46,14 +46,14 @@ export const ProCardHeader = ({
     <div className={`flex items-start justify-between mb-4 ${className}`}>
       <div className="flex items-center gap-3">
         {Icon && (
-          <div className="p-2 rounded-lg bg-slate-700/50">
-            <Icon size={18} className="text-slate-300" />
+          <div className="p-2 rounded-lg bg-theme-bg-tertiary/60 border border-theme">
+            <Icon size={18} className="text-theme-text-secondary" />
           </div>
         )}
         <div>
-          <h3 className="text-base font-semibold text-slate-100">{title}</h3>
+          <h3 className="text-base font-semibold text-theme-text-primary">{title}</h3>
           {subtitle && (
-            <p className="text-sm text-slate-400 mt-0.5">{subtitle}</p>
+            <p className="text-sm text-theme-text-secondary mt-0.5">{subtitle}</p>
           )}
         </div>
       </div>
@@ -92,7 +92,7 @@ export const StatCard = ({
       <div className="flex items-start justify-between">
         {Icon && (
           <div className={`p-2.5 rounded-xl bg-gradient-to-br ${iconBgColors[iconBg]} border`}>
-            <Icon size={20} className="text-slate-200" />
+            <Icon size={20} className="text-theme-text-primary" />
           </div>
         )}
         {change !== undefined && (
@@ -104,8 +104,8 @@ export const StatCard = ({
       </div>
       
       <div className="mt-4">
-        <p className="text-2xl font-bold text-slate-100">{value}</p>
-        <p className="text-sm text-slate-400 mt-1">{label}</p>
+        <p className="text-2xl font-bold text-theme-text-primary">{value}</p>
+        <p className="text-sm text-theme-text-secondary mt-1">{label}</p>
       </div>
     </ProCard>
   );
@@ -150,12 +150,12 @@ export const InfoField = ({
   return (
     <div className={`flex items-start gap-3 ${className}`}>
       {Icon && (
-        <Icon size={16} className="text-slate-500 mt-0.5 flex-shrink-0" />
+        <Icon size={16} className="text-theme-text-tertiary mt-0.5 flex-shrink-0" />
       )}
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-slate-500 mb-0.5">{label}</p>
+        <p className="text-xs text-theme-text-tertiary mb-0.5">{label}</p>
         <p 
-          className={`text-sm text-slate-200 break-words ${copyable ? 'cursor-pointer hover:text-blue-400' : ''}`}
+          className={`text-sm text-theme-text-primary break-words ${copyable ? 'cursor-pointer hover:text-primary' : ''}`}
           onClick={handleCopy}
         >
           {value || '-'}
@@ -181,13 +181,13 @@ export const ListCard = ({
       <ProCardHeader title={title} icon={Icon} action={action} />
       
       {items.length === 0 ? (
-        <p className="text-sm text-slate-500 text-center py-4">{emptyMessage}</p>
+        <p className="text-sm text-theme-text-tertiary text-center py-4">{emptyMessage}</p>
       ) : (
         <div className="space-y-2">
           {items.map((item, idx) => (
-            <div key={idx} className="p-3 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
+            <div key={idx} className="p-3 rounded-lg bg-theme-bg-tertiary/40 hover:bg-theme-bg-tertiary/60 transition-colors border border-theme">
               {renderItem ? renderItem(item, idx) : (
-                <span className="text-sm text-slate-300">{item}</span>
+                <span className="text-sm text-theme-text-primary">{item}</span>
               )}
             </div>
           ))}
@@ -209,15 +209,15 @@ export const MetricCard = ({
   className = ''
 }) => {
   return (
-    <div className={`flex items-center gap-3 p-3 rounded-lg bg-slate-700/30 ${className}`}>
+    <div className={`flex items-center gap-3 p-3 rounded-lg bg-theme-bg-tertiary/40 border border-theme ${className}`}>
       {Icon && (
-        <div className="p-2 rounded-lg bg-slate-700/50">
-          <Icon size={16} className="text-slate-400" />
+        <div className="p-2 rounded-lg bg-theme-bg-tertiary/60 border border-theme">
+          <Icon size={16} className="text-theme-text-secondary" />
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-slate-500">{label}</p>
-        <p className="text-lg font-semibold text-slate-200">
+        <p className="text-xs text-theme-text-tertiary">{label}</p>
+        <p className="text-lg font-semibold text-theme-text-primary">
           {prefix}{value}{suffix}
         </p>
       </div>

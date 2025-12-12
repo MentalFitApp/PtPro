@@ -209,25 +209,25 @@ const StepContent = ({ step, onAction }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="text-center px-6"
+      className="text-center px-4 sm:px-6"
     >
       <motion.div
         initial={{ scale: 0.8 }}
         animate={{ scale: 1 }}
-        className={`w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br ${iconColors[step.color]} flex items-center justify-center shadow-lg`}
+        className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-4 rounded-xl sm:rounded-2xl bg-gradient-to-br ${iconColors[step.color]} flex items-center justify-center shadow-lg`}
       >
-        <step.icon size={36} className="text-white" />
+        <step.icon size={28} className="text-white" />
       </motion.div>
       
-      <h2 className="text-2xl font-bold text-white mb-3">{step.title}</h2>
-      <p className="text-slate-400 mb-6 max-w-md mx-auto">{step.description}</p>
+      <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">{step.title}</h2>
+      <p className="text-sm sm:text-base text-slate-400 mb-4 sm:mb-5 max-w-md mx-auto leading-relaxed">{step.description}</p>
       
       {step.action && (
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => onAction(step.action)}
-          className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium rounded-xl shadow-lg transition-all"
+          className="px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-medium rounded-xl shadow-lg transition-all"
         >
           {step.action.label}
         </motion.button>
@@ -318,7 +318,7 @@ export default function OnboardingWizard({ role = 'admin', onComplete, onSkip })
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
         >
           {/* Backdrop */}
           <motion.div
@@ -334,7 +334,7 @@ export default function OnboardingWizard({ role = 'admin', onComplete, onSkip })
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
-            className="relative w-full max-w-lg bg-gradient-to-b from-slate-800 to-slate-900 rounded-3xl shadow-2xl border border-slate-700/50 overflow-hidden"
+            className="relative w-full max-w-sm sm:max-w-lg bg-gradient-to-b from-slate-800 to-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-700/50 overflow-hidden my-auto max-h-[95vh] overflow-y-auto"
           >
             {/* Skip Button */}
             <button
@@ -345,7 +345,7 @@ export default function OnboardingWizard({ role = 'admin', onComplete, onSkip })
             </button>
 
             {/* Content */}
-            <div className="pt-12 pb-8">
+            <div className="pt-8 sm:pt-10 pb-4 sm:pb-6">
               <AnimatePresence mode="wait">
                 <StepContent 
                   key={step.id} 
@@ -356,7 +356,7 @@ export default function OnboardingWizard({ role = 'admin', onComplete, onSkip })
             </div>
 
             {/* Footer */}
-            <div className="px-6 pb-6">
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6">
               {/* Progress */}
               <div className="flex justify-center mb-6">
                 <ProgressDots total={steps.length} current={currentStep} />

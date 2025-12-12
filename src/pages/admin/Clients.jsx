@@ -23,6 +23,7 @@ import FilterPanel, { FilterSection, FilterCheckbox, FilterDateRange } from '../
 import KanbanBoard, { KanbanCard } from '../../components/layout/KanbanBoard';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { usePageInfo } from '../../contexts/PageContext';
 
 // --- COMPONENTI UI ---
 const Notification = ({ message, type, onDismiss }) => (
@@ -245,6 +246,16 @@ export default function Clients({ role: propRole }) {
   
   // Document title dinamico
   useDocumentTitle('Clienti');
+  
+  // Imposta titolo nell'header
+  usePageInfo({
+    pageTitle: 'Clienti',
+    pageSubtitle: `${stats.total} clienti totali`,
+    breadcrumbs: [
+      { label: 'Dashboard', to: '/' },
+      { label: 'Clienti' }
+    ]
+  }, [stats.total]);
   
   // --- NUOVI STATI PER FILTER PANEL E KANBAN ---
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);

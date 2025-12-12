@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, onSnapshot, orderBy, query, updateDoc, deleteDoc, addDoc, setDoc, getDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
@@ -46,7 +47,8 @@ import {
   Dumbbell,
   UtensilsCrossed,
   CalendarClock,
-  XCircle
+  XCircle,
+  KeyRound
 } from 'lucide-react';
 import { uploadToR2 } from '../../cloudflareStorage';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
@@ -58,6 +60,7 @@ import { useUserPreferences } from '../../hooks/useUserPreferences';
 import { useUnreadAnamnesi, useUnreadChecks } from '../../hooks/useUnreadNotifications';
 import normalizePhotoURLs from '../../utils/normalizePhotoURLs';
 import { formatDeviceInfo } from '../../utils/deviceInfo';
+import { usePageInfo } from '../../contexts/PageContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import ProgressCharts from '../../components/client/ProgressCharts';
@@ -73,11 +76,11 @@ import {
   CardFooter,
   InfoField,
   DataCard,
-  Badge,
   ListItemCard,
-  EmptyState,
   CardGrid
 } from '../../components/ui/UnifiedCard';
+import { Badge } from '../../components/ui/Badge';
+import EmptyState from '../../components/ui/EmptyState';
 import { ScheduleCallModal, NextCallCard, CallRequestsBadge } from '../../components/calls/CallScheduler';
 
 // Error boundary to avoid full page crash
@@ -737,6 +740,7 @@ export default function ClientDetail({ role: propRole }) {
     checkDate: new Date().toISOString().split('T')[0] // Data del check (default oggi)
   });
   const [uploadingCheckPhoto, setUploadingCheckPhoto] = useState(null);
+  const [resettingPassword, setResettingPassword] = useState(false);
   const photoInputRef = useRef(null);
   
   // State per schede
@@ -758,6 +762,20 @@ export default function ClientDetail({ role: propRole }) {
   const canDeleteClient = isAdmin;   // Solo admin può eliminare clienti
   const canEditClient = isAdmin || isCoach; // Entrambi possono modificare
   const backPath = isCoach ? '/coach/clients' : '/clients'; // Path di ritorno
+
+  // Imposta titolo nell'header con back button
+  usePageInfo({
+    pageTitle: client?.name || 'Dettaglio Cliente',
+    breadcrumbs: [
+      { label: 'Dashboard', to: isCoach ? '/coach' : '/' },
+      { label: 'Clienti', to: backPath },
+      { label: client?.name || 'Cliente' }
+    ],
+    backButton: {
+      label: 'Torna ai clienti',
+      onClick: () => navigate(backPath)
+    }
+  }, [client?.name, backPath]);
 
   // Marca anamnesi e checks come letti quando si entra nella pagina del cliente
   useEffect(() => {
@@ -1063,6 +1081,30 @@ export default function ClientDetail({ role: propRole }) {
   const handleDelete = async () => {
     if (window.confirm(`Eliminare ${client?.name}?`)) {
       try { await deleteDoc(getTenantDoc(db, 'clients', clientId)); navigate(backPath); } catch { toast.error('Errore eliminazione.'); }
+    }
+  };
+
+  // Invia email reset password al cliente
+  const handleResetPassword = async () => {
+    if (!client?.email) {
+      toast.error('Il cliente non ha un\'email associata');
+      return;
+    }
+    
+    setResettingPassword(true);
+    try {
+      const auth = getAuth();
+      await sendPasswordResetEmail(auth, client.email);
+      toast.success(`Email di reset password inviata a ${client.email}`);
+    } catch (error) {
+      console.error('Errore reset password:', error);
+      if (error.code === 'auth/user-not-found') {
+        toast.error('Nessun utente trovato con questa email');
+      } else {
+        toast.error('Errore nell\'invio dell\'email di reset');
+      }
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -1803,10 +1845,6 @@ export default function ClientDetail({ role: propRole }) {
           <div className="space-y-6">
             {/* Header Section */}
             <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
-              {/* Breadcrumb / Back button */}
-              <button onClick={() => navigate(backPath)} className="flex items-center gap-2 text-slate-400 hover:text-white mb-4 text-sm transition-colors">
-                <ArrowLeft size={16} /> Torna ai Clienti
-              </button>
               
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div className="space-y-2">
@@ -1835,6 +1873,16 @@ export default function ClientDetail({ role: propRole }) {
                   <QuickNotifyButton userId={clientId} userName={client.name} userType="client" />
                   {!isMobile && (
                     <>
+                      {client?.email && (
+                        <button 
+                          onClick={handleResetPassword} 
+                          disabled={resettingPassword}
+                          className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-amber-300 hover:bg-amber-900/20 border border-slate-700/50 hover:border-amber-500/50 rounded-lg text-sm transition-colors disabled:opacity-50"
+                          title="Invia email reset password"
+                        >
+                          {resettingPassword ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />} Reset Password
+                        </button>
+                      )}
                       {canEditClient && <button onClick={() => setShowEdit(true)} className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm transition-colors"><Edit size={16} /> Modifica</button>}
                       {canManagePayments && <button onClick={() => setShowRenewal(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-lg transition-colors"><Plus size={16} /> Rinnovo</button>}
                       <button onClick={() => setShowExtend(true)} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm transition-colors"><CalendarDays size={16} /> Prolunga</button>
@@ -2108,6 +2156,15 @@ export default function ClientDetail({ role: propRole }) {
 
             {isMobile && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+                {client?.email && (
+                  <button 
+                    onClick={handleResetPassword} 
+                    disabled={resettingPassword}
+                    className="px-3 py-2 border border-amber-500/50 bg-amber-900/20 text-amber-300 rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {resettingPassword ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />} Reset PW
+                  </button>
+                )}
                 {canEditClient && <button onClick={() => setShowEdit(true)} className="px-3 py-2 border border-slate-700 bg-slate-900 text-slate-200 rounded-lg text-sm flex items-center justify-center gap-2"><Edit size={14} /> Modifica</button>}
                 {canManagePayments && <button onClick={() => setShowRenewal(true)} className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm flex items-center justify-center gap-2"><Plus size={14} /> Rinnovo</button>}
                 <button onClick={() => setShowExtend(true)} className="px-3 py-2 bg-cyan-600/80 text-white border border-cyan-500/60 rounded-lg text-sm flex items-center justify-center gap-2"><CalendarDays size={14} /> Prolunga</button>

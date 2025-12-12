@@ -143,45 +143,62 @@ const getNavConfig = (role, isSuperAdmin = false) => {
 const SidebarLogo = ({ isCollapsed, branding }) => {
   if (isCollapsed) {
     return branding?.logoUrl ? (
-      <img 
+      <motion.img 
         src={branding.logoUrl} 
         alt={branding.appName}
-        className="h-8 w-8 object-contain mx-auto"
+        className="h-9 w-9 object-contain mx-auto"
+        whileHover={{ scale: 1.05 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       />
     ) : (
-      <div className="w-9 h-9 rounded-lg overflow-hidden ring-2 ring-blue-500/30 mx-auto">
+      <motion.div 
+        className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 mx-auto shadow-lg shadow-blue-500/20"
+        whileHover={{ scale: 1.05, rotate: 2 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      >
         <img 
           src="/logo192.png" 
           alt="FitFlow"
           className="w-full h-full object-cover"
         />
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <motion.div 
+      className="flex items-center gap-3"
+      initial={false}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+    >
       {branding?.logoUrl ? (
-        <img 
+        <motion.img 
           src={branding.logoUrl} 
           alt={branding.appName}
-          className="h-8 max-w-[140px] object-contain"
+          className="h-9 max-w-[140px] object-contain"
+          whileHover={{ scale: 1.02 }}
         />
       ) : (
         <>
-          <div className="w-9 h-9 rounded-lg overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/20">
+          <motion.div 
+            className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/25"
+            whileHover={{ scale: 1.05, rotate: 2 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          >
             <img 
               src="/logo192.png" 
               alt="FitFlow"
               className="w-full h-full object-cover"
             />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-white">{branding?.appName || 'FitFlow'}</h1>
+          </motion.div>
+          <div className="flex flex-col">
+            <h1 className="text-base font-bold text-theme-text-primary leading-tight">{branding?.appName || 'FitFlow'}</h1>
+            <span className="text-[10px] font-medium text-blue-400/70 tracking-wider uppercase">Pro</span>
           </div>
         </>
       )}
-    </div>
+    </motion.div>
   );
 };
 
@@ -234,30 +251,59 @@ const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0 }) => {
     <motion.button
       onClick={onClick}
       data-tour={tourId}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+      className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group ${
         isActive
-          ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
-          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+          ? 'bg-gradient-to-r from-blue-500/15 to-cyan-500/10 text-blue-400 shadow-sm shadow-blue-500/10'
+          : 'text-theme-text-secondary hover:text-theme-text-primary hover:bg-theme-bg-tertiary/60'
       }`}
-      whileHover={{ x: isCollapsed ? 0 : 2 }}
+      whileHover={{ x: isCollapsed ? 0 : 3, scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
       title={isCollapsed ? item.label : undefined}
     >
+      {/* Active indicator line */}
+      {isActive && (
+        <motion.div
+          layoutId="activeIndicator"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-blue-400 to-cyan-400 rounded-full"
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        />
+      )}
+      
       <div className="relative">
-        <Icon size={18} className="flex-shrink-0" />
+        <Icon 
+          size={18} 
+          className={`flex-shrink-0 transition-all duration-200 ${isActive ? 'text-blue-400' : 'group-hover:text-blue-400/70'}`} 
+        />
         {badge > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+          <motion.span 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30"
+          >
             {badge > 99 ? '99+' : badge}
-          </span>
+          </motion.span>
         )}
       </div>
-      {!isCollapsed && (
-        <span className="truncate font-medium flex-1">{item.label}</span>
-      )}
+      <AnimatePresence mode="wait">
+        {!isCollapsed && (
+          <motion.span 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            className="truncate font-medium flex-1 text-left"
+          >
+            {item.label}
+          </motion.span>
+        )}
+      </AnimatePresence>
       {!isCollapsed && badge > 0 && (
-        <span className="min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+        <motion.span 
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="min-w-[22px] h-[22px] px-1.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg shadow-rose-500/30"
+        >
           {badge > 99 ? '99+' : badge}
-        </span>
+        </motion.span>
       )}
     </motion.button>
   );
@@ -266,13 +312,19 @@ const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0 }) => {
 // === SEZIONE NAV ===
 const NavSection = ({ section, isCollapsed, currentPath, onNavigate, badges = {} }) => {
   return (
-    <div className="mb-4">
+    <div className="mb-5">
       {!isCollapsed && (
-        <div className="px-3 mb-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        <motion.div 
+          className="px-3 mb-2.5 flex items-center gap-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-theme-text-tertiary/70">
             {section.title}
           </span>
-        </div>
+          <div className="flex-1 h-px bg-gradient-to-r from-theme-text-tertiary/20 to-transparent" />
+        </motion.div>
       )}
       <div className="space-y-1">
         {section.items.map((item) => {
@@ -304,53 +356,67 @@ const UserMenu = ({ isCollapsed, user, onLogout, onNavigateProfile }) => {
   
   return (
     <div className="relative">
-      <button
+      <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors ${
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${
           isCollapsed ? 'justify-center' : ''
-        }`}
+        } ${isOpen ? 'bg-theme-bg-tertiary/60' : 'hover:bg-theme-bg-tertiary/40'}`}
       >
-        <img 
-          src={photoURL}
-          alt={displayName}
-          className="w-9 h-9 rounded-full ring-2 ring-slate-700"
-        />
+        <div className="relative">
+          <img 
+            src={photoURL}
+            alt={displayName}
+            className="w-10 h-10 rounded-xl ring-2 ring-theme shadow-lg"
+          />
+          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-theme-bg-secondary" />
+        </div>
         {!isCollapsed && (
           <>
             <div className="flex-1 text-left min-w-0">
-              <p className="text-sm font-medium text-slate-200 truncate">{displayName}</p>
-              <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+              <p className="text-sm font-semibold text-theme-text-primary truncate">{displayName}</p>
+              <p className="text-xs text-theme-text-tertiary truncate">{user?.email}</p>
             </div>
-            <ChevronRight 
-              size={16} 
-              className={`text-slate-500 transition-transform ${isOpen ? 'rotate-90' : ''}`}
-            />
+            <motion.div
+              animate={{ rotate: isOpen ? 90 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronRight 
+                size={16} 
+                className="text-theme-text-tertiary"
+              />
+            </motion.div>
           </>
         )}
-      </button>
+      </motion.button>
 
       <AnimatePresence>
         {isOpen && !isCollapsed && (
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden"
+            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            className="absolute bottom-full left-2 right-2 mb-2 bg-theme-bg-secondary/95 backdrop-blur-xl border border-theme/50 rounded-xl shadow-xl shadow-black/20 overflow-hidden"
           >
-            <button
+            <motion.button
               onClick={() => { onNavigateProfile(); setIsOpen(false); }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-slate-700/50 transition-colors"
+              whileHover={{ x: 2 }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-colors"
             >
-              <Settings size={16} />
+              <Settings size={16} className="text-blue-400" />
               <span>Impostazioni</span>
-            </button>
-            <button
+            </motion.button>
+            <div className="h-px bg-theme/50" />
+            <motion.button
               onClick={() => { onLogout(); setIsOpen(false); }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-rose-400 hover:bg-slate-700/50 transition-colors"
+              whileHover={{ x: 2 }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors"
             >
               <LogOut size={16} />
               <span>Esci</span>
-            </button>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -444,38 +510,55 @@ export const ProSidebar = ({
   return (
     <motion.aside
       initial={false}
-      animate={{ width: isCollapsed ? 72 : 260 }}
-      transition={{ duration: 0.2, ease: 'easeInOut' }}
-      className={`fixed top-0 left-0 h-screen bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 z-40 flex flex-col ${className}`}
+      animate={{ width: isCollapsed ? 76 : 264 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className={`fixed top-0 left-0 h-screen bg-theme-bg-secondary/80 backdrop-blur-2xl border-r border-theme/50 z-40 flex flex-col shadow-xl shadow-black/10 ${className}`}
     >
+      {/* Gradient overlay for depth */}
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none" />
+      
       {/* Header */}
-      <div className={`p-4 border-b border-slate-700/50 ${isCollapsed ? 'px-3' : ''}`}>
+      <div className={`relative p-4 border-b border-theme/50 ${isCollapsed ? 'px-4' : ''}`}>
         <div className="flex items-center justify-between">
           <SidebarLogo isCollapsed={isCollapsed} branding={branding} />
-          {!isCollapsed && (
-            <button
-              onClick={onToggleCollapse}
-              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-              title="Comprimi sidebar"
-            >
-              <ChevronLeft size={18} />
-            </button>
-          )}
+          <AnimatePresence mode="wait">
+            {!isCollapsed && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={onToggleCollapse}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 rounded-xl bg-theme-bg-tertiary/40 hover:bg-theme-bg-tertiary text-theme-text-secondary hover:text-theme-text-primary transition-all"
+                title="Comprimi sidebar"
+              >
+                <ChevronLeft size={16} />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
         
-        {isCollapsed && (
-          <button
-            onClick={onToggleCollapse}
-            className="w-full mt-3 p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors flex items-center justify-center"
-            title="Espandi sidebar"
-          >
-            <ChevronRight size={18} />
-          </button>
-        )}
+        <AnimatePresence mode="wait">
+          {isCollapsed && (
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onToggleCollapse}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="w-full mt-3 p-2 rounded-xl bg-theme-bg-tertiary/40 hover:bg-theme-bg-tertiary text-theme-text-secondary hover:text-theme-text-primary transition-all flex items-center justify-center"
+              title="Espandi sidebar"
+            >
+              <ChevronRight size={16} />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 overflow-y-auto scrollbar-hide">
+      <nav className="relative flex-1 p-3 overflow-y-auto scrollbar-hide">
         {navConfig.sections.map((section, idx) => (
           <NavSection
             key={section.title}
@@ -489,17 +572,26 @@ export const ProSidebar = ({
       </nav>
 
       {/* Help */}
-      {!isCollapsed && (
-        <div className="px-3 pb-2">
-          <button
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors"
-            onClick={() => navigate('/guida')}
+      <AnimatePresence>
+        {!isCollapsed && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="px-3 pb-3"
           >
-            <HelpCircle size={18} />
-            <span>Aiuto</span>
-          </button>
-        </div>
-      )}
+            <motion.button
+              whileHover={{ x: 3, scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-theme-text-secondary hover:text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-all"
+              onClick={() => navigate('/guida')}
+            >
+              <HelpCircle size={18} className="text-amber-400/70" />
+              <span className="font-medium">Aiuto</span>
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.aside>
   );
 };
@@ -560,30 +652,35 @@ export const MobileSidebar = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden"
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 lg:hidden"
           />
           
           {/* Sidebar */}
           <motion.aside
-            initial={{ x: -300 }}
-            animate={{ x: 0 }}
-            exit={{ x: -300 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed left-0 top-0 h-screen w-72 bg-slate-900/98 backdrop-blur-xl border-r border-slate-700/50 z-50 flex flex-col lg:hidden"
+            initial={{ x: -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -300, opacity: 0 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+            className="fixed left-0 top-0 h-screen w-[280px] bg-theme-bg-secondary/95 backdrop-blur-2xl border-r border-theme/50 z-50 flex flex-col lg:hidden shadow-2xl shadow-black/30"
           >
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-blue-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none" />
+            
             {/* Header */}
-            <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
+            <div className="relative p-4 border-b border-theme/50 flex items-center justify-between">
               <SidebarLogo isCollapsed={false} branding={branding} />
-              <button
+              <motion.button
                 onClick={onClose}
-                className="p-2 rounded-lg hover:bg-slate-800 text-slate-400"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-2.5 rounded-xl bg-theme-bg-tertiary/50 hover:bg-theme-bg-tertiary text-theme-text-secondary hover:text-theme-text-primary transition-all"
               >
-                <X size={20} />
-              </button>
+                <X size={18} />
+              </motion.button>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-3 overflow-y-auto">
+            <nav className="relative flex-1 p-3 overflow-y-auto scrollbar-hide">
               {navConfig.sections.map((section) => (
                 <NavSection
                   key={section.title}
@@ -596,25 +693,30 @@ export const MobileSidebar = ({
             </nav>
 
             {/* User */}
-            <div className="p-3 border-t border-slate-700/50">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-800/50">
-                <img 
-                  src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.displayName || 'U')}&background=3b82f6&color=fff`}
-                  alt="User"
-                  className="w-10 h-10 rounded-full ring-2 ring-slate-700"
-                />
+            <div className="relative p-3 border-t border-theme/50">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-theme-bg-tertiary/50 to-transparent border border-theme/30">
+                <div className="relative">
+                  <img 
+                    src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.displayName || 'U')}&background=3b82f6&color=fff`}
+                    alt="User"
+                    className="w-11 h-11 rounded-xl ring-2 ring-theme shadow-lg"
+                  />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-theme-bg-secondary" />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-200 truncate">{user?.displayName || 'Utente'}</p>
-                  <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                  <p className="text-sm font-semibold text-theme-text-primary truncate">{user?.displayName || 'Utente'}</p>
+                  <p className="text-xs text-theme-text-tertiary truncate">{user?.email}</p>
                 </div>
               </div>
-              <button
+              <motion.button
                 onClick={handleLogout}
-                className="w-full mt-2 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-rose-400 hover:bg-slate-800/50 transition-colors"
+                whileHover={{ x: 3 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full mt-2 flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-rose-400 hover:bg-rose-500/10 transition-colors"
               >
                 <LogOut size={18} />
-                <span>Esci</span>
-              </button>
+                <span className="font-medium">Esci</span>
+              </motion.button>
             </div>
           </motion.aside>
         </>

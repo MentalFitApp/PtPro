@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Settings, LogOut, ChevronDown, Bell, User, CreditCard, Home, Users, MessageSquare, Calendar, Dumbbell, Utensils, Activity } from 'lucide-react';
+import { Menu, Settings, LogOut, ChevronDown, Bell, User, CreditCard, Home, Users, MessageSquare, Calendar, Dumbbell, Utensils, Activity, ChevronRight, ArrowLeft } from 'lucide-react';
 import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
 import { ProSidebar, MobileSidebar } from './ProSidebar';
@@ -11,6 +11,7 @@ import ThemeToggle from '../ui/ThemeToggle';
 import NotificationPermissionModal from '../notifications/NotificationPermissionModal';
 import InteractiveTour from '../onboarding/InteractiveTour';
 import { useUnreadMessages } from '../../hooks/useUnreadNotifications';
+import { PageProvider, usePageContext } from '../../contexts/PageContext';
 
 // === STELLE ANIMATE ===
 const AnimatedStars = () => {
@@ -75,14 +76,14 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
     <motion.header
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="fixed top-0 left-0 right-0 z-40 lg:hidden bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50"
+      className="fixed top-0 left-0 right-0 z-40 lg:hidden bg-theme-bg-secondary/90 backdrop-blur-xl border-b border-theme"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
           <button
             onClick={onMenuOpen}
-            className="p-2 rounded-lg hover:bg-slate-800 text-slate-400"
+            className="p-2 rounded-lg hover:bg-theme-bg-tertiary/60 text-theme-text-secondary"
           >
             <Menu size={22} />
           </button>
@@ -103,7 +104,7 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <span className="text-sm font-bold text-white">{branding?.appName || 'FitFlow'}</span>
+                <span className="text-sm font-bold text-theme-text-primary">{branding?.appName || 'FitFlow'}</span>
               </>
             )}
           </div>
@@ -130,31 +131,31 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 w-56 bg-slate-800/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50"
+                  className="absolute right-0 top-full mt-2 w-56 bg-theme-bg-secondary/95 backdrop-blur-xl border border-theme rounded-xl shadow-2xl overflow-hidden z-50"
                 >
-                  <div className="p-3 border-b border-slate-700/50">
-                    <p className="text-sm font-medium text-white truncate">{displayName}</p>
-                    <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                  <div className="p-3 border-b border-theme">
+                    <p className="text-sm font-medium text-theme-text-primary truncate">{displayName}</p>
+                    <p className="text-xs text-theme-text-secondary truncate">{user?.email}</p>
                   </div>
                   <div className="py-1">
                     <button
                       onClick={onNavigateProfile}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700/50 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-colors"
                     >
                       <User size={16} />
                       <span>Profilo</span>
                     </button>
                     <button
                       onClick={onNavigateSettings}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700/50 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-colors"
                     >
                       <Settings size={16} />
                       <span>Impostazioni</span>
                     </button>
-                    <div className="my-1 border-t border-slate-700/50" />
+                    <div className="my-1 border-t border-theme" />
                     <button
                       onClick={onLogout}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-400 hover:bg-slate-700/50 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-500 hover:bg-theme-bg-tertiary/60 transition-colors"
                     >
                       <LogOut size={16} />
                       <span>Esci</span>
@@ -171,22 +172,75 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
 };
 
 // === DESKTOP HEADER ===
-const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSettings, onNavigateProfile, onNavigateBilling, onLogout }) => {
+const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSettings, onNavigateProfile, onNavigateBilling, onLogout, isSidebarCollapsed }) => {
   const user = auth.currentUser;
+  const navigate = useNavigate();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Utente';
   const photoURL = user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3b82f6&color=fff`;
+  
+  // Ottieni info pagina dal context
+  const { pageTitle, pageSubtitle, breadcrumbs, backButton } = usePageContext();
 
   return (
-    <header className="fixed top-0 right-0 z-30 hidden lg:flex items-center gap-4 px-6 py-3 bg-slate-900/80 backdrop-blur-xl border-b border-slate-700/30"
-      style={{ left: 'var(--sidebar-width, 260px)' }}
+    <header 
+      className="fixed top-0 right-0 z-30 hidden lg:flex items-center gap-4 px-6 py-2.5 bg-theme-bg-secondary/80 backdrop-blur-2xl border-b border-theme/50"
+      style={{ left: isSidebarCollapsed ? '76px' : '264px', transition: 'left 0.3s ease' }}
     >
-      <div className="flex-1" />
+      {/* Left side - Page Title, Breadcrumbs, Back Button */}
+      <div className="flex-1 flex items-center gap-4 min-w-0">
+        {/* Back Button */}
+        {backButton && (
+          <motion.button
+            onClick={() => backButton.onClick ? backButton.onClick() : navigate(-1)}
+            whileHover={{ scale: 1.05, x: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-theme-text-secondary hover:text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-all"
+          >
+            <ArrowLeft size={16} />
+            <span className="hidden xl:inline">{backButton.label || 'Indietro'}</span>
+          </motion.button>
+        )}
+        
+        {/* Breadcrumbs */}
+        {breadcrumbs && breadcrumbs.length > 0 && (
+          <nav className="hidden md:flex items-center gap-1.5 text-sm">
+            {breadcrumbs.map((crumb, index) => (
+              <React.Fragment key={index}>
+                {index > 0 && <ChevronRight size={14} className="text-theme-text-tertiary" />}
+                {crumb.to ? (
+                  <button
+                    onClick={() => navigate(crumb.to)}
+                    className="text-theme-text-tertiary hover:text-theme-text-primary transition-colors"
+                  >
+                    {crumb.label}
+                  </button>
+                ) : (
+                  <span className="text-theme-text-primary font-medium">{crumb.label}</span>
+                )}
+              </React.Fragment>
+            ))}
+          </nav>
+        )}
+        
+        {/* Page Title (when no breadcrumbs) */}
+        {pageTitle && (!breadcrumbs || breadcrumbs.length === 0) && (
+          <div className="flex flex-col">
+            <h1 className="text-base font-semibold text-theme-text-primary leading-tight">
+              {pageTitle}
+            </h1>
+            {pageSubtitle && (
+              <p className="text-xs text-theme-text-tertiary">{pageSubtitle}</p>
+            )}
+          </div>
+        )}
+      </div>
       
+      {/* Right side - Actions */}
       <div className="flex items-center gap-3">
         <ThemeToggle />
         
         <button 
-          className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+          className="p-2 rounded-lg hover:bg-theme-bg-tertiary/60 text-theme-text-secondary hover:text-theme-text-primary transition-colors"
           title="Notifiche"
         >
           <Bell size={18} />
@@ -195,15 +249,15 @@ const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSetti
         <div className="relative">
           <button 
             onClick={onProfileMenuToggle}
-            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-800/50 transition-colors"
+            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-theme-bg-tertiary/60 transition-colors"
           >
             <img 
               src={photoURL}
               alt="User"
-              className="w-8 h-8 rounded-full ring-2 ring-slate-700"
+              className="w-8 h-8 rounded-full ring-2 ring-theme"
             />
-            <span className="text-sm font-medium text-slate-300 hidden xl:block">{displayName}</span>
-            <ChevronDown size={14} className={`text-slate-500 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+            <span className="text-sm font-medium text-theme-text-primary hidden xl:block">{displayName}</span>
+            <ChevronDown size={14} className={`text-theme-text-tertiary transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
           </button>
           
           <AnimatePresence>
@@ -213,31 +267,31 @@ const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSetti
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full mt-2 w-56 bg-slate-800/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50"
+                className="absolute right-0 top-full mt-2 w-56 bg-theme-bg-secondary/95 backdrop-blur-xl border border-theme rounded-xl shadow-2xl overflow-hidden z-50"
               >
-                <div className="p-3 border-b border-slate-700/50">
-                  <p className="text-sm font-medium text-white truncate">{displayName}</p>
-                  <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                  <div className="p-3 border-b border-theme">
+                    <p className="text-sm font-medium text-theme-text-primary truncate">{displayName}</p>
+                    <p className="text-xs text-theme-text-secondary truncate">{user?.email}</p>
                 </div>
                 <div className="py-1">
                   <button
                     onClick={onNavigateProfile}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700/50 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-colors"
                   >
                     <User size={16} />
                     <span>Profilo</span>
                   </button>
                   <button
                     onClick={onNavigateSettings}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700/50 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-colors"
                   >
                     <Settings size={16} />
                     <span>Impostazioni</span>
                   </button>
-                  <div className="my-1 border-t border-slate-700/50" />
+                    <div className="my-1 border-t border-theme" />
                   <button
                     onClick={onLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-400 hover:bg-slate-700/50 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-500 hover:bg-theme-bg-tertiary/60 transition-colors"
                   >
                     <LogOut size={16} />
                     <span>Esci</span>
@@ -565,6 +619,7 @@ export const ProLayout = () => {
   }
 
   return (
+    <PageProvider>
     <div className="min-h-screen bg-transparent overflow-x-hidden">
       {/* Sfondo stellato */}
       <div className="starry-background" />
@@ -588,10 +643,7 @@ export const ProLayout = () => {
 
       {/* Desktop Header */}
       {!isMobile && (
-        <div 
-          data-profile-menu
-          style={{ '--sidebar-width': isSidebarCollapsed ? '72px' : '260px' }}
-        >
+        <div data-profile-menu>
           <DesktopHeader 
             isProfileMenuOpen={isProfileMenuOpen}
             onProfileMenuToggle={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
@@ -599,6 +651,7 @@ export const ProLayout = () => {
             onNavigateProfile={handleNavigateProfile}
             onNavigateBilling={handleNavigateBilling}
             onLogout={handleLogout}
+            isSidebarCollapsed={isSidebarCollapsed}
           />
         </div>
       )}
@@ -621,15 +674,15 @@ export const ProLayout = () => {
 
       {/* Main Content Area */}
       <div 
-        className={`min-h-screen transition-all duration-200 ${
+        className={`min-h-screen transition-all duration-300 ease-out ${
           !isMobile 
-            ? (isSidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]')
+            ? (isSidebarCollapsed ? 'lg:ml-[76px]' : 'lg:ml-[264px]')
             : ''
         }`}
       >
         <main 
-          className={`min-h-screen bg-slate-900/30 ${
-            isMobile ? 'pb-20' : 'pt-14'
+          className={`min-h-screen bg-gradient-to-br from-theme-bg-primary/40 via-theme-bg-primary/30 to-theme-bg-secondary/20 ${
+            isMobile ? 'pb-24' : 'pt-14'
           }`}
           style={isMobile ? { paddingTop: 'calc(64px + env(safe-area-inset-top, 0px))' } : undefined}
         >
@@ -660,6 +713,7 @@ export const ProLayout = () => {
         />
       )}
     </div>
+    </PageProvider>
   );
 };
 

@@ -20,10 +20,10 @@ export const PremiumCard = ({
       animate={{ opacity: 1, y: 0 }}
       whileHover={hover ? { scale: 1.02, y: -4 } : {}}
       className={`
-        bg-slate-800/60 backdrop-blur-sm rounded-xl shadow-glow 
-        border border-slate-700/50 shadow-xl
-        ${gradient ? 'bg-gradient-to-br from-slate-800/60 to-slate-900/60' : ''}
-        ${hover ? 'hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer' : ''}
+        bg-theme-bg-secondary/75 backdrop-blur-sm rounded-xl shadow-glow 
+        border border-theme shadow-xl
+        ${gradient ? 'bg-gradient-to-br from-theme-bg-secondary/80 to-theme-bg-primary/60' : ''}
+        ${hover ? 'hover:border-blue-500/40 hover:shadow-2xl hover:shadow-blue-500/10 cursor-pointer' : ''}
         ${padding}
         transition-all duration-300
         ${className}
@@ -70,9 +70,9 @@ export const StatCard = ({
           </div>
         )}
       </div>
-      <h3 className="text-2xl font-bold text-white mb-1">{value}</h3>
-      <p className="text-sm text-slate-400">{title}</p>
-      {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
+      <h3 className="text-2xl font-bold text-theme-text-primary mb-1">{value}</h3>
+      <p className="text-sm text-theme-text-secondary">{title}</p>
+      {subtitle && <p className="text-xs text-theme-text-tertiary mt-1">{subtitle}</p>}
     </PremiumCard>
   );
 };

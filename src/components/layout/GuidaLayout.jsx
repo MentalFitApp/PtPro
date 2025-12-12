@@ -72,7 +72,7 @@ export default function GuidaLayout() {
     <div className="overflow-x-hidden w-full min-h-screen">
       <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-background text-foreground">
         <AnimatedBackground />
-        <main className="w-full flex-1 flex flex-col items-center justify-center p-4 z-10">
+        <main className="w-full flex-1 flex flex-col items-center justify-center p-4 z-10 text-theme-text-primary">
           <Outlet />
         </main>
       </div>

@@ -39,6 +39,9 @@ export default defineConfig({
 
   build: {
     chunkSizeWarningLimit: 1500,
+    // La minificazione CSS (esbuild) produce warning su alcuni selettori complessi.
+    // Disabilitata per avere build pulita e stabile.
+    cssMinify: false,
     // Rimuove console.log in produzione
     minify: 'terser',
     terserOptions: {

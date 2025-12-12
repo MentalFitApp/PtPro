@@ -12,6 +12,7 @@ import { useUserPreferences } from '../../hooks/useUserPreferences';
 import { SkeletonCard, SkeletonList } from '../../components/ui/SkeletonLoader';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { usePageInfo } from '../../contexts/PageContext';
 import {
   TrendingUp, TrendingDown, Users, DollarSign, Calendar, 
   ChevronRight, LogOut, User, Bell, Search, Plus,
@@ -181,6 +182,12 @@ export default function DashboardPro() {
   
   // Document title dinamico
   useDocumentTitle('Dashboard');
+  
+  // Imposta titolo nell'header
+  usePageInfo({
+    pageTitle: 'Dashboard',
+    pageSubtitle: `Bentornato, ${userName?.split(' ')[0] || 'Admin'}!`
+  }, [userName]);
 
   // Auth check
   useEffect(() => {

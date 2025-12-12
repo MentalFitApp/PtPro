@@ -14,7 +14,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={handleToggle}
-      className="p-2 rounded-lg hover:bg-white/10 transition-all duration-200 text-slate-400 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+      className="p-2 rounded-lg hover:bg-theme-bg-tertiary/60 transition-all duration-200 text-theme-text-secondary hover:text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
       title={`Passa al tema ${isDark ? 'chiaro' : 'scuro'}`}
       aria-label={`Passa al tema ${isDark ? 'chiaro' : 'scuro'}`}
     >

@@ -11,7 +11,8 @@ import {
   ArrowRight, Eye, Clock, Search, Filter, Check
 } from 'lucide-react';
 import { useUnreadChecks } from '../../hooks/useUnreadNotifications';
-import { UnifiedCard, CardHeaderSimple, CardContent, Badge } from '../../components/ui/UnifiedCard';
+import { UnifiedCard, CardHeaderSimple, CardContent } from '../../components/ui/UnifiedCard';
+import { Badge } from '../../components/ui/Badge';
 
 export default function AdminChecksList() {
   const navigate = useNavigate();
