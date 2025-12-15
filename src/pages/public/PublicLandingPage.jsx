@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { collection, query, where, getDocs, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { DynamicBlock } from '../../components/landingBlocks';
 import { X } from 'lucide-react';
@@ -48,18 +48,33 @@ export default function PublicLandingPage() {
 
   const loadPage = async () => {
     try {
-      // 1. Trova tenant tramite slug
+      // 1. Trova tenant tramite siteSlug o direttamente per ID
+      let foundTenantId = null;
+      
+      // Prima prova a cercare per siteSlug
       const tenantsRef = collection(db, 'tenants');
-      const tenantQuery = query(tenantsRef, where('slug', '==', tenantSlug));
+      const tenantQuery = query(tenantsRef, where('siteSlug', '==', tenantSlug));
       const tenantSnap = await getDocs(tenantQuery);
       
-      if (tenantSnap.empty) {
+      if (!tenantSnap.empty) {
+        foundTenantId = tenantSnap.docs[0].id;
+      } else {
+        // Fallback: potrebbe essere direttamente l'ID del tenant
+        // Verifica che il documento esista
+        const tenantDocRef = doc(db, 'tenants', tenantSlug);
+        const tenantDocSnap = await getDoc(tenantDocRef);
+        
+        if (tenantDocSnap.exists()) {
+          foundTenantId = tenantSlug;
+        }
+      }
+      
+      if (!foundTenantId) {
         setError('Tenant non trovato');
         setLoading(false);
         return;
       }
       
-      const foundTenantId = tenantSnap.docs[0].id;
       setTenantId(foundTenantId);
       
       // 2. Carica landing page - prova prima con nuovo sistema, poi vecchio

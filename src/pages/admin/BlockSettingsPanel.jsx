@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { DEFAULT_BLOCKS } from '../../services/landingPageService';
 
@@ -8,15 +8,35 @@ import { DEFAULT_BLOCKS } from '../../services/landingPageService';
 const BlockSettingsPanel = ({ block, onUpdate, onClose }) => {
   const [localSettings, setLocalSettings] = useState(block?.settings || {});
   const [expandedSections, setExpandedSections] = useState(['content', 'style']);
+  const debounceRef = useRef(null);
 
   useEffect(() => {
     setLocalSettings(block?.settings || {});
   }, [block?.id]);
 
+  // Debounced update to parent - evita re-render continui
+  const debouncedUpdate = useCallback((newSettings) => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      onUpdate(newSettings);
+    }, 300);
+  }, [onUpdate]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
   const handleChange = (key, value) => {
     const newSettings = { ...localSettings, [key]: value };
     setLocalSettings(newSettings);
-    onUpdate(newSettings);
+    debouncedUpdate(newSettings);
   };
 
   const handleNestedChange = (parentKey, key, value) => {
@@ -28,24 +48,30 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose }) => {
       }
     };
     setLocalSettings(newSettings);
-    onUpdate(newSettings);
+    debouncedUpdate(newSettings);
   };
 
   const handleArrayItemChange = (arrayKey, index, field, value) => {
     const newArray = [...(localSettings[arrayKey] || [])];
     newArray[index] = { ...newArray[index], [field]: value };
-    handleChange(arrayKey, newArray);
+    const newSettings = { ...localSettings, [arrayKey]: newArray };
+    setLocalSettings(newSettings);
+    debouncedUpdate(newSettings);
   };
 
   const handleAddArrayItem = (arrayKey, defaultItem) => {
     const newArray = [...(localSettings[arrayKey] || []), defaultItem];
-    handleChange(arrayKey, newArray);
+    const newSettings = { ...localSettings, [arrayKey]: newArray };
+    setLocalSettings(newSettings);
+    debouncedUpdate(newSettings);
   };
 
   const handleRemoveArrayItem = (arrayKey, index) => {
     const newArray = [...(localSettings[arrayKey] || [])];
     newArray.splice(index, 1);
-    handleChange(arrayKey, newArray);
+    const newSettings = { ...localSettings, [arrayKey]: newArray };
+    setLocalSettings(newSettings);
+    debouncedUpdate(newSettings);
   };
 
   const toggleSection = (section) => {

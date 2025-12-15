@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useTenant } from '../../contexts/TenantContext';
@@ -10,6 +10,7 @@ import {
   createBlock,
   DEFAULT_BLOCKS,
   LANDING_TEMPLATES,
+  generateSlug,
 } from '../../services/landingPageService';
 import { DynamicBlock } from '../../components/landingBlocks';
 import BlockSettingsPanel from './BlockSettingsPanel';
@@ -28,6 +29,11 @@ import {
   Check,
   X,
   Menu,
+  Link2,
+  Wand2,
+  AlertCircle,
+  ExternalLink,
+  Info,
 } from 'lucide-react';
 
 const LandingPageEditor = () => {
@@ -527,6 +533,7 @@ const LandingPageEditor = () => {
         {showSettings && (
           <PageSettingsModal
             page={page}
+            tenantId={tenantId}
             onSave={async (settings) => {
               try {
                 await updateLandingPage(tenantId, pageId, settings);
@@ -545,14 +552,97 @@ const LandingPageEditor = () => {
   );
 };
 
-// Modal per le impostazioni della pagina
-const PageSettingsModal = ({ page, onSave, onClose }) => {
-  const [settings, setSettings] = useState({
-    title: page?.title || '',
-    slug: page?.slug || '',
-    description: page?.description || '',
-    settings: page?.settings || {},
-  });
+// Modal per le impostazioni della pagina - Migliorato con auto-generazione e validazioni
+const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
+  const [title, setTitle] = useState(page?.title || '');
+  const [slug, setSlug] = useState(page?.slug || '');
+  const [description, setDescription] = useState(page?.description || '');
+  const [seoTitle, setSeoTitle] = useState(page?.settings?.seo?.title || '');
+  const [seoDescription, setSeoDescription] = useState(page?.settings?.seo?.description || '');
+  const [facebookPixel, setFacebookPixel] = useState(page?.settings?.tracking?.facebookPixel || '');
+  const [googleAnalytics, setGoogleAnalytics] = useState(page?.settings?.tracking?.googleAnalytics || '');
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [seoManuallyEdited, setSeoManuallyEdited] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Genera slug automaticamente dal titolo (se non modificato manualmente)
+  useEffect(() => {
+    if (!slugManuallyEdited && title) {
+      const autoSlug = title
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      setSlug(autoSlug);
+    }
+  }, [title, slugManuallyEdited]);
+
+  // Auto-popola SEO dal contenuto principale (se non modificato manualmente)
+  useEffect(() => {
+    if (!seoManuallyEdited) {
+      if (!seoTitle && title) setSeoTitle(title);
+      if (!seoDescription && description) setSeoDescription(description);
+    }
+  }, [title, description, seoManuallyEdited, seoTitle, seoDescription]);
+
+  // URL preview
+  const previewUrl = useMemo(() => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/site/${tenantId}/${slug || 'your-page-slug'}`;
+  }, [tenantId, slug]);
+
+  // Validazioni
+  const validations = useMemo(() => {
+    const errors = [];
+    const warnings = [];
+    
+    if (!title.trim()) errors.push('Il titolo è obbligatorio');
+    if (title.length > 60) warnings.push('Titolo lungo: potrebbe essere troncato nei risultati di ricerca');
+    
+    if (!slug.trim()) errors.push('Lo slug URL è obbligatorio');
+    if (slug && !/^[a-z0-9-]+$/.test(slug)) errors.push('Lo slug può contenere solo lettere minuscole, numeri e trattini');
+    
+    if (seoTitle && seoTitle.length > 60) warnings.push('Meta Title: idealmente max 60 caratteri');
+    if (seoDescription && seoDescription.length > 160) warnings.push('Meta Description: idealmente max 160 caratteri');
+    
+    if (facebookPixel && !/^\d{15,16}$/.test(facebookPixel)) warnings.push('Facebook Pixel ID sembra non valido (dovrebbe essere 15-16 cifre)');
+    if (googleAnalytics && !/^G-[A-Z0-9]+$/.test(googleAnalytics)) warnings.push('Google Analytics ID sembra non valido (formato: G-XXXXXXXXXX)');
+    
+    return { errors, warnings, isValid: errors.length === 0 };
+  }, [title, slug, seoTitle, seoDescription, facebookPixel, googleAnalytics]);
+
+  const handleSave = async () => {
+    if (!validations.isValid) return;
+    
+    setSaving(true);
+    try {
+      await onSave({
+        title,
+        slug,
+        description,
+        settings: {
+          ...page?.settings,
+          seo: {
+            title: seoTitle || title,
+            description: seoDescription || description,
+            ogImage: page?.settings?.seo?.ogImage || '',
+            keywords: page?.settings?.seo?.keywords || [],
+          },
+          tracking: {
+            facebookPixel,
+            googleAnalytics,
+            tiktokPixel: page?.settings?.tracking?.tiktokPixel || '',
+            customScripts: page?.settings?.tracking?.customScripts || '',
+          },
+        },
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <motion.div
@@ -567,17 +657,32 @@ const PageSettingsModal = ({ page, onSave, onClose }) => {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-slate-800 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+        className="bg-slate-800 rounded-2xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white">Impostazioni Pagina</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-700 rounded-lg"
-          >
+          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
+
+        {/* Errori e Warning */}
+        {(validations.errors.length > 0 || validations.warnings.length > 0) && (
+          <div className="mb-6 space-y-2">
+            {validations.errors.map((error, i) => (
+              <div key={`err-${i}`} className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {error}
+              </div>
+            ))}
+            {validations.warnings.map((warning, i) => (
+              <div key={`warn-${i}`} className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm">
+                <Info className="w-4 h-4 flex-shrink-0" />
+                {warning}
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* Generale */}
@@ -585,29 +690,85 @@ const PageSettingsModal = ({ page, onSave, onClose }) => {
             <h3 className="text-sm font-semibold text-slate-400 uppercase mb-4">Generale</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-slate-300 mb-1">Titolo</label>
+                <label className="block text-sm text-slate-300 mb-1">
+                  Titolo <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
-                  value={settings.title}
-                  onChange={(e) => setSettings(s => ({ ...s, title: e.target.value }))}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Es: Trasformazione Fisica in 90 Giorni"
                   className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
+                <p className="text-xs text-slate-500 mt-1">{title.length}/60 caratteri</p>
               </div>
+              
               <div>
-                <label className="block text-sm text-slate-300 mb-1">Slug URL</label>
-                <input
-                  type="text"
-                  value={settings.slug}
-                  onChange={(e) => setSettings(s => ({ ...s, slug: e.target.value }))}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
+                <label className="block text-sm text-slate-300 mb-1">
+                  Slug URL <span className="text-red-400">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={slug}
+                    onChange={(e) => {
+                      setSlugManuallyEdited(true);
+                      setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''));
+                    }}
+                    placeholder="trasformazione-fisica-90-giorni"
+                    className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSlugManuallyEdited(false);
+                      if (title) {
+                        const autoSlug = title
+                          .toLowerCase()
+                          .normalize('NFD')
+                          .replace(/[\u0300-\u036f]/g, '')
+                          .replace(/[^a-z0-9\s-]/g, '')
+                          .replace(/\s+/g, '-')
+                          .replace(/-+/g, '-')
+                          .replace(/^-|-$/g, '');
+                        setSlug(autoSlug);
+                      }
+                    }}
+                    className="px-3 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg transition-colors"
+                    title="Rigenera automaticamente dal titolo"
+                  >
+                    <Wand2 className="w-4 h-4 text-slate-300" />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">Solo lettere minuscole, numeri e trattini</p>
               </div>
+
+              {/* Preview URL */}
+              <div className="p-3 bg-slate-900/50 rounded-lg">
+                <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
+                  <Link2 className="w-3 h-3" />
+                  URL Pubblico:
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-sm text-sky-400 break-all">{previewUrl}</code>
+                  <button
+                    type="button"
+                    onClick={() => window.open(previewUrl, '_blank')}
+                    className="p-1.5 hover:bg-slate-700 rounded"
+                    title="Apri in nuova scheda"
+                  >
+                    <ExternalLink className="w-4 h-4 text-slate-400" />
+                  </button>
+                </div>
+              </div>
+              
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Descrizione</label>
                 <textarea
-                  value={settings.description}
-                  onChange={(e) => setSettings(s => ({ ...s, description: e.target.value }))}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   rows={3}
+                  placeholder="Una breve descrizione della tua offerta..."
                   className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
@@ -616,67 +777,89 @@ const PageSettingsModal = ({ page, onSave, onClose }) => {
 
           {/* SEO */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-400 uppercase mb-4">SEO</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-slate-400 uppercase">SEO</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setSeoManuallyEdited(false);
+                  setSeoTitle(title);
+                  setSeoDescription(description);
+                }}
+                className="flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300"
+              >
+                <Wand2 className="w-3 h-3" />
+                Auto-genera da contenuto
+              </button>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Meta Title</label>
                 <input
                   type="text"
-                  value={settings.settings?.seo?.title || settings.title}
-                  onChange={(e) => setSettings(s => ({
-                    ...s,
-                    settings: { ...s.settings, seo: { ...s.settings?.seo, title: e.target.value } }
-                  }))}
+                  value={seoTitle}
+                  onChange={(e) => {
+                    setSeoManuallyEdited(true);
+                    setSeoTitle(e.target.value);
+                  }}
+                  placeholder={title || 'Titolo per i motori di ricerca'}
                   className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
+                <p className={`text-xs mt-1 ${seoTitle.length > 60 ? 'text-amber-400' : 'text-slate-500'}`}>
+                  {seoTitle.length}/60 caratteri {seoTitle.length > 60 && '(consigliato max 60)'}
+                </p>
               </div>
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Meta Description</label>
                 <textarea
-                  value={settings.settings?.seo?.description || settings.description}
-                  onChange={(e) => setSettings(s => ({
-                    ...s,
-                    settings: { ...s.settings, seo: { ...s.settings?.seo, description: e.target.value } }
-                  }))}
+                  value={seoDescription}
+                  onChange={(e) => {
+                    setSeoManuallyEdited(true);
+                    setSeoDescription(e.target.value);
+                  }}
                   rows={2}
+                  placeholder={description || 'Descrizione per i risultati di ricerca'}
                   className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
+                <p className={`text-xs mt-1 ${seoDescription.length > 160 ? 'text-amber-400' : 'text-slate-500'}`}>
+                  {seoDescription.length}/160 caratteri {seoDescription.length > 160 && '(consigliato max 160)'}
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Tracking */}
-          <div>
-            <h3 className="text-sm font-semibold text-slate-400 uppercase mb-4">Tracking</h3>
-            <div className="space-y-4">
+          {/* Tracking - Collapsible */}
+          <details className="group">
+            <summary className="text-sm font-semibold text-slate-400 uppercase cursor-pointer hover:text-slate-300 list-none flex items-center gap-2">
+              <span className="transform transition-transform group-open:rotate-90">▶</span>
+              Tracking (Opzionale)
+            </summary>
+            <div className="space-y-4 mt-4 pl-4 border-l-2 border-slate-700">
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Facebook Pixel ID</label>
                 <input
                   type="text"
-                  value={settings.settings?.tracking?.facebookPixel || ''}
-                  onChange={(e) => setSettings(s => ({
-                    ...s,
-                    settings: { ...s.settings, tracking: { ...s.settings?.tracking, facebookPixel: e.target.value } }
-                  }))}
-                  placeholder="Es: 123456789012345"
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  value={facebookPixel}
+                  onChange={(e) => setFacebookPixel(e.target.value.replace(/\D/g, ''))}
+                  placeholder="123456789012345"
+                  maxLength={16}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
                 />
+                <p className="text-xs text-slate-500 mt-1">15-16 cifre numeriche</p>
               </div>
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Google Analytics ID</label>
                 <input
                   type="text"
-                  value={settings.settings?.tracking?.googleAnalytics || ''}
-                  onChange={(e) => setSettings(s => ({
-                    ...s,
-                    settings: { ...s.settings, tracking: { ...s.settings?.tracking, googleAnalytics: e.target.value } }
-                  }))}
-                  placeholder="Es: G-XXXXXXXXXX"
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  value={googleAnalytics}
+                  onChange={(e) => setGoogleAnalytics(e.target.value.toUpperCase())}
+                  placeholder="G-XXXXXXXXXX"
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
                 />
+                <p className="text-xs text-slate-500 mt-1">Formato: G-XXXXXXXXXX</p>
               </div>
             </div>
-          </div>
+          </details>
         </div>
 
         <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-slate-700">
@@ -687,10 +870,18 @@ const PageSettingsModal = ({ page, onSave, onClose }) => {
             Annulla
           </button>
           <button
-            onClick={() => onSave(settings)}
-            className="px-6 py-2 bg-gradient-to-r from-sky-500 to-cyan-400 text-white rounded-lg hover:shadow-lg transition-all"
+            onClick={handleSave}
+            disabled={!validations.isValid || saving}
+            className="px-6 py-2 bg-gradient-to-r from-sky-500 to-cyan-400 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            Salva Impostazioni
+            {saving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Salvataggio...
+              </>
+            ) : (
+              'Salva Impostazioni'
+            )}
           </button>
         </div>
       </motion.div>
