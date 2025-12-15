@@ -122,6 +122,37 @@ export function useUnreadAnamnesi() {
       return;
     }
 
+    // Prima verifica se l'utente è admin/coach
+    const checkRoleAndLoad = async () => {
+      try {
+        const { getDoc, doc } = await import('firebase/firestore');
+        
+        // Controlla ruolo admin
+        const adminDoc = await getDoc(doc(db, `tenants/${tenantId}/roles/admins`));
+        const isAdmin = adminDoc.exists() && adminDoc.data().uids?.includes(user.uid);
+        
+        // Controlla ruolo coach
+        const coachDoc = await getDoc(doc(db, `tenants/${tenantId}/roles/coaches`));
+        const isCoach = coachDoc.exists() && coachDoc.data().uids?.includes(user.uid);
+        
+        // Se non è admin o coach, non caricare nulla
+        if (!isAdmin && !isCoach) {
+          setUnreadCount(0);
+          setUnreadIds([]);
+          setLoading(false);
+          return;
+        }
+
+        // Carica anamnesi solo se admin/coach
+        loadAnamnesi();
+      } catch (error) {
+        console.error('Errore verifica ruolo per anamnesi:', error);
+        setUnreadCount(0);
+        setUnreadIds([]);
+        setLoading(false);
+      }
+    };
+
     // Legge i clientId le cui anamnesi sono già state viste
     const viewedKey = `viewed_anamnesi_${tenantId}_${user.uid}`;
     const viewedClientIds = JSON.parse(localStorage.getItem(viewedKey) || '[]');
@@ -175,10 +206,10 @@ export function useUnreadAnamnesi() {
       }
     };
     
-    loadAnamnesi();
+    checkRoleAndLoad();
     
-    // Ricarica ogni 5 minuti
-    const interval = setInterval(loadAnamnesi, 5 * 60 * 1000);
+    // Ricarica ogni 5 minuti (solo se già verificato come admin/coach)
+    const interval = setInterval(checkRoleAndLoad, 5 * 60 * 1000);
     
     return () => clearInterval(interval);
   }, []);
@@ -255,14 +286,44 @@ export function useUnreadChecks() {
       return;
     }
 
+    // Prima verifica se l'utente è admin/coach
+    const checkRoleAndLoad = async () => {
+      try {
+        const { getDoc, doc, getDocs, collection, query, orderBy, limit } = await import('firebase/firestore');
+        
+        // Controlla ruolo admin
+        const adminDoc = await getDoc(doc(db, `tenants/${tenantId}/roles/admins`));
+        const isAdmin = adminDoc.exists() && adminDoc.data().uids?.includes(user.uid);
+        
+        // Controlla ruolo coach
+        const coachDoc = await getDoc(doc(db, `tenants/${tenantId}/roles/coaches`));
+        const isCoach = coachDoc.exists() && coachDoc.data().uids?.includes(user.uid);
+        
+        // Se non è admin o coach, non caricare nulla
+        if (!isAdmin && !isCoach) {
+          setUnreadCount(0);
+          setUnreadIds([]);
+          setLoading(false);
+          return;
+        }
+
+        // Carica checks solo se admin/coach
+        loadChecks(getDocs, collection, query, orderBy, limit);
+      } catch (error) {
+        console.error('Errore verifica ruolo per checks:', error);
+        setUnreadCount(0);
+        setUnreadIds([]);
+        setLoading(false);
+      }
+    };
+
     // Legge gli ID già visti dal localStorage
     const viewedKey = `viewed_checks_${tenantId}_${user.uid}`;
     const viewedIds = JSON.parse(localStorage.getItem(viewedKey) || '[]');
 
     // Carica checks da tutti i clienti
-    const loadChecks = async () => {
+    const loadChecks = async (getDocs, collection, query, orderBy, limit) => {
       try {
-        const { getDocs, collection, query, orderBy, limit } = await import('firebase/firestore');
         const clientsRef = collection(db, `tenants/${tenantId}/clients`);
         const clientsSnap = await getDocs(clientsRef);
         
@@ -300,10 +361,10 @@ export function useUnreadChecks() {
       }
     };
     
-    loadChecks();
+    checkRoleAndLoad();
     
     // Ricarica ogni 5 minuti
-    const interval = setInterval(loadChecks, 5 * 60 * 1000);
+    const interval = setInterval(checkRoleAndLoad, 5 * 60 * 1000);
     
     return () => clearInterval(interval);
   }, []);

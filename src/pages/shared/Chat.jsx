@@ -27,47 +27,20 @@ import clsx from 'clsx';
 const cn = (...classes) => clsx(...classes);
 
 // ============ ANIMATED STARS BACKGROUND ============
-const AnimatedStars = () => {
-  const [initialized, setInitialized] = useState(false);
+// Genera le stelle una sola volta, fuori dal componente
+const STARS_DATA = [...Array(50)].map((_, i) => ({
+  id: i,
+  width: Math.random() * 2 + 1,
+  top: Math.random() * 100,
+  left: Math.random() * 100,
+  opacity: Math.random() * 0.5 + 0.2,
+  duration: Math.random() * 3 + 2,
+  delay: Math.random() * 2
+}));
 
+const AnimatedStars = React.memo(() => {
+  // Aggiungi CSS per l'animazione una sola volta
   useEffect(() => {
-    if (initialized) return;
-    
-    const existingContainer = document.querySelector('.chat-stars');
-    if (existingContainer) {
-      setInitialized(true);
-      return;
-    }
-
-    const container = document.createElement('div');
-    container.className = 'chat-stars';
-    container.style.cssText = `
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 0;
-    `;
-    
-    for (let i = 0; i < 50; i++) {
-      const star = document.createElement('div');
-      const size = Math.random() * 2 + 1;
-      star.style.cssText = `
-        position: absolute;
-        width: ${size}px;
-        height: ${size}px;
-        background: white;
-        border-radius: 50%;
-        top: ${Math.random() * 100}%;
-        left: ${Math.random() * 100}%;
-        opacity: ${Math.random() * 0.5 + 0.2};
-        animation: twinkle ${Math.random() * 3 + 2}s ease-in-out infinite;
-        animation-delay: ${Math.random() * 2}s;
-      `;
-      container.appendChild(star);
-    }
-
-    // Add CSS animation if not exists
     if (!document.getElementById('chat-stars-style')) {
       const style = document.createElement('style');
       style.id = 'chat-stars-style';
@@ -79,33 +52,30 @@ const AnimatedStars = () => {
       `;
       document.head.appendChild(style);
     }
-
-    setInitialized(true);
-    return () => {
-      container.remove();
-    };
-  }, [initialized]);
+  }, []);
 
   return (
-    <div className="chat-stars absolute inset-0 pointer-events-none overflow-hidden z-0">
-      {[...Array(50)].map((_, i) => (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+      {STARS_DATA.map((star) => (
         <div
-          key={i}
+          key={star.id}
           className="absolute rounded-full bg-white"
           style={{
-            width: `${Math.random() * 2 + 1}px`,
-            height: `${Math.random() * 2 + 1}px`,
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
-            opacity: Math.random() * 0.5 + 0.2,
-            animation: `twinkle ${Math.random() * 3 + 2}s ease-in-out infinite`,
-            animationDelay: `${Math.random() * 2}s`
+            width: `${star.width}px`,
+            height: `${star.width}px`,
+            top: `${star.top}%`,
+            left: `${star.left}%`,
+            opacity: star.opacity,
+            animation: `twinkle ${star.duration}s ease-in-out infinite`,
+            animationDelay: `${star.delay}s`
           }}
         />
       ))}
     </div>
   );
-};
+});
+
+AnimatedStars.displayName = 'AnimatedStars';
 
 // Helper per ottenere il ruolo dell'utente corrente
 const getCurrentUserRole = async (userId) => {
@@ -3574,7 +3544,7 @@ export default function Chat() {
         </div>
 
         {/* Input - Fixed at bottom */}
-        <div className="flex-shrink-0 z-20 bg-slate-900/90 backdrop-blur-xl border-t border-white/10">
+        <div className="flex-shrink-0 z-20 bg-slate-900/90 backdrop-blur-xl border-t border-white/10" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           <MessageInput
             onSend={handleSendMessage}
             onTyping={setTyping}
@@ -3634,7 +3604,10 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-[calc(100vh-120px)] md:h-[calc(100vh-120px)] flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 overflow-hidden fixed inset-0 md:relative md:inset-auto" style={{ top: isMobile ? 'env(safe-area-inset-top, 0px)' : undefined }}>
+    <div className={cn(
+      "flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 overflow-hidden",
+      isMobile ? "fixed inset-0 z-40" : "h-[calc(100vh-120px)] relative"
+    )}>
       {/* Profile Check Modal */}
       <AnimatePresence>
         {showProfileModal && (
@@ -3691,7 +3664,7 @@ export default function Chat() {
 
         {/* Mobile Layout */}
         {isMobile && (
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 relative">
             <AnimatePresence mode="wait">
               {showMobileChat ? (
                 <motion.div
@@ -3700,7 +3673,7 @@ export default function Chat() {
                   animate={{ x: 0 }}
                   exit={{ x: '100%' }}
                   transition={{ type: 'tween', duration: 0.2 }}
-                  className="absolute inset-0 flex flex-col"
+                  className="flex-1 flex flex-col absolute inset-0 z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 pb-16"
                   style={{ touchAction: 'pan-y' }}
                 >
                   {renderChatArea()}
@@ -3712,7 +3685,7 @@ export default function Chat() {
                   animate={{ x: 0 }}
                   exit={{ x: '-100%' }}
                   transition={{ type: 'tween', duration: 0.2 }}
-                  className="flex-1 flex flex-col overflow-hidden"
+                  className="flex-1 flex flex-col"
                 >
                   <ChatSidebar
                     chats={(chats || []).filter(c => !c.deletedBy?.includes(user?.uid))}
