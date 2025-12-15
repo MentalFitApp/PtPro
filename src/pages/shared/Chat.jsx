@@ -161,12 +161,13 @@ const EMOJI_CATEGORIES = {
 };
 
 // ============ EMOJI PICKER COMPONENT ============
-const EmojiPicker = ({ onSelect, onClose }) => {
+const EmojiPicker = ({ onSelect, onClose, inline = false }) => {
   const [activeCategory, setActiveCategory] = useState('Frecenti');
   const [searchTerm, setSearchTerm] = useState('');
   const pickerRef = useRef(null);
 
   useEffect(() => {
+    if (inline) return; // Non serve click outside per inline
     const handleClickOutside = (e) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target)) {
         onClose();
@@ -174,7 +175,7 @@ const EmojiPicker = ({ onSelect, onClose }) => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
+  }, [onClose, inline]);
 
   const filteredEmojis = useMemo(() => {
     if (!searchTerm) return EMOJI_CATEGORIES[activeCategory] || [];
@@ -183,6 +184,71 @@ const EmojiPicker = ({ onSelect, onClose }) => {
       emoji.includes(term)
     );
   }, [activeCategory, searchTerm]);
+
+  const content = (
+    <>
+      {/* Categories - compatte per inline */}
+      {!searchTerm && (
+        <div className={cn(
+          "flex gap-1 overflow-x-auto scrollbar-hide",
+          inline ? "pb-2" : "p-2 border-b border-slate-700"
+        )}>
+          {Object.keys(EMOJI_CATEGORIES).map(category => (
+            <button
+              key={category}
+              onClick={() => setActiveCategory(category)}
+              className={cn(
+                "px-2 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors",
+                activeCategory === category 
+                  ? "bg-cyan-500 text-white" 
+                  : "text-slate-400 hover:bg-slate-700"
+              )}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Emojis Grid */}
+      <div className={cn(
+        "overflow-y-auto",
+        inline ? "max-h-32" : "flex-1 p-2"
+      )}>
+        <div className={cn(
+          "grid gap-0.5",
+          inline ? "grid-cols-10" : "grid-cols-8"
+        )}>
+          {filteredEmojis.map((emoji, i) => (
+            <button
+              key={`${emoji}-${i}`}
+              onClick={() => {
+                onSelect(emoji);
+                if (!inline) onClose();
+              }}
+              className={cn(
+                "flex items-center justify-center hover:bg-slate-700 rounded-lg transition-colors cursor-pointer",
+                inline ? "w-7 h-7 text-lg" : "w-8 h-8 text-xl"
+              )}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+        {filteredEmojis.length === 0 && (
+          <p className="text-center text-slate-500 text-sm py-2">Nessun emoji trovato</p>
+        )}
+      </div>
+    </>
+  );
+
+  if (inline) {
+    return (
+      <div className="bg-slate-800/80 rounded-xl p-2 border border-white/10">
+        {content}
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -208,47 +274,7 @@ const EmojiPicker = ({ onSelect, onClose }) => {
         </div>
       </div>
 
-      {/* Categories */}
-      {!searchTerm && (
-        <div className="flex gap-1 p-2 border-b border-slate-700 overflow-x-auto scrollbar-hide">
-          {Object.keys(EMOJI_CATEGORIES).map(category => (
-            <button
-              key={category}
-              onClick={() => setActiveCategory(category)}
-              className={cn(
-                "px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors",
-                activeCategory === category 
-                  ? "bg-blue-500 text-white" 
-                  : "text-slate-400 hover:bg-slate-700"
-              )}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Emojis Grid */}
-      <div className="flex-1 overflow-y-auto p-2">
-        <div className="grid grid-cols-8 gap-0.5">
-          {filteredEmojis.map((emoji, i) => (
-            <button
-              key={`${emoji}-${i}`}
-              onClick={() => {
-                onSelect(emoji);
-                onClose();
-              }}
-              className="w-8 h-8 flex items-center justify-center text-xl hover:bg-slate-700 rounded-lg 
-                         transition-colors cursor-pointer"
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-        {filteredEmojis.length === 0 && (
-          <p className="text-center text-slate-500 text-sm py-4">Nessun emoji trovato</p>
-        )}
-      </div>
+      {content}
     </motion.div>
   );
 };
@@ -1298,8 +1324,11 @@ const MessageBubble = ({
   onStar,
   onForward,
   isFirstInGroup,
-  isLastInGroup 
+  isLastInGroup,
+  participantNames // Nome corretto dalla chat
 }) => {
+  // Usa il nome dalla chat se disponibile, altrimenti quello salvato nel messaggio
+  const displayName = participantNames?.[message.senderId] || message.senderName || 'Utente';
   const [showMenu, setShowMenu] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const menuRef = useRef(null);
@@ -1416,13 +1445,13 @@ const MessageBubble = ({
         message.senderPhoto ? (
           <img 
             src={message.senderPhoto} 
-            alt={message.senderName} 
+            alt={displayName} 
             className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-auto"
           />
         ) : (
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 
                           flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-auto">
-            {message.senderName?.charAt(0).toUpperCase()}
+            {displayName?.charAt(0).toUpperCase()}
           </div>
         )
       ) : !isOwn ? (
@@ -1433,7 +1462,7 @@ const MessageBubble = ({
       <div className={cn("max-w-[75%] relative", isOwn && "flex flex-col items-end")}>
         {/* Sender name for group chats */}
         {!isOwn && isFirstInGroup && (
-          <p className="text-xs text-slate-500 mb-1 ml-1">{message.senderName}</p>
+          <p className="text-xs text-slate-500 mb-1 ml-1">{displayName}</p>
         )}
 
         <div
@@ -1970,12 +1999,14 @@ const MessageInput = ({
   editingMessage,
   onCancelEdit,
   onSendEdit,
-  disabled 
+  disabled,
+  isMobile 
 }) => {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showMobileToolbar, setShowMobileToolbar] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -2183,7 +2214,8 @@ const MessageInput = ({
       <div 
         ref={dropZoneRef}
         className={cn(
-          "p-4 relative transition-colors",
+          "relative transition-colors",
+          isMobile ? "p-2" : "p-4",
           isDragging && "bg-cyan-500/10 border-2 border-dashed border-cyan-500/50 rounded-xl m-2"
         )}
         onDragEnter={handleDragEnter}
@@ -2201,51 +2233,126 @@ const MessageInput = ({
           </div>
         )}
 
-        {/* Formatting toolbar */}
-        <div className="flex items-center gap-1 mb-2 px-1">
-          <button
-            onClick={() => insertFormatting('bold')}
-            className="p-1.5 hover:bg-white/10 rounded transition-colors"
-            title="Grassetto **testo**"
-          >
-            <Bold size={16} className="text-slate-400" />
-          </button>
-          <button
-            onClick={() => insertFormatting('italic')}
-            className="p-1.5 hover:bg-white/10 rounded transition-colors"
-            title="Corsivo *testo*"
-          >
-            <Italic size={16} className="text-slate-400" />
-          </button>
-          <button
-            onClick={() => insertFormatting('code')}
-            className="p-1.5 hover:bg-white/10 rounded transition-colors"
-            title="Codice `codice`"
-          >
-            <Code size={16} className="text-slate-400" />
-          </button>
-          <button
-            onClick={() => insertFormatting('mention')}
-            className="p-1.5 hover:bg-white/10 rounded transition-colors"
-            title="Menzione @utente"
-          >
-            <AtSign size={16} className="text-slate-400" />
-          </button>
-          <div className="flex-1" />
-          <span className="text-xs text-slate-500 hidden sm:block">
-            Shift+Enter per andare a capo
-          </span>
-        </div>
+        {/* Mobile Toolbar - espandibile */}
+        {isMobile && (
+          <AnimatePresence>
+            {showMobileToolbar && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="flex items-center gap-1 pb-2 px-1">
+                  <button
+                    onClick={() => insertFormatting('bold')}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <Bold size={18} className="text-slate-400" />
+                  </button>
+                  <button
+                    onClick={() => insertFormatting('italic')}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <Italic size={18} className="text-slate-400" />
+                  </button>
+                  <button
+                    onClick={() => insertFormatting('code')}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <Code size={18} className="text-slate-400" />
+                  </button>
+                  <div className="w-px h-6 bg-white/10 mx-1" />
+                  <button
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <Smile size={18} className="text-slate-400" />
+                  </button>
+                </div>
+                {/* Emoji Picker for mobile */}
+                <AnimatePresence>
+                  {showEmojiPicker && (
+                    <div className="pb-2">
+                      <EmojiPicker
+                        onSelect={(emoji) => {
+                          insertEmoji(emoji);
+                          setShowEmojiPicker(false);
+                        }}
+                        onClose={() => setShowEmojiPicker(false)}
+                        inline
+                      />
+                    </div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
 
-        <div className="flex items-end gap-2">
+        {/* Formatting toolbar - desktop */}
+        {!isMobile && (
+          <div className="flex items-center gap-1 mb-2 px-1">
+            <button
+              onClick={() => insertFormatting('bold')}
+              className="p-1.5 hover:bg-white/10 rounded transition-colors"
+              title="Grassetto **testo**"
+            >
+              <Bold size={16} className="text-slate-400" />
+            </button>
+            <button
+              onClick={() => insertFormatting('italic')}
+              className="p-1.5 hover:bg-white/10 rounded transition-colors"
+              title="Corsivo *testo*"
+            >
+              <Italic size={16} className="text-slate-400" />
+            </button>
+            <button
+              onClick={() => insertFormatting('code')}
+              className="p-1.5 hover:bg-white/10 rounded transition-colors"
+              title="Codice `codice`"
+            >
+              <Code size={16} className="text-slate-400" />
+            </button>
+            <button
+              onClick={() => insertFormatting('mention')}
+              className="p-1.5 hover:bg-white/10 rounded transition-colors"
+              title="Menzione @utente"
+            >
+              <AtSign size={16} className="text-slate-400" />
+            </button>
+            <div className="flex-1" />
+            <span className="text-xs text-slate-500">
+              Shift+Enter per andare a capo
+            </span>
+          </div>
+        )}
+
+        <div className="flex items-end gap-1">
+          {/* Mobile: Toggle toolbar button */}
+          {isMobile && (
+            <button
+              onClick={() => setShowMobileToolbar(!showMobileToolbar)}
+              className={cn(
+                "p-2 rounded-full transition-colors",
+                showMobileToolbar ? "bg-cyan-500/20 text-cyan-400" : "hover:bg-white/10 text-slate-400"
+              )}
+            >
+              <Plus size={18} className={cn("transition-transform", showMobileToolbar && "rotate-45")} />
+            </button>
+          )}
+          
           {/* Attachment Button */}
           <div className="relative">
             <button
               onClick={() => setShowAttachMenu(!showAttachMenu)}
               disabled={disabled}
-              className="p-3 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50"
+              className={cn(
+                "hover:bg-white/10 rounded-full transition-colors disabled:opacity-50",
+                isMobile ? "p-2" : "p-3"
+              )}
             >
-              <Paperclip size={20} className="text-slate-400" />
+              <Paperclip size={isMobile ? 18 : 20} className="text-slate-400" />
             </button>
 
             {/* Attachment Menu */}
@@ -2309,24 +2416,26 @@ const MessageInput = ({
             />
           </div>
 
-          {/* Emoji Picker Button */}
-          <div className="relative">
-            <button
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              disabled={disabled}
-              className="p-3 hover:bg-slate-700 rounded-full transition-colors disabled:opacity-50"
-            >
-              <Smile size={20} className="text-slate-400" />
-            </button>
-            <AnimatePresence>
-              {showEmojiPicker && (
-                <EmojiPicker
-                  onSelect={insertEmoji}
-                  onClose={() => setShowEmojiPicker(false)}
-                />
-              )}
-            </AnimatePresence>
-          </div>
+          {/* Emoji Picker Button - nascosto su mobile */}
+          {!isMobile && (
+            <div className="relative">
+              <button
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                disabled={disabled}
+                className="p-3 hover:bg-slate-700 rounded-full transition-colors disabled:opacity-50"
+              >
+                <Smile size={20} className="text-slate-400" />
+              </button>
+              <AnimatePresence>
+                {showEmojiPicker && (
+                  <EmojiPicker
+                    onSelect={insertEmoji}
+                    onClose={() => setShowEmojiPicker(false)}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+          )}
 
           {/* Text Input */}
           <div className="flex-1 relative">
@@ -2335,16 +2444,20 @@ const MessageInput = ({
               value={message}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
-              placeholder="Scrivi un messaggio... (usa **grassetto**, *corsivo*, `codice`)"
+              placeholder={isMobile ? "Scrivi un messaggio..." : "Scrivi un messaggio... (usa **grassetto**, *corsivo*, `codice`)"}
               disabled={disabled}
               rows={1}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl 
-                         text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50
-                         resize-none min-h-[48px] max-h-32 disabled:opacity-50 text-base leading-relaxed backdrop-blur-sm"
+              className={cn(
+                "w-full bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-500",
+                "focus:outline-none focus:ring-2 focus:ring-cyan-500/50 resize-none disabled:opacity-50 backdrop-blur-sm",
+                isMobile 
+                  ? "px-3 py-2 min-h-[40px] max-h-24 text-sm" 
+                  : "px-4 py-3 min-h-[48px] max-h-32 text-base leading-relaxed"
+              )}
               onInput={(e) => {
                 // Auto-resize textarea
-                e.target.style.height = '48px';
-                e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
+                e.target.style.height = isMobile ? '40px' : '48px';
+                e.target.style.height = Math.min(e.target.scrollHeight, isMobile ? 96 : 128) + 'px';
               }}
             />
           </div>
@@ -2354,17 +2467,23 @@ const MessageInput = ({
             <button
               onClick={handleSend}
               disabled={disabled}
-              className="p-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-full transition-all disabled:opacity-50 shadow-lg shadow-cyan-500/30"
+              className={cn(
+                "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-full transition-all disabled:opacity-50 shadow-lg shadow-cyan-500/30",
+                isMobile ? "p-2" : "p-3"
+              )}
             >
-              <Send size={20} className="text-white" />
+              <Send size={isMobile ? 18 : 20} className="text-white" />
             </button>
           ) : (
             <button
               onClick={() => setIsRecording(true)}
               disabled={disabled}
-              className="p-3 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50"
+              className={cn(
+                "hover:bg-white/10 rounded-full transition-colors disabled:opacity-50",
+                isMobile ? "p-2" : "p-3"
+              )}
             >
-              <Mic size={20} className="text-slate-400" />
+              <Mic size={isMobile ? 18 : 20} className="text-slate-400" />
             </button>
           )}
         </div>
@@ -2390,7 +2509,8 @@ const MessagesArea = ({
   onStar,
   onForward,
   typingUsers,
-  scrollToMessageId
+  scrollToMessageId,
+  participantNames
 }) => {
   const messagesEndRef = useRef(null);
   const containerRef = useRef(null);
@@ -2513,6 +2633,7 @@ const MessagesArea = ({
                     onReaction={onReaction}
                     onStar={onStar}
                     onForward={onForward}
+                    participantNames={participantNames}
                   />
                 </div>
               );
@@ -3136,26 +3257,24 @@ export default function Chat() {
         console.log('📸 Chat - Aggiornata foto profilo anche in clients collection');
       }
 
-      // Aggiorna participantPhotos in tutte le chat dove l'utente partecipa
-      if (photoURL) {
-        const chatsRef = collection(db, `tenants/${tenantId}/chats`);
-        const chatsQuery = query(chatsRef, where('participants', 'array-contains', user.uid));
-        const chatsSnapshot = await getDocs(chatsQuery);
-        
-        const updatePromises = chatsSnapshot.docs.map(async (chatDoc) => {
-          const chatData = chatDoc.data();
-          const updatedPhotos = {
-            ...(chatData.participantPhotos || {}),
-            [user.uid]: photoURL
-          };
-          await updateDoc(doc(db, `tenants/${tenantId}/chats/${chatDoc.id}`), {
-            participantPhotos: updatedPhotos
-          });
-        });
-        
-        await Promise.all(updatePromises);
-        console.log('📸 Chat - Aggiornata foto in', chatsSnapshot.size, 'chat');
-      }
+      // Aggiorna participantPhotos e participantNames in tutte le chat dove l'utente partecipa
+      const chatsRef = collection(db, `tenants/${tenantId}/chats`);
+      const chatsQuery = query(chatsRef, where('participants', 'array-contains', user.uid));
+      const chatsSnapshot = await getDocs(chatsQuery);
+      
+      const updatePromises = chatsSnapshot.docs.map(async (chatDoc) => {
+        const chatData = chatDoc.data();
+        const updates = {
+          [`participantNames.${user.uid}`]: name
+        };
+        if (photoURL) {
+          updates[`participantPhotos.${user.uid}`] = photoURL;
+        }
+        await updateDoc(doc(db, `tenants/${tenantId}/chats/${chatDoc.id}`), updates);
+      });
+      
+      await Promise.all(updatePromises);
+      console.log('📸 Chat - Aggiornati nome e foto in', chatsSnapshot.size, 'chat');
 
       setShowProfileModal(false);
     } catch (err) {
@@ -3540,6 +3659,7 @@ export default function Chat() {
             onForward={handleForwardMessage}
             typingUsers={typingUsers}
             scrollToMessageId={scrollToMessageId}
+            participantNames={activeChat?.participantNames}
           />
         </div>
 
@@ -3554,6 +3674,7 @@ export default function Chat() {
             onCancelEdit={() => setEditingMessage(null)}
             onSendEdit={handleEditMessage}
             disabled={uploading}
+            isMobile={isMobile}
           />
         </div>
 
@@ -3603,11 +3724,14 @@ export default function Chat() {
     );
   }
 
+  // Calcola l'altezza disponibile
+  // Su mobile e desktop, il ProLayout gestisce header e bottom nav
+  // La chat deve solo riempire lo spazio disponibile
+  
   return (
-    <div className={cn(
-      "flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 overflow-hidden",
-      isMobile ? "fixed inset-0 z-40" : "h-[calc(100vh-120px)] relative"
-    )}>
+    <div 
+      className="flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 w-full h-full"
+    >
       {/* Profile Check Modal */}
       <AnimatePresence>
         {showProfileModal && (
@@ -3632,12 +3756,12 @@ export default function Chat() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-0">
         {/* Desktop Layout */}
         {!isMobile && (
           <>
             {/* Sidebar */}
-            <div className="w-80 lg:w-96 flex-shrink-0 border-r border-white/10 flex flex-col bg-slate-900/50 backdrop-blur-sm">
+            <div className="w-80 lg:w-96 flex-shrink-0 border-r border-white/10 flex flex-col bg-slate-900/50 backdrop-blur-sm overflow-hidden">
               <ChatSidebar
                 chats={(chats || []).filter(c => !c.deletedBy?.includes(user?.uid))}
                 loading={chatsLoading}
@@ -3656,7 +3780,7 @@ export default function Chat() {
             </div>
             
             {/* Chat Area */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <div className="flex-1 flex flex-col min-w-0">
               {renderChatArea()}
             </div>
           </>
@@ -3664,48 +3788,29 @@ export default function Chat() {
 
         {/* Mobile Layout */}
         {isMobile && (
-          <div className="flex-1 flex flex-col min-h-0 relative">
-            <AnimatePresence mode="wait">
-              {showMobileChat ? (
-                <motion.div
-                  key="chat"
-                  initial={{ x: '100%' }}
-                  animate={{ x: 0 }}
-                  exit={{ x: '100%' }}
-                  transition={{ type: 'tween', duration: 0.2 }}
-                  className="flex-1 flex flex-col absolute inset-0 z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 pb-16"
-                  style={{ touchAction: 'pan-y' }}
-                >
-                  {renderChatArea()}
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="list"
-                  initial={{ x: '-100%' }}
-                  animate={{ x: 0 }}
-                  exit={{ x: '-100%' }}
-                  transition={{ type: 'tween', duration: 0.2 }}
-                  className="flex-1 flex flex-col"
-                >
-                  <ChatSidebar
-                    chats={(chats || []).filter(c => !c.deletedBy?.includes(user?.uid))}
-                    loading={chatsLoading}
-                    activeChat={activeChat}
-                    onSelectChat={handleSelectChat}
-                    onNewChat={() => setShowNewChatModal(true)}
-                    onGlobalSearch={() => setShowGlobalSearch(true)}
-                    searchTerm={searchTerm}
-                    onSearchChange={setSearchTerm}
-                    currentUserId={user?.uid}
-                    onArchiveChat={handleArchiveChat}
-                    onPinChat={handlePinChat}
-                    onDeleteChat={handleDeleteChat}
-                    onMarkReadChat={handleMarkReadChat}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          showMobileChat ? (
+            <div className="flex-1 flex flex-col min-h-0 w-full">
+              {renderChatArea()}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col min-h-0 w-full overflow-y-auto">
+              <ChatSidebar
+                chats={(chats || []).filter(c => !c.deletedBy?.includes(user?.uid))}
+                loading={chatsLoading}
+                activeChat={activeChat}
+                onSelectChat={handleSelectChat}
+                onNewChat={() => setShowNewChatModal(true)}
+                onGlobalSearch={() => setShowGlobalSearch(true)}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                currentUserId={user?.uid}
+                onArchiveChat={handleArchiveChat}
+                onPinChat={handlePinChat}
+                onDeleteChat={handleDeleteChat}
+                onMarkReadChat={handleMarkReadChat}
+              />
+            </div>
+          )
         )}
       </div>
 

@@ -48,6 +48,94 @@ export const formatMessageTime = (timestamp) => {
   return date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 };
 
+// Arricchisce i nomi delle chat mancanti caricandoli da clients/users
+const enrichChatNames = async (chatsNeedingNames, currentUserId, tenantId) => {
+  const enrichedData = {};
+  
+  try {
+    // Raggruppa tutti gli ID da cercare
+    const participantIds = [...new Set(chatsNeedingNames.map(c => c.participantId))];
+    
+    // Cerca prima nella collection clients
+    const clientsRef = collection(db, `tenants/${tenantId}/clients`);
+    const clientsPromises = participantIds.map(async (pid) => {
+      try {
+        const clientDoc = await getDoc(doc(clientsRef, pid));
+        if (clientDoc.exists()) {
+          const data = clientDoc.data();
+          return { 
+            id: pid, 
+            name: data.displayName || data.name || `${data.firstName || ''} ${data.lastName || ''}`.trim() || null,
+            photo: data.photoURL || data.profilePhoto || null
+          };
+        }
+        return { id: pid, name: null, photo: null };
+      } catch {
+        return { id: pid, name: null, photo: null };
+      }
+    });
+    
+    const clientsResults = await Promise.all(clientsPromises);
+    const clientsMap = {};
+    clientsResults.forEach(r => { clientsMap[r.id] = r; });
+    
+    // Per quelli non trovati, cerca nella collection users
+    const usersRef = collection(db, `tenants/${tenantId}/users`);
+    for (const pid of participantIds) {
+      if (!clientsMap[pid]?.name) {
+        try {
+          const userDoc = await getDoc(doc(usersRef, pid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            clientsMap[pid] = {
+              id: pid,
+              name: data.displayName || data.name || data.email?.split('@')[0] || null,
+              photo: data.photoURL || null
+            };
+          }
+        } catch {
+          // Ignora errori
+        }
+      }
+    }
+    
+    // Aggiorna le chat in Firestore e prepara i dati arricchiti
+    const batch = writeBatch(db);
+    let batchCount = 0;
+    
+    for (const chat of chatsNeedingNames) {
+      const participantData = clientsMap[chat.participantId];
+      if (participantData?.name) {
+        enrichedData[chat.chatId] = {
+          names: { [chat.participantId]: participantData.name },
+          photos: { [chat.participantId]: participantData.photo }
+        };
+        
+        // Aggiorna anche in Firestore per le prossime volte
+        batch.update(chat.ref, {
+          [`participantNames.${chat.participantId}`]: participantData.name,
+          [`participantPhotos.${chat.participantId}`]: participantData.photo || null
+        });
+        batchCount++;
+        
+        // Commit ogni 400 operazioni (limite Firestore è 500)
+        if (batchCount >= 400) {
+          await batch.commit();
+          batchCount = 0;
+        }
+      }
+    }
+    
+    if (batchCount > 0) {
+      await batch.commit();
+    }
+  } catch (err) {
+    console.warn('Error enriching chat names:', err);
+  }
+  
+  return enrichedData;
+};
+
 // ============ MAIN CHAT HOOK ============
 
 export function useChat(chatId) {
@@ -166,14 +254,15 @@ export function useChat(chatId) {
       // Aggiungi messaggio
       const docRef = await addDoc(messagesRef, messageData);
 
-      // Aggiorna chat con ultimo messaggio
+      // Aggiorna chat con ultimo messaggio e rimuovi da deletedBy (se era stata eliminata)
       await updateDoc(chatRef, {
         lastMessage: content.substring(0, 100),
         lastMessageType: type,
         lastMessageAt: serverTimestamp(),
         lastMessageBy: user.uid,
         [`unreadCount.${user.uid}`]: 0, // Reset proprio contatore
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        deletedBy: arrayRemove(user.uid) // Rimuovi dalla lista eliminati se presente
       });
 
       return docRef.id;
@@ -351,13 +440,46 @@ export function useChatList() {
       );
 
       const unsubscribe = onSnapshot(q, 
-        (snapshot) => {
+        async (snapshot) => {
           const chatList = [];
-          snapshot.forEach((doc) => {
-            chatList.push({ id: doc.id, ...doc.data() });
+          const chatsNeedingNames = [];
+          
+          snapshot.forEach((docSnap) => {
+            const data = { id: docSnap.id, ...docSnap.data() };
+            chatList.push(data);
+            
+            // Controlla se mancano i nomi dei partecipanti
+            const otherParticipant = data.participants?.find(p => p !== user.uid);
+            if (otherParticipant) {
+              const hasName = data.participantNames?.[otherParticipant] && 
+                              data.participantNames[otherParticipant] !== 'Utente' &&
+                              data.participantNames[otherParticipant] !== 'User';
+              if (!hasName) {
+                chatsNeedingNames.push({ chatId: docSnap.id, participantId: otherParticipant, ref: docSnap.ref });
+              }
+            }
           });
+          
           setChats(chatList);
           setLoading(false);
+          
+          // Arricchisci i nomi mancanti in background
+          if (chatsNeedingNames.length > 0) {
+            enrichChatNames(chatsNeedingNames, user.uid, tenantId).then(enrichedData => {
+              if (Object.keys(enrichedData).length > 0) {
+                setChats(prev => prev.map(chat => {
+                  if (enrichedData[chat.id]) {
+                    return {
+                      ...chat,
+                      participantNames: { ...chat.participantNames, ...enrichedData[chat.id].names },
+                      participantPhotos: { ...chat.participantPhotos, ...enrichedData[chat.id].photos }
+                    };
+                  }
+                  return chat;
+                }));
+              }
+            });
+          }
         },
         (err) => {
           console.error('Error loading chats:', err);
@@ -389,14 +511,36 @@ export function useChatList() {
     const existingSnap = await getDocs(existingQuery);
     
     let existingChat = null;
-    existingSnap.forEach((doc) => {
-      const data = doc.data();
+    existingSnap.forEach((docSnap) => {
+      const data = docSnap.data();
       if (data.participants.includes(participantId) && data.type === 'direct') {
-        existingChat = { id: doc.id, ...data };
+        existingChat = { id: docSnap.id, ref: docSnap.ref, ...data };
       }
     });
 
-    if (existingChat) return existingChat.id;
+    if (existingChat) {
+      // Aggiorna i nomi/foto se mancanti o diversi
+      const needsUpdate = 
+        !existingChat.participantNames?.[participantId] ||
+        existingChat.participantNames?.[participantId] === 'Utente' ||
+        existingChat.participantNames?.[participantId] === 'User' ||
+        existingChat.participantNames?.[participantId] !== participantName ||
+        existingChat.participantPhotos?.[participantId] !== participantPhoto;
+      
+      if (needsUpdate && existingChat.ref) {
+        try {
+          await updateDoc(existingChat.ref, {
+            [`participantNames.${participantId}`]: participantName,
+            [`participantNames.${user.uid}`]: user.displayName || 'Utente',
+            [`participantPhotos.${participantId}`]: participantPhoto || null,
+            [`participantPhotos.${user.uid}`]: user.photoURL || null
+          });
+        } catch (err) {
+          console.warn('Could not update participant names:', err);
+        }
+      }
+      return existingChat.id;
+    }
 
     // Determina il ruolo dell'utente corrente
     let currentUserRole = 'client';

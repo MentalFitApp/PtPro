@@ -674,17 +674,17 @@ export const ProLayout = () => {
 
       {/* Main Content Area */}
       <div 
-        className={`min-h-screen transition-all duration-300 ease-out ${
+        className={`h-screen flex flex-col transition-all duration-300 ease-out ${
           !isMobile 
             ? (isSidebarCollapsed ? 'lg:ml-[76px]' : 'lg:ml-[264px]')
             : ''
         }`}
       >
         <main 
-          className={`min-h-screen bg-gradient-to-br from-theme-bg-primary/40 via-theme-bg-primary/30 to-theme-bg-secondary/20 ${
-            isMobile ? 'pb-24' : 'pt-14'
+          className={`flex-1 flex flex-col bg-gradient-to-br from-theme-bg-primary/40 via-theme-bg-primary/30 to-theme-bg-secondary/20 overflow-hidden ${
+            isMobile ? 'pb-16' : 'pt-14'
           }`}
-          style={isMobile ? { paddingTop: 'calc(64px + env(safe-area-inset-top, 0px))' } : undefined}
+          style={isMobile ? { paddingTop: 'calc(56px + env(safe-area-inset-top, 0px))' } : undefined}
         >
           <Outlet />
         </main>
