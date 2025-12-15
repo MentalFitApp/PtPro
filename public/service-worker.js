@@ -1,8 +1,8 @@
 // Service Worker - PtPro PWA
 // Versione migliorata con offline support e background sync
-const CACHE_NAME = 'ptpro-v3'; // Incrementa per forzare update
-const ASSETS_CACHE = 'ptpro-assets-v3';
-const DATA_CACHE = 'ptpro-data-v1';
+const CACHE_NAME = 'ptpro-v4'; // Incrementa per forzare update
+const ASSETS_CACHE = 'ptpro-assets-v4';
+const DATA_CACHE = 'ptpro-data-v2';
 
 // Assets critici da cachare
 const CRITICAL_ASSETS = [
@@ -41,7 +41,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => !name.includes('-v3') && !name.includes('-v1'))
+          .filter((name) => !name.includes('-v4') && !name.includes('-v2'))
           .map((name) => {
             console.log('[SW] Deleting old cache:', name);
             return caches.delete(name);
