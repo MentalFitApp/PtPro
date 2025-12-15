@@ -1060,7 +1060,7 @@ const ChatSidebar = ({
   const [showArchivedChats, setShowArchivedChats] = useState(showArchived || false);
   
   const filteredChats = useMemo(() => {
-    let result = chats;
+    let result = chats || [];
     
     // Filtra per archiviate/non archiviate
     result = result.filter(chat => {
@@ -1095,7 +1095,7 @@ const ChatSidebar = ({
 
   // Calcola totale messaggi non letti
   const totalUnread = useMemo(() => {
-    return chats.reduce((total, chat) => {
+    return (chats || []).reduce((total, chat) => {
       return total + (chat.unreadCount?.[currentUserId] || 0);
     }, 0);
   }, [chats, currentUserId]);
@@ -3574,7 +3574,7 @@ export default function Chat() {
             {/* Sidebar */}
             <div className="w-80 lg:w-96 flex-shrink-0 border-r border-slate-700/50 flex flex-col bg-slate-800/30">
               <ChatSidebar
-                chats={chats.filter(c => !c.deletedBy?.includes(user?.uid))}
+                chats={(chats || []).filter(c => !c.deletedBy?.includes(user?.uid))}
                 loading={chatsLoading}
                 activeChat={activeChat}
                 onSelectChat={handleSelectChat}
@@ -3622,7 +3622,7 @@ export default function Chat() {
                   className="flex-1 flex flex-col overflow-hidden"
                 >
                   <ChatSidebar
-                    chats={chats.filter(c => !c.deletedBy?.includes(user?.uid))}
+                    chats={(chats || []).filter(c => !c.deletedBy?.includes(user?.uid))}
                     loading={chatsLoading}
                     activeChat={activeChat}
                     onSelectChat={handleSelectChat}
