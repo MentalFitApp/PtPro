@@ -214,6 +214,15 @@ service cloud.firestore {
         }
       }
       
+      // --- PRESENCE (online status) ---
+      match /presence/{usrId} {
+        // Ogni utente può leggere la presence di tutti (per vedere chi è online)
+        allow read, list: if request.auth != null;
+        // Ogni utente può scrivere solo la propria presenza
+        allow create, update: if request.auth != null && request.auth.uid == usrId;
+        allow delete: if request.auth != null && request.auth.uid == usrId;
+      }
+      
       // --- NOTIFICATIONS ---
       match /notifications/{notifId} {
         allow read: if request.auth != null && (

@@ -26,6 +26,87 @@ import clsx from 'clsx';
 // Helper per classi condizionali
 const cn = (...classes) => clsx(...classes);
 
+// ============ ANIMATED STARS BACKGROUND ============
+const AnimatedStars = () => {
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (initialized) return;
+    
+    const existingContainer = document.querySelector('.chat-stars');
+    if (existingContainer) {
+      setInitialized(true);
+      return;
+    }
+
+    const container = document.createElement('div');
+    container.className = 'chat-stars';
+    container.style.cssText = `
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    `;
+    
+    for (let i = 0; i < 50; i++) {
+      const star = document.createElement('div');
+      const size = Math.random() * 2 + 1;
+      star.style.cssText = `
+        position: absolute;
+        width: ${size}px;
+        height: ${size}px;
+        background: white;
+        border-radius: 50%;
+        top: ${Math.random() * 100}%;
+        left: ${Math.random() * 100}%;
+        opacity: ${Math.random() * 0.5 + 0.2};
+        animation: twinkle ${Math.random() * 3 + 2}s ease-in-out infinite;
+        animation-delay: ${Math.random() * 2}s;
+      `;
+      container.appendChild(star);
+    }
+
+    // Add CSS animation if not exists
+    if (!document.getElementById('chat-stars-style')) {
+      const style = document.createElement('style');
+      style.id = 'chat-stars-style';
+      style.textContent = `
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.2; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.2); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    setInitialized(true);
+    return () => {
+      container.remove();
+    };
+  }, [initialized]);
+
+  return (
+    <div className="chat-stars absolute inset-0 pointer-events-none overflow-hidden z-0">
+      {[...Array(50)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full bg-white"
+          style={{
+            width: `${Math.random() * 2 + 1}px`,
+            height: `${Math.random() * 2 + 1}px`,
+            top: `${Math.random() * 100}%`,
+            left: `${Math.random() * 100}%`,
+            opacity: Math.random() * 0.5 + 0.2,
+            animation: `twinkle ${Math.random() * 3 + 2}s ease-in-out infinite`,
+            animationDelay: `${Math.random() * 2}s`
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 // Helper per ottenere il ruolo dell'utente corrente
 const getCurrentUserRole = async (userId) => {
   try {
@@ -890,7 +971,7 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
         onTouchMove={handleTouchEnd}
         className={cn(
           "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all relative group",
-          isActive ? "bg-blue-500/20 border border-blue-500/30" : "hover:bg-slate-700/50",
+          isActive ? "bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30" : "hover:bg-white/5",
           isArchived && "opacity-60"
         )}
       >
@@ -956,7 +1037,7 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
                chat.lastMessage || 'Nessun messaggio'}
             </p>
             {unreadCount > 0 && (
-              <span className="bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+              <span className="bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center shadow-lg shadow-pink-500/30">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
@@ -978,12 +1059,12 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
               top: Math.min(menuPosition.y, window.innerHeight - 250),
               zIndex: 9999
             }}
-            className="bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden min-w-[180px]"
+            className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[180px]"
           >
             {/* Pin/Unpin */}
             <button
               onClick={(e) => handleMenuAction(() => onPin?.(chat.id, !isPinned), e)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 text-left transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 text-left transition-colors"
             >
               {isPinned ? (
                 <><PinOff size={18} className="text-slate-400" />
@@ -997,7 +1078,7 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
             {/* Mark as read/unread */}
             <button
               onClick={(e) => handleMenuAction(() => onMarkRead?.(chat.id, unreadCount > 0), e)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 text-left transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 text-left transition-colors"
             >
               {unreadCount > 0 ? (
                 <><Check size={18} className="text-green-500" />
@@ -1011,7 +1092,7 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
             {/* Archive/Unarchive */}
             <button
               onClick={(e) => handleMenuAction(() => onArchive?.(chat.id, !isArchived), e)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700/50 text-left transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 text-left transition-colors"
             >
               {isArchived ? (
                 <><Archive size={18} className="text-slate-400" />
@@ -1022,7 +1103,7 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
               )}
             </button>
 
-            <div className="border-t border-slate-700" />
+            <div className="border-t border-white/10" />
 
             {/* Delete */}
             <button
@@ -1103,13 +1184,13 @@ const ChatSidebar = ({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-slate-700/50">
+      <div className="flex-shrink-0 p-4 border-b border-white/10">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <MessageSquare className="text-blue-400" size={24} />
+            <MessageSquare className="text-cyan-400" size={24} />
             Messaggi
             {totalUnread > 0 && (
-              <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+              <span className="bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
                 {totalUnread > 99 ? '99+' : totalUnread}
               </span>
             )}
@@ -1118,14 +1199,14 @@ const ChatSidebar = ({
             {/* Global Search Button */}
             <button
               onClick={onGlobalSearch}
-              className="p-2.5 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-colors"
+              className="p-2.5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-colors"
               title="Cerca in tutte le chat"
             >
               <Search size={20} />
             </button>
             <button
               onClick={onNewChat}
-              className="p-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors shadow-lg shadow-blue-500/20"
+              className="p-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl transition-colors shadow-lg shadow-cyan-500/30"
             >
               <Plus size={20} />
             </button>
@@ -1140,8 +1221,8 @@ const ChatSidebar = ({
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Cerca conversazione..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-700/50 border border-slate-600/50 rounded-xl 
-                       text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl 
+                       text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 backdrop-blur-sm"
           />
         </div>
 
@@ -1152,8 +1233,8 @@ const ChatSidebar = ({
             className={cn(
               "flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors",
               !showArchivedChats 
-                ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" 
-                : "text-slate-400 hover:bg-slate-700/50"
+                ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30" 
+                : "text-slate-400 hover:bg-white/10"
             )}
           >
             Attive
@@ -1164,7 +1245,7 @@ const ChatSidebar = ({
               "flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5",
               showArchivedChats 
                 ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" 
-                : "text-slate-400 hover:bg-slate-700/50"
+                : "text-slate-400 hover:bg-white/10"
             )}
           >
             <Archive size={14} />
@@ -1219,14 +1300,17 @@ const ChatSidebar = ({
 // ============ EMPTY CHAT STATE ============
 
 const EmptyChatState = () => (
-  <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-800 text-slate-500">
-    <div className="w-32 h-32 bg-slate-800/80 rounded-full flex items-center justify-center mb-6 ring-4 ring-slate-700/50">
-      <MessageSquare size={48} className="opacity-50 text-blue-400" />
+  <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 text-slate-500 relative overflow-hidden">
+    <AnimatedStars />
+    <div className="relative z-10">
+      <div className="w-32 h-32 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center mb-6 ring-4 ring-white/10 shadow-2xl border border-white/20">
+        <MessageSquare size={48} className="text-cyan-400" />
+      </div>
+      <h2 className="text-2xl font-semibold text-white mb-2 text-center">Seleziona una chat</h2>
+      <p className="text-center max-w-sm text-slate-400">
+        Scegli una conversazione dalla lista a sinistra o iniziane una nuova cliccando sul pulsante +
+      </p>
     </div>
-    <h2 className="text-2xl font-semibold text-white mb-2">Seleziona una chat</h2>
-    <p className="text-center max-w-sm text-slate-400">
-      Scegli una conversazione dalla lista a sinistra o iniziane una nuova cliccando sul pulsante +
-    </p>
   </div>
 );
 
@@ -1384,15 +1468,15 @@ const MessageBubble = ({
 
         <div
           className={cn(
-            "relative px-4 py-2.5 rounded-2xl",
+            "relative px-4 py-2.5 rounded-2xl backdrop-blur-md shadow-lg",
             isOwn 
-              ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white" 
-              : "bg-slate-700 text-white",
+              ? "bg-gradient-to-br from-blue-500/80 to-cyan-500/70 text-white border border-blue-400/30" 
+              : "bg-white/10 text-white border border-white/20",
             isFirstInGroup && isOwn && "rounded-tr-md",
             isFirstInGroup && !isOwn && "rounded-tl-md",
             isLastInGroup && isOwn && "rounded-br-md",
             isLastInGroup && !isOwn && "rounded-bl-md",
-            message.isPinned && "ring-2 ring-yellow-500/50"
+            message.isPinned && "ring-2 ring-yellow-400/60"
           )}
         >
           {/* Pin indicator */}
@@ -1775,28 +1859,28 @@ const ChatHeader = ({
   const lastSeen = chat?.lastSeen?.[otherParticipant];
 
   return (
-    <div className="flex-shrink-0 bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50">
+    <div className="flex-shrink-0 bg-slate-900/60 backdrop-blur-xl border-b border-white/10">
       <div className="flex items-center justify-between px-4 py-3">
         {/* Left: Back + User Info */}
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="md:hidden p-2 hover:bg-slate-700 rounded-full transition-colors"
+            className="md:hidden p-2 hover:bg-white/10 rounded-full transition-colors"
           >
             <ArrowLeft size={20} className="text-slate-400" />
           </button>
 
           <div className="relative">
             {otherPhoto ? (
-              <img src={otherPhoto} alt={otherName} className="w-10 h-10 rounded-full object-cover" />
+              <img src={otherPhoto} alt={otherName} className="w-10 h-10 rounded-full object-cover ring-2 ring-white/20" />
             ) : (
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 
-                              flex items-center justify-center text-white font-bold">
+                              flex items-center justify-center text-white font-bold ring-2 ring-white/20">
                 {otherName.charAt(0).toUpperCase()}
               </div>
             )}
             {isOnline && (
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800" />
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900 shadow-lg shadow-emerald-500/50" />
             )}
           </div>
 
@@ -1808,7 +1892,7 @@ const ChatHeader = ({
                 <span className="text-xs text-slate-400">{formatRole(otherRole)}</span>
               </div>
               <span className="text-slate-600">•</span>
-              <span className={cn("text-xs", isOnline ? "text-green-400" : "text-slate-500")}>
+              <span className={cn("text-xs", isOnline ? "text-emerald-400" : "text-slate-500")}>
                 {isOnline ? '● Online' : lastSeen ? `Ultimo accesso ${formatMessageTime(lastSeen)}` : 'Offline'}
               </span>
             </div>
@@ -1821,7 +1905,7 @@ const ChatHeader = ({
             onClick={onToggleSound}
             className={cn(
               "p-2 rounded-full transition-colors",
-              soundEnabled ? "hover:bg-slate-700 text-slate-400" : "bg-red-500/20 text-red-400"
+              soundEnabled ? "hover:bg-white/10 text-slate-400" : "bg-red-500/20 text-red-400"
             )}
             title={soundEnabled ? "Suono attivo" : "Suono disattivato"}
           >
@@ -1831,33 +1915,33 @@ const ChatHeader = ({
             onClick={onSearch}
             className={cn(
               "p-2 rounded-full transition-colors",
-              isSearchOpen ? "bg-blue-500/20 text-blue-400" : "hover:bg-slate-700 text-slate-400"
+              isSearchOpen ? "bg-cyan-500/20 text-cyan-400" : "hover:bg-white/10 text-slate-400"
             )}
           >
             <Search size={20} />
           </button>
           <button
             onClick={onVoiceCall}
-            className="p-2 hover:bg-slate-700 rounded-full transition-colors text-slate-400"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400"
           >
             <Phone size={20} />
           </button>
           <button
             onClick={onVideoCall}
-            className="p-2 hover:bg-slate-700 rounded-full transition-colors text-slate-400"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400"
           >
             <Video size={20} />
           </button>
           <button
             onClick={onStarred}
-            className="p-2 hover:bg-slate-700 rounded-full transition-colors text-slate-400"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400"
             title="Messaggi preferiti"
           >
             <Star size={20} />
           </button>
           <button
             onClick={onSettings}
-            className="p-2 hover:bg-slate-700 rounded-full transition-colors text-slate-400"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400"
             title="Messaggi pinnati"
           >
             <Pin size={20} />
@@ -1872,7 +1956,7 @@ const ChatHeader = ({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-slate-700/50"
+            className="overflow-hidden border-t border-white/10"
           >
             <div className="p-3">
               <div className="relative">
@@ -1882,8 +1966,8 @@ const ChatHeader = ({
                   value={searchTerm}
                   onChange={(e) => onSearchChange(e.target.value)}
                   placeholder="Cerca nei messaggi..."
-                  className="w-full pl-10 pr-10 py-2 bg-slate-700/50 border border-slate-600/50 rounded-xl 
-                             text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  className="w-full pl-10 pr-10 py-2 bg-white/5 border border-white/10 rounded-xl 
+                             text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 backdrop-blur-sm"
                   autoFocus
                 />
                 <button
@@ -2072,7 +2156,7 @@ const MessageInput = ({
 
   if (isRecording) {
     return (
-      <div className="flex-shrink-0 p-4 bg-slate-800/80 backdrop-blur-sm border-t border-slate-700/50">
+      <div className="flex-shrink-0 p-4 bg-slate-900/60 backdrop-blur-xl border-t border-white/10">
         <AudioRecorder 
           onSend={handleAudioSend} 
           onCancel={() => setIsRecording(false)} 
@@ -2082,7 +2166,7 @@ const MessageInput = ({
   }
 
   return (
-    <div className="flex-shrink-0 bg-slate-800/80 backdrop-blur-sm border-t border-slate-700/50">
+    <div className="flex-shrink-0 bg-slate-900/60 backdrop-blur-xl border-t border-white/10">
       {/* Reply Preview */}
       <AnimatePresence>
         {replyTo && (
@@ -2092,13 +2176,13 @@ const MessageInput = ({
             exit={{ height: 0, opacity: 0 }}
             className="px-4 pt-3 overflow-hidden"
           >
-            <div className="flex items-start gap-2 p-2 bg-slate-700/50 rounded-lg border-l-2 border-blue-500">
-              <Reply size={16} className="text-blue-400 mt-0.5" />
+            <div className="flex items-start gap-2 p-2 bg-white/5 backdrop-blur-sm rounded-lg border-l-2 border-cyan-500">
+              <Reply size={16} className="text-cyan-400 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-blue-400">{replyTo.senderName}</p>
+                <p className="text-xs font-medium text-cyan-400">{replyTo.senderName}</p>
                 <p className="text-sm text-slate-400 truncate">{replyTo.content}</p>
               </div>
-              <button onClick={onCancelReply} className="p-1 hover:bg-slate-600 rounded">
+              <button onClick={onCancelReply} className="p-1 hover:bg-white/10 rounded">
                 <X size={16} className="text-slate-400" />
               </button>
             </div>
@@ -2113,11 +2197,11 @@ const MessageInput = ({
             exit={{ height: 0, opacity: 0 }}
             className="px-4 pt-3 overflow-hidden"
           >
-            <div className="flex items-center gap-2 p-2 bg-blue-500/10 rounded-lg border-l-2 border-blue-500">
-              <Edit3 size={16} className="text-blue-400" />
-              <span className="text-sm text-blue-400">Modifica messaggio</span>
+            <div className="flex items-center gap-2 p-2 bg-cyan-500/10 rounded-lg border-l-2 border-cyan-500">
+              <Edit3 size={16} className="text-cyan-400" />
+              <span className="text-sm text-cyan-400">Modifica messaggio</span>
               <div className="flex-1" />
-              <button onClick={onCancelEdit} className="p-1 hover:bg-slate-600 rounded">
+              <button onClick={onCancelEdit} className="p-1 hover:bg-white/10 rounded">
                 <X size={16} className="text-slate-400" />
               </button>
             </div>
@@ -2130,7 +2214,7 @@ const MessageInput = ({
         ref={dropZoneRef}
         className={cn(
           "p-4 relative transition-colors",
-          isDragging && "bg-blue-500/10 border-2 border-dashed border-blue-500/50 rounded-xl m-2"
+          isDragging && "bg-cyan-500/10 border-2 border-dashed border-cyan-500/50 rounded-xl m-2"
         )}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -2139,10 +2223,10 @@ const MessageInput = ({
       >
         {/* Drag overlay */}
         {isDragging && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-800/90 rounded-xl z-10">
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm rounded-xl z-10">
             <div className="text-center">
-              <Paperclip size={40} className="text-blue-400 mx-auto mb-2" />
-              <p className="text-blue-400 font-medium">Rilascia per inviare</p>
+              <Paperclip size={40} className="text-cyan-400 mx-auto mb-2" />
+              <p className="text-cyan-400 font-medium">Rilascia per inviare</p>
             </div>
           </div>
         )}
@@ -2151,28 +2235,28 @@ const MessageInput = ({
         <div className="flex items-center gap-1 mb-2 px-1">
           <button
             onClick={() => insertFormatting('bold')}
-            className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+            className="p-1.5 hover:bg-white/10 rounded transition-colors"
             title="Grassetto **testo**"
           >
             <Bold size={16} className="text-slate-400" />
           </button>
           <button
             onClick={() => insertFormatting('italic')}
-            className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+            className="p-1.5 hover:bg-white/10 rounded transition-colors"
             title="Corsivo *testo*"
           >
             <Italic size={16} className="text-slate-400" />
           </button>
           <button
             onClick={() => insertFormatting('code')}
-            className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+            className="p-1.5 hover:bg-white/10 rounded transition-colors"
             title="Codice `codice`"
           >
             <Code size={16} className="text-slate-400" />
           </button>
           <button
             onClick={() => insertFormatting('mention')}
-            className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+            className="p-1.5 hover:bg-white/10 rounded transition-colors"
             title="Menzione @utente"
           >
             <AtSign size={16} className="text-slate-400" />
@@ -2189,7 +2273,7 @@ const MessageInput = ({
             <button
               onClick={() => setShowAttachMenu(!showAttachMenu)}
               disabled={disabled}
-              className="p-3 hover:bg-slate-700 rounded-full transition-colors disabled:opacity-50"
+              className="p-3 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50"
             >
               <Paperclip size={20} className="text-slate-400" />
             </button>
@@ -2201,24 +2285,24 @@ const MessageInput = ({
                   initial={{ opacity: 0, scale: 0.9, y: 10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                  className="absolute bottom-full left-0 mb-2 bg-slate-800 rounded-xl shadow-lg 
-                             border border-slate-700 overflow-hidden z-20"
+                  className="absolute bottom-full left-0 mb-2 bg-slate-900/90 backdrop-blur-xl rounded-xl shadow-lg 
+                             border border-white/10 overflow-hidden z-20"
                 >
                   <button
                     onClick={() => imageInputRef.current?.click()}
-                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-slate-700 transition-colors"
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-white/10 transition-colors"
                   >
-                    <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
-                      <Image size={20} className="text-green-400" />
+                    <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                      <Image size={20} className="text-emerald-400" />
                     </div>
                     <span className="text-white">Foto</span>
                   </button>
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-slate-700 transition-colors"
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-white/10 transition-colors"
                   >
-                    <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
-                      <File size={20} className="text-blue-400" />
+                    <div className="w-10 h-10 bg-cyan-500/20 rounded-full flex items-center justify-center">
+                      <File size={20} className="text-cyan-400" />
                     </div>
                     <span className="text-white">File</span>
                   </button>
@@ -2227,10 +2311,10 @@ const MessageInput = ({
                       // Camera capture
                       imageInputRef.current?.click();
                     }}
-                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-slate-700 transition-colors"
+                    className="flex items-center gap-3 w-full px-4 py-3 hover:bg-white/10 transition-colors"
                   >
-                    <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
-                      <Camera size={20} className="text-purple-400" />
+                    <div className="w-10 h-10 bg-violet-500/20 rounded-full flex items-center justify-center">
+                      <Camera size={20} className="text-violet-400" />
                     </div>
                     <span className="text-white">Fotocamera</span>
                   </button>
@@ -2284,9 +2368,9 @@ const MessageInput = ({
               placeholder="Scrivi un messaggio... (usa **grassetto**, *corsivo*, `codice`)"
               disabled={disabled}
               rows={1}
-              className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-2xl 
-                         text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50
-                         resize-none min-h-[48px] max-h-32 disabled:opacity-50 text-base leading-relaxed"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl 
+                         text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50
+                         resize-none min-h-[48px] max-h-32 disabled:opacity-50 text-base leading-relaxed backdrop-blur-sm"
               onInput={(e) => {
                 // Auto-resize textarea
                 e.target.style.height = '48px';
@@ -2300,7 +2384,7 @@ const MessageInput = ({
             <button
               onClick={handleSend}
               disabled={disabled}
-              className="p-3 bg-blue-500 hover:bg-blue-600 rounded-full transition-colors disabled:opacity-50"
+              className="p-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-full transition-all disabled:opacity-50 shadow-lg shadow-cyan-500/30"
             >
               <Send size={20} className="text-white" />
             </button>
@@ -2308,7 +2392,7 @@ const MessageInput = ({
             <button
               onClick={() => setIsRecording(true)}
               disabled={disabled}
-              className="p-3 hover:bg-slate-700 rounded-full transition-colors disabled:opacity-50"
+              className="p-3 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50"
             >
               <Mic size={20} className="text-slate-400" />
             </button>
@@ -2414,7 +2498,7 @@ const MessagesArea = ({
   return (
     <div 
       ref={containerRef}
-      className="h-full overflow-y-auto px-4 py-4 scroll-smooth"
+      className="px-4 py-4"
       onScroll={handleScroll}
     >
       {/* Load More Indicator */}
@@ -2429,7 +2513,7 @@ const MessagesArea = ({
         <div key={group.date}>
           {/* Date Separator */}
           <div className="flex items-center justify-center my-4">
-            <div className="px-3 py-1 bg-slate-700/50 rounded-full text-xs text-slate-400">
+            <div className="px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-xs text-slate-300 border border-white/10 shadow-lg">
               {group.date}
             </div>
           </div>
@@ -2483,8 +2567,8 @@ const MessagesArea = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
-            className="fixed bottom-24 right-6 p-3 bg-slate-700 hover:bg-slate-600 rounded-full 
-                       shadow-lg transition-colors z-10"
+            className="fixed bottom-24 right-6 p-3 bg-white/10 backdrop-blur-md hover:bg-white/20 rounded-full 
+                       shadow-lg transition-colors z-10 border border-white/20"
           >
             <ChevronDown size={20} className="text-white" />
           </motion.button>
@@ -3434,9 +3518,14 @@ export default function Chat() {
     }
 
     return (
-      <div className="flex flex-col h-full overflow-hidden bg-gradient-to-b from-slate-900 to-slate-800">
+      <div className="flex flex-col h-full bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 relative">
+        {/* Animated Stars Background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+          <AnimatedStars />
+        </div>
+        
         {/* Header - Fixed at top */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 z-20 bg-slate-900/90 backdrop-blur-xl border-b border-white/10">
           <ChatHeader
             chat={activeChat}
             currentUserId={user?.uid}
@@ -3461,7 +3550,10 @@ export default function Chat() {
         </div>
 
         {/* Messages - Scrollable middle area */}
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div 
+          className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 scroll-smooth" 
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           <MessagesArea
             messages={searchResults.length > 0 ? searchResults : messages}
             loading={messagesLoading}
@@ -3482,7 +3574,7 @@ export default function Chat() {
         </div>
 
         {/* Input - Fixed at bottom */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 z-20 bg-slate-900/90 backdrop-blur-xl border-t border-white/10">
           <MessageInput
             onSend={handleSendMessage}
             onTyping={setTyping}
@@ -3542,7 +3634,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="h-[calc(100vh-120px)] flex flex-col bg-slate-900 overflow-hidden">
+    <div className="h-[calc(100vh-120px)] md:h-[calc(100vh-120px)] flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 overflow-hidden fixed inset-0 md:relative md:inset-auto" style={{ top: isMobile ? 'env(safe-area-inset-top, 0px)' : undefined }}>
       {/* Profile Check Modal */}
       <AnimatePresence>
         {showProfileModal && (
@@ -3572,7 +3664,7 @@ export default function Chat() {
         {!isMobile && (
           <>
             {/* Sidebar */}
-            <div className="w-80 lg:w-96 flex-shrink-0 border-r border-slate-700/50 flex flex-col bg-slate-800/30">
+            <div className="w-80 lg:w-96 flex-shrink-0 border-r border-white/10 flex flex-col bg-slate-900/50 backdrop-blur-sm">
               <ChatSidebar
                 chats={(chats || []).filter(c => !c.deletedBy?.includes(user?.uid))}
                 loading={chatsLoading}
@@ -3599,7 +3691,7 @@ export default function Chat() {
 
         {/* Mobile Layout */}
         {isMobile && (
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col min-h-0">
             <AnimatePresence mode="wait">
               {showMobileChat ? (
                 <motion.div
@@ -3608,7 +3700,8 @@ export default function Chat() {
                   animate={{ x: 0 }}
                   exit={{ x: '100%' }}
                   transition={{ type: 'tween', duration: 0.2 }}
-                  className="flex-1 flex flex-col overflow-hidden"
+                  className="absolute inset-0 flex flex-col"
+                  style={{ touchAction: 'pan-y' }}
                 >
                   {renderChatArea()}
                 </motion.div>
