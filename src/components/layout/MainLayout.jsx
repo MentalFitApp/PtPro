@@ -202,7 +202,6 @@ const collaboratoreNavConfig = {
 // Keep old flat arrays for bottom nav compatibility
 const adminNavLinks = [
   { to: '/', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
-  { to: '/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/updates', icon: <BellRing size={18} />, label: 'Novità' },
   { to: '/calendar', icon: <Calendar size={18} />, label: 'Calendario' },
 ];
@@ -210,14 +209,12 @@ const adminNavLinks = [
 const coachNavLinks = [
   { to: '/coach', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
   { to: '/coach/clients', icon: <Users size={18} />, label: 'Clienti' },
-  { to: '/coach/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
 ];
 
 const clientNavLinks = [
   { to: '/client/dashboard', icon: <Home size={18} />, label: 'Dashboard', isCentral: true },
   { to: '/client/scheda-allenamento', icon: <Dumbbell size={18} />, label: 'Allenamento' },
   { to: '/client/scheda-alimentazione', icon: <Utensils size={18} />, label: 'Alimentazione' },
-  { to: '/client/chat', icon: <MessageSquare size={18} />, label: 'Chat' },
   { to: '/client/courses', icon: <BookOpen size={18} />, label: 'Corsi' },
   { to: '/client/community', icon: <Users size={18} />, label: 'Community' },
   { to: '/client/anamnesi', icon: <FileText size={18} />, label: 'Anamnesi' },
@@ -368,7 +365,7 @@ const getRoleNavConfig = (isCoach, isClient, isCollaboratore) => {
         { to: '/client/dashboard', label: 'Home', Icon: Home, isCentral: true },
         { to: '/client/scheda-allenamento', label: 'Allenamento', Icon: Dumbbell },
         { to: '/client/scheda-alimentazione', label: 'Alimentazione', Icon: Utensils },
-        { to: '/client/chat', label: 'Messaggi', Icon: MessageSquare, badgeKey: 'chat' },
+        { to: '/client/chat', label: 'Chat', Icon: MessageSquare, badgeKey: 'chat' },
         { type: 'more', label: 'Altro', Icon: MoreHorizontal }
       ],
       more: [
@@ -386,7 +383,7 @@ const getRoleNavConfig = (isCoach, isClient, isCollaboratore) => {
         { to: '/coach', label: 'Home', Icon: Home, isCentral: true },
         { to: '/coach/clients', label: 'Clienti', Icon: Users, badgeKey: 'clients' },
         { to: '/coach/anamnesi', label: 'Anamnesi', Icon: FileText },
-        { to: '/coach/chat', label: 'Messaggi', Icon: MessageSquare, badgeKey: 'chat' },
+        { to: '/coach/chat', label: 'Chat', Icon: MessageSquare, badgeKey: 'chat' },
         { type: 'more', label: 'Altro', Icon: MoreHorizontal }
       ],
       more: [
@@ -413,8 +410,8 @@ const getRoleNavConfig = (isCoach, isClient, isCollaboratore) => {
     primary: [
       { to: '/', label: 'Home', Icon: Home, isCentral: true },
       { to: '/clients', label: 'Clienti', Icon: Users, badgeKey: 'clients' },
+      { to: '/chat', label: 'Chat', Icon: MessageSquare, badgeKey: 'chat' },
       { to: '/calendar', label: 'Calendario', Icon: Calendar },
-      { to: '/chat', label: 'Messaggi', Icon: MessageSquare, badgeKey: 'chat' },
       { type: 'more', label: 'Altro', Icon: MoreHorizontal }
     ],
     more: [
@@ -798,9 +795,9 @@ export default function MainLayout() {
   const [userIsSuperAdmin, setUserIsSuperAdmin] = useState(false);
   const [branding, setBranding] = useState(defaultBranding);
 
-  // Determina se è pagina auth o chat
+  // Determina se è pagina auth o community
   const isAuthPage = AUTH_PAGES.includes(location.pathname);
-  const isChatPage = location.pathname === '/chat' || location.pathname === '/coach/chat' || location.pathname === '/client/chat' || location.pathname === '/community';
+  const isChatPage = location.pathname === '/community' || location.pathname.includes('/community');
   const [isChatSelected, setIsChatSelected] = useState(false);
   const showSidebar = !isAuthPage && auth.currentUser;
   const mobileBottomPadding = showSidebar && isMobile && !isAuthPage

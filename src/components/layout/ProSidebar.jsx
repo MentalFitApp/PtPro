@@ -7,9 +7,10 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { isSuperAdmin } from '../../utils/superadmin';
 import { defaultBranding } from '../../config/tenantBranding';
-import { useUnreadMessages, useUnreadAnamnesi, useUnreadChecks } from '../../hooks/useUnreadNotifications';
+import { useUnreadAnamnesi, useUnreadChecks } from '../../hooks/useUnreadNotifications';
+import { useUnreadCount } from '../../hooks/useChat';
 import {
-  Home, Users, MessageSquare, FileText, Calendar, Settings,
+  Home, Users, FileText, Calendar, Settings, MessageSquare,
   ChevronRight, ChevronLeft, BarChart3, BellRing, UserCheck,
   BookOpen, Target, Activity, Plus, Palette, Layout, Link2,
   Dumbbell, Utensils, Shield, CreditCard, LogOut, HelpCircle,
@@ -27,7 +28,7 @@ const getNavConfig = (role, isSuperAdmin = false) => {
           items: [
             { to: '/', icon: Home, label: 'Dashboard' },
             { to: '/clients', icon: Users, label: 'Clienti' },
-            { to: '/chat', icon: MessageSquare, label: 'Messaggi' },
+            { to: '/chat', icon: MessageSquare, label: 'Messaggi', hasBadge: 'chat' },
             { to: '/calendar', icon: Calendar, label: 'Calendario' },
           ]
         },
@@ -74,7 +75,7 @@ const getNavConfig = (role, isSuperAdmin = false) => {
           items: [
             { to: '/coach', icon: Home, label: 'Dashboard' },
             { to: '/coach/clients', icon: Users, label: 'Clienti' },
-            { to: '/coach/chat', icon: MessageSquare, label: 'Messaggi' },
+            { to: '/coach/chat', icon: MessageSquare, label: 'Messaggi', hasBadge: 'chat' },
           ]
         },
         {
@@ -107,7 +108,7 @@ const getNavConfig = (role, isSuperAdmin = false) => {
         {
           title: 'Comunicazioni',
           items: [
-            { to: '/client/chat', icon: MessageSquare, label: 'Chat' },
+            { to: '/client/chat', icon: MessageSquare, label: 'Chat', hasBadge: 'chat' },
             { to: '/client/community', icon: Users, label: 'Community' },
           ]
         },
@@ -213,7 +214,6 @@ const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0 }) => {
     
     // Admin routes
     if (path === '/clients') return 'clients';
-    if (path === '/chat' || path.includes('/chat')) return 'chat';
     if (path === '/calendar' || path.includes('/calendar')) return 'calendar';
     if (path === '/collaboratori') return 'collaboratori';
     if (path === '/alimentazione-allenamento') return 'schede';
@@ -225,7 +225,6 @@ const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0 }) => {
     
     // Coach routes
     if (path === '/coach/clients') return 'clients';
-    if (path === '/coach/chat') return 'chat';
     if (path === '/coach/anamnesi') return 'anamnesi';
     if (path === '/coach/schede') return 'schede';
     if (path === '/coach/updates') return 'updates';
@@ -233,7 +232,6 @@ const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0 }) => {
     // Client routes
     if (path === '/client/scheda-allenamento') return 'workout';
     if (path === '/client/scheda-alimentazione') return 'diet';
-    if (path === '/client/chat') return 'chat';
     if (path === '/client/community') return 'community';
     if (path === '/client/anamnesi') return 'anamnesi';
     if (path === '/client/checks') return 'checks';
@@ -438,17 +436,18 @@ export const ProSidebar = ({
   const user = auth.currentUser;
   
   // Hook per notifiche non lette
-  const { unreadCount: unreadMessages } = useUnreadMessages();
   const { unreadCount: unreadAnamnesi } = useUnreadAnamnesi();
   const { unreadCount: unreadChecks } = useUnreadChecks();
+  const unreadChat = useUnreadCount();
 
   const navConfig = getNavConfig(role, userIsSuperAdmin);
   
   // Badge per le varie voci di menu
   const badges = {
-    '/chat': unreadMessages,
-    '/coach/chat': unreadMessages,
-    '/client/chat': unreadMessages,
+    // Badge per chat
+    '/chat': unreadChat,
+    '/coach/chat': unreadChat,
+    '/client/chat': unreadChat,
     // Badge per anamnesi (admin e coach)
     '/coach/anamnesi': unreadAnamnesi,
     '/admin/anamnesi': unreadAnamnesi,

@@ -12,12 +12,12 @@ const PATH_TO_PERMISSION = {
   '/client/anamnesi': 'anamnesi',
   '/client/checks': 'checks',
   '/client/payments': 'payments',
-  '/client/chat': 'chat',
   '/client/scheda-alimentazione': 'scheda-alimentazione',
   '/client/scheda-allenamento': 'scheda-allenamento',
   '/client/courses': 'courses',
   '/client/community': 'community',
   '/client/settings': 'settings',
+  '/client/chat': 'chat',
 };
 
 const DEFAULT_PERMISSIONS = {
@@ -27,12 +27,12 @@ const DEFAULT_PERMISSIONS = {
     anamnesi: true,
     checks: true,
     payments: true,
-    chat: true,
     'scheda-alimentazione': true,
     'scheda-allenamento': true,
     courses: true,
     community: true,
     settings: true,
+    chat: true,
   },
   features: {
     'food-swap': true,
@@ -176,12 +176,6 @@ export function ProtectedClientRoute({ children, requiredPermission }) {
               className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all"
             >
               Torna alla Dashboard
-            </a>
-            <a
-              href="/client/chat"
-              className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-all"
-            >
-              Contatta Trainer
             </a>
           </div>
         </div>

@@ -1853,9 +1853,14 @@ export default function ClientDetail({ role: propRole }) {
                     <h1 className="text-2xl sm:text-3xl font-bold text-white">{client.name}</h1>
                     <span className="px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-400 text-xs font-medium">{client.tags?.[0] || 'Client'}</span>
                     {client.rateizzato && <span className="px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-medium">Rateizzato</span>}
-                    {client.isOldClient && (
+                    {client.isArchived && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-400 text-xs font-medium">
                         <AlertTriangle size={12} /> Archiviato
+                      </span>
+                    )}
+                    {client.isOldClient && !client.isArchived && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-500/10 text-slate-400 text-xs font-medium">
+                        Cliente storico
                       </span>
                     )}
                   </div>

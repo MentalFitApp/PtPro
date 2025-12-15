@@ -86,8 +86,7 @@ const CoachAnalytics = React.lazy(() => import('./components/admin/CoachAnalytic
 const CollaboratoreDashboard = React.lazy(() => import('./pages/collaboratore/CollaboratoreDashboard'));
 
 // Shared Pages
-const UnifiedChat = React.lazy(() => import('./pages/shared/UnifiedChat'));
-const ModernChat = React.lazy(() => import('./pages/shared/ModernChat'));
+const Chat = React.lazy(() => import('./pages/shared/Chat'));
 const Updates = React.lazy(() => import('./pages/shared/Updates'));
 const CalendarPage = React.lazy(() => import('./pages/shared/CalendarPage'));
 const CalendarReport = React.lazy(() => import('./pages/shared/CalendarReport'));
@@ -287,7 +286,6 @@ export default function App() {
               location.pathname.startsWith('/client/') ||
               location.pathname.startsWith('/edit/') ||
               location.pathname === '/updates' ||
-              location.pathname === '/chat' ||
               location.pathname === '/collaboratori' ||
               location.pathname.startsWith('/collaboratore/') ||
               location.pathname.startsWith('/calendar-report/') ||
@@ -314,7 +312,6 @@ export default function App() {
               location.pathname === '/coach/anamnesi' ||
               location.pathname === '/coach/checks' ||
               location.pathname === '/coach/updates' ||
-              location.pathname === '/coach/chat' ||
               location.pathname === '/coach/schede' ||
               location.pathname === '/coach/profile' ||
               location.pathname.startsWith('/coach/scheda-alimentazione/') ||
@@ -432,7 +429,7 @@ export default function App() {
           <Route path="/updates" element={<Updates />} />
           <Route path="/admin/checks" element={<AdminChecksList />} />
           <Route path="/admin/anamnesi" element={<AdminAnamnesiList />} />
-          <Route path="/chat" element={<ModernChat />} />
+          <Route path="/chat" element={<Chat />} />
           <Route path="/client/:id/anamnesi" element={<AdminAnamnesi />} />
           <Route path="/collaboratori" element={<Collaboratori />} />
           <Route path="/collaboratore-detail" element={<CollaboratoreDetail />} />
@@ -486,7 +483,7 @@ export default function App() {
           <Route path="/coach/checks" element={<CoachChecksList />} />
           <Route path="/coach/updates" element={<CoachUpdates />} />
           <Route path="/coach/analytics" element={<CoachAnalytics />} />
-          <Route path="/coach/chat" element={<ModernChat />} />
+          <Route path="/coach/chat" element={<Chat />} />
           <Route path="/coach/profile" element={<Profile />} />
           <Route path="/coach/client/:clientId/checks" element={<ClientChecks />} />
           <Route path="/coach/schede" element={<AlimentazioneAllenamento />} />
@@ -502,7 +499,7 @@ export default function App() {
           <Route path="/client/anamnesi" element={<ProtectedClientRoute requiredPermission="anamnesi"><ClientAnamnesi /></ProtectedClientRoute>} />
           <Route path="/client/checks" element={<ProtectedClientRoute requiredPermission="checks"><ClientChecks /></ProtectedClientRoute>} />
           <Route path="/client/payments" element={<ProtectedClientRoute requiredPermission="payments"><ClientPayments /></ProtectedClientRoute>} />
-          <Route path="/client/chat" element={<ProtectedClientRoute requiredPermission="chat"><ModernChat /></ProtectedClientRoute>} />
+          <Route path="/client/chat" element={<ProtectedClientRoute requiredPermission="chat"><Chat /></ProtectedClientRoute>} />
           <Route path="/client/profile" element={<Profile />} />
           <Route path="/client/scheda-alimentazione" element={<ProtectedClientRoute requiredPermission="scheda-alimentazione"><ClientSchedaAlimentazione /></ProtectedClientRoute>} />
           <Route path="/client/scheda-allenamento" element={<ProtectedClientRoute requiredPermission="scheda-allenamento"><ClientSchedaAllenamento /></ProtectedClientRoute>} />

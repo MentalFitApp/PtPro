@@ -143,7 +143,7 @@ export function useUnreadAnamnesi() {
         
         for (const clientDoc of clientsSnap.docs) {
           const clientData = clientDoc.data();
-          if (clientData.isOldClient) continue;
+          // Mostra notifiche anamnesi di tutti i clienti (anche storici e archiviati)
           
           const anamRef = doc(db, `tenants/${tenantId}/clients/${clientDoc.id}/anamnesi/initial`);
           const anamSnap = await getDoc(anamRef);
@@ -272,7 +272,7 @@ export function useUnreadChecks() {
         
         for (const clientDoc of clientsSnap.docs) {
           const clientData = clientDoc.data();
-          if (clientData.isOldClient) continue;
+          // Mostra notifiche check di tutti i clienti (anche storici e archiviati)
           
           const checksRef = collection(db, `tenants/${tenantId}/clients/${clientDoc.id}/checks`);
           const checksQuery = query(checksRef, orderBy('createdAt', 'desc'), limit(10));

@@ -3,14 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Settings, LogOut, ChevronDown, Bell, User, CreditCard, Home, Users, MessageSquare, Calendar, Dumbbell, Utensils, Activity, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Menu, Settings, LogOut, ChevronDown, Bell, User, CreditCard, Home, Users, MessageSquare, Calendar, Dumbbell, Utensils, Activity, ChevronRight, ArrowLeft, FileText } from 'lucide-react';
 import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
 import { ProSidebar, MobileSidebar } from './ProSidebar';
 import ThemeToggle from '../ui/ThemeToggle';
 import NotificationPermissionModal from '../notifications/NotificationPermissionModal';
 import InteractiveTour from '../onboarding/InteractiveTour';
-import { useUnreadMessages } from '../../hooks/useUnreadNotifications';
 import { PageProvider, usePageContext } from '../../contexts/PageContext';
 
 // === STELLE ANIMATE ===
@@ -324,16 +323,16 @@ const BottomNav = ({ role, currentPath, unreadMessages = 0 }) => {
         return [
           { to: '/client/dashboard', icon: Home, label: 'Home' },
           { to: '/client/scheda-allenamento', icon: Dumbbell, label: 'Workout' },
-          { to: '/client/scheda-alimentazione', icon: Utensils, label: 'Dieta' },
-          { to: '/client/checks', icon: Activity, label: 'Check' },
           { to: '/client/chat', icon: MessageSquare, label: 'Chat', hasBadge: true },
+          { to: '/client/checks', icon: Activity, label: 'Check' },
+          { to: '/client/community', icon: Users, label: 'Community' },
         ];
       case 'coach':
         return [
           { to: '/coach', icon: Home, label: 'Home' },
           { to: '/coach/clients', icon: Users, label: 'Clienti' },
-          { to: '/coach/anamnesi', icon: Activity, label: 'Anamnesi' },
           { to: '/coach/chat', icon: MessageSquare, label: 'Chat', hasBadge: true },
+          { to: '/coach/checks', icon: FileText, label: 'Check' },
         ];
       case 'collaboratore':
         return [
@@ -344,8 +343,8 @@ const BottomNav = ({ role, currentPath, unreadMessages = 0 }) => {
         return [
           { to: '/', icon: Home, label: 'Home' },
           { to: '/clients', icon: Users, label: 'Clienti' },
-          { to: '/calendar', icon: Calendar, label: 'Calendario' },
           { to: '/chat', icon: MessageSquare, label: 'Chat', hasBadge: true },
+          { to: '/updates', icon: Bell, label: 'Novità' },
         ];
     }
   };
@@ -456,7 +455,6 @@ const AUTH_PAGES = ['/login', '/register', '/reset-password', '/first-access'];
 export const ProLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const unreadCount = useUnreadMessages();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem('sidebarCollapsed') === 'true';

@@ -1162,26 +1162,29 @@ export default function CalendarPage() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-emerald-500/30 shadow-2xl shadow-emerald-500/10 p-6 w-full max-w-md"
+              className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-emerald-500/30 shadow-2xl shadow-emerald-500/10 w-full max-w-md max-h-[90vh] flex flex-col"
             >
-              <div className="flex justify-between items-center mb-6">
+              {/* Header fisso */}
+              <div className="flex justify-between items-center p-4 sm:p-6 border-b border-slate-700/50 flex-shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-emerald-500/20 rounded-xl">
-                    <Phone className="w-6 h-6 text-emerald-400" />
+                  <div className="p-2 sm:p-3 bg-emerald-500/20 rounded-xl">
+                    <Phone className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-slate-100">Dettagli Lead</h3>
-                    <p className="text-sm text-emerald-400">Chiamata Programmata</p>
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-100">Dettagli Lead</h3>
+                    <p className="text-xs sm:text-sm text-emerald-400">Chiamata Programmata</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowLeadDetails(false)}
-                  className="text-slate-400 hover:text-rose-400 transition-colors"
+                  className="text-slate-400 hover:text-rose-400 transition-colors p-2"
                 >
                   <X size={24} />
                 </button>
               </div>
 
+              {/* Contenuto scrollabile */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               {selectedLead.leadData && !editingLeadDetails && (
                   <div className="space-y-4">
                     {(!isAdmin && selectedLead.createdBy !== (auth.currentUser?.uid || '')) && (
@@ -1292,12 +1295,37 @@ export default function CalendarPage() {
                             toast.error('Errore nel caricamento dei dati del lead');
                           }
                         }}
-                        className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold py-3 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition-all"
+                        className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold py-3 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition-all"
                       >
                         <Edit className="w-5 h-5" />
-                        Modifica qui
+                        Modifica
                       </motion.button>
                     )}
+                    {(isAdmin || selectedLead.createdBy === (auth.currentUser?.uid || '')) && (
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={async () => {
+                          if (!window.confirm('Sei sicuro di voler eliminare questa chiamata dal calendario?')) return;
+                          try {
+                            // Elimina l'evento dal calendario
+                            await deleteDoc(getTenantDoc(db, 'calendarEvents', selectedLead.id));
+                            toast.success('Chiamata rimossa dal calendario');
+                            setShowLeadDetails(false);
+                            setSelectedLead(null);
+                          } catch (err) {
+                            console.error('Errore eliminazione evento:', err);
+                            toast.error('Errore nella rimozione');
+                          }
+                        }}
+                        className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                        Elimina
+                      </motion.button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1">
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -1452,6 +1480,7 @@ export default function CalendarPage() {
                   </div>
                 </div>
               )}
+              </div>
             </motion.div>
           </motion.div>
         )}

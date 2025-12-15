@@ -4,7 +4,7 @@ import { doc, getDoc, getDocs, collection, query, orderBy, onSnapshot, limit } f
 import { db } from '../../firebase.js';
 import { useNavigate, Link } from 'react-router-dom';
 import { getTenantDoc, getTenantSubcollection } from '../../config/tenant';
-import { User, Calendar, CheckSquare, MessageSquare, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone, TrendingUp, Target, Dumbbell, Utensils, Phone, UserCircle, X } from 'lucide-react';
+import { User, Calendar, CheckSquare, Users, LogOut, BarChart2, Briefcase, ChevronRight, AlertCircle, Download, Smartphone, TrendingUp, Target, Dumbbell, Utensils, Phone, UserCircle, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
 import { useTenantBranding } from '../../hooks/useTenantBranding';
@@ -503,7 +503,7 @@ const ClientDashboard = () => {
               <ActionLink to="/client/scheda-allenamento" title="Allenamento" description="Scheda" icon={<Dumbbell size={14} />} variants={itemVariants}/>
               <ActionLink to="/client/scheda-alimentazione" title="Alimentazione" description="Piano" icon={<Utensils size={14} />} variants={itemVariants}/>
               <ActionLink to="/client/checks" title="Check" description="Progressi" icon={<CheckSquare size={14} />} variants={itemVariants}/>
-              <ActionLink to="/client/chat" title="Chat" description="Coach" icon={<MessageSquare size={14} />} variants={itemVariants}/>
+              <ActionLink to="/client/community" title="Community" description="Social" icon={<Users size={14} />} variants={itemVariants}/>
               <ActionLink to="/client/anamnesi" title="Anamnesi" description="Dati" icon={<User size={14} />} variants={itemVariants}/>
               <ActionLink to="/client/payments" title="Pagamenti" description="Storico" icon={<BarChart2 size={14} />} variants={itemVariants}/>
             </div>

@@ -40,7 +40,7 @@ export default function AdminChecksList() {
       // Per ogni cliente, carica i suoi check recenti
       for (const clientDoc of clientsSnap.docs) {
         const clientData = clientDoc.data();
-        if (clientData.isOldClient) continue;
+        // Mostra check di tutti i clienti (anche storici e archiviati)
         
         const checksRef = collection(db, `tenants/${CURRENT_TENANT_ID}/clients/${clientDoc.id}/checks`);
         const checksQuery = query(checksRef, orderBy('createdAt', 'desc'), limit(5));

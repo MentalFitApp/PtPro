@@ -40,7 +40,7 @@ export default function AdminAnamnesiList() {
       // Per ogni cliente, controlla se ha anamnesi compilata
       for (const clientDoc of clientsSnap.docs) {
         const clientData = clientDoc.data();
-        if (clientData.isOldClient) continue;
+        // Mostra anamnesi di tutti i clienti (anche storici e archiviati)
         
         // Controlla anamnesi principale (salvata come 'initial')
         const anamRef = doc(db, `tenants/${CURRENT_TENANT_ID}/clients/${clientDoc.id}/anamnesi/initial`);

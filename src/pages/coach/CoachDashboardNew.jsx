@@ -184,7 +184,6 @@ export default function CoachDashboardNew() {
       const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
       clientsSnap.forEach(clientDoc => {
         const clientData = clientDoc.data();
-        if (clientData.isOldClient) return;
         
         const checksQuery = query(
           getTenantSubcollection(db, 'clients', clientDoc.id, 'checks'),
@@ -222,7 +221,6 @@ export default function CoachDashboardNew() {
       const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
       clientsSnap.forEach(clientDoc => {
         const clientData = clientDoc.data();
-        if (clientData.isOldClient) return;
         
         const anamnesiQuery = query(
           getTenantSubcollection(db, 'clients', clientDoc.id, 'anamnesi'),

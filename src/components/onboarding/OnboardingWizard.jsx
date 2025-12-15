@@ -95,14 +95,6 @@ const ONBOARDING_STEPS = {
       action: { label: 'Vai al Calendario', path: '/coach/calendar' }
     },
     {
-      id: 'chat',
-      title: 'Chat con i Clienti',
-      description: 'Comunica direttamente con i tuoi clienti. Puoi anche fare videochiamate!',
-      icon: MessageSquare,
-      color: 'blue',
-      action: { label: 'Apri Chat', path: '/coach/chat' }
-    },
-    {
       id: 'notifications',
       title: 'Attiva le Notifiche',
       description: 'Ricevi notifiche quando i clienti caricano check o ti scrivono.',
@@ -157,14 +149,6 @@ const ONBOARDING_STEPS = {
       icon: Camera,
       color: 'rose',
       action: { label: 'Fai un Check', path: '/client/checks' }
-    },
-    {
-      id: 'chat',
-      title: 'Resta in Contatto',
-      description: 'Usa la chat per comunicare direttamente con il tuo coach. Puoi anche fare videochiamate!',
-      icon: MessageSquare,
-      color: 'blue',
-      action: { label: 'Apri Chat', path: '/client/chat' }
     },
     {
       id: 'complete',
