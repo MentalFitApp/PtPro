@@ -11,6 +11,7 @@ import ThemeToggle from '../ui/ThemeToggle';
 import NotificationPermissionModal from '../notifications/NotificationPermissionModal';
 import InteractiveTour from '../onboarding/InteractiveTour';
 import { PageProvider, usePageContext } from '../../contexts/PageContext';
+import { useUnreadCount } from '../../hooks/useChat';
 
 // === STELLE ANIMATE ===
 const AnimatedStars = () => {
@@ -455,6 +456,7 @@ const AUTH_PAGES = ['/login', '/register', '/reset-password', '/first-access'];
 export const ProLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const unreadCount = useUnreadCount(); // Hook per messaggi non letti
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem('sidebarCollapsed') === 'true';

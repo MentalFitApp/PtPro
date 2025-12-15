@@ -328,36 +328,50 @@ export function useChatList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        setChats([]);
+        setLoading(false);
+        return;
+      }
+
+      const tenantId = getTenantId();
+      if (!tenantId) {
+        setChats([]);
+        setLoading(false);
+        return;
+      }
+
+      const chatsRef = getChatCollection();
+      const q = query(
+        chatsRef,
+        where('participants', 'array-contains', user.uid),
+        orderBy('lastMessageAt', 'desc')
+      );
+
+      const unsubscribe = onSnapshot(q, 
+        (snapshot) => {
+          const chatList = [];
+          snapshot.forEach((doc) => {
+            chatList.push({ id: doc.id, ...doc.data() });
+          });
+          setChats(chatList);
+          setLoading(false);
+        },
+        (err) => {
+          console.error('Error loading chats:', err);
+          setChats([]);
+          setLoading(false);
+        }
+      );
+
+      return () => unsubscribe();
+    } catch (err) {
+      console.warn('useChatList: Exception', err);
       setChats([]);
       setLoading(false);
-      return;
     }
-
-    const chatsRef = getChatCollection();
-    const q = query(
-      chatsRef,
-      where('participants', 'array-contains', user.uid),
-      orderBy('lastMessageAt', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(q, 
-      (snapshot) => {
-        const chatList = [];
-        snapshot.forEach((doc) => {
-          chatList.push({ id: doc.id, ...doc.data() });
-        });
-        setChats(chatList);
-        setLoading(false);
-      },
-      (err) => {
-        console.error('Error loading chats:', err);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
   }, []);
 
   // Crea nuova chat
@@ -616,28 +630,45 @@ export function useUnreadCount() {
   const [totalUnread, setTotalUnread] = useState(0);
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        setTotalUnread(0);
+        return;
+      }
+
+      const tenantId = getTenantId();
+      if (!tenantId) {
+        setTotalUnread(0);
+        return;
+      }
+
+      const chatsRef = getChatCollection();
+      const q = query(
+        chatsRef,
+        where('participants', 'array-contains', user.uid)
+      );
+
+      const unsubscribe = onSnapshot(q, 
+        (snapshot) => {
+          let count = 0;
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            count += data.unreadCount?.[user.uid] || 0;
+          });
+          setTotalUnread(count);
+        },
+        (error) => {
+          console.warn('useUnreadCount: Error fetching chats', error);
+          setTotalUnread(0);
+        }
+      );
+
+      return () => unsubscribe();
+    } catch (err) {
+      console.warn('useUnreadCount: Exception', err);
       setTotalUnread(0);
-      return;
     }
-
-    const chatsRef = getChatCollection();
-    const q = query(
-      chatsRef,
-      where('participants', 'array-contains', user.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let count = 0;
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        count += data.unreadCount?.[user.uid] || 0;
-      });
-      setTotalUnread(count);
-    });
-
-    return () => unsubscribe();
   }, []);
 
   return totalUnread;
