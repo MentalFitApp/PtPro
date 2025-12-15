@@ -30,11 +30,16 @@ const AnimatedStars = () => {
     container.className = 'stars';
     document.body.appendChild(container);
 
-    for (let i = 0; i < 35; i++) {
+    // Colori delle stelle: blu, cyan, indigo
+    const starColors = ['', 'cyan', 'indigo']; // '' = default blu
+    
+    for (let i = 0; i < 40; i++) {
       const star = document.createElement('div');
-      star.className = 'star';
+      // Assegna colore random alle stelle
+      const colorClass = starColors[Math.floor(Math.random() * starColors.length)];
+      star.className = colorClass ? `star ${colorClass}` : 'star';
       
-      const minDistance = 8;
+      const minDistance = 7;
       let top, left, tooClose;
       
       do {
@@ -57,6 +62,16 @@ const AnimatedStars = () => {
       
       star.style.top = `${top}%`;
       star.style.left = `${left}%`;
+      
+      // Varia leggermente la dimensione
+      const size = 1 + Math.random() * 2;
+      star.style.setProperty('--star-width', `${size}px`);
+      
+      // Varia la durata dell'animazione
+      const duration = 12 + Math.random() * 10;
+      star.style.setProperty('--fall-duration', `${duration}s`);
+      star.style.setProperty('--fall-delay', `${Math.random() * -20}s`);
+      
       container.appendChild(star);
     }
 
@@ -183,7 +198,7 @@ const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSetti
 
   return (
     <header 
-      className="fixed top-0 right-0 z-30 hidden lg:flex items-center gap-4 px-6 py-2.5 bg-theme-bg-secondary/80 backdrop-blur-2xl border-b border-theme/50"
+      className="fixed top-0 right-0 z-30 hidden lg:flex items-center gap-4 px-6 h-[72px] bg-theme-bg-secondary/80 backdrop-blur-2xl border-b border-theme/50"
       style={{ left: isSidebarCollapsed ? '76px' : '264px', transition: 'left 0.3s ease' }}
     >
       {/* Left side - Page Title, Breadcrumbs, Back Button */}
@@ -674,19 +689,21 @@ export const ProLayout = () => {
 
       {/* Main Content Area */}
       <div 
-        className={`h-screen flex flex-col transition-all duration-300 ease-out ${
+        className={`min-h-screen transition-all duration-300 ease-out ${
           !isMobile 
             ? (isSidebarCollapsed ? 'lg:ml-[76px]' : 'lg:ml-[264px]')
             : ''
         }`}
       >
         <main 
-          className={`flex-1 flex flex-col bg-gradient-to-br from-theme-bg-primary/40 via-theme-bg-primary/30 to-theme-bg-secondary/20 overflow-hidden ${
-            isMobile ? 'pb-16' : 'pt-14'
+          className={`min-h-screen bg-gradient-to-br from-theme-bg-primary/40 via-theme-bg-primary/30 to-theme-bg-secondary/20 ${
+            isMobile ? 'pb-16' : 'pt-[72px]'
           }`}
           style={isMobile ? { paddingTop: 'calc(56px + env(safe-area-inset-top, 0px))' } : undefined}
         >
-          <Outlet />
+          <div className="w-full">
+            <Outlet />
+          </div>
         </main>
       </div>
 

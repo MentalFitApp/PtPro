@@ -161,42 +161,63 @@ export function useUnreadAnamnesi() {
     const timestampsKey = `anamnesi_timestamps_${tenantId}_${user.uid}`;
     const viewedTimestamps = JSON.parse(localStorage.getItem(timestampsKey) || '{}');
 
-    // Per ora carichiamo periodicamente - questo potrebbe essere ottimizzato
+    // Carica anamnesi in modo ottimizzato - solo clienti recenti
     const loadAnamnesi = async () => {
       try {
-        const { getDocs, collection, doc, getDoc } = await import('firebase/firestore');
+        const { getDocs, collection, doc, getDoc, query, orderBy, limit, where } = await import('firebase/firestore');
         const clientsRef = collection(db, `tenants/${tenantId}/clients`);
-        const clientsSnap = await getDocs(clientsRef);
+        
+        // Carica solo clienti attivi/recenti (ultimi 100 per data creazione)
+        const clientsQuery = query(
+          clientsRef, 
+          where('isActive', '!=', false),
+          orderBy('isActive'),
+          orderBy('createdAt', 'desc'), 
+          limit(100)
+        );
+        
+        let clientsSnap;
+        try {
+          clientsSnap = await getDocs(clientsQuery);
+        } catch (indexError) {
+          // Se l'indice non esiste, usa query semplice
+          console.debug('Index not available, using simple query');
+          const simpleQuery = query(clientsRef, limit(50));
+          clientsSnap = await getDocs(simpleQuery);
+        }
         
         const unread = [];
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         
-        for (const clientDoc of clientsSnap.docs) {
-          const clientData = clientDoc.data();
-          // Mostra notifiche anamnesi di tutti i clienti (anche storici e archiviati)
-          
-          const anamRef = doc(db, `tenants/${tenantId}/clients/${clientDoc.id}/anamnesi/initial`);
-          const anamSnap = await getDoc(anamRef);
-          
-          if (anamSnap.exists()) {
-            const anamData = anamSnap.data();
-            const updatedAt = anamData.submittedAt?.toDate?.() || anamData.updatedAt?.toDate?.() || anamData.completedAt?.toDate?.() || anamData.createdAt?.toDate?.() || new Date(0);
+        // Usa Promise.all per query parallele (molto più veloce)
+        const anamnesiPromises = clientsSnap.docs.map(async (clientDoc) => {
+          try {
+            const anamRef = doc(db, `tenants/${tenantId}/clients/${clientDoc.id}/anamnesi/initial`);
+            const anamSnap = await getDoc(anamRef);
             
-            // È non letta se:
-            // 1. Il clientId non è nella lista dei visti, OPPURE
-            // 2. L'anamnesi è stata aggiornata dopo l'ultimo timestamp visto
-            const lastViewedTimestamp = viewedTimestamps[clientDoc.id] || 0;
-            const isUpdatedAfterView = updatedAt.getTime() > lastViewedTimestamp;
-            
-            if (updatedAt > sevenDaysAgo && (!viewedClientIds.includes(clientDoc.id) || isUpdatedAfterView)) {
-              unread.push(clientDoc.id);
+            if (anamSnap.exists()) {
+              const anamData = anamSnap.data();
+              const updatedAt = anamData.submittedAt?.toDate?.() || anamData.updatedAt?.toDate?.() || anamData.completedAt?.toDate?.() || anamData.createdAt?.toDate?.() || new Date(0);
+              
+              const lastViewedTimestamp = viewedTimestamps[clientDoc.id] || 0;
+              const isUpdatedAfterView = updatedAt.getTime() > lastViewedTimestamp;
+              
+              if (updatedAt > sevenDaysAgo && (!viewedClientIds.includes(clientDoc.id) || isUpdatedAfterView)) {
+                return clientDoc.id;
+              }
             }
+            return null;
+          } catch {
+            return null;
           }
-        }
+        });
         
-        setUnreadIds(unread);
-        setUnreadCount(unread.length);
+        const results = await Promise.all(anamnesiPromises);
+        const validUnread = results.filter(id => id !== null);
+        
+        setUnreadIds(validUnread);
+        setUnreadCount(validUnread.length);
         setLoading(false);
       } catch (error) {
         console.error('Errore caricamento anamnesi:', error);
@@ -321,37 +342,61 @@ export function useUnreadChecks() {
     const viewedKey = `viewed_checks_${tenantId}_${user.uid}`;
     const viewedIds = JSON.parse(localStorage.getItem(viewedKey) || '[]');
 
-    // Carica checks da tutti i clienti
+    // Carica checks in modo ottimizzato
     const loadChecks = async (getDocs, collection, query, orderBy, limit) => {
       try {
+        const { where } = await import('firebase/firestore');
         const clientsRef = collection(db, `tenants/${tenantId}/clients`);
-        const clientsSnap = await getDocs(clientsRef);
         
-        const unread = [];
+        // Carica solo clienti attivi/recenti (ultimi 100)
+        let clientsSnap;
+        try {
+          const clientsQuery = query(
+            clientsRef, 
+            where('isActive', '!=', false),
+            orderBy('isActive'),
+            orderBy('createdAt', 'desc'), 
+            limit(100)
+          );
+          clientsSnap = await getDocs(clientsQuery);
+        } catch (indexError) {
+          // Se l'indice non esiste, usa query semplice
+          console.debug('Index not available for checks, using simple query');
+          const simpleQuery = query(clientsRef, limit(50));
+          clientsSnap = await getDocs(simpleQuery);
+        }
+        
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         
-        for (const clientDoc of clientsSnap.docs) {
-          const clientData = clientDoc.data();
-          // Mostra notifiche check di tutti i clienti (anche storici e archiviati)
-          
-          const checksRef = collection(db, `tenants/${tenantId}/clients/${clientDoc.id}/checks`);
-          const checksQuery = query(checksRef, orderBy('createdAt', 'desc'), limit(10));
-          const checksSnap = await getDocs(checksQuery);
-          
-          checksSnap.docs.forEach(checkDoc => {
-            const checkData = checkDoc.data();
-            const fullId = `${clientDoc.id}_${checkDoc.id}`;
-            const createdAt = checkData.createdAt?.toDate?.() || checkData.date?.toDate?.() || new Date(0);
+        // Usa Promise.all per query parallele
+        const checksPromises = clientsSnap.docs.map(async (clientDoc) => {
+          try {
+            const checksRef = collection(db, `tenants/${tenantId}/clients/${clientDoc.id}/checks`);
+            const checksQuery = query(checksRef, orderBy('createdAt', 'desc'), limit(5)); // Solo ultimi 5 check per cliente
+            const checksSnap = await getDocs(checksQuery);
             
-            if (createdAt > sevenDaysAgo && !viewedIds.includes(fullId)) {
-              unread.push(fullId);
-            }
-          });
-        }
+            const unreadForClient = [];
+            checksSnap.docs.forEach(checkDoc => {
+              const checkData = checkDoc.data();
+              const fullId = `${clientDoc.id}_${checkDoc.id}`;
+              const createdAt = checkData.createdAt?.toDate?.() || checkData.date?.toDate?.() || new Date(0);
+              
+              if (createdAt > sevenDaysAgo && !viewedIds.includes(fullId)) {
+                unreadForClient.push(fullId);
+              }
+            });
+            return unreadForClient;
+          } catch {
+            return [];
+          }
+        });
         
-        setUnreadIds(unread);
-        setUnreadCount(unread.length);
+        const results = await Promise.all(checksPromises);
+        const allUnread = results.flat();
+        
+        setUnreadIds(allUnread);
+        setUnreadCount(allUnread.length);
         setLoading(false);
       } catch (error) {
         console.error('Errore caricamento checks:', error);

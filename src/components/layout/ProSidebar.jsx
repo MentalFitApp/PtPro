@@ -47,6 +47,7 @@ const getNavConfig = (role, isSuperAdmin = false) => {
             { to: '/admin/anamnesi', icon: FileText, label: 'Anamnesi', hasBadge: 'anamnesi' },
             { to: '/courses', icon: BookOpen, label: 'Corsi' },
             { to: '/community', icon: Users, label: 'Community' },
+            { to: '/admin/landing-pages', icon: Layout, label: 'Landing Pages' },
           ]
         },
         {
@@ -61,7 +62,6 @@ const getNavConfig = (role, isSuperAdmin = false) => {
           title: 'Impostazioni',
           items: [
             { to: '/admin/branding', icon: Palette, label: 'Branding' },
-            { to: '/landing-pages', icon: Layout, label: 'Landing Pages' },
             { to: '/integrations', icon: Link2, label: 'Integrazioni' },
             { to: '/platform-settings', icon: Settings, label: 'Piattaforma' },
           ]
@@ -220,7 +220,6 @@ const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0 }) => {
     if (path === '/community' || path.includes('/community')) return 'community';
     if (path === '/analytics' || path === '/statistiche' || path === '/business-history') return 'analytics';
     if (path.includes('/branding')) return 'branding';
-    if (path === '/landing-pages') return 'landing';
     if (path === '/integrations') return 'integrations';
     
     // Coach routes
@@ -517,8 +516,8 @@ export const ProSidebar = ({
       <div className="absolute inset-0 bg-gradient-to-b from-blue-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none" />
       
       {/* Header */}
-      <div className={`relative p-4 border-b border-theme/50 ${isCollapsed ? 'px-4' : ''}`}>
-        <div className="flex items-center justify-between">
+      <div className={`relative h-[72px] px-4 flex items-center border-b border-theme/50 ${isCollapsed ? 'px-4' : ''}`}>
+        <div className="flex items-center justify-between w-full">
           <SidebarLogo isCollapsed={isCollapsed} branding={branding} />
           <AnimatePresence mode="wait">
             {!isCollapsed && (

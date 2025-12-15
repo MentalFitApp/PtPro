@@ -628,7 +628,7 @@ export default function DashboardPro() {
   if (loading) {
     return (
       <div className="min-h-screen pb-20">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 space-y-4 sm:space-y-6">
+        <div className="w-full px-3 sm:px-6 py-4 space-y-4 sm:space-y-6">
           <div className="h-8 w-32 bg-slate-700/50 rounded-lg animate-pulse" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <SkeletonCard />
@@ -644,10 +644,7 @@ export default function DashboardPro() {
 
   return (
     <div className="min-h-screen pb-20">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 space-y-4 sm:space-y-6">
-        
-        {/* ============ TITLE ============ */}
-        <h1 className="text-lg sm:text-xl font-bold text-white">Dashboard</h1>
+      <div className="w-full px-3 sm:px-6 py-4 space-y-4 sm:space-y-6">
 
         {/* ============ SEARCH BAR ============ */}
         <div className="relative">

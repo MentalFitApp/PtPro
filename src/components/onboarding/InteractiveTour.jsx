@@ -82,13 +82,6 @@ const TOUR_STEPS = {
       position: 'right'
     },
     {
-      id: 'landing',
-      selector: '[data-tour="landing"]',
-      title: 'Landing Pages',
-      description: 'Crea landing page professionali con AI per acquisire nuovi clienti. Lead generation automatica!',
-      position: 'right'
-    },
-    {
       id: 'integrations',
       selector: '[data-tour="integrations"]',
       title: 'Integrazioni',

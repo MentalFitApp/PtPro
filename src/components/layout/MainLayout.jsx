@@ -122,7 +122,6 @@ const adminNavConfig = {
       title: 'Impostazioni',
       items: [
         { to: '/admin/branding', icon: <Palette size={18} />, label: 'Branding' },
-        { to: '/landing-pages', icon: <Layout size={18} />, label: 'Landing Pages' },
         { to: '/integrations', icon: <Zap size={18} />, label: 'Integrazioni' },
         { to: '/platform-settings', icon: <Settings size={18} />, label: 'Piattaforma' },
       ]
@@ -419,7 +418,6 @@ const getRoleNavConfig = (isCoach, isClient, isCollaboratore) => {
       { to: '/admin/dipendenti', label: 'Dipendenti', Icon: Users },
       { to: '/courses', label: 'Corsi', Icon: BookOpen },
       { to: '/community', label: 'Community', Icon: Users },
-      { to: '/landing-pages', label: 'Landing Pages', Icon: Layout },
       { to: '/integrations', label: 'Integrazioni', Icon: Zap },
       { to: '/updates', label: 'Novità', Icon: BellRing },
       { to: '/analytics', label: 'Analytics', Icon: BarChart3 },

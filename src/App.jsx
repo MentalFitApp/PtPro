@@ -17,7 +17,6 @@ import useOnlineStatus from './hooks/useOnlineStatus';
 // Import dinamici dei layout
 const ProLayout = React.lazy(() => import('./components/layout/ProLayout'));
 const SimpleLayout = React.lazy(() => import('./components/layout/SimpleLayout'));
-const GuidaLayout = React.lazy(() => import('./components/layout/GuidaLayout'));
 
 // Import componente protezione permessi
 import { ProtectedClientRoute } from './components/ProtectedClientRoute';
@@ -52,11 +51,9 @@ const CourseAdmin = React.lazy(() => import('./pages/admin/CourseAdmin'));
 const CourseContentManager = React.lazy(() => import('./pages/admin/CourseContentManager'));
 const PlatformSettings = React.lazy(() => import('./pages/admin/PlatformSettings'));
 const TenantBranding = React.lazy(() => import('./pages/admin/TenantBranding'));
-const LandingEditor = React.lazy(() => import('./pages/admin/LandingEditor'));
-const LandingPagesList = React.lazy(() => import('./pages/admin/landingPages/LandingPagesList'));
-const CreateLandingPage = React.lazy(() => import('./pages/admin/landingPages/CreateLandingPage'));
-const LandingPageEditor = React.lazy(() => import('./pages/admin/landingPages/LandingPageEditor'));
 const ClientCallsCalendar = React.lazy(() => import('./pages/admin/ClientCallsCalendar'));
+const LandingPagesList = React.lazy(() => import('./pages/admin/LandingPagesList'));
+const LandingPageEditor = React.lazy(() => import('./pages/admin/LandingPageEditor'));
 
 // Platform CEO Pages
 const CEOPlatformDashboard = React.lazy(() => import('./pages/platform/CEOPlatformDashboard'));
@@ -94,7 +91,6 @@ const Notifications = React.lazy(() => import('./pages/shared/Notifications'));
 const AlimentazioneAllenamento = React.lazy(() => import('./pages/shared/AlimentazioneAllenamento'));
 const SchedaAlimentazione = React.lazy(() => import('./pages/shared/SchedaAlimentazione'));
 const SchedaAllenamento = React.lazy(() => import('./pages/shared/SchedaAllenamento'));
-const GuidaMentalFit = React.lazy(() => import('./pages/shared/GuidaMentalFit'));
 const OnboardingFlow = React.lazy(() => import('./pages/shared/OnboardingFlow'));
 const Community = React.lazy(() => import('./pages/community/Community'));
 
@@ -160,11 +156,6 @@ export default function App() {
   }, [location.pathname]);
 
   useEffect(() => {
-    if (location.pathname === '/guida' || location.pathname.startsWith('/guida/')) {
-      setAuthInfo(prev => ({ ...prev, isLoading: false }));
-      return;
-    }
-
     let isMounted = true;
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!isMounted) return;
@@ -353,8 +344,8 @@ export default function App() {
             error: null
           });
 
-          const publicPaths = ['/login', '/client/forgot-password', '/guida', '/guida/:guideId', '/platform-login', '/platform-dashboard', '/site', '/privacy', '/terms', '/setup'];
-          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/guida/') || location.pathname.startsWith('/platform') || location.pathname.startsWith('/site') || location.pathname.startsWith('/setup/') || location.pathname === '/privacy' || location.pathname === '/terms');
+          const publicPaths = ['/login', '/client/forgot-password', '/platform-login', '/platform-dashboard', '/site', '/privacy', '/terms', '/setup'];
+          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/platform') || location.pathname.startsWith('/site') || location.pathname.startsWith('/setup/') || location.pathname === '/privacy' || location.pathname === '/terms');
           if (!isPublic && !initialAuthComplete) {
             const target = '/login';
             if (lastNavigated !== target) {
@@ -402,9 +393,6 @@ export default function App() {
         <Route path="/site/:slug" element={<LandingPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
-        <Route element={<GuidaLayout />}>
-          <Route path="/guida" element={<GuidaMentalFit />} />
-        </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/setup/:token" element={<SetupAccount />} />
         <Route path="/platform-login" element={<PlatformLogin />} />
@@ -439,10 +427,6 @@ export default function App() {
           <Route path="/business-history" element={<BusinessHistory />} />
           <Route path="/admin/dipendenti" element={<Dipendenti />} />
           <Route path="/admin/branding" element={<TenantBranding />} />
-          <Route path="/admin/landing" element={<LandingEditor />} />
-          <Route path="/landing-pages" element={<LandingPagesList />} />
-          <Route path="/landing-pages/new" element={<CreateLandingPage />} />
-          <Route path="/landing-pages/:id/edit" element={<LandingPageEditor />} />
           <Route path="/statistiche" element={<StatisticheDashboard />} />
           <Route path="/statistiche/legacy" element={<Statistiche />} />
           <Route path="/profile" element={<Profile />} />
@@ -460,6 +444,9 @@ export default function App() {
           <Route path="/instagram" element={<InstagramHub />} />
           <Route path="/integrations" element={<IntegrationsHub />} />
           <Route path="/oauth/callback" element={<OAuthCallback />} />
+          <Route path="/admin/landing-pages" element={<LandingPagesList />} />
+          <Route path="/admin/landing-pages/new" element={<LandingPageEditor />} />
+          <Route path="/admin/landing-pages/:pageId/edit" element={<LandingPageEditor />} />
 
         </Route>
 

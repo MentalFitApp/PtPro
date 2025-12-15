@@ -98,128 +98,217 @@ button, a, [role="button"], input, select, textarea {
 }
 /* Ensure dark variables apply when attribute is on html/body or :root */
 :root[data-theme="dark"], html[data-theme="dark"], body[data-theme="dark"], [data-theme="dark"] {
-  /* Dark theme colors */
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #0f172a;
-  --bg-tertiary: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-tertiary: #94a3b8;
-  --border-color: #334155;
-  --card-bg: #151b2e;
-  --card-hover: #1a2235;
-  --accent-primary: #3b82f6;
-  --accent-secondary: #fbbf24;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+  /* Dark theme colors - Modern Blue Refresh 2025 */
+  --bg-primary: #020617;        /* Nero spazio profondo */
+  --bg-secondary: #0a1628;      /* Blu notte oceano */
+  --bg-tertiary: #0f2847;       /* Blu profondo */
+  --text-primary: #f0f9ff;      /* Bianco luminoso */
+  --text-secondary: #bae6fd;    /* Celeste chiaro */
+  --text-tertiary: #7dd3fc;     /* Cyan muted */
+  --border-color: #0c4a6e;      /* Bordo blu oceano */
+  --card-bg: #082f49;           /* Card blu notte */
+  --card-hover: #0c4a6e;        /* Card hover blu */
+  --accent-primary: #0ea5e9;    /* Sky blu brillante */
+  --accent-secondary: #22d3ee;  /* Cyan luminoso */
+  --accent-tertiary: #38bdf8;   /* Celeste brillante */
+  --accent-glow: #7dd3fc;       /* Glow celeste */
+  --shadow-sm: 0 2px 4px 0 rgba(2, 6, 23, 0.4);
+  --shadow-md: 0 8px 16px -2px rgba(2, 6, 23, 0.5);
+  --shadow-lg: 0 16px 32px -4px rgba(2, 6, 23, 0.6);
+  --shadow-glow: 0 0 20px rgba(14, 165, 233, 0.15);
   
   /* RGB values for Tailwind */
-  --bg-primary-rgb: 10 14 26;
-  --bg-secondary-rgb: 15 23 42;
-  --text-primary-rgb: 248 250 252;
-  --text-secondary-rgb: 203 213 225;
+  --bg-primary-rgb: 2 6 23;
+  --bg-secondary-rgb: 10 22 40;
+  --text-primary-rgb: 240 249 255;
+  --text-secondary-rgb: 186 230 253;
   
-  /* Glass morphism values */
-  --glass-bg: rgba(15, 23, 42, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  /* Glass morphism values - più blu vibrante */
+  --glass-bg: rgba(8, 47, 73, 0.75);
+  --glass-border: rgba(14, 165, 233, 0.2);
+  --glass-shadow: 0 8px 32px rgba(2, 6, 23, 0.5), 0 0 40px rgba(14, 165, 233, 0.05);
+  --glass-highlight: rgba(56, 189, 248, 0.1);
+  
+  /* Aurora/Nebula colors - più vibranti */
+  --aurora-1: rgba(14, 165, 233, 0.2);    /* Sky blu */
+  --aurora-2: rgba(34, 211, 238, 0.15);   /* Cyan */
+  --aurora-3: rgba(56, 189, 248, 0.18);   /* Celeste */
+  --aurora-4: rgba(125, 211, 252, 0.1);   /* Glow celeste */
+  
+  /* Accent gradients */
+  --gradient-primary: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 50%, #22d3ee 100%);
+  --gradient-glow: linear-gradient(135deg, rgba(14, 165, 233, 0.3) 0%, rgba(56, 189, 248, 0.15) 100%);
 }
 
 /* ========================================
-   GLASSMORPHISM UTILITIES
+   GLASSMORPHISM UTILITIES - Modern 2025
    ======================================== */
 .glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
 }
 
 .glass-subtle {
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(8, 47, 73, 0.5);
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  border: 1px solid rgba(14, 165, 233, 0.12);
 }
 
 .glass-card {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(15, 23, 42, 0.4) 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(8, 47, 73, 0.85) 0%, rgba(10, 22, 40, 0.6) 100%);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgba(14, 165, 233, 0.15);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 8px 32px rgba(2, 6, 23, 0.4),
+    0 0 0 1px rgba(56, 189, 248, 0.05),
+    0 0 40px rgba(14, 165, 233, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Glass con glow blu sofisticato */
+.glass-glow {
+  background: rgba(8, 47, 73, 0.75);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  box-shadow: 
+    0 8px 32px rgba(2, 6, 23, 0.4),
+    0 0 30px rgba(14, 165, 233, 0.15),
+    inset 0 0 20px rgba(56, 189, 248, 0.03);
+}
+
+/* Glass premium con effetto aurora */
+.glass-premium {
+  background: linear-gradient(135deg, 
+    rgba(8, 47, 73, 0.9) 0%, 
+    rgba(12, 74, 110, 0.6) 50%,
+    rgba(8, 47, 73, 0.85) 100%);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  box-shadow: 
+    0 12px 48px rgba(2, 6, 23, 0.5),
+    0 0 50px rgba(14, 165, 233, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 30px rgba(34, 211, 238, 0.03);
 }
 
 /* Light theme glass */
 [data-theme="light"] .glass {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(14, 165, 233, 0.1);
+  box-shadow: 0 8px 32px rgba(14, 165, 233, 0.08);
 }
 
 [data-theme="light"] .glass-subtle {
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(14, 165, 233, 0.08);
 }
 
 [data-theme="light"] .glass-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 249, 255, 0.7) 100%);
+  border: 1px solid rgba(14, 165, 233, 0.12);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    0 8px 32px rgba(14, 165, 233, 0.06),
+    0 0 40px rgba(14, 165, 233, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 /* ========================================
-   MODERN GRADIENT UTILITIES
+   MODERN GRADIENT UTILITIES - Sky/Cyan Theme 2025
    ======================================== */
 .gradient-primary {
-  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 50%, #22d3ee 100%);
+}
+
+.gradient-secondary {
+  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%);
 }
 
 .gradient-success {
-  background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+  background: linear-gradient(135deg, #10b981 0%, #14b8a6 50%, #22d3ee 100%);
 }
 
 .gradient-warning {
-  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
 }
 
 .gradient-danger {
-  background: linear-gradient(135deg, #ef4444 0%, #ec4899 100%);
+  background: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
 }
 
 .gradient-purple {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 50%, #0ea5e9 100%);
 }
 
 .gradient-premium {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #22d3ee 40%, #67e8f9 100%);
 }
 
-/* Mesh gradient backgrounds */
+/* Gradient glow effect */
+.gradient-glow {
+  background: linear-gradient(135deg, 
+    rgba(14, 165, 233, 0.3) 0%, 
+    rgba(56, 189, 248, 0.2) 50%, 
+    rgba(34, 211, 238, 0.15) 100%);
+}
+
+/* Animated gradient */
+.gradient-animated {
+  background: linear-gradient(270deg, #0ea5e9, #38bdf8, #22d3ee, #7dd3fc, #0ea5e9);
+  background-size: 400% 400%;
+  animation: gradient-flow 8s ease infinite;
+}
+
+@keyframes gradient-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Mesh gradient backgrounds - Nebula style */
 .mesh-gradient {
   background: 
-    radial-gradient(at 40% 20%, hsla(217, 91%, 60%, 0.15) 0px, transparent 50%),
-    radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 0.1) 0px, transparent 50%),
-    radial-gradient(at 0% 50%, hsla(217, 91%, 60%, 0.08) 0px, transparent 50%),
-    radial-gradient(at 80% 50%, hsla(189, 100%, 56%, 0.06) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, hsla(217, 91%, 60%, 0.1) 0px, transparent 50%);
+    radial-gradient(at 40% 20%, hsla(199, 89%, 48%, 0.2) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(187, 92%, 52%, 0.15) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(199, 89%, 48%, 0.12) 0px, transparent 50%),
+    radial-gradient(at 80% 50%, hsla(187, 92%, 52%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(199, 89%, 48%, 0.15) 0px, transparent 50%),
+    radial-gradient(at 50% 80%, hsla(195, 84%, 63%, 0.08) 0px, transparent 60%);
+}
+
+/* Animated mesh gradient */
+.mesh-gradient-animated {
+  background: 
+    radial-gradient(at 40% 20%, hsla(199, 89%, 48%, 0.25) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, hsla(187, 92%, 52%, 0.18) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, hsla(199, 89%, 48%, 0.15) 0px, transparent 50%);
+  animation: mesh-shift 15s ease-in-out infinite;
+}
+
+@keyframes mesh-shift {
+  0%, 100% { background-position: 0% 0%, 100% 0%, 0% 100%; }
+  50% { background-position: 100% 100%, 0% 100%, 100% 0%; }
 }
 
 /* ========================================
-   GLOW EFFECTS
+   GLOW EFFECTS - Sky/Cyan 2025
    ======================================== */
 .glow-blue {
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), 0 0 40px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 25px rgba(14, 165, 233, 0.35), 0 0 50px rgba(14, 165, 233, 0.18), 0 0 80px rgba(14, 165, 233, 0.08);
 }
 
 .glow-cyan {
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3), 0 0 40px rgba(6, 182, 212, 0.15);
+  box-shadow: 0 0 25px rgba(34, 211, 238, 0.35), 0 0 50px rgba(34, 211, 238, 0.18), 0 0 80px rgba(34, 211, 238, 0.08);
+}
+
+.glow-sky {
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.35), 0 0 50px rgba(56, 189, 248, 0.18), 0 0 80px rgba(56, 189, 248, 0.08);
 }
 
 .glow-emerald {
@@ -234,9 +323,23 @@ button, a, [role="button"], input, select, textarea {
   box-shadow: 0 0 20px rgba(244, 63, 94, 0.3), 0 0 40px rgba(244, 63, 94, 0.15);
 }
 
+/* Animated glow */
+.glow-pulse {
+  animation: glow-pulse-effect 3s ease-in-out infinite;
+}
+
+@keyframes glow-pulse-effect {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(14, 165, 233, 0.3), 0 0 40px rgba(14, 165, 233, 0.15);
+  }
+  50% { 
+    box-shadow: 0 0 35px rgba(14, 165, 233, 0.5), 0 0 70px rgba(14, 165, 233, 0.25);
+  }
+}
+
 /* Hover glow */
 .hover-glow:hover {
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.35), 0 0 60px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 35px rgba(14, 165, 233, 0.4), 0 0 70px rgba(14, 165, 233, 0.2);
   transform: translateY(-2px);
   transition: all 0.3s ease;
 }
@@ -280,7 +383,7 @@ button, a, [role="button"], input, select, textarea {
 }
 
 /* ========================================
-   MODERN BORDER EFFECTS
+   MODERN BORDER EFFECTS - Sky/Cyan 2025
    ======================================== */
 .border-gradient {
   border: 1px solid transparent;
@@ -288,7 +391,7 @@ button, a, [role="button"], input, select, textarea {
   background-clip: padding-box, border-box;
   background-image: 
     linear-gradient(var(--bg-secondary), var(--bg-secondary)),
-    linear-gradient(135deg, #3b82f6, #06b6d4);
+    linear-gradient(135deg, #0ea5e9, #22d3ee, #38bdf8);
 }
 
 .border-glow {
@@ -301,13 +404,48 @@ button, a, [role="button"], input, select, textarea {
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(6, 182, 212, 0.5));
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.6), rgba(34, 211, 238, 0.5), rgba(56, 189, 248, 0.4));
   -webkit-mask: 
     linear-gradient(#fff 0 0) content-box, 
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+  animation: border-glow-rotate 6s linear infinite;
+}
+
+@keyframes border-glow-rotate {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Animated border */
+.border-animated {
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.border-animated::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(90deg, #0ea5e9, #38bdf8, #22d3ee, #7dd3fc, #0ea5e9);
+  background-size: 300% 100%;
+  animation: border-flow 4s linear infinite;
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@keyframes border-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
 }
 
 /* ========================================
@@ -432,7 +570,7 @@ button, a, [role="button"], input, select, textarea {
 }
 
 /* ========================================
-   SFONDO ANIMATO (Dark & Light)
+   SFONDO ANIMATO (Dark & Light) - NEBULA EFFECT 2025
    ======================================== */
 .starry-background {
   position: fixed;
@@ -441,13 +579,62 @@ button, a, [role="button"], input, select, textarea {
   height: 100vh;
   overflow: hidden;
   z-index: -10;
-  /* Theme-aware background (supports light + dark via CSS variables) */
-  background: radial-gradient(
-    ellipse at bottom,
-    rgb(var(--bg-secondary-rgb) / 1) 0%,
-    rgb(var(--bg-primary-rgb) / 1) 100%
-  );
+  /* Modern nebula gradient background */
+  background: 
+    /* Nebula core glow - top */
+    radial-gradient(ellipse 120% 80% at 50% -10%, var(--aurora-1, rgba(14, 165, 233, 0.25)) 0%, transparent 45%),
+    /* Cyan accent - right */
+    radial-gradient(ellipse 80% 60% at 95% 25%, var(--aurora-2, rgba(34, 211, 238, 0.18)) 0%, transparent 50%),
+    /* Celeste mist - bottom left */
+    radial-gradient(ellipse 70% 50% at 5% 70%, var(--aurora-3, rgba(56, 189, 248, 0.2)) 0%, transparent 50%),
+    /* Deep space glow - center */
+    radial-gradient(ellipse 100% 100% at 50% 50%, var(--aurora-4, rgba(125, 211, 252, 0.08)) 0%, transparent 60%),
+    /* Base gradient */
+    radial-gradient(ellipse at bottom, rgb(var(--bg-secondary-rgb) / 1) 0%, rgb(var(--bg-primary-rgb) / 1) 100%);
   will-change: auto;
+}
+
+/* Multi-layer aurora animation overlay */
+.starry-background::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse 150% 80% at 30% -20%, rgba(14, 165, 233, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 100% 60% at 80% 100%, rgba(34, 211, 238, 0.1) 0%, transparent 50%);
+  animation: nebula-drift 20s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Secondary aurora pulse */
+.starry-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse 120% 70% at 50% 0%, rgba(14, 165, 233, 0.1) 0%, transparent 55%);
+  animation: aurora-breathe 12s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes nebula-drift {
+  0%, 100% { 
+    transform: translate(0, 0) scale(1); 
+    opacity: 0.6; 
+  }
+  33% { 
+    transform: translate(3%, -2%) scale(1.05); 
+    opacity: 0.8; 
+  }
+  66% { 
+    transform: translate(-2%, 3%) scale(0.98); 
+    opacity: 0.7; 
+  }
+}
+
+@keyframes aurora-breathe {
+  0%, 100% { opacity: 0.4; transform: scale(1) translateY(0); }
+  50% { opacity: 0.9; transform: scale(1.15) translateY(-3%); }
 }
 
 .stars {
@@ -460,9 +647,10 @@ button, a, [role="button"], input, select, textarea {
 }
 
 .star {
-  --star-color: #ffffff;
+  --star-color: #38bdf8;
+  --star-glow: #0ea5e9;
   --star-width: var(--star-width, 2px);
-  --fall-duration: var(--fall-duration, 15s);
+  --fall-duration: var(--fall-duration, 18s);
   --fall-delay: var(--fall-delay, 0s);
   --top-offset: var(--top-offset, 0vh);
 
@@ -471,21 +659,49 @@ button, a, [role="button"], input, select, textarea {
   left: 0;
   width: var(--star-width);
   height: var(--star-width);
-  background: var(--star-color);
+  background: radial-gradient(circle at 30% 30%, #ffffff, var(--star-color));
   border-radius: 50%;
-  box-shadow: 0 0 3px var(--star-color);
+  box-shadow: 
+    0 0 6px var(--star-color),
+    0 0 12px var(--star-glow),
+    0 0 20px rgba(14, 165, 233, 0.3);
   transform: translate3d(104em, 0, 0);
   animation: 
     fall var(--fall-duration) var(--fall-delay) linear infinite,
-    twinkle 4s ease-in-out infinite;
+    twinkle-modern 4s ease-in-out infinite,
+    glow-pulse 6s ease-in-out infinite;
   pointer-events: none;
+}
+
+/* Glow pulse animation for stars */
+@keyframes glow-pulse {
+  0%, 100% { 
+    box-shadow: 
+      0 0 6px var(--star-color),
+      0 0 12px var(--star-glow),
+      0 0 20px rgba(14, 165, 233, 0.3);
+  }
+  50% { 
+    box-shadow: 
+      0 0 10px var(--star-color),
+      0 0 20px var(--star-glow),
+      0 0 35px rgba(14, 165, 233, 0.5);
+  }
+}
+
+/* Modern twinkle animation */
+@keyframes twinkle-modern {
+  0%, 100% { opacity: 0.4; transform: translate3d(104em, 0, 0) scale(1); }
+  25% { opacity: 0.8; transform: translate3d(104em, 0, 0) scale(1.1); }
+  50% { opacity: 1; transform: translate3d(104em, 0, 0) scale(1.3); }
+  75% { opacity: 0.6; transform: translate3d(104em, 0, 0) scale(1.05); }
 }
 
 /* Stars intensity: subtler on light theme */
 html:not([data-theme="dark"]) .star,
 body:not([data-theme="dark"]) .star {
   opacity: 0.25;
-  box-shadow: 0 0 2px rgb(15 23 42 / 0.25);
+  box-shadow: 0 0 3px rgba(14, 165, 233, 0.4);
 }
 
 html[data-theme="dark"] .star,
@@ -498,20 +714,41 @@ body[data-theme="dark"] .star {
   position: absolute;
   top: 50%;
   left: calc(var(--star-width) / -2);
-  width: 2.5em;
+  width: 4em;
   height: 1px;
-  background: linear-gradient(to left, rgba(255, 255, 255, 0.4), transparent);
+  background: linear-gradient(to left, rgba(56, 189, 248, 0.6), transparent);
   animation: tail-fade var(--fall-duration) var(--fall-delay) ease-out infinite;
   z-index: -1;
 }
 
 .star.gold {
-  --star-color: #fbbf24;
-  filter: drop-shadow(0 0 8px #fbbf24);
+  --star-color: #22d3ee;
+  --star-glow: #0ea5e9;
+  filter: drop-shadow(0 0 12px #22d3ee);
+}
+
+.star.cyan {
+  --star-color: #67e8f9;
+  --star-glow: #22d3ee;
+  filter: drop-shadow(0 0 12px #67e8f9);
+}
+
+.star.indigo {
+  --star-color: #7dd3fc;
+  --star-glow: #38bdf8;
+  filter: drop-shadow(0 0 12px #7dd3fc);
 }
 
 .star.gold::after {
-  background: linear-gradient(to left, rgba(251, 191, 36, 0.7), transparent);
+  background: linear-gradient(to left, rgba(34, 211, 238, 0.7), transparent);
+}
+
+.star.cyan::after {
+  background: linear-gradient(to left, rgba(103, 232, 249, 0.7), transparent);
+}
+
+.star.indigo::after {
+  background: linear-gradient(to left, rgba(125, 211, 252, 0.7), transparent);
 }
 
 /* ========================================
@@ -640,17 +877,17 @@ body[data-theme="dark"] .star {
 [data-theme="dark"] .star:not(:nth-child(6n)) {
   background: #3b82f6;
   box-shadow: 
-    0 0 6px #3b82f6,
-    0 0 12px #3b82f680;
+    0 0 6px #0ea5e9,
+    0 0 12px #0ea5e980;
 }
 
-/* Light theme - Particelle visibili blu/viola */
+/* Light theme - Particelle visibili sky/cyan */
 [data-theme="light"] .star:not(:nth-child(6n)) {
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  background: linear-gradient(135deg, #0ea5e9, #22d3ee);
   box-shadow: 
-    0 0 6px rgba(59, 130, 246, 0.6),
-    0 0 12px rgba(59, 130, 246, 0.4),
-    0 0 18px rgba(139, 92, 246, 0.3);
+    0 0 6px rgba(14, 165, 233, 0.6),
+    0 0 12px rgba(14, 165, 233, 0.4),
+    0 0 18px rgba(34, 211, 238, 0.3);
   opacity: 0.75;
 }
 
@@ -673,30 +910,30 @@ body[data-theme="dark"] .star {
   animation-duration: 4s, 14s;
 }
 
-/* Dark theme - Stelle dorate premium (ogni 6) */
+/* Dark theme - Stelle cyan premium (ogni 6) */
 [data-theme="dark"] .star:nth-child(6n) {
   width: 3px;
   height: 3px;
-  background: #fbbf24;
+  background: #22d3ee;
   box-shadow: 
-    0 0 8px #fbbf24,
-    0 0 15px #fbbf24cc,
-    0 0 25px #fbbf2480;
+    0 0 8px #22d3ee,
+    0 0 15px #22d3eecc,
+    0 0 25px #22d3ee80;
   animation: 
     twinkle 2s ease-in-out infinite,
     float 20s ease-in-out infinite,
     pulse-glow 4s ease-in-out infinite;
 }
 
-/* Light theme - Particelle arancioni brillanti */
+/* Light theme - Particelle cyan brillanti */
 [data-theme="light"] .star:nth-child(6n) {
   width: 3px;
   height: 3px;
-  background: linear-gradient(135deg, #f59e0b, #f97316);
+  background: linear-gradient(135deg, #22d3ee, #67e8f9);
   box-shadow: 
-    0 0 8px rgba(245, 158, 11, 0.7),
-    0 0 16px rgba(245, 158, 11, 0.5),
-    0 0 24px rgba(249, 115, 22, 0.3);
+    0 0 8px rgba(34, 211, 238, 0.7),
+    0 0 16px rgba(34, 211, 238, 0.5),
+    0 0 24px rgba(103, 232, 249, 0.3);
   opacity: 0.8;
   animation: 
     twinkle 2s ease-in-out infinite,
@@ -725,65 +962,65 @@ body[data-theme="dark"] .star {
   animation-delay: -4.5s, -15s;
 }
 
-/* Dark theme - Stelle dorate extra luminose (ogni 18) */
+/* Dark theme - Stelle sky extra luminose (ogni 18) */
 [data-theme="dark"] .star:nth-child(18n) {
   width: 4px;
   height: 4px;
-  background: #fbbf24;
+  background: #38bdf8;
   box-shadow: 
-    0 0 10px #fbbf24,
-    0 0 20px #fbbf24dd,
-    0 0 35px #fbbf24aa,
-    0 0 50px #fbbf2466;
+    0 0 10px #38bdf8,
+    0 0 20px #38bdf8dd,
+    0 0 35px #38bdf8aa,
+    0 0 50px #38bdf866;
   animation-duration: 1.8s, 25s, 3s;
 }
 
-/* Light theme - Particelle extra speciali */
+/* Light theme - Particelle extra speciali sky */
 [data-theme="light"] .star:nth-child(18n) {
   width: 4px;
   height: 4px;
-  background: #3b82f6;
+  background: #0ea5e9;
   box-shadow: 
-    0 0 8px #3b82f6,
-    0 0 15px #3b82f6dd,
-    0 0 25px #3b82f6aa,
-    0 0 40px #3b82f666;
+    0 0 8px #0ea5e9,
+    0 0 15px #0ea5e9dd,
+    0 0 25px #0ea5e9aa,
+    0 0 40px #0ea5e966;
   opacity: 0.8;
   animation-duration: 1.8s, 25s, 3s;
 }
 
 /* ========================================
    2 LINEE ANIMATE CON TEMA
-   - Light theme: Linee blu chiare
-   - Dark theme: Linee blu intense
+   - Light theme: Linee sky chiare
+   - Dark theme: Linee sky intense
    ======================================== */
 
 /* LINEA 1 – ORARIO */
 @keyframes glow-line-1-dark {
   0% {
     background-position: 0% 50%;
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
   }
   50% {
-    box-shadow: 0 0 25px rgba(59, 130, 246, 0.8);
+    box-shadow: 0 0 25px rgba(14, 165, 233, 0.8);
   }
   100% {
     background-position: 100% 50%;
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
   }
 }
 
 @keyframes glow-line-1-light {
   0% {
     background-position: 0% 50%;
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.3);
   }
   50% {
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
   }
   100% {
     background-position: 100% 50%;
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.3);
   }
 }
 
@@ -792,14 +1029,14 @@ body[data-theme="dark"] .star {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    #3b82f6 48%,
-    #3b82f6 52%,
+    #0ea5e9 48%,
+    #0ea5e9 52%,
     transparent 100%
   );
   background-size: 200% 100%;
   animation: glow-line-1-dark 5s linear infinite;
   border-radius: inherit;
-  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
+  filter: drop-shadow(0 0 8px rgba(14, 165, 233, 0.4));
 }
 
 /* Light theme - Linea 1 */
@@ -807,14 +1044,14 @@ body[data-theme="dark"] .star {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    #3b82f6 48%,
-    #3b82f6 52%,
+    #0ea5e9 48%,
+    #0ea5e9 52%,
     transparent 100%
   );
   background-size: 200% 100%;
   animation: glow-line-1-light 5s linear infinite;
   border-radius: inherit;
-  filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.3));
+  filter: drop-shadow(0 0 4px rgba(14, 165, 233, 0.3));
   opacity: 0.8;
 }
 
@@ -822,28 +1059,28 @@ body[data-theme="dark"] .star {
 @keyframes glow-line-2-dark {
   0% {
     background-position: 100% 50%;
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
   }
   50% {
-    box-shadow: 0 0 25px rgba(59, 130, 246, 0.8);
+    box-shadow: 0 0 25px rgba(14, 165, 233, 0.8);
   }
   100% {
     background-position: 0% 50%;
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
   }
 }
 
 @keyframes glow-line-2-light {
   0% {
     background-position: 100% 50%;
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.3);
   }
   50% {
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
   }
   100% {
     background-position: 0% 50%;
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.3);
   }
 }
 
@@ -852,14 +1089,14 @@ body[data-theme="dark"] .star {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    #3b82f6 48%,
-    #3b82f6 52%,
+    #0ea5e9 48%,
+    #0ea5e9 52%,
     transparent 100%
   );
   background-size: 200% 100%;
   animation: glow-line-2-dark 5s linear infinite reverse;
   border-radius: inherit;
-  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
+  filter: drop-shadow(0 0 8px rgba(14, 165, 233, 0.4));
 }
 
 /* Light theme - Linea 2 */
@@ -867,14 +1104,14 @@ body[data-theme="dark"] .star {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    #3b82f6 48%,
-    #3b82f6 52%,
+    #0ea5e9 48%,
+    #0ea5e9 52%,
     transparent 100%
   );
   background-size: 200% 100%;
   animation: glow-line-2-light 5s linear infinite reverse;
   border-radius: inherit;
-  filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.3));
+  filter: drop-shadow(0 0 4px rgba(14, 165, 233, 0.3));
   opacity: 0.8;
 }
 

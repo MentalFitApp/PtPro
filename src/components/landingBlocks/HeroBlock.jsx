@@ -1,0 +1,300 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+
+/**
+ * Hero Block - Sezione principale della landing page
+ * Varianti: centered, split, video
+ */
+const HeroBlock = ({ settings, isPreview = false }) => {
+  const {
+    variant = 'centered',
+    title = 'Il tuo titolo qui',
+    subtitle = 'Il tuo sottotitolo qui',
+    ctaText = 'Inizia Ora',
+    ctaLink = '#form',
+    secondaryCtaText = '',
+    secondaryCtaLink = '',
+    backgroundType = 'gradient',
+    backgroundGradient = 'from-slate-900 via-sky-900 to-slate-900',
+    backgroundImage = '',
+    backgroundVideo = '',
+    overlay = true,
+    overlayOpacity = 50,
+    textAlign = 'center',
+    minHeight = '90vh',
+    showBadge = false,
+    badgeText = '',
+  } = settings || {};
+
+  const alignmentClasses = {
+    left: 'text-left items-start',
+    center: 'text-center items-center',
+    right: 'text-right items-end',
+  };
+
+  const scrollToElement = (e, href) => {
+    if (isPreview) {
+      e.preventDefault();
+      return;
+    }
+    if (href.startsWith('#')) {
+      e.preventDefault();
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
+  // Render per variante Split (immagine a lato)
+  if (variant === 'split') {
+    return (
+      <section 
+        className={`relative min-h-[${minHeight}] flex items-center overflow-hidden`}
+        style={{ minHeight }}
+      >
+        {/* Background */}
+        {backgroundType === 'gradient' && (
+          <div className={`absolute inset-0 bg-gradient-to-br ${backgroundGradient}`} />
+        )}
+        {backgroundType === 'image' && backgroundImage && (
+          <div 
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${backgroundImage})` }}
+          />
+        )}
+        {overlay && (
+          <div 
+            className="absolute inset-0 bg-black"
+            style={{ opacity: overlayOpacity / 100 }}
+          />
+        )}
+
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              className={`flex flex-col ${alignmentClasses[textAlign]}`}
+            >
+              {showBadge && badgeText && (
+                <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-6 w-fit">
+                  {badgeText}
+                </span>
+              )}
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+                {title}
+              </h1>
+              <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-xl">
+                {subtitle}
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <a
+                  href={ctaLink}
+                  onClick={(e) => scrollToElement(e, ctaLink)}
+                  className="px-8 py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300 transform hover:-translate-y-0.5"
+                >
+                  {ctaText}
+                </a>
+                {secondaryCtaText && (
+                  <a
+                    href={secondaryCtaLink}
+                    onClick={(e) => scrollToElement(e, secondaryCtaLink)}
+                    className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+                  >
+                    {secondaryCtaText}
+                  </a>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Image placeholder */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="relative"
+            >
+              {backgroundImage ? (
+                <img 
+                  src={backgroundImage} 
+                  alt="Hero" 
+                  className="rounded-2xl shadow-2xl"
+                />
+              ) : (
+                <div className="aspect-square bg-gradient-to-br from-sky-500/20 to-cyan-500/20 rounded-2xl flex items-center justify-center border border-white/10">
+                  <span className="text-6xl">🏋️</span>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Render per variante Video
+  if (variant === 'video' && backgroundVideo) {
+    return (
+      <section 
+        className="relative flex items-center justify-center overflow-hidden"
+        style={{ minHeight }}
+      >
+        {/* Video Background */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src={backgroundVideo} type="video/mp4" />
+        </video>
+        
+        {overlay && (
+          <div 
+            className="absolute inset-0 bg-black"
+            style={{ opacity: overlayOpacity / 100 }}
+          />
+        )}
+
+        <div className={`relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col ${alignmentClasses[textAlign]}`}>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            {showBadge && badgeText && (
+              <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-6">
+                {badgeText}
+              </span>
+            )}
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-white leading-tight mb-6">
+              {title}
+            </h1>
+            <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
+              {subtitle}
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <a
+                href={ctaLink}
+                onClick={(e) => scrollToElement(e, ctaLink)}
+                className="px-8 py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300 transform hover:-translate-y-0.5"
+              >
+                {ctaText}
+              </a>
+              {secondaryCtaText && (
+                <a
+                  href={secondaryCtaLink}
+                  onClick={(e) => scrollToElement(e, secondaryCtaLink)}
+                  className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+                >
+                  {secondaryCtaText}
+                </a>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+    );
+  }
+
+  // Render default: Centered
+  return (
+    <section 
+      className="relative flex items-center justify-center overflow-hidden"
+      style={{ minHeight }}
+    >
+      {/* Background */}
+      {backgroundType === 'gradient' && (
+        <div className={`absolute inset-0 bg-gradient-to-br ${backgroundGradient}`} />
+      )}
+      {backgroundType === 'image' && backgroundImage && (
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${backgroundImage})` }}
+        />
+      )}
+      {overlay && backgroundType !== 'gradient' && (
+        <div 
+          className="absolute inset-0 bg-black"
+          style={{ opacity: overlayOpacity / 100 }}
+        />
+      )}
+
+      {/* Decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-sky-500/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
+      </div>
+
+      <div className={`relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col ${alignmentClasses[textAlign]}`}>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="flex flex-col items-center"
+        >
+          {showBadge && badgeText && (
+            <motion.span 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-6"
+            >
+              {badgeText}
+            </motion.span>
+          )}
+          <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-white leading-tight mb-6 text-center">
+            {title}
+          </h1>
+          <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-2xl text-center">
+            {subtitle}
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <motion.a
+              href={ctaLink}
+              onClick={(e) => scrollToElement(e, ctaLink)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-8 py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300"
+            >
+              {ctaText}
+            </motion.a>
+            {secondaryCtaText && (
+              <motion.a
+                href={secondaryCtaLink}
+                onClick={(e) => scrollToElement(e, secondaryCtaLink)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+              >
+                {secondaryCtaText}
+              </motion.a>
+            )}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Scroll indicator */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+      >
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+          className="w-6 h-10 border-2 border-white/30 rounded-full flex items-start justify-center p-1"
+        >
+          <div className="w-1.5 h-3 bg-white/50 rounded-full" />
+        </motion.div>
+      </motion.div>
+    </section>
+  );
+};
+
+export default HeroBlock;

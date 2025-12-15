@@ -3725,12 +3725,21 @@ export default function Chat() {
   }
 
   // Calcola l'altezza disponibile
-  // Su mobile e desktop, il ProLayout gestisce header e bottom nav
-  // La chat deve solo riempire lo spazio disponibile
+  // Mobile: usa fixed per occupare tutto lo schermo sopra il contenuto
+  // Desktop: usa altezza calcolata basata sull'header (72px)
   
   return (
     <div 
-      className="flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 w-full h-full"
+      className={cn(
+        "flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 w-full",
+        isMobile 
+          ? "fixed inset-0 z-30" // Su mobile, fixed per coprire tutto
+          : "h-[calc(100vh-72px)]" // Desktop: altezza meno header (72px)
+      )}
+      style={isMobile ? { 
+        top: 'calc(56px + env(safe-area-inset-top, 0px))',
+        bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))'
+      } : undefined}
     >
       {/* Profile Check Modal */}
       <AnimatePresence>

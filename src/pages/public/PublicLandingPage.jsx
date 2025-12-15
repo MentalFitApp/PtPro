@@ -1,34 +1,22 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { collection, query, where, getDocs, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { uploadToR2 } from '../../cloudflareStorage';
-import { Play, Upload, CheckCircle, XCircle } from 'lucide-react';
-import CountdownTimer from '../admin/landingPages/components/CountdownTimer';
-import { useToast } from '../../contexts/ToastContext';
+import { DynamicBlock } from '../../components/landingBlocks';
+import { X } from 'lucide-react';
 
+/**
+ * PublicLandingPage - Renderizza una landing page pubblica con il nuovo sistema di blocchi
+ */
 export default function PublicLandingPage() {
   const { tenantSlug, slug } = useParams();
-  const navigate = useNavigate();
-  const toast = useToast();
   const [page, setPage] = useState(null);
   const [tenantId, setTenantId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Form states
-  const [formData, setFormData] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
-  
-  // Video upload states
-  const [uploadingVideo, setUploadingVideo] = useState(false);
-  const [videoProgress, setVideoProgress] = useState(0);
-  const [videoSuccess, setVideoSuccess] = useState(false);
-
-  // Advanced features states
-  const [timerComplete, setTimerComplete] = useState(false);
+  // Exit Intent
   const [showExitIntent, setShowExitIntent] = useState(false);
   const [exitIntentShown, setExitIntentShown] = useState(false);
 
@@ -36,9 +24,16 @@ export default function PublicLandingPage() {
     loadPage();
   }, [tenantSlug, slug]);
 
+  // Track page view
+  useEffect(() => {
+    if (page?.id && tenantId) {
+      trackPageView();
+    }
+  }, [page?.id, tenantId]);
+
   // Exit Intent Detection
   useEffect(() => {
-    if (!page?.exitIntentEnabled || exitIntentShown) return;
+    if (!page?.settings?.exitIntent?.enabled || exitIntentShown) return;
 
     const handleMouseLeave = (e) => {
       if (e.clientY <= 0 && !exitIntentShown) {
@@ -67,31 +62,52 @@ export default function PublicLandingPage() {
       const foundTenantId = tenantSnap.docs[0].id;
       setTenantId(foundTenantId);
       
-      // 2. Carica landing page
-      const pagesRef = collection(db, `tenants/${foundTenantId}/landingPages`);
-      const pageQuery = query(
-        pagesRef, 
-        where('slug', '==', slug),
-        where('status', '==', 'published')
-      );
-      const pageSnap = await getDocs(pageQuery);
+      // 2. Carica landing page - prova prima con nuovo sistema, poi vecchio
+      let pageData = null;
       
-      if (pageSnap.empty) {
+      // Prova nuovo sistema (landing_pages)
+      const newPagesRef = collection(db, `tenants/${foundTenantId}/landing_pages`);
+      const newPageQuery = query(
+        newPagesRef, 
+        where('slug', '==', slug),
+        where('isPublished', '==', true)
+      );
+      const newPageSnap = await getDocs(newPageQuery);
+      
+      if (!newPageSnap.empty) {
+        pageData = { id: newPageSnap.docs[0].id, ...newPageSnap.docs[0].data(), isNewSystem: true };
+      } else {
+        // Fallback al vecchio sistema (landingPages)
+        const oldPagesRef = collection(db, `tenants/${foundTenantId}/landingPages`);
+        const oldPageQuery = query(
+          oldPagesRef, 
+          where('slug', '==', slug),
+          where('status', '==', 'published')
+        );
+        const oldPageSnap = await getDocs(oldPageQuery);
+        
+        if (!oldPageSnap.empty) {
+          pageData = { id: oldPageSnap.docs[0].id, ...oldPageSnap.docs[0].data(), isNewSystem: false };
+        }
+      }
+      
+      if (!pageData) {
         setError('Pagina non trovata o non pubblicata');
         setLoading(false);
         return;
       }
       
-      const pageData = { id: pageSnap.docs[0].id, ...pageSnap.docs[0].data() };
       setPage(pageData);
       
       // 3. Imposta SEO meta tags
-      if (pageData.seoTitle) {
-        document.title = pageData.seoTitle;
+      if (pageData.seo?.title || pageData.seoTitle) {
+        document.title = pageData.seo?.title || pageData.seoTitle;
       }
-      if (pageData.seoDescription) {
+      if (pageData.seo?.description || pageData.seoDescription) {
         const metaDesc = document.querySelector('meta[name="description"]');
-        if (metaDesc) metaDesc.setAttribute('content', pageData.seoDescription);
+        if (metaDesc) {
+          metaDesc.setAttribute('content', pageData.seo?.description || pageData.seoDescription);
+        }
       }
       
       setLoading(false);
@@ -102,662 +118,364 @@ export default function PublicLandingPage() {
     }
   };
 
-  const handleScroll = (targetId) => {
-    const element = document.getElementById(targetId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
-  const handleLink = (url, openInNewTab) => {
-    if (openInNewTab) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } else {
-      window.location.href = url;
-    }
-  };
-
-  const handleFormSubmit = async (e, section) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setSubmitError(null);
-    setSubmitSuccess(false);
-
+  const trackPageView = async () => {
     try {
-      // TODO: Cloud Function per salvataggio + email
-      // Per ora salvo direttamente in Firestore
-      const collectionName = section.formCollection || 'formSubmissions';
-      const submissionsRef = collection(db, `tenants/${tenantId}/${collectionName}`);
-      
-      await addDoc(submissionsRef, {
-        ...formData,
-        landingPageId: page.id,
-        landingPageSlug: page.slug,
-        sectionId: section.id,
-        submittedAt: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        referrer: document.referrer
+      const pageRef = doc(db, `tenants/${tenantId}/${page.isNewSystem ? 'landing_pages' : 'landingPages'}/${page.id}`);
+      await updateDoc(pageRef, {
+        'analytics.views': increment(1),
+        'analytics.lastViewedAt': new Date().toISOString(),
       });
-
-      setSubmitSuccess(true);
-      setFormData({});
-      
-      // Redirect dopo successo (se configurato)
-      if (section.successRedirect) {
-        setTimeout(() => {
-          handleLink(section.successRedirect, section.redirectInNewTab);
-        }, 2000);
-      }
     } catch (err) {
-      console.error('Form submit error:', err);
-      setSubmitError(err.message);
-    } finally {
-      setSubmitting(false);
+      console.error('Error tracking page view:', err);
     }
   };
 
-  const handleVideoUpload = async (file, section) => {
-    if (!file) return;
+  const trackConversion = async () => {
+    if (!page?.id || !tenantId) return;
     
-    // Valida dimensione (max 1GB)
-    const maxSize = 1024 * 1024 * 1024; // 1GB
-    if (file.size > maxSize) {
-      toast.error('Il video non può superare 1GB');
-      return;
-    }
-
-    setUploadingVideo(true);
-    setVideoProgress(0);
-    setVideoSuccess(false);
-
     try {
-      // Upload a R2
-      const path = `clients/${tenantId}/landing-videos/${Date.now()}-${file.name}`;
-      const videoUrl = await uploadToR2(file, path, (progress) => {
-        setVideoProgress(Math.round(progress));
+      const pageRef = doc(db, `tenants/${tenantId}/${page.isNewSystem ? 'landing_pages' : 'landingPages'}/${page.id}`);
+      await updateDoc(pageRef, {
+        'analytics.conversions': increment(1),
       });
-
-      // Salva metadata in Firestore
-      const videosRef = collection(db, `tenants/${tenantId}/uploadedVideos`);
-      await addDoc(videosRef, {
-        url: videoUrl,
-        fileName: file.name,
-        fileSize: file.size,
-        landingPageId: page.id,
-        sectionId: section.id,
-        uploadedAt: new Date().toISOString(),
-        userAgent: navigator.userAgent
-      });
-
-      setVideoSuccess(true);
-      
-      // Redirect dopo successo (se configurato)
-      if (section.successRedirect) {
-        setTimeout(() => {
-          handleLink(section.successRedirect, section.redirectInNewTab);
-        }, 2000);
-      }
     } catch (err) {
-      console.error('Video upload error:', err);
-      toast.error('Errore durante l\'upload: ' + err.message);
-    } finally {
-      setUploadingVideo(false);
+      console.error('Error tracking conversion:', err);
     }
   };
 
-  const handleCTA = (action) => {
-    switch (action.type) {
-      case 'scroll':
-        handleScroll(action.target);
-        break;
-      case 'link':
-        handleLink(action.url, action.openInNewTab);
-        break;
-      case 'form':
-        handleScroll(action.formSectionId);
-        break;
-      case 'video':
-        handleScroll(action.videoSectionId);
-        break;
-      default:
-        console.warn('Unknown action type:', action.type);
+  // Render nuovo sistema di blocchi
+  const renderNewBlocks = () => {
+    if (!page?.blocks || page.blocks.length === 0) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-900">
+          <p className="text-slate-400">Nessun contenuto disponibile</p>
+        </div>
+      );
     }
+
+    return (
+      <div className="bg-slate-900 min-h-screen">
+        {page.blocks.map((block, index) => (
+          <DynamicBlock
+            key={block.id || index}
+            block={block}
+            isPreview={false}
+            tenantId={tenantId}
+            onConversion={trackConversion}
+          />
+        ))}
+      </div>
+    );
   };
 
-  const renderSection = (section, index) => {
-    const sectionId = `section-${index}`;
-    
-    switch (section.type) {
-      case 'hero':
-        return (
-          <section 
-            id={sectionId}
-            key={section.id} 
-            className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800"
-            style={{ backgroundColor: section.backgroundColor }}
-          >
-            {section.backgroundImage && (
-              <div 
-                className="absolute inset-0 bg-cover bg-center opacity-30"
-                style={{ backgroundImage: `url(${section.backgroundImage})` }}
-              />
-            )}
-            <div className="relative z-10 container mx-auto px-6 text-center">
-              {section.badge && (
-                <div className="inline-block px-4 py-2 bg-blue-500/20 text-blue-300 rounded-full text-sm mb-6">
-                  {section.badge}
-                </div>
-              )}
-              <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white">
-                {section.title}
-              </h1>
-              <p className="text-xl md:text-2xl mb-8 text-slate-300 max-w-3xl mx-auto">
-                {section.subtitle}
-              </p>
-              <div className="flex flex-wrap gap-4 justify-center">
-                {section.primaryCTA && (
-                  <button
-                    onClick={() => handleCTA(section.primaryCTA)}
-                    className="px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold text-lg transition-colors"
-                  >
-                    {section.primaryCTA.label}
-                  </button>
-                )}
-                {section.secondaryCTA && (
-                  <button
-                    onClick={() => handleCTA(section.secondaryCTA)}
-                    className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-lg font-semibold text-lg transition-colors backdrop-blur-sm"
-                  >
-                    {section.secondaryCTA.label}
-                  </button>
-                )}
-              </div>
-            </div>
-          </section>
-        );
-
-      case 'features':
-        return (
-          <section 
-            id={sectionId}
-            key={section.id} 
-            className="py-20 bg-slate-800"
-            style={{ backgroundColor: section.backgroundColor }}
-          >
-            <div className="container mx-auto px-6">
-              {section.title && (
-                <h2 className="text-4xl font-bold text-center mb-4 text-white">
-                  {section.title}
-                </h2>
-              )}
-              {section.subtitle && (
-                <p className="text-xl text-center mb-12 text-slate-300 max-w-3xl mx-auto">
-                  {section.subtitle}
-                </p>
-              )}
-              <div className="grid md:grid-cols-3 gap-8">
-                {section.features?.map((feature, idx) => (
-                  <div key={idx} className="bg-slate-700/50 p-8 rounded-xl backdrop-blur-sm">
-                    {feature.icon && (
-                      <div className="text-4xl mb-4">{feature.icon}</div>
-                    )}
-                    <h3 className="text-2xl font-bold mb-3 text-white">{feature.title}</h3>
-                    <p className="text-slate-300">{feature.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        );
-
-      case 'contactForm':
-        return (
-          <section 
-            id={sectionId}
-            key={section.id} 
-            className="py-20 bg-slate-900"
-            style={{ backgroundColor: section.backgroundColor }}
-          >
-            <div className="container mx-auto px-6 max-w-2xl">
-              {section.title && (
-                <h2 className="text-4xl font-bold text-center mb-4 text-white">
-                  {section.title}
-                </h2>
-              )}
-              {section.subtitle && (
-                <p className="text-xl text-center mb-12 text-slate-300">
-                  {section.subtitle}
-                </p>
-              )}
-              
-              {submitSuccess ? (
-                <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-8 text-center">
-                  <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold text-white mb-2">
-                    {section.successMessage || 'Grazie per averci contattato!'}
-                  </h3>
-                  <p className="text-slate-300">Ti risponderemo al più presto.</p>
-                </div>
-              ) : (
-                <form onSubmit={(e) => handleFormSubmit(e, section)} className="space-y-6">
-                  {section.fields?.map((field, idx) => (
-                    <div key={idx}>
-                      <label className="block text-sm font-medium mb-2 text-slate-200">
-                        {field.label} {field.required && <span className="text-red-400">*</span>}
-                      </label>
-                      {field.type === 'textarea' ? (
-                        <textarea
-                          required={field.required}
-                          placeholder={field.placeholder}
-                          rows={4}
-                          value={formData[field.name] || ''}
-                          onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-                          className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
-                        />
-                      ) : (
-                        <input
-                          type={field.type}
-                          required={field.required}
-                          placeholder={field.placeholder}
-                          value={formData[field.name] || ''}
-                          onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-                          className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none"
-                        />
-                      )}
-                    </div>
-                  ))}
-                  
-                  {submitError && (
-                    <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex items-center gap-3">
-                      <XCircle className="w-5 h-5 text-red-400" />
-                      <span className="text-red-300">{submitError}</span>
-                    </div>
-                  )}
-                  
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full px-8 py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg font-semibold transition-colors"
-                  >
-                    {submitting ? 'Invio in corso...' : (section.submitText || 'Invia')}
-                  </button>
-                </form>
-              )}
-            </div>
-          </section>
-        );
-
-      case 'videoUpload':
-        return (
-          <section 
-            id={sectionId}
-            key={section.id} 
-            className="py-20 bg-slate-800"
-            style={{ backgroundColor: section.backgroundColor }}
-          >
-            <div className="container mx-auto px-6 max-w-2xl">
-              {section.title && (
-                <h2 className="text-4xl font-bold text-center mb-4 text-white">
-                  {section.title}
-                </h2>
-              )}
-              {section.subtitle && (
-                <p className="text-xl text-center mb-12 text-slate-300">
-                  {section.subtitle}
-                </p>
-              )}
-              
-              {videoSuccess ? (
-                <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-8 text-center">
-                  <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold text-white mb-2">
-                    {section.successMessage || 'Video caricato con successo!'}
-                  </h3>
-                  <p className="text-slate-300">Grazie per il tuo contributo.</p>
-                </div>
-              ) : (
-                <div className="bg-slate-700/50 rounded-xl p-8 backdrop-blur-sm">
-                  <div className="border-2 border-dashed border-slate-600 rounded-xl p-12 text-center">
-                    <Upload className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                    <p className="text-slate-300 mb-2">
-                      {section.instructions || 'Carica il tuo video (max 1GB)'}
-                    </p>
-                    <input
-                      type="file"
-                      accept="video/*"
-                      disabled={uploadingVideo}
-                      onChange={(e) => handleVideoUpload(e.target.files[0], section)}
-                      className="hidden"
-                      id={`video-upload-${section.id}`}
-                    />
-                    <label
-                      htmlFor={`video-upload-${section.id}`}
-                      className={`inline-block px-8 py-4 mt-4 rounded-lg font-semibold cursor-pointer transition-colors ${
-                        uploadingVideo 
-                          ? 'bg-slate-600 cursor-not-allowed' 
-                          : 'bg-blue-500 hover:bg-blue-600'
-                      } text-white`}
-                    >
-                      {uploadingVideo ? `Caricamento ${videoProgress}%...` : 'Scegli Video'}
-                    </label>
-                  </div>
-                  
-                  {uploadingVideo && (
-                    <div className="mt-6">
-                      <div className="bg-slate-800 rounded-full h-3 overflow-hidden">
-                        <div 
-                          className="bg-blue-500 h-full transition-all duration-300"
-                          style={{ width: `${videoProgress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </section>
-        );
-
-      case 'pricing':
-        return (
-          <section 
-            id={sectionId}
-            key={section.id} 
-            className="py-20 bg-slate-900"
-            style={{ backgroundColor: section.backgroundColor }}
-          >
-            <div className="container mx-auto px-6">
-              {section.title && (
-                <h2 className="text-4xl font-bold text-center mb-4 text-white">
-                  {section.title}
-                </h2>
-              )}
-              {section.subtitle && (
-                <p className="text-xl text-center mb-12 text-slate-300 max-w-3xl mx-auto">
-                  {section.subtitle}
-                </p>
-              )}
-              <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                {section.plans?.map((plan, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`bg-slate-800/50 rounded-xl p-8 backdrop-blur-sm ${
-                      plan.featured ? 'ring-2 ring-blue-500 scale-105' : ''
-                    }`}
-                  >
-                    {plan.featured && (
-                      <div className="bg-blue-500 text-white text-sm font-bold px-4 py-1 rounded-full inline-block mb-4">
-                        POPOLARE
-                      </div>
-                    )}
-                    <h3 className="text-2xl font-bold mb-2 text-white">{plan.name}</h3>
-                    <div className="text-4xl font-bold mb-6 text-white">
-                      {plan.price}
-                      {plan.period && <span className="text-lg text-slate-400">/{plan.period}</span>}
-                    </div>
-                    <ul className="space-y-3 mb-8">
-                      {plan.features?.map((feature, fIdx) => (
-                        <li key={fIdx} className="flex items-start gap-2 text-slate-300">
-                          <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    {plan.ctaAction && (
-                      <button
-                        onClick={() => handleCTA(plan.ctaAction)}
-                        className={`w-full px-6 py-3 rounded-lg font-semibold transition-colors ${
-                          plan.featured
-                            ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                            : 'bg-white/10 hover:bg-white/20 text-white'
-                        }`}
-                      >
-                        {plan.ctaLabel || 'Scegli Piano'}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        );
-
-      case 'testimonials':
-        return (
-          <section 
-            id={sectionId}
-            key={section.id} 
-            className="py-20 bg-slate-800"
-            style={{ backgroundColor: section.backgroundColor }}
-          >
-            <div className="container mx-auto px-6">
-              {section.title && (
-                <h2 className="text-4xl font-bold text-center mb-4 text-white">
-                  {section.title}
-                </h2>
-              )}
-              {section.subtitle && (
-                <p className="text-xl text-center mb-12 text-slate-300 max-w-3xl mx-auto">
-                  {section.subtitle}
-                </p>
-              )}
-              <div className="grid md:grid-cols-3 gap-8">
-                {section.testimonials?.map((testimonial, idx) => (
-                  <div key={idx} className="bg-slate-700/50 p-8 rounded-xl backdrop-blur-sm">
-                    {testimonial.rating && (
-                      <div className="flex gap-1 mb-4">
-                        {[...Array(5)].map((_, i) => (
-                          <span key={i} className={i < testimonial.rating ? 'text-yellow-400' : 'text-slate-600'}>
-                            ★
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <p className="text-slate-300 mb-6 italic">"{testimonial.quote}"</p>
-                    <div className="flex items-center gap-4">
-                      {testimonial.avatar && (
-                        <img 
-                          src={testimonial.avatar} 
-                          alt={testimonial.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                      )}
-                      <div>
-                        <div className="font-bold text-white">{testimonial.name}</div>
-                        {testimonial.role && (
-                          <div className="text-sm text-slate-400">{testimonial.role}</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        );
-
-      case 'cta':
-        return (
-          <section 
-            id={sectionId}
-            key={section.id} 
-            className="py-20 bg-gradient-to-r from-blue-600 to-purple-600"
-            style={{ backgroundColor: section.backgroundColor }}
-          >
-            <div className="container mx-auto px-6 text-center">
-              {section.title && (
-                <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
-                  {section.title}
-                </h2>
-              )}
-              {section.subtitle && (
-                <p className="text-xl mb-8 text-white/90 max-w-3xl mx-auto">
-                  {section.subtitle}
-                </p>
-              )}
-              {section.ctaAction && (
-                <button
-                  onClick={() => handleCTA(section.ctaAction)}
-                  className="px-10 py-5 bg-white text-blue-600 hover:bg-slate-100 rounded-lg font-bold text-lg transition-colors"
-                >
-                  {section.ctaLabel || 'Inizia Ora'}
-                </button>
-              )}
-            </div>
-          </section>
-        );
-
-      case 'faq':
-        return (
-          <section 
-            id={sectionId}
-            key={section.id} 
-            className="py-20 bg-slate-900"
-            style={{ backgroundColor: section.backgroundColor }}
-          >
-            <div className="container mx-auto px-6 max-w-4xl">
-              {section.title && (
-                <h2 className="text-4xl font-bold text-center mb-4 text-white">
-                  {section.title}
-                </h2>
-              )}
-              {section.subtitle && (
-                <p className="text-xl text-center mb-12 text-slate-300">
-                  {section.subtitle}
-                </p>
-              )}
-              <div className="space-y-4">
-                {section.faqs?.map((faq, idx) => (
-                  <details key={idx} className="bg-slate-800/50 rounded-xl backdrop-blur-sm group">
-                    <summary className="px-6 py-4 cursor-pointer font-semibold text-white list-none flex items-center justify-between">
-                      {faq.question}
-                      <span className="text-2xl group-open:rotate-45 transition-transform">+</span>
-                    </summary>
-                    <div className="px-6 pb-4 text-slate-300">
-                      {faq.answer}
-                    </div>
-                  </details>
-                ))}
-              </div>
-            </div>
-          </section>
-        );
-
-      default:
-        return null;
+  // Render vecchio sistema per retrocompatibilità
+  const renderOldSections = () => {
+    if (!page?.sections || page.sections.length === 0) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-900">
+          <p className="text-slate-400">Nessun contenuto disponibile</p>
+        </div>
+      );
     }
+
+    return (
+      <div className="bg-slate-900 min-h-screen">
+        {page.sections.map((section, index) => (
+          <LegacySection
+            key={section.id || index}
+            section={section}
+            index={index}
+            tenantId={tenantId}
+            pageId={page.id}
+            onConversion={trackConversion}
+          />
+        ))}
+      </div>
+    );
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Caricamento...</div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-slate-400 mt-4">Caricamento...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">Errore</h1>
-          <p className="text-xl text-slate-300">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!page) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">Pagina non trovata</h1>
-          <p className="text-xl text-slate-300">La landing page richiesta non esiste.</p>
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-white mb-2">Pagina non disponibile</h1>
+          <p className="text-slate-400">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {/* Countdown Timer */}
-      {page.timerEnabled && !timerComplete && (
-        <CountdownTimer
-          type={page.timerType}
-          duration={page.timerDuration}
-          endDate={page.timerEndDate}
-          message={page.timerMessage}
-          onComplete={() => setTimerComplete(true)}
-        />
-      )}
-
-      {/* Page Sections */}
-      {page.sections?.map((section, index) => {
-        // Nascondi sezione se c'è un timer attivo e questa è la sezione da sbloccare
-        if (page.timerEnabled && page.timerUnlockSection === section.id && !timerComplete) {
-          return null;
-        }
-        return renderSection(section, index);
-      })}
+    <>
+      {/* Main Content */}
+      {page?.isNewSystem ? renderNewBlocks() : renderOldSections()}
 
       {/* Exit Intent Popup */}
-      {showExitIntent && page.exitIntentEnabled && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl transform animate-scaleIn">
-            <button
-              onClick={() => setShowExitIntent(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+      <AnimatePresence>
+        {showExitIntent && page?.settings?.exitIntent?.enabled && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4"
+            onClick={() => setShowExitIntent(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-2xl p-8 max-w-md w-full text-center relative"
             >
-              <XCircle size={24} />
-            </button>
-            
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">
-              {page.exitIntentTitle}
-            </h2>
-            <p className="text-lg text-slate-600 mb-6">
-              {page.exitIntentMessage}
-            </p>
-            <button
-              onClick={() => {
-                setShowExitIntent(false);
-                // Scroll alla prima form section
-                const formSection = page.sections.find(s => s.type === 'contactForm');
-                if (formSection) {
-                  const formIdx = page.sections.indexOf(formSection);
-                  handleScroll(`section-${formIdx}`);
-                }
-              }}
-              className="w-full px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg font-bold text-lg transition-all transform hover:scale-105"
-            >
-              {page.exitIntentCTA}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Analytics Tracking (if enabled) */}
-      {page.trackingEnabled && (
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Track page view
-              console.log('Analytics: Page View');
+              <button
+                onClick={() => setShowExitIntent(false)}
+                className="absolute top-4 right-4 p-2 hover:bg-slate-700 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
               
-              // Track scroll depth
-              let maxScroll = 0;
-              window.addEventListener('scroll', () => {
-                const scrollPercent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
-                if (scrollPercent > maxScroll) {
-                  maxScroll = Math.floor(scrollPercent / 25) * 25;
-                  if (maxScroll > 0) {
-                    console.log('Analytics: Scroll Depth ' + maxScroll + '%');
-                  }
-                }
-              });
-            `
-          }}
-        />
-      )}
-    </div>
+              <div className="text-5xl mb-4">
+                {page.settings.exitIntent.icon || '🎁'}
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                {page.settings.exitIntent.title || 'Aspetta!'}
+              </h3>
+              <p className="text-slate-300 mb-6">
+                {page.settings.exitIntent.message || 'Non perdere questa occasione speciale!'}
+              </p>
+              {page.settings.exitIntent.ctaText && (
+                <a
+                  href={page.settings.exitIntent.ctaLink || '#form'}
+                  onClick={() => {
+                    setShowExitIntent(false);
+                    trackConversion();
+                  }}
+                  className="inline-block px-6 py-3 bg-gradient-to-r from-sky-500 to-cyan-500 text-white font-semibold rounded-lg hover:from-sky-600 hover:to-cyan-600 transition-all"
+                >
+                  {page.settings.exitIntent.ctaText}
+                </a>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
+
+/**
+ * LegacySection - Componente per retrocompatibilità con vecchie landing pages
+ */
+const LegacySection = ({ section, index, tenantId, pageId, onConversion }) => {
+  const [formData, setFormData] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    
+    try {
+      const { addDoc, collection } = await import('firebase/firestore');
+      const collectionName = section.formCollection || 'formSubmissions';
+      const submissionsRef = collection(db, `tenants/${tenantId}/${collectionName}`);
+      
+      await addDoc(submissionsRef, {
+        ...formData,
+        landingPageId: pageId,
+        sectionId: section.id,
+        submittedAt: new Date().toISOString(),
+      });
+      
+      setSubmitSuccess(true);
+      setFormData({});
+      onConversion?.();
+    } catch (err) {
+      console.error('Form submit error:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  switch (section.type) {
+    case 'hero':
+      return (
+        <section 
+          className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800"
+          style={{ backgroundColor: section.backgroundColor }}
+        >
+          {section.backgroundImage && (
+            <div 
+              className="absolute inset-0 bg-cover bg-center opacity-30"
+              style={{ backgroundImage: `url(${section.backgroundImage})` }}
+            />
+          )}
+          <div className="relative z-10 container mx-auto px-6 text-center">
+            {section.badge && (
+              <div className="inline-block px-4 py-2 bg-sky-500/20 text-sky-300 rounded-full text-sm mb-6">
+                {section.badge}
+              </div>
+            )}
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white">
+              {section.title}
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 text-slate-300 max-w-3xl mx-auto">
+              {section.subtitle}
+            </p>
+            {section.primaryCTA && (
+              <a
+                href={section.primaryCTA.url || '#form'}
+                className="inline-block px-8 py-4 bg-gradient-to-r from-sky-500 to-cyan-500 text-white rounded-lg font-semibold text-lg hover:from-sky-600 hover:to-cyan-600 transition-all"
+              >
+                {section.primaryCTA.label}
+              </a>
+            )}
+          </div>
+        </section>
+      );
+
+    case 'features':
+      return (
+        <section className="py-20 bg-slate-800">
+          <div className="container mx-auto px-6">
+            {section.title && (
+              <h2 className="text-4xl font-bold text-center mb-4 text-white">
+                {section.title}
+              </h2>
+            )}
+            {section.subtitle && (
+              <p className="text-xl text-center mb-12 text-slate-300 max-w-3xl mx-auto">
+                {section.subtitle}
+              </p>
+            )}
+            <div className="grid md:grid-cols-3 gap-8">
+              {section.features?.map((feature, idx) => (
+                <div key={idx} className="bg-slate-700/50 p-8 rounded-xl backdrop-blur-sm">
+                  {feature.icon && (
+                    <div className="text-4xl mb-4">{feature.icon}</div>
+                  )}
+                  <h3 className="text-2xl font-bold mb-3 text-white">{feature.title}</h3>
+                  <p className="text-slate-300">{feature.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    case 'contactForm':
+      return (
+        <section id="form" className="py-20 bg-slate-900">
+          <div className="container mx-auto px-6 max-w-2xl">
+            {section.title && (
+              <h2 className="text-4xl font-bold text-center mb-4 text-white">
+                {section.title}
+              </h2>
+            )}
+            {section.subtitle && (
+              <p className="text-xl text-center mb-12 text-slate-300">
+                {section.subtitle}
+              </p>
+            )}
+            
+            {submitSuccess ? (
+              <div className="bg-green-500/20 border border-green-500/50 rounded-xl p-8 text-center">
+                <div className="text-6xl mb-4">✅</div>
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  {section.successMessage || 'Grazie!'}
+                </h3>
+                <p className="text-slate-300">Ti contatteremo presto.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleFormSubmit} className="space-y-6">
+                {section.fields?.map((field, idx) => (
+                  <div key={idx}>
+                    <label className="block text-sm font-medium mb-2 text-slate-200">
+                      {field.label} {field.required && <span className="text-red-400">*</span>}
+                    </label>
+                    {field.type === 'textarea' ? (
+                      <textarea
+                        required={field.required}
+                        value={formData[field.name] || ''}
+                        onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+                        rows={4}
+                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        placeholder={field.placeholder}
+                      />
+                    ) : (
+                      <input
+                        type={field.type || 'text'}
+                        required={field.required}
+                        value={formData[field.name] || ''}
+                        onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        placeholder={field.placeholder}
+                      />
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full py-4 bg-gradient-to-r from-sky-500 to-cyan-500 text-white font-semibold rounded-lg hover:from-sky-600 hover:to-cyan-600 transition-all disabled:opacity-50"
+                >
+                  {submitting ? 'Invio in corso...' : (section.submitLabel || 'Invia')}
+                </button>
+              </form>
+            )}
+          </div>
+        </section>
+      );
+
+    case 'testimonials':
+      return (
+        <section className="py-20 bg-slate-800">
+          <div className="container mx-auto px-6">
+            {section.title && (
+              <h2 className="text-4xl font-bold text-center mb-12 text-white">
+                {section.title}
+              </h2>
+            )}
+            <div className="grid md:grid-cols-3 gap-8">
+              {section.testimonials?.map((testimonial, idx) => (
+                <div key={idx} className="bg-slate-700/50 p-8 rounded-xl">
+                  <div className="flex text-yellow-400 mb-4">
+                    {[...Array(testimonial.rating || 5)].map((_, i) => (
+                      <span key={i}>⭐</span>
+                    ))}
+                  </div>
+                  <p className="text-slate-300 mb-4 italic">"{testimonial.text}"</p>
+                  <div className="flex items-center gap-3">
+                    {testimonial.avatar && (
+                      <img src={testimonial.avatar} alt={testimonial.name} className="w-12 h-12 rounded-full" />
+                    )}
+                    <div>
+                      <p className="font-semibold text-white">{testimonial.name}</p>
+                      {testimonial.role && (
+                        <p className="text-sm text-slate-400">{testimonial.role}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    default:
+      return null;
+  }
+};
