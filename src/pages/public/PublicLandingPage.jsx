@@ -80,18 +80,34 @@ export default function PublicLandingPage() {
       // 2. Carica landing page - prova prima con nuovo sistema, poi vecchio
       let pageData = null;
       
-      // Prova nuovo sistema (landing_pages)
+      // Prova nuovo sistema (landing_pages) - prima cerca senza filtro isPublished per debug
       const newPagesRef = collection(db, `tenants/${foundTenantId}/landing_pages`);
-      const newPageQuery = query(
-        newPagesRef, 
-        where('slug', '==', slug),
-        where('isPublished', '==', true)
-      );
-      const newPageSnap = await getDocs(newPageQuery);
       
-      if (!newPageSnap.empty) {
-        pageData = { id: newPageSnap.docs[0].id, ...newPageSnap.docs[0].data(), isNewSystem: true };
+      // Prima cerca la pagina per slug (senza filtro pubblicazione)
+      const debugQuery = query(newPagesRef, where('slug', '==', slug));
+      const debugSnap = await getDocs(debugQuery);
+      
+      if (!debugSnap.empty) {
+        const foundPage = debugSnap.docs[0].data();
+        console.log('🔍 Pagina trovata:', { 
+          id: debugSnap.docs[0].id,
+          slug: foundPage.slug, 
+          isPublished: foundPage.isPublished,
+          status: foundPage.status 
+        });
+        
+        // Controlla se è pubblicata (supporta sia isPublished che status)
+        if (foundPage.isPublished === true || foundPage.status === 'published') {
+          pageData = { id: debugSnap.docs[0].id, ...foundPage, isNewSystem: true };
+        } else {
+          console.log('⚠️ Pagina non pubblicata');
+        }
       } else {
+        console.log('🔍 Nessuna pagina trovata con slug:', slug, 'in tenant:', foundTenantId);
+      }
+      
+      // Se non trovata nel nuovo sistema, prova vecchio sistema
+      if (!pageData) {
         // Fallback al vecchio sistema (landingPages)
         const oldPagesRef = collection(db, `tenants/${foundTenantId}/landingPages`);
         const oldPageQuery = query(
@@ -173,10 +189,11 @@ export default function PublicLandingPage() {
         {page.blocks.map((block, index) => (
           <DynamicBlock
             key={block.id || index}
-            block={block}
+            type={block.type}
+            settings={block.settings}
             isPreview={false}
+            pageId={page.id}
             tenantId={tenantId}
-            onConversion={trackConversion}
           />
         ))}
       </div>

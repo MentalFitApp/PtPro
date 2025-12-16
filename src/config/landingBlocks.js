@@ -94,13 +94,30 @@ export const DEFAULT_BLOCKS = {
       variant: 'centered',
       title: 'Pronto a cambiare la tua vita?',
       subtitle: 'Unisciti a oltre 500 persone che hanno già trasformato il loro corpo',
+      // Pulsante principale
       ctaText: 'Prenota una Consulenza Gratuita',
+      ctaAction: 'scroll', // 'scroll' | 'redirect' | 'popup' | 'whatsapp' | 'calendly' | 'phone'
       ctaLink: '#form',
+      ctaRedirectUrl: '',
+      ctaWhatsappNumber: '',
+      ctaWhatsappMessage: '',
+      ctaCalendlyUrl: '',
+      ctaPhoneNumber: '',
+      // Pulsante secondario
       showSecondaryButton: false,
       secondaryText: 'Scopri i piani',
+      secondaryAction: 'scroll',
       secondaryLink: '#pricing',
+      secondaryRedirectUrl: '',
+      // Stile
       backgroundType: 'gradient',
       backgroundGradient: 'from-sky-600 to-cyan-500',
+      backgroundImage: '',
+      buttonStyle: 'gradient',
+      secondaryButtonStyle: 'outline',
+      animation: 'fadeIn',
+      spacing: 'py-24',
+      // Stats
       showStats: true,
       stats: [
         { value: '500+', label: 'Clienti Soddisfatti' },
@@ -125,18 +142,34 @@ export const DEFAULT_BLOCKS = {
         { id: 'message', type: 'textarea', label: 'Messaggio (opzionale)', placeholder: 'Raccontaci di te...', required: false },
       ],
       submitText: 'Invia Richiesta',
+      // Azione dopo submit
+      afterSubmitAction: 'message', // 'message' | 'redirect' | 'popup' | 'whatsapp' | 'calendly'
       successMessage: 'Grazie! Ti contatteremo presto.',
+      redirectUrl: '',
+      redirectDelay: 2, // secondi prima del redirect
+      popupTitle: 'Grazie per averci contattato!',
+      popupContent: 'Ti contatteremo entro 24 ore.',
+      popupCtaText: 'Chiudi',
+      whatsappNumber: '',
+      whatsappMessage: 'Ciao! Ho compilato il form sulla landing page.',
+      calendlyUrl: '',
+      // Privacy e stile
       privacyText: 'Inviando accetti la nostra Privacy Policy',
       privacyLink: '/privacy',
       backgroundColor: 'bg-slate-800',
       showImage: true,
       imagePosition: 'right',
       imageSrc: '',
-      redirectAfterSubmit: false,
-      redirectUrl: '',
+      // Lead management
       saveToLeads: true,
       leadSource: 'landing_page',
+      leadTags: [],
       sendNotification: true,
+      notificationEmail: '',
+      // Stile avanzato
+      buttonStyle: 'gradient',
+      animation: 'fadeIn',
+      spacing: 'py-16',
     }
   },
   faq: {

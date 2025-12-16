@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 
 /**
  * Hero Block - Sezione principale della landing page
- * Varianti: centered, split, video
+ * Varianti: centered, split, video, minimal, fullscreen
+ * Azioni CTA: scroll, redirect, whatsapp, calendly, phone
  */
 const HeroBlock = ({ settings, isPreview = false }) => {
   const {
@@ -12,6 +13,13 @@ const HeroBlock = ({ settings, isPreview = false }) => {
     subtitle = 'Il tuo sottotitolo qui',
     ctaText = 'Inizia Ora',
     ctaLink = '#form',
+    // Nuove azioni CTA
+    ctaAction = 'scroll', // scroll, redirect, whatsapp, calendly, phone
+    ctaRedirectUrl = '',
+    ctaWhatsappNumber = '',
+    ctaWhatsappMessage = 'Ciao! Vorrei maggiori informazioni.',
+    ctaCalendlyUrl = '',
+    ctaPhoneNumber = '',
     secondaryCtaText = '',
     secondaryCtaLink = '',
     backgroundType = 'gradient',
@@ -30,6 +38,77 @@ const HeroBlock = ({ settings, isPreview = false }) => {
     left: 'text-left items-start',
     center: 'text-center items-center',
     right: 'text-right items-end',
+  };
+
+  // Gestisce click sul pulsante principale
+  const handleCtaClick = (e) => {
+    if (isPreview) {
+      e.preventDefault();
+      return;
+    }
+
+    switch (ctaAction) {
+      case 'scroll':
+        if (ctaLink?.startsWith('#')) {
+          e.preventDefault();
+          const element = document.querySelector(ctaLink);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+        break;
+      
+      case 'redirect':
+        if (ctaRedirectUrl) {
+          window.location.href = ctaRedirectUrl;
+        }
+        break;
+      
+      case 'whatsapp':
+        if (ctaWhatsappNumber) {
+          e.preventDefault();
+          const cleanNumber = ctaWhatsappNumber.replace(/\D/g, '');
+          const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(ctaWhatsappMessage || '')}`;
+          window.open(waUrl, '_blank');
+        }
+        break;
+      
+      case 'calendly':
+        if (ctaCalendlyUrl) {
+          e.preventDefault();
+          if (typeof window !== 'undefined' && window.Calendly) {
+            window.Calendly.initPopupWidget({ url: ctaCalendlyUrl });
+          } else {
+            window.open(ctaCalendlyUrl, '_blank');
+          }
+        }
+        break;
+      
+      case 'phone':
+        if (ctaPhoneNumber) {
+          const cleanPhone = ctaPhoneNumber.replace(/\s/g, '');
+          window.location.href = `tel:${cleanPhone}`;
+        }
+        break;
+      
+      default:
+        break;
+    }
+  };
+
+  // Determina l'href del pulsante
+  const getCtaHref = () => {
+    switch (ctaAction) {
+      case 'phone':
+        return `tel:${ctaPhoneNumber?.replace(/\s/g, '')}`;
+      case 'whatsapp':
+        const cleanNumber = ctaWhatsappNumber?.replace(/\D/g, '');
+        return `https://wa.me/${cleanNumber}`;
+      case 'redirect':
+        return ctaRedirectUrl || '#';
+      default:
+        return ctaLink || '#';
+    }
   };
 
   const scrollToElement = (e, href) => {
@@ -92,8 +171,8 @@ const HeroBlock = ({ settings, isPreview = false }) => {
               </p>
               <div className="flex flex-wrap gap-4">
                 <a
-                  href={ctaLink}
-                  onClick={(e) => scrollToElement(e, ctaLink)}
+                  href={getCtaHref()}
+                  onClick={handleCtaClick}
                   className="px-8 py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300 transform hover:-translate-y-0.5"
                 >
                   {ctaText}
@@ -179,8 +258,8 @@ const HeroBlock = ({ settings, isPreview = false }) => {
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <a
-                href={ctaLink}
-                onClick={(e) => scrollToElement(e, ctaLink)}
+                href={getCtaHref()}
+                onClick={handleCtaClick}
                 className="px-8 py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300 transform hover:-translate-y-0.5"
               >
                 {ctaText}
@@ -255,8 +334,8 @@ const HeroBlock = ({ settings, isPreview = false }) => {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <motion.a
-              href={ctaLink}
-              onClick={(e) => scrollToElement(e, ctaLink)}
+              href={getCtaHref()}
+              onClick={handleCtaClick}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="px-8 py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300"

@@ -179,6 +179,7 @@ export const createLandingPage = async (tenantId, data) => {
  */
 export const updateLandingPage = async (tenantId, pageId, data) => {
   try {
+    console.log('🔧 updateLandingPage chiamato:', { tenantId, pageId, data });
     const docRef = getLandingPageDoc(tenantId, pageId);
     
     const updateData = {
@@ -193,7 +194,9 @@ export const updateLandingPage = async (tenantId, pageId, data) => {
       }
     }
     
+    console.log('🔧 Dati da salvare:', updateData);
     await updateDoc(docRef, updateData);
+    console.log('✅ Documento aggiornato');
     return { id: pageId, ...updateData };
   } catch (error) {
     console.error('Errore updateLandingPage:', error);

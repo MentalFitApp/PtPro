@@ -14,6 +14,7 @@ import {
 } from '../../services/landingPageService';
 import { DynamicBlock } from '../../components/landingBlocks';
 import BlockSettingsPanel from './BlockSettingsPanel';
+import AIGeneratorModal from '../../components/landing/AIGeneratorModal';
 import {
   Plus,
   Trash2,
@@ -34,6 +35,7 @@ import {
   AlertCircle,
   ExternalLink,
   Info,
+  Sparkles,
 } from 'lucide-react';
 
 const LandingPageEditor = () => {
@@ -53,6 +55,7 @@ const LandingPageEditor = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
 
   // Determina se è modalità creazione
   const isNewPage = !pageId || pageId === 'new';
@@ -111,17 +114,25 @@ const LandingPageEditor = () => {
     
     try {
       setIsSaving(true);
-      await updateLandingPage(tenantId, pageId, {
+      const updateData = {
         blocks,
         isPublished: publish ? true : page.isPublished,
-      });
+      };
+      
+      // Se stiamo pubblicando, aggiungi anche status per backward compatibility
+      if (publish) {
+        updateData.status = 'published';
+        updateData.publishedAt = new Date().toISOString();
+      }
+      
+      await updateLandingPage(tenantId, pageId, updateData);
       setHasChanges(false);
       toast?.showToast?.(
         publish ? 'Pagina pubblicata!' : 'Modifiche salvate!',
         'success'
       );
       if (publish) {
-        setPage(prev => ({ ...prev, status: 'published' }));
+        setPage(prev => ({ ...prev, isPublished: true, status: 'published' }));
       }
     } catch (error) {
       console.error('Errore salvataggio:', error);
@@ -193,6 +204,34 @@ const LandingPageEditor = () => {
   const handleReorder = (newBlocks) => {
     setBlocks(newBlocks);
     setHasChanges(true);
+  };
+
+  // Gestisce risultato AI generator
+  const handleAIGenerated = (result) => {
+    if (result?.blocks) {
+      setBlocks(result.blocks);
+      setHasChanges(true);
+      
+      // Aggiorna anche i meta se presenti
+      if (result.meta) {
+        setPage(prev => ({
+          ...prev,
+          title: result.meta.title || prev?.title,
+          slug: result.meta.slug || prev?.slug,
+          description: result.meta.description || prev?.description,
+          settings: {
+            ...prev?.settings,
+            seo: {
+              ...prev?.settings?.seo,
+              title: result.meta.title,
+              description: result.meta.description,
+            },
+          },
+        }));
+      }
+      
+      toast?.showToast?.('Landing page generata con AI! 🎉', 'success');
+    }
   };
 
   const selectedBlock = blocks.find(b => b.id === selectedBlockId);
@@ -271,6 +310,14 @@ const LandingPageEditor = () => {
           >
             <Eye className="w-5 h-5" />
             <span className="hidden sm:inline">Preview</span>
+          </button>
+
+          <button
+            onClick={() => setShowAIGenerator(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-all"
+          >
+            <Sparkles className="w-5 h-5" />
+            <span className="hidden sm:inline">AI</span>
           </button>
           
           <button
@@ -479,6 +526,8 @@ const LandingPageEditor = () => {
               block={selectedBlock}
               onUpdate={(settings) => handleUpdateBlockSettings(selectedBlock.id, settings)}
               onClose={() => setSelectedBlockId(null)}
+              tenantId={tenantId}
+              pageId={pageId}
             />
           </aside>
         )}
@@ -536,11 +585,14 @@ const LandingPageEditor = () => {
             tenantId={tenantId}
             onSave={async (settings) => {
               try {
+                console.log('📝 Salvando settings:', settings);
                 await updateLandingPage(tenantId, pageId, settings);
+                console.log('✅ Settings salvati');
                 setPage(prev => ({ ...prev, ...settings }));
                 toast?.showToast?.('Impostazioni salvate!', 'success');
                 setShowSettings(false);
               } catch (error) {
+                console.error('❌ Errore salvataggio:', error);
                 toast?.showToast?.('Errore nel salvataggio', 'error');
               }
             }}
@@ -548,6 +600,14 @@ const LandingPageEditor = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* AI Generator Modal */}
+      <AIGeneratorModal
+        isOpen={showAIGenerator}
+        onClose={() => setShowAIGenerator(false)}
+        onGenerated={handleAIGenerated}
+        tenantId={tenantId}
+      />
     </div>
   );
 };
@@ -561,9 +621,56 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
   const [seoDescription, setSeoDescription] = useState(page?.settings?.seo?.description || '');
   const [facebookPixel, setFacebookPixel] = useState(page?.settings?.tracking?.facebookPixel || '');
   const [googleAnalytics, setGoogleAnalytics] = useState(page?.settings?.tracking?.googleAnalytics || '');
-  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
-  const [seoManuallyEdited, setSeoManuallyEdited] = useState(false);
+  
+  // Design settings
+  const [colorScheme, setColorScheme] = useState(page?.settings?.design?.colorScheme || 'sky');
+  const [fontFamily, setFontFamily] = useState(page?.settings?.design?.fontFamily || 'Inter');
+  const [buttonStyle, setButtonStyle] = useState(page?.settings?.design?.buttonStyle || 'rounded');
+  const [containerWidth, setContainerWidth] = useState(page?.settings?.design?.containerWidth || 'default');
+  const [globalAnimations, setGlobalAnimations] = useState(page?.settings?.design?.globalAnimations ?? true);
+  
+  // Se la pagina ha già uno slug, considera già modificato manualmente
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!page?.slug);
+  const [seoManuallyEdited, setSeoManuallyEdited] = useState(!!page?.settings?.seo?.title || !!page?.settings?.seo?.description);
+  const [activeTab, setActiveTab] = useState('general');
   const [saving, setSaving] = useState(false);
+
+  // Color scheme options
+  const colorSchemes = [
+    { value: 'sky', label: 'Sky Blue', primary: '#0ea5e9', secondary: '#06b6d4' },
+    { value: 'purple', label: 'Purple', primary: '#a855f7', secondary: '#ec4899' },
+    { value: 'emerald', label: 'Emerald', primary: '#10b981', secondary: '#14b8a6' },
+    { value: 'orange', label: 'Orange', primary: '#f97316', secondary: '#ef4444' },
+    { value: 'rose', label: 'Rose', primary: '#f43f5e', secondary: '#ec4899' },
+    { value: 'indigo', label: 'Indigo', primary: '#6366f1', secondary: '#8b5cf6' },
+    { value: 'amber', label: 'Amber', primary: '#f59e0b', secondary: '#eab308' },
+    { value: 'slate', label: 'Slate (Dark)', primary: '#475569', secondary: '#64748b' },
+  ];
+
+  const fontFamilies = [
+    { value: 'Inter', label: 'Inter (Moderno)' },
+    { value: 'Poppins', label: 'Poppins (Geometrico)' },
+    { value: 'Playfair Display', label: 'Playfair Display (Elegante)' },
+    { value: 'Montserrat', label: 'Montserrat (Professionale)' },
+    { value: 'Roboto', label: 'Roboto (Neutro)' },
+    { value: 'Open Sans', label: 'Open Sans (Leggibile)' },
+    { value: 'Lato', label: 'Lato (Friendly)' },
+    { value: 'Raleway', label: 'Raleway (Sofisticato)' },
+  ];
+
+  const buttonStyles = [
+    { value: 'rounded', label: 'Arrotondato' },
+    { value: 'pill', label: 'Pillola' },
+    { value: 'square', label: 'Squadrato' },
+    { value: 'sharp', label: 'Sharp' },
+  ];
+
+  const containerWidths = [
+    { value: 'narrow', label: 'Stretto (max-w-4xl)' },
+    { value: 'default', label: 'Default (max-w-6xl)' },
+    { value: 'wide', label: 'Largo (max-w-7xl)' },
+    { value: 'full', label: 'Pieno (100%)' },
+  ];
 
   // Genera slug automaticamente dal titolo (se non modificato manualmente)
   useEffect(() => {
@@ -637,6 +744,13 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
             tiktokPixel: page?.settings?.tracking?.tiktokPixel || '',
             customScripts: page?.settings?.tracking?.customScripts || '',
           },
+          design: {
+            colorScheme,
+            fontFamily,
+            buttonStyle,
+            containerWidth,
+            globalAnimations,
+          },
         },
       });
     } finally {
@@ -657,38 +771,61 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-slate-800 rounded-2xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto"
+        className="bg-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col"
       >
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between p-6 border-b border-slate-700">
           <h2 className="text-xl font-bold text-white">Impostazioni Pagina</h2>
           <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
 
-        {/* Errori e Warning */}
-        {(validations.errors.length > 0 || validations.warnings.length > 0) && (
-          <div className="mb-6 space-y-2">
-            {validations.errors.map((error, i) => (
-              <div key={`err-${i}`} className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {error}
-              </div>
-            ))}
-            {validations.warnings.map((warning, i) => (
-              <div key={`warn-${i}`} className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm">
-                <Info className="w-4 h-4 flex-shrink-0" />
-                {warning}
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Tabs */}
+        <div className="flex border-b border-slate-700">
+          {[
+            { id: 'general', label: 'Generale', icon: '📝' },
+            { id: 'design', label: 'Design', icon: '🎨' },
+            { id: 'seo', label: 'SEO', icon: '🔍' },
+            { id: 'tracking', label: 'Tracking', icon: '📊' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                activeTab === tab.id 
+                  ? 'text-sky-400 border-b-2 border-sky-400 bg-slate-700/50' 
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/30'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        <div className="space-y-6">
-          {/* Generale */}
-          <div>
-            <h3 className="text-sm font-semibold text-slate-400 uppercase mb-4">Generale</h3>
-            <div className="space-y-4">
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {/* Errori e Warning */}
+          {(validations.errors.length > 0 || validations.warnings.length > 0) && (
+            <div className="mb-6 space-y-2">
+              {validations.errors.map((error, i) => (
+                <div key={`err-${i}`} className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {error}
+                </div>
+              ))}
+              {validations.warnings.map((warning, i) => (
+                <div key={`warn-${i}`} className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm">
+                  <Info className="w-4 h-4 flex-shrink-0" />
+                  {warning}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Tab: General */}
+          {activeTab === 'general' && (
+            <div className="space-y-6">
               <div>
                 <label className="block text-sm text-slate-300 mb-1">
                   Titolo <span className="text-red-400">*</span>
@@ -773,26 +910,136 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
                 />
               </div>
             </div>
-          </div>
+          )}
 
-          {/* SEO */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-slate-400 uppercase">SEO</h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setSeoManuallyEdited(false);
-                  setSeoTitle(title);
-                  setSeoDescription(description);
-                }}
-                className="flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300"
-              >
-                <Wand2 className="w-3 h-3" />
-                Auto-genera da contenuto
-              </button>
+          {/* Tab: Design */}
+          {activeTab === 'design' && (
+            <div className="space-y-6">
+              {/* Color Scheme */}
+              <div>
+                <label className="block text-sm text-slate-300 mb-3">Schema Colori</label>
+                <div className="grid grid-cols-4 gap-3">
+                  {colorSchemes.map(scheme => (
+                    <button
+                      key={scheme.value}
+                      onClick={() => setColorScheme(scheme.value)}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        colorScheme === scheme.value 
+                          ? 'border-sky-400 bg-slate-700' 
+                          : 'border-slate-600 hover:border-slate-500'
+                      }`}
+                    >
+                      <div className="flex gap-1 mb-2">
+                        <div 
+                          className="w-4 h-4 rounded-full" 
+                          style={{ backgroundColor: scheme.primary }}
+                        />
+                        <div 
+                          className="w-4 h-4 rounded-full" 
+                          style={{ backgroundColor: scheme.secondary }}
+                        />
+                      </div>
+                      <span className="text-xs text-slate-300">{scheme.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Font Family */}
+              <div>
+                <label className="block text-sm text-slate-300 mb-2">Font</label>
+                <select
+                  value={fontFamily}
+                  onChange={(e) => setFontFamily(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                >
+                  {fontFamilies.map(font => (
+                    <option key={font.value} value={font.value}>{font.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Button Style */}
+              <div>
+                <label className="block text-sm text-slate-300 mb-3">Stile Pulsanti</label>
+                <div className="grid grid-cols-4 gap-3">
+                  {buttonStyles.map(style => (
+                    <button
+                      key={style.value}
+                      onClick={() => setButtonStyle(style.value)}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        buttonStyle === style.value 
+                          ? 'border-sky-400 bg-slate-700' 
+                          : 'border-slate-600 hover:border-slate-500'
+                      }`}
+                    >
+                      <div className={`h-8 bg-gradient-to-r from-sky-500 to-cyan-400 flex items-center justify-center text-white text-xs mb-2 ${
+                        style.value === 'rounded' ? 'rounded-lg' :
+                        style.value === 'pill' ? 'rounded-full' :
+                        style.value === 'square' ? 'rounded' :
+                        'rounded-none'
+                      }`}>
+                        Button
+                      </div>
+                      <span className="text-xs text-slate-300">{style.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Container Width */}
+              <div>
+                <label className="block text-sm text-slate-300 mb-2">Larghezza Contenuto</label>
+                <select
+                  value={containerWidth}
+                  onChange={(e) => setContainerWidth(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                >
+                  {containerWidths.map(width => (
+                    <option key={width.value} value={width.value}>{width.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Animations Toggle */}
+              <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
+                <div>
+                  <p className="text-sm text-white">Animazioni</p>
+                  <p className="text-xs text-slate-400">Attiva animazioni di entrata per i blocchi</p>
+                </div>
+                <button
+                  onClick={() => setGlobalAnimations(!globalAnimations)}
+                  className={`w-12 h-6 rounded-full transition-colors ${
+                    globalAnimations ? 'bg-sky-500' : 'bg-slate-600'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${
+                    globalAnimations ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
             </div>
-            <div className="space-y-4">
+          )}
+
+          {/* Tab: SEO */}
+          {activeTab === 'seo' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-slate-400">Ottimizza la pagina per i motori di ricerca</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSeoManuallyEdited(false);
+                    setSeoTitle(title);
+                    setSeoDescription(description);
+                  }}
+                  className="flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300"
+                >
+                  <Wand2 className="w-3 h-3" />
+                  Auto-genera
+                </button>
+              </div>
+              
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Meta Title</label>
                 <input
@@ -806,9 +1053,10 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
                   className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
                 <p className={`text-xs mt-1 ${seoTitle.length > 60 ? 'text-amber-400' : 'text-slate-500'}`}>
-                  {seoTitle.length}/60 caratteri {seoTitle.length > 60 && '(consigliato max 60)'}
+                  {seoTitle.length}/60 caratteri
                 </p>
               </div>
+              
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Meta Description</label>
                 <textarea
@@ -817,24 +1065,33 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
                     setSeoManuallyEdited(true);
                     setSeoDescription(e.target.value);
                   }}
-                  rows={2}
+                  rows={3}
                   placeholder={description || 'Descrizione per i risultati di ricerca'}
                   className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
                 <p className={`text-xs mt-1 ${seoDescription.length > 160 ? 'text-amber-400' : 'text-slate-500'}`}>
-                  {seoDescription.length}/160 caratteri {seoDescription.length > 160 && '(consigliato max 160)'}
+                  {seoDescription.length}/160 caratteri
+                </p>
+              </div>
+
+              {/* Preview SERP */}
+              <div className="p-4 bg-white rounded-lg">
+                <p className="text-sm text-blue-600 hover:underline cursor-pointer truncate">
+                  {seoTitle || title || 'Titolo della Pagina'}
+                </p>
+                <p className="text-xs text-green-700 truncate">{previewUrl}</p>
+                <p className="text-xs text-gray-600 line-clamp-2">
+                  {seoDescription || description || 'Descrizione della pagina che apparirà nei risultati di ricerca...'}
                 </p>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Tracking - Collapsible */}
-          <details className="group">
-            <summary className="text-sm font-semibold text-slate-400 uppercase cursor-pointer hover:text-slate-300 list-none flex items-center gap-2">
-              <span className="transform transition-transform group-open:rotate-90">▶</span>
-              Tracking (Opzionale)
-            </summary>
-            <div className="space-y-4 mt-4 pl-4 border-l-2 border-slate-700">
+          {/* Tab: Tracking */}
+          {activeTab === 'tracking' && (
+            <div className="space-y-6">
+              <p className="text-sm text-slate-400">Configura il tracciamento per monitorare le conversioni</p>
+              
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Facebook Pixel ID</label>
                 <input
@@ -847,6 +1104,7 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
                 />
                 <p className="text-xs text-slate-500 mt-1">15-16 cifre numeriche</p>
               </div>
+              
               <div>
                 <label className="block text-sm text-slate-300 mb-1">Google Analytics ID</label>
                 <input
@@ -858,11 +1116,20 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
                 />
                 <p className="text-xs text-slate-500 mt-1">Formato: G-XXXXXXXXXX</p>
               </div>
+
+              <div className="p-4 bg-slate-700/50 rounded-lg">
+                <h4 className="text-sm font-medium text-white mb-2">Suggerimenti</h4>
+                <ul className="text-xs text-slate-400 space-y-1">
+                  <li>• Il Facebook Pixel ti permette di tracciare le conversioni da Meta Ads</li>
+                  <li>• Google Analytics ti dà insight dettagliati sul comportamento dei visitatori</li>
+                  <li>• I codici verranno caricati automaticamente su tutte le pagine pubbliche</li>
+                </ul>
+              </div>
             </div>
-          </details>
+          )}
         </div>
 
-        <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-slate-700">
+        <div className="flex justify-end gap-3 p-6 border-t border-slate-700">
           <button
             onClick={onClose}
             className="px-6 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"

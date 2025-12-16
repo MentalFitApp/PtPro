@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 
 /**
  * CTA Block - Call to Action section
- * Varianti: centered, split, banner
+ * Varianti: centered, split, banner, floating, fullscreen
+ * Azioni: scroll, redirect, whatsapp, calendly, phone
  */
 const CTABlock = ({ settings, isPreview = false }) => {
   const {
@@ -12,6 +13,13 @@ const CTABlock = ({ settings, isPreview = false }) => {
     subtitle = '',
     ctaText = 'Inizia Ora',
     ctaLink = '#form',
+    // Nuove azioni CTA
+    ctaAction = 'scroll', // scroll, redirect, whatsapp, calendly, phone
+    ctaRedirectUrl = '',
+    ctaWhatsappNumber = '',
+    ctaWhatsappMessage = 'Ciao! Vorrei maggiori informazioni.',
+    ctaCalendlyUrl = '',
+    ctaPhoneNumber = '',
     showSecondaryButton = false,
     secondaryText = '',
     secondaryLink = '',
@@ -20,6 +28,78 @@ const CTABlock = ({ settings, isPreview = false }) => {
     showStats = false,
     stats = [],
   } = settings || {};
+
+  // Gestisce click sul pulsante principale
+  const handleCtaClick = (e) => {
+    if (isPreview) {
+      e.preventDefault();
+      return;
+    }
+
+    switch (ctaAction) {
+      case 'scroll':
+        if (ctaLink?.startsWith('#')) {
+          e.preventDefault();
+          const element = document.querySelector(ctaLink);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+        break;
+      
+      case 'redirect':
+        if (ctaRedirectUrl) {
+          window.location.href = ctaRedirectUrl;
+        }
+        break;
+      
+      case 'whatsapp':
+        if (ctaWhatsappNumber) {
+          e.preventDefault();
+          const cleanNumber = ctaWhatsappNumber.replace(/\D/g, '');
+          const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(ctaWhatsappMessage || '')}`;
+          window.open(waUrl, '_blank');
+        }
+        break;
+      
+      case 'calendly':
+        if (ctaCalendlyUrl) {
+          e.preventDefault();
+          if (typeof window !== 'undefined' && window.Calendly) {
+            window.Calendly.initPopupWidget({ url: ctaCalendlyUrl });
+          } else {
+            window.open(ctaCalendlyUrl, '_blank');
+          }
+        }
+        break;
+      
+      case 'phone':
+        if (ctaPhoneNumber) {
+          const cleanPhone = ctaPhoneNumber.replace(/\s/g, '');
+          window.location.href = `tel:${cleanPhone}`;
+        }
+        break;
+      
+      default:
+        // Default: usa il link come href
+        break;
+    }
+  };
+
+  // Determina l'href del pulsante
+  const getCtaHref = () => {
+    switch (ctaAction) {
+      case 'phone':
+        return `tel:${ctaPhoneNumber?.replace(/\s/g, '')}`;
+      case 'whatsapp':
+        const cleanNumber = ctaWhatsappNumber?.replace(/\D/g, '');
+        return `https://wa.me/${cleanNumber}`;
+      case 'redirect':
+        return ctaRedirectUrl || '#';
+      default:
+        return ctaLink || '#';
+    }
+  };
 
   const scrollToElement = (e, href) => {
     if (isPreview) {
@@ -49,8 +129,8 @@ const CTABlock = ({ settings, isPreview = false }) => {
             </div>
             <div className="flex gap-4">
               <motion.a
-                href={ctaLink}
-                onClick={(e) => scrollToElement(e, ctaLink)}
+                href={getCtaHref()}
+                onClick={handleCtaClick}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className="px-6 py-3 bg-white text-slate-900 font-semibold rounded-xl hover:bg-white/90 transition-colors"
@@ -100,8 +180,8 @@ const CTABlock = ({ settings, isPreview = false }) => {
               )}
               <div className="flex flex-wrap gap-4">
                 <motion.a
-                  href={ctaLink}
-                  onClick={(e) => scrollToElement(e, ctaLink)}
+                  href={getCtaHref()}
+                  onClick={handleCtaClick}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="px-8 py-4 bg-white text-slate-900 font-semibold rounded-xl hover:bg-white/90 transition-all shadow-lg"
@@ -189,8 +269,8 @@ const CTABlock = ({ settings, isPreview = false }) => {
 
           <div className="flex flex-wrap justify-center gap-4">
             <motion.a
-              href={ctaLink}
-              onClick={(e) => scrollToElement(e, ctaLink)}
+              href={getCtaHref()}
+              onClick={handleCtaClick}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="px-10 py-4 bg-white text-slate-900 font-semibold rounded-xl hover:bg-white/90 transition-all shadow-lg text-lg"
