@@ -11,8 +11,11 @@ import {
   startAfter,
   doc
 } from 'firebase/firestore';
-import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../config/tenant';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection, CURRENT_TENANT_ID } from '../config/tenant';
 import { notifyNewCheck, notifyNewAnamnesi, notifyPayment } from './notificationService';
+
+const functions = getFunctions(undefined, 'europe-west1');
 
 /**
  * Client Service - Centralizza tutte le operazioni sui clients
@@ -130,13 +133,53 @@ export const updateClient = async (db, clientId, updates) => {
 
 export const deleteClient = async (db, clientId) => {
   try {
-    const clientRef = doc(getTenantCollection(db, 'clients'), clientId);
-    await deleteDoc(clientRef);
+    // Usa soft-delete tramite Cloud Function
+    const softDeleteClient = httpsCallable(functions, 'softDeleteClient');
+    const result = await softDeleteClient({
+      tenantId: CURRENT_TENANT_ID,
+      clientId
+    });
     
-    return { success: true };
+    if (result.data.success) {
+      return { success: true, message: result.data.message };
+    } else {
+      throw new Error(result.data.error || 'Errore sconosciuto');
+    }
   } catch (error) {
     console.error('Errore deleteClient:', error);
     throw new Error('Impossibile eliminare il client: ' + error.message);
+  }
+};
+
+// Verifica se esiste un cliente archiviato con la stessa email
+export const checkArchivedClient = async (email) => {
+  try {
+    const checkArchived = httpsCallable(functions, 'checkArchivedClient');
+    const result = await checkArchived({
+      tenantId: CURRENT_TENANT_ID,
+      email
+    });
+    return result.data;
+  } catch (error) {
+    console.error('Errore checkArchivedClient:', error);
+    return { found: false };
+  }
+};
+
+// Riattiva un cliente archiviato
+export const reactivateArchivedClient = async (archivedClientId, newUserId, newEmail) => {
+  try {
+    const reactivate = httpsCallable(functions, 'reactivateArchivedClient');
+    const result = await reactivate({
+      tenantId: CURRENT_TENANT_ID,
+      archivedClientId,
+      newUserId,
+      newEmail
+    });
+    return result.data;
+  } catch (error) {
+    console.error('Errore reactivateArchivedClient:', error);
+    throw new Error('Impossibile riattivare il client: ' + error.message);
   }
 };
 

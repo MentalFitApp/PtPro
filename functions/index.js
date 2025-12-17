@@ -2333,6 +2333,22 @@ exports.completeInvitation = onCall(async (request) => {
       // OK - email non in uso
     }
 
+    // Verifica se esiste un cliente archiviato con questa email
+    let archivedClientId = null;
+    let archivedClientData = null;
+    const archivedQuery = await db.collection(`tenants/${invite.tenantId}/clients`)
+      .where('originalEmail', '==', email.toLowerCase().trim())
+      .where('isDeleted', '==', true)
+      .limit(1)
+      .get();
+    
+    if (!archivedQuery.empty) {
+      const archivedDoc = archivedQuery.docs[0];
+      archivedClientId = archivedDoc.id;
+      archivedClientData = archivedDoc.data();
+      console.log('🔄 [INVITE] Trovato cliente archiviato da ricollegare:', archivedClientId);
+    }
+
     // Crea utente Firebase Auth
     const userRecord = await admin.auth().createUser({
       email: email.toLowerCase().trim(),
@@ -2365,6 +2381,25 @@ exports.completeInvitation = onCall(async (request) => {
       expiryDate.setDate(expiryDate.getDate() + 7); // 7 giorni di grazia
     }
 
+    // Se c'è un cliente archiviato, ricollega i suoi dati storici
+    if (archivedClientId && archivedClientData) {
+      // Copia subcollections dal cliente archiviato
+      const subcollections = ['checks', 'payments', 'anamnesi'];
+      for (const subcol of subcollections) {
+        const oldSubcol = await db.collection(`tenants/${invite.tenantId}/clients/${archivedClientId}/${subcol}`).get();
+        for (const docSnap of oldSubcol.docs) {
+          await db.doc(`tenants/${invite.tenantId}/clients/${newUserId}/${subcol}/${docSnap.id}`).set(docSnap.data());
+        }
+        console.log(`📋 [INVITE] Copiata subcollection ${subcol}: ${oldSubcol.size} documenti`);
+      }
+
+      // Marca il vecchio cliente come migrato
+      await db.doc(`tenants/${invite.tenantId}/clients/${archivedClientId}`).update({
+        migratedTo: newUserId,
+        migratedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+
     // Crea documento cliente nel tenant
     const clientRef = db.doc(`tenants/${invite.tenantId}/clients/${newUserId}`);
     await clientRef.set({
@@ -2391,6 +2426,9 @@ exports.completeInvitation = onCall(async (request) => {
       registeredViaInvite: true,
       inviteToken: token,
       inviteCode: invite.code,
+      // Ricollegamento cliente archiviato
+      previousAccountId: archivedClientId || null,
+      reactivatedFromArchive: archivedClientId ? true : false,
       // Consensi
       termsAcceptedAt: acceptTerms ? admin.firestore.FieldValue.serverTimestamp() : null,
       privacyAcceptedAt: acceptPrivacy ? admin.firestore.FieldValue.serverTimestamp() : null,
@@ -2637,5 +2675,230 @@ exports.resendInvitation = onCall(async (request) => {
   } catch (error) {
     console.error('💥 [INVITE] Errore rigenerazione:', error);
     throw new Error(error.message || 'Errore nella rigenerazione');
+  }
+});
+
+/**
+ * Soft-delete cliente: elimina da Firebase Auth ma mantiene dati in Firestore
+ * Permette di ri-collegare il cliente se viene re-invitato con la stessa email
+ */
+exports.softDeleteClient = onCall(async (request) => {
+  enforceRateLimit(request, 'softDeleteClient');
+  requireAuth(request);
+  
+  const { tenantId, clientId } = validateInput(request.data, {
+    tenantId: validators.tenantId,
+    clientId: validators.nonEmptyString
+  });
+
+  console.log('🗑️ [CLIENT] Soft-delete richiesto per:', clientId, 'tenant:', tenantId);
+
+  try {
+    // Recupera dati cliente
+    const clientRef = db.doc(`tenants/${tenantId}/clients/${clientId}`);
+    const clientDoc = await clientRef.get();
+
+    if (!clientDoc.exists) {
+      throw new Error('Cliente non trovato');
+    }
+
+    const clientData = clientDoc.data();
+    const clientEmail = clientData.email;
+
+    // Elimina utente da Firebase Auth (se esiste)
+    try {
+      await admin.auth().deleteUser(clientId);
+      console.log('✅ [CLIENT] Utente eliminato da Auth:', clientId);
+    } catch (authError) {
+      if (authError.code !== 'auth/user-not-found') {
+        console.warn('⚠️ [CLIENT] Errore eliminazione Auth:', authError.message);
+      }
+    }
+
+    // Aggiorna documento cliente come "eliminato" (soft-delete)
+    await clientRef.update({
+      isDeleted: true,
+      deletedAt: admin.firestore.FieldValue.serverTimestamp(),
+      deletedBy: request.auth.uid,
+      // Mantieni email originale per possibile ri-collegamento
+      originalEmail: clientEmail,
+      // Rimuovi email per permettere nuova registrazione
+      email: null,
+      status: 'eliminato',
+      // Mantieni i dati storici
+      _archivedData: {
+        email: clientEmail,
+        name: clientData.name,
+        phone: clientData.phone,
+        deletedAt: new Date().toISOString(),
+      }
+    });
+
+    // Rimuovi mapping user_tenants
+    try {
+      const userTenantRef = db.doc(`user_tenants/${clientId}`);
+      const userTenantDoc = await userTenantRef.get();
+      if (userTenantDoc.exists) {
+        const data = userTenantDoc.data();
+        delete data[tenantId];
+        if (Object.keys(data).length === 0) {
+          await userTenantRef.delete();
+        } else {
+          await userTenantRef.set(data);
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ [CLIENT] Errore rimozione user_tenants:', err);
+    }
+
+    console.log('✅ [CLIENT] Soft-delete completato per:', clientId);
+
+    return {
+      success: true,
+      message: 'Cliente eliminato. I dati storici sono stati archiviati.'
+    };
+
+  } catch (error) {
+    console.error('💥 [CLIENT] Errore soft-delete:', error);
+    throw new Error(error.message || 'Errore nell\'eliminazione del cliente');
+  }
+});
+
+/**
+ * Verifica se esiste un cliente archiviato con la stessa email
+ * Chiamata quando si crea un nuovo invito per suggerire ri-collegamento
+ */
+exports.checkArchivedClient = onCall(async (request) => {
+  enforceRateLimit(request, 'checkArchivedClient');
+  requireAuth(request);
+  
+  const { tenantId, email } = validateInput(request.data, {
+    tenantId: validators.tenantId,
+    email: validators.email
+  });
+
+  console.log('🔍 [CLIENT] Verifica cliente archiviato per email:', email);
+
+  try {
+    // Cerca cliente eliminato con questa email originale
+    const archivedQuery = await db.collection(`tenants/${tenantId}/clients`)
+      .where('originalEmail', '==', email.toLowerCase().trim())
+      .where('isDeleted', '==', true)
+      .limit(1)
+      .get();
+
+    if (!archivedQuery.empty) {
+      const archivedClient = archivedQuery.docs[0];
+      const data = archivedClient.data();
+      
+      console.log('✅ [CLIENT] Trovato cliente archiviato:', archivedClient.id);
+      
+      return {
+        found: true,
+        archivedClient: {
+          id: archivedClient.id,
+          name: data._archivedData?.name || data.name,
+          email: data._archivedData?.email || data.originalEmail,
+          deletedAt: data.deletedAt?.toDate?.()?.toISOString() || data._archivedData?.deletedAt,
+          // Includi alcuni dati storici utili
+          planType: data.planType,
+          checksCount: data.checksCount || 0,
+        }
+      };
+    }
+
+    return { found: false };
+
+  } catch (error) {
+    console.error('💥 [CLIENT] Errore verifica archiviato:', error);
+    return { found: false, error: error.message };
+  }
+});
+
+/**
+ * Riattiva un cliente archiviato collegandolo a un nuovo account
+ */
+exports.reactivateArchivedClient = onCall(async (request) => {
+  enforceRateLimit(request, 'reactivateArchivedClient');
+  requireAuth(request);
+  
+  const { tenantId, archivedClientId, newUserId, newEmail } = validateInput(request.data, {
+    tenantId: validators.tenantId,
+    archivedClientId: validators.nonEmptyString,
+    newUserId: validators.nonEmptyString,
+    newEmail: validators.email
+  });
+
+  console.log('🔄 [CLIENT] Riattivazione cliente archiviato:', archivedClientId, '→', newUserId);
+
+  try {
+    const archivedRef = db.doc(`tenants/${tenantId}/clients/${archivedClientId}`);
+    const archivedDoc = await archivedRef.get();
+
+    if (!archivedDoc.exists) {
+      throw new Error('Cliente archiviato non trovato');
+    }
+
+    const archivedData = archivedDoc.data();
+
+    if (!archivedData.isDeleted) {
+      throw new Error('Il cliente non è archiviato');
+    }
+
+    // Crea nuovo documento cliente con il nuovo userId
+    const newClientRef = db.doc(`tenants/${tenantId}/clients/${newUserId}`);
+    
+    // Copia i dati storici nel nuovo documento
+    await newClientRef.set({
+      ...archivedData,
+      // Aggiorna con nuovi dati
+      email: newEmail.toLowerCase().trim(),
+      isDeleted: false,
+      deletedAt: null,
+      deletedBy: null,
+      originalEmail: null,
+      // Mantieni riferimento al vecchio account
+      previousAccountId: archivedClientId,
+      reactivatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      reactivatedBy: request.auth.uid,
+      status: 'attivo',
+    });
+
+    // Copia subcollections (checks, payments, etc.) se necessario
+    const subcollections = ['checks', 'payments', 'anamnesi'];
+    for (const subcol of subcollections) {
+      const oldSubcol = await db.collection(`tenants/${tenantId}/clients/${archivedClientId}/${subcol}`).get();
+      for (const doc of oldSubcol.docs) {
+        await db.doc(`tenants/${tenantId}/clients/${newUserId}/${subcol}/${doc.id}`).set(doc.data());
+      }
+    }
+
+    // Marca il vecchio documento come migrato
+    await archivedRef.update({
+      migratedTo: newUserId,
+      migratedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Crea mapping user_tenants per il nuovo utente
+    await db.doc(`user_tenants/${newUserId}`).set({
+      [tenantId]: {
+        role: 'client',
+        joinedAt: admin.firestore.FieldValue.serverTimestamp(),
+        reactivated: true,
+        previousAccountId: archivedClientId,
+      }
+    }, { merge: true });
+
+    console.log('✅ [CLIENT] Cliente riattivato con successo');
+
+    return {
+      success: true,
+      newClientId: newUserId,
+      message: 'Cliente riattivato con tutti i dati storici'
+    };
+
+  } catch (error) {
+    console.error('💥 [CLIENT] Errore riattivazione:', error);
+    throw new Error(error.message || 'Errore nella riattivazione del cliente');
   }
 });

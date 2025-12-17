@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { CURRENT_TENANT_ID } from '../../config/tenant';
-import { auth } from '../../firebase';
+import { auth, db } from '../../firebase';
 import { 
   Send, 
   ArrowLeft, 
@@ -21,7 +22,10 @@ import {
   MessageCircle,
   DollarSign,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  Save,
+  FileText,
+  Edit3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
@@ -66,6 +70,9 @@ export default function NewClient() {
   const [isRateizzato, setIsRateizzato] = useState(false);
   const [rates, setRates] = useState([]);
   const [newRate, setNewRate] = useState({ amount: '', dueDate: '', paid: false });
+  const [inviteMessageTemplate, setInviteMessageTemplate] = useState('');
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
     defaultValues: {
@@ -84,6 +91,22 @@ export default function NewClient() {
   });
 
   const customStartDate = watch('customStartDate');
+
+  // Carica template messaggio dal tenant
+  useEffect(() => {
+    const loadTemplate = async () => {
+      try {
+        const tenantRef = doc(db, 'tenants', CURRENT_TENANT_ID);
+        const tenantSnap = await getDoc(tenantRef);
+        if (tenantSnap.exists() && tenantSnap.data().inviteMessageTemplate) {
+          setInviteMessageTemplate(tenantSnap.data().inviteMessageTemplate);
+        }
+      } catch (err) {
+        console.log('Template non caricato:', err);
+      }
+    };
+    loadTemplate();
+  }, []);
 
   // Pre-compilazione da collaboratori/lead
   useEffect(() => {
@@ -198,6 +221,19 @@ export default function NewClient() {
     
     const clientName = invitation.clientData?.name || 'Cliente';
     const tenantName = invitation.tenantName || 'la nostra piattaforma fitness';
+    const baseUrl = invitation.url?.split('/invite')[0] || 'la nostra app';
+    
+    // Usa template personalizzato se presente, altrimenti default
+    if (inviteMessageTemplate) {
+      return inviteMessageTemplate
+        .replace(/\{\{clientName\}\}/g, clientName)
+        .replace(/\{\{tenantName\}\}/g, tenantName)
+        .replace(/\{\{inviteUrl\}\}/g, invitation.url)
+        .replace(/\{\{inviteCode\}\}/g, invitation.code)
+        .replace(/\{\{expiryDays\}\}/g, invitation.expiryDays || 7)
+        .replace(/\{\{baseUrl\}\}/g, baseUrl);
+    }
+    
     return `Ciao ${clientName}! 👋
 
 Sei stato invitato a unirti a ${tenantName}! 🎉
@@ -207,10 +243,45 @@ Clicca qui per completare la registrazione:
 ${invitation.url}
 
 🔢 *OPZIONE 2 - Codice manuale:*
-Vai su ${invitation.url?.split('/invite')[0] || 'la nostra app'} e inserisci il codice:
+Vai su ${baseUrl} e inserisci il codice:
 *${invitation.code}*
 
 ⏰ L'invito è valido per ${invitation.expiryDays || 7} giorni.
+
+Ti aspettiamo! 💪`;
+  };
+
+  const saveMessageTemplate = async () => {
+    setIsSavingTemplate(true);
+    try {
+      const tenantRef = doc(db, 'tenants', CURRENT_TENANT_ID);
+      await updateDoc(tenantRef, {
+        inviteMessageTemplate: inviteMessageTemplate
+      });
+      showNotification('Template salvato con successo!', 'success');
+      setShowTemplateEditor(false);
+    } catch (err) {
+      console.error('Errore salvataggio template:', err);
+      showNotification('Errore nel salvataggio del template', 'error');
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
+  const getDefaultTemplate = () => {
+    return `Ciao {{clientName}}! 👋
+
+Sei stato invitato a unirti a {{tenantName}}! 🎉
+
+📲 *OPZIONE 1 - Link diretto:*
+Clicca qui per completare la registrazione:
+{{inviteUrl}}
+
+🔢 *OPZIONE 2 - Codice manuale:*
+Vai su {{baseUrl}} e inserisci il codice:
+*{{inviteCode}}*
+
+⏰ L'invito è valido per {{expiryDays}} giorni.
 
 Ti aspettiamo! 💪`;
   };
@@ -701,13 +772,71 @@ Ti aspettiamo! 💪`;
                 </motion.button>
 
                 {/* Copia messaggio completo */}
-                <button
-                  onClick={() => copyToClipboard(getFullInviteMessage(), 'message')}
-                  className="w-full py-3 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg flex items-center justify-center gap-2 transition-colors"
-                >
-                  {copied === 'message' ? <Check size={18} /> : <Copy size={18} />}
-                  {copied === 'message' ? 'Messaggio Copiato!' : 'Copia Messaggio Completo'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => copyToClipboard(getFullInviteMessage(), 'message')}
+                    className="flex-1 py-3 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {copied === 'message' ? <Check size={18} /> : <Copy size={18} />}
+                    {copied === 'message' ? 'Copiato!' : 'Copia Messaggio'}
+                  </button>
+                  <button
+                    onClick={() => setShowTemplateEditor(!showTemplateEditor)}
+                    className="py-3 px-4 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg flex items-center justify-center gap-2 transition-colors"
+                    title="Modifica template messaggio"
+                  >
+                    <Edit3 size={18} />
+                  </button>
+                </div>
+
+                {/* Editor Template */}
+                <AnimatePresence>
+                  {showTemplateEditor && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-slate-800/60 rounded-lg p-4 border border-slate-600/50 mt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs text-slate-400 font-medium flex items-center gap-1">
+                            <FileText size={12} />
+                            TEMPLATE MESSAGGIO
+                          </p>
+                          <button
+                            onClick={() => setInviteMessageTemplate(getDefaultTemplate())}
+                            className="text-xs text-blue-400 hover:text-blue-300"
+                          >
+                            Ripristina default
+                          </button>
+                        </div>
+                        <textarea
+                          value={inviteMessageTemplate || getDefaultTemplate()}
+                          onChange={(e) => setInviteMessageTemplate(e.target.value)}
+                          className="w-full h-48 p-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white text-sm font-mono resize-none focus:outline-none focus:border-blue-500"
+                          placeholder="Scrivi il tuo template..."
+                        />
+                        <div className="mt-2 space-y-2">
+                          <p className="text-xs text-slate-500">
+                            Variabili: <code className="text-blue-400">{'{{clientName}}'}</code>, <code className="text-blue-400">{'{{tenantName}}'}</code>, <code className="text-blue-400">{'{{inviteUrl}}'}</code>, <code className="text-blue-400">{'{{inviteCode}}'}</code>, <code className="text-blue-400">{'{{expiryDays}}'}</code>, <code className="text-blue-400">{'{{baseUrl}}'}</code>
+                          </p>
+                          <button
+                            onClick={saveMessageTemplate}
+                            disabled={isSavingTemplate}
+                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
+                          >
+                            {isSavingTemplate ? (
+                              <><Loader2 className="animate-spin" size={14} /> Salvataggio...</>
+                            ) : (
+                              <><Save size={14} /> Salva come Template Predefinito</>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Info scadenza */}
