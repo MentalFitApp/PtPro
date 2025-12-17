@@ -311,6 +311,31 @@ service cloud.firestore {
         allow write: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
       }
       
+      // --- LANDING PAGES ---
+      match /landing_pages/{pageId} {
+        // LETTURA PUBBLICA per pagine pubblicate (status = 'published')
+        // Chiunque può vedere le landing pages pubbliche senza autenticazione
+        allow read: if resource.data.status == 'published' || 
+                       isTenantAdmin(tenantId) || 
+                       isPlatformCEO();
+        
+        // Lista: admin e platform CEO
+        allow list: if isTenantAdmin(tenantId) || isPlatformCEO();
+        
+        // Scrittura: solo admin
+        allow create, update, delete: if isTenantAdmin(tenantId) || isPlatformCEO();
+      }
+      
+      // --- LEADS (form submissions) ---
+      match /leads/{leadId} {
+        // Chiunque può creare un lead (compilare form pubblici)
+        allow create: if true;
+        
+        // Solo admin possono leggere e gestire i leads
+        allow read, list: if isTenantAdmin(tenantId) || isPlatformCEO();
+        allow update, delete: if isTenantAdmin(tenantId) || isPlatformCEO();
+      }
+      
       // --- LANDING PAGE CONFIG ---
       match /settings/landing {
         allow read: if true; // Pubblico per visualizzazione siti

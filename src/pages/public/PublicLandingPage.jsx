@@ -80,30 +80,26 @@ export default function PublicLandingPage() {
       // 2. Carica landing page - prova prima con nuovo sistema, poi vecchio
       let pageData = null;
       
-      // Prova nuovo sistema (landing_pages) - prima cerca senza filtro isPublished per debug
+      // Prova nuovo sistema (landing_pages) - cerca pagine pubblicate
       const newPagesRef = collection(db, `tenants/${foundTenantId}/landing_pages`);
       
-      // Prima cerca la pagina per slug (senza filtro pubblicazione)
-      const debugQuery = query(newPagesRef, where('slug', '==', slug));
-      const debugSnap = await getDocs(debugQuery);
+      // Query per pagine pubblicate con questo slug
+      const publishedQuery = query(
+        newPagesRef, 
+        where('slug', '==', slug),
+        where('status', '==', 'published')
+      );
+      const publishedSnap = await getDocs(publishedQuery);
       
-      if (!debugSnap.empty) {
-        const foundPage = debugSnap.docs[0].data();
-        console.log('🔍 Pagina trovata:', { 
-          id: debugSnap.docs[0].id,
-          slug: foundPage.slug, 
-          isPublished: foundPage.isPublished,
-          status: foundPage.status 
+      if (!publishedSnap.empty) {
+        const foundPage = publishedSnap.docs[0].data();
+        console.log('✅ Pagina pubblicata trovata:', { 
+          id: publishedSnap.docs[0].id,
+          slug: foundPage.slug
         });
-        
-        // Controlla se è pubblicata (supporta sia isPublished che status)
-        if (foundPage.isPublished === true || foundPage.status === 'published') {
-          pageData = { id: debugSnap.docs[0].id, ...foundPage, isNewSystem: true };
-        } else {
-          console.log('⚠️ Pagina non pubblicata');
-        }
+        pageData = { id: publishedSnap.docs[0].id, ...foundPage, isNewSystem: true };
       } else {
-        console.log('🔍 Nessuna pagina trovata con slug:', slug, 'in tenant:', foundTenantId);
+        console.log('🔍 Nessuna pagina pubblicata trovata con slug:', slug, 'in tenant:', foundTenantId);
       }
       
       // Se non trovata nel nuovo sistema, prova vecchio sistema
