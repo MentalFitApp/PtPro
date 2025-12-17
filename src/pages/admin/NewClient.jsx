@@ -1,15 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { db, firebaseConfig, auth } from '../../firebase.js';
-import { initializeApp, deleteApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, serverTimestamp, setDoc, collection } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getTenantDoc, getTenantCollection, getTenantSubcollection, CURRENT_TENANT_ID } from '../../config/tenant';
-import { Save, ArrowLeft, DollarSign, Copy, Check, X, AlertTriangle, Link2, Loader2 } from 'lucide-react';
+import { CURRENT_TENANT_ID } from '../../config/tenant';
+import { auth } from '../../firebase';
+import { 
+  Send, 
+  ArrowLeft, 
+  Copy, 
+  Check, 
+  X, 
+  AlertTriangle, 
+  Loader2,
+  QrCode,
+  Link2,
+  Mail,
+  Phone,
+  User,
+  Clock,
+  MessageCircle,
+  DollarSign,
+  CheckCircle2,
+  ExternalLink
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import QRCode from 'react-qr-code';
 
+const functions = getFunctions(undefined, 'europe-west1');
+
+// Componente notifica
 const Notification = ({ message, type, onDismiss }) => (
   <AnimatePresence>
     {message && (
@@ -18,12 +37,14 @@ const Notification = ({ message, type, onDismiss }) => (
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -50 }}
         className={`fixed top-5 right-5 z-50 flex items-center gap-4 p-4 rounded-lg border ${
-          type === 'error' ? 'bg-red-900/80 text-red-300 border-red-500/30' : 'bg-emerald-900/80 text-emerald-300 border-emerald-500/30'
-        } backdrop-blur-md shadow-lg`}
+          type === 'error' 
+            ? 'bg-red-900/80 text-red-300 border-red-500/30' 
+            : 'bg-emerald-900/80 text-emerald-300 border-emerald-500/30'
+        } backdrop-blur-md shadow-lg max-w-sm`}
       >
         <AlertTriangle className={type === 'error' ? 'text-red-400' : 'text-emerald-400'} />
-        <p>{message}</p>
-        <button onClick={onDismiss} className="p-2 rounded-full hover:bg-white/10 min-w-[44px] min-h-[44px] flex items-center justify-center">
+        <p className="flex-1">{message}</p>
+        <button onClick={onDismiss} className="p-2 rounded-full hover:bg-white/10">
           <X size={16} />
         </button>
       </motion.div>
@@ -31,21 +52,22 @@ const Notification = ({ message, type, onDismiss }) => (
   </AnimatePresence>
 );
 
-const generatePassword = () => {
-  const length = 8;
-  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-  let retVal = "";
-  for (let i = 0, n = charset.length; i < length; ++i) {
-    retVal += charset.charAt(Math.floor(Math.random() * n));
-  }
-  return retVal;
-};
-
 export default function NewClient() {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  const [notification, setNotification] = useState({ message: '', type: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [invitation, setInvitation] = useState(null);
+  const [copied, setCopied] = useState(null);
+  const [showQrCode, setShowQrCode] = useState(false);
+  const [useCustomDate, setUseCustomDate] = useState(false);
+  const [isRateizzato, setIsRateizzato] = useState(false);
+  const [rates, setRates] = useState([]);
+  const [newRate, setNewRate] = useState({ amount: '', dueDate: '', paid: false });
 
-  const { register, handleSubmit, reset, watch, formState: { isSubmitting, errors } } = useForm({
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
     defaultValues: {
       name: '',
       email: '',
@@ -55,30 +77,18 @@ export default function NewClient() {
       customStartDate: new Date().toISOString().split('T')[0],
       customExpiryDate: '',
       paymentAmount: '',
-      paymentMethod: ''
+      paymentMethod: '',
+      expiryDays: 7,
+      welcomeMessage: '',
     }
   });
 
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [newClientCredentials, setNewClientCredentials] = useState(null);
-  const [copied, setCopied] = useState(false);
-  const [notification, setNotification] = useState({ message: '', type: '' });
-  const [useCustomDate, setUseCustomDate] = useState(false);
-  const [isRateizzato, setIsRateizzato] = useState(false);
-  const [rates, setRates] = useState([]);
-  const [newRate, setNewRate] = useState({ amount: '', dueDate: '', paid: false });
-  const [magicLink, setMagicLink] = useState(null);
-  const [generatingLink, setGeneratingLink] = useState(false);
   const customStartDate = watch('customStartDate');
 
-  const functions = getFunctions(undefined, 'europe-west1');
-
-  // PRECOMPILAZIONE DA COLLABORATORI – AGGIORNATO E CORRETTO
+  // Pre-compilazione da collaboratori/lead
   useEffect(() => {
     if (location.state?.prefill) {
       const prefill = location.state.prefill;
-      console.log('Dati precompilati ricevuti:', prefill);
-
       reset({
         name: prefill.name || '',
         email: prefill.email || '',
@@ -88,9 +98,10 @@ export default function NewClient() {
         paymentAmount: prefill.paymentAmount ? String(prefill.paymentAmount) : '',
         paymentMethod: prefill.paymentMethod || '',
         customStartDate: prefill.customStartDate || new Date().toISOString().split('T')[0],
+        expiryDays: 7,
+        welcomeMessage: '',
       });
-
-      // Se c'è durata, forziamo "Durata in mesi"
+      
       if (prefill.duration) {
         setUseCustomDate(false);
       }
@@ -104,67 +115,15 @@ export default function NewClient() {
 
   const onSubmit = async (data) => {
     if (!auth.currentUser) {
-      showNotification("Devi essere autenticato come coach o admin per creare un cliente.", 'error');
+      showNotification("Devi essere autenticato per creare un invito.", 'error');
       navigate('/login');
       return;
     }
 
-    console.log('🔍 DEBUG - Inizio creazione cliente:', {
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      isMobile: /Mobi|Android/i.test(navigator.userAgent),
-      currentUserId: auth.currentUser.uid,
-      currentUserEmail: auth.currentUser.email
-    });
-
-    const tempPassword = generatePassword();
-    const tempApp = initializeApp(firebaseConfig, `user-creation-${Date.now()}`);
-    const tempAuth = getAuth(tempApp);
+    setIsSubmitting(true);
 
     try {
-      let startDate = new Date(data.customStartDate);
-      startDate.setHours(0, 0, 0, 0);
-      let expiryDate;
-      let isOldClient = false;
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-      if (startDate > today) {
-        showNotification("La data di inizio non può essere futura.", 'error');
-        return;
-      }
-
-      if (useCustomDate && data.customExpiryDate) {
-        expiryDate = new Date(data.customExpiryDate);
-        if (expiryDate < startDate) {
-          showNotification("La data di scadenza deve essere successiva alla data di inizio.", 'error');
-          return;
-        }
-        isOldClient = startDate < currentMonth;
-      } else if (data.duration) {
-        const durationNum = parseInt(data.duration, 10);
-        expiryDate = new Date(startDate);
-        expiryDate.setMonth(expiryDate.getMonth() + durationNum);
-        expiryDate.setDate(expiryDate.getDate() + 7);
-      } else {
-        showNotification("Seleziona una durata o una data di scadenza.", 'error');
-        return;
-      }
-
-      console.log('Inizio creazione cliente:', {
-        email: data.email,
-        name: data.name,
-        paymentAmount: data.paymentAmount,
-        userId: auth.currentUser.uid
-      });
-
-      const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email.trim(), tempPassword);
-      const newUserId = userCredential.user.uid;
-      console.log('Utente creato con UID:', newUserId);
-
-      // Calcola il prezzo totale
+      // Calcola prezzo totale
       let totalPrice = 0;
       if (isRateizzato && rates.length > 0) {
         totalPrice = rates.reduce((sum, rate) => sum + (parseFloat(rate.amount) || 0), 0);
@@ -172,138 +131,100 @@ export default function NewClient() {
         totalPrice = parseFloat(data.paymentAmount) || 0;
       }
 
-      const newClientRef = getTenantDoc(db, 'clients', newUserId);
+      // Calcola date
+      let startDate = new Date(data.customStartDate);
+      let expiryDate;
+      
+      if (useCustomDate && data.customExpiryDate) {
+        expiryDate = new Date(data.customExpiryDate);
+      } else if (data.duration) {
+        expiryDate = new Date(startDate);
+        expiryDate.setMonth(expiryDate.getMonth() + parseInt(data.duration, 10));
+        expiryDate.setDate(expiryDate.getDate() + 7); // +7 giorni di grazia
+      }
+
+      // Prepara i dati per l'invito
       const clientData = {
-        ...data,
+        name: data.name.trim(),
+        email: data.email?.trim() || null,
+        phone: data.phone?.trim() || null,
+        planType: data.planType,
+        duration: data.duration ? parseInt(data.duration, 10) : null,
+        startDate: startDate.toISOString(),
+        expiryDate: expiryDate?.toISOString() || null,
+        paymentAmount: totalPrice > 0 ? totalPrice : null,
+        paymentMethod: data.paymentMethod || null,
         rateizzato: isRateizzato,
         rate: isRateizzato ? rates : [],
-        name: data.name,
-        name_lowercase: data.name.toLowerCase(),
-        email: data.email.trim(),
-        phone: data.phone || null,
-        status: 'attivo',
-        planType: data.planType,
-        createdAt: serverTimestamp(),
-        startDate,
-        scadenza: expiryDate,
-        isClient: true,
-        firstLogin: true,
-        tempPassword: tempPassword,
-        isOldClient,
-        assignedCoaches: [auth.currentUser.uid],
-        statoPercorso: 'Attivo',
-        price: totalPrice > 0 ? totalPrice : null
       };
-      
-      console.log('🔍 DEBUG - Tentativo scrittura documento cliente:', {
-        path: newClientRef.path,
-        userId: newUserId,
-        currentUser: auth.currentUser.uid,
-        dataKeys: Object.keys(clientData)
-      });
-      
-      await setDoc(newClientRef, clientData);
-      console.log('✅ Documento cliente creato:', newClientRef.path);
 
-      if (data.paymentAmount) {
-        const paymentRef = doc(getTenantSubcollection(db, 'clients', newUserId, 'payments'));
-        const paymentData = {
-          amount: parseFloat(data.paymentAmount),
-          duration: useCustomDate ? 'personalizzata' : `${parseInt(data.duration, 10)} mes${parseInt(data.duration, 10) > 1 ? 'i' : 'e'}`,
-          paymentMethod: data.paymentMethod || 'N/A',
-          paymentDate: serverTimestamp(),
-          // isPast NON va sul pagamento - il pagamento è fatto OGGI
-          // isOldClient resta sul documento cliente per indicare che è storico
-          createdAt: serverTimestamp()
-        };
-        console.log('Tentativo creazione pagamento:', { paymentRef: paymentRef.path, paymentData });
-        await setDoc(paymentRef, paymentData);
-        console.log('Documento pagamento creato:', paymentRef.path);
-      }
-
-      setNewClientCredentials({ name: data.name, email: data.email.trim(), password: tempPassword, clientId: newUserId });
-      
-      // Genera automaticamente il Magic Link
-      try {
-        const generateMagicLink = httpsCallable(functions, 'generateMagicLink');
-        const linkResult = await generateMagicLink({
-          clientId: newUserId,
-          tenantId: CURRENT_TENANT_ID,
-          email: data.email.trim(),
-          name: data.name
-        });
-        if (linkResult.data.success) {
-          setMagicLink(linkResult.data.magicLink);
-          console.log('✅ Magic Link generato:', linkResult.data.magicLink);
-        }
-      } catch (linkError) {
-        console.error('⚠️ Errore generazione Magic Link:', linkError);
-        // Non blocchiamo, il cliente può comunque usare le credenziali normali
-      }
-      
-      setShowSuccessModal(true);
-      showNotification('Cliente creato con successo!', 'success');
-      reset();
-    } catch (error) {
-      console.error("❌ Errore nella creazione del cliente:", {
-        code: error.code,
-        message: error.message,
-        stack: error.stack,
-        data,
-        isMobile: /Mobi|Android/i.test(navigator.userAgent),
-        userAgent: navigator.userAgent
+      const createClientInvitation = httpsCallable(functions, 'createClientInvitation');
+      const result = await createClientInvitation({
+        tenantId: CURRENT_TENANT_ID,
+        clientData,
+        expiryDays: parseInt(data.expiryDays, 10) || 7,
+        welcomeMessage: data.welcomeMessage?.trim() || null,
       });
-      
-      if (error.code === 'permission-denied') {
-        showNotification(`Permessi insufficienti per creare il cliente. Errore: ${error.message}. Verifica i tuoi ruoli in Firestore.`, 'error');
-      } else if (error.code === 'auth/email-already-in-use') {
-        showNotification('Questa email è già in uso da un altro utente.', 'error');
+
+      if (result.data.success) {
+        setInvitation(result.data);
+        setShowSuccessModal(true);
+        showNotification('Invito creato con successo!', 'success');
       } else {
-        showNotification(`Errore: ${error.code || 'unknown'} - ${error.message}`, 'error');
+        throw new Error(result.data.error || 'Errore sconosciuto');
       }
+    } catch (error) {
+      console.error('Errore creazione invito:', error);
+      showNotification(error.message || 'Errore nella creazione dell\'invito', 'error');
     } finally {
-      await deleteApp(tempApp);
+      setIsSubmitting(false);
     }
   };
 
-  const copyToClipboard = () => {
-    let text;
-    
-    if (magicLink) {
-      // Usa il Magic Link (preferito)
-      text = `Ciao ${newClientCredentials.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪 Tu come stai?\n\n🔗 LINK ACCESSO RAPIDO (valido 48h):\n${magicLink}\n\n⚠️ Clicca il link sopra per impostare la tua password e accedere direttamente!`;
-    } else {
-      // Fallback alle credenziali tradizionali
-      const loginLink = 'https://www.flowfitpro.it/login';
-      text = `Ciao ${newClientCredentials.name}, ti invio il link per entrare nel tuo profilo personale dove inizialmente potrai iniziare a caricare i check settimanalmente, vedere i pagamenti e scadenza abbonamento. A breve ci saranno altre novità che potrai vedere su questa piattaforma: Alimentazione, community, videocorsi, e altro ancora 💪 Tu come stai?\n\nLink: ${loginLink}\nEmail: ${newClientCredentials.email}\nPassword Temporanea: ${newClientCredentials.password}\n\n⚠️ IMPORTANTE: Al primo accesso ti verrà chiesto di impostare una password personale.`;
-    }
-    
+  const copyToClipboard = (text, type) => {
     navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    setCopied(type);
+    setTimeout(() => setCopied(null), 2000);
   };
 
-  const copyMagicLinkOnly = () => {
-    if (magicLink) {
-      navigator.clipboard.writeText(magicLink);
-      showNotification('Magic Link copiato!', 'success');
+  const openWhatsApp = () => {
+    if (invitation?.whatsappLink) {
+      window.open(invitation.whatsappLink, '_blank');
     }
   };
 
-  const copyPasswordOnly = () => {
-    navigator.clipboard.writeText(newClientCredentials.password);
-    showNotification('Password copiata negli appunti!', 'success');
-  };
+  const getFullInviteMessage = () => {
+    if (!invitation) return '';
+    
+    const clientName = invitation.clientData?.name || 'Cliente';
+    return `Ciao ${clientName}! 👋
 
-  const copyEmailOnly = () => {
-    navigator.clipboard.writeText(newClientCredentials.email);
-    showNotification('Email copiata negli appunti!', 'success');
+Sei stato invitato a unirti alla nostra piattaforma fitness! 
+
+🔗 Usa questo link per registrarti:
+${invitation.inviteLink}
+
+📱 Oppure inserisci il codice: ${invitation.code}
+
+⏰ L'invito scade tra ${invitation.expiryDays || 7} giorni.
+
+Ti aspettiamo! 💪`;
   };
 
   const handleCloseModal = () => {
     setShowSuccessModal(false);
+    setInvitation(null);
     reset();
     navigate('/clients');
+  };
+
+  const handleCreateAnother = () => {
+    setShowSuccessModal(false);
+    setInvitation(null);
+    reset();
+    setRates([]);
+    setIsRateizzato(false);
+    setUseCustomDate(false);
   };
 
   const inputStyle = "w-full p-3 bg-slate-800/40 border border-slate-700/50 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder:text-slate-500 transition-colors";
@@ -314,14 +235,28 @@ export default function NewClient() {
 
   return (
     <>
-      <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
-      <motion.div className="w-full max-w-2xl mx-auto px-4 sm:px-0" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <Notification 
+        message={notification.message} 
+        type={notification.type} 
+        onDismiss={() => setNotification({ message: '', type: '' })} 
+      />
+      
+      <motion.div 
+        className="w-full max-w-2xl mx-auto px-4 sm:px-0" 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }}
+      >
         {/* Header */}
-        <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6 mb-6">
+        <div className={sectionStyle + " mb-6"}>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl sm:text-2xl font-semibold text-white">Onboarding Nuovo Cliente</h1>
-              <p className="text-sm text-slate-400 mt-1">Inserisci i dati per creare un nuovo cliente</p>
+              <h1 className="text-xl sm:text-2xl font-semibold text-white flex items-center gap-2">
+                <Send className="text-blue-400" size={24} />
+                Nuovo Cliente
+              </h1>
+              <p className="text-sm text-slate-400 mt-1">
+                Crea un invito e invialo via WhatsApp, Link o QR Code
+              </p>
             </div>
             <button 
               onClick={() => navigate('/clients')} 
@@ -331,226 +266,335 @@ export default function NewClient() {
             </button>
           </div>
         </div>
-        
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Sezione 1: Anagrafica */}
           <div className={sectionStyle}>
-            <h4 className={headingStyle}>1. Anagrafica</h4>
+            <h4 className={headingStyle}>
+              <User size={18} className="text-blue-400" />
+              1. Dati Cliente
+            </h4>
             <div className="space-y-4">
               <div>
-                <label className={labelStyle}>Nome e Cognome*</label>
+                <label className={labelStyle}>Nome e Cognome *</label>
                 <input 
                   {...register('name', { 
                     required: 'Il nome è obbligatorio',
-                    minLength: { value: 2, message: 'Il nome deve essere lungo almeno 2 caratteri' }
+                    minLength: { value: 2, message: 'Minimo 2 caratteri' }
                   })} 
-                  className={inputStyle} 
+                  className={inputStyle}
+                  placeholder="Mario Rossi"
                 />
                 {errors.name && <p className={errorStyle}>{errors.name.message}</p>}
               </div>
-              <div>
-                <label className={labelStyle}>Email (sarà il suo username)*</label>
-                <input 
-                  type="email" 
-                  {...register('email', { 
-                    required: 'L\'email è obbligatoria',
-                    pattern: { 
-                      value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-                      message: 'Inserisci un\'email valida'
-                    }
-                  })} 
-                  className={inputStyle} 
-                />
-                {errors.email && <p className={errorStyle}>{errors.email.message}</p>}
-              </div>
-              <div>
-                <label className={labelStyle}>Telefono (Opzionale)</label>
-                <input 
-                  {...register('phone', { 
-                    pattern: { 
-                      value: /^\+?[0-9]{7,15}$/,
-                      message: 'Inserisci un numero di telefono valido (7-15 cifre)'
-                    }
-                  })} 
-                  className={inputStyle} 
-                />
-                {errors.phone && <p className={errorStyle}>{errors.phone.message}</p>}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelStyle}>
+                    <Mail size={14} className="inline mr-1" />
+                    Email (opzionale)
+                  </label>
+                  <input 
+                    type="email" 
+                    {...register('email', {
+                      pattern: { 
+                        value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                        message: 'Email non valida'
+                      }
+                    })} 
+                    className={inputStyle}
+                    placeholder="mario@email.com"
+                  />
+                  {errors.email && <p className={errorStyle}>{errors.email.message}</p>}
+                </div>
+                
+                <div>
+                  <label className={labelStyle}>
+                    <Phone size={14} className="inline mr-1" />
+                    Telefono (opzionale)
+                  </label>
+                  <input 
+                    {...register('phone')} 
+                    className={inputStyle}
+                    placeholder="+39 333 1234567"
+                  />
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Sezione 2: Percorso */}
           <div className={sectionStyle}>
-            <h4 className={headingStyle}>2. Dettagli Percorso</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className={labelStyle}>Tipo di Percorso*</label>
-                <select 
-                  {...register('planType', { required: 'Il tipo di percorso è obbligatorio' })} 
-                  className={inputStyle}
-                >
-                  <option value="">Seleziona tipo</option>
-                  <option value="allenamento">Solo Allenamento</option>
-                  <option value="alimentazione">Solo Alimentazione</option>
-                  <option value="completo">Completo</option>
-                </select>
-                {errors.planType && <p className={errorStyle}>{errors.planType.message}</p>}
-              </div>
-              <div>
-                <label className={labelStyle}>Modalità Scadenza*</label>
-                <div className="flex items-center gap-4 mb-2">
-                  <label className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      checked={!useCustomDate} 
-                      onChange={() => setUseCustomDate(false)} 
-                      className="text-rose-500" 
-                    /> 
-                    Durata in mesi
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      checked={useCustomDate} 
-                      onChange={() => setUseCustomDate(true)} 
-                      className="text-rose-500" 
-                    /> 
-                    Data personalizzata
-                  </label>
+            <h4 className={headingStyle}>
+              <Clock size={18} className="text-emerald-400" />
+              2. Dettagli Percorso
+            </h4>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelStyle}>Tipo di Percorso *</label>
+                  <select 
+                    {...register('planType', { required: 'Seleziona il tipo di percorso' })} 
+                    className={inputStyle}
+                  >
+                    <option value="">Seleziona tipo</option>
+                    <option value="allenamento">Solo Allenamento</option>
+                    <option value="alimentazione">Solo Alimentazione</option>
+                    <option value="completo">Completo</option>
+                  </select>
+                  {errors.planType && <p className={errorStyle}>{errors.planType.message}</p>}
                 </div>
-                {!useCustomDate ? (
-                  <div>
-                    <label className={labelStyle}>Durata del Percorso*</label>
-                    <select 
-                      {...register('duration', { required: 'La durata è obbligatoria quando si usa "Durata in mesi"' })} 
-                      className={inputStyle}
-                    >
-                      <option value="">Seleziona durata</option>
-                      {[...Array(24).keys()].map(i => (
-                        <option key={i+1} value={i+1}>{i+1} mes{i > 0 ? 'i' : 'e'}</option>
-                      ))}
-                    </select>
-                    {errors.duration && <p className={errorStyle}>{errors.duration.message}</p>}
+                
+                <div>
+                  <label className={labelStyle}>Modalità Scadenza</label>
+                  <div className="flex items-center gap-4 mt-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        checked={!useCustomDate} 
+                        onChange={() => setUseCustomDate(false)} 
+                        className="text-blue-500" 
+                      /> 
+                      <span className="text-sm text-slate-300">Durata in mesi</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        checked={useCustomDate} 
+                        onChange={() => setUseCustomDate(true)} 
+                        className="text-blue-500" 
+                      /> 
+                      <span className="text-sm text-slate-300">Data personalizzata</span>
+                    </label>
                   </div>
-                ) : (
+                </div>
+              </div>
+
+              {!useCustomDate ? (
+                <div>
+                  <label className={labelStyle}>Durata del Percorso *</label>
+                  <select 
+                    {...register('duration', { 
+                      required: !useCustomDate ? 'Seleziona la durata' : false 
+                    })} 
+                    className={inputStyle}
+                  >
+                    <option value="">Seleziona durata</option>
+                    {[...Array(24).keys()].map(i => (
+                      <option key={i+1} value={i+1}>{i+1} mes{i > 0 ? 'i' : 'e'}</option>
+                    ))}
+                  </select>
+                  {errors.duration && <p className={errorStyle}>{errors.duration.message}</p>}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className={labelStyle}>Data di Inizio*</label>
+                    <label className={labelStyle}>Data di Inizio</label>
                     <input 
                       type="date" 
-                      {...register('customStartDate', { 
-                        required: 'La data di inizio è obbligatoria quando si usa "Data personalizzata"',
-                        validate: value => {
-                          const start = new Date(value);
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
-                          return start <= today || 'La data di inizio non può essere futura';
-                        }
-                      })} 
+                      {...register('customStartDate')} 
                       className={inputStyle} 
                     />
-                    {errors.customStartDate && <p className={errorStyle}>{errors.customStartDate.message}</p>}
-                    <label className={labelStyle}>Data di Scadenza*</label>
+                  </div>
+                  <div>
+                    <label className={labelStyle}>Data di Scadenza *</label>
                     <input 
                       type="date" 
                       {...register('customExpiryDate', { 
-                        required: 'La data di scadenza è obbligatoria quando si usa "Data personalizzata"',
+                        required: useCustomDate ? 'Inserisci la data di scadenza' : false,
                         validate: value => {
                           if (!useCustomDate) return true;
                           const start = new Date(customStartDate);
                           const expiry = new Date(value);
-                          return expiry >= start || 'La data di scadenza deve essere successiva alla data di inizio';
+                          return expiry >= start || 'La scadenza deve essere dopo l\'inizio';
                         }
                       })} 
                       className={inputStyle} 
                     />
                     {errors.customExpiryDate && <p className={errorStyle}>{errors.customExpiryDate.message}</p>}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Sezione 3: Pagamento */}
           <div className={sectionStyle}>
-            <h4 className={headingStyle}><DollarSign size={20}/> 3. Primo Pagamento (Opzionale)</h4>
+            <h4 className={headingStyle}>
+              <DollarSign size={18} className="text-amber-400" />
+              3. Pagamento (Opzionale)
+            </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={labelStyle}>Importo Pagato (€)</label>
+                <label className={labelStyle}>Importo (€)</label>
                 <input 
                   type="number" 
-                  step="0.01" 
-                  {...register('paymentAmount', { 
-                    validate: value => !value || parseFloat(value) > 0 || 'L\'importo deve essere maggiore di 0'
-                  })} 
-                  className={inputStyle} 
+                  step="0.01"
+                  {...register('paymentAmount')} 
+                  className={inputStyle}
+                  placeholder="150.00"
                 />
-                {errors.paymentAmount && <p className={errorStyle}>{errors.paymentAmount.message}</p>}
               </div>
               <div>
                 <label className={labelStyle}>Metodo di Pagamento</label>
                 <input 
                   {...register('paymentMethod')} 
-                  className={inputStyle} 
-                  placeholder="Es. Bonifico" 
+                  className={inputStyle}
+                  placeholder="Es. Bonifico, Contanti..."
+                />
+              </div>
+            </div>
+
+            {/* Rateizzazione */}
+            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-700/50">
+              <label className="font-medium text-white text-sm">Pagamento Rateizzato:</label>
+              <input 
+                type="checkbox" 
+                checked={isRateizzato} 
+                onChange={e => setIsRateizzato(e.target.checked)} 
+                className="rounded" 
+              />
+            </div>
+
+            {isRateizzato && (
+              <div className="mt-4 space-y-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-700/50">
+                        <th className="px-3 py-2 text-left text-slate-400 font-medium">Importo</th>
+                        <th className="px-3 py-2 text-left text-slate-400 font-medium">Scadenza</th>
+                        <th className="px-3 py-2 text-left text-slate-400 font-medium">Pagata</th>
+                        <th className="px-3 py-2 text-left text-slate-400 font-medium">Azioni</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rates.length > 0 ? rates.map((rate, idx) => (
+                        <tr key={idx} className="border-b border-slate-700/50">
+                          <td className="px-3 py-2 text-white">€{rate.amount}</td>
+                          <td className="px-3 py-2 text-slate-300">
+                            {rate.dueDate ? new Date(rate.dueDate).toLocaleDateString('it-IT') : '-'}
+                          </td>
+                          <td className="px-3 py-2">
+                            <input 
+                              type="checkbox" 
+                              checked={rate.paid} 
+                              onChange={() => {
+                                const updated = rates.map((r, i) => i === idx ? { ...r, paid: !r.paid } : r);
+                                setRates(updated);
+                              }} 
+                              className="rounded" 
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <button 
+                              type="button" 
+                              onClick={() => setRates(rates.filter((_, i) => i !== idx))} 
+                              className="text-red-400 hover:text-red-300 text-sm"
+                            >
+                              Elimina
+                            </button>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan={4} className="text-center py-4 text-slate-400">Nessuna rata</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                
+                <div className="flex flex-wrap gap-3">
+                  <input 
+                    type="number" 
+                    placeholder="Importo (€)" 
+                    value={newRate.amount} 
+                    onChange={e => setNewRate({ ...newRate, amount: e.target.value })} 
+                    className="flex-1 min-w-[100px] p-3 rounded-lg bg-slate-800/40 border border-slate-700/50 text-white placeholder:text-slate-500" 
+                  />
+                  <input 
+                    type="date" 
+                    value={newRate.dueDate} 
+                    onChange={e => setNewRate({ ...newRate, dueDate: e.target.value })} 
+                    className="flex-1 min-w-[140px] p-3 rounded-lg bg-slate-800/40 border border-slate-700/50 text-white" 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => { 
+                      if (newRate.amount && newRate.dueDate) { 
+                        setRates([...rates, newRate]); 
+                        setNewRate({ amount: '', dueDate: '', paid: false }); 
+                      } 
+                    }} 
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-lg font-medium transition-colors"
+                  >
+                    Aggiungi rata
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sezione 4: Impostazioni Invito */}
+          <div className={sectionStyle}>
+            <h4 className={headingStyle}>
+              <Link2 size={18} className="text-purple-400" />
+              4. Impostazioni Invito
+            </h4>
+            <div className="space-y-4">
+              <div>
+                <label className={labelStyle}>Validità Invito</label>
+                <select {...register('expiryDays')} className={inputStyle}>
+                  <option value="3">3 giorni</option>
+                  <option value="7">7 giorni (consigliato)</option>
+                  <option value="14">14 giorni</option>
+                  <option value="30">30 giorni</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className={labelStyle}>
+                  <MessageCircle size={14} className="inline mr-1" />
+                  Messaggio di Benvenuto (opzionale)
+                </label>
+                <textarea 
+                  {...register('welcomeMessage')} 
+                  className={inputStyle + " h-24 resize-none"}
+                  placeholder="Es: Benvenuto nel team! Non vedo l'ora di iniziare questo percorso insieme..."
                 />
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 mt-2 bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4">
-            <label className="font-medium text-white text-sm">Pagamento Rateizzato:</label>
-            <input type="checkbox" checked={isRateizzato} onChange={e => setIsRateizzato(e.target.checked)} className="rounded" />
-          </div>
-          {isRateizzato && (
-            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
-              <h3 className="text-base font-semibold text-white mb-4">Rate iniziali</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-700/50">
-                      <th className="px-3 py-2 text-left text-slate-400 font-medium">Importo</th>
-                      <th className="px-3 py-2 text-left text-slate-400 font-medium">Scadenza</th>
-                      <th className="px-3 py-2 text-left text-slate-400 font-medium">Pagata</th>
-                      <th className="px-3 py-2 text-left text-slate-400 font-medium">Azioni</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                  {rates.length > 0 ? rates.map((rate, idx) => (
-                    <tr key={idx} className="border-b border-slate-700/50">
-                      <td className="px-3 py-2 text-white">€{rate.amount}</td>
-                      <td className="px-3 py-2 text-slate-300">{rate.dueDate ? new Date(rate.dueDate).toLocaleDateString() : '-'}</td>
-                      <td className="px-3 py-2">
-                        <input type="checkbox" checked={rate.paid} onChange={() => {
-                          const updated = rates.map((r, i) => i === idx ? { ...r, paid: !r.paid } : r);
-                          setRates(updated);
-                        }} className="rounded" />
-                      </td>
-                      <td className="px-3 py-2">
-                        <button type="button" onClick={() => setRates(rates.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-300 text-sm transition-colors">Elimina</button>
-                      </td>
-                    </tr>
-                  )) : (
-                    <tr><td colSpan={4} className="text-center py-4 text-slate-400">Nessuna rata</td></tr>
-                  )}
-                </tbody>
-              </table>
-              </div>
-              <div className="flex flex-wrap gap-3 mt-4">
-                <input type="number" placeholder="Importo (€)" value={newRate.amount} onChange={e => setNewRate({ ...newRate, amount: e.target.value })} className="flex-1 min-w-[100px] p-3 rounded-lg bg-slate-800/40 border border-slate-700/50 text-white placeholder:text-slate-500" />
-                <input type="date" value={newRate.dueDate} onChange={e => setNewRate({ ...newRate, dueDate: e.target.value })} className="flex-1 min-w-[140px] p-3 rounded-lg bg-slate-800/40 border border-slate-700/50 text-white" />
-                <button type="button" onClick={() => { if (newRate.amount && newRate.dueDate) { setRates([...rates, newRate]); setNewRate({ amount: '', dueDate: '', paid: false }); } }} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-lg font-medium transition-colors">Aggiungi rata</button>
-              </div>
-            </div>
-          )}
+
+          {/* Submit Button */}
           <div className="flex justify-center md:justify-end pt-2 pb-4">
             <motion.button
               type="submit"
               disabled={isSubmitting}
-              className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:opacity-50 font-medium disabled:cursor-not-allowed"
+              className="w-full md:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:opacity-50 font-medium disabled:cursor-not-allowed"
               whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
               whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
             >
-              <Save size={18} /> {isSubmitting ? 'Creazione in corso...' : 'Crea Cliente'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} />
+                  Creazione in corso...
+                </>
+              ) : (
+                <>
+                  <Send size={18} />
+                  Crea Invito
+                </>
+              )}
             </motion.button>
           </div>
         </form>
       </motion.div>
+
+      {/* Success Modal */}
       <AnimatePresence>
-        {showSuccessModal && (
+        {showSuccessModal && invitation && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -558,89 +602,133 @@ export default function NewClient() {
             className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4"
           >
             <motion.div
-              className="bg-slate-900/95 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 text-center w-full max-w-md shadow-2xl"
+              className="bg-slate-900/95 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
             >
-              <h2 className="text-xl font-semibold text-white">Cliente Creato!</h2>
-              <p className="text-slate-400 text-sm mt-2">
-                {magicLink ? 'Invia il Magic Link al cliente per un accesso rapido.' : 'Copia e invia le credenziali al cliente.'}
-              </p>
-              
-              {/* Magic Link Section - Mostrato se disponibile */}
-              {magicLink && (
-                <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-left">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-emerald-400 font-medium">🔗 Magic Link (valido 48h)</p>
-                    <button
-                      onClick={copyMagicLinkOnly}
-                      className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
-                    >
-                      <Copy size={12} /> Copia
-                    </button>
-                  </div>
-                  <p className="font-mono text-emerald-300 text-xs break-all select-all">{magicLink}</p>
-                  <p className="text-xs text-emerald-400/70 mt-2">✨ Il cliente clicca il link → imposta password → accede!</p>
+              {/* Header */}
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="text-emerald-400" size={32} />
                 </div>
-              )}
-              
-              {/* Credenziali tradizionali - sempre visibili come backup */}
-              <div className={`my-4 space-y-3 text-left ${magicLink ? 'opacity-60' : ''}`}>
-                {magicLink && (
-                  <p className="text-xs text-slate-500 text-center mb-2">─── Credenziali di backup ───</p>
-                )}
-                <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/50">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-slate-400">Email (Username)</p>
-                    <button
-                      onClick={copyEmailOnly}
-                      className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
-                    >
-                      <Copy size={12} /> Copia
-                    </button>
-                  </div>
-                  <p className="font-mono text-white break-all text-sm">{newClientCredentials.email}</p>
-                </div>
-                {!magicLink && (
-                  <div className="bg-slate-800/40 p-4 rounded-lg border border-slate-700/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs text-slate-400">Password Temporanea</p>
-                      <button
-                        onClick={copyPasswordOnly}
-                        className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
-                      >
-                        <Copy size={12} /> Copia
-                      </button>
-                    </div>
-                    <p className="font-mono text-white break-all select-all">{newClientCredentials.password}</p>
-                    <p className="text-xs text-amber-400 mt-2">⚠️ Attenzione agli spazi! Copia esattamente</p>
-                  </div>
-                )}
+                <h2 className="text-xl font-semibold text-white">Invito Creato!</h2>
+                <p className="text-slate-400 text-sm mt-1">
+                  Scegli come inviare l'invito a {invitation.clientData?.name}
+                </p>
               </div>
-              
-              <motion.button
-                onClick={copyToClipboard}
-                className={`w-full py-3 ${magicLink ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-colors`}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {copied ? (
-                  <>
-                    <Check size={18} /> Copiato!
-                  </>
-                ) : (
-                  <>
-                    <Copy size={16} /> {magicLink ? 'Copia Messaggio con Magic Link' : 'Copia Credenziali'}
-                  </>
-                )}
-              </motion.button>
+
+              {/* Codice Invito */}
+              <div className="bg-slate-800/40 rounded-lg p-4 mb-4 border border-slate-700/50">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-slate-400 font-medium">CODICE INVITO</p>
+                  <button
+                    onClick={() => copyToClipboard(invitation.code, 'code')}
+                    className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                  >
+                    {copied === 'code' ? <Check size={12} /> : <Copy size={12} />}
+                    {copied === 'code' ? 'Copiato!' : 'Copia'}
+                  </button>
+                </div>
+                <p className="font-mono text-2xl text-white tracking-[0.3em] text-center select-all">
+                  {invitation.code}
+                </p>
+              </div>
+
+              {/* Link Invito */}
+              <div className="bg-slate-800/40 rounded-lg p-4 mb-4 border border-slate-700/50">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-slate-400 font-medium">
+                    <Link2 size={12} className="inline mr-1" />
+                    LINK INVITO
+                  </p>
+                  <button
+                    onClick={() => copyToClipboard(invitation.inviteLink, 'link')}
+                    className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                  >
+                    {copied === 'link' ? <Check size={12} /> : <Copy size={12} />}
+                    {copied === 'link' ? 'Copiato!' : 'Copia'}
+                  </button>
+                </div>
+                <p className="font-mono text-xs text-slate-300 break-all select-all">
+                  {invitation.inviteLink}
+                </p>
+              </div>
+
+              {/* QR Code Toggle */}
               <button
-                onClick={handleCloseModal}
-                className="w-full mt-3 py-2 text-slate-400 hover:text-white text-sm text-center transition-colors"
+                onClick={() => setShowQrCode(!showQrCode)}
+                className="w-full py-3 px-4 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 rounded-lg flex items-center justify-center gap-2 text-slate-300 transition-colors mb-4"
               >
-                Chiudi
+                <QrCode size={18} />
+                {showQrCode ? 'Nascondi' : 'Mostra'} QR Code
               </button>
+
+              {/* QR Code */}
+              <AnimatePresence>
+                {showQrCode && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden mb-4"
+                  >
+                    <div className="bg-white rounded-lg p-4 flex justify-center">
+                      <QRCode value={invitation.inviteLink} size={180} />
+                    </div>
+                    <p className="text-xs text-slate-400 text-center mt-2">
+                      Il cliente può scansionare questo QR per registrarsi
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Azioni principali */}
+              <div className="space-y-3">
+                {/* WhatsApp - Azione principale */}
+                <motion.button
+                  onClick={openWhatsApp}
+                  className="w-full py-3 bg-[#25D366] hover:bg-[#20BD5A] text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <MessageCircle size={18} />
+                  Invia su WhatsApp
+                </motion.button>
+
+                {/* Copia messaggio completo */}
+                <button
+                  onClick={() => copyToClipboard(getFullInviteMessage(), 'message')}
+                  className="w-full py-3 bg-slate-700/50 hover:bg-slate-700 text-white rounded-lg flex items-center justify-center gap-2 transition-colors"
+                >
+                  {copied === 'message' ? <Check size={18} /> : <Copy size={18} />}
+                  {copied === 'message' ? 'Messaggio Copiato!' : 'Copia Messaggio Completo'}
+                </button>
+              </div>
+
+              {/* Info scadenza */}
+              <div className="mt-4 pt-4 border-t border-slate-700/50 text-center">
+                <p className="text-xs text-slate-400 flex items-center justify-center gap-1">
+                  <Clock size={12} />
+                  Invito valido per {invitation.expiryDays || 7} giorni
+                </p>
+              </div>
+
+              {/* Azioni secondarie */}
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={handleCreateAnother}
+                  className="flex-1 py-2 text-blue-400 hover:text-blue-300 text-sm text-center transition-colors border border-slate-700/50 rounded-lg"
+                >
+                  Crea altro invito
+                </button>
+                <button
+                  onClick={handleCloseModal}
+                  className="flex-1 py-2 text-slate-400 hover:text-white text-sm text-center transition-colors"
+                >
+                  Vai ai clienti
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

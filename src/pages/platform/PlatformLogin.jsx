@@ -41,8 +41,16 @@ export default function PlatformLogin() {
       const platformAdminData = platformAdminDoc.data();
       
       if (!platformAdminData?.uids?.includes(user.uid)) {
+        // IMPORTANTE: Elimina l'account Auth se non è un Platform CEO autorizzato
+        console.log('⚠️ Utente non autorizzato come Platform CEO, eliminazione account Auth...');
+        try {
+          await user.delete();
+          console.log('✅ Account Auth eliminato per utente non autorizzato');
+        } catch (deleteError) {
+          console.error('❌ Errore eliminazione account Auth:', deleteError);
+          await auth.signOut();
+        }
         setError('Accesso negato: solo CEO della piattaforma può accedere');
-        await auth.signOut();
         return;
       }
 

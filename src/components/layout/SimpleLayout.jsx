@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Home, Apple, Dumbbell, UsersRound } from 'lucide-react';
 import { motion } from 'framer-motion';
-import NotificationPermissionModal from '../notifications/NotificationPermissionModal';
+// import NotificationPermissionModal from '../notifications/NotificationPermissionModal'; // TODO: riabilitare quando notifiche implementate
 
 // Bottom nav component for mobile (matching MainLayout style)
 const BottomNav = () => {
@@ -167,8 +167,8 @@ export default function SimpleLayout() {
           <BottomNav />
         </div>
 
-        {/* Modale richiesta permessi notifiche */}
-        <NotificationPermissionModal />
+        {/* Modale richiesta permessi notifiche - TODO: riabilitare quando notifiche implementate */}
+        {/* <NotificationPermissionModal /> */}
 
         {/* SCROLLBAR NASCOSTA */}
         <style>{`

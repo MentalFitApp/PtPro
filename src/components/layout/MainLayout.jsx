@@ -10,9 +10,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { isSuperAdmin } from '../../utils/superadmin';
 import { auth, db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import ThemeToggle from '../ui/ThemeToggle';
+// import ThemeToggle from '../ui/ThemeToggle'; // TODO: riabilitare quando light mode pronta
 import { defaultBranding } from '../../config/tenantBranding';
-import NotificationPermissionModal from '../notifications/NotificationPermissionModal';
+// import NotificationPermissionModal from '../notifications/NotificationPermissionModal'; // TODO: riabilitare quando notifiche implementate
 import { 
   pageVariants, 
   fadeVariants, 
@@ -709,7 +709,7 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
             className="w-full h-full object-cover"
           />
         </button>
-        <ThemeToggle />
+        {/* ThemeToggle rimosso - dark mode forzata */}
         {!isCollapsed && (
           <button
             onClick={() => navigate('/notifications')}
@@ -994,7 +994,7 @@ export default function MainLayout() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <ThemeToggle />
+                {/* ThemeToggle rimosso - dark mode forzata */}
                 {/* Menu utente con foto profilo - Dropdown */}
                 <div className="relative" data-profile-menu>
                   <button
@@ -1089,8 +1089,8 @@ export default function MainLayout() {
           </main>
         </div>
 
-        {/* Modal richiesta permessi notifiche (primo accesso) */}
-        {!isAuthPage && <NotificationPermissionModal />}
+        {/* Modal richiesta permessi notifiche (primo accesso) - TODO: riabilitare quando notifiche implementate */}
+        {/* {!isAuthPage && <NotificationPermissionModal />} */}
 
         {/* Bottom navigation mobile con dashboard in evidenza */}
         {showSidebar && isMobile && !isAuthPage && (

@@ -1948,3 +1948,670 @@ exports.sendBirthdayWishes = onSchedule(
     }
   }
 );
+
+// ============================================
+// SISTEMA INVITI - Onboarding Modernizzato
+// ============================================
+
+/**
+ * Genera un codice invito breve univoco
+ * Formato: 6 caratteri alfanumerici uppercase (es: ABC123)
+ */
+function generateInviteCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Esclusi I,O,0,1 per evitare confusione
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+/**
+ * Crea un invito per un nuovo cliente
+ * L'invito può essere condiviso via link, QR code o codice breve
+ * 
+ * @param {Object} request.data
+ * @param {string} request.data.tenantId - ID del tenant
+ * @param {string} request.data.name - Nome del cliente (opzionale)
+ * @param {string} request.data.email - Email del cliente (opzionale)
+ * @param {string} request.data.phone - Telefono del cliente (opzionale)
+ * @param {string} request.data.planType - Tipo piano (opzionale)
+ * @param {number} request.data.duration - Durata in mesi (opzionale)
+ * @param {number} request.data.expiryDays - Giorni validità invito (default 7)
+ * @param {string} request.data.welcomeMessage - Messaggio personalizzato (opzionale)
+ */
+exports.createClientInvitation = onCall(async (request) => {
+  // Rate limiting
+  enforceRateLimit(request, 'createClientInvitation');
+  
+  // Richiede autenticazione (solo admin/coach)
+  requireAuth(request);
+  
+  // Validazione input
+  const { 
+    tenantId, 
+    name, 
+    email, 
+    phone, 
+    planType, 
+    duration,
+    paymentAmount,
+    expiryDays,
+    welcomeMessage,
+    leadId // Se viene da conversione lead
+  } = validateInput(request.data, {
+    tenantId: validators.tenantId,
+    name: validators.optional(validators.nonEmptyString),
+    email: validators.optional(validators.email),
+    phone: validators.optional(validators.nonEmptyString),
+    planType: validators.optional(validators.nonEmptyString),
+    duration: validators.optional(validators.positiveNumber),
+    paymentAmount: validators.optional(validators.positiveNumber),
+    expiryDays: validators.optional(validators.positiveNumber),
+    welcomeMessage: validators.optional(validators.nonEmptyString),
+    leadId: validators.optional(validators.nonEmptyString)
+  });
+
+  console.log('📨 [INVITE] Creazione invito per tenant:', tenantId, 'da:', request.auth.uid);
+
+  try {
+    // Genera codice univoco
+    let inviteCode;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    // Assicurati che il codice sia univoco
+    do {
+      inviteCode = generateInviteCode();
+      const existingInvite = await db.collection('invitations')
+        .where('code', '==', inviteCode)
+        .where('status', 'in', ['pending', 'sent'])
+        .limit(1)
+        .get();
+      
+      if (existingInvite.empty) break;
+      attempts++;
+    } while (attempts < maxAttempts);
+
+    if (attempts >= maxAttempts) {
+      throw new Error('Impossibile generare un codice univoco. Riprova.');
+    }
+
+    // Genera token lungo per URL (32 caratteri)
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(16).toString('hex');
+
+    // Calcola scadenza (default 7 giorni)
+    const validDays = expiryDays || 7;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + validDays);
+
+    // Recupera info tenant per branding
+    const tenantDoc = await db.doc(`tenants/${tenantId}`).get();
+    const tenantData = tenantDoc.exists ? tenantDoc.data() : {};
+    const tenantName = tenantData.name || tenantData.businessName || 'Il tuo coach';
+
+    // Crea documento invito
+    const inviteRef = db.collection('invitations').doc(token);
+    const inviteData = {
+      // Identificatori
+      token,
+      code: inviteCode,
+      tenantId,
+      
+      // Dati cliente pre-compilati
+      clientData: {
+        name: name || null,
+        email: email ? email.toLowerCase().trim() : null,
+        phone: phone || null,
+        planType: planType || null,
+        duration: duration || null,
+        paymentAmount: paymentAmount || null,
+      },
+      
+      // Conversione da lead
+      leadId: leadId || null,
+      
+      // Stato invito
+      status: 'pending', // pending | sent | opened | completed | expired | cancelled
+      
+      // Tracking
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: request.auth.uid,
+      expiresAt,
+      
+      // Tracking aperture
+      openedAt: null,
+      openCount: 0,
+      lastOpenedAt: null,
+      
+      // Completamento
+      completedAt: null,
+      completedBy: null, // UID del cliente creato
+      
+      // Personalizzazione
+      welcomeMessage: welcomeMessage || null,
+      tenantName,
+      
+      // Reminder
+      reminderSentAt: null,
+      reminderCount: 0,
+    };
+
+    await inviteRef.set(inviteData);
+
+    console.log('✅ [INVITE] Invito creato:', inviteCode, 'token:', token.substring(0, 8) + '...');
+
+    // Genera URL invito
+    const baseUrl = process.env.FUNCTIONS_EMULATOR 
+      ? 'http://localhost:5173' 
+      : 'https://www.flowfitpro.it';
+    
+    const inviteUrl = `${baseUrl}/invite/${token}`;
+    
+    // Genera URL breve con codice (fallback se URL non funziona)
+    const inviteCodeUrl = `${baseUrl}/invite?code=${inviteCode}`;
+
+    // Genera messaggio WhatsApp precompilato
+    const clientNameText = name ? `Ciao ${name}! ` : 'Ciao! ';
+    const whatsappMessage = welcomeMessage || 
+      `${clientNameText}Sei stato invitato a unirti a ${tenantName}! 🎉\n\n` +
+      `Clicca il link per completare la registrazione:\n${inviteUrl}\n\n` +
+      `Oppure inserisci il codice: ${inviteCode}\n\n` +
+      `Il link è valido per ${validDays} giorni.`;
+    
+    // Genera link WhatsApp
+    const whatsappLink = phone 
+      ? `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
+      : `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
+
+    return {
+      success: true,
+      invitation: {
+        token,
+        code: inviteCode,
+        url: inviteUrl,
+        codeUrl: inviteCodeUrl,
+        expiresAt: expiresAt.toISOString(),
+        expiryDays: validDays,
+        whatsappLink,
+        whatsappMessage,
+        tenantName,
+        clientData: inviteData.clientData,
+      }
+    };
+
+  } catch (error) {
+    console.error('💥 [INVITE] Errore creazione:', error);
+    throw new Error(error.message || 'Errore nella creazione dell\'invito');
+  }
+});
+
+/**
+ * Valida un invito (per token o codice)
+ * Chiamata quando il cliente apre il link invito
+ */
+exports.validateInvitation = onCall(async (request) => {
+  // Rate limiting
+  enforceRateLimit(request, 'validateInvitation');
+  
+  // Non richiede autenticazione (pre-login)
+  
+  const { token, code } = validateInput(request.data, {
+    token: validators.optional(validators.nonEmptyString),
+    code: validators.optional(validators.nonEmptyString)
+  });
+
+  if (!token && !code) {
+    return { valid: false, reason: 'Token o codice richiesto' };
+  }
+
+  console.log('🔍 [INVITE] Validazione:', token ? `token ${token.substring(0, 8)}...` : `code ${code}`);
+
+  try {
+    let inviteDoc;
+    
+    if (token) {
+      // Ricerca per token (URL diretto)
+      inviteDoc = await db.collection('invitations').doc(token).get();
+    } else {
+      // Ricerca per codice breve
+      const inviteQuery = await db.collection('invitations')
+        .where('code', '==', code.toUpperCase())
+        .where('status', 'in', ['pending', 'sent', 'opened'])
+        .limit(1)
+        .get();
+      
+      if (!inviteQuery.empty) {
+        inviteDoc = inviteQuery.docs[0];
+      }
+    }
+
+    if (!inviteDoc || !inviteDoc.exists) {
+      console.log('❌ [INVITE] Invito non trovato');
+      return { valid: false, reason: 'Invito non valido o già utilizzato' };
+    }
+
+    const invite = inviteDoc.data();
+
+    // Controlla stato
+    if (invite.status === 'completed') {
+      console.log('❌ [INVITE] Invito già completato');
+      return { valid: false, reason: 'Questo invito è già stato utilizzato' };
+    }
+
+    if (invite.status === 'cancelled') {
+      console.log('❌ [INVITE] Invito cancellato');
+      return { valid: false, reason: 'Questo invito è stato annullato' };
+    }
+
+    if (invite.status === 'expired') {
+      console.log('❌ [INVITE] Invito scaduto (status)');
+      return { valid: false, reason: 'Questo invito è scaduto. Contatta il tuo coach per un nuovo invito.' };
+    }
+
+    // Controlla scadenza
+    const now = new Date();
+    const expiresAt = invite.expiresAt?.toDate ? invite.expiresAt.toDate() : new Date(invite.expiresAt);
+    if (now > expiresAt) {
+      console.log('❌ [INVITE] Invito scaduto (data)');
+      // Aggiorna status a expired
+      await inviteDoc.ref.update({ status: 'expired' });
+      return { valid: false, reason: 'Questo invito è scaduto. Contatta il tuo coach per un nuovo invito.' };
+    }
+
+    // Aggiorna tracking aperture
+    await inviteDoc.ref.update({
+      status: invite.status === 'pending' ? 'opened' : invite.status,
+      openedAt: invite.openedAt || admin.firestore.FieldValue.serverTimestamp(),
+      openCount: admin.firestore.FieldValue.increment(1),
+      lastOpenedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log('✅ [INVITE] Invito valido per tenant:', invite.tenantId);
+
+    // Recupera branding tenant
+    const tenantDoc = await db.doc(`tenants/${invite.tenantId}`).get();
+    const tenantData = tenantDoc.exists ? tenantDoc.data() : {};
+
+    return {
+      valid: true,
+      invitation: {
+        token: invite.token,
+        code: invite.code,
+        tenantId: invite.tenantId,
+        tenantName: invite.tenantName || tenantData.name || 'Coach',
+        tenantLogo: tenantData.branding?.logo || tenantData.logoUrl || null,
+        tenantColors: tenantData.branding?.colors || null,
+        clientData: invite.clientData || {},
+        welcomeMessage: invite.welcomeMessage,
+        expiresAt: expiresAt.toISOString(),
+      }
+    };
+
+  } catch (error) {
+    console.error('💥 [INVITE] Errore validazione:', error);
+    return { valid: false, reason: 'Errore di sistema. Riprova più tardi.' };
+  }
+});
+
+/**
+ * Completa la registrazione da invito
+ * Crea l'account cliente e lo collega al tenant
+ */
+exports.completeInvitation = onCall(async (request) => {
+  // Rate limiting
+  enforceRateLimit(request, 'completeInvitation');
+  
+  // Non richiede autenticazione (il cliente non è ancora loggato)
+  
+  const { 
+    token, 
+    name, 
+    email, 
+    password, 
+    phone,
+    acceptTerms,
+    acceptPrivacy 
+  } = validateInput(request.data, {
+    token: validators.nonEmptyString,
+    name: validators.nonEmptyString,
+    email: validators.email,
+    password: validators.nonEmptyString,
+    phone: validators.optional(validators.nonEmptyString),
+    acceptTerms: validators.optional(validators.boolean),
+    acceptPrivacy: validators.optional(validators.boolean)
+  });
+
+  console.log('📝 [INVITE] Completamento invito:', token.substring(0, 8) + '...', 'per:', email);
+
+  try {
+    // Valida l'invito
+    const inviteRef = db.collection('invitations').doc(token);
+    const inviteDoc = await inviteRef.get();
+
+    if (!inviteDoc.exists) {
+      throw new Error('Invito non valido');
+    }
+
+    const invite = inviteDoc.data();
+
+    // Verifica stato
+    if (invite.status === 'completed') {
+      throw new Error('Questo invito è già stato utilizzato');
+    }
+
+    if (invite.status === 'cancelled' || invite.status === 'expired') {
+      throw new Error('Questo invito non è più valido');
+    }
+
+    // Verifica scadenza
+    const now = new Date();
+    const expiresAt = invite.expiresAt?.toDate ? invite.expiresAt.toDate() : new Date(invite.expiresAt);
+    if (now > expiresAt) {
+      await inviteRef.update({ status: 'expired' });
+      throw new Error('Questo invito è scaduto');
+    }
+
+    // Verifica che l'email non sia già in uso
+    try {
+      await admin.auth().getUserByEmail(email.toLowerCase().trim());
+      throw new Error('Questa email è già registrata. Prova ad accedere o usa un\'altra email.');
+    } catch (authError) {
+      if (authError.code !== 'auth/user-not-found') {
+        throw authError;
+      }
+      // OK - email non in uso
+    }
+
+    // Crea utente Firebase Auth
+    const userRecord = await admin.auth().createUser({
+      email: email.toLowerCase().trim(),
+      password,
+      displayName: name,
+    });
+
+    const newUserId = userRecord.uid;
+    console.log('✅ [INVITE] Utente creato:', newUserId);
+
+    // Prepara dati cliente
+    const clientData = invite.clientData || {};
+    const startDate = new Date();
+    startDate.setHours(0, 0, 0, 0);
+    
+    let expiryDate = null;
+    if (clientData.duration) {
+      expiryDate = new Date(startDate);
+      expiryDate.setMonth(expiryDate.getMonth() + parseInt(clientData.duration, 10));
+      expiryDate.setDate(expiryDate.getDate() + 7); // 7 giorni di grazia
+    }
+
+    // Crea documento cliente nel tenant
+    const clientRef = db.doc(`tenants/${invite.tenantId}/clients/${newUserId}`);
+    await clientRef.set({
+      name,
+      name_lowercase: name.toLowerCase(),
+      email: email.toLowerCase().trim(),
+      phone: phone || clientData.phone || null,
+      status: 'attivo',
+      planType: clientData.planType || null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      startDate,
+      scadenza: expiryDate,
+      isClient: true,
+      firstLogin: false, // Non serve first login, ha già impostato la password
+      assignedCoaches: invite.createdBy ? [invite.createdBy] : [],
+      statoPercorso: 'Attivo',
+      price: clientData.paymentAmount || null,
+      // Registrazione self-service
+      registeredViaInvite: true,
+      inviteToken: token,
+      inviteCode: invite.code,
+      // Consensi
+      termsAcceptedAt: acceptTerms ? admin.firestore.FieldValue.serverTimestamp() : null,
+      privacyAcceptedAt: acceptPrivacy ? admin.firestore.FieldValue.serverTimestamp() : null,
+    });
+
+    // Crea mapping globale utente → tenant
+    await db.doc(`user_tenants/${newUserId}`).set({
+      [invite.tenantId]: {
+        role: 'client',
+        joinedAt: admin.firestore.FieldValue.serverTimestamp(),
+        viaInvite: true,
+      }
+    }, { merge: true });
+
+    // Aggiorna invito come completato
+    await inviteRef.update({
+      status: 'completed',
+      completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      completedBy: newUserId,
+      completedEmail: email.toLowerCase().trim(),
+    });
+
+    // Se era collegato a un lead, aggiorna il lead
+    if (invite.leadId) {
+      const leadRef = db.doc(`tenants/${invite.tenantId}/collaboratori_leads/${invite.leadId}`);
+      await leadRef.update({
+        status: 'convertito',
+        convertedToClientId: newUserId,
+        convertedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }).catch(err => console.warn('Lead update failed:', err));
+    }
+
+    console.log('✅ [INVITE] Registrazione completata per:', email);
+
+    return {
+      success: true,
+      clientId: newUserId,
+      tenantId: invite.tenantId,
+      message: 'Registrazione completata! Puoi ora accedere con le tue credenziali.',
+    };
+
+  } catch (error) {
+    console.error('💥 [INVITE] Errore completamento:', error);
+    throw new Error(error.message || 'Errore nella registrazione');
+  }
+});
+
+/**
+ * Lista inviti per un tenant
+ * Solo admin/coach possono vedere gli inviti
+ */
+exports.listInvitations = onCall(async (request) => {
+  // Rate limiting
+  enforceRateLimit(request, 'listInvitations');
+  
+  // Richiede autenticazione
+  requireAuth(request);
+  
+  const { tenantId, status, limit: queryLimit } = validateInput(request.data, {
+    tenantId: validators.tenantId,
+    status: validators.optional(validators.nonEmptyString),
+    limit: validators.optional(validators.positiveNumber)
+  });
+
+  console.log('📋 [INVITE] Lista inviti per tenant:', tenantId);
+
+  try {
+    let query = db.collection('invitations')
+      .where('tenantId', '==', tenantId)
+      .orderBy('createdAt', 'desc');
+    
+    if (status) {
+      query = query.where('status', '==', status);
+    }
+    
+    if (queryLimit) {
+      query = query.limit(queryLimit);
+    } else {
+      query = query.limit(50);
+    }
+
+    const snapshot = await query.get();
+    
+    const invitations = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        token: data.token,
+        code: data.code,
+        status: data.status,
+        clientData: data.clientData,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || null,
+        expiresAt: data.expiresAt?.toDate?.()?.toISOString() || data.expiresAt,
+        openCount: data.openCount || 0,
+        completedAt: data.completedAt?.toDate?.()?.toISOString() || null,
+        completedBy: data.completedBy,
+      };
+    });
+
+    return {
+      success: true,
+      invitations,
+      total: invitations.length,
+    };
+
+  } catch (error) {
+    console.error('💥 [INVITE] Errore lista:', error);
+    throw new Error('Errore nel recupero degli inviti');
+  }
+});
+
+/**
+ * Cancella un invito
+ */
+exports.cancelInvitation = onCall(async (request) => {
+  // Rate limiting
+  enforceRateLimit(request, 'cancelInvitation');
+  
+  // Richiede autenticazione
+  requireAuth(request);
+  
+  const { token } = validateInput(request.data, {
+    token: validators.nonEmptyString
+  });
+
+  console.log('❌ [INVITE] Cancellazione invito:', token.substring(0, 8) + '...');
+
+  try {
+    const inviteRef = db.collection('invitations').doc(token);
+    const inviteDoc = await inviteRef.get();
+
+    if (!inviteDoc.exists) {
+      throw new Error('Invito non trovato');
+    }
+
+    const invite = inviteDoc.data();
+
+    if (invite.status === 'completed') {
+      throw new Error('Impossibile cancellare un invito già completato');
+    }
+
+    await inviteRef.update({
+      status: 'cancelled',
+      cancelledAt: admin.firestore.FieldValue.serverTimestamp(),
+      cancelledBy: request.auth.uid,
+    });
+
+    console.log('✅ [INVITE] Invito cancellato');
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('💥 [INVITE] Errore cancellazione:', error);
+    throw new Error(error.message || 'Errore nella cancellazione');
+  }
+});
+
+/**
+ * Reinvia/rigenera un invito scaduto
+ */
+exports.resendInvitation = onCall(async (request) => {
+  // Rate limiting
+  enforceRateLimit(request, 'resendInvitation');
+  
+  // Richiede autenticazione
+  requireAuth(request);
+  
+  const { token, expiryDays } = validateInput(request.data, {
+    token: validators.nonEmptyString,
+    expiryDays: validators.optional(validators.positiveNumber)
+  });
+
+  console.log('🔄 [INVITE] Rigenerazione invito:', token.substring(0, 8) + '...');
+
+  try {
+    const inviteRef = db.collection('invitations').doc(token);
+    const inviteDoc = await inviteRef.get();
+
+    if (!inviteDoc.exists) {
+      throw new Error('Invito non trovato');
+    }
+
+    const invite = inviteDoc.data();
+
+    if (invite.status === 'completed') {
+      throw new Error('Impossibile rigenerare un invito già completato');
+    }
+
+    // Genera nuova scadenza
+    const validDays = expiryDays || 7;
+    const newExpiresAt = new Date();
+    newExpiresAt.setDate(newExpiresAt.getDate() + validDays);
+
+    // Genera nuovo codice
+    let newCode;
+    let attempts = 0;
+    do {
+      newCode = generateInviteCode();
+      const existingInvite = await db.collection('invitations')
+        .where('code', '==', newCode)
+        .where('status', 'in', ['pending', 'sent'])
+        .limit(1)
+        .get();
+      
+      if (existingInvite.empty) break;
+      attempts++;
+    } while (attempts < 10);
+
+    await inviteRef.update({
+      code: newCode,
+      status: 'pending',
+      expiresAt: newExpiresAt,
+      reminderCount: admin.firestore.FieldValue.increment(1),
+      lastResentAt: admin.firestore.FieldValue.serverTimestamp(),
+      resentBy: request.auth.uid,
+    });
+
+    // Rigenera URL e messaggio WhatsApp
+    const baseUrl = 'https://www.flowfitpro.it';
+    const inviteUrl = `${baseUrl}/invite/${token}`;
+    
+    const clientName = invite.clientData?.name;
+    const whatsappMessage = `${clientName ? `Ciao ${clientName}! ` : 'Ciao! '}Ecco il tuo nuovo link di invito per ${invite.tenantName}:\n\n${inviteUrl}\n\nCodice: ${newCode}\n\nValido per ${validDays} giorni.`;
+    
+    const phone = invite.clientData?.phone;
+    const whatsappLink = phone 
+      ? `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
+      : `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
+
+    console.log('✅ [INVITE] Invito rigenerato con nuovo codice:', newCode);
+
+    return {
+      success: true,
+      invitation: {
+        token,
+        code: newCode,
+        url: inviteUrl,
+        expiresAt: newExpiresAt.toISOString(),
+        whatsappLink,
+        whatsappMessage,
+      }
+    };
+
+  } catch (error) {
+    console.error('💥 [INVITE] Errore rigenerazione:', error);
+    throw new Error(error.message || 'Errore nella rigenerazione');
+  }
+});

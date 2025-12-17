@@ -363,8 +363,19 @@ const Login = () => {
         sessionStorage.setItem('app_role', 'client');
         navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
       } else {
-        setError('Account Google non collegato. Registrati prima con email/password e poi collega Google dal profilo.');
-        await signOut(auth);
+        // IMPORTANTE: Se l'utente non esiste come cliente/admin/coach, elimina l'account Auth
+        // appena creato da signInWithPopup per evitare utenti orfani
+        console.log('⚠️ Utente Google non autorizzato, eliminazione account Auth...');
+        try {
+          // Elimina l'utente Auth appena creato (possibile perché è ancora autenticato)
+          await userCredential.user.delete();
+          console.log('✅ Account Auth eliminato per utente non autorizzato');
+        } catch (deleteError) {
+          console.error('❌ Errore eliminazione account Auth:', deleteError);
+          // Se non riesce a eliminare, almeno fa signOut
+          await signOut(auth);
+        }
+        setError('Account Google non collegato. Devi prima essere registrato come cliente dal tuo coach, poi potrai collegare Google dal tuo profilo.');
       }
     } catch (error) {
       console.error('❌ Errore login Google:', error);

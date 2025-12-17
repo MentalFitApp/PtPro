@@ -11,28 +11,21 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  // Inizializza il tema immediatamente dal localStorage o system preference
-  const getInitialTheme = () => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) return savedTheme;
-    
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    return prefersDark ? 'dark' : 'light';
-  };
+  // FORZATO DARK MODE - Light mode non ancora implementata correttamente
+  // TODO: riabilitare quando light mode sarà pronta
+  const [theme] = useState('dark');
 
-  const [theme, setTheme] = useState(getInitialTheme);
-
-  // Applica tema al documento ogni volta che cambia
+  // Applica tema al documento
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    document.body.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-    
-    console.log('Theme applied:', theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.body.setAttribute('data-theme', 'dark');
+    localStorage.setItem('theme', 'dark');
+  }, []);
 
+  // Toggle disabilitato per ora
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+    // No-op: dark mode forzata
+    console.log('Theme toggle disabled - dark mode forced');
   };
 
   const value = {

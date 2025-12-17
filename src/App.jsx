@@ -51,6 +51,7 @@ const CourseAdmin = React.lazy(() => import('./pages/admin/CourseAdmin'));
 const CourseContentManager = React.lazy(() => import('./pages/admin/CourseContentManager'));
 const PlatformSettings = React.lazy(() => import('./pages/admin/PlatformSettings'));
 const TenantBranding = React.lazy(() => import('./pages/admin/TenantBranding'));
+const ThemePreview = React.lazy(() => import('./pages/admin/ThemePreview'));
 const ClientCallsCalendar = React.lazy(() => import('./pages/admin/ClientCallsCalendar'));
 const LandingPagesList = React.lazy(() => import('./pages/admin/LandingPagesList'));
 const LandingPageEditor = React.lazy(() => import('./pages/admin/LandingPageEditor'));
@@ -109,6 +110,7 @@ const LandingPage = React.lazy(() => import('./pages/public/LandingPage'));
 const PublicLandingPage = React.lazy(() => import('./pages/public/PublicLandingPage'));
 const PrivacyPolicy = React.lazy(() => import('./pages/public/PrivacyPolicyDynamic'));
 const TermsOfService = React.lazy(() => import('./pages/public/TermsOfServiceDynamic'));
+const AcceptInvite = React.lazy(() => import('./pages/public/AcceptInvite'));
 
 // Spinner
 const PageSpinner = () => (
@@ -193,6 +195,7 @@ export default function App() {
 
           // Se sta navigando verso pagine pubbliche, permettilo
           if (location.pathname.startsWith('/site') || 
+              location.pathname.startsWith('/invite') ||
               location.pathname === '/privacy' || 
               location.pathname === '/terms') {
             // Non fare nulla, lascia che la route pubblica venga gestita
@@ -397,6 +400,10 @@ export default function App() {
         <Route path="/setup/:token" element={<SetupAccount />} />
         <Route path="/platform-login" element={<PlatformLogin />} />
         <Route path="/client/forgot-password" element={<ForgotPassword />} />
+        
+        {/* === ROTTE INVITI === */}
+        <Route path="/invite/:token" element={<AcceptInvite />} />
+        <Route path="/invite" element={<AcceptInvite />} />
 
         {/* === ROTTE PLATFORM CEO === */}
         <Route path="/platform-dashboard" element={
@@ -427,6 +434,7 @@ export default function App() {
           <Route path="/business-history" element={<BusinessHistory />} />
           <Route path="/admin/dipendenti" element={<Dipendenti />} />
           <Route path="/admin/branding" element={<TenantBranding />} />
+          <Route path="/admin/theme-preview" element={<ThemePreview />} />
           <Route path="/statistiche" element={<StatisticheDashboard />} />
           <Route path="/statistiche/legacy" element={<Statistiche />} />
           <Route path="/profile" element={<Profile />} />

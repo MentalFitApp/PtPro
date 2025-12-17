@@ -486,6 +486,16 @@ service cloud.firestore {
 
     // ==================== COLLECTION GLOBALI (fuori dai tenant) ====================
     
+    // --- USERS (profili utente globali) ---
+    match /users/{userId} {
+      // Ogni utente può leggere e aggiornare solo il proprio documento
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      // Solo Platform CEO può eliminare utenti
+      allow delete: if isPlatformCEO();
+    }
+    
     // --- COURSES (global) ---
     match /courses/{courseId} {
       allow read: if request.auth != null;

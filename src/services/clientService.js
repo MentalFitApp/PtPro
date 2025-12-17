@@ -310,6 +310,15 @@ export const createClientAnamnesi = async (db, clientId, anamnesiData, clientNam
       createdAt: new Date()
     });
     
+    // Aggiorna il campo denormalizzato hasAnamnesi nel documento cliente
+    // per evitare N+1 query nella lista clienti
+    try {
+      const clientRef = getTenantDoc(db, 'clients', clientId);
+      await updateDoc(clientRef, { hasAnamnesi: true });
+    } catch (updateError) {
+      console.log('Errore aggiornamento hasAnamnesi:', updateError);
+    }
+    
     // Invia notifica al coach
     try {
       await notifyNewAnamnesi({ id: docRef.id, ...anamnesiData }, clientName, clientId);

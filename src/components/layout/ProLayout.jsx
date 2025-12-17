@@ -7,76 +7,147 @@ import { Menu, Settings, LogOut, ChevronDown, Bell, User, CreditCard, Home, User
 import { auth } from '../../firebase';
 import { signOut } from 'firebase/auth';
 import { ProSidebar, MobileSidebar } from './ProSidebar';
-import ThemeToggle from '../ui/ThemeToggle';
-import NotificationPermissionModal from '../notifications/NotificationPermissionModal';
+// import ThemeToggle from '../ui/ThemeToggle'; // TODO: riabilitare quando light mode pronta
+// import NotificationPermissionModal from '../notifications/NotificationPermissionModal'; // TODO: riabilitare quando notifiche implementate
 import InteractiveTour from '../onboarding/InteractiveTour';
 import { PageProvider, usePageContext } from '../../contexts/PageContext';
 import { useUnreadCount } from '../../hooks/useChat';
 
-// === STELLE ANIMATE ===
+// === STELLE ANIMATE - MULTI-STYLE ===
 const AnimatedStars = () => {
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    if (initialized) return;
-    
-    const existingContainer = document.querySelector('.stars');
-    if (existingContainer) {
-      setInitialized(true);
-      return;
-    }
+    // Funzione per creare le stelle in base al preset
+    const createStars = () => {
+      // Rimuovi stelle esistenti
+      const existingContainer = document.querySelector('.stars');
+      if (existingContainer) {
+        existingContainer.remove();
+      }
 
-    const container = document.createElement('div');
-    container.className = 'stars';
-    document.body.appendChild(container);
+      // Leggi il preset corrente
+      const preset = document.documentElement.getAttribute('data-bg-preset') || 'classic';
+      
+      // Se è solid o gradient, non creare stelle
+      if (preset === 'solid' || preset === 'gradient') {
+        return;
+      }
 
-    // Colori delle stelle: blu, cyan, indigo
-    const starColors = ['', 'cyan', 'indigo']; // '' = default blu
-    
-    for (let i = 0; i < 40; i++) {
-      const star = document.createElement('div');
-      // Assegna colore random alle stelle
-      const colorClass = starColors[Math.floor(Math.random() * starColors.length)];
-      star.className = colorClass ? `star ${colorClass}` : 'star';
-      
-      const minDistance = 7;
-      let top, left, tooClose;
-      
-      do {
-        top = Math.random() * 100;
-        left = Math.random() * 100;
-        tooClose = false;
+      const container = document.createElement('div');
+      container.className = `stars stars-${preset}`;
+      document.body.appendChild(container);
+
+      // Configurazioni per ogni preset
+      const presetConfigs = {
+        classic: {
+          count: 25,
+          sizeRange: [1, 2.5],
+          colors: ['', 'gold', 'cyan'],
+          animation: 'fall',
+          speed: { min: 18, max: 30 },
+        },
+        nebula: {
+          count: 15,
+          sizeRange: [2, 5],
+          colors: ['nebula-purple', 'nebula-pink', 'nebula-blue'],
+          animation: 'pulse-glow',
+          speed: { min: 3, max: 6 },
+        },
+        aurora: {
+          count: 20,
+          sizeRange: [1, 2],
+          colors: ['aurora-cyan', 'aurora-purple', 'aurora-pink'],
+          animation: 'float',
+          speed: { min: 8, max: 15 },
+        },
+        galaxy: {
+          count: 50,
+          sizeRange: [0.5, 1.5],
+          colors: ['galaxy-white', 'galaxy-blue', 'galaxy-gold'],
+          animation: 'drift',
+          speed: { min: 25, max: 45 },
+        },
+        minimal: {
+          count: 8,
+          sizeRange: [1.5, 2.5],
+          colors: ['minimal'],
+          animation: 'twinkle-slow',
+          speed: { min: 6, max: 10 },
+        },
+      };
+
+      const config = presetConfigs[preset] || presetConfigs.classic;
+
+      for (let i = 0; i < config.count; i++) {
+        const star = document.createElement('div');
+        const colorClass = config.colors[Math.floor(Math.random() * config.colors.length)];
+        star.className = `star star-${config.animation} ${colorClass}`;
         
-        for (let j = 0; j < container.children.length; j++) {
-          const existingStar = container.children[j];
-          const existingTop = parseFloat(existingStar.style.top);
-          const existingLeft = parseFloat(existingStar.style.left);
-          const distance = Math.sqrt(Math.pow(top - existingTop, 2) + Math.pow(left - existingLeft, 2));
-          
-          if (distance < minDistance) {
-            tooClose = true;
-            break;
-          }
+        // Posizione casuale con distribuzione migliore
+        const top = Math.random() * 100;
+        const left = Math.random() * 100;
+        
+        star.style.top = `${top}%`;
+        star.style.left = `${left}%`;
+        
+        // Dimensione
+        const size = config.sizeRange[0] + Math.random() * (config.sizeRange[1] - config.sizeRange[0]);
+        star.style.setProperty('--star-size', `${size}px`);
+        
+        // Velocità animazione
+        const duration = config.speed.min + Math.random() * (config.speed.max - config.speed.min);
+        star.style.setProperty('--anim-duration', `${duration}s`);
+        star.style.setProperty('--anim-delay', `${Math.random() * -duration}s`);
+        
+        // Per galaxy, aggiungi variazione z-index per profondità
+        if (preset === 'galaxy') {
+          const depth = Math.random();
+          star.style.opacity = 0.3 + depth * 0.7;
+          star.style.filter = `blur(${(1 - depth) * 1}px)`;
         }
-      } while (tooClose && container.children.length > 0);
-      
-      star.style.top = `${top}%`;
-      star.style.left = `${left}%`;
-      
-      // Varia leggermente la dimensione
-      const size = 1 + Math.random() * 2;
-      star.style.setProperty('--star-width', `${size}px`);
-      
-      // Varia la durata dell'animazione
-      const duration = 12 + Math.random() * 10;
-      star.style.setProperty('--fall-duration', `${duration}s`);
-      star.style.setProperty('--fall-delay', `${Math.random() * -20}s`);
-      
-      container.appendChild(star);
-    }
+        
+        container.appendChild(star);
+      }
 
+      // Per aurora, aggiungi onde di luce
+      if (preset === 'aurora') {
+        for (let i = 0; i < 3; i++) {
+          const wave = document.createElement('div');
+          wave.className = `aurora-wave aurora-wave-${i + 1}`;
+          container.appendChild(wave);
+        }
+      }
+
+      // Per galaxy, aggiungi nuvole di polvere
+      if (preset === 'galaxy') {
+        for (let i = 0; i < 2; i++) {
+          const dust = document.createElement('div');
+          dust.className = `galaxy-dust galaxy-dust-${i + 1}`;
+          container.appendChild(dust);
+        }
+      }
+    };
+
+    // Crea stelle iniziali
+    createStars();
     setInitialized(true);
-  }, [initialized]);
+
+    // Observer per cambiamenti al preset
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'data-bg-preset') {
+          createStars();
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   return null;
 };
@@ -126,7 +197,7 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
         </div>
         
         <div className="flex items-center gap-2">
-          <ThemeToggle />
+          {/* ThemeToggle rimosso - dark mode forzata */}
           <div className="relative">
             <button 
               onClick={onProfileMenuToggle}
@@ -252,7 +323,7 @@ const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSetti
       
       {/* Right side - Actions */}
       <div className="flex items-center gap-3">
-        <ThemeToggle />
+        {/* ThemeToggle rimosso - dark mode forzata */}
         
         <button 
           className="p-2 rounded-lg hover:bg-theme-bg-tertiary/60 text-theme-text-secondary hover:text-theme-text-primary transition-colors"
@@ -712,8 +783,8 @@ export const ProLayout = () => {
         <BottomNav role={role} currentPath={location.pathname} unreadMessages={unreadCount} />
       )}
 
-      {/* Modale richiesta permessi notifiche */}
-      <NotificationPermissionModal />
+      {/* Modale richiesta permessi notifiche - TODO: riabilitare quando notifiche implementate */}
+      {/* <NotificationPermissionModal /> */}
 
       {/* Tour interattivo per nuovi utenti */}
       {showOnboarding && (

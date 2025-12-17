@@ -250,7 +250,7 @@ const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0 }) => {
       data-tour={tourId}
       className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group ${
         isActive
-          ? 'bg-gradient-to-r from-blue-500/15 to-cyan-500/10 text-blue-400 shadow-sm shadow-blue-500/10'
+          ? 'bg-gradient-to-r from-blue-500/15 to-sky-500/10 text-blue-400 shadow-sm shadow-blue-500/10'
           : 'text-theme-text-secondary hover:text-theme-text-primary hover:bg-theme-bg-tertiary/60'
       }`}
       whileHover={{ x: isCollapsed ? 0 : 3, scale: 1.01 }}
@@ -261,7 +261,7 @@ const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0 }) => {
       {isActive && (
         <motion.div
           layoutId="activeIndicator"
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-blue-400 to-cyan-400 rounded-full"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-blue-400 to-sky-400 rounded-full"
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         />
       )}
@@ -513,7 +513,7 @@ export const ProSidebar = ({
       className={`fixed top-0 left-0 h-screen bg-theme-bg-secondary/80 backdrop-blur-2xl border-r border-theme/50 z-40 flex flex-col shadow-xl shadow-black/10 ${className}`}
     >
       {/* Gradient overlay for depth */}
-      <div className="absolute inset-0 bg-gradient-to-b from-blue-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-500/[0.02] via-transparent to-sky-500/[0.02] pointer-events-none" />
       
       {/* Header */}
       <div className={`relative h-[72px] px-4 flex items-center border-b border-theme/50 ${isCollapsed ? 'px-4' : ''}`}>
@@ -662,7 +662,7 @@ export const MobileSidebar = ({
             className="fixed left-0 top-0 h-screen w-[280px] bg-theme-bg-secondary/95 backdrop-blur-2xl border-r border-theme/50 z-50 flex flex-col lg:hidden shadow-2xl shadow-black/30"
           >
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-blue-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-b from-blue-500/[0.02] via-transparent to-sky-500/[0.02] pointer-events-none" />
             
             {/* Header */}
             <div className="relative p-4 border-b border-theme/50 flex items-center justify-between">

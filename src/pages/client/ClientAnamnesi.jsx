@@ -296,7 +296,7 @@ const ClientAnamnesi = () => {
   );
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-slate-900 p-4 sm:p-6 lg:p-8">
       <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
 
       <header className="flex justify-between items-center mb-8 flex-col sm:flex-row gap-4">

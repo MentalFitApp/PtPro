@@ -33,6 +33,13 @@ const RATE_LIMITS = {
   completeMagicLinkSetup: { maxRequests: 5, windowMs: 60000 }, // 5 setup/min
   sendWhatsAppMessage: { maxRequests: 20, windowMs: 60000 }, // 20 msg/min
   generateWhatsAppLink: { maxRequests: 30, windowMs: 60000 }, // 30 link/min
+  // Sistema Inviti
+  createClientInvitation: { maxRequests: 20, windowMs: 60000 }, // 20 inviti/min
+  validateInvitation: { maxRequests: 30, windowMs: 60000 }, // 30 validazioni/min
+  completeInvitation: { maxRequests: 10, windowMs: 60000 }, // 10 registrazioni/min
+  listInvitations: { maxRequests: 30, windowMs: 60000 }, // 30 liste/min
+  cancelInvitation: { maxRequests: 20, windowMs: 60000 }, // 20 cancellazioni/min
+  resendInvitation: { maxRequests: 15, windowMs: 60000 }, // 15 reinvii/min
 };
 
 /**
