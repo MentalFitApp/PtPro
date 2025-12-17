@@ -1987,30 +1987,34 @@ exports.createClientInvitation = onCall(async (request) => {
   // Richiede autenticazione (solo admin/coach)
   requireAuth(request);
   
-  // Validazione input
+  // Validazione input - supporta sia campi singoli che clientData oggetto
   const { 
     tenantId, 
-    name, 
-    email, 
-    phone, 
-    planType, 
-    duration,
-    paymentAmount,
+    clientData: clientDataFromRequest,
     expiryDays,
     welcomeMessage,
     leadId // Se viene da conversione lead
   } = validateInput(request.data, {
     tenantId: validators.tenantId,
-    name: validators.optional(validators.nonEmptyString),
-    email: validators.optional(validators.email),
-    phone: validators.optional(validators.nonEmptyString),
-    planType: validators.optional(validators.nonEmptyString),
-    duration: validators.optional(validators.positiveNumber),
-    paymentAmount: validators.optional(validators.positiveNumber),
+    clientData: validators.optional(validators.object),
     expiryDays: validators.optional(validators.positiveNumber),
     welcomeMessage: validators.optional(validators.nonEmptyString),
     leadId: validators.optional(validators.nonEmptyString)
   });
+  
+  // Estrai dati cliente dall'oggetto clientData o dai campi diretti (retrocompatibilità)
+  const clientInput = clientDataFromRequest || request.data;
+  const name = clientInput.name || null;
+  const email = clientInput.email || null;
+  const phone = clientInput.phone || null;
+  const planType = clientInput.planType || null;
+  const duration = clientInput.duration || null;
+  const paymentAmount = clientInput.paymentAmount || null;
+  const paymentMethod = clientInput.paymentMethod || null;
+  const startDate = clientInput.startDate || null;
+  const expiryDate = clientInput.expiryDate || null;
+  const rateizzato = clientInput.rateizzato || false;
+  const rate = clientInput.rate || [];
 
   console.log('📨 [INVITE] Creazione invito per tenant:', tenantId, 'da:', request.auth.uid);
 
@@ -2066,7 +2070,12 @@ exports.createClientInvitation = onCall(async (request) => {
         phone: phone || null,
         planType: planType || null,
         duration: duration || null,
+        startDate: startDate || null,
+        expiryDate: expiryDate || null,
         paymentAmount: paymentAmount || null,
+        paymentMethod: paymentMethod || null,
+        rateizzato: rateizzato || false,
+        rate: rate || [],
       },
       
       // Conversione da lead
@@ -2334,13 +2343,23 @@ exports.completeInvitation = onCall(async (request) => {
     const newUserId = userRecord.uid;
     console.log('✅ [INVITE] Utente creato:', newUserId);
 
-    // Prepara dati cliente
+    // Prepara dati cliente dall'invito
     const clientData = invite.clientData || {};
-    const startDate = new Date();
+    
+    // Usa startDate dall'invito se presente, altrimenti oggi
+    let startDate;
+    if (clientData.startDate) {
+      startDate = new Date(clientData.startDate);
+    } else {
+      startDate = new Date();
+    }
     startDate.setHours(0, 0, 0, 0);
     
+    // Usa expiryDate dall'invito se presente, altrimenti calcola da duration
     let expiryDate = null;
-    if (clientData.duration) {
+    if (clientData.expiryDate) {
+      expiryDate = new Date(clientData.expiryDate);
+    } else if (clientData.duration) {
       expiryDate = new Date(startDate);
       expiryDate.setMonth(expiryDate.getMonth() + parseInt(clientData.duration, 10));
       expiryDate.setDate(expiryDate.getDate() + 7); // 7 giorni di grazia
@@ -2358,11 +2377,16 @@ exports.completeInvitation = onCall(async (request) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       startDate,
       scadenza: expiryDate,
+      duration: clientData.duration || null,
       isClient: true,
       firstLogin: false, // Non serve first login, ha già impostato la password
       assignedCoaches: invite.createdBy ? [invite.createdBy] : [],
       statoPercorso: 'Attivo',
+      // Dati pagamento
       price: clientData.paymentAmount || null,
+      paymentMethod: clientData.paymentMethod || null,
+      rateizzato: clientData.rateizzato || false,
+      rate: clientData.rate || [],
       // Registrazione self-service
       registeredViaInvite: true,
       inviteToken: token,
