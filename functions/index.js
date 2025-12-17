@@ -387,13 +387,16 @@ exports.updateStatsOnUserChange = onDocumentWritten(
 /**
  * Helper: Aggiorna il mapping user_tenants per un utente
  * Chiamato quando viene creato/modificato un client, collaboratore, o ruolo
+ * Formato: { [tenantId]: { role, status, joinedAt } } per supporto multi-tenant
  */
 async function updateUserTenantMapping(userId, tenantId, role) {
   try {
     await db.collection('user_tenants').doc(userId).set({
-      tenantId,
-      role, // 'client', 'collaboratore', 'admin', 'coach', 'superadmin'
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      [tenantId]: {
+        role, // 'client', 'collaboratore', 'admin', 'coach', 'superadmin'
+        status: 'active',
+        joinedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }
     }, { merge: true });
     console.log(`✅ User-tenant mapping aggiornato: ${userId} → ${tenantId} (${role})`);
   } catch (error) {

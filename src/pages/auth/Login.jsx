@@ -31,9 +31,16 @@ async function findUserTenant(userId) {
         
         // Filtra solo tenant attivi (status === 'active' o status non definito per retrocompatibilità)
         const activeTenants = Object.entries(tenantsData)
-          .filter(([tenantId, data]) => {
-            // Ignora campi speciali
-            if (tenantId === 'tenantId') return false;
+          .filter(([key, data]) => {
+            // Ignora campi speciali e metadati del vecchio formato
+            const reservedFields = ['tenantId', 'role', 'updatedAt', 'joinedAt', 'status', 'migratedAt', 'createdAt', 'lastLogin'];
+            if (reservedFields.includes(key)) return false;
+            // Il valore deve essere un oggetto (non stringa, numero, null o timestamp)
+            if (typeof data !== 'object' || data === null) return false;
+            // Se è un Timestamp Firestore, ignoralo
+            if (data.toDate && typeof data.toDate === 'function') return false;
+            // Deve avere almeno un campo 'role' per essere considerato un tenant valido
+            if (!data.role) return false;
             // Considera attivo se status è 'active' o non definito
             return data.status === 'active' || !data.status;
           })
@@ -42,6 +49,11 @@ async function findUserTenant(userId) {
         console.log('📊 Tenant attivi per utente:', activeTenants.length);
         
         if (activeTenants.length === 0) {
+          // Retrocompatibilità: vecchio formato flat { tenantId: "xyz", role: "client" }
+          if (tenantsData.tenantId && typeof tenantsData.tenantId === 'string') {
+            console.log('📦 Formato vecchio trovato, usando tenantId diretto:', tenantsData.tenantId);
+            return { tenantId: tenantsData.tenantId, allActiveTenants: null };
+          }
           console.log('⚠️ Nessun tenant attivo trovato');
           return { tenantId: getCurrentTenantId() || DEFAULT_TENANT_ID, allActiveTenants: null };
         }
