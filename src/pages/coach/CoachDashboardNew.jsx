@@ -642,7 +642,15 @@ export default function CoachDashboardNew() {
               <div>
                 <p className="text-xs text-slate-400 mb-2">Check-in Recenti</p>
                 <div className="space-y-1.5">
-                  {activityFeed.filter(a => a.type === 'new_check').slice(0, 5).map((activity, idx) => (
+                  {activityFeed
+                    .filter(a => a.type === 'new_check')
+                    .sort((a, b) => {
+                      const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+                      const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+                      return dateB - dateA;
+                    })
+                    .slice(0, 5)
+                    .map((activity, idx) => (
                     <div 
                       key={idx}
                       onClick={() => navigate(`/client/${activity.clientId}?tab=check`)}
@@ -659,6 +667,54 @@ export default function CoachDashboardNew() {
                   ))}
                   {activityFeed.filter(a => a.type === 'new_check').length === 0 && (
                     <p className="text-xs text-slate-500 py-2 text-center">Nessun check-in recente</p>
+                  )}
+                  {activityFeed.filter(a => a.type === 'new_check').length > 5 && (
+                    <button 
+                      onClick={() => setActiveTab('checks')}
+                      className="text-[10px] text-blue-400 hover:underline w-full text-center py-1"
+                    >
+                      Vedi tutti i {activityFeed.filter(a => a.type === 'new_check').length} check-in →
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-400 mb-2">Anamnesi Recenti</p>
+                <div className="space-y-1.5">
+                  {activityFeed
+                    .filter(a => a.type === 'new_anamnesi')
+                    .sort((a, b) => {
+                      const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+                      const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+                      return dateB - dateA;
+                    })
+                    .slice(0, 5)
+                    .map((activity, idx) => (
+                    <div 
+                      key={idx}
+                      onClick={() => navigate(`/client/${activity.clientId}?tab=anamnesi`)}
+                      className="flex items-center justify-between p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <FileText className="text-amber-400 flex-shrink-0" size={14} />
+                        <span className="text-xs text-white truncate">{activity.clientName}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 flex-shrink-0">
+                        {toDate(activity.date)?.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}
+                      </span>
+                    </div>
+                  ))}
+                  {activityFeed.filter(a => a.type === 'new_anamnesi').length === 0 && (
+                    <p className="text-xs text-slate-500 py-2 text-center">Nessuna anamnesi recente</p>
+                  )}
+                  {activityFeed.filter(a => a.type === 'new_anamnesi').length > 5 && (
+                    <button 
+                      onClick={() => setActiveTab('anamnesi')}
+                      className="text-[10px] text-blue-400 hover:underline w-full text-center py-1"
+                    >
+                      Vedi tutte le {activityFeed.filter(a => a.type === 'new_anamnesi').length} anamnesi →
+                    </button>
                   )}
                 </div>
               </div>
