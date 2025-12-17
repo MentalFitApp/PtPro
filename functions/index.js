@@ -2322,18 +2322,29 @@ exports.completeInvitation = onCall(async (request) => {
       throw new Error('Questo invito è scaduto');
     }
 
-    // Verifica che l'email non sia già in uso
+    // Verifica se l'email esiste già in Firebase Auth
+    let existingUserId = null;
+    let isExistingUser = false;
     try {
-      await admin.auth().getUserByEmail(email.toLowerCase().trim());
-      throw new Error('Questa email è già registrata. Prova ad accedere o usa un\'altra email.');
+      const existingUser = await admin.auth().getUserByEmail(email.toLowerCase().trim());
+      existingUserId = existingUser.uid;
+      isExistingUser = true;
+      console.log('👤 [INVITE] Utente esistente trovato:', existingUserId);
+      
+      // Verifica che non sia già cliente attivo in questo tenant
+      const existingClientDoc = await db.doc(`tenants/${invite.tenantId}/clients/${existingUserId}`).get();
+      if (existingClientDoc.exists && !existingClientDoc.data().isDeleted) {
+        throw new Error('Sei già registrato in questo workspace. Accedi con le tue credenziali.');
+      }
     } catch (authError) {
       if (authError.code !== 'auth/user-not-found') {
+        // Se non è "user not found", propaga l'errore (incluso quello del cliente già esistente)
         throw authError;
       }
-      // OK - email non in uso
+      // OK - email non in uso, creeremo un nuovo utente
     }
 
-    // Verifica se esiste un cliente archiviato con questa email
+    // Verifica se esiste un cliente archiviato con questa email in questo tenant
     let archivedClientId = null;
     let archivedClientData = null;
     const archivedQuery = await db.collection(`tenants/${invite.tenantId}/clients`)
@@ -2349,15 +2360,22 @@ exports.completeInvitation = onCall(async (request) => {
       console.log('🔄 [INVITE] Trovato cliente archiviato da ricollegare:', archivedClientId);
     }
 
-    // Crea utente Firebase Auth
-    const userRecord = await admin.auth().createUser({
-      email: email.toLowerCase().trim(),
-      password,
-      displayName: name,
-    });
-
-    const newUserId = userRecord.uid;
-    console.log('✅ [INVITE] Utente creato:', newUserId);
+    // Usa utente esistente o crea nuovo
+    let newUserId;
+    if (isExistingUser) {
+      // Utente già esiste (da altro tenant) - riutilizza lo stesso account
+      newUserId = existingUserId;
+      console.log('✅ [INVITE] Riutilizzo utente esistente per nuovo tenant:', newUserId);
+    } else {
+      // Crea nuovo utente Firebase Auth
+      const userRecord = await admin.auth().createUser({
+        email: email.toLowerCase().trim(),
+        password,
+        displayName: name,
+      });
+      newUserId = userRecord.uid;
+      console.log('✅ [INVITE] Nuovo utente creato:', newUserId);
+    }
 
     // Prepara dati cliente dall'invito
     const clientData = invite.clientData || {};
@@ -2434,12 +2452,14 @@ exports.completeInvitation = onCall(async (request) => {
       privacyAcceptedAt: acceptPrivacy ? admin.firestore.FieldValue.serverTimestamp() : null,
     });
 
-    // Crea mapping globale utente → tenant
+    // Crea/aggiorna mapping globale utente → tenant con stato attivo
     await db.doc(`user_tenants/${newUserId}`).set({
       [invite.tenantId]: {
         role: 'client',
+        status: 'active', // active | deleted
         joinedAt: admin.firestore.FieldValue.serverTimestamp(),
         viaInvite: true,
+        isExistingUser: isExistingUser, // true se era già in altro tenant
       }
     }, { merge: true });
 
@@ -2449,6 +2469,7 @@ exports.completeInvitation = onCall(async (request) => {
       completedAt: admin.firestore.FieldValue.serverTimestamp(),
       completedBy: newUserId,
       completedEmail: email.toLowerCase().trim(),
+      existingUserLinked: isExistingUser, // traccia se era utente esistente
     });
 
     // Se era collegato a un lead, aggiorna il lead
@@ -2679,8 +2700,9 @@ exports.resendInvitation = onCall(async (request) => {
 });
 
 /**
- * Soft-delete cliente: elimina da Firebase Auth ma mantiene dati in Firestore
- * Permette di ri-collegare il cliente se viene re-invitato con la stessa email
+ * Soft-delete cliente: mantiene dati in Firestore, gestisce Auth in modo intelligente
+ * - Se ha altri tenant attivi: NON elimina da Auth, marca solo come deleted in questo tenant
+ * - Se non ha altri tenant: elimina da Auth
  */
 exports.softDeleteClient = onCall(async (request) => {
   enforceRateLimit(request, 'softDeleteClient');
@@ -2705,14 +2727,33 @@ exports.softDeleteClient = onCall(async (request) => {
     const clientData = clientDoc.data();
     const clientEmail = clientData.email;
 
-    // Elimina utente da Firebase Auth (se esiste)
-    try {
-      await admin.auth().deleteUser(clientId);
-      console.log('✅ [CLIENT] Utente eliminato da Auth:', clientId);
-    } catch (authError) {
-      if (authError.code !== 'auth/user-not-found') {
-        console.warn('⚠️ [CLIENT] Errore eliminazione Auth:', authError.message);
+    // Verifica se l'utente ha altri tenant attivi
+    const userTenantRef = db.doc(`user_tenants/${clientId}`);
+    const userTenantDoc = await userTenantRef.get();
+    let hasOtherActiveTenants = false;
+    
+    if (userTenantDoc.exists) {
+      const tenants = userTenantDoc.data();
+      // Conta tenant attivi escludendo quello corrente
+      const otherActiveTenants = Object.entries(tenants).filter(([tid, data]) => 
+        tid !== tenantId && data.status === 'active'
+      );
+      hasOtherActiveTenants = otherActiveTenants.length > 0;
+      console.log('📊 [CLIENT] Altri tenant attivi:', otherActiveTenants.length);
+    }
+
+    // Elimina utente da Firebase Auth SOLO se non ha altri tenant attivi
+    if (!hasOtherActiveTenants) {
+      try {
+        await admin.auth().deleteUser(clientId);
+        console.log('✅ [CLIENT] Utente eliminato da Auth (nessun altro tenant):', clientId);
+      } catch (authError) {
+        if (authError.code !== 'auth/user-not-found') {
+          console.warn('⚠️ [CLIENT] Errore eliminazione Auth:', authError.message);
+        }
       }
+    } else {
+      console.log('⏭️ [CLIENT] Utente Auth mantenuto (ha altri tenant attivi):', clientId);
     }
 
     // Aggiorna documento cliente come "eliminato" (soft-delete)
@@ -2722,7 +2763,7 @@ exports.softDeleteClient = onCall(async (request) => {
       deletedBy: request.auth.uid,
       // Mantieni email originale per possibile ri-collegamento
       originalEmail: clientEmail,
-      // Rimuovi email per permettere nuova registrazione
+      // Rimuovi email per permettere nuova registrazione in questo tenant
       email: null,
       status: 'eliminato',
       // Mantieni i dati storici
@@ -2734,21 +2775,16 @@ exports.softDeleteClient = onCall(async (request) => {
       }
     });
 
-    // Rimuovi mapping user_tenants
+    // Aggiorna mapping user_tenants - marca come deleted invece di rimuovere
     try {
-      const userTenantRef = db.doc(`user_tenants/${clientId}`);
-      const userTenantDoc = await userTenantRef.get();
       if (userTenantDoc.exists) {
-        const data = userTenantDoc.data();
-        delete data[tenantId];
-        if (Object.keys(data).length === 0) {
-          await userTenantRef.delete();
-        } else {
-          await userTenantRef.set(data);
-        }
+        await userTenantRef.update({
+          [`${tenantId}.status`]: 'deleted',
+          [`${tenantId}.deletedAt`]: admin.firestore.FieldValue.serverTimestamp(),
+        });
       }
     } catch (err) {
-      console.warn('⚠️ [CLIENT] Errore rimozione user_tenants:', err);
+      console.warn('⚠️ [CLIENT] Errore aggiornamento user_tenants:', err);
     }
 
     console.log('✅ [CLIENT] Soft-delete completato per:', clientId);

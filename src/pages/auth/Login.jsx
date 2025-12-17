@@ -12,25 +12,72 @@ import { getDeviceInfo } from '../../utils/deviceInfo';
  * Cerca in quale tenant esiste l'utente
  * 
  * STRATEGIA (in ordine di priorità):
- * 1. Controlla user_tenants/{userId} - mapping veloce e sicuro (nuovi utenti)
- * 2. Fallback: cerca nel tenant già salvato o default (utenti esistenti)
+ * 1. Controlla user_tenants/{userId} - mapping con stato attivo/eliminato
+ * 2. Se ha 1 solo tenant attivo → usa quello
+ * 3. Se ha più tenant attivi E è coach/admin → restituisce lista per selettore
+ * 4. Fallback: cerca nel tenant già salvato o default (utenti esistenti)
  * 
- * Il sistema è retrocompatibile: funziona anche se user_tenants non esiste ancora.
+ * @returns { tenantId: string, allActiveTenants: Array | null }
  */
 async function findUserTenant(userId) {
   try {
-    // 1. PRIMA: Controlla user_tenants (mapping veloce)
+    // 1. PRIMA: Controlla user_tenants (mapping con stato)
     try {
       const userTenantRef = doc(db, 'user_tenants', userId);
       const userTenantDoc = await getDoc(userTenantRef);
-      if (userTenantDoc.exists() && userTenantDoc.data()?.tenantId) {
-        const tenantId = userTenantDoc.data().tenantId;
-        console.log('✅ Tenant trovato in user_tenants:', tenantId);
-        return tenantId;
+      
+      if (userTenantDoc.exists()) {
+        const tenantsData = userTenantDoc.data();
+        
+        // Filtra solo tenant attivi (status === 'active' o status non definito per retrocompatibilità)
+        const activeTenants = Object.entries(tenantsData)
+          .filter(([tenantId, data]) => {
+            // Ignora campi speciali
+            if (tenantId === 'tenantId') return false;
+            // Considera attivo se status è 'active' o non definito
+            return data.status === 'active' || !data.status;
+          })
+          .map(([tenantId, data]) => ({ tenantId, ...data }));
+        
+        console.log('📊 Tenant attivi per utente:', activeTenants.length);
+        
+        if (activeTenants.length === 0) {
+          console.log('⚠️ Nessun tenant attivo trovato');
+          return { tenantId: getCurrentTenantId() || DEFAULT_TENANT_ID, allActiveTenants: null };
+        }
+        
+        if (activeTenants.length === 1) {
+          // Un solo tenant attivo → usa quello direttamente
+          console.log('✅ Singolo tenant attivo:', activeTenants[0].tenantId);
+          return { tenantId: activeTenants[0].tenantId, allActiveTenants: null };
+        }
+        
+        // Più tenant attivi - verifica se è coach/admin
+        const hasCoachOrAdminRole = activeTenants.some(t => 
+          t.role === 'admin' || t.role === 'coach' || t.role === 'superadmin'
+        );
+        
+        if (hasCoachOrAdminRole) {
+          // Coach/Admin con più tenant → restituisci lista per selettore
+          console.log('👔 Coach/Admin con più tenant:', activeTenants.length);
+          return { 
+            tenantId: null, 
+            allActiveTenants: activeTenants,
+            needsSelection: true 
+          };
+        } else {
+          // Cliente con più tenant → usa il più recente
+          const sortedTenants = activeTenants.sort((a, b) => {
+            const dateA = a.joinedAt?.toDate?.() || new Date(0);
+            const dateB = b.joinedAt?.toDate?.() || new Date(0);
+            return dateB - dateA;
+          });
+          console.log('👤 Cliente con più tenant, usando il più recente:', sortedTenants[0].tenantId);
+          return { tenantId: sortedTenants[0].tenantId, allActiveTenants: null };
+        }
       }
     } catch (e) {
-      // user_tenants potrebbe non esistere ancora per utenti vecchi
-      console.log('ℹ️ user_tenants non disponibile, usando fallback');
+      console.log('ℹ️ user_tenants non disponibile, usando fallback', e);
     }
 
     // 2. FALLBACK: Usa tenant già salvato o cerca manualmente
@@ -42,9 +89,9 @@ async function findUserTenant(userId) {
       try {
         const clientRef = doc(db, 'tenants', tenantId, 'clients', userId);
         const clientDoc = await getDoc(clientRef);
-        if (clientDoc.exists()) {
+        if (clientDoc.exists() && !clientDoc.data().isDeleted) {
           console.log('✅ Utente trovato come client in:', tenantId);
-          return tenantId;
+          return { tenantId, allActiveTenants: null };
         }
       } catch (e) { /* continue */ }
 
@@ -54,7 +101,7 @@ async function findUserTenant(userId) {
         const collabDoc = await getDoc(collabRef);
         if (collabDoc.exists()) {
           console.log('✅ Utente trovato come collaboratore in:', tenantId);
-          return tenantId;
+          return { tenantId, allActiveTenants: null };
         }
       } catch (e) { /* continue */ }
 
@@ -64,7 +111,7 @@ async function findUserTenant(userId) {
         const adminDoc = await getDoc(adminRef);
         if (adminDoc.exists() && adminDoc.data()?.uids?.includes(userId)) {
           console.log('✅ Utente trovato come admin in:', tenantId);
-          return tenantId;
+          return { tenantId, allActiveTenants: null };
         }
       } catch (e) { /* continue */ }
 
@@ -74,7 +121,7 @@ async function findUserTenant(userId) {
         const coachDoc = await getDoc(coachRef);
         if (coachDoc.exists() && coachDoc.data()?.uids?.includes(userId)) {
           console.log('✅ Utente trovato come coach in:', tenantId);
-          return tenantId;
+          return { tenantId, allActiveTenants: null };
         }
       } catch (e) { /* continue */ }
       
@@ -84,16 +131,16 @@ async function findUserTenant(userId) {
         const superadminDoc = await getDoc(superadminRef);
         if (superadminDoc.exists() && superadminDoc.data()?.uids?.includes(userId)) {
           console.log('✅ Utente trovato come superadmin in:', tenantId);
-          return tenantId;
+          return { tenantId, allActiveTenants: null };
         }
       } catch (e) { /* continue */ }
     }
 
     // Se niente funziona, usa il tenant salvato o default
-    return savedTenant || DEFAULT_TENANT_ID;
+    return { tenantId: savedTenant || DEFAULT_TENANT_ID, allActiveTenants: null };
   } catch (error) {
     console.log('ℹ️ Ricerca tenant: usando default');
-    return getCurrentTenantId() || DEFAULT_TENANT_ID;
+    return { tenantId: getCurrentTenantId() || DEFAULT_TENANT_ID, allActiveTenants: null };
   }
 }
 
@@ -143,6 +190,9 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [showWorkspaceSelector, setShowWorkspaceSelector] = useState(false);
+  const [availableWorkspaces, setAvailableWorkspaces] = useState([]);
+  const [pendingUser, setPendingUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -154,7 +204,18 @@ const Login = () => {
           let tenantId = localStorage.getItem('tenantId');
           if (!tenantId) {
             console.log('🔍 Cercando tenant per utente:', user.uid);
-            tenantId = await findUserTenant(user.uid);
+            const tenantResult = await findUserTenant(user.uid);
+            
+            // Se deve selezionare workspace (coach/admin con più tenant)
+            if (tenantResult.needsSelection && tenantResult.allActiveTenants) {
+              setPendingUser(user);
+              setAvailableWorkspaces(tenantResult.allActiveTenants);
+              setShowWorkspaceSelector(true);
+              setIsCheckingAuth(false);
+              return;
+            }
+            
+            tenantId = tenantResult.tenantId;
             if (tenantId) {
               setCurrentTenantId(tenantId);
               console.log('✅ TenantId trovato e salvato:', tenantId);
@@ -232,7 +293,17 @@ const Login = () => {
       
       // Cerca e salva il tenant per questo utente
       console.log('🔍 Cercando tenant per utente:', userCredential.user.uid);
-      let tenantId = await findUserTenant(userCredential.user.uid);
+      const tenantResult = await findUserTenant(userCredential.user.uid);
+      
+      // Se deve selezionare workspace (coach/admin con più tenant)
+      if (tenantResult.needsSelection && tenantResult.allActiveTenants) {
+        setPendingUser(userCredential.user);
+        setAvailableWorkspaces(tenantResult.allActiveTenants);
+        setShowWorkspaceSelector(true);
+        return;
+      }
+      
+      let tenantId = tenantResult.tenantId;
       if (tenantId) {
         setCurrentTenantId(tenantId);
         console.log('✅ TenantId trovato al login:', tenantId);
@@ -311,7 +382,17 @@ const Login = () => {
       
       // Cerca e salva il tenant per questo utente
       console.log('🔍 Cercando tenant per utente Google:', userCredential.user.uid);
-      let tenantId = await findUserTenant(userCredential.user.uid);
+      const tenantResult = await findUserTenant(userCredential.user.uid);
+      
+      // Se deve selezionare workspace (coach/admin con più tenant)
+      if (tenantResult.needsSelection && tenantResult.allActiveTenants) {
+        setPendingUser(userCredential.user);
+        setAvailableWorkspaces(tenantResult.allActiveTenants);
+        setShowWorkspaceSelector(true);
+        return;
+      }
+      
+      let tenantId = tenantResult.tenantId;
       if (tenantId) {
         setCurrentTenantId(tenantId);
         console.log('✅ TenantId trovato al login Google:', tenantId);
@@ -405,6 +486,86 @@ const Login = () => {
       }
     }
   };
+
+  // Funzione per selezionare workspace (coach/admin con più tenant)
+  const handleSelectWorkspace = async (workspace) => {
+    try {
+      setCurrentTenantId(workspace.tenantId);
+      console.log('✅ Workspace selezionato:', workspace.tenantId);
+      
+      // Redirect basato sul ruolo nel workspace selezionato
+      if (workspace.role === 'admin' || workspace.role === 'superadmin') {
+        navigate('/admin');
+      } else if (workspace.role === 'coach') {
+        navigate('/coach');
+      } else {
+        navigate('/client');
+      }
+    } catch (error) {
+      console.error('❌ Errore selezione workspace:', error);
+      setError('Errore nella selezione del workspace');
+    }
+  };
+
+  // Se mostra il selettore workspace
+  if (showWorkspaceSelector && availableWorkspaces.length > 0) {
+    return (
+      <div className="min-h-screen bg-slate-900 relative overflow-hidden flex items-center justify-center p-4">
+        <AnimatedStars />
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md z-10"
+        >
+          <div className="bg-slate-800/70 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Crown className="text-blue-400" size={32} />
+              </div>
+              <h2 className="text-xl font-semibold text-white">Seleziona Workspace</h2>
+              <p className="text-slate-400 text-sm mt-1">
+                Hai accesso a più workspace. Quale vuoi aprire?
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {availableWorkspaces.map((workspace) => (
+                <motion.button
+                  key={workspace.tenantId}
+                  onClick={() => handleSelectWorkspace(workspace)}
+                  className="w-full p-4 bg-slate-700/50 hover:bg-slate-700 border border-slate-600/50 hover:border-blue-500/50 rounded-xl text-left transition-all flex items-center gap-4"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                    {workspace.tenantId?.charAt(0)?.toUpperCase() || 'W'}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white font-medium">{workspace.tenantId}</p>
+                    <p className="text-slate-400 text-sm capitalize">{workspace.role}</p>
+                  </div>
+                  <LogIn className="text-slate-400" size={20} />
+                </motion.button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                signOut(auth);
+                setShowWorkspaceSelector(false);
+                setAvailableWorkspaces([]);
+                setPendingUser(null);
+              }}
+              className="w-full mt-4 py-2 text-slate-400 hover:text-white text-sm transition-colors"
+            >
+              Logout e cambia account
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (isCheckingAuth) {
     return (

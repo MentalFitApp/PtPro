@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Settings, LogOut, ChevronDown, Bell, User, CreditCard, Home, Users, MessageSquare, Calendar, Dumbbell, Utensils, Activity, ChevronRight, ArrowLeft, FileText } from 'lucide-react';
-import { auth } from '../../firebase';
+import { Menu, Settings, LogOut, ChevronDown, Bell, User, CreditCard, Home, Users, MessageSquare, Calendar, Dumbbell, Utensils, Activity, ChevronRight, ArrowLeft, FileText, Building2, Check } from 'lucide-react';
+import { auth, db } from '../../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { ProSidebar, MobileSidebar } from './ProSidebar';
+import { setCurrentTenantId, getCurrentTenantId } from '../../config/tenant';
 // import ThemeToggle from '../ui/ThemeToggle'; // TODO: riabilitare quando light mode pronta
 // import NotificationPermissionModal from '../notifications/NotificationPermissionModal'; // TODO: riabilitare quando notifiche implementate
 import InteractiveTour from '../onboarding/InteractiveTour';
@@ -153,7 +155,7 @@ const AnimatedStars = () => {
 };
 
 // === MOBILE HEADER ===
-const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenuOpen, onNavigateSettings, onNavigateProfile, onNavigateBilling, onLogout }) => {
+const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenuOpen, onNavigateSettings, onNavigateProfile, onNavigateBilling, onLogout, availableWorkspaces = [], currentWorkspaceId, onSwitchWorkspace }) => {
   const user = auth.currentUser;
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Utente';
   const photoURL = user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3b82f6&color=fff`;
@@ -223,6 +225,33 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
                     <p className="text-sm font-medium text-theme-text-primary truncate">{displayName}</p>
                     <p className="text-xs text-theme-text-secondary truncate">{user?.email}</p>
                   </div>
+                  
+                  {/* Workspace Selector - solo se ci sono più workspace */}
+                  {availableWorkspaces.length > 1 && (
+                    <div className="py-2 border-b border-theme">
+                      <p className="px-4 py-1 text-xs font-medium text-theme-text-tertiary uppercase tracking-wider flex items-center gap-2">
+                        <Building2 size={12} />
+                        Workspace
+                      </p>
+                      {availableWorkspaces.map((ws) => (
+                        <button
+                          key={ws.id}
+                          onClick={() => onSwitchWorkspace(ws.id)}
+                          className={`w-full flex items-center justify-between gap-3 px-4 py-2 text-sm transition-colors ${
+                            ws.id === currentWorkspaceId 
+                              ? 'bg-theme-accent/10 text-theme-accent' 
+                              : 'text-theme-text-primary hover:bg-theme-bg-tertiary/60'
+                          }`}
+                        >
+                          <span className="truncate">{ws.name}</span>
+                          {ws.id === currentWorkspaceId && (
+                            <Check size={14} className="text-theme-accent flex-shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  
                   <div className="py-1">
                     <button
                       onClick={onNavigateProfile}
@@ -258,7 +287,7 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
 };
 
 // === DESKTOP HEADER ===
-const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSettings, onNavigateProfile, onNavigateBilling, onLogout, isSidebarCollapsed }) => {
+const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSettings, onNavigateProfile, onNavigateBilling, onLogout, isSidebarCollapsed, availableWorkspaces = [], currentWorkspaceId, onSwitchWorkspace }) => {
   const user = auth.currentUser;
   const navigate = useNavigate();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Utente';
@@ -359,6 +388,33 @@ const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSetti
                     <p className="text-sm font-medium text-theme-text-primary truncate">{displayName}</p>
                     <p className="text-xs text-theme-text-secondary truncate">{user?.email}</p>
                 </div>
+                
+                {/* Workspace Selector - solo se ci sono più workspace */}
+                {availableWorkspaces.length > 1 && (
+                  <div className="py-2 border-b border-theme">
+                    <p className="px-4 py-1 text-xs font-medium text-theme-text-tertiary uppercase tracking-wider flex items-center gap-2">
+                      <Building2 size={12} />
+                      Workspace
+                    </p>
+                    {availableWorkspaces.map((ws) => (
+                      <button
+                        key={ws.id}
+                        onClick={() => onSwitchWorkspace(ws.id)}
+                        className={`w-full flex items-center justify-between gap-3 px-4 py-2 text-sm transition-colors ${
+                          ws.id === currentWorkspaceId 
+                            ? 'bg-theme-accent/10 text-theme-accent' 
+                            : 'text-theme-text-primary hover:bg-theme-bg-tertiary/60'
+                        }`}
+                      >
+                        <span className="truncate">{ws.name}</span>
+                        {ws.id === currentWorkspaceId && (
+                          <Check size={14} className="text-theme-accent flex-shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
                 <div className="py-1">
                   <button
                     onClick={onNavigateProfile}
@@ -555,6 +611,37 @@ export const ProLayout = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [branding, setBranding] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [availableWorkspaces, setAvailableWorkspaces] = useState([]);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState(getCurrentTenantId());
+
+  // Carica workspace disponibili per l'utente
+  useEffect(() => {
+    const loadWorkspaces = async () => {
+      if (!auth.currentUser) return;
+      
+      try {
+        const userTenantRef = doc(db, 'user_tenants', auth.currentUser.uid);
+        const userTenantDoc = await getDoc(userTenantRef);
+        
+        if (userTenantDoc.exists()) {
+          const tenantsData = userTenantDoc.data();
+          const workspaces = Object.entries(tenantsData)
+            .filter(([tenantId, data]) => {
+              if (tenantId === 'tenantId') return false;
+              return (data.status === 'active' || !data.status) && 
+                     (data.role === 'admin' || data.role === 'coach' || data.role === 'superadmin');
+            })
+            .map(([tenantId, data]) => ({ tenantId, ...data }));
+          
+          setAvailableWorkspaces(workspaces);
+        }
+      } catch (err) {
+        console.log('Errore caricamento workspace:', err);
+      }
+    };
+    
+    loadWorkspaces();
+  }, []);
 
   // Determina il ruolo basandosi sul path
   const getRole = () => {
@@ -693,6 +780,23 @@ export const ProLayout = () => {
     navigate('/billing');
   };
 
+  // Funzione per cambiare workspace
+  const handleSwitchWorkspace = (workspace) => {
+    setCurrentTenantId(workspace.tenantId);
+    setCurrentWorkspaceId(workspace.tenantId);
+    setIsProfileMenuOpen(false);
+    
+    // Redirect basato sul ruolo
+    if (workspace.role === 'admin' || workspace.role === 'superadmin') {
+      navigate('/admin');
+    } else if (workspace.role === 'coach') {
+      navigate('/coach');
+    }
+    
+    // Ricarica la pagina per applicare il nuovo tenant
+    window.location.reload();
+  };
+
   // Se è pagina auth, non mostrare layout
   if (!showLayout) {
     return (
@@ -738,6 +842,9 @@ export const ProLayout = () => {
             onNavigateBilling={handleNavigateBilling}
             onLogout={handleLogout}
             isSidebarCollapsed={isSidebarCollapsed}
+            availableWorkspaces={availableWorkspaces}
+            currentWorkspaceId={currentWorkspaceId}
+            onSwitchWorkspace={handleSwitchWorkspace}
           />
         </div>
       )}
@@ -754,6 +861,9 @@ export const ProLayout = () => {
             onNavigateProfile={handleNavigateProfile}
             onNavigateBilling={handleNavigateBilling}
             onLogout={handleLogout}
+            availableWorkspaces={availableWorkspaces}
+            currentWorkspaceId={currentWorkspaceId}
+            onSwitchWorkspace={handleSwitchWorkspace}
           />
         </div>
       )}
