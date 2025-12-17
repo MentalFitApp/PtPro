@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -13,51 +13,107 @@ import {
   Loader2,
   Settings,
   Key,
+  Link2,
+  Image,
+  Upload,
+  Globe,
+  Camera,
 } from 'lucide-react';
 import { generateLandingPage, AI_PRESETS } from '../../services/aiLandingGenerator';
+import { analyzeCompetitorURL, analyzeScreenshot, generateLandingPage as generateFromAnalysis } from '../../services/openai';
 
 /**
  * AIGeneratorModal - Modal per generare landing pages con AI
+ * Supporta 4 modalità: Preset, Custom, URL Competitor, Screenshot
  */
 export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantId }) {
-  const [step, setStep] = useState(1); // 1: Preset/Custom, 2: Details, 3: Generating, 4: Done
-  const [mode, setMode] = useState('preset'); // 'preset' | 'custom'
+  const fileInputRef = useRef(null);
+  const [step, setStep] = useState(1); // 1: Choose Mode, 2: Details, 3: Generating, 4: Done
+  const [mode, setMode] = useState('preset'); // 'preset' | 'custom' | 'url' | 'screenshot'
   const [selectedPreset, setSelectedPreset] = useState(null);
   const [customInput, setCustomInput] = useState({
     businessInfo: '',
     goal: '',
     target: '',
   });
+  // URL Mode
+  const [competitorUrl, setCompetitorUrl] = useState('');
+  // Screenshot Mode
+  const [screenshotFile, setScreenshotFile] = useState(null);
+  const [screenshotPreview, setScreenshotPreview] = useState(null);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  
   const [apiKey, setApiKey] = useState(localStorage.getItem('openai_api_key') || '');
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
 
+  // Handle screenshot file selection
+  const handleScreenshotSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setScreenshotFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = () => {
+        setScreenshotPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleGenerate = async () => {
-    if (!apiKey) {
-      setShowApiKeyInput(true);
-      return;
-    }
-
-    const input = mode === 'preset' 
-      ? AI_PRESETS[selectedPreset]
-      : customInput;
-
-    if (!input.businessInfo || !input.goal || !input.target) {
-      setError('Compila tutti i campi');
-      return;
-    }
-
     setIsGenerating(true);
     setError(null);
     setStep(3);
 
     try {
-      const generated = await generateLandingPage({
-        ...input,
-        apiKey,
-      });
+      let generated;
+
+      if (mode === 'url') {
+        // Analizza URL competitor
+        if (!competitorUrl) {
+          throw new Error('Inserisci un URL');
+        }
+        const analysis = await analyzeCompetitorURL(competitorUrl);
+        setAnalysisResult(analysis);
+        
+        // Converti analisi in blocchi landing page
+        generated = convertAnalysisToBlocks(analysis);
+      } else if (mode === 'screenshot') {
+        // Analizza screenshot con Vision AI
+        if (!screenshotFile) {
+          throw new Error('Carica uno screenshot');
+        }
+        
+        // Convert to base64
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(screenshotFile);
+        });
+        
+        const analysis = await analyzeScreenshot(base64);
+        setAnalysisResult(analysis);
+        
+        // Converti analisi in blocchi
+        generated = convertAnalysisToBlocks(analysis, analysis.colors);
+      } else {
+        // Modalità preset o custom
+        const input = mode === 'preset' 
+          ? AI_PRESETS[selectedPreset]
+          : customInput;
+
+        if (!input?.businessInfo || !input?.goal || !input?.target) {
+          throw new Error('Compila tutti i campi');
+        }
+
+        generated = await generateLandingPage({
+          ...input,
+          apiKey,
+        });
+      }
 
       setResult(generated);
       setStep(4);
@@ -68,6 +124,67 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Converte l'analisi AI in blocchi per la landing page
+  const convertAnalysisToBlocks = (analysis, colors = null) => {
+    const blocks = [];
+    const generateId = () => `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Mappa le sezioni analizzate ai blocchi
+    (analysis.sections || []).forEach((section, index) => {
+      const block = {
+        id: generateId(),
+        type: section.type || 'text',
+        settings: {
+          title: section.title || '',
+          subtitle: section.subtitle || '',
+          backgroundColor: colors?.[0] || 'bg-slate-800',
+        },
+      };
+      
+      // Gestisci CTA
+      if (section.ctas && section.ctas.length > 0) {
+        block.settings.ctaText = section.ctas[0].label;
+        block.settings.ctaLink = section.ctas[0].actionType === 'form' ? '#form' : '#';
+      }
+      
+      // Gestisci features se presenti
+      if (section.features) {
+        block.settings.items = section.features;
+      }
+      
+      blocks.push(block);
+    });
+
+    // Aggiungi sempre un form se non presente
+    if (!blocks.find(b => b.type === 'form')) {
+      blocks.push({
+        id: generateId(),
+        type: 'form',
+        settings: {
+          title: 'Richiedi Informazioni',
+          subtitle: 'Compila il form e ti ricontatteremo',
+          variant: 'standard',
+          fields: [
+            { id: 'name', type: 'text', label: 'Nome', required: true },
+            { id: 'email', type: 'email', label: 'Email', required: true },
+            { id: 'phone', type: 'tel', label: 'Telefono', required: false },
+          ],
+          submitText: 'Invia Richiesta',
+          saveToLeads: true,
+        },
+      });
+    }
+
+    return {
+      blocks,
+      meta: {
+        title: analysis.targetAudience ? `Landing per ${analysis.targetAudience}` : 'Landing Page Generata',
+        description: `Stile: ${analysis.style || 'professionale'}, Tono: ${analysis.tone || 'coinvolgente'}`,
+        analyzedFrom: analysis.sourceUrl || 'screenshot',
+      },
+    };
   };
 
   const handleSaveApiKey = () => {
@@ -168,26 +285,49 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
           {/* Step 1: Choose Mode */}
           {step === 1 && (
             <div className="space-y-6">
+              <p className="text-slate-300 text-center mb-4">Come vuoi creare la landing page?</p>
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => { setMode('preset'); setStep(2); }}
-                  className="p-6 bg-slate-700/50 hover:bg-slate-700 rounded-xl border-2 border-transparent hover:border-purple-500 transition-all text-left group"
+                  className="p-5 bg-slate-700/50 hover:bg-slate-700 rounded-xl border-2 border-transparent hover:border-purple-500 transition-all text-left group"
                 >
-                  <Zap className="w-8 h-8 text-purple-400 mb-3 group-hover:scale-110 transition-transform" />
+                  <Zap className="w-7 h-7 text-purple-400 mb-2 group-hover:scale-110 transition-transform" />
                   <h3 className="font-semibold text-white mb-1">Template Preimpostati</h3>
-                  <p className="text-sm text-slate-400">
-                    Scegli un preset ottimizzato per il tuo tipo di business
+                  <p className="text-xs text-slate-400">
+                    Scegli un preset ottimizzato
                   </p>
                 </button>
                 
                 <button
                   onClick={() => { setMode('custom'); setStep(2); }}
-                  className="p-6 bg-slate-700/50 hover:bg-slate-700 rounded-xl border-2 border-transparent hover:border-cyan-500 transition-all text-left group"
+                  className="p-5 bg-slate-700/50 hover:bg-slate-700 rounded-xl border-2 border-transparent hover:border-cyan-500 transition-all text-left group"
                 >
-                  <Wand2 className="w-8 h-8 text-cyan-400 mb-3 group-hover:scale-110 transition-transform" />
+                  <Wand2 className="w-7 h-7 text-cyan-400 mb-2 group-hover:scale-110 transition-transform" />
                   <h3 className="font-semibold text-white mb-1">Personalizzato</h3>
-                  <p className="text-sm text-slate-400">
-                    Descrivi il tuo business e lascia che l'AI crei per te
+                  <p className="text-xs text-slate-400">
+                    Descrivi il tuo business
+                  </p>
+                </button>
+
+                <button
+                  onClick={() => { setMode('url'); setStep(2); }}
+                  className="p-5 bg-slate-700/50 hover:bg-slate-700 rounded-xl border-2 border-transparent hover:border-green-500 transition-all text-left group"
+                >
+                  <Globe className="w-7 h-7 text-green-400 mb-2 group-hover:scale-110 transition-transform" />
+                  <h3 className="font-semibold text-white mb-1">Clona da URL</h3>
+                  <p className="text-xs text-slate-400">
+                    Analizza un competitor e ricrea
+                  </p>
+                </button>
+                
+                <button
+                  onClick={() => { setMode('screenshot'); setStep(2); }}
+                  className="p-5 bg-slate-700/50 hover:bg-slate-700 rounded-xl border-2 border-transparent hover:border-orange-500 transition-all text-left group"
+                >
+                  <Camera className="w-7 h-7 text-orange-400 mb-2 group-hover:scale-110 transition-transform" />
+                  <h3 className="font-semibold text-white mb-1">Da Screenshot</h3>
+                  <p className="text-xs text-slate-400">
+                    Carica immagine da analizzare
                   </p>
                 </button>
               </div>
@@ -307,6 +447,144 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
               >
                 <Sparkles className="w-5 h-5" />
                 Genera Landing Page
+              </button>
+            </div>
+          )}
+
+          {/* Step 2: URL Mode */}
+          {step === 2 && mode === 'url' && (
+            <div className="space-y-6">
+              <button
+                onClick={() => setStep(1)}
+                className="text-sm text-slate-400 hover:text-white flex items-center gap-1"
+              >
+                ← Indietro
+              </button>
+              
+              <div className="text-center mb-4">
+                <Globe className="w-12 h-12 text-green-400 mx-auto mb-3" />
+                <h3 className="font-semibold text-white text-lg">Clona da URL Competitor</h3>
+                <p className="text-sm text-slate-400">
+                  Inserisci l'URL di una landing page e l'AI la analizzerà per ricrearla
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-slate-300 mb-2">
+                    URL della Landing Page
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                      <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <input
+                        type="url"
+                        value={competitorUrl}
+                        onChange={(e) => setCompetitorUrl(e.target.value)}
+                        placeholder="https://esempio.com/landing-page"
+                        className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-700/50 rounded-xl">
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">💡 Come funziona</h4>
+                  <ul className="text-xs text-slate-400 space-y-1">
+                    <li>• L'AI analizzerà la struttura della pagina</li>
+                    <li>• Estrarrà sezioni, CTA, stile e tono comunicativo</li>
+                    <li>• Creerà blocchi simili per la tua landing</li>
+                    <li>• Potrai poi personalizzare ogni dettaglio</li>
+                  </ul>
+                </div>
+              </div>
+
+              <button
+                onClick={handleGenerate}
+                disabled={!competitorUrl}
+                className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-green-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-5 h-5" />
+                Analizza e Ricrea
+              </button>
+            </div>
+          )}
+
+          {/* Step 2: Screenshot Mode */}
+          {step === 2 && mode === 'screenshot' && (
+            <div className="space-y-6">
+              <button
+                onClick={() => setStep(1)}
+                className="text-sm text-slate-400 hover:text-white flex items-center gap-1"
+              >
+                ← Indietro
+              </button>
+              
+              <div className="text-center mb-4">
+                <Camera className="w-12 h-12 text-orange-400 mx-auto mb-3" />
+                <h3 className="font-semibold text-white text-lg">Analizza Screenshot</h3>
+                <p className="text-sm text-slate-400">
+                  Carica uno screenshot e l'AI Vision lo analizzerà per ricreare la pagina
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Upload area */}
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                    screenshotPreview 
+                      ? 'border-orange-500 bg-orange-500/10' 
+                      : 'border-slate-600 hover:border-orange-500 hover:bg-slate-700/50'
+                  }`}
+                >
+                  {screenshotPreview ? (
+                    <div className="space-y-3">
+                      <img 
+                        src={screenshotPreview} 
+                        alt="Preview" 
+                        className="max-h-48 mx-auto rounded-lg shadow-lg"
+                      />
+                      <p className="text-sm text-orange-400">
+                        ✓ Screenshot caricato - Clicca per cambiare
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Upload className="w-10 h-10 text-slate-400 mx-auto" />
+                      <div>
+                        <p className="text-white font-medium">Clicca per caricare</p>
+                        <p className="text-xs text-slate-400">PNG, JPG fino a 10MB</p>
+                      </div>
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleScreenshotSelect}
+                    className="hidden"
+                  />
+                </div>
+
+                <div className="p-4 bg-slate-700/50 rounded-xl">
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">🔍 GPT-4 Vision analizzerà</h4>
+                  <ul className="text-xs text-slate-400 space-y-1">
+                    <li>• Layout e struttura delle sezioni</li>
+                    <li>• Colori dominanti e stile grafico</li>
+                    <li>• Testi dei pulsanti e CTA</li>
+                    <li>• Tipologia di contenuti</li>
+                  </ul>
+                </div>
+              </div>
+
+              <button
+                onClick={handleGenerate}
+                disabled={!screenshotFile}
+                className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-5 h-5" />
+                Analizza con Vision AI
               </button>
             </div>
           )}

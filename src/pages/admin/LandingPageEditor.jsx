@@ -15,6 +15,7 @@ import {
 import { DynamicBlock } from '../../components/landingBlocks';
 import BlockSettingsPanel from './BlockSettingsPanel';
 import AIGeneratorModal from '../../components/landing/AIGeneratorModal';
+import LandingPageLeads from '../../components/landing/LandingPageLeads';
 import {
   Plus,
   Trash2,
@@ -36,6 +37,7 @@ import {
   ExternalLink,
   Info,
   Sparkles,
+  Users,
 } from 'lucide-react';
 
 const LandingPageEditor = () => {
@@ -56,6 +58,7 @@ const LandingPageEditor = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [showLeads, setShowLeads] = useState(false);
 
   // Determina se è modalità creazione
   const isNewPage = !pageId || pageId === 'new';
@@ -311,6 +314,17 @@ const LandingPageEditor = () => {
             <Eye className="w-5 h-5" />
             <span className="hidden sm:inline">Preview</span>
           </button>
+
+          {/* Leads Button */}
+          {!isNewPage && (
+            <button
+              onClick={() => setShowLeads(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-lg hover:shadow-lg hover:shadow-green-500/30 transition-all"
+            >
+              <Users className="w-5 h-5" />
+              <span className="hidden sm:inline">Leads</span>
+            </button>
+          )}
 
           <button
             onClick={() => setShowAIGenerator(true)}
@@ -606,6 +620,14 @@ const LandingPageEditor = () => {
         isOpen={showAIGenerator}
         onClose={() => setShowAIGenerator(false)}
         onGenerated={handleAIGenerated}
+        tenantId={tenantId}
+      />
+
+      {/* Leads Modal */}
+      <LandingPageLeads
+        isOpen={showLeads}
+        onClose={() => setShowLeads(false)}
+        pageId={pageId}
         tenantId={tenantId}
       />
     </div>
@@ -1154,6 +1176,11 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
       </motion.div>
     </motion.div>
   );
+};
+
+// Componente wrapper per esportazione con Leads Modal
+const LandingPageEditorWithLeads = () => {
+  return <LandingPageEditor />;
 };
 
 export default LandingPageEditor;
