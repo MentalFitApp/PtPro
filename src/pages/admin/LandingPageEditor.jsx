@@ -10,7 +10,6 @@ import {
   createBlock,
   DEFAULT_BLOCKS,
   LANDING_TEMPLATES,
-  generateSlug,
 } from '../../services/landingPageService';
 import { DynamicBlock } from '../../components/landingBlocks';
 import BlockSettingsPanel from './BlockSettingsPanel';

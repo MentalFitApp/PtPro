@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Plus, Trash2, ChevronDown, ChevronUp, Upload, Video, Image } from 'lucide-react';
 import { DEFAULT_BLOCKS } from '../../services/landingPageService';
 import MediaUploader from '../../components/landing/MediaUploader';
@@ -9,7 +9,6 @@ import MediaUploader from '../../components/landing/MediaUploader';
 const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
   const [localSettings, setLocalSettings] = useState(block?.settings || {});
   const [expandedSections, setExpandedSections] = useState(['content', 'style']);
-  const [showMediaUploader, setShowMediaUploader] = useState(null); // 'image' | 'video' | null
   const debounceRef = useRef(null);
   const blockIdRef = useRef(block?.id);
   const localSettingsRef = useRef(localSettings);
@@ -27,16 +26,6 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
     }
   }, [block?.id, block?.settings]);
 
-  // Debounced update to parent - evita re-render continui
-  const debouncedUpdate = useCallback((newSettings) => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-    debounceRef.current = setTimeout(() => {
-      onUpdate(newSettings);
-    }, 800); // Aumentato a 800ms per dare più tempo
-  }, [onUpdate]);
-
   // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
@@ -51,25 +40,6 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
     setLocalSettings(prev => {
       const newSettings = { ...prev, [key]: value };
       // Usa setTimeout per evitare update sincrono
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-      debounceRef.current = setTimeout(() => {
-        onUpdate(newSettings);
-      }, 800);
-      return newSettings;
-    });
-  }, [onUpdate]);
-
-  const handleNestedChange = useCallback((parentKey, key, value) => {
-    setLocalSettings(prev => {
-      const newSettings = {
-        ...prev,
-        [parentKey]: {
-          ...(prev[parentKey] || {}),
-          [key]: value,
-        }
-      };
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
@@ -130,7 +100,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
         ? prev.filter(s => s !== section)
         : [...prev, section]
     );
-  };
+  }, []);
 
   const blockDef = DEFAULT_BLOCKS[block?.type];
 
@@ -372,7 +342,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                       
                       {(localSettings.formPopupCustomFields || []).length === 0 && (
                         <p className="text-xs text-slate-500 text-center py-2">
-                          Nessun campo. Clicca "Aggiungi Campo" per iniziare.
+                          Nessun campo. Clicca &quot;Aggiungi Campo&quot; per iniziare.
                         </p>
                       )}
                       
@@ -1214,7 +1184,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                   <input
                     type="checkbox"
                     checked={localSettings.saveToLeads !== false}
-                    onChange={(e) => handleFieldChange('saveToLeads', e.target.checked)}
+                    onChange={(e) => handleChange('saveToLeads', e.target.checked)}
                     className="rounded w-5 h-5 text-green-500 border-slate-600 bg-slate-700"
                   />
                   <span className="text-sm text-slate-300">
@@ -1238,7 +1208,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                       <input
                         type="checkbox"
                         checked={localSettings.sendNotification !== false}
-                        onChange={(e) => handleFieldChange('sendNotification', e.target.checked)}
+                        onChange={(e) => handleChange('sendNotification', e.target.checked)}
                         className="rounded w-5 h-5 text-green-500 border-slate-600 bg-slate-700"
                       />
                       <span className="text-sm text-slate-300">
