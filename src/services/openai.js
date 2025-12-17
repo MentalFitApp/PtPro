@@ -106,73 +106,201 @@ Rispondi in JSON valido con questa struttura:
 
 /**
  * Analizza uno screenshot e estrae struttura
+ * @param {string} base64Image - Immagine in base64
+ * @param {Object} options - Opzioni aggiuntive
+ * @param {string} options.context - Contesto testuale aggiuntivo
+ * @param {string} options.pdfContent - Contenuto estratto da PDF
  */
-export async function analyzeScreenshot(base64Image) {
-  const response = await fetch(OPENAI_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `Sei un esperto di landing pages. Analizza lo screenshot e estrai:
-1. Struttura sezioni visibili (hero, features, pricing, etc)
-2. Per ogni CTA: testo del bottone e tipo azione probabile
-3. Colori dominanti
-4. Layout (single column, grid, etc)
+export async function analyzeScreenshot(base64Image, options = {}) {
+  const { context = '', pdfContent = '' } = options;
+  
+  // Costruisci il prompt con contesto aggiuntivo
+  let contextPrompt = '';
+  if (context) {
+    contextPrompt += `\n\nCONTESTO FORNITO DALL'UTENTE:\n${context}`;
+  }
+  if (pdfContent) {
+    contextPrompt += `\n\nINFORMAZIONI DA PDF ALLEGATO:\n${pdfContent}`;
+  }
+
+  const systemPrompt = `Sei un esperto di landing pages e UI/UX design. Il tuo compito è REPLICARE LA STRUTTURA visiva dello screenshot, NON copiare il testo.
+
+FOCUS SULLA STRUTTURA - Analizza attentamente:
+1. LAYOUT: Come sono disposte le sezioni? Quante colonne? Come è organizzato lo spazio?
+2. BLOCCHI IMMAGINE: Dove ci sono immagini? Che dimensioni hanno? Sono a sinistra, destra, sfondo?
+3. PULSANTI: Quanti sono? Dove sono posizionati? Sono primari o secondari?
+4. SUDDIVISIONE TESTO: Come è organizzato? Titolo grande + sottotitolo? Liste? Paragrafi?
+5. ELEMENTI VISIVI: Badge, icone, card, separatori, statistiche?
+
+Per ogni sezione indica:
+- Tipo di blocco (hero, features, testimonials, pricing, cta, faq, gallery, stats, text)
+- Struttura interna (es: "immagine a sinistra 50%, testo a destra 50%")
+- Elementi presenti (badge sopra titolo? icone? immagini?)
+- Pulsanti con posizione e stile (primario/secondario)
+
+NON copiare il testo letteralmente! Usa placeholder come:
+- "[Titolo principale attrattivo]" invece del testo reale
+- "[Sottotitolo che spiega il valore]" invece del testo reale
+- "[Nome Funzionalità]" per le features
+- "[Testo pulsante CTA]" per i bottoni
 
 Rispondi in JSON valido con questa struttura:
 {
   "sections": [
-    { "type": "hero", "title": "...", "subtitle": "...", "ctas": [{"label": "...", "actionType": "scroll|link|form"}] }
+    { 
+      "type": "hero",
+      "layout": "split-left|split-right|centered|fullscreen",
+      "hasImage": true,
+      "imagePosition": "left|right|background|none",
+      "hasBadge": true,
+      "title": "[Titolo principale attrattivo]",
+      "subtitle": "[Sottotitolo persuasivo]",
+      "ctas": [{"label": "[Testo CTA Primario]", "style": "primary"}, {"label": "[Testo Secondario]", "style": "secondary"}]
+    },
+    {
+      "type": "features",
+      "layout": "grid-3|grid-4|list|alternating",
+      "hasIcons": true,
+      "hasImages": false,
+      "title": "[Titolo sezione]",
+      "features": [
+        {"icon": "💪", "title": "[Nome Feature]", "description": "[Breve descrizione]"}
+      ]
+    }
   ],
-  "colors": ["#hex1", "#hex2"],
-  "layout": "single-column|multi-column|grid"
-}`
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
-                detail: 'high'
-              }
-            },
-            {
-              type: 'text',
-              text: 'Analizza questa landing page'
-            }
-          ]
-        }
-      ],
-      max_tokens: 2000
-    })
-  });
+  "colors": ["#colore1", "#colore2", "#colore3"],
+  "overallLayout": "descrizione del layout generale",
+  "style": "minimal|corporate|bold|elegant|playful",
+  "imageSlots": [
+    {"section": 0, "position": "right", "suggestedType": "foto persona|prodotto|illustrazione|icona"}
+  ]
+}`;
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'OpenAI Vision API error');
-  }
-
-  const data = await response.json();
-  const content = data.choices[0].message.content;
-  
   try {
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Image}`,
+                  detail: 'high'
+                }
+              },
+              {
+                type: 'text',
+                text: `Analizza la STRUTTURA di questa landing page e crea un template replicabile.${contextPrompt}\n\nRicorda: NON copiare il testo, usa placeholder!`
+              }
+            ]
+          }
+        ],
+        max_tokens: 3000,
+        temperature: 0.3 // Bassa per output più consistente
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      console.error('OpenAI Vision API error:', error);
+      throw new Error(error.error?.message || `Errore API: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    
+    if (!content) {
+      throw new Error('Risposta vuota da OpenAI');
+    }
+    
+    // Estrai JSON dalla risposta
     const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) || content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[1] || jsonMatch[0]);
+      const jsonStr = jsonMatch[1] || jsonMatch[0];
+      return JSON.parse(jsonStr);
     }
+    
+    // Prova a parsare direttamente
     return JSON.parse(content);
   } catch (e) {
-    console.error('Parse error:', e, content);
-    throw new Error('Risposta AI non valida');
+    console.error('Errore analisi screenshot:', e);
+    
+    // Fallback: ritorna struttura base invece di fallire
+    if (e.message.includes('JSON')) {
+      console.warn('Fallback a struttura base per errore parsing');
+      return {
+        sections: [
+          {
+            type: 'hero',
+            layout: 'centered',
+            title: '[Titolo principale]',
+            subtitle: '[Sottotitolo]',
+            ctas: [{ label: '[CTA Principale]', style: 'primary' }]
+          },
+          {
+            type: 'features',
+            layout: 'grid-3',
+            title: '[Le nostre caratteristiche]',
+            features: [
+              { icon: '✨', title: '[Feature 1]', description: '[Descrizione]' },
+              { icon: '🎯', title: '[Feature 2]', description: '[Descrizione]' },
+              { icon: '💪', title: '[Feature 3]', description: '[Descrizione]' }
+            ]
+          },
+          {
+            type: 'cta',
+            title: '[Pronto a iniziare?]',
+            ctas: [{ label: '[Contattaci]', style: 'primary' }]
+          }
+        ],
+        colors: ['#3b82f6', '#1e293b'],
+        style: 'professional',
+        parseError: true,
+        errorMessage: e.message
+      };
+    }
+    
+    throw e;
   }
+}
+
+/**
+ * Estrae testo da un PDF (usando pdf.js o servizio esterno)
+ */
+export async function extractPDFText(pdfFile) {
+  // Per ora usiamo un approccio semplice con FileReader
+  // In futuro si può integrare pdf.js per estrazione migliore
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        // Prova a estrarre testo base (funziona per PDF con testo selezionabile)
+        const text = reader.result;
+        // Se è binario, non possiamo estrarre facilmente
+        if (text.includes('%PDF')) {
+          resolve('[PDF caricato - contenuto non estraibile direttamente, usa le immagini come riferimento principale]');
+        } else {
+          resolve(text.substring(0, 5000)); // Limita a 5000 caratteri
+        }
+      } catch (e) {
+        resolve('[Errore lettura PDF]');
+      }
+    };
+    reader.onerror = () => resolve('[Errore lettura PDF]');
+    reader.readAsText(pdfFile);
+  });
 }
 
 /**

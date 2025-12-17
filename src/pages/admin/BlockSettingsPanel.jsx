@@ -260,6 +260,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                 {renderField('ctaAction', localSettings.ctaAction || 'scroll', 'select', {
                   options: [
                     { value: 'scroll', label: 'Scrolla a sezione' },
+                    { value: 'form_popup', label: '📝 Apri Form Popup' },
                     { value: 'redirect', label: 'Vai a URL' },
                     { value: 'whatsapp', label: 'Apri WhatsApp' },
                     { value: 'calendly', label: 'Apri Calendly' },
@@ -272,6 +273,55 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                 <FieldGroup label="ID Sezione" hint="Es: #form o #pricing">
                   {renderField('ctaLink', localSettings.ctaLink)}
                 </FieldGroup>
+              )}
+
+              {localSettings.ctaAction === 'form_popup' && (
+                <>
+                  <FieldGroup label="Titolo Form">
+                    {renderField('formPopupTitle', localSettings.formPopupTitle || 'Richiedi Informazioni', 'text')}
+                  </FieldGroup>
+                  <FieldGroup label="Sottotitolo">
+                    {renderField('formPopupSubtitle', localSettings.formPopupSubtitle, 'text', {
+                      placeholder: 'Compila il form e ti ricontatteremo'
+                    })}
+                  </FieldGroup>
+                  <FieldGroup label="Campi Form">
+                    {renderField('formPopupFields', localSettings.formPopupFields || 'name,email,phone', 'select', {
+                      options: [
+                        { value: 'name,email', label: 'Nome + Email' },
+                        { value: 'name,email,phone', label: 'Nome + Email + Telefono' },
+                        { value: 'name,email,phone,message', label: 'Nome + Email + Telefono + Messaggio' },
+                        { value: 'name,email,message', label: 'Nome + Email + Messaggio' },
+                      ]
+                    })}
+                  </FieldGroup>
+                  <FieldGroup label="Testo Bottone Invio">
+                    {renderField('formPopupSubmitText', localSettings.formPopupSubmitText || 'Invia Richiesta', 'text')}
+                  </FieldGroup>
+                  <FieldGroup label="Messaggio Successo">
+                    {renderField('formPopupSuccessMessage', localSettings.formPopupSuccessMessage || 'Grazie! Ti contatteremo presto.', 'textarea')}
+                  </FieldGroup>
+                  <FieldGroup label="Dopo invio">
+                    {renderField('formPopupAfterSubmit', localSettings.formPopupAfterSubmit || 'message', 'select', {
+                      options: [
+                        { value: 'message', label: 'Mostra messaggio' },
+                        { value: 'redirect', label: 'Redirect a URL' },
+                        { value: 'whatsapp', label: 'Apri WhatsApp' },
+                        { value: 'close', label: 'Chiudi popup' },
+                      ]
+                    })}
+                  </FieldGroup>
+                  {localSettings.formPopupAfterSubmit === 'redirect' && (
+                    <FieldGroup label="URL Redirect">
+                      {renderField('formPopupRedirectUrl', localSettings.formPopupRedirectUrl, 'text', { placeholder: 'https://...' })}
+                    </FieldGroup>
+                  )}
+                  {localSettings.formPopupAfterSubmit === 'whatsapp' && (
+                    <FieldGroup label="Numero WhatsApp">
+                      {renderField('formPopupWhatsappNumber', localSettings.formPopupWhatsappNumber, 'text', { placeholder: '+393331234567' })}
+                    </FieldGroup>
+                  )}
+                </>
               )}
 
               {localSettings.ctaAction === 'redirect' && (
@@ -848,6 +898,61 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                 <Plus className="w-4 h-4" />
                 Aggiungi Campo
               </button>
+            </Section>
+
+            <Section title="Gestione Lead" id="leads">
+              <FieldGroup label="Salva in Leads">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={localSettings.saveToLeads !== false}
+                    onChange={(e) => handleFieldChange('saveToLeads', e.target.checked)}
+                    className="rounded w-5 h-5 text-green-500 border-slate-600 bg-slate-700"
+                  />
+                  <span className="text-sm text-slate-300">
+                    Salva i dati del form nella tabella Leads
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  I lead saranno visibili in Landing Pages → Leads
+                </p>
+              </FieldGroup>
+              
+              {localSettings.saveToLeads !== false && (
+                <>
+                  <FieldGroup label="Etichetta Sorgente" hint="Per identificare da quale form arriva il lead">
+                    {renderField('leadSource', localSettings.leadSource || 'landing_page', 'text', { 
+                      placeholder: 'es: promo-natale, form-contatti' 
+                    })}
+                  </FieldGroup>
+                  <FieldGroup label="Invia Notifica">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={localSettings.sendNotification !== false}
+                        onChange={(e) => handleFieldChange('sendNotification', e.target.checked)}
+                        className="rounded w-5 h-5 text-green-500 border-slate-600 bg-slate-700"
+                      />
+                      <span className="text-sm text-slate-300">
+                        Invia notifica quando arriva un nuovo lead
+                      </span>
+                    </div>
+                  </FieldGroup>
+                </>
+              )}
+            </Section>
+
+            <Section title="Privacy" id="privacy">
+              <FieldGroup label="Testo Privacy">
+                {renderField('privacyText', localSettings.privacyText, 'textarea', {
+                  placeholder: 'Ho letto e accetto la privacy policy'
+                })}
+              </FieldGroup>
+              <FieldGroup label="Link Privacy Policy">
+                {renderField('privacyLink', localSettings.privacyLink || '/privacy', 'text', {
+                  placeholder: '/privacy'
+                })}
+              </FieldGroup>
             </Section>
           </>
         );

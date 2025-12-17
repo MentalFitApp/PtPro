@@ -20,9 +20,11 @@ import {
   Camera,
   Trash2,
   Plus,
+  FileText,
+  MessageSquare,
 } from 'lucide-react';
 import { generateLandingPage, AI_PRESETS } from '../../services/aiLandingGenerator';
-import { analyzeCompetitorURL, analyzeScreenshot, generateLandingPage as generateFromAnalysis } from '../../services/openai';
+import { analyzeCompetitorURL, analyzeScreenshot, extractPDFText, generateLandingPage as generateFromAnalysis } from '../../services/openai';
 
 const MAX_SCREENSHOTS = 10;
 
@@ -32,6 +34,7 @@ const MAX_SCREENSHOTS = 10;
  */
 export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantId }) {
   const fileInputRef = useRef(null);
+  const pdfInputRef = useRef(null);
   const [step, setStep] = useState(1); // 1: Choose Mode, 2: Details, 3: Generating, 4: Done
   const [mode, setMode] = useState('preset'); // 'preset' | 'custom' | 'url' | 'screenshot'
   const [selectedPreset, setSelectedPreset] = useState(null);
@@ -46,6 +49,11 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
   const [screenshots, setScreenshots] = useState([]); // Array di { file, preview, id }
   const [analysisResult, setAnalysisResult] = useState(null);
   const [currentAnalyzingIndex, setCurrentAnalyzingIndex] = useState(0);
+  
+  // Contesto aggiuntivo
+  const [additionalContext, setAdditionalContext] = useState('');
+  const [pdfFile, setPdfFile] = useState(null);
+  const [pdfContent, setPdfContent] = useState('');
   
   const [apiKey, setApiKey] = useState(localStorage.getItem('openai_api_key') || '');
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
@@ -82,6 +90,33 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
     setScreenshots(prev => prev.filter(s => s.id !== id));
   };
 
+  // Handle PDF upload
+  const handlePdfSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setPdfFile(file);
+    
+    // Estrai testo dal PDF
+    try {
+      const text = await extractPDFText(file);
+      setPdfContent(text);
+    } catch (err) {
+      console.error('Errore estrazione PDF:', err);
+      setPdfContent('[Errore lettura PDF]');
+    }
+    
+    if (pdfInputRef.current) {
+      pdfInputRef.current.value = '';
+    }
+  };
+
+  // Remove PDF
+  const handleRemovePdf = () => {
+    setPdfFile(null);
+    setPdfContent('');
+  };
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     setError(null);
@@ -108,14 +143,37 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
         
         // Analizza tutti gli screenshot e combina i risultati
         const allAnalyses = [];
+        const failedAnalyses = [];
+        
         for (let i = 0; i < screenshots.length; i++) {
           setCurrentAnalyzingIndex(i);
           
-          // Convert to base64
-          const base64 = screenshots[i].preview.split(',')[1];
-          
-          const analysis = await analyzeScreenshot(base64);
-          allAnalyses.push(analysis);
+          try {
+            // Convert to base64
+            const base64 = screenshots[i].preview.split(',')[1];
+            
+            // Passa contesto e PDF all'analisi
+            const analysis = await analyzeScreenshot(base64, {
+              context: additionalContext,
+              pdfContent: pdfContent,
+            });
+            
+            allAnalyses.push(analysis);
+          } catch (err) {
+            console.error(`Errore analisi screenshot ${i + 1}:`, err);
+            failedAnalyses.push({ index: i, error: err.message });
+            // Continua con gli altri screenshot invece di fermarsi
+          }
+        }
+        
+        // Se tutti gli screenshot hanno fallito, mostra errore
+        if (allAnalyses.length === 0) {
+          throw new Error(`Impossibile analizzare gli screenshot. Errori: ${failedAnalyses.map(f => f.error).join(', ')}`);
+        }
+        
+        // Se alcuni hanno fallito, mostra warning ma continua
+        if (failedAnalyses.length > 0) {
+          console.warn(`${failedAnalyses.length} screenshot non analizzati, continuo con ${allAnalyses.length}`);
         }
         
         // Combina le analisi di tutti gli screenshot
@@ -160,7 +218,7 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
     (analysis.sections || []).forEach((section, index) => {
       const block = {
         id: generateId(),
-        type: section.type || 'text',
+        type: mapSectionType(section.type),
         settings: {
           title: section.title || '',
           subtitle: section.subtitle || '',
@@ -168,15 +226,64 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
         },
       };
       
+      // Gestisci layout/variante per hero
+      if (section.type === 'hero') {
+        block.settings.variant = mapHeroLayout(section.layout);
+        if (section.hasBadge) {
+          block.settings.showBadge = true;
+          block.settings.badgeText = section.badge || '🔥 Offerta Limitata';
+        }
+        if (section.hasImage && section.imagePosition) {
+          block.settings.showImage = true;
+          block.settings.imagePosition = section.imagePosition;
+          // Placeholder per immagine
+          block.settings.imagePlaceholder = section.imageSuggestion || 'Inserisci immagine';
+        }
+      }
+      
+      // Gestisci layout per features
+      if (section.type === 'features') {
+        block.settings.variant = mapFeaturesLayout(section.layout);
+        block.settings.showIcons = section.hasIcons !== false;
+      }
+      
       // Gestisci CTA
       if (section.ctas && section.ctas.length > 0) {
-        block.settings.ctaText = section.ctas[0].label;
-        block.settings.ctaLink = section.ctas[0].actionType === 'form' ? '#form' : '#';
+        const primaryCta = section.ctas.find(c => c.style === 'primary') || section.ctas[0];
+        const secondaryCta = section.ctas.find(c => c.style === 'secondary');
+        
+        block.settings.ctaText = primaryCta?.label || '[Testo CTA]';
+        block.settings.ctaAction = primaryCta?.actionType === 'form' ? 'form_popup' : 'scroll';
+        block.settings.ctaLink = '#form';
+        
+        if (secondaryCta) {
+          block.settings.secondaryCtaText = secondaryCta.label;
+          block.settings.secondaryCtaLink = '#';
+        }
       }
       
       // Gestisci features se presenti
-      if (section.features) {
-        block.settings.items = section.features;
+      if (section.features && section.features.length > 0) {
+        block.settings.items = section.features.map(f => ({
+          icon: f.icon || '✨',
+          title: f.title || '[Titolo Feature]',
+          description: f.description || '[Descrizione feature]',
+        }));
+      }
+      
+      // Gestisci pricing
+      if (section.type === 'pricing' && section.plans) {
+        block.settings.plans = section.plans;
+      }
+      
+      // Gestisci testimonials
+      if (section.type === 'testimonials' && section.testimonials) {
+        block.settings.testimonials = section.testimonials;
+      }
+      
+      // Gestisci stats
+      if (section.type === 'stats' && section.stats) {
+        block.settings.stats = section.stats;
       }
       
       blocks.push(block);
@@ -202,14 +309,60 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
       });
     }
 
+    // Aggiungi info sugli slot immagine
+    const imageSlots = analysis.imageSlots || [];
+
     return {
       blocks,
       meta: {
         title: analysis.targetAudience ? `Landing per ${analysis.targetAudience}` : 'Landing Page Generata',
-        description: `Stile: ${analysis.style || 'professionale'}, Tono: ${analysis.tone || 'coinvolgente'}`,
+        description: `Stile: ${analysis.style || 'professionale'}`,
         analyzedFrom: analysis.sourceUrl || `${screenshots.length} screenshot`,
+        overallLayout: analysis.overallLayout || '',
+        imageSlots,
+        hadParseError: analysis.parseError || false,
       },
     };
+  };
+
+  // Mappa il tipo di sezione AI al tipo di blocco
+  const mapSectionType = (type) => {
+    const typeMap = {
+      'hero': 'hero',
+      'features': 'features',
+      'pricing': 'pricing',
+      'testimonials': 'testimonials',
+      'cta': 'cta',
+      'faq': 'faq',
+      'form': 'form',
+      'gallery': 'gallery',
+      'stats': 'socialproof',
+      'text': 'text',
+      'video': 'video',
+    };
+    return typeMap[type] || 'text';
+  };
+
+  // Mappa layout hero
+  const mapHeroLayout = (layout) => {
+    const layoutMap = {
+      'split-left': 'split',
+      'split-right': 'split',
+      'centered': 'centered',
+      'fullscreen': 'fullscreen',
+    };
+    return layoutMap[layout] || 'centered';
+  };
+
+  // Mappa layout features
+  const mapFeaturesLayout = (layout) => {
+    const layoutMap = {
+      'grid-3': 'grid',
+      'grid-4': 'grid',
+      'list': 'list',
+      'alternating': 'alternating',
+    };
+    return layoutMap[layout] || 'grid';
   };
 
   // Combina le analisi di più screenshot in una unica
@@ -686,14 +839,73 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
                   </div>
                 )}
 
+                {/* Contesto Aggiuntivo */}
+                <div className="space-y-3 border-t border-slate-700 pt-4">
+                  <h4 className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-blue-400" />
+                    Contesto Aggiuntivo (opzionale)
+                  </h4>
+                  <textarea
+                    value={additionalContext}
+                    onChange={(e) => setAdditionalContext(e.target.value)}
+                    placeholder="Descrivi il tuo business, target, obiettivi... L'AI userà queste info per generare contenuti migliori"
+                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Upload PDF */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-green-400" />
+                    Allega PDF (opzionale)
+                  </h4>
+                  
+                  {pdfFile ? (
+                    <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
+                      <FileText className="w-8 h-8 text-green-400" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white truncate">{pdfFile.name}</p>
+                        <p className="text-xs text-slate-400">{(pdfFile.size / 1024).toFixed(1)} KB</p>
+                      </div>
+                      <button
+                        onClick={handleRemovePdf}
+                        className="p-1.5 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-400 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => pdfInputRef.current?.click()}
+                      className="w-full p-3 border border-dashed border-slate-600 hover:border-green-500 rounded-lg text-center transition-colors"
+                    >
+                      <span className="text-sm text-slate-400">Clicca per caricare un PDF con info aggiuntive</span>
+                    </button>
+                  )}
+                  
+                  <input
+                    ref={pdfInputRef}
+                    type="file"
+                    accept=".pdf"
+                    onChange={handlePdfSelect}
+                    className="hidden"
+                  />
+                </div>
+
                 <div className="p-4 bg-slate-700/50 rounded-xl">
                   <h4 className="text-sm font-medium text-slate-300 mb-2">🔍 GPT-4 Vision analizzerà</h4>
                   <ul className="text-xs text-slate-400 space-y-1">
-                    <li>• Layout e struttura delle sezioni</li>
+                    <li>• <strong>STRUTTURA:</strong> Layout, disposizione blocchi, posizione immagini</li>
+                    <li>• <strong>ELEMENTI:</strong> Pulsanti, badge, icone, card</li>
                     <li>• Colori dominanti e stile grafico</li>
-                    <li>• Testi dei pulsanti e CTA</li>
-                    <li>• {screenshots.length > 1 ? 'Combinerà gli elementi da tutti gli screenshot' : 'Tipologia di contenuti'}</li>
+                    <li>• {screenshots.length > 1 ? 'Combinerà gli elementi da tutti gli screenshot' : 'Suddivisione dei contenuti'}</li>
+                    {additionalContext && <li>• Userà il contesto che hai fornito</li>}
+                    {pdfFile && <li>• Integrerà le info dal PDF</li>}
                   </ul>
+                  <p className="text-xs text-orange-400 mt-2">
+                    💡 L'AI non copierà il testo, ma replicherà la STRUTTURA con placeholder modificabili
+                  </p>
                 </div>
               </div>
 

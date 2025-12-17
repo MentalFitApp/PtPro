@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import FormPopup from './FormPopup';
 
 /**
  * CTA Block - Call to Action section
  * Varianti: centered, split, banner, floating, fullscreen
- * Azioni: scroll, redirect, whatsapp, calendly, phone
+ * Azioni: scroll, redirect, whatsapp, calendly, phone, form_popup
  */
-const CTABlock = ({ settings, isPreview = false }) => {
+const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null }) => {
   const {
     variant = 'centered',
     title = 'Pronto a iniziare?',
@@ -14,12 +15,21 @@ const CTABlock = ({ settings, isPreview = false }) => {
     ctaText = 'Inizia Ora',
     ctaLink = '#form',
     // Nuove azioni CTA
-    ctaAction = 'scroll', // scroll, redirect, whatsapp, calendly, phone
+    ctaAction = 'scroll', // scroll, redirect, whatsapp, calendly, phone, form_popup
     ctaRedirectUrl = '',
     ctaWhatsappNumber = '',
     ctaWhatsappMessage = 'Ciao! Vorrei maggiori informazioni.',
     ctaCalendlyUrl = '',
     ctaPhoneNumber = '',
+    // Form Popup settings
+    formPopupTitle = 'Richiedi Informazioni',
+    formPopupSubtitle = '',
+    formPopupFields = 'name,email,phone',
+    formPopupSubmitText = 'Invia Richiesta',
+    formPopupSuccessMessage = 'Grazie! Ti contatteremo presto.',
+    formPopupAfterSubmit = 'message',
+    formPopupRedirectUrl = '',
+    formPopupWhatsappNumber = '',
     showSecondaryButton = false,
     secondaryText = '',
     secondaryLink = '',
@@ -28,6 +38,8 @@ const CTABlock = ({ settings, isPreview = false }) => {
     showStats = false,
     stats = [],
   } = settings || {};
+
+  const [showFormPopup, setShowFormPopup] = useState(false);
 
   // Gestisce click sul pulsante principale
   const handleCtaClick = (e) => {
@@ -80,6 +92,11 @@ const CTABlock = ({ settings, isPreview = false }) => {
         }
         break;
       
+      case 'form_popup':
+        e.preventDefault();
+        setShowFormPopup(true);
+        break;
+      
       default:
         // Default: usa il link come href
         break;
@@ -96,10 +113,33 @@ const CTABlock = ({ settings, isPreview = false }) => {
         return `https://wa.me/${cleanNumber}`;
       case 'redirect':
         return ctaRedirectUrl || '#';
+      case 'form_popup':
+        return '#';
       default:
         return ctaLink || '#';
     }
   };
+
+  // Helper per renderizzare il FormPopup
+  const renderFormPopup = () => (
+    <FormPopup
+      isOpen={showFormPopup}
+      onClose={() => setShowFormPopup(false)}
+      settings={{
+        title: formPopupTitle,
+        subtitle: formPopupSubtitle,
+        fields: formPopupFields,
+        submitText: formPopupSubmitText,
+        successMessage: formPopupSuccessMessage,
+        afterSubmit: formPopupAfterSubmit,
+        redirectUrl: formPopupRedirectUrl,
+        whatsappNumber: formPopupWhatsappNumber,
+      }}
+      pageId={pageId}
+      tenantId={tenantId}
+      isPreview={isPreview}
+    />
+  );
 
   const scrollToElement = (e, href) => {
     if (isPreview) {
@@ -149,6 +189,7 @@ const CTABlock = ({ settings, isPreview = false }) => {
             </div>
           </div>
         </div>
+        {renderFormPopup()}
       </section>
     );
   }
@@ -224,6 +265,7 @@ const CTABlock = ({ settings, isPreview = false }) => {
             )}
           </div>
         </div>
+        {renderFormPopup()}
       </section>
     );
   }
@@ -289,6 +331,7 @@ const CTABlock = ({ settings, isPreview = false }) => {
           </div>
         </motion.div>
       </div>
+      {renderFormPopup()}
     </section>
   );
 };

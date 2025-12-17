@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import FormPopup from './FormPopup';
 
 /**
  * Hero Block - Sezione principale della landing page
  * Varianti: centered, split, video, minimal, fullscreen
- * Azioni CTA: scroll, redirect, whatsapp, calendly, phone
+ * Azioni CTA: scroll, redirect, whatsapp, calendly, phone, form_popup
  */
-const HeroBlock = ({ settings, isPreview = false }) => {
+const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null }) => {
   const {
     variant = 'centered',
     title = 'Il tuo titolo qui',
@@ -14,12 +15,21 @@ const HeroBlock = ({ settings, isPreview = false }) => {
     ctaText = 'Inizia Ora',
     ctaLink = '#form',
     // Nuove azioni CTA
-    ctaAction = 'scroll', // scroll, redirect, whatsapp, calendly, phone
+    ctaAction = 'scroll', // scroll, redirect, whatsapp, calendly, phone, form_popup
     ctaRedirectUrl = '',
     ctaWhatsappNumber = '',
     ctaWhatsappMessage = 'Ciao! Vorrei maggiori informazioni.',
     ctaCalendlyUrl = '',
     ctaPhoneNumber = '',
+    // Form Popup settings
+    formPopupTitle = 'Richiedi Informazioni',
+    formPopupSubtitle = '',
+    formPopupFields = 'name,email,phone',
+    formPopupSubmitText = 'Invia Richiesta',
+    formPopupSuccessMessage = 'Grazie! Ti contatteremo presto.',
+    formPopupAfterSubmit = 'message',
+    formPopupRedirectUrl = '',
+    formPopupWhatsappNumber = '',
     secondaryCtaText = '',
     secondaryCtaLink = '',
     backgroundType = 'gradient',
@@ -33,6 +43,8 @@ const HeroBlock = ({ settings, isPreview = false }) => {
     showBadge = false,
     badgeText = '',
   } = settings || {};
+
+  const [showFormPopup, setShowFormPopup] = useState(false);
 
   const alignmentClasses = {
     left: 'text-left items-start',
@@ -91,6 +103,11 @@ const HeroBlock = ({ settings, isPreview = false }) => {
         }
         break;
       
+      case 'form_popup':
+        e.preventDefault();
+        setShowFormPopup(true);
+        break;
+      
       default:
         break;
     }
@@ -106,6 +123,8 @@ const HeroBlock = ({ settings, isPreview = false }) => {
         return `https://wa.me/${cleanNumber}`;
       case 'redirect':
         return ctaRedirectUrl || '#';
+      case 'form_popup':
+        return '#';
       default:
         return ctaLink || '#';
     }
@@ -210,6 +229,25 @@ const HeroBlock = ({ settings, isPreview = false }) => {
             </motion.div>
           </div>
         </div>
+
+        {/* Form Popup */}
+        <FormPopup
+          isOpen={showFormPopup}
+          onClose={() => setShowFormPopup(false)}
+          settings={{
+            title: formPopupTitle,
+            subtitle: formPopupSubtitle,
+            fields: formPopupFields,
+            submitText: formPopupSubmitText,
+            successMessage: formPopupSuccessMessage,
+            afterSubmit: formPopupAfterSubmit,
+            redirectUrl: formPopupRedirectUrl,
+            whatsappNumber: formPopupWhatsappNumber,
+          }}
+          pageId={pageId}
+          tenantId={tenantId}
+          isPreview={isPreview}
+        />
       </section>
     );
   }
@@ -276,6 +314,25 @@ const HeroBlock = ({ settings, isPreview = false }) => {
             </div>
           </motion.div>
         </div>
+
+        {/* Form Popup */}
+        <FormPopup
+          isOpen={showFormPopup}
+          onClose={() => setShowFormPopup(false)}
+          settings={{
+            title: formPopupTitle,
+            subtitle: formPopupSubtitle,
+            fields: formPopupFields,
+            submitText: formPopupSubmitText,
+            successMessage: formPopupSuccessMessage,
+            afterSubmit: formPopupAfterSubmit,
+            redirectUrl: formPopupRedirectUrl,
+            whatsappNumber: formPopupWhatsappNumber,
+          }}
+          pageId={pageId}
+          tenantId={tenantId}
+          isPreview={isPreview}
+        />
       </section>
     );
   }
@@ -372,6 +429,25 @@ const HeroBlock = ({ settings, isPreview = false }) => {
           <div className="w-1.5 h-3 bg-white/50 rounded-full" />
         </motion.div>
       </motion.div>
+
+      {/* Form Popup */}
+      <FormPopup
+        isOpen={showFormPopup}
+        onClose={() => setShowFormPopup(false)}
+        settings={{
+          title: formPopupTitle,
+          subtitle: formPopupSubtitle,
+          fields: formPopupFields,
+          submitText: formPopupSubmitText,
+          successMessage: formPopupSuccessMessage,
+          afterSubmit: formPopupAfterSubmit,
+          redirectUrl: formPopupRedirectUrl,
+          whatsappNumber: formPopupWhatsappNumber,
+        }}
+        pageId={pageId}
+        tenantId={tenantId}
+        isPreview={isPreview}
+      />
     </section>
   );
 };
