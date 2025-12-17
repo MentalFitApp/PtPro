@@ -654,7 +654,6 @@ const LandingPageEditor = () => {
             }}
             onUpdateAllBlocks={(changes) => {
               // changes dovrebbe essere un array di { blockId, settings }
-              // Aggiungi validazione per evitare errori se l'AI restituisce formato sbagliato
               if (!Array.isArray(changes)) {
                 console.warn('onUpdateAllBlocks: changes non è un array', changes);
                 toast?.showToast?.('Formato risposta AI non valido', 'error');
@@ -672,12 +671,45 @@ const LandingPageEditor = () => {
             }}
             onAddBlock={(newBlock) => {
               const block = {
-                id: `block-${Date.now()}`,
+                id: `${newBlock.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 ...newBlock,
               };
               setBlocks(prev => [...prev, block]);
               setHasChanges(true);
               toast?.showToast?.('Nuovo blocco aggiunto dall\'AI', 'success');
+            }}
+            onDeleteBlock={(blockId) => {
+              setBlocks(prev => prev.filter(b => b.id !== blockId));
+              if (selectedBlockId === blockId) {
+                setSelectedBlockId(null);
+              }
+              setHasChanges(true);
+              toast?.showToast?.('Blocco eliminato dall\'AI', 'success');
+            }}
+            onReorderBlocks={(newOrder) => {
+              // newOrder è un array di blockId nell'ordine desiderato
+              setBlocks(prev => {
+                const blockMap = new Map(prev.map(b => [b.id, b]));
+                const reordered = newOrder
+                  .filter(id => blockMap.has(id))
+                  .map(id => blockMap.get(id));
+                // Aggiungi eventuali blocchi non presenti in newOrder alla fine
+                const missingBlocks = prev.filter(b => !newOrder.includes(b.id));
+                return [...reordered, ...missingBlocks];
+              });
+              setHasChanges(true);
+              toast?.showToast?.('Blocchi riordinati dall\'AI', 'success');
+            }}
+            onReplaceAllBlocks={(newBlocks) => {
+              // Sostituisce TUTTI i blocchi con quelli nuovi
+              const blocksWithIds = newBlocks.map(block => ({
+                id: `${block.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                ...block,
+              }));
+              setBlocks(blocksWithIds);
+              setSelectedBlockId(null);
+              setHasChanges(true);
+              toast?.showToast?.(`Landing rigenerata con ${newBlocks.length} blocchi`, 'success');
             }}
           />
         )}
