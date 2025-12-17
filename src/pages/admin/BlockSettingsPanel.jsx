@@ -292,9 +292,136 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                         { value: 'name,email,phone', label: 'Nome + Email + Telefono' },
                         { value: 'name,email,phone,message', label: 'Nome + Email + Telefono + Messaggio' },
                         { value: 'name,email,message', label: 'Nome + Email + Messaggio' },
+                        { value: 'custom', label: '⚙️ Campi Personalizzati' },
                       ]
                     })}
                   </FieldGroup>
+                  
+                  {/* Editor Campi Personalizzati */}
+                  {localSettings.formPopupFields === 'custom' && (
+                    <div className="space-y-3 p-3 bg-slate-700/30 rounded-lg border border-slate-600">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-slate-300">Campi Personalizzati</span>
+                        <button
+                          onClick={() => {
+                            const currentFields = localSettings.formPopupCustomFields || [];
+                            updateSetting('formPopupCustomFields', [
+                              ...currentFields,
+                              { 
+                                id: `field_${Date.now()}`, 
+                                label: 'Nuovo Campo', 
+                                type: 'text', 
+                                required: false,
+                                placeholder: ''
+                              }
+                            ]);
+                          }}
+                          className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded hover:bg-purple-500/30 transition-colors"
+                        >
+                          + Aggiungi Campo
+                        </button>
+                      </div>
+                      
+                      {(localSettings.formPopupCustomFields || []).length === 0 && (
+                        <p className="text-xs text-slate-500 text-center py-2">
+                          Nessun campo. Clicca "Aggiungi Campo" per iniziare.
+                        </p>
+                      )}
+                      
+                      {(localSettings.formPopupCustomFields || []).map((field, index) => (
+                        <div key={field.id} className="p-3 bg-slate-800/50 rounded-lg space-y-2 border border-slate-600/50">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-slate-400">Campo {index + 1}</span>
+                            <button
+                              onClick={() => {
+                                const newFields = [...(localSettings.formPopupCustomFields || [])];
+                                newFields.splice(index, 1);
+                                updateSetting('formPopupCustomFields', newFields);
+                              }}
+                              className="text-red-400 hover:text-red-300 p-1"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              value={field.label}
+                              onChange={(e) => {
+                                const newFields = [...(localSettings.formPopupCustomFields || [])];
+                                newFields[index] = { ...field, label: e.target.value };
+                                updateSetting('formPopupCustomFields', newFields);
+                              }}
+                              placeholder="Etichetta"
+                              className="px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-slate-500"
+                            />
+                            <select
+                              value={field.type}
+                              onChange={(e) => {
+                                const newFields = [...(localSettings.formPopupCustomFields || [])];
+                                newFields[index] = { ...field, type: e.target.value };
+                                updateSetting('formPopupCustomFields', newFields);
+                              }}
+                              className="px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-sm text-white"
+                            >
+                              <option value="text">Testo</option>
+                              <option value="email">Email</option>
+                              <option value="tel">Telefono</option>
+                              <option value="number">Numero</option>
+                              <option value="textarea">Area Testo</option>
+                              <option value="select">Selezione</option>
+                              <option value="checkbox">Checkbox</option>
+                              <option value="date">Data</option>
+                            </select>
+                          </div>
+                          
+                          <input
+                            type="text"
+                            value={field.placeholder || ''}
+                            onChange={(e) => {
+                              const newFields = [...(localSettings.formPopupCustomFields || [])];
+                              newFields[index] = { ...field, placeholder: e.target.value };
+                              updateSetting('formPopupCustomFields', newFields);
+                            }}
+                            placeholder="Placeholder (opzionale)"
+                            className="w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-slate-500"
+                          />
+                          
+                          {field.type === 'select' && (
+                            <input
+                              type="text"
+                              value={field.options || ''}
+                              onChange={(e) => {
+                                const newFields = [...(localSettings.formPopupCustomFields || [])];
+                                newFields[index] = { ...field, options: e.target.value };
+                                updateSetting('formPopupCustomFields', newFields);
+                              }}
+                              placeholder="Opzioni separate da virgola (es: Opzione 1, Opzione 2)"
+                              className="w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-slate-500"
+                            />
+                          )}
+                          
+                          <label className="flex items-center gap-2 text-xs text-slate-300">
+                            <input
+                              type="checkbox"
+                              checked={field.required || false}
+                              onChange={(e) => {
+                                const newFields = [...(localSettings.formPopupCustomFields || [])];
+                                newFields[index] = { ...field, required: e.target.checked };
+                                updateSetting('formPopupCustomFields', newFields);
+                              }}
+                              className="rounded bg-slate-700 border-slate-600"
+                            />
+                            Obbligatorio
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
                   <FieldGroup label="Testo Bottone Invio">
                     {renderField('formPopupSubmitText', localSettings.formPopupSubmitText || 'Invia Richiesta', 'text')}
                   </FieldGroup>

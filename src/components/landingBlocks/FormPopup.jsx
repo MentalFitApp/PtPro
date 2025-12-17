@@ -20,7 +20,8 @@ const FormPopup = ({
   const {
     title = 'Richiedi Informazioni',
     subtitle = '',
-    fields = 'name,email,phone', // stringa csv o array
+    fields = 'name,email,phone', // stringa csv o array o 'custom'
+    customFields = [], // campi personalizzati quando fields === 'custom'
     submitText = 'Invia Richiesta',
     successMessage = 'Grazie! Ti contatteremo presto.',
     afterSubmit = 'message', // message, redirect, whatsapp, close
@@ -36,8 +37,21 @@ const FormPopup = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Parse fields da stringa CSV a array di oggetti
+  // Parse fields da stringa CSV a array di oggetti, o usa customFields
   const getFields = () => {
+    // Se è 'custom', usa i campi personalizzati
+    if (fields === 'custom' && customFields && customFields.length > 0) {
+      return customFields.map(f => ({
+        id: f.id || `field_${Math.random().toString(36).substr(2, 9)}`,
+        label: f.label || 'Campo',
+        type: f.type || 'text',
+        required: f.required || false,
+        placeholder: f.placeholder || '',
+        options: f.options ? f.options.split(',').map(o => o.trim()) : [],
+      }));
+    }
+    
+    // Altrimenti usa i preset
     const fieldConfig = {
       name: { id: 'name', label: 'Nome', type: 'text', required: true, placeholder: 'Il tuo nome' },
       email: { id: 'email', label: 'Email', type: 'email', required: true, placeholder: 'La tua email' },
@@ -236,11 +250,15 @@ const FormPopup = ({
               <form onSubmit={handleSubmit} className="space-y-4">
                 {formFields.map((field) => (
                   <div key={field.id}>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      {field.label}
-                      {field.required && <span className="text-red-400 ml-1">*</span>}
-                    </label>
-                    {field.type === 'textarea' ? (
+                    {field.type !== 'checkbox' && (
+                      <label className="block text-sm font-medium text-slate-300 mb-1">
+                        {field.label}
+                        {field.required && <span className="text-red-400 ml-1">*</span>}
+                      </label>
+                    )}
+                    
+                    {/* Textarea */}
+                    {field.type === 'textarea' && (
                       <textarea
                         value={formData[field.id] || ''}
                         onChange={(e) => handleChange(field.id, e.target.value)}
@@ -250,7 +268,69 @@ const FormPopup = ({
                           errors[field.id] ? 'border-red-500' : 'border-white/10'
                         } rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none`}
                       />
-                    ) : (
+                    )}
+                    
+                    {/* Select */}
+                    {field.type === 'select' && (
+                      <select
+                        value={formData[field.id] || ''}
+                        onChange={(e) => handleChange(field.id, e.target.value)}
+                        className={`w-full px-4 py-3 bg-white/5 border ${
+                          errors[field.id] ? 'border-red-500' : 'border-white/10'
+                        } rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
+                      >
+                        <option value="" className="bg-slate-800">{field.placeholder || 'Seleziona...'}</option>
+                        {(field.options || []).map((opt, i) => (
+                          <option key={i} value={opt} className="bg-slate-800">{opt}</option>
+                        ))}
+                      </select>
+                    )}
+                    
+                    {/* Checkbox */}
+                    {field.type === 'checkbox' && (
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData[field.id] || false}
+                          onChange={(e) => handleChange(field.id, e.target.checked)}
+                          className={`w-5 h-5 rounded bg-white/5 border ${
+                            errors[field.id] ? 'border-red-500' : 'border-white/10'
+                          } text-blue-500 focus:ring-2 focus:ring-blue-500`}
+                        />
+                        <span className="text-sm text-slate-300">
+                          {field.label}
+                          {field.required && <span className="text-red-400 ml-1">*</span>}
+                        </span>
+                      </label>
+                    )}
+                    
+                    {/* Date */}
+                    {field.type === 'date' && (
+                      <input
+                        type="date"
+                        value={formData[field.id] || ''}
+                        onChange={(e) => handleChange(field.id, e.target.value)}
+                        className={`w-full px-4 py-3 bg-white/5 border ${
+                          errors[field.id] ? 'border-red-500' : 'border-white/10'
+                        } rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
+                      />
+                    )}
+                    
+                    {/* Number */}
+                    {field.type === 'number' && (
+                      <input
+                        type="number"
+                        value={formData[field.id] || ''}
+                        onChange={(e) => handleChange(field.id, e.target.value)}
+                        placeholder={field.placeholder}
+                        className={`w-full px-4 py-3 bg-white/5 border ${
+                          errors[field.id] ? 'border-red-500' : 'border-white/10'
+                        } rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
+                      />
+                    )}
+                    
+                    {/* Text, Email, Tel (default) */}
+                    {!['textarea', 'select', 'checkbox', 'date', 'number'].includes(field.type) && (
                       <input
                         type={field.type}
                         value={formData[field.id] || ''}
@@ -261,6 +341,7 @@ const FormPopup = ({
                         } rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                       />
                     )}
+                    
                     {errors[field.id] && (
                       <p className="text-red-400 text-sm mt-1">{errors[field.id]}</p>
                     )}
