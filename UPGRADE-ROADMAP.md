@@ -36,14 +36,26 @@
 - ✅ Self-registration: cliente completa i propri dati (AcceptInvite.jsx)
 - ✅ Invito valido 7 giorni (configurabile)
 - ✅ Tracking stato invito: pending → completed/expired
+- ✅ Template messaggio invito personalizzabile per tenant
+- ✅ Soft-delete cliente con archivio dati (email rimossa, dati preservati)
+- ✅ Ricollegamento automatico clienti archiviati
+- ✅ Multi-tenant: stesso utente può essere cliente in più workspace
+- ✅ Workspace selector nel menu profilo (coach/admin con più tenant)
 - ⏳ Reminder automatico (richiede sistema notifiche - Fase 2)
 - ⏳ Pre-compilazione dati dal lead (richiede integrazione CRM)
 
-**Files creati:**
-- `src/pages/admin/NewClient.jsx` - Creazione inviti con QR e codice
+**Files creati/modificati:**
+- `src/pages/admin/NewClient.jsx` - Creazione inviti con QR, codice, template messaggio
 - `src/pages/public/AcceptInvite.jsx` - Self-registration clienti
 - `src/components/admin/InvitesManager.jsx` - Widget gestione inviti
-- `functions/index.js` - 6 Cloud Functions (createInvitation, validateInvitation, completeInvitation, revokeInvitation, listInvitations, cleanupExpiredInvitations)
+- `src/pages/auth/Login.jsx` - Workspace selector, validazione multi-tenant
+- `src/components/layout/ProLayout.jsx` - Workspace switcher nel profilo
+- `functions/index.js` - Cloud Functions: createInvitation, validateInvitation, completeInvitation, revokeInvitation, listInvitations, cleanupExpiredInvitations, softDeleteClient, checkArchivedClient, reactivateArchivedClient
+
+**Bug Fix (17 Dicembre):**
+- ✅ Fix race condition login (flickering dashboard/login)
+- ✅ Fix validazione tenantId (campi riservati non più usati come ID)
+- ✅ Fix dashboard coach: aggiunta sezione anamnesi recenti in Panoramica
 
 **Impatto:**
 - ⏱️ -70% tempo onboarding
@@ -51,7 +63,7 @@
 - 😊 Esperienza cliente professionale fin dal primo contatto
 
 **Complessità:** ⭐⭐⭐ Media
-**Tempo stimato:** 2-3 settimane → **Completato in 1 giorno**
+**Tempo stimato:** 2-3 settimane → **Completato in 2 giorni**
 
 ---
 

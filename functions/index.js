@@ -381,6 +381,288 @@ exports.updateStatsOnUserChange = onDocumentWritten(
 );
 
 // ============================================
+// SISTEMA NOTIFICHE - HELPER E TRIGGER
+// ============================================
+
+/**
+ * Helper: Crea una notifica nel database (trigger automatico per push FCM)
+ * @param {string} tenantId - ID del tenant
+ * @param {string} userId - ID utente destinatario
+ * @param {object} notification - { type, title, body, data, userType }
+ */
+async function createNotification(tenantId, userId, notification) {
+  try {
+    const notificationRef = db.collection('tenants').doc(tenantId)
+      .collection('notifications').doc();
+    
+    await notificationRef.set({
+      userId,
+      userType: notification.userType || 'client',
+      type: notification.type || 'general',
+      title: notification.title,
+      body: notification.body,
+      data: notification.data || {},
+      read: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Auto-cleanup dopo 30 giorni
+      expiresAt: admin.firestore.Timestamp.fromDate(
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      )
+    });
+    
+    console.log(`🔔 Notifica creata per ${userId}: ${notification.title}`);
+    return notificationRef.id;
+  } catch (error) {
+    console.error('❌ Errore creazione notifica:', error);
+    return null;
+  }
+}
+
+/**
+ * Trigger: Quando un coach visualizza un check, notifica il cliente
+ */
+exports.onCheckViewed = onDocumentWritten(
+  'tenants/{tenantId}/clients/{clientId}/checks/{checkId}',
+  async (event) => {
+    const before = event.data.before?.data();
+    const after = event.data.after?.data();
+    const { tenantId, clientId, checkId } = event.params;
+    
+    // Se viewedByCoach passa da false/undefined a true
+    if (!before?.viewedByCoach && after?.viewedByCoach) {
+      console.log(`👁️ Check ${checkId} visto dal coach per cliente ${clientId}`);
+      
+      // Recupera nome coach se disponibile
+      const coachName = after.viewedByName || 'Il tuo coach';
+      
+      await createNotification(tenantId, clientId, {
+        type: 'check_viewed',
+        userType: 'client',
+        title: '✅ Check-in visualizzato!',
+        body: `${coachName} ha visto il tuo check-in`,
+        data: { checkId, clientId }
+      });
+    }
+  }
+);
+
+/**
+ * Trigger: Quando viene assegnata una nuova scheda workout, notifica il cliente
+ */
+exports.onWorkoutAssigned = onDocumentCreated(
+  'tenants/{tenantId}/clients/{clientId}/workouts/{workoutId}',
+  async (event) => {
+    const workout = event.data.data();
+    const { tenantId, clientId, workoutId } = event.params;
+    
+    // Non notificare se è una copia/template
+    if (workout.isTemplate || workout.isDraft) return;
+    
+    console.log(`💪 Nuova scheda ${workoutId} assegnata a ${clientId}`);
+    
+    await createNotification(tenantId, clientId, {
+      type: 'new_workout',
+      userType: 'client',
+      title: '💪 Nuova scheda disponibile!',
+      body: workout.name || 'Il tuo coach ti ha assegnato una nuova scheda',
+      data: { workoutId, clientId, workoutName: workout.name }
+    });
+  }
+);
+
+/**
+ * Trigger: Quando un cliente invia un check, notifica il coach/admin
+ */
+exports.onCheckCreated = onDocumentCreated(
+  'tenants/{tenantId}/clients/{clientId}/checks/{checkId}',
+  async (event) => {
+    const check = event.data.data();
+    const { tenantId, clientId, checkId } = event.params;
+    
+    console.log(`📊 Nuovo check ${checkId} da cliente ${clientId}`);
+    
+    // Recupera il nome del cliente
+    const clientDoc = await db.collection('tenants').doc(tenantId)
+      .collection('clients').doc(clientId).get();
+    const clientName = clientDoc.exists ? clientDoc.data().name : 'Un cliente';
+    
+    // Recupera gli admin e coach del tenant
+    const [adminsDoc, coachesDoc] = await Promise.all([
+      db.collection('tenants').doc(tenantId).collection('roles').doc('admins').get(),
+      db.collection('tenants').doc(tenantId).collection('roles').doc('coaches').get()
+    ]);
+    
+    const adminUids = adminsDoc.exists ? adminsDoc.data().uids || [] : [];
+    const coachUids = coachesDoc.exists ? coachesDoc.data().uids || [] : [];
+    const allCoachAdmins = [...new Set([...adminUids, ...coachUids])];
+    
+    // Invia notifica a tutti gli admin/coach
+    for (const coachId of allCoachAdmins) {
+      await createNotification(tenantId, coachId, {
+        type: 'new_check',
+        userType: 'coach',
+        title: '📊 Nuovo check-in ricevuto',
+        body: `${clientName} ha inviato un check-in`,
+        data: { checkId, clientId, clientName }
+      });
+    }
+  }
+);
+
+/**
+ * Trigger: Quando viene inviato un messaggio in chat, notifica il destinatario
+ */
+exports.onChatMessageCreated = onDocumentCreated(
+  'tenants/{tenantId}/chats/{chatId}/messages/{messageId}',
+  async (event) => {
+    const message = event.data.data();
+    const { tenantId, chatId, messageId } = event.params;
+    
+    // Non notificare messaggi di sistema
+    if (message.isSystem) return;
+    
+    const senderId = message.senderId || message.sender;
+    const senderName = message.senderName || 'Qualcuno';
+    
+    // Il chatId è solitamente formato come `${clientId}_${coachId}` o simile
+    // Determina il destinatario
+    const chatDoc = await db.collection('tenants').doc(tenantId)
+      .collection('chats').doc(chatId).get();
+    
+    if (!chatDoc.exists) return;
+    
+    const chatData = chatDoc.data();
+    const participants = chatData.participants || [];
+    const recipientId = participants.find(p => p !== senderId);
+    
+    if (!recipientId) return;
+    
+    console.log(`💬 Nuovo messaggio da ${senderId} a ${recipientId}`);
+    
+    // Determina se il destinatario è coach o client
+    const isRecipientCoach = chatData.coachId === recipientId;
+    
+    await createNotification(tenantId, recipientId, {
+      type: 'new_message',
+      userType: isRecipientCoach ? 'coach' : 'client',
+      title: '💬 Nuovo messaggio',
+      body: `${senderName}: ${message.text?.substring(0, 50) || 'Nuovo messaggio'}${message.text?.length > 50 ? '...' : ''}`,
+      data: { chatId, messageId, senderId, senderName }
+    });
+  }
+);
+
+/**
+ * Callable: Segna notifica come letta
+ */
+exports.markNotificationRead = onCall(async (request) => {
+  const { notificationId, tenantId } = request.data;
+  const userId = request.auth?.uid;
+  
+  if (!userId) {
+    throw new Error('Non autenticato');
+  }
+  
+  if (!notificationId || !tenantId) {
+    throw new Error('notificationId e tenantId richiesti');
+  }
+  
+  const notificationRef = db.collection('tenants').doc(tenantId)
+    .collection('notifications').doc(notificationId);
+  
+  const notificationDoc = await notificationRef.get();
+  
+  if (!notificationDoc.exists) {
+    throw new Error('Notifica non trovata');
+  }
+  
+  // Verifica che la notifica appartenga all'utente
+  if (notificationDoc.data().userId !== userId) {
+    throw new Error('Non autorizzato');
+  }
+  
+  await notificationRef.update({
+    read: true,
+    readAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+  
+  return { success: true };
+});
+
+/**
+ * Callable: Segna tutte le notifiche come lette
+ */
+exports.markAllNotificationsRead = onCall(async (request) => {
+  const { tenantId } = request.data;
+  const userId = request.auth?.uid;
+  
+  if (!userId) {
+    throw new Error('Non autenticato');
+  }
+  
+  if (!tenantId) {
+    throw new Error('tenantId richiesto');
+  }
+  
+  const notificationsQuery = db.collection('tenants').doc(tenantId)
+    .collection('notifications')
+    .where('userId', '==', userId)
+    .where('read', '==', false);
+  
+  const snapshot = await notificationsQuery.get();
+  
+  const batch = db.batch();
+  snapshot.docs.forEach(doc => {
+    batch.update(doc.ref, { 
+      read: true,
+      readAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  });
+  
+  await batch.commit();
+  
+  return { success: true, count: snapshot.docs.length };
+});
+
+/**
+ * Scheduled: Pulizia notifiche vecchie (>30 giorni)
+ * Esegue ogni giorno alle 3:00
+ */
+exports.cleanupOldNotifications = onSchedule(
+  { schedule: '0 3 * * *', timeZone: 'Europe/Rome' },
+  async () => {
+    console.log('🧹 Pulizia notifiche vecchie...');
+    
+    const thirtyDaysAgo = admin.firestore.Timestamp.fromDate(
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    );
+    
+    // Recupera tutti i tenant
+    const tenantsSnapshot = await db.collection('tenants').get();
+    
+    let totalDeleted = 0;
+    
+    for (const tenantDoc of tenantsSnapshot.docs) {
+      const oldNotifications = await db.collection('tenants').doc(tenantDoc.id)
+        .collection('notifications')
+        .where('createdAt', '<', thirtyDaysAgo)
+        .limit(500) // Batch limit
+        .get();
+      
+      if (oldNotifications.empty) continue;
+      
+      const batch = db.batch();
+      oldNotifications.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      
+      totalDeleted += oldNotifications.docs.length;
+    }
+    
+    console.log(`✅ Eliminate ${totalDeleted} notifiche vecchie`);
+  }
+);
+
+// ============================================
 // USER-TENANT MAPPING (per login veloce)
 // ============================================
 

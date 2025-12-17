@@ -3,14 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Settings, LogOut, ChevronDown, Bell, User, CreditCard, Home, Users, MessageSquare, Calendar, Dumbbell, Utensils, Activity, ChevronRight, ArrowLeft, FileText, Building2, Check } from 'lucide-react';
+import { Menu, Settings, LogOut, ChevronDown, User, CreditCard, Home, Users, MessageSquare, Calendar, Dumbbell, Utensils, Activity, ChevronRight, ArrowLeft, FileText, Building2, Check } from 'lucide-react';
 import { auth, db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { ProSidebar, MobileSidebar } from './ProSidebar';
 import { setCurrentTenantId, getCurrentTenantId } from '../../config/tenant';
 // import ThemeToggle from '../ui/ThemeToggle'; // TODO: riabilitare quando light mode pronta
-// import NotificationPermissionModal from '../notifications/NotificationPermissionModal'; // TODO: riabilitare quando notifiche implementate
+import NotificationBell from '../notifications/NotificationBell';
 import InteractiveTour from '../onboarding/InteractiveTour';
 import { PageProvider, usePageContext } from '../../contexts/PageContext';
 import { useUnreadCount } from '../../hooks/useChat';
@@ -354,12 +354,7 @@ const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSetti
       <div className="flex items-center gap-3">
         {/* ThemeToggle rimosso - dark mode forzata */}
         
-        <button 
-          className="p-2 rounded-lg hover:bg-theme-bg-tertiary/60 text-theme-text-secondary hover:text-theme-text-primary transition-colors"
-          title="Notifiche"
-        >
-          <Bell size={18} />
-        </button>
+        <NotificationBell />
 
         <div className="relative">
           <button 
