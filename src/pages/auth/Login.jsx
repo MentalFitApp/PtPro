@@ -9,6 +9,24 @@ import { getTenantDoc, setCurrentTenantId, getCurrentTenantId, DEFAULT_TENANT_ID
 import { getDeviceInfo } from '../../utils/deviceInfo';
 
 /**
+ * Valida se una stringa può essere un tenantId valido
+ * Un tenantId valido non deve essere un campo riservato e deve avere un formato ragionevole
+ */
+function isValidTenantId(id) {
+  if (!id || typeof id !== 'string') return false;
+  // Lista di campi che NON sono tenantId validi
+  const invalidIds = [
+    'tenantId', 'role', 'updatedAt', 'joinedAt', 'status', 'migratedAt', 
+    'createdAt', 'lastLogin', 'email', 'name', 'uid', 'viaInvite', 
+    'isExistingUser', 'firstLogin', 'isClient', 'isDeleted'
+  ];
+  if (invalidIds.includes(id)) return false;
+  // Deve avere almeno 5 caratteri (i tenantId Firestore sono più lunghi)
+  if (id.length < 5) return false;
+  return true;
+}
+
+/**
  * Cerca in quale tenant esiste l'utente
  * 
  * STRATEGIA (in ordine di priorità):
@@ -32,9 +50,8 @@ async function findUserTenant(userId) {
         // Filtra solo tenant attivi (status === 'active' o status non definito per retrocompatibilità)
         const activeTenants = Object.entries(tenantsData)
           .filter(([key, data]) => {
-            // Ignora campi speciali e metadati del vecchio formato
-            const reservedFields = ['tenantId', 'role', 'updatedAt', 'joinedAt', 'status', 'migratedAt', 'createdAt', 'lastLogin'];
-            if (reservedFields.includes(key)) return false;
+            // La chiave deve essere un tenantId valido
+            if (!isValidTenantId(key)) return false;
             // Il valore deve essere un oggetto (non stringa, numero, null o timestamp)
             if (typeof data !== 'object' || data === null) return false;
             // Se è un Timestamp Firestore, ignoralo
@@ -50,42 +67,40 @@ async function findUserTenant(userId) {
         
         if (activeTenants.length === 0) {
           // Retrocompatibilità: vecchio formato flat { tenantId: "xyz", role: "client" }
-          if (tenantsData.tenantId && typeof tenantsData.tenantId === 'string') {
+          if (tenantsData.tenantId && isValidTenantId(tenantsData.tenantId)) {
             console.log('📦 Formato vecchio trovato, usando tenantId diretto:', tenantsData.tenantId);
             return { tenantId: tenantsData.tenantId, allActiveTenants: null };
           }
-          console.log('⚠️ Nessun tenant attivo trovato');
-          return { tenantId: getCurrentTenantId() || DEFAULT_TENANT_ID, allActiveTenants: null };
-        }
-        
-        if (activeTenants.length === 1) {
+          console.log('⚠️ Nessun tenant valido in user_tenants, usando fallback manuale');
+          // Non fare return qui - continua con il fallback sotto
+        } else if (activeTenants.length === 1) {
           // Un solo tenant attivo → usa quello direttamente
           console.log('✅ Singolo tenant attivo:', activeTenants[0].tenantId);
           return { tenantId: activeTenants[0].tenantId, allActiveTenants: null };
-        }
-        
-        // Più tenant attivi - verifica se è coach/admin
-        const hasCoachOrAdminRole = activeTenants.some(t => 
-          t.role === 'admin' || t.role === 'coach' || t.role === 'superadmin'
-        );
-        
-        if (hasCoachOrAdminRole) {
-          // Coach/Admin con più tenant → restituisci lista per selettore
-          console.log('👔 Coach/Admin con più tenant:', activeTenants.length);
-          return { 
-            tenantId: null, 
-            allActiveTenants: activeTenants,
-            needsSelection: true 
-          };
         } else {
-          // Cliente con più tenant → usa il più recente
-          const sortedTenants = activeTenants.sort((a, b) => {
-            const dateA = a.joinedAt?.toDate?.() || new Date(0);
-            const dateB = b.joinedAt?.toDate?.() || new Date(0);
-            return dateB - dateA;
-          });
-          console.log('👤 Cliente con più tenant, usando il più recente:', sortedTenants[0].tenantId);
-          return { tenantId: sortedTenants[0].tenantId, allActiveTenants: null };
+          // Più tenant attivi - verifica se è coach/admin
+          const hasCoachOrAdminRole = activeTenants.some(t => 
+            t.role === 'admin' || t.role === 'coach' || t.role === 'superadmin'
+          );
+          
+          if (hasCoachOrAdminRole) {
+            // Coach/Admin con più tenant → restituisci lista per selettore
+            console.log('👔 Coach/Admin con più tenant:', activeTenants.length);
+            return { 
+              tenantId: null, 
+              allActiveTenants: activeTenants,
+              needsSelection: true 
+            };
+          } else {
+            // Cliente con più tenant → usa il più recente
+            const sortedTenants = activeTenants.sort((a, b) => {
+              const dateA = a.joinedAt?.toDate?.() || new Date(0);
+              const dateB = b.joinedAt?.toDate?.() || new Date(0);
+              return dateB - dateA;
+            });
+            console.log('👤 Cliente con più tenant, usando il più recente:', sortedTenants[0].tenantId);
+            return { tenantId: sortedTenants[0].tenantId, allActiveTenants: null };
+          }
         }
       }
     } catch (e) {
@@ -201,6 +216,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false); // Flag per evitare race condition
   const [showPassword, setShowPassword] = useState(false);
   const [showWorkspaceSelector, setShowWorkspaceSelector] = useState(false);
   const [availableWorkspaces, setAvailableWorkspaces] = useState([]);
@@ -210,6 +226,12 @@ const Login = () => {
   useEffect(() => {
     let isInitialCheck = true;
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      // Se stiamo già facendo il login manualmente, lascia che handleLogin gestisca tutto
+      if (isLoggingIn) {
+        console.log('⏳ Login in corso, skippo onAuthStateChanged');
+        return;
+      }
+      
       if (user && isInitialCheck) {
         try {
           // Cerca il tenant per questo utente
@@ -295,11 +317,12 @@ const Login = () => {
       isInitialCheck = false;
       unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, isLoggingIn]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoggingIn(true); // Blocca onAuthStateChanged
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
@@ -370,6 +393,7 @@ const Login = () => {
         await signOut(auth);
       }
     } catch (error) {
+      setIsLoggingIn(false); // Reset in caso di errore
       if (error.code === 'auth/wrong-password') {
         setError('Password errata. Riprova o reimposta la password.');
       } else if (error.code === 'auth/user-not-found') {
@@ -384,6 +408,7 @@ const Login = () => {
 
   const handleGoogleLogin = async () => {
     setError('');
+    setIsLoggingIn(true); // Blocca onAuthStateChanged
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
@@ -469,8 +494,10 @@ const Login = () => {
           await signOut(auth);
         }
         setError('Account Google non collegato. Devi prima essere registrato come cliente dal tuo coach, poi potrai collegare Google dal tuo profilo.');
+        setIsLoggingIn(false);
       }
     } catch (error) {
+      setIsLoggingIn(false); // Reset in caso di errore
       console.error('❌ Errore login Google:', error);
       if (error.code === 'auth/popup-closed-by-user') {
         setError('Popup chiuso. Riprova.');
