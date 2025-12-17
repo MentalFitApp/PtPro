@@ -653,7 +653,13 @@ const LandingPageEditor = () => {
               toast?.showToast?.('Blocco modificato dall\'AI', 'success');
             }}
             onUpdateAllBlocks={(changes) => {
-              // changes è un array di { blockId, settings }
+              // changes dovrebbe essere un array di { blockId, settings }
+              // Aggiungi validazione per evitare errori se l'AI restituisce formato sbagliato
+              if (!Array.isArray(changes)) {
+                console.warn('onUpdateAllBlocks: changes non è un array', changes);
+                toast?.showToast?.('Formato risposta AI non valido', 'error');
+                return;
+              }
               setBlocks(prev => prev.map(b => {
                 const change = changes.find(c => c.blockId === b.id);
                 if (change) {

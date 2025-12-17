@@ -431,11 +431,22 @@ REGOLE:
 Rispondi SEMPRE in JSON valido con questa struttura:
 {
   "action": "update_block" | "update_all" | "add_block" | "message",
-  "blockId": "id del blocco (se update_block)",
-  "changes": { ... modifiche da applicare alle settings },
+  "blockId": "id del blocco (solo se update_block)",
+  "changes": { ... } (se update_block: oggetto con modifiche) OPPURE [{ "blockId": "...", "settings": {...} }] (se update_all: ARRAY di oggetti),
   "newBlock": { type, settings } (se add_block),
   "explanation": "spiegazione di cosa hai fatto",
   "message": "messaggio per l'utente (se action=message)"
+}
+
+IMPORTANTE per update_all: "changes" DEVE essere un ARRAY di oggetti con "blockId" e "settings".
+Esempio update_all:
+{
+  "action": "update_all",
+  "changes": [
+    { "blockId": "hero-123", "settings": { "title": "Nuovo titolo" } },
+    { "blockId": "cta-456", "settings": { "ctaText": "Scopri di più" } }
+  ],
+  "explanation": "Ho modificato i titoli"
 }`;
 
   const userPrompt = `${blocksContext}
