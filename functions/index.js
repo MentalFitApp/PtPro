@@ -2278,7 +2278,7 @@ exports.completeInvitation = onCall(async (request) => {
     name: validators.nonEmptyString,
     email: validators.email,
     password: validators.nonEmptyString,
-    phone: validators.optional(validators.nonEmptyString),
+    phone: validators.nonEmptyString, // Telefono obbligatorio
     acceptTerms: validators.optional(validators.boolean),
     acceptPrivacy: validators.optional(validators.boolean)
   });

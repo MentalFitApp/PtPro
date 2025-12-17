@@ -109,7 +109,7 @@ const InviteRow = ({ invite, onResend, onCancel, onCopy }) => {
   const inviteUrl = `https://www.flowfitpro.it/invite/${invite.token}`;
 
   return (
-    <div className="bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700/50 rounded-lg p-4 transition-colors">
+    <div className="bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700/50 rounded-lg p-4 transition-colors relative">
       <div className="flex items-start justify-between gap-4">
         {/* Info principale */}
         <div className="flex-1 min-w-0">
@@ -195,7 +195,7 @@ const InviteRow = ({ invite, onResend, onCancel, onCopy }) => {
               <>
                 {/* Overlay per chiudere */}
                 <div 
-                  className="fixed inset-0 z-10" 
+                  className="fixed inset-0 z-40" 
                   onClick={() => setShowActions(false)}
                 />
                 
@@ -203,7 +203,7 @@ const InviteRow = ({ invite, onResend, onCancel, onCopy }) => {
                   initial={{ opacity: 0, scale: 0.95, y: -10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                  className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-20 overflow-hidden"
+                  className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50"
                 >
                   {/* Copia link */}
                   <button
@@ -372,7 +372,6 @@ export default function InvitesManager({ onInviteCompleted }) {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden"
           >
             <div className="px-4 sm:px-6 pb-4 border-t border-slate-700/50">
               {/* Filtri */}

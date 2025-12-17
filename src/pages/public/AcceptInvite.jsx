@@ -358,20 +358,29 @@ export default function AcceptInvite() {
                       )}
                     </div>
 
-                    {/* Telefono (opzionale) */}
+                    {/* Telefono */}
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-1">
-                        Telefono <span className="text-slate-500">(opzionale)</span>
+                        Telefono *
                       </label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input
                           type="tel"
-                          {...register('phone')}
+                          {...register('phone', { 
+                            required: 'Numero di telefono richiesto',
+                            pattern: {
+                              value: /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/,
+                              message: 'Numero di telefono non valido'
+                            }
+                          })}
                           className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                           placeholder="+39 123 456 7890"
                         />
                       </div>
+                      {errors.phone && (
+                        <p className="text-red-400 text-sm mt-1">{errors.phone.message}</p>
+                      )}
                     </div>
 
                     {/* Password */}
