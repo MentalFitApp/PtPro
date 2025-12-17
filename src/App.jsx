@@ -55,6 +55,7 @@ const ThemePreview = React.lazy(() => import('./pages/admin/ThemePreview'));
 const ClientCallsCalendar = React.lazy(() => import('./pages/admin/ClientCallsCalendar'));
 const LandingPagesList = React.lazy(() => import('./pages/admin/LandingPagesList'));
 const LandingPageEditor = React.lazy(() => import('./pages/admin/LandingPageEditor'));
+const LandingPagesLeads = React.lazy(() => import('./pages/admin/LandingPagesLeads'));
 
 // Platform CEO Pages
 const CEOPlatformDashboard = React.lazy(() => import('./pages/platform/CEOPlatformDashboard'));
@@ -453,6 +454,7 @@ export default function App() {
           <Route path="/integrations" element={<IntegrationsHub />} />
           <Route path="/oauth/callback" element={<OAuthCallback />} />
           <Route path="/admin/landing-pages" element={<LandingPagesList />} />
+          <Route path="/admin/landing-pages/leads" element={<LandingPagesLeads />} />
           <Route path="/admin/landing-pages/new" element={<LandingPageEditor />} />
           <Route path="/admin/landing-pages/:pageId/edit" element={<LandingPageEditor />} />
 

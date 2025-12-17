@@ -15,6 +15,7 @@ import {
   Globe,
   CheckCircle,
   XCircle,
+  Users,
 } from 'lucide-react';
 import { useTenant } from '../../contexts/TenantContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -142,13 +143,22 @@ const LandingPagesList = () => {
               Crea e gestisci le tue landing pages per acquisire nuovi clienti
             </p>
           </div>
-          <button
-            onClick={() => setShowTemplateModal(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-sky-500 to-cyan-500 text-white font-semibold rounded-xl hover:from-sky-600 hover:to-cyan-600 transition-all shadow-lg shadow-sky-500/25"
-          >
-            <Plus className="w-5 h-5" />
-            Nuova Landing Page
-          </button>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/admin/landing-pages/leads"
+              className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg shadow-green-500/25"
+            >
+              <Users className="w-5 h-5" />
+              Vedi Leads
+            </Link>
+            <button
+              onClick={() => setShowTemplateModal(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-sky-500 to-cyan-500 text-white font-semibold rounded-xl hover:from-sky-600 hover:to-cyan-600 transition-all shadow-lg shadow-sky-500/25"
+            >
+              <Plus className="w-5 h-5" />
+              Nuova Landing Page
+            </button>
+          </div>
         </div>
 
         {/* Search & Filters */}

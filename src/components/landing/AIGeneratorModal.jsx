@@ -18,13 +18,17 @@ import {
   Upload,
   Globe,
   Camera,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 import { generateLandingPage, AI_PRESETS } from '../../services/aiLandingGenerator';
 import { analyzeCompetitorURL, analyzeScreenshot, generateLandingPage as generateFromAnalysis } from '../../services/openai';
 
+const MAX_SCREENSHOTS = 10;
+
 /**
  * AIGeneratorModal - Modal per generare landing pages con AI
- * Supporta 4 modalità: Preset, Custom, URL Competitor, Screenshot
+ * Supporta 4 modalità: Preset, Custom, URL Competitor, Screenshot (fino a 10)
  */
 export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantId }) {
   const fileInputRef = useRef(null);
@@ -38,10 +42,10 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
   });
   // URL Mode
   const [competitorUrl, setCompetitorUrl] = useState('');
-  // Screenshot Mode
-  const [screenshotFile, setScreenshotFile] = useState(null);
-  const [screenshotPreview, setScreenshotPreview] = useState(null);
+  // Screenshot Mode - supporta multipli screenshot
+  const [screenshots, setScreenshots] = useState([]); // Array di { file, preview, id }
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [currentAnalyzingIndex, setCurrentAnalyzingIndex] = useState(0);
   
   const [apiKey, setApiKey] = useState(localStorage.getItem('openai_api_key') || '');
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
@@ -49,18 +53,33 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
 
-  // Handle screenshot file selection
+  // Handle multiple screenshot file selection
   const handleScreenshotSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setScreenshotFile(file);
-      // Create preview
+    const files = Array.from(e.target.files || []);
+    const remainingSlots = MAX_SCREENSHOTS - screenshots.length;
+    const filesToAdd = files.slice(0, remainingSlots);
+    
+    filesToAdd.forEach(file => {
       const reader = new FileReader();
       reader.onload = () => {
-        setScreenshotPreview(reader.result);
+        setScreenshots(prev => [...prev, {
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          file,
+          preview: reader.result,
+        }]);
       };
       reader.readAsDataURL(file);
+    });
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
+  };
+
+  // Remove screenshot
+  const handleRemoveScreenshot = (id) => {
+    setScreenshots(prev => prev.filter(s => s.id !== id));
   };
 
   const handleGenerate = async () => {
@@ -82,23 +101,29 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
         // Converti analisi in blocchi landing page
         generated = convertAnalysisToBlocks(analysis);
       } else if (mode === 'screenshot') {
-        // Analizza screenshot con Vision AI
-        if (!screenshotFile) {
-          throw new Error('Carica uno screenshot');
+        // Analizza screenshot multipli con Vision AI
+        if (screenshots.length === 0) {
+          throw new Error('Carica almeno uno screenshot');
         }
         
-        // Convert to base64
-        const base64 = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result.split(',')[1]);
-          reader.readAsDataURL(screenshotFile);
-        });
+        // Analizza tutti gli screenshot e combina i risultati
+        const allAnalyses = [];
+        for (let i = 0; i < screenshots.length; i++) {
+          setCurrentAnalyzingIndex(i);
+          
+          // Convert to base64
+          const base64 = screenshots[i].preview.split(',')[1];
+          
+          const analysis = await analyzeScreenshot(base64);
+          allAnalyses.push(analysis);
+        }
         
-        const analysis = await analyzeScreenshot(base64);
-        setAnalysisResult(analysis);
+        // Combina le analisi di tutti gli screenshot
+        const combinedAnalysis = combineScreenshotAnalyses(allAnalyses);
+        setAnalysisResult(combinedAnalysis);
         
-        // Converti analisi in blocchi
-        generated = convertAnalysisToBlocks(analysis, analysis.colors);
+        // Converti analisi combinata in blocchi
+        generated = convertAnalysisToBlocks(combinedAnalysis, combinedAnalysis.colors);
       } else {
         // Modalità preset o custom
         const input = mode === 'preset' 
@@ -182,8 +207,57 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
       meta: {
         title: analysis.targetAudience ? `Landing per ${analysis.targetAudience}` : 'Landing Page Generata',
         description: `Stile: ${analysis.style || 'professionale'}, Tono: ${analysis.tone || 'coinvolgente'}`,
-        analyzedFrom: analysis.sourceUrl || 'screenshot',
+        analyzedFrom: analysis.sourceUrl || `${screenshots.length} screenshot`,
       },
+    };
+  };
+
+  // Combina le analisi di più screenshot in una unica
+  const combineScreenshotAnalyses = (analyses) => {
+    if (analyses.length === 0) return {};
+    if (analyses.length === 1) return analyses[0];
+
+    // Combina tutte le sezioni, rimuovendo duplicati per tipo
+    const seenTypes = new Set();
+    const allSections = [];
+    
+    analyses.forEach(analysis => {
+      (analysis.sections || []).forEach(section => {
+        // Per hero, prendi solo il primo
+        if (section.type === 'hero' && seenTypes.has('hero')) return;
+        // Per form, prendi solo il primo
+        if (section.type === 'form' && seenTypes.has('form')) return;
+        
+        seenTypes.add(section.type);
+        allSections.push(section);
+      });
+    });
+
+    // Ordina le sezioni: hero prima, form ultimo
+    allSections.sort((a, b) => {
+      if (a.type === 'hero') return -1;
+      if (b.type === 'hero') return 1;
+      if (a.type === 'form' || a.type === 'cta') return 1;
+      if (b.type === 'form' || b.type === 'cta') return -1;
+      return 0;
+    });
+
+    // Combina colori (prendi i più frequenti)
+    const allColors = analyses.flatMap(a => a.colors || []);
+    const uniqueColors = [...new Set(allColors)].slice(0, 3);
+
+    // Combina stile e tono (prendi il primo non vuoto)
+    const style = analyses.find(a => a.style)?.style || 'professionale';
+    const tone = analyses.find(a => a.tone)?.tone || 'coinvolgente';
+    const targetAudience = analyses.find(a => a.targetAudience)?.targetAudience || '';
+
+    return {
+      sections: allSections,
+      colors: uniqueColors,
+      style,
+      tone,
+      targetAudience,
+      layout: analyses[0]?.layout || 'single-column',
     };
   };
 
@@ -524,48 +598,93 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
                 <Camera className="w-12 h-12 text-orange-400 mx-auto mb-3" />
                 <h3 className="font-semibold text-white text-lg">Analizza Screenshot</h3>
                 <p className="text-sm text-slate-400">
-                  Carica uno screenshot e l'AI Vision lo analizzerà per ricreare la pagina
+                  Carica fino a {MAX_SCREENSHOTS} screenshot - L'AI li combinerà per creare una landing completa
                 </p>
               </div>
               
               <div className="space-y-4">
-                {/* Upload area */}
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-                    screenshotPreview 
-                      ? 'border-orange-500 bg-orange-500/10' 
-                      : 'border-slate-600 hover:border-orange-500 hover:bg-slate-700/50'
-                  }`}
-                >
-                  {screenshotPreview ? (
-                    <div className="space-y-3">
-                      <img 
-                        src={screenshotPreview} 
-                        alt="Preview" 
-                        className="max-h-48 mx-auto rounded-lg shadow-lg"
-                      />
-                      <p className="text-sm text-orange-400">
-                        ✓ Screenshot caricato - Clicca per cambiare
-                      </p>
-                    </div>
-                  ) : (
+                {/* Screenshots Grid */}
+                {screenshots.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {screenshots.map((screenshot, index) => (
+                      <div 
+                        key={screenshot.id}
+                        className="relative group aspect-video bg-slate-700 rounded-lg overflow-hidden"
+                      >
+                        <img 
+                          src={screenshot.preview} 
+                          alt={`Screenshot ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <button
+                            onClick={() => handleRemoveScreenshot(screenshot.id)}
+                            className="p-2 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="absolute top-1 left-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded">
+                          {index + 1}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Add more button */}
+                    {screenshots.length < MAX_SCREENSHOTS && (
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="aspect-video border-2 border-dashed border-slate-600 hover:border-orange-500 rounded-lg flex flex-col items-center justify-center gap-1 transition-colors"
+                      >
+                        <Plus className="w-6 h-6 text-slate-400" />
+                        <span className="text-xs text-slate-400">Aggiungi</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Upload area (shown when no screenshots) */}
+                {screenshots.length === 0 && (
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all border-slate-600 hover:border-orange-500 hover:bg-slate-700/50"
+                  >
                     <div className="space-y-3">
                       <Upload className="w-10 h-10 text-slate-400 mx-auto" />
                       <div>
                         <p className="text-white font-medium">Clicca per caricare</p>
-                        <p className="text-xs text-slate-400">PNG, JPG fino a 10MB</p>
+                        <p className="text-xs text-slate-400">PNG, JPG fino a 10MB • Max {MAX_SCREENSHOTS} immagini</p>
                       </div>
                     </div>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleScreenshotSelect}
-                    className="hidden"
-                  />
-                </div>
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleScreenshotSelect}
+                  className="hidden"
+                />
+
+                {/* Counter */}
+                {screenshots.length > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400">
+                      {screenshots.length} di {MAX_SCREENSHOTS} screenshot caricati
+                    </span>
+                    {screenshots.length < MAX_SCREENSHOTS && (
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Aggiungi altri
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 <div className="p-4 bg-slate-700/50 rounded-xl">
                   <h4 className="text-sm font-medium text-slate-300 mb-2">🔍 GPT-4 Vision analizzerà</h4>
@@ -573,18 +692,18 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
                     <li>• Layout e struttura delle sezioni</li>
                     <li>• Colori dominanti e stile grafico</li>
                     <li>• Testi dei pulsanti e CTA</li>
-                    <li>• Tipologia di contenuti</li>
+                    <li>• {screenshots.length > 1 ? 'Combinerà gli elementi da tutti gli screenshot' : 'Tipologia di contenuti'}</li>
                   </ul>
                 </div>
               </div>
 
               <button
                 onClick={handleGenerate}
-                disabled={!screenshotFile}
+                disabled={screenshots.length === 0}
                 className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-5 h-5" />
-                Analizza con Vision AI
+                Analizza {screenshots.length > 1 ? `${screenshots.length} Screenshot` : 'Screenshot'} con Vision AI
               </button>
             </div>
           )}
@@ -597,7 +716,10 @@ export default function AIGeneratorModal({ isOpen, onClose, onGenerated, tenantI
                 <Loader2 className="w-10 h-10 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin" />
               </div>
               <h3 className="text-xl font-semibold text-white mt-6 mb-2">
-                Generazione in corso...
+                {mode === 'screenshot' && screenshots.length > 1 
+                  ? `Analizzando screenshot ${currentAnalyzingIndex + 1} di ${screenshots.length}...`
+                  : 'Generazione in corso...'
+                }
               </h3>
               <p className="text-slate-400">
                 L'AI sta creando la tua landing page personalizzata
