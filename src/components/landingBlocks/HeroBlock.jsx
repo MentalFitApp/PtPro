@@ -43,6 +43,16 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
     minHeight = '90vh',
     showBadge = false,
     badgeText = '',
+    // Split image settings
+    splitImage = '',
+    splitImageStyle = 'rounded',
+    splitImagePosition = 'right',
+    // Text style settings
+    titleColor = '#ffffff',
+    titleSize = 'default',
+    subtitleColor = '#cbd5e1',
+    highlightedWords = '',
+    highlightColor = '#0ea5e9',
   } = settings || {};
 
   const [showFormPopup, setShowFormPopup] = useState(false);
@@ -51,6 +61,31 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
     left: 'text-left items-start',
     center: 'text-center items-center',
     right: 'text-right items-end',
+  };
+
+  // Classi dimensione titolo
+  const titleSizeClasses = {
+    small: 'text-2xl md:text-3xl lg:text-4xl',
+    default: 'text-3xl md:text-4xl lg:text-5xl xl:text-6xl',
+    large: 'text-4xl md:text-5xl lg:text-6xl xl:text-7xl',
+    xlarge: 'text-5xl md:text-6xl lg:text-7xl xl:text-8xl',
+  };
+
+  // Renderizza titolo con parole evidenziate
+  const renderTitle = () => {
+    if (!highlightedWords || !title) {
+      return <span style={{ color: titleColor }}>{title}</span>;
+    }
+
+    const wordsToHighlight = highlightedWords.split(',').map(w => w.trim()).filter(Boolean);
+    let result = title;
+    
+    wordsToHighlight.forEach(word => {
+      const regex = new RegExp(`(${word})`, 'gi');
+      result = result.replace(regex, `<span style="color: ${highlightColor}">$1</span>`);
+    });
+
+    return <span style={{ color: titleColor }} dangerouslySetInnerHTML={{ __html: result }} />;
   };
 
   // Gestisce click sul pulsante principale
@@ -147,9 +182,20 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
 
   // Render per variante Split (immagine a lato)
   if (variant === 'split') {
+    // Stile immagine
+    const imageStyleClasses = {
+      rounded: 'rounded-2xl',
+      circle: 'rounded-full',
+      square: 'rounded-none',
+      blob: 'rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%]',
+    };
+
+    const imageClass = imageStyleClasses[splitImageStyle] || imageStyleClasses.rounded;
+    const isImageLeft = splitImagePosition === 'left';
+
     return (
       <section 
-        className={`relative min-h-[${minHeight}] flex items-center overflow-hidden`}
+        className="relative flex items-center overflow-hidden"
         style={{ minHeight }}
       >
         {/* Background */}
@@ -169,31 +215,34 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
           />
         )}
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Content */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+          <div className={`grid lg:grid-cols-2 gap-8 lg:gap-12 items-center ${isImageLeft ? 'lg:grid-flow-col-dense' : ''}`}>
+            {/* Content - ordine diverso su mobile/desktop in base a posizione */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
+              initial={{ opacity: 0, x: isImageLeft ? 30 : -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
-              className={`flex flex-col ${alignmentClasses[textAlign]}`}
+              className={`flex flex-col ${alignmentClasses[textAlign]} order-2 lg:order-${isImageLeft ? '2' : '1'} px-2 sm:px-0`}
             >
               {showBadge && badgeText && (
-                <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-6 w-fit">
+                <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-4 md:mb-6 w-fit">
                   {badgeText}
                 </span>
               )}
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-                {title}
+              <h1 className={`${titleSizeClasses[titleSize] || titleSizeClasses.default} font-bold leading-tight mb-4 md:mb-6`}>
+                {renderTitle()}
               </h1>
-              <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-xl">
+              <p 
+                className="text-base md:text-lg lg:text-xl mb-6 md:mb-8 max-w-xl"
+                style={{ color: subtitleColor }}
+              >
                 {subtitle}
               </p>
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-3 md:gap-4">
                 <a
                   href={getCtaHref()}
                   onClick={handleCtaClick}
-                  className="px-8 py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300 transform hover:-translate-y-0.5"
+                  className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300 transform hover:-translate-y-0.5 text-sm md:text-base"
                 >
                   {ctaText}
                 </a>
@@ -201,7 +250,7 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
                   <a
                     href={secondaryCtaLink}
                     onClick={(e) => scrollToElement(e, secondaryCtaLink)}
-                    className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+                    className="px-6 md:px-8 py-3 md:py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 text-sm md:text-base"
                   >
                     {secondaryCtaText}
                   </a>
@@ -209,22 +258,22 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
               </div>
             </motion.div>
 
-            {/* Image placeholder */}
+            {/* Image */}
             <motion.div
-              initial={{ opacity: 0, x: 30 }}
+              initial={{ opacity: 0, x: isImageLeft ? -30 : 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative"
+              className={`relative order-1 lg:order-${isImageLeft ? '1' : '2'}`}
             >
-              {backgroundImage ? (
+              {splitImage ? (
                 <img 
-                  src={backgroundImage} 
+                  src={splitImage} 
                   alt="Hero" 
-                  className="rounded-2xl shadow-2xl"
+                  className={`w-full shadow-2xl ${imageClass} object-cover`}
                 />
               ) : (
-                <div className="aspect-square bg-gradient-to-br from-sky-500/20 to-cyan-500/20 rounded-2xl flex items-center justify-center border border-white/10">
-                  <span className="text-6xl">🏋️</span>
+                <div className={`aspect-square bg-gradient-to-br from-sky-500/20 to-cyan-500/20 ${imageClass} flex items-center justify-center border border-white/10`}>
+                  <span className="text-4xl md:text-6xl opacity-50">📷</span>
                 </div>
               )}
             </motion.div>
@@ -369,7 +418,7 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
         <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
       </div>
 
-      <div className={`relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col ${alignmentClasses[textAlign]}`}>
+      <div className={`relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 flex flex-col ${alignmentClasses[textAlign]}`}>
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -381,24 +430,27 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-6"
+              className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-4 md:mb-6"
             >
               {badgeText}
             </motion.span>
           )}
-          <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-white leading-tight mb-6 text-center">
-            {title}
+          <h1 className={`${titleSizeClasses[titleSize] || titleSizeClasses.default} font-bold leading-tight mb-4 md:mb-6 text-center`}>
+            {renderTitle()}
           </h1>
-          <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-2xl text-center">
+          <p 
+            className="text-base md:text-lg lg:text-xl mb-6 md:mb-8 max-w-2xl text-center"
+            style={{ color: subtitleColor }}
+          >
             {subtitle}
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-3 md:gap-4">
             <motion.a
               href={getCtaHref()}
               onClick={handleCtaClick}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="px-8 py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300"
+              className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300 text-sm md:text-base"
             >
               {ctaText}
             </motion.a>

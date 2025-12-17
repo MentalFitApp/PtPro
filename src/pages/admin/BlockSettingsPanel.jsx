@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { X, Plus, Trash2, ChevronDown, ChevronUp, Upload, Video, Image } from 'lucide-react';
 import { DEFAULT_BLOCKS } from '../../services/landingPageService';
 import MediaUploader from '../../components/landing/MediaUploader';
@@ -12,6 +12,12 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
   const [showMediaUploader, setShowMediaUploader] = useState(null); // 'image' | 'video' | null
   const debounceRef = useRef(null);
   const blockIdRef = useRef(block?.id);
+  const localSettingsRef = useRef(localSettings);
+  
+  // Mantieni ref aggiornato
+  useEffect(() => {
+    localSettingsRef.current = localSettings;
+  }, [localSettings]);
 
   // Aggiorna localSettings solo quando cambia il blocco (non ad ogni re-render)
   useEffect(() => {
@@ -28,7 +34,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
     }
     debounceRef.current = setTimeout(() => {
       onUpdate(newSettings);
-    }, 500); // Aumentato a 500ms per dare più tempo
+    }, 800); // Aumentato a 800ms per dare più tempo
   }, [onUpdate]);
 
   // Cleanup debounce on unmount
@@ -40,48 +46,85 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
     };
   }, []);
 
-  const handleChange = (key, value) => {
-    const newSettings = { ...localSettings, [key]: value };
-    setLocalSettings(newSettings);
-    debouncedUpdate(newSettings);
-  };
-
-  const handleNestedChange = (parentKey, key, value) => {
-    const newSettings = {
-      ...localSettings,
-      [parentKey]: {
-        ...(localSettings[parentKey] || {}),
-        [key]: value,
+  // Handler stabile che usa ref
+  const handleChange = useCallback((key, value) => {
+    setLocalSettings(prev => {
+      const newSettings = { ...prev, [key]: value };
+      // Usa setTimeout per evitare update sincrono
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
       }
-    };
-    setLocalSettings(newSettings);
-    debouncedUpdate(newSettings);
-  };
+      debounceRef.current = setTimeout(() => {
+        onUpdate(newSettings);
+      }, 800);
+      return newSettings;
+    });
+  }, [onUpdate]);
 
-  const handleArrayItemChange = (arrayKey, index, field, value) => {
-    const newArray = [...(localSettings[arrayKey] || [])];
-    newArray[index] = { ...newArray[index], [field]: value };
-    const newSettings = { ...localSettings, [arrayKey]: newArray };
-    setLocalSettings(newSettings);
-    debouncedUpdate(newSettings);
-  };
+  const handleNestedChange = useCallback((parentKey, key, value) => {
+    setLocalSettings(prev => {
+      const newSettings = {
+        ...prev,
+        [parentKey]: {
+          ...(prev[parentKey] || {}),
+          [key]: value,
+        }
+      };
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      debounceRef.current = setTimeout(() => {
+        onUpdate(newSettings);
+      }, 800);
+      return newSettings;
+    });
+  }, [onUpdate]);
 
-  const handleAddArrayItem = (arrayKey, defaultItem) => {
-    const newArray = [...(localSettings[arrayKey] || []), defaultItem];
-    const newSettings = { ...localSettings, [arrayKey]: newArray };
-    setLocalSettings(newSettings);
-    debouncedUpdate(newSettings);
-  };
+  const handleArrayItemChange = useCallback((arrayKey, index, field, value) => {
+    setLocalSettings(prev => {
+      const newArray = [...(prev[arrayKey] || [])];
+      newArray[index] = { ...newArray[index], [field]: value };
+      const newSettings = { ...prev, [arrayKey]: newArray };
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      debounceRef.current = setTimeout(() => {
+        onUpdate(newSettings);
+      }, 800);
+      return newSettings;
+    });
+  }, [onUpdate]);
 
-  const handleRemoveArrayItem = (arrayKey, index) => {
-    const newArray = [...(localSettings[arrayKey] || [])];
-    newArray.splice(index, 1);
-    const newSettings = { ...localSettings, [arrayKey]: newArray };
-    setLocalSettings(newSettings);
-    debouncedUpdate(newSettings);
-  };
+  const handleAddArrayItem = useCallback((arrayKey, defaultItem) => {
+    setLocalSettings(prev => {
+      const newArray = [...(prev[arrayKey] || []), defaultItem];
+      const newSettings = { ...prev, [arrayKey]: newArray };
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      debounceRef.current = setTimeout(() => {
+        onUpdate(newSettings);
+      }, 800);
+      return newSettings;
+    });
+  }, [onUpdate]);
 
-  const toggleSection = (section) => {
+  const handleRemoveArrayItem = useCallback((arrayKey, index) => {
+    setLocalSettings(prev => {
+      const newArray = [...(prev[arrayKey] || [])];
+      newArray.splice(index, 1);
+      const newSettings = { ...prev, [arrayKey]: newArray };
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      debounceRef.current = setTimeout(() => {
+        onUpdate(newSettings);
+      }, 800);
+      return newSettings;
+    });
+  }, [onUpdate]);
+
+  const toggleSection = useCallback((section) => {
     setExpandedSections(prev => 
       prev.includes(section) 
         ? prev.filter(s => s !== section)
@@ -310,7 +353,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                         <button
                           onClick={() => {
                             const currentFields = localSettings.formPopupCustomFields || [];
-                            updateSetting('formPopupCustomFields', [
+                            handleChange('formPopupCustomFields', [
                               ...currentFields,
                               { 
                                 id: `field_${Date.now()}`, 
@@ -341,7 +384,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                               onClick={() => {
                                 const newFields = [...(localSettings.formPopupCustomFields || [])];
                                 newFields.splice(index, 1);
-                                updateSetting('formPopupCustomFields', newFields);
+                                handleChange('formPopupCustomFields', newFields);
                               }}
                               className="text-red-400 hover:text-red-300 p-1"
                             >
@@ -358,7 +401,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                               onChange={(e) => {
                                 const newFields = [...(localSettings.formPopupCustomFields || [])];
                                 newFields[index] = { ...field, label: e.target.value };
-                                updateSetting('formPopupCustomFields', newFields);
+                                handleChange('formPopupCustomFields', newFields);
                               }}
                               placeholder="Etichetta"
                               className="px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-slate-500"
@@ -368,7 +411,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                               onChange={(e) => {
                                 const newFields = [...(localSettings.formPopupCustomFields || [])];
                                 newFields[index] = { ...field, type: e.target.value };
-                                updateSetting('formPopupCustomFields', newFields);
+                                handleChange('formPopupCustomFields', newFields);
                               }}
                               className="px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-sm text-white"
                             >
@@ -389,7 +432,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                             onChange={(e) => {
                               const newFields = [...(localSettings.formPopupCustomFields || [])];
                               newFields[index] = { ...field, placeholder: e.target.value };
-                              updateSetting('formPopupCustomFields', newFields);
+                              handleChange('formPopupCustomFields', newFields);
                             }}
                             placeholder="Placeholder (opzionale)"
                             className="w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-slate-500"
@@ -402,7 +445,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                               onChange={(e) => {
                                 const newFields = [...(localSettings.formPopupCustomFields || [])];
                                 newFields[index] = { ...field, options: e.target.value };
-                                updateSetting('formPopupCustomFields', newFields);
+                                handleChange('formPopupCustomFields', newFields);
                               }}
                               placeholder="Opzioni separate da virgola (es: Opzione 1, Opzione 2)"
                               className="w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-slate-500"
@@ -416,7 +459,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                               onChange={(e) => {
                                 const newFields = [...(localSettings.formPopupCustomFields || [])];
                                 newFields[index] = { ...field, required: e.target.checked };
-                                updateSetting('formPopupCustomFields', newFields);
+                                handleChange('formPopupCustomFields', newFields);
                               }}
                               className="rounded bg-slate-700 border-slate-600"
                             />
@@ -611,6 +654,139 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
                   ]
                 })}
               </FieldGroup>
+            </Section>
+
+            {/* Sezione Immagine Laterale - solo per variante Split */}
+            {localSettings.variant === 'split' && (
+              <Section title="Immagine Laterale" id="splitImage">
+                <FieldGroup label="Immagine">
+                  {localSettings.splitImage ? (
+                    <div className="space-y-2">
+                      <div className="relative rounded-lg overflow-hidden aspect-square">
+                        <img 
+                          src={localSettings.splitImage} 
+                          alt="Split Image" 
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          onClick={() => handleChange('splitImage', '')}
+                          className="absolute top-2 right-2 p-1 bg-red-500 rounded-full hover:bg-red-600"
+                        >
+                          <X className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <MediaUploader
+                      accept="image"
+                      onUpload={(url) => handleChange('splitImage', url)}
+                      tenantId={tenantId}
+                      pageId={pageId}
+                      blockId={block.id}
+                      compact
+                    />
+                  )}
+                </FieldGroup>
+                <FieldGroup label="Stile Immagine">
+                  {renderField('splitImageStyle', localSettings.splitImageStyle || 'rounded', 'select', {
+                    options: [
+                      { value: 'rounded', label: 'Arrotondata' },
+                      { value: 'circle', label: 'Cerchio' },
+                      { value: 'square', label: 'Quadrata' },
+                      { value: 'blob', label: 'Forma Organica' },
+                    ]
+                  })}
+                </FieldGroup>
+                <FieldGroup label="Posizione Immagine">
+                  {renderField('splitImagePosition', localSettings.splitImagePosition || 'right', 'select', {
+                    options: [
+                      { value: 'right', label: 'Destra' },
+                      { value: 'left', label: 'Sinistra' },
+                    ]
+                  })}
+                </FieldGroup>
+              </Section>
+            )}
+
+            {/* Sezione Stile Testo */}
+            <Section title="Stile Testo" id="textStyle">
+              <FieldGroup label="Colore Titolo">
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={localSettings.titleColor || '#ffffff'}
+                    onChange={(e) => handleChange('titleColor', e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer border border-slate-600"
+                  />
+                  <input
+                    type="text"
+                    value={localSettings.titleColor || '#ffffff'}
+                    onChange={(e) => handleChange('titleColor', e.target.value)}
+                    className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                    placeholder="#ffffff"
+                  />
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Dimensione Titolo">
+                {renderField('titleSize', localSettings.titleSize || 'default', 'select', {
+                  options: [
+                    { value: 'small', label: 'Piccolo (3xl)' },
+                    { value: 'default', label: 'Normale (4xl-6xl)' },
+                    { value: 'large', label: 'Grande (5xl-7xl)' },
+                    { value: 'xlarge', label: 'Extra Grande (6xl-8xl)' },
+                  ]
+                })}
+              </FieldGroup>
+              <FieldGroup label="Colore Sottotitolo">
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={localSettings.subtitleColor || '#cbd5e1'}
+                    onChange={(e) => handleChange('subtitleColor', e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer border border-slate-600"
+                  />
+                  <input
+                    type="text"
+                    value={localSettings.subtitleColor || '#cbd5e1'}
+                    onChange={(e) => handleChange('subtitleColor', e.target.value)}
+                    className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                    placeholder="#cbd5e1"
+                  />
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Allineamento Testo">
+                {renderField('textAlign', localSettings.textAlign || 'left', 'select', {
+                  options: [
+                    { value: 'left', label: 'Sinistra' },
+                    { value: 'center', label: 'Centro' },
+                    { value: 'right', label: 'Destra' },
+                  ]
+                })}
+              </FieldGroup>
+              <FieldGroup label="Parole Evidenziate" hint="Testo che verrà colorato diversamente">
+                {renderField('highlightedWords', localSettings.highlightedWords || '', 'text', {
+                  placeholder: 'es: Trasforma, Risultati'
+                })}
+              </FieldGroup>
+              {localSettings.highlightedWords && (
+                <FieldGroup label="Colore Evidenziazione">
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={localSettings.highlightColor || '#0ea5e9'}
+                      onChange={(e) => handleChange('highlightColor', e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer border border-slate-600"
+                    />
+                    <input
+                      type="text"
+                      value={localSettings.highlightColor || '#0ea5e9'}
+                      onChange={(e) => handleChange('highlightColor', e.target.value)}
+                      className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                      placeholder="#0ea5e9"
+                    />
+                  </div>
+                </FieldGroup>
+              )}
             </Section>
           </>
         );
