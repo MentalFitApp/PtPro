@@ -2,7 +2,7 @@
 
 > Documento di pianificazione per miglioramenti piattaforma
 > Ultimo aggiornamento: 17 Dicembre 2025
-> Status: DA RIFINIRE
+> Status: IN CORSO
 
 ---
 
@@ -18,24 +18,32 @@
 
 ## 🔴 PRIORITÀ CRITICA - Da fare subito
 
-### 1. Sistema Inviti e Onboarding Modernizzato
+### 1. Sistema Inviti e Onboarding Modernizzato ✅ COMPLETATO
 
-**Problema attuale:**
-- Creazione cliente richiede email + password temporanea
-- Magic link con scadenza 48h
-- Se scade bisogna rigenerare
-- Copia/incolla manuale su WhatsApp
-- Processo lungo e soggetto a errori
+> **Completato il 17 Dicembre 2025**
 
-**Soluzione proposta:**
-- Generazione QR code scannerizzabile
-- Codice invito breve (es: ABC123) inseribile manualmente
-- Link condivisibile direttamente su WhatsApp/Telegram
-- Self-registration: cliente completa i propri dati
-- Invito valido 7 giorni (configurabile)
-- Tracking stato invito: inviato → aperto → completato
-- Reminder automatico se non si registra entro 3 giorni
-- Pre-compilazione dati dal lead (se viene da CRM)
+**Problema attuale:** (RISOLTO)
+- ~~Creazione cliente richiede email + password temporanea~~
+- ~~Magic link con scadenza 48h~~
+- ~~Se scade bisogna rigenerare~~
+- ~~Copia/incolla manuale su WhatsApp~~
+- ~~Processo lungo e soggetto a errori~~
+
+**Implementato:**
+- ✅ Generazione QR code scannerizzabile (react-qr-code)
+- ✅ Codice invito breve (es: ABC123) inseribile manualmente
+- ✅ Link condivisibile direttamente su WhatsApp/Telegram
+- ✅ Self-registration: cliente completa i propri dati (AcceptInvite.jsx)
+- ✅ Invito valido 7 giorni (configurabile)
+- ✅ Tracking stato invito: pending → completed/expired
+- ⏳ Reminder automatico (richiede sistema notifiche - Fase 2)
+- ⏳ Pre-compilazione dati dal lead (richiede integrazione CRM)
+
+**Files creati:**
+- `src/pages/admin/NewClient.jsx` - Creazione inviti con QR e codice
+- `src/pages/public/AcceptInvite.jsx` - Self-registration clienti
+- `src/components/admin/InvitesManager.jsx` - Widget gestione inviti
+- `functions/index.js` - 6 Cloud Functions (createInvitation, validateInvitation, completeInvitation, revokeInvitation, listInvitations, cleanupExpiredInvitations)
 
 **Impatto:**
 - ⏱️ -70% tempo onboarding
@@ -43,7 +51,7 @@
 - 😊 Esperienza cliente professionale fin dal primo contatto
 
 **Complessità:** ⭐⭐⭐ Media
-**Tempo stimato:** 2-3 settimane
+**Tempo stimato:** 2-3 settimane → **Completato in 1 giorno**
 
 ---
 
@@ -1284,48 +1292,69 @@ Sistema corsi integrato per ogni tenant.
 
 ## 📊 RIEPILOGO PRIORITÀ
 
-| # | Upgrade | Priorità | Complessità | Tempo | Impatto |
-|---|---------|----------|-------------|-------|---------|
-| 1 | Sistema Inviti | 🔴 CRITICA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐⭐⭐ |
-| 2 | Notifiche Centralizzate | 🔴 CRITICA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐⭐⭐ |
-| 3 | Dashboard Analytics | 🔴 CRITICA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ |
-| 4 | Sistema Appuntamenti | 🟠 ALTA | ⭐⭐⭐ | 3 sett | ⭐⭐⭐⭐ |
-| 5 | Automazioni Workflow | 🟠 ALTA | ⭐⭐⭐⭐ | 4-5 sett | ⭐⭐⭐⭐⭐ |
-| 6 | RBAC Permessi | 🟠 ALTA | ⭐⭐⭐⭐ | 3-4 sett | ⭐⭐⭐⭐ |
-| 7 | Gamification | 🟠 ALTA | ⭐⭐⭐ | 3 sett | ⭐⭐⭐⭐ |
-| 8 | White-Label | 🟡 MEDIA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐ |
-| 9 | Chat Avanzata | 🟡 MEDIA | ⭐⭐⭐ | 3 sett | ⭐⭐⭐ |
-| 10 | Multi-Tenant Utente | 🟡 MEDIA | ⭐⭐⭐⭐ | 4 sett | ⭐⭐⭐ |
-| 11 | PWA Offline | 🟢 BASSA | ⭐⭐⭐⭐ | 4-5 sett | ⭐⭐⭐ |
-| 12 | Wearables | 🟢 BASSA | ⭐⭐⭐⭐⭐ | 6-8 sett | ⭐⭐⭐ |
-| 13 | Video Coaching | 🟢 BASSA | ⭐⭐⭐⭐⭐ | 8-10 sett | ⭐⭐⭐⭐ |
-| 14 | Marketplace | 🟢 BASSA | ⭐⭐⭐⭐⭐ | 10+ sett | ⭐⭐⭐⭐ |
-| 15 | AI Assistant | 🟢 BASSA | ⭐⭐⭐⭐⭐ | 12+ sett | ⭐⭐⭐⭐⭐ |
-| 16 | Sistema Referral | 🟡 MEDIA | ⭐⭐ | 1-2 sett | ⭐⭐⭐⭐ |
-| 17 | Pagamenti Integrati | 🟠 ALTA | ⭐⭐⭐⭐ | 4 sett | ⭐⭐⭐⭐⭐ |
-| 18 | AI Body Analysis | 🟢 BASSA | ⭐⭐⭐⭐⭐ | 8+ sett | ⭐⭐⭐⭐ |
-| 19 | Obiettivi SMART | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ |
-| 20 | Template Schede | 🟠 ALTA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐⭐ |
-| 21 | Report PDF | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ |
-| 22 | Sistema Note | 🟡 MEDIA | ⭐⭐ | 1 sett | ⭐⭐⭐ |
-| 23 | Import Bulk | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐ |
-| 24 | API Pubblica | 🟢 BASSA | ⭐⭐⭐⭐ | 6 sett | ⭐⭐⭐ |
-| 25 | Community Avanzata | 🟡 MEDIA | ⭐⭐⭐ | 3 sett | ⭐⭐⭐⭐ |
-| 26 | Email Personalizzata Tenant | 🟠 ALTA | ⭐⭐⭐⭐ | 3-4 sett | ⭐⭐⭐⭐⭐ |
-| 27 | SMS/WhatsApp Integration | 🟠 ALTA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐⭐⭐ |
-| 28 | CRM Esterni | 🟡 MEDIA | ⭐⭐⭐ | 3 sett | ⭐⭐⭐ |
-| 29 | Calendari Esterni | 🟠 ALTA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ |
-| 30 | Gateway Pagamenti Multi | 🟠 ALTA | ⭐⭐⭐⭐ | 4-5 sett | ⭐⭐⭐⭐⭐ |
-| 31 | Google Analytics/Pixel | 🟡 MEDIA | ⭐⭐ | 1 sett | ⭐⭐⭐⭐ |
-| 32 | ManyChat/Chatbot | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ |
-| 33 | Typeform/Google Forms | 🟢 BASSA | ⭐⭐ | 1 sett | ⭐⭐⭐ |
-| 34 | Fatturazione Elettronica | 🟠 ALTA | ⭐⭐⭐⭐ | 3-4 sett | ⭐⭐⭐⭐ |
-| 35 | App Mobile Nativa | 🟢 BASSA | ⭐⭐⭐⭐⭐ | 12+ sett | ⭐⭐⭐⭐⭐ |
-| 36 | SSO Enterprise | 🟢 BASSA | ⭐⭐⭐⭐ | 3 sett | ⭐⭐⭐ |
-| 37 | Backup & Export | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ |
-| 38 | Multi-lingua | 🟢 BASSA | ⭐⭐⭐⭐ | 4-5 sett | ⭐⭐⭐⭐ |
-| 39 | Integrazione Advertising | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ |
-| 40 | LMS (Corsi) | 🟡 MEDIA | ⭐⭐⭐⭐ | 6-8 sett | ⭐⭐⭐⭐ |
+| # | Upgrade | Priorità | Complessità | Tempo | Impatto | Status |
+|---|---------|----------|-------------|-------|---------|--------|
+| 1 | Sistema Inviti | 🔴 CRITICA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐⭐⭐ | ✅ FATTO |
+| 2 | Notifiche Centralizzate | 🔴 CRITICA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐⭐⭐ | ⏳ |
+| 3 | Dashboard Analytics | 🔴 CRITICA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ | ⏳ |
+| 4 | Sistema Appuntamenti | 🟠 ALTA | ⭐⭐⭐ | 3 sett | ⭐⭐⭐⭐ | ⏳ |
+| 5 | Automazioni Workflow | 🟠 ALTA | ⭐⭐⭐⭐ | 4-5 sett | ⭐⭐⭐⭐⭐ | ⏳ |
+| 6 | RBAC Permessi | 🟠 ALTA | ⭐⭐⭐⭐ | 3-4 sett | ⭐⭐⭐⭐ | ⏳ |
+| 7 | Gamification | 🟠 ALTA | ⭐⭐⭐ | 3 sett | ⭐⭐⭐⭐ | ⏳ |
+| 8 | White-Label | 🟡 MEDIA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐ | ⏳ |
+| 9 | Chat Avanzata | 🟡 MEDIA | ⭐⭐⭐ | 3 sett | ⭐⭐⭐ | ⏳ |
+| 10 | Multi-Tenant Utente | 🟡 MEDIA | ⭐⭐⭐⭐ | 4 sett | ⭐⭐⭐ | ⏳ |
+| 11 | PWA Offline | 🟢 BASSA | ⭐⭐⭐⭐ | 4-5 sett | ⭐⭐⭐ | ⏳ |
+| 12 | Wearables | 🟢 BASSA | ⭐⭐⭐⭐⭐ | 6-8 sett | ⭐⭐⭐ | ⏳ |
+| 13 | Video Coaching | 🟢 BASSA | ⭐⭐⭐⭐⭐ | 8-10 sett | ⭐⭐⭐⭐ | ⏳ |
+| 14 | Marketplace | 🟢 BASSA | ⭐⭐⭐⭐⭐ | 10+ sett | ⭐⭐⭐⭐ | ⏳ |
+| 15 | AI Assistant | 🟢 BASSA | ⭐⭐⭐⭐⭐ | 12+ sett | ⭐⭐⭐⭐⭐ | ⏳ |
+| 16 | Sistema Referral | 🟡 MEDIA | ⭐⭐ | 1-2 sett | ⭐⭐⭐⭐ | ⏳ |
+| 17 | Pagamenti Integrati | 🟠 ALTA | ⭐⭐⭐⭐ | 4 sett | ⭐⭐⭐⭐⭐ | ⏳ |
+| 18 | AI Body Analysis | 🟢 BASSA | ⭐⭐⭐⭐⭐ | 8+ sett | ⭐⭐⭐⭐ | ⏳ |
+| 19 | Obiettivi SMART | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ | ⏳ |
+| 20 | Template Schede | 🟠 ALTA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐⭐ | ⏳ |
+| 21 | Report PDF | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ | ⏳ |
+| 22 | Sistema Note | 🟡 MEDIA | ⭐⭐ | 1 sett | ⭐⭐⭐ | ⏳ |
+| 23 | Import Bulk | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐ | ⏳ |
+| 24 | API Pubblica | 🟢 BASSA | ⭐⭐⭐⭐ | 6 sett | ⭐⭐⭐ | ⏳ |
+| 25 | Community Avanzata | 🟡 MEDIA | ⭐⭐⭐ | 3 sett | ⭐⭐⭐⭐ | ⏳ |
+| 26 | Email Personalizzata Tenant | 🟠 ALTA | ⭐⭐⭐⭐ | 3-4 sett | ⭐⭐⭐⭐⭐ | ⏳ |
+| 27 | SMS/WhatsApp Integration | 🟠 ALTA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐⭐⭐ | ⏳ |
+| 28 | CRM Esterni | 🟡 MEDIA | ⭐⭐⭐ | 3 sett | ⭐⭐⭐ | ⏳ |
+| 29 | Calendari Esterni | 🟠 ALTA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ | ⏳ |
+| 30 | Gateway Pagamenti Multi | 🟠 ALTA | ⭐⭐⭐⭐ | 4-5 sett | ⭐⭐⭐⭐⭐ | ⏳ |
+| 31 | Google Analytics/Pixel | 🟡 MEDIA | ⭐⭐ | 1 sett | ⭐⭐⭐⭐ | ⏳ |
+| 32 | ManyChat/Chatbot | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ | ⏳ |
+| 33 | Typeform/Google Forms | 🟢 BASSA | ⭐⭐ | 1 sett | ⭐⭐⭐ | ⏳ |
+| 34 | Fatturazione Elettronica | 🟠 ALTA | ⭐⭐⭐⭐ | 3-4 sett | ⭐⭐⭐⭐ | ⏳ |
+| 35 | App Mobile Nativa | 🟢 BASSA | ⭐⭐⭐⭐⭐ | 12+ sett | ⭐⭐⭐⭐⭐ | ⏳ |
+| 36 | SSO Enterprise | 🟢 BASSA | ⭐⭐⭐⭐ | 3 sett | ⭐⭐⭐ | ⏳ |
+| 37 | Backup & Export | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ | ⏳ |
+| 38 | Multi-lingua | 🟢 BASSA | ⭐⭐⭐⭐ | 4-5 sett | ⭐⭐⭐⭐ | ⏳ |
+| 39 | Integrazione Advertising | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ | ⏳ |
+| 40 | LMS (Corsi) | 🟡 MEDIA | ⭐⭐⭐⭐ | 6-8 sett | ⭐⭐⭐⭐ | ⏳ |
+
+---
+
+## 📝 CHANGELOG IMPLEMENTAZIONI
+
+### 17 Dicembre 2025
+- ✅ **Sistema Inviti MVP** completato
+  - NewClient.jsx con QR code e codici invito
+  - AcceptInvite.jsx per self-registration
+  - InvitesManager.jsx widget gestione
+  - 6 Cloud Functions per backend
+- ✅ **Refactoring Clients page**
+  - Componenti estratti in /components
+  - Hook useClientsState per stato centralizzato
+  - Paginazione (20 clienti per pagina)
+  - Layout margini unificati
+  - Header desktop riorganizzato
+- ✅ **Nuovi modali ClientDetail**
+  - RenewalModal, EditClientModal, ExtendExpiryModal
+  - EditPaymentModal, NewCheckModal, PhotoZoomModal
+- ✅ **ThemePreview** pagina personalizzazione tema
 
 ---
 

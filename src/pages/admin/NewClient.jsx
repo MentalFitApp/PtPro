@@ -167,7 +167,7 @@ export default function NewClient() {
       });
 
       if (result.data.success) {
-        setInvitation(result.data);
+        setInvitation(result.data.invitation);
         setShowSuccessModal(true);
         showNotification('Invito creato con successo!', 'success');
       } else {
@@ -197,16 +197,20 @@ export default function NewClient() {
     if (!invitation) return '';
     
     const clientName = invitation.clientData?.name || 'Cliente';
+    const tenantName = invitation.tenantName || 'la nostra piattaforma fitness';
     return `Ciao ${clientName}! 👋
 
-Sei stato invitato a unirti alla nostra piattaforma fitness! 
+Sei stato invitato a unirti a ${tenantName}! 🎉
 
-🔗 Usa questo link per registrarti:
-${invitation.inviteLink}
+📲 *OPZIONE 1 - Link diretto:*
+Clicca qui per completare la registrazione:
+${invitation.url}
 
-📱 Oppure inserisci il codice: ${invitation.code}
+🔢 *OPZIONE 2 - Codice manuale:*
+Vai su ${invitation.url?.split('/invite')[0] || 'la nostra app'} e inserisci il codice:
+*${invitation.code}*
 
-⏰ L'invito scade tra ${invitation.expiryDays || 7} giorni.
+⏰ L'invito è valido per ${invitation.expiryDays || 7} giorni.
 
 Ti aspettiamo! 💪`;
   };
@@ -643,7 +647,7 @@ Ti aspettiamo! 💪`;
                     LINK INVITO
                   </p>
                   <button
-                    onClick={() => copyToClipboard(invitation.inviteLink, 'link')}
+                    onClick={() => copyToClipboard(invitation.url, 'link')}
                     className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
                   >
                     {copied === 'link' ? <Check size={12} /> : <Copy size={12} />}
@@ -651,7 +655,7 @@ Ti aspettiamo! 💪`;
                   </button>
                 </div>
                 <p className="font-mono text-xs text-slate-300 break-all select-all">
-                  {invitation.inviteLink}
+                  {invitation.url}
                 </p>
               </div>
 
@@ -674,7 +678,7 @@ Ti aspettiamo! 💪`;
                     className="overflow-hidden mb-4"
                   >
                     <div className="bg-white rounded-lg p-4 flex justify-center">
-                      <QRCode value={invitation.inviteLink} size={180} />
+                      <QRCode value={invitation.url} size={180} />
                     </div>
                     <p className="text-xs text-slate-400 text-center mt-2">
                       Il cliente può scansionare questo QR per registrarsi
