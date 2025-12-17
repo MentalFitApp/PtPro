@@ -142,11 +142,12 @@ export default function AIAssistantPanel({
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Applica le modifiche pendenti
-  const applyPendingAction = () => {
-    if (!pendingAction) return;
+  // Applica le modifiche - accetta opzionalmente l'azione da applicare
+  const applyPendingAction = (actionOverride = null) => {
+    const actionToApply = actionOverride || pendingAction;
+    if (!actionToApply) return;
     
-    const { action, response } = pendingAction;
+    const { action, response } = actionToApply;
     
     try {
       switch (action) {
@@ -271,6 +272,9 @@ ${selectedBlock ? `\n⭐ BLOCCO SELEZIONATO: "${selectedBlock.id}" (${selectedBl
       // Chiama OpenAI per elaborare la richiesta
       const response = await callAIAssistant(userMessage, blocksContext, attachmentAnalysis, blocks, selectedBlock);
       
+      // Debug log
+      console.log('🤖 AI Response:', response);
+      
       // Determina se serve conferma
       const actionNeedsConfirm = ['update_block', 'update_all', 'add_block', 'add_blocks', 'delete_block', 'delete_blocks', 'reorder', 'replace_all'].includes(response.action);
       
@@ -285,10 +289,9 @@ ${selectedBlock ? `\n⭐ BLOCCO SELEZIONATO: "${selectedBlock.id}" (${selectedBl
           isPreview: true 
         });
       } else if (actionNeedsConfirm && autoApply) {
-        // Auto-apply mode - applica direttamente
-        setPendingAction({ action: response.action, response });
-        applyPendingAction();
-        addMessage('assistant', `✅ Modifiche applicate automaticamente!\n\n${response.explanation || ''}`);
+        // Auto-apply mode - applica direttamente passando l'azione
+        const actionData = { action: response.action, response };
+        applyPendingAction(actionData);
       } else if (response.action === 'message') {
         addMessage('assistant', response.message || response.explanation || 'Come posso aiutarti?');
       } else {
