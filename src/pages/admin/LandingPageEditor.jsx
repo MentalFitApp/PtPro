@@ -15,6 +15,7 @@ import {
 import { DynamicBlock } from '../../components/landingBlocks';
 import BlockSettingsPanel from './BlockSettingsPanel';
 import AIGeneratorModal from '../../components/landing/AIGeneratorModal';
+import AIAssistantPanel from '../../components/landing/AIAssistantPanel';
 import LandingPageLeads from '../../components/landing/LandingPageLeads';
 import {
   Plus,
@@ -38,6 +39,7 @@ import {
   Info,
   Sparkles,
   Users,
+  Bot,
 } from 'lucide-react';
 
 const LandingPageEditor = () => {
@@ -58,6 +60,7 @@ const LandingPageEditor = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showLeads, setShowLeads] = useState(false);
 
   // Determina se è modalità creazione
@@ -331,7 +334,16 @@ const LandingPageEditor = () => {
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-all"
           >
             <Sparkles className="w-5 h-5" />
-            <span className="hidden sm:inline">AI</span>
+            <span className="hidden sm:inline">Genera AI</span>
+          </button>
+
+          <button
+            onClick={() => setShowAIAssistant(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:shadow-blue-500/30 transition-all"
+            title="Assistente AI per modifiche"
+          >
+            <Bot className="w-5 h-5" />
+            <span className="hidden sm:inline">Assistente</span>
           </button>
           
           <button
@@ -622,6 +634,48 @@ const LandingPageEditor = () => {
         onGenerated={handleAIGenerated}
         tenantId={tenantId}
       />
+
+      {/* AI Assistant Panel */}
+      <AnimatePresence>
+        {showAIAssistant && (
+          <AIAssistantPanel
+            isOpen={showAIAssistant}
+            onClose={() => setShowAIAssistant(false)}
+            blocks={blocks}
+            selectedBlockId={selectedBlockId}
+            onUpdateBlock={(blockId, changes) => {
+              setBlocks(prev => prev.map(b => 
+                b.id === blockId 
+                  ? { ...b, settings: { ...b.settings, ...changes } }
+                  : b
+              ));
+              setHasChanges(true);
+              toast?.showToast?.('Blocco modificato dall\'AI', 'success');
+            }}
+            onUpdateAllBlocks={(changes) => {
+              // changes è un array di { blockId, settings }
+              setBlocks(prev => prev.map(b => {
+                const change = changes.find(c => c.blockId === b.id);
+                if (change) {
+                  return { ...b, settings: { ...b.settings, ...change.settings } };
+                }
+                return b;
+              }));
+              setHasChanges(true);
+              toast?.showToast?.(`${changes.length} blocchi modificati dall'AI`, 'success');
+            }}
+            onAddBlock={(newBlock) => {
+              const block = {
+                id: `block-${Date.now()}`,
+                ...newBlock,
+              };
+              setBlocks(prev => [...prev, block]);
+              setHasChanges(true);
+              toast?.showToast?.('Nuovo blocco aggiunto dall\'AI', 'success');
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Leads Modal */}
       <LandingPageLeads
