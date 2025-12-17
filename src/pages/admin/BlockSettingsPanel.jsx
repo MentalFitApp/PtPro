@@ -11,10 +11,15 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
   const [expandedSections, setExpandedSections] = useState(['content', 'style']);
   const [showMediaUploader, setShowMediaUploader] = useState(null); // 'image' | 'video' | null
   const debounceRef = useRef(null);
+  const blockIdRef = useRef(block?.id);
 
+  // Aggiorna localSettings solo quando cambia il blocco (non ad ogni re-render)
   useEffect(() => {
-    setLocalSettings(block?.settings || {});
-  }, [block?.id]);
+    if (block?.id !== blockIdRef.current) {
+      blockIdRef.current = block?.id;
+      setLocalSettings(block?.settings || {});
+    }
+  }, [block?.id, block?.settings]);
 
   // Debounced update to parent - evita re-render continui
   const debouncedUpdate = useCallback((newSettings) => {
@@ -23,7 +28,7 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
     }
     debounceRef.current = setTimeout(() => {
       onUpdate(newSettings);
-    }, 300);
+    }, 500); // Aumentato a 500ms per dare più tempo
   }, [onUpdate]);
 
   // Cleanup debounce on unmount
@@ -1795,4 +1800,5 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
   );
 };
 
-export default BlockSettingsPanel;
+// Memoizza il componente per evitare re-render quando le props non cambiano
+export default React.memo(BlockSettingsPanel);

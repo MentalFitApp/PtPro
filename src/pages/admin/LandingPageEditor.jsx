@@ -196,15 +196,15 @@ const LandingPageEditor = () => {
     setHasChanges(true);
   };
 
-  // Aggiorna settings del blocco
-  const handleUpdateBlockSettings = (blockId, newSettings) => {
+  // Aggiorna settings del blocco - memoizzato per evitare re-render
+  const handleUpdateBlockSettings = useCallback((blockId, newSettings) => {
     setBlocks(prev => prev.map(block => 
       block.id === blockId 
         ? { ...block, settings: { ...block.settings, ...newSettings } }
         : block
     ));
     setHasChanges(true);
-  };
+  }, []);
 
   // Reorder blocks (drag & drop)
   const handleReorder = (newBlocks) => {
@@ -240,7 +240,18 @@ const LandingPageEditor = () => {
     }
   };
 
-  const selectedBlock = blocks.find(b => b.id === selectedBlockId);
+  // Memoizza selectedBlock per evitare re-render del pannello settings
+  const selectedBlock = useMemo(() => 
+    blocks.find(b => b.id === selectedBlockId),
+    [blocks, selectedBlockId]
+  );
+
+  // Callback memoizzato per update del blocco selezionato
+  const handleSelectedBlockUpdate = useCallback((settings) => {
+    if (selectedBlockId) {
+      handleUpdateBlockSettings(selectedBlockId, settings);
+    }
+  }, [selectedBlockId, handleUpdateBlockSettings]);
 
   // Preview widths
   const previewWidths = {
@@ -549,8 +560,9 @@ const LandingPageEditor = () => {
         {selectedBlock && !showPreview && (
           <aside className="w-80 bg-slate-800 border-l border-slate-700 overflow-y-auto">
             <BlockSettingsPanel
+              key={selectedBlockId}
               block={selectedBlock}
-              onUpdate={(settings) => handleUpdateBlockSettings(selectedBlock.id, settings)}
+              onUpdate={handleSelectedBlockUpdate}
               onClose={() => setSelectedBlockId(null)}
               tenantId={tenantId}
               pageId={pageId}
