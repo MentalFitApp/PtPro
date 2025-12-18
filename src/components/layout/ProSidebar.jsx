@@ -53,9 +53,10 @@ const getNavConfig = (role, isSuperAdmin = false) => {
         {
           title: 'Analytics',
           items: [
+            { to: '/analytics-dashboard', icon: Activity, label: 'Dashboard Analytics' },
             { to: '/business-history', icon: BarChart3, label: 'Business History' },
             { to: '/statistiche', icon: Activity, label: 'Statistiche' },
-            { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+            { to: '/analytics', icon: BarChart3, label: 'Report Dettagliato' },
           ]
         },
         {

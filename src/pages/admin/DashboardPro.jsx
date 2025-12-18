@@ -19,23 +19,23 @@ import {
   Clock, AlertCircle, CheckCircle, Phone, ArrowUpRight,
   BarChart2, Activity, Target, Zap, Eye, EyeOff,
   Settings, CreditCard, Palette, FileText, ClipboardList,
-  X, ChevronDown, Edit3, ChevronLeft, RefreshCw
+  X, ChevronDown, Edit3, ChevronLeft, RefreshCw, MessageCircle
 } from "lucide-react";
 
 // ============ COMPONENTI UI ============
 
 // Big Number - Per metriche principali
-const BigNumber = ({ value, label, icon: Icon, trend, trendValue, color = 'blue', onClick, toggleIcon }) => (
+const BigNumber = ({ value, label, icon: Icon, trend, trendValue, onClick, toggleIcon }) => (
   <motion.div 
     whileHover={{ scale: 1.02 }}
     onClick={onClick}
-    className={`relative overflow-hidden ${onClick ? 'cursor-pointer' : ''}`}
+    className={`relative overflow-hidden rounded-2xl ${onClick ? 'cursor-pointer' : ''}`}
   >
-    <div className={`absolute inset-0 bg-gradient-to-br from-${color}-500/10 to-transparent rounded-2xl`} />
+    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-transparent" />
     <div className="relative p-4 sm:p-5">
       <div className="flex items-start justify-between mb-2">
-        <div className={`p-2 rounded-xl bg-${color}-500/20`}>
-          <Icon size={18} className={`text-${color}-400`} />
+        <div className="p-2 rounded-xl bg-blue-500/20">
+          <Icon size={18} className="text-blue-400" />
         </div>
         {toggleIcon && (
           <button className="p-1 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors">
@@ -145,8 +145,50 @@ const TAB_TYPES = {
   SCADENZE: 'scadenze',
   CHIAMATE: 'chiamate',
   ANAMNESI: 'anamnesi',
-  CHECKS: 'checks'
+  CHECKS: 'checks',
+  CHAT: 'chat'
 };
+
+// ============ MINI TREND BAR ============
+const TrendBar = ({ label, value, max, color = 'blue' }) => {
+  const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-slate-400 w-12 truncate">{label}</span>
+      <div className="flex-1 h-2 bg-slate-700/50 rounded-full overflow-hidden">
+        <div 
+          className={`h-full bg-${color}-500 rounded-full transition-all duration-500`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+      <span className={`text-[10px] text-${color}-400 w-8 text-right font-medium`}>{value}</span>
+    </div>
+  );
+};
+
+// ============ TODAY EVENT ITEM ============
+const TodayEvent = ({ icon: Icon, title, time, type, onClick }) => (
+  <div 
+    onClick={onClick}
+    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+      type === 'call' ? 'hover:bg-cyan-500/10' : 
+      type === 'expiry' ? 'hover:bg-amber-500/10' : 
+      'hover:bg-slate-700/30'
+    }`}
+  >
+    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+      type === 'call' ? 'bg-cyan-500/20 text-cyan-400' : 
+      type === 'expiry' ? 'bg-amber-500/20 text-amber-400' : 
+      'bg-slate-700 text-slate-400'
+    }`}>
+      <Icon size={12} />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-xs text-white truncate">{title}</p>
+    </div>
+    <span className="text-[10px] text-slate-500">{time}</span>
+  </div>
+);
 
 // ============ TIME RANGE FILTER ============
 const TIME_RANGES = {
@@ -179,6 +221,8 @@ export default function DashboardPro() {
   const [showRenewalsOnly, setShowRenewalsOnly] = useState(false);
   const [showRevenueModal, setShowRevenueModal] = useState(false);
   const [revenueModalType, setRevenueModalType] = useState('incasso'); // 'incasso' | 'rinnovi'
+  const [unreadChats, setUnreadChats] = useState([]);
+  const [weeklyChecks, setWeeklyChecks] = useState(0);
   
   // Document title dinamico
   useDocumentTitle('Dashboard');
@@ -405,6 +449,16 @@ export default function DashboardPro() {
             .sort((a, b) => (toDate(b.createdAt) || 0) - (toDate(a.createdAt) || 0))
             .slice(0, 10)
         );
+        
+        // Calculate weekly checks
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+        weekStart.setHours(0, 0, 0, 0);
+        const checksThisWeek = allChecks.filter(c => {
+          const checkDate = toDate(c.createdAt);
+          return checkDate && checkDate >= weekStart;
+        }).length;
+        setWeeklyChecks(checksThisWeek);
       } catch (error) {
         console.error('Dashboard data load error:', error);
       }
@@ -420,6 +474,38 @@ export default function DashboardPro() {
       clearInterval(interval);
     };
   }, [clients.length]); // Re-run when clients change
+
+  // Load unread chats
+  useEffect(() => {
+    const currentUserId = auth.currentUser?.uid;
+    if (!currentUserId) return;
+    
+    const unsubscribe = onSnapshot(getTenantCollection(db, 'chats'), (snap) => {
+      const unread = [];
+      snap.docs.forEach(doc => {
+        const data = doc.data();
+        const participants = data.participants || [];
+        if (participants.includes(currentUserId)) {
+          const unreadCount = data.unreadCount?.[currentUserId] || 0;
+          if (unreadCount > 0) {
+            const otherParticipantId = participants.find(p => p !== currentUserId);
+            const client = clients.find(c => c.id === otherParticipantId);
+            unread.push({
+              chatId: doc.id,
+              clientId: otherParticipantId,
+              clientName: client?.name || 'Cliente',
+              unreadCount,
+              lastMessage: data.lastMessage,
+              lastMessageTime: toDate(data.lastMessageAt)
+            });
+          }
+        }
+      });
+      setUnreadChats(unread.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0)));
+    });
+    
+    return () => unsubscribe();
+  }, [clients]);
 
   // Computed metrics
   const metrics = useMemo(() => {
@@ -538,9 +624,58 @@ export default function DashboardPro() {
       retention,
       // Aggiungi liste dettagliate per il modal
       renewalPaymentsList: periodPayments.filter(p => p.isRenewal === true),
-      regularPaymentsList: periodPayments.filter(p => p.isRenewal !== true)
+      regularPaymentsList: periodPayments.filter(p => p.isRenewal !== true),
+      // Clienti inattivi (no check da 7+ giorni)
+      inactiveClients: activeClients.filter(c => {
+        if (!c.lastCheckDate) return true; // Mai fatto check
+        const lastCheck = toDate(c.lastCheckDate);
+        if (!lastCheck) return true;
+        const daysSinceCheck = (now - lastCheck) / (1000 * 60 * 60 * 24);
+        return daysSinceCheck >= 7;
+      })
     };
   }, [clients, payments, revenueTimeRange]);
+
+  // Today's events
+  const todayEvents = useMemo(() => {
+    const events = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // Calls today
+    upcomingCalls.forEach(call => {
+      const callDate = toDate(call.scheduledAt);
+      if (callDate && callDate >= today && callDate < tomorrow) {
+        events.push({
+          type: 'call',
+          icon: Phone,
+          title: `Chiamata ${call.clientName}`,
+          time: callDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+          sortTime: callDate,
+          onClick: () => navigate(`/client/${call.clientId}`)
+        });
+      }
+    });
+    
+    // Expiries today
+    metrics.expiringClients?.forEach(client => {
+      const exp = toDate(client.scadenza);
+      if (exp && exp >= today && exp < tomorrow) {
+        events.push({
+          type: 'expiry',
+          icon: Clock,
+          title: `Scade ${client.name}`,
+          time: 'Oggi',
+          sortTime: exp,
+          onClick: () => navigate(`/client/${client.id}`)
+        });
+      }
+    });
+    
+    return events.sort((a, b) => a.sortTime - b.sortTime);
+  }, [upcomingCalls, metrics.expiringClients, navigate]);
 
   // Recent activity
   const recentActivity = useMemo(() => {
@@ -658,39 +793,44 @@ export default function DashboardPro() {
           />
         </div>
 
-        {/* ============ ALERTS ============ */}
-        <div className="space-y-2">
-          {metrics.expiredCount > 0 && (
-            <AlertBanner
-              icon={AlertCircle}
-              title={`${metrics.expiredCount} client${metrics.expiredCount > 1 ? 'i' : 'e'} scadut${metrics.expiredCount > 1 ? 'i' : 'o'}`}
-              subtitle="Richiede attenzione"
-              color="rose"
-              action={() => navigate('/clients?filter=expired')}
-              actionLabel="Gestisci"
-            />
-          )}
-          {metrics.expiringCount > 0 && (
-            <AlertBanner
-              icon={Clock}
-              title={`${metrics.expiringCount} client${metrics.expiringCount > 1 ? 'i' : 'e'} in scadenza`}
-              subtitle="Nei prossimi 15 giorni"
-              color="amber"
-              action={() => navigate('/clients?filter=expiring')}
-              actionLabel="Gestisci"
-            />
-          )}
-          {callRequests.length > 0 && (
-            <AlertBanner
-              icon={Phone}
-              title={`${callRequests.length} richieste di chiamata`}
-              subtitle={callRequests[0]?.clientName}
-              color="cyan"
-              action={() => navigate(`/client/${callRequests[0]?.clientId}`)}
-              actionLabel="Rispondi"
-            />
-          )}
-        </div>
+        {/* ============ ALERTS COMPATTO ============ */}
+        {(metrics.expiredCount > 0 || metrics.expiringCount > 0 || callRequests.length > 0 || unreadChats.length > 0) && (
+          <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/50">
+            <span className="text-xs text-slate-400 mr-1">⚠️ Attenzione:</span>
+            {metrics.expiredCount > 0 && (
+              <button 
+                onClick={() => navigate('/clients?filter=expired')}
+                className="px-2 py-1 rounded-lg bg-rose-500/20 text-rose-400 text-xs font-medium hover:bg-rose-500/30 transition-colors"
+              >
+                {metrics.expiredCount} scaduti
+              </button>
+            )}
+            {metrics.expiringCount > 0 && (
+              <button 
+                onClick={() => navigate('/clients?filter=expiring')}
+                className="px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-medium hover:bg-amber-500/30 transition-colors"
+              >
+                {metrics.expiringCount} in scadenza
+              </button>
+            )}
+            {callRequests.length > 0 && (
+              <button 
+                onClick={() => navigate(`/client/${callRequests[0]?.clientId}`)}
+                className="px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 text-xs font-medium hover:bg-cyan-500/30 transition-colors"
+              >
+                {callRequests.length} richieste chiamata
+              </button>
+            )}
+            {unreadChats.length > 0 && (
+              <button 
+                onClick={() => setActiveTab(TAB_TYPES.CHAT)}
+                className="px-2 py-1 rounded-lg bg-purple-500/20 text-purple-400 text-xs font-medium hover:bg-purple-500/30 transition-colors"
+              >
+                💬 {unreadChats.length} messaggi
+              </button>
+            )}
+          </div>
+        )}
 
         {/* ============ MAIN GRID ============ */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -781,21 +921,32 @@ export default function DashboardPro() {
                   </div>
                 </div>
               </div>
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
-                <BigNumber
-                  value={metrics.totalClients}
-                  label="Clienti Attivi"
-                  icon={Users}
-                  trend={metrics.newClients > 0 ? `+${metrics.newClients}` : undefined}
-                  trendValue={metrics.newClients > 0 ? `+${metrics.newClients}` : undefined}
-                  color="blue"
-                  onClick={() => navigate('/clients')}
-                />
+              
+              {/* Clienti Attivi Card - stesso stile di Incasso */}
+              <div 
+                onClick={() => navigate('/clients')}
+                className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden cursor-pointer hover:bg-slate-700/40 transition-colors"
+              >
+                <div className="p-4 sm:p-5">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="p-2 rounded-xl bg-blue-500/20">
+                      <Users size={18} className="text-blue-400" />
+                    </div>
+                    {metrics.newClients > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">
+                        <TrendingUp size={10} />
+                        +{metrics.newClients}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-2xl sm:text-3xl font-bold text-white mb-1">{metrics.totalClients}</p>
+                  <p className="text-xs sm:text-sm text-slate-400">Clienti Attivi</p>
+                </div>
               </div>
             </div>
 
             {/* SECONDARY METRICS */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-3 text-center">
                 <p className="text-xl sm:text-2xl font-bold text-white">{metrics.newClients}</p>
                 <p className="text-[10px] sm:text-xs text-slate-400">Nuovi questo mese</p>
@@ -805,38 +956,35 @@ export default function DashboardPro() {
                 className="bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-3 text-center cursor-pointer hover:bg-slate-700/40 transition-colors"
               >
                 <p className="text-xl sm:text-2xl font-bold text-amber-400">{metrics.expiringCount}</p>
-                <p className="text-[10px] sm:text-xs text-slate-400">In scadenza</p>
-              </div>
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-3 text-center">
-                <p className="text-xl sm:text-2xl font-bold text-cyan-400">{metrics.retention}%</p>
-                <p className="text-[10px] sm:text-xs text-slate-400">Retention</p>
+                <p className="text-[10px] sm:text-xs text-slate-400">In Scadenza</p>
               </div>
             </div>
 
-            {/* TABBED CONTENT: Clients / Anamnesi / Checks */}
+            {/* TABBED CONTENT */}
             <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
               {/* Tabs Header */}
-              <div className="flex items-center border-b border-slate-700/50 overflow-x-auto">
+              <div className="flex items-center border-b border-slate-700/50 overflow-x-auto scrollbar-hide">
                 {[
                   { key: TAB_TYPES.CLIENTS, label: 'Clienti', icon: Users },
                   { key: TAB_TYPES.SCADENZE, label: 'Scadenze', icon: Clock, badge: metrics.expiringCount + metrics.expiredCount },
                   { key: TAB_TYPES.CHIAMATE, label: 'Chiamate', icon: Phone, badge: upcomingCalls.length },
-                  { key: TAB_TYPES.ANAMNESI, label: 'Anamnesi', icon: FileText },
-                  { key: TAB_TYPES.CHECKS, label: 'Check-in', icon: ClipboardList },
+                  { key: TAB_TYPES.ANAMNESI, label: 'Anamnesi', icon: FileText, badge: recentAnamnesi.length },
+                  { key: TAB_TYPES.CHECKS, label: 'Check', icon: ClipboardList, badge: recentChecks.length },
+                  { key: TAB_TYPES.CHAT, label: 'Chat', icon: MessageCircle, badge: unreadChats.length },
                 ].map(tab => (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                    className={`flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2.5 text-xs font-medium transition-colors whitespace-nowrap ${
                       activeTab === tab.key 
                         ? 'text-blue-400 border-b-2 border-blue-400 bg-blue-500/5' 
                         : 'text-slate-400 hover:text-white hover:bg-slate-700/30'
                     }`}
                   >
-                    <tab.icon size={14} />
-                    <span className="hidden sm:inline">{tab.label}</span>
+                    <tab.icon size={14} className="flex-shrink-0" />
+                    <span>{tab.label}</span>
                     {tab.badge > 0 && (
-                      <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">
+                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">
                         {tab.badge}
                       </span>
                     )}
@@ -1004,12 +1152,87 @@ export default function DashboardPro() {
                     )}
                   </>
                 )}
+                
+                {activeTab === TAB_TYPES.CHAT && (
+                  <>
+                    {unreadChats.length > 0 ? (
+                      unreadChats.slice(0, 5).map(chat => (
+                        <div 
+                          key={chat.chatId}
+                          onClick={() => navigate(`/chat/${chat.clientId}`)}
+                          className="flex items-center gap-3 p-3 hover:bg-slate-800/50 cursor-pointer transition-colors"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                            {chat.clientName?.charAt(0)?.toUpperCase() || '?'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white font-medium truncate">{chat.clientName}</p>
+                            <p className="text-xs text-slate-400 truncate">{chat.lastMessage || 'Nuovo messaggio'}</p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 text-[10px] font-bold">
+                              {chat.unreadCount}
+                            </span>
+                            {chat.lastMessageTime && (
+                              <span className="text-[10px] text-slate-500">
+                                {chat.lastMessageTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center text-slate-500 text-sm">
+                        <MessageCircle size={24} className="mx-auto mb-2 text-slate-600" />
+                        Nessun messaggio non letto 🎉
+                      </div>
+                    )}
+                    <div className="p-3 bg-slate-900/30">
+                      <button 
+                        onClick={() => navigate('/chat')}
+                        className="w-full py-2 text-sm text-purple-400 hover:text-purple-300 flex items-center justify-center gap-1"
+                      >
+                        Vai alla Chat <ArrowUpRight size={14} />
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
           {/* RIGHT COLUMN - Actions & Activity */}
           <div className="space-y-4 sm:space-y-6">
+
+            {/* TODAY WIDGET */}
+            <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-4">
+              <h2 className="font-semibold text-white mb-3 flex items-center gap-2">
+                <Calendar size={16} className="text-blue-400" />
+                Oggi, {new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long' })}
+              </h2>
+              {todayEvents.length > 0 ? (
+                <div className="space-y-1">
+                  {todayEvents.slice(0, 4).map((event, idx) => (
+                    <TodayEvent key={idx} {...event} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500 text-center py-2">Nessun evento oggi</p>
+              )}
+            </div>
+
+            {/* MINI TREND */}
+            <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-4">
+              <h2 className="font-semibold text-white mb-3 flex items-center gap-2">
+                <BarChart2 size={16} className="text-purple-400" />
+                Questa Settimana
+              </h2>
+              <div className="space-y-2">
+                <TrendBar label="Check" value={weeklyChecks} max={Math.max(weeklyChecks, 20)} color="purple" />
+                <TrendBar label="Chat" value={unreadChats.length} max={10} color="pink" />
+                <TrendBar label="Nuovi" value={metrics.newClients} max={5} color="blue" />
+              </div>
+            </div>
 
             {/* UPCOMING CALLS */}
             {upcomingCalls.length > 0 && (

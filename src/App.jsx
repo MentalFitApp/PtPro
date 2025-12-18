@@ -44,6 +44,7 @@ const CollaboratoreDetail = React.lazy(() => import('./pages/admin/Collaboratore
 const Dipendenti = React.lazy(() => import('./pages/admin/Dipendenti'));
 const Statistiche = React.lazy(() => import('./pages/admin/Statistiche'));
 const StatisticheDashboard = React.lazy(() => import('./pages/admin/StatisticheDashboard'));
+const AnalyticsDashboard = React.lazy(() => import('./pages/admin/AnalyticsDashboard'));
 const Profile = React.lazy(() => import('./pages/admin/Profile'));
 const Settings = React.lazy(() => import('./pages/admin/Settings'));
 const Analytics = React.lazy(() => import('./pages/admin/Analytics'));
@@ -54,7 +55,7 @@ const TenantBranding = React.lazy(() => import('./pages/admin/TenantBranding'));
 const ThemePreview = React.lazy(() => import('./pages/admin/ThemePreview'));
 const ClientCallsCalendar = React.lazy(() => import('./pages/admin/ClientCallsCalendar'));
 const LandingPagesList = React.lazy(() => import('./pages/admin/LandingPagesList'));
-const LandingPageEditor = React.lazy(() => import('./pages/admin/LandingPageEditor'));
+const LandingPageBuilderPro = React.lazy(() => import('./pages/admin/LandingPageBuilderPro'));
 const LandingPagesLeads = React.lazy(() => import('./pages/admin/LandingPagesLeads'));
 
 // Platform CEO Pages
@@ -441,6 +442,7 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/analytics-dashboard" element={<AnalyticsDashboard />} />
           <Route path="/coach-analytics" element={<CoachAnalytics />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/alimentazione-allenamento" element={<AlimentazioneAllenamento />} />
@@ -455,10 +457,14 @@ export default function App() {
           <Route path="/oauth/callback" element={<OAuthCallback />} />
           <Route path="/admin/landing-pages" element={<LandingPagesList />} />
           <Route path="/admin/landing-pages/leads" element={<LandingPagesLeads />} />
-          <Route path="/admin/landing-pages/new" element={<LandingPageEditor />} />
-          <Route path="/admin/landing-pages/:pageId/edit" element={<LandingPageEditor />} />
 
         </Route>
+
+        {/* === LANDING PAGE BUILDER (FULL SCREEN - FUORI DAL LAYOUT) === */}
+        <Route path="/admin/landing-pages/new" element={<LandingPageBuilderPro />} />
+        <Route path="/admin/landing-pages/:pageId/edit" element={<LandingPageBuilderPro />} />
+        <Route path="/admin/landing-pages/new/builder" element={<LandingPageBuilderPro />} />
+        <Route path="/admin/landing-pages/:pageId/builder" element={<LandingPageBuilderPro />} />
 
         {/* === ROTTE SUPERADMIN (SOLO SUPERADMIN) === */}
         <Route element={authInfo.isAdmin ? <ProLayout /> : <Navigate to="/login" replace />}>

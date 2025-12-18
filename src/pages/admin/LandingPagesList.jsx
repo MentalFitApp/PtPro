@@ -16,6 +16,8 @@ import {
   CheckCircle,
   XCircle,
   Users,
+  Wand2,
+  Blocks,
 } from 'lucide-react';
 import { useTenant } from '../../contexts/TenantContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -296,9 +298,16 @@ const LandingPagesList = () => {
                     {/* Quick Actions Overlay */}
                     <div className="absolute inset-0 bg-slate-900/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                       <Link
+                        to={`/admin/landing-pages/${page.id}/builder`}
+                        className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full hover:shadow-lg hover:shadow-purple-500/30 transition-all"
+                        title="Builder Pro"
+                      >
+                        <Blocks className="w-5 h-5" />
+                      </Link>
+                      <Link
                         to={`/admin/landing-pages/${page.id}/edit`}
                         className="p-3 bg-sky-500 text-white rounded-full hover:bg-sky-600 transition-colors"
-                        title="Modifica"
+                        title="Editor Classico"
                       >
                         <Pencil className="w-5 h-5" />
                       </Link>
@@ -397,6 +406,50 @@ const LandingPagesList = () => {
               </div>
 
               <div className="p-6 overflow-y-auto max-h-[60vh]">
+                {/* Builder Pro - Opzione principale */}
+                <div className="mb-6">
+                  <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                    🔥 Builder Avanzato (Consigliato)
+                  </h3>
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={() => {
+                      setShowTemplateModal(false);
+                      navigate('/admin/landing-pages/new/builder');
+                    }}
+                    className="w-full p-5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-2 border-purple-500/50 rounded-xl text-left hover:border-purple-400 transition-colors group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl">
+                        <Blocks className="w-8 h-8 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-white group-hover:text-purple-300 transition-colors flex items-center gap-2">
+                          Builder Pro 
+                          <span className="text-xs bg-purple-500 px-2 py-0.5 rounded-full">NUOVO</span>
+                        </h3>
+                        <p className="text-slate-400 mt-1">
+                          Editor full-screen con drag & drop, ridimensiona e posiziona i blocchi liberamente in griglie personalizzate
+                        </p>
+                        <div className="flex gap-2 mt-3">
+                          <span className="text-xs px-2 py-1 bg-slate-700 rounded text-slate-300">Full Screen</span>
+                          <span className="text-xs px-2 py-1 bg-slate-700 rounded text-slate-300">Drag & Drop</span>
+                          <span className="text-xs px-2 py-1 bg-slate-700 rounded text-slate-300">Griglia Libera</span>
+                          <span className="text-xs px-2 py-1 bg-slate-700 rounded text-slate-300">Stili Avanzati</span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.button>
+                </div>
+
+                {/* Separator */}
+                <div className="flex items-center gap-4 my-6">
+                  <div className="flex-1 h-px bg-slate-700" />
+                  <span className="text-sm text-slate-500">oppure usa i template rapidi</span>
+                  <div className="flex-1 h-px bg-slate-700" />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Object.entries(LANDING_TEMPLATES_LIGHT).map(([key, template]) => (
                     <motion.button
