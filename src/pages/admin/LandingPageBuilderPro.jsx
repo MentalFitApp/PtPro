@@ -9,6 +9,8 @@ import {
   DEFAULT_BLOCKS,
 } from '../../services/landingPageService';
 import GrapesEditor from '../../components/landing/GrapesEditor';
+import NovelLandingEditor from '../../components/landing/NovelLandingEditor';
+import { Sparkles, Layout, Wand2 } from 'lucide-react';
 
 /**
  * Converte i vecchi blocchi in HTML per il nuovo editor
@@ -157,9 +159,9 @@ const convertBlocksToHtml = (blocks) => {
 };
 
 /**
- * LandingPageBuilderPro - Editor avanzato con GrapesJS
- * Full-screen, drag & drop, ridimensionamento blocchi
- * Include: AI Generator, AI Assistant, Leads, Settings
+ * LandingPageBuilderPro - Editor avanzato con scelta tra GrapesJS e Novel
+ * - GrapesJS: Drag & drop completo per utenti esperti
+ * - Novel: Editor Notion-style con AI per utenti semplici
  */
 const LandingPageBuilderPro = () => {
   const { pageId } = useParams();
@@ -170,6 +172,8 @@ const LandingPageBuilderPro = () => {
   const [page, setPage] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [initialContent, setInitialContent] = useState('');
+  const [editorType, setEditorType] = useState(null); // 'grapes' | 'novel'
+  const [showEditorChoice, setShowEditorChoice] = useState(false);
 
   const isNewPage = !pageId || pageId === 'new';
 
@@ -182,33 +186,31 @@ const LandingPageBuilderPro = () => {
 
       try {
         if (isNewPage) {
-          // Crea nuova pagina
-          const newPage = await createLandingPage(tenantId, {
-            title: 'Nuova Landing Page',
-            description: '',
-            template: 'grapes',
-            blocks: [],
-            grapesData: {
-              html: '',
-              css: '',
-              components: '',
-            },
-          });
-          navigate(`/admin/landing-pages/${newPage.id}/edit`, { replace: true });
+          // Per nuova pagina, mostra scelta editor
+          setShowEditorChoice(true);
+          setIsLoading(false);
         } else {
           // Carica pagina esistente
           const pageData = await getLandingPage(tenantId, pageId);
           setPage(pageData);
 
-          // Se ha dati GrapesJS, usa quelli
-          if (pageData.grapesData?.html) {
+          // Determina editor type dalla pagina salvata
+          if (pageData.editorType === 'novel') {
+            setEditorType('novel');
+            setInitialContent(pageData.novelContent || '');
+          } else if (pageData.grapesData?.html) {
+            setEditorType('grapes');
             setInitialContent(pageData.grapesData.html);
           } else if (pageData.blocks && pageData.blocks.length > 0) {
             // Converti vecchi blocchi in HTML
             console.log('🔄 Conversione blocchi vecchi in HTML...');
             const convertedHtml = convertBlocksToHtml(pageData.blocks);
             setInitialContent(convertedHtml);
+            setEditorType('grapes');
             toast?.showToast?.('Pagina convertita nel nuovo formato', 'info');
+          } else {
+            // Nessun contenuto, mostra scelta editor
+            setShowEditorChoice(true);
           }
 
           setIsLoading(false);
@@ -223,7 +225,32 @@ const LandingPageBuilderPro = () => {
     loadPage();
   }, [pageId, tenantId, isNewPage, navigate]);
 
-  // Salva la pagina
+  // Crea nuova pagina con l'editor scelto
+  const handleCreateWithEditor = async (type) => {
+    setEditorType(type);
+    setShowEditorChoice(false);
+    setIsLoading(true);
+
+    try {
+      const newPage = await createLandingPage(tenantId, {
+        title: 'Nuova Landing Page',
+        description: '',
+        template: type,
+        editorType: type,
+        blocks: [],
+        grapesData: type === 'grapes' ? { html: '', css: '', components: '' } : null,
+        novelContent: type === 'novel' ? '' : null,
+      });
+      navigate(`/admin/landing-pages/${newPage.id}/edit`, { replace: true });
+    } catch (error) {
+      console.error('Errore creazione pagina:', error);
+      toast?.showToast?.('Errore nella creazione', 'error');
+      setShowEditorChoice(true);
+      setIsLoading(false);
+    }
+  };
+
+  // Salva la pagina (GrapesJS)
   const handleSave = async (data) => {
     if (!page) return;
 
@@ -235,6 +262,28 @@ const LandingPageBuilderPro = () => {
           components: data.components,
           fullHtml: data.fullHtml,
         },
+        editorType: 'grapes',
+        blocks: [],
+        updatedAt: new Date().toISOString(),
+      });
+
+      toast?.showToast?.('Modifiche salvate!', 'success');
+    } catch (error) {
+      console.error('Errore salvataggio:', error);
+      toast?.showToast?.('Errore nel salvataggio', 'error');
+    }
+  };
+
+  // Salva la pagina (Novel)
+  const handleSaveNovel = async (data) => {
+    if (!page) return;
+
+    try {
+      await updateLandingPage(tenantId, pageId, {
+        novelContent: data.content,
+        novelHtml: data.html,
+        novelPalette: data.palette,
+        editorType: 'novel',
         blocks: [],
         updatedAt: new Date().toISOString(),
       });
@@ -306,6 +355,103 @@ const LandingPageBuilderPro = () => {
     );
   }
 
+  // Schermata scelta editor
+  if (showEditorChoice) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-900 p-4">
+        <div className="max-w-2xl w-full">
+          <div className="text-center mb-10">
+            <Sparkles className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-white mb-2">Scegli il tuo Editor</h1>
+            <p className="text-slate-400">Come preferisci creare la tua landing page?</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Novel - Simple */}
+            <button
+              onClick={() => handleCreateWithEditor('novel')}
+              className="p-8 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-2 border-purple-500/50 hover:border-purple-400 rounded-2xl text-left transition-all hover:scale-[1.02]"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-purple-500/20 rounded-xl">
+                  <Wand2 className="w-8 h-8 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Novel AI</h3>
+                  <span className="text-xs text-purple-400 font-medium">CONSIGLIATO</span>
+                </div>
+              </div>
+              <p className="text-slate-300 mb-4">
+                Editor semplice stile Notion con AI integrata. Scrivi contenuti e l'AI ti aiuta.
+              </p>
+              <ul className="text-sm text-slate-400 space-y-2">
+                <li className="flex items-center gap-2">
+                  <span className="text-green-400">✓</span> Facile da usare
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-green-400">✓</span> AI autocompletamento
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-green-400">✓</span> Template pronti
+                </li>
+              </ul>
+            </button>
+
+            {/* GrapesJS - Advanced */}
+            <button
+              onClick={() => handleCreateWithEditor('grapes')}
+              className="p-8 bg-slate-800/50 border-2 border-slate-600 hover:border-slate-500 rounded-2xl text-left transition-all hover:scale-[1.02]"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-slate-700 rounded-xl">
+                  <Layout className="w-8 h-8 text-cyan-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">GrapesJS Pro</h3>
+                  <span className="text-xs text-slate-500 font-medium">AVANZATO</span>
+                </div>
+              </div>
+              <p className="text-slate-300 mb-4">
+                Editor drag & drop completo. Massimo controllo su layout e design.
+              </p>
+              <ul className="text-sm text-slate-400 space-y-2">
+                <li className="flex items-center gap-2">
+                  <span className="text-cyan-400">✓</span> Drag & drop
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-cyan-400">✓</span> Blocchi personalizzati
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-cyan-400">✓</span> CSS avanzato
+                </li>
+              </ul>
+            </button>
+          </div>
+
+          <button
+            onClick={handleBack}
+            className="mt-8 mx-auto block text-slate-400 hover:text-white transition-colors"
+          >
+            ← Torna alla lista
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Editor Novel
+  if (editorType === 'novel') {
+    return (
+      <NovelLandingEditor
+        initialContent={page?.novelContent || initialContent}
+        onSave={handleSaveNovel}
+        onBack={handleBack}
+        landingPage={page}
+      />
+    );
+  }
+
+  // Editor GrapesJS (default)
   return (
     <GrapesEditor
       initialContent={initialContent}
