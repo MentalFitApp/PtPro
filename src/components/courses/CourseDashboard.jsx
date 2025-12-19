@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, query, orderBy, onSnapshot, doc, getDoc, setDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
-import { BookOpen, Search, Filter, Grid, List, GraduationCap } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { BookOpen, Search, Grid, List, GraduationCap, Play, Clock, Award } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import CourseCard from './CourseCard';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { useToast } from '../../contexts/ToastContext';
@@ -98,13 +98,20 @@ export default function CourseDashboard() {
       return;
     }
 
-    // Carica tutti i corsi
-    const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
+    // Carica corsi pubblici (published o coming_soon)
+    const coursesQuery = query(
+      collection(db, 'courses'), 
+      where('isPublic', '==', true),
+      orderBy('createdAt', 'desc')
+    );
     const unsubscribeCourses = onSnapshot(coursesQuery, (snapshot) => {
-      const coursesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const coursesData = snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        // Filtra: mostra solo published e coming_soon (non draft)
+        .filter(course => course.status !== 'draft');
       setCourses(coursesData);
     });
 
@@ -179,116 +186,125 @@ export default function CourseDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-500"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-purple-500 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
-      {/* Header */}
-      <div className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <GraduationCap className="text-cyan-400" size={32} />
-              <div>
-                <h1 className="text-3xl font-bold text-white">Corsi</h1>
-                <p className="text-slate-400">Impara e cresci con i nostri corsi esclusivi</p>
-              </div>
-            </div>
+    <div className="min-h-screen px-4 py-6 pb-24">
+      {/* Header con gradiente */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6"
+      >
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <GraduationCap className="text-white" size={20} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">I Miei Corsi</h1>
+            <p className="text-sm text-slate-400">Continua il tuo percorso di crescita</p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Search and Filters */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-              <input
-                type="text"
-                placeholder="Cerca corsi..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
-              />
-            </div>
-
-            {/* Level Filter */}
-            <select
-              value={selectedLevel}
-              onChange={(e) => setSelectedLevel(e.target.value)}
-              className="px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+      {/* Search */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="mb-6"
+      >
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500" size={18} />
+          <input
+            type="text"
+            placeholder="Cerca corsi..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+          />
+        </div>
+        
+        {/* Level Filter Pills */}
+        <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
+          {[
+            { value: 'all', label: 'Tutti' },
+            { value: 'beginner', label: '🌱 Principiante' },
+            { value: 'intermediate', label: '📈 Intermedio' },
+            { value: 'advanced', label: '🚀 Avanzato' }
+          ].map((level) => (
+            <button
+              key={level.value}
+              onClick={() => setSelectedLevel(level.value)}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                selectedLevel === level.value
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                  : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
+              }`}
             >
-              <option value="all">Tutti i livelli</option>
-              <option value="beginner">Principiante</option>
-              <option value="intermediate">Intermedio</option>
-              <option value="advanced">Avanzato</option>
-            </select>
-
-            {/* View Mode */}
-            <div className="flex bg-slate-800 border border-slate-700 rounded-lg">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-3 rounded-l-lg transition-colors ${
-                  viewMode === 'grid' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Grid size={20} />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-3 rounded-r-lg transition-colors ${
-                  viewMode === 'list' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <List size={20} />
-              </button>
-            </div>
-          </div>
+              {level.label}
+            </button>
+          ))}
         </div>
+      </motion.div>
 
-        {/* Enrolled Courses */}
-        {enrolledCourseCards.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6">I Miei Corsi</h2>
-            <div className={`grid gap-6 ${
-              viewMode === 'grid'
-                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-                : 'grid-cols-1'
-            }`}>
-              {enrolledCourseCards}
-            </div>
+      {/* Corsi Iscritti */}
+      {enrolledCourseCards.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Play className="text-emerald-400" size={18} />
+            <h2 className="text-lg font-semibold text-white">Continua a imparare</h2>
           </div>
-        )}
+          <div className="space-y-3">
+            {enrolledCourseCards}
+          </div>
+        </motion.div>
+      )}
 
-        {/* Available Courses */}
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-6">
-            {enrolledCourseCards.length > 0 ? 'Altri Corsi Disponibili' : 'Corsi Disponibili'}
+      {/* Corsi Disponibili */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <BookOpen className="text-purple-400" size={18} />
+          <h2 className="text-lg font-semibold text-white">
+            {enrolledCourseCards.length > 0 ? 'Scopri altri corsi' : 'Corsi disponibili'}
           </h2>
-
-          {availableCourseCards.length > 0 ? (
-            <div className={`grid gap-6 ${
-              viewMode === 'grid'
-                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-                : 'grid-cols-1'
-            }`}>
-              {availableCourseCards}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <BookOpen className="mx-auto text-slate-600 mb-4" size={48} />
-              <h3 className="text-xl font-medium text-slate-400 mb-2">Nessun corso trovato</h3>
-              <p className="text-slate-500">Prova a modificare i filtri di ricerca</p>
-            </div>
-          )}
         </div>
-      </div>
+
+        {availableCourseCards.length > 0 ? (
+          <div className="space-y-3">
+            {availableCourseCards}
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-800/30 rounded-2xl p-8 text-center border border-slate-700/30"
+          >
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+              <GraduationCap className="text-purple-400" size={32} />
+            </div>
+            <h3 className="text-lg font-medium text-white mb-2">Nessun corso disponibile</h3>
+            <p className="text-slate-400 text-sm">
+              {searchTerm || selectedLevel !== 'all' 
+                ? 'Prova a modificare i filtri di ricerca'
+                : 'Nuovi corsi saranno disponibili presto!'}
+            </p>
+          </motion.div>
+        )}
+      </motion.div>
     </div>
   );
 }

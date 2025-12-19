@@ -6,6 +6,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { storage } from '../../firebase';
 import { isSuperAdmin, isAdmin } from '../../utils/superadmin';
 import { useToast } from '../../contexts/ToastContext';
+import { getCurrentTenantId } from '../../config/tenant';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { 
   BookOpen, Plus, Edit, Trash2, Eye, EyeOff, Video, FileText, 
@@ -39,6 +40,7 @@ export default function CourseAdmin() {
     description: '',
     level: 'beginner',
     isPublic: true,
+    status: 'draft', // 'draft' | 'coming_soon' | 'published'
     price: 0,
     duration: '',
     instructor: '',
@@ -129,11 +131,13 @@ export default function CourseAdmin() {
         description: newCourse.description,
         level: newCourse.level,
         isPublic: newCourse.isPublic,
+        status: newCourse.status || 'draft', // 'draft', 'coming_soon', 'published'
         price: parseFloat(newCourse.price) || 0,
         duration: newCourse.duration,
         instructor: newCourse.instructor || 'Admin',
         category: newCourse.category,
         thumbnail: thumbnailUrl,
+        tenantId: getCurrentTenantId(), // Necessario per le regole Firestore
         createdAt: serverTimestamp(),
         createdBy: auth.currentUser.uid,
         updatedAt: serverTimestamp()
@@ -145,6 +149,7 @@ export default function CourseAdmin() {
         description: '',
         level: 'beginner',
         isPublic: true,
+        status: 'draft',
         price: 0,
         duration: '',
         instructor: '',
@@ -180,6 +185,7 @@ export default function CourseAdmin() {
         description: newCourse.description,
         level: newCourse.level,
         isPublic: newCourse.isPublic,
+        status: newCourse.status || 'draft',
         price: parseFloat(newCourse.price) || 0,
         duration: newCourse.duration,
         instructor: newCourse.instructor,
@@ -230,6 +236,7 @@ export default function CourseAdmin() {
       description: course.description || '',
       level: course.level || 'beginner',
       isPublic: course.isPublic !== false,
+      status: course.status || 'draft',
       price: course.price || 0,
       duration: course.duration || '',
       instructor: course.instructor || '',
@@ -245,16 +252,16 @@ export default function CourseAdmin() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-500"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-purple-500 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
+    <div className="min-h-screen">
       {/* Header */}
-      <div className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700">
+      <div className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -575,6 +582,34 @@ export default function CourseAdmin() {
                     />
                     <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
                   </label>
+                </div>
+
+                {/* Status del corso */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                    Stato del Corso
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: 'draft', label: '📝 Bozza', desc: 'Non visibile' },
+                      { value: 'coming_soon', label: '🔜 In arrivo', desc: 'Visibile ma non accessibile' },
+                      { value: 'published', label: '✅ Pubblicato', desc: 'Completamente accessibile' }
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setNewCourse({ ...newCourse, status: opt.value })}
+                        className={`p-3 rounded-lg border-2 transition-all text-left ${
+                          newCourse.status === opt.value
+                            ? 'border-cyan-500 bg-cyan-500/10'
+                            : 'border-slate-600 bg-slate-700/50 hover:border-slate-500'
+                        }`}
+                      >
+                        <div className="font-medium text-white text-sm">{opt.label}</div>
+                        <div className="text-xs text-slate-400 mt-1">{opt.desc}</div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 

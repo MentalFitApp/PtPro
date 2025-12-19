@@ -24,17 +24,6 @@ export default function CourseDetail() {
   // Determina il prefisso delle route basato sulla posizione attuale
   const routePrefix = location.pathname.startsWith('/client') ? '/client' : '';
 
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
-    loadCourse();
-    checkEnrollment(user.uid);
-  }, [courseId, navigate, loadCourse, checkEnrollment]);
-
   const loadCourse = useCallback(async () => {
     try {
       // Carica dati del corso
@@ -65,26 +54,6 @@ export default function CourseDetail() {
     }
   }, [courseId]);
 
-  const checkEnrollment = useCallback(async (userId) => {
-    try {
-      const enrollmentQuery = query(
-        collection(db, 'course_enrollments'),
-        where('userId', '==', userId),
-        where('courseId', '==', courseId)
-      );
-
-      const enrollmentSnap = await getDocs(enrollmentQuery);
-      setIsEnrolled(!enrollmentSnap.empty);
-
-      if (!enrollmentSnap.empty) {
-        // Carica progresso utente
-        loadUserProgress(userId);
-      }
-    } catch (error) {
-      console.error('Error checking enrollment:', error);
-    }
-  }, [courseId, loadUserProgress]);
-
   const loadUserProgress = useCallback(async (userId) => {
     try {
       const progressQuery = query(
@@ -106,6 +75,38 @@ export default function CourseDetail() {
       console.error('Error loading progress:', error);
     }
   }, [courseId]);
+
+  const checkEnrollment = useCallback(async (userId) => {
+    try {
+      const enrollmentQuery = query(
+        collection(db, 'course_enrollments'),
+        where('userId', '==', userId),
+        where('courseId', '==', courseId)
+      );
+
+      const enrollmentSnap = await getDocs(enrollmentQuery);
+      setIsEnrolled(!enrollmentSnap.empty);
+
+      if (!enrollmentSnap.empty) {
+        // Carica progresso utente
+        loadUserProgress(userId);
+      }
+    } catch (error) {
+      console.error('Error checking enrollment:', error);
+    }
+  }, [courseId, loadUserProgress]);
+
+  // Carica corso e verifica iscrizione
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    loadCourse();
+    checkEnrollment(user.uid);
+  }, [courseId, navigate, loadCourse, checkEnrollment]);
 
   const handleEnroll = async () => {
     const user = auth.currentUser;
@@ -139,187 +140,250 @@ export default function CourseDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-500"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-purple-500 border-t-transparent"></div>
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <BookOpen className="mx-auto text-slate-600 mb-4" size={48} />
-          <h2 className="text-xl font-bold text-slate-400 mb-2">Corso non trovato</h2>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+            <BookOpen className="text-purple-400" size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Corso non trovato</h2>
           <button
             onClick={() => navigate(`${routePrefix}/courses`)}
-            className="text-cyan-400 hover:text-cyan-300"
+            className="text-purple-400 hover:text-purple-300"
           >
-            Torna ai corsi
+            ← Torna ai corsi
           </button>
         </div>
       </div>
     );
   }
 
+  const getLevelInfo = (level) => {
+    switch (level) {
+      case 'beginner': return { emoji: '🌱', label: 'Principiante', color: 'from-emerald-500 to-teal-500' };
+      case 'intermediate': return { emoji: '📈', label: 'Intermedio', color: 'from-amber-500 to-orange-500' };
+      case 'advanced': return { emoji: '🚀', label: 'Avanzato', color: 'from-red-500 to-pink-500' };
+      default: return { emoji: '📚', label: 'Corso', color: 'from-purple-500 to-pink-500' };
+    }
+  };
+
+  const levelInfo = getLevelInfo(course.level);
+  const instructorName = course.instructor?.name || course.instructor || course.createdByName || 'Il tuo Coach';
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800">
-      {/* Header */}
-      <div className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700 sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate(`${routePrefix}/courses`)}
-              className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
-            >
-              <ArrowLeft size={20} className="text-slate-300" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-white">{course.title}</h1>
-              <p className="text-slate-400">{course.description}</p>
+    <div className="min-h-screen px-4 py-6 pb-24">
+      {/* Header con back button */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 mb-6"
+      >
+        <button
+          onClick={() => navigate(`${routePrefix}/courses`)}
+          className="w-10 h-10 rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <span className="text-slate-400 text-sm">Torna ai corsi</span>
+      </motion.div>
+
+      {/* Hero Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 mb-6"
+      >
+        {/* Thumbnail */}
+        <div className="relative h-48 w-full">
+          {course.thumbnail ? (
+            <img
+              src={course.thumbnail}
+              alt={course.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className={`w-full h-full bg-gradient-to-br ${levelInfo.color} flex items-center justify-center`}>
+              <BookOpen size={64} className="text-white/30" />
             </div>
+          )}
+          {/* Overlay gradient */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent" />
+          
+          {/* Level badge */}
+          <div className="absolute top-4 left-4">
+            <span className={`px-3 py-1.5 rounded-full text-xs font-semibold bg-black/50 backdrop-blur-sm text-white flex items-center gap-1.5`}>
+              <span>{levelInfo.emoji}</span>
+              <span>{levelInfo.label}</span>
+            </span>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Course Info */}
-        <div className="bg-slate-800 rounded-xl p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Thumbnail */}
-            <div className="w-full md:w-64 h-40 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-lg flex items-center justify-center">
-              {course.thumbnail ? (
-                <img
-                  src={course.thumbnail}
-                  alt={course.title}
-                  className="w-full h-full object-cover rounded-lg"
-                />
-              ) : (
-                <BookOpen size={48} className="text-white/50" />
-              )}
+        <div className="p-5">
+          <h1 className="text-2xl font-bold text-white mb-2">{course.title}</h1>
+          <p className="text-slate-400 text-sm mb-4 line-clamp-3">{course.description}</p>
+
+          {/* Stats row */}
+          <div className="flex items-center gap-4 mb-4 text-sm">
+            {course.duration && (
+              <div className="flex items-center gap-1.5 text-slate-400">
+                <Clock size={14} />
+                <span>{course.duration}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 text-slate-400">
+              <Users size={14} />
+              <span>{course.studentsCount || 0} iscritti</span>
             </div>
-
-            {/* Info */}
-            <div className="flex-1">
-              <div className="flex items-center gap-4 mb-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  course.level === 'beginner' ? 'bg-green-500' :
-                  course.level === 'intermediate' ? 'bg-yellow-500' : 'bg-red-500'
-                } text-white`}>
-                  {course.level === 'beginner' ? 'Principiante' :
-                   course.level === 'intermediate' ? 'Intermedio' : 'Avanzato'}
-                </span>
-                <div className="flex items-center gap-1 text-slate-400">
-                  <Clock size={16} />
-                  <span>{course.duration || 'N/A'}</span>
-                </div>
-                <div className="flex items-center gap-1 text-slate-400">
-                  <Users size={16} />
-                  <span>{course.studentsCount || 0} studenti</span>
-                </div>
+            {course.rating > 0 && (
+              <div className="flex items-center gap-1.5 text-amber-400">
+                <Star size={14} className="fill-amber-400" />
+                <span>{course.rating.toFixed(1)}</span>
               </div>
+            )}
+          </div>
 
-              <p className="text-slate-300 mb-4">{course.description}</p>
-
-              {/* Instructor */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
-                    {course.instructor?.name?.charAt(0)?.toUpperCase() || 'I'}
-                  </span>
-                </div>
-                <span className="text-slate-300">{course.instructor?.name || 'Instructor'}</span>
-              </div>
-
-              {/* Enroll Button */}
-              {!isEnrolled ? (
-                <button
-                  onClick={handleEnroll}
-                  className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-                >
-                  Iscriviti al Corso
-                </button>
-              ) : (
-                <div className="flex items-center gap-2 text-green-400">
-                  <CheckCircle size={20} />
-                  <span className="font-medium">Iscritto al corso</span>
-                </div>
-              )}
+          {/* Instructor */}
+          <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-xl mb-4">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <span className="text-white font-semibold">
+                {instructorName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Istruttore</p>
+              <p className="text-white font-medium">{instructorName}</p>
             </div>
           </div>
-        </div>
 
-        {/* Modules */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-white">Contenuto del Corso</h2>
-
-          {modules.map((module, moduleIndex) => (
-            <motion.div
-              key={module.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: moduleIndex * 0.1 }}
-              className="bg-slate-800 rounded-xl overflow-hidden"
+          {/* Enroll/Status Button */}
+          {!isEnrolled ? (
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={handleEnroll}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold flex items-center justify-center gap-2"
             >
-              {/* Module Header */}
-              <div className="bg-slate-700 px-6 py-4">
-                <h3 className="text-lg font-semibold text-white">{module.title}</h3>
-                <p className="text-slate-400 text-sm">{module.description}</p>
-              </div>
-
-              {/* Lessons */}
-              <div className="divide-y divide-slate-700">
-                {module.lessons?.map((lesson) => (
-                  <div
-                    key={lesson.id}
-                    onClick={() => handleLessonClick(module.id, lesson.id)}
-                    className={`px-6 py-4 hover:bg-slate-700/50 cursor-pointer transition-colors ${
-                      !isEnrolled ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          userProgress[lesson.id]
-                            ? 'bg-green-600 text-white'
-                            : 'bg-slate-600 text-slate-400'
-                        }`}>
-                          {userProgress[lesson.id] ? (
-                            <CheckCircle size={16} />
-                          ) : (
-                            <Play size={16} />
-                          )}
-                        </div>
-                        <div>
-                          <h4 className="text-white font-medium">{lesson.title}</h4>
-                          <p className="text-slate-400 text-sm">{lesson.description}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-slate-400 text-sm">
-                        <Clock size={14} />
-                        <span>{lesson.duration || 'N/A'}</span>
-                      </div>
-                    </div>
-                  </div>
-                )) || (
-                  <div className="px-6 py-8 text-center text-slate-500">
-                    Nessuna lezione disponibile per questo modulo
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          ))}
-
-          {modules.length === 0 && (
-            <div className="text-center py-12">
-              <BookOpen className="mx-auto text-slate-600 mb-4" size={48} />
-              <h3 className="text-xl font-medium text-slate-400 mb-2">Contenuto in preparazione</h3>
-              <p className="text-slate-500">Il contenuto di questo corso sarà disponibile a breve.</p>
+              <Play size={18} />
+              Iscriviti gratis
+            </motion.button>
+          ) : (
+            <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/30">
+              <CheckCircle size={18} className="text-emerald-400" />
+              <span className="text-emerald-400 font-medium">Sei iscritto a questo corso</span>
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
+
+      {/* Course Content */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <BookOpen className="text-purple-400" size={18} />
+          <h2 className="text-lg font-semibold text-white">Contenuto del corso</h2>
+        </div>
+
+        {modules.length > 0 ? (
+          <div className="space-y-3">
+            {modules.map((module, moduleIndex) => (
+              <motion.div
+                key={module.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + moduleIndex * 0.1 }}
+                className="bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50"
+              >
+                {/* Module Header */}
+                <div className="p-4 border-b border-slate-700/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                      <span className="text-purple-400 font-semibold text-sm">{moduleIndex + 1}</span>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-medium">{module.title}</h3>
+                      {module.description && (
+                        <p className="text-slate-400 text-xs mt-0.5">{module.description}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lessons */}
+                <div className="divide-y divide-slate-700/50">
+                  {module.lessons?.length > 0 ? (
+                    module.lessons.map((lesson, lessonIndex) => (
+                      <div
+                        key={lesson.id}
+                        onClick={() => handleLessonClick(module.id, lesson.id)}
+                        className={`p-4 flex items-center gap-3 transition-colors ${
+                          isEnrolled 
+                            ? 'hover:bg-slate-700/30 cursor-pointer active:bg-slate-700/50' 
+                            : 'opacity-60'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          userProgress[lesson.id]
+                            ? 'bg-emerald-500'
+                            : 'bg-slate-700'
+                        }`}>
+                          {userProgress[lesson.id] ? (
+                            <CheckCircle size={14} className="text-white" />
+                          ) : (
+                            <Play size={14} className="text-slate-400" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-white text-sm font-medium truncate">{lesson.title}</h4>
+                          {lesson.duration && (
+                            <p className="text-slate-500 text-xs flex items-center gap-1 mt-0.5">
+                              <Clock size={10} />
+                              {lesson.duration}
+                            </p>
+                          )}
+                        </div>
+                        {!isEnrolled && (
+                          <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center">
+                            <span className="text-slate-500 text-xs">🔒</span>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-6 text-center">
+                      <p className="text-slate-500 text-sm">Lezioni in preparazione...</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-800/30 rounded-2xl p-8 text-center border border-slate-700/30"
+          >
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+              <BookOpen className="text-purple-400" size={32} />
+            </div>
+            <h3 className="text-lg font-medium text-white mb-2">Contenuto in preparazione</h3>
+            <p className="text-slate-400 text-sm">
+              Il contenuto di questo corso sarà disponibile a breve. Resta sintonizzato!
+            </p>
+          </motion.div>
+        )}
+      </motion.div>
     </div>
   );
 }

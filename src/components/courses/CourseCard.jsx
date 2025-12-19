@@ -1,11 +1,13 @@
 import React from 'react';
-import { BookOpen, Users, Clock, Star, Play } from 'lucide-react';
+import { BookOpen, Users, Clock, Star, Play, ChevronRight, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useToast } from '../../contexts/ToastContext';
 
 /**
- * Card per mostrare un corso nella lista corsi
+ * Card per mostrare un corso nella lista corsi - Stile Nebula
  */
 export default function CourseCard({ course, onEnroll, onView, isEnrolled = false, progress = 0 }) {
+  const toast = useToast();
   const {
     title,
     description,
@@ -15,116 +17,153 @@ export default function CourseCard({ course, onEnroll, onView, isEnrolled = fals
     studentsCount = 0,
     rating = 0,
     level = 'beginner',
-    modulesCount = 0
+    modulesCount = 0,
+    lessonsCount = 0,
+    status = 'published'
   } = course;
 
-  const getLevelColor = (level) => {
+  const isComingSoon = status === 'coming_soon';
+
+  const getLevelInfo = (level) => {
     switch (level) {
-      case 'beginner': return 'bg-green-500';
-      case 'intermediate': return 'bg-yellow-500';
-      case 'advanced': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case 'beginner': return { emoji: '🌱', label: 'Principiante', color: 'from-emerald-500 to-teal-500' };
+      case 'intermediate': return { emoji: '📈', label: 'Intermedio', color: 'from-amber-500 to-orange-500' };
+      case 'advanced': return { emoji: '🚀', label: 'Avanzato', color: 'from-red-500 to-pink-500' };
+      default: return { emoji: '📚', label: 'Corso', color: 'from-purple-500 to-pink-500' };
+    }
+  };
+
+  const levelInfo = getLevelInfo(level);
+
+  const handleClick = () => {
+    if (isComingSoon) {
+      toast.info('Questo corso sarà disponibile presto! 🔜');
+      return;
+    }
+    if (isEnrolled) {
+      onView(course);
+    } else {
+      onEnroll(course);
     }
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -5 }}
-      className="bg-slate-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+      whileTap={{ scale: isComingSoon ? 1 : 0.98 }}
+      onClick={handleClick}
+      className={`bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 transition-all ${
+        isComingSoon ? 'opacity-75 cursor-default' : 'active:bg-slate-800/70 cursor-pointer'
+      }`}
     >
-      {/* Thumbnail */}
-      <div className="relative h-48 bg-gradient-to-br from-cyan-600 to-blue-600">
-        {thumbnail ? (
-          <img
-            src={thumbnail}
-            alt={title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <BookOpen size={48} className="text-white/50" />
-          </div>
-        )}
-
-        {/* Level Badge */}
-        <div className="absolute top-3 left-3">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getLevelColor(level)}`}>
-            {level === 'beginner' ? 'Principiante' :
-             level === 'intermediate' ? 'Intermedio' : 'Avanzato'}
-          </span>
-        </div>
-
-        {/* Progress Bar for enrolled courses */}
-        {isEnrolled && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
-            <div
-              className="h-full bg-cyan-400 transition-all duration-300"
-              style={{ width: `${progress}%` }}
+      <div className="flex gap-4 p-4">
+        {/* Thumbnail */}
+        <div className="relative w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden">
+          {thumbnail ? (
+            <img
+              src={thumbnail}
+              alt={title}
+              className={`w-full h-full object-cover ${isComingSoon ? 'grayscale' : ''}`}
             />
+          ) : (
+            <div className={`w-full h-full bg-gradient-to-br ${levelInfo.color} flex items-center justify-center`}>
+              <BookOpen size={28} className="text-white/80" />
+            </div>
+          )}
+          
+          {/* Progress overlay per corsi iscritti */}
+          {isEnrolled && progress > 0 && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
+              <div
+                className="h-full bg-emerald-400"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
+          
+          {/* Coming soon badge */}
+          {isComingSoon && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <span className="text-xs font-bold text-amber-400 bg-black/60 px-2 py-1 rounded">🔜</span>
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              {/* Level badge */}
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs">{levelInfo.emoji}</span>
+                <span className="text-xs text-slate-400">{levelInfo.label}</span>
+                {isEnrolled && progress > 0 && (
+                  <span className="text-xs text-emerald-400 font-medium">{progress}%</span>
+                )}
+              </div>
+              
+              {/* Title */}
+              <h3 className="text-base font-semibold text-white line-clamp-1 mb-1">{title}</h3>
+              
+              {/* Description */}
+              <p className="text-sm text-slate-400 line-clamp-2 mb-2">{description}</p>
+            </div>
+            
+            <ChevronRight className="text-slate-500 flex-shrink-0 mt-4" size={20} />
           </div>
-        )}
+
+          {/* Stats row */}
+          <div className="flex items-center gap-3 text-xs text-slate-500">
+            {duration && (
+              <div className="flex items-center gap-1">
+                <Clock size={12} />
+                <span>{duration}</span>
+              </div>
+            )}
+            {(modulesCount > 0 || lessonsCount > 0) && (
+              <div className="flex items-center gap-1">
+                <BookOpen size={12} />
+                <span>{lessonsCount || modulesCount} lezioni</span>
+              </div>
+            )}
+            {studentsCount > 0 && (
+              <div className="flex items-center gap-1">
+                <Users size={12} />
+                <span>{studentsCount}</span>
+              </div>
+            )}
+            {rating > 0 && (
+              <div className="flex items-center gap-1">
+                <Star size={12} className="text-amber-400 fill-amber-400" />
+                <span>{rating.toFixed(1)}</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-
-      {/* Content */}
-      <div className="p-6">
-        <h3 className="text-xl font-bold text-white mb-2 line-clamp-2">{title}</h3>
-        <p className="text-slate-400 text-sm mb-4 line-clamp-3">{description}</p>
-
-        {/* Instructor */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-medium">
-              {instructor?.name?.charAt(0)?.toUpperCase() || 'I'}
-            </span>
-          </div>
-          <span className="text-slate-300 text-sm">{instructor?.name || 'Instructor'}</span>
-        </div>
-
-        {/* Stats */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4 text-sm text-slate-400">
-            <div className="flex items-center gap-1">
-              <Clock size={14} />
-              <span>{duration || 'N/A'}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <BookOpen size={14} />
-              <span>{modulesCount} moduli</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Star size={14} className="text-yellow-400 fill-current" />
-            <span className="text-sm text-slate-300">{rating?.toFixed(1) || 'N/A'}</span>
-          </div>
-        </div>
-
-        {/* Students Count */}
-        <div className="flex items-center gap-1 mb-4 text-sm text-slate-400">
-          <Users size={14} />
-          <span>{studentsCount} studenti iscritti</span>
-        </div>
-
-        {/* Action Button */}
-        <button
-          onClick={() => isEnrolled ? onView(course) : onEnroll(course)}
-          className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
-            isEnrolled
-              ? 'bg-cyan-600 hover:bg-cyan-700 text-white'
-              : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white'
-          }`}
-        >
-          {isEnrolled ? (
+      
+      {/* Bottom action hint */}
+      <div className={`px-4 py-2 border-t border-slate-700/50 ${
+        isComingSoon ? 'bg-amber-500/10' : isEnrolled ? 'bg-emerald-500/10' : 'bg-purple-500/10'
+      }`}>
+        <div className="flex items-center justify-center gap-2">
+          {isComingSoon ? (
             <>
-              <Play size={16} />
-              Continua Corso
+              <Lock size={14} className="text-amber-400" />
+              <span className="text-xs font-medium text-amber-400">In arrivo</span>
+            </>
+          ) : isEnrolled ? (
+            <>
+              <Play size={14} className="text-emerald-400" />
+              <span className="text-xs font-medium text-emerald-400">Continua</span>
             </>
           ) : (
-            'Iscriviti al Corso'
+            <>
+              <span className="text-xs font-medium text-purple-400">Iscriviti gratis</span>
+            </>
           )}
-        </button>
+        </div>
       </div>
     </motion.div>
   );

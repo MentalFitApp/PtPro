@@ -447,7 +447,7 @@ export default function App() {
           <Route path="/alimentazione-allenamento" element={<AlimentazioneAllenamento />} />
           <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
           <Route path="/scheda-allenamento/:clientId" element={<SchedaAllenamento />} />
-          <Route path="/courses" element={<CourseDashboard />} />
+          <Route path="/courses" element={<CourseAdmin />} />
           <Route path="/courses/:courseId" element={<CourseDetail />} />
           <Route path="/courses/:courseId/modules/:moduleId/lessons/:lessonId" element={<LessonPlayer />} />
           <Route path="/community" element={<Community />} />
