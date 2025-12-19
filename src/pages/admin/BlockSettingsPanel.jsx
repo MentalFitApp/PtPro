@@ -640,13 +640,67 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                       <Trash2 className="w-4 h-4 text-red-400" />
                     </button>
                   </div>
-                  <input
-                    type="text"
-                    value={item.icon || ''}
-                    onChange={(e) => handleArrayItemChange('items', index, 'icon', e.target.value)}
-                    placeholder="Icona (emoji)"
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-                  />
+                  
+                  {/* Tipo icona: emoji o immagine */}
+                  <div className="flex gap-2 mb-2">
+                    <button
+                      onClick={() => handleArrayItemChange('items', index, 'iconType', 'emoji')}
+                      className={`flex-1 py-1.5 px-3 rounded text-xs font-medium transition-colors ${
+                        (item.iconType || 'emoji') === 'emoji' 
+                          ? 'bg-sky-600 text-white' 
+                          : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                      }`}
+                    >
+                      🎯 Emoji
+                    </button>
+                    <button
+                      onClick={() => handleArrayItemChange('items', index, 'iconType', 'image')}
+                      className={`flex-1 py-1.5 px-3 rounded text-xs font-medium transition-colors ${
+                        item.iconType === 'image' 
+                          ? 'bg-sky-600 text-white' 
+                          : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                      }`}
+                    >
+                      🖼️ Immagine
+                    </button>
+                  </div>
+                  
+                  {/* Input emoji o upload immagine */}
+                  {(item.iconType || 'emoji') === 'emoji' ? (
+                    <input
+                      type="text"
+                      value={item.icon || ''}
+                      onChange={(e) => handleArrayItemChange('items', index, 'icon', e.target.value)}
+                      placeholder="Icona (emoji)"
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                    />
+                  ) : (
+                    <div className="space-y-2">
+                      {item.iconImage ? (
+                        <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-slate-600">
+                          <img 
+                            src={item.iconImage} 
+                            alt="Icon" 
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            onClick={() => handleArrayItemChange('items', index, 'iconImage', '')}
+                            className="absolute top-0 right-0 p-1 bg-red-500 rounded-bl"
+                          >
+                            <X className="w-3 h-3 text-white" />
+                          </button>
+                        </div>
+                      ) : (
+                        <MediaUploader
+                          type="image"
+                          onUpload={(url) => handleArrayItemChange('items', index, 'iconImage', url)}
+                          tenantId={tenantId}
+                          accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
+                        />
+                      )}
+                    </div>
+                  )}
+                  
                   <input
                     type="text"
                     value={item.title || ''}
@@ -664,7 +718,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                 </div>
               ))}
               <button
-                onClick={() => handleAddArrayItem('items', { icon: '✨', title: '', description: '' })}
+                onClick={() => handleAddArrayItem('items', { icon: '✨', iconType: 'emoji', title: '', description: '' })}
                 className="w-full py-2 border-2 border-dashed border-slate-600 rounded-lg text-slate-400 hover:border-sky-500 hover:text-sky-400 transition-colors flex items-center justify-center gap-2"
               >
                 <Plus className="w-4 h-4" />

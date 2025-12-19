@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 /**
  * Features Block - Griglia di caratteristiche/benefici
  * Varianti: grid, list, alternating
+ * Supporta icone emoji o immagini personalizzate (PNG, JPG, SVG, etc.)
  */
 const FeaturesBlock = ({ settings, isPreview = false }) => {
   const {
@@ -15,6 +16,26 @@ const FeaturesBlock = ({ settings, isPreview = false }) => {
     backgroundColor = 'bg-slate-900',
     cardStyle = 'glass', // glass, solid, outline
   } = settings || {};
+
+  // Helper per renderizzare l'icona (emoji o immagine)
+  const renderIcon = (item, size = 'normal') => {
+    const sizeClasses = {
+      normal: 'w-14 h-14 text-2xl',
+      large: 'w-20 h-20 text-4xl',
+      huge: 'text-8xl',
+    };
+    
+    if (item.iconType === 'image' && item.iconImage) {
+      return (
+        <img 
+          src={item.iconImage} 
+          alt={item.title || 'Feature icon'} 
+          className={`${size === 'huge' ? 'w-32 h-32' : size === 'large' ? 'w-16 h-16' : 'w-10 h-10'} object-contain`}
+        />
+      );
+    }
+    return <span className={size === 'huge' ? 'opacity-50' : ''}>{item.icon}</span>;
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -91,7 +112,7 @@ const FeaturesBlock = ({ settings, isPreview = false }) => {
                 className={`${getCardClasses()} flex items-start gap-4`}
               >
                 <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-sky-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center text-2xl">
-                  {item.icon}
+                  {renderIcon(item, 'normal')}
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-1">
@@ -147,7 +168,7 @@ const FeaturesBlock = ({ settings, isPreview = false }) => {
               >
                 <div className="flex-1">
                   <div className="w-20 h-20 bg-gradient-to-br from-sky-500/20 to-cyan-500/20 rounded-2xl flex items-center justify-center text-4xl mb-6 border border-sky-500/30">
-                    {item.icon}
+                    {renderIcon(item, 'large')}
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-4">
                     {item.title}
@@ -158,7 +179,7 @@ const FeaturesBlock = ({ settings, isPreview = false }) => {
                 </div>
                 <div className="flex-1">
                   <div className="aspect-video bg-gradient-to-br from-sky-500/10 to-cyan-500/10 rounded-2xl border border-white/10 flex items-center justify-center">
-                    <span className="text-8xl opacity-50">{item.icon}</span>
+                    {renderIcon(item, 'huge')}
                   </div>
                 </div>
               </motion.div>
@@ -208,7 +229,7 @@ const FeaturesBlock = ({ settings, isPreview = false }) => {
               className={getCardClasses()}
             >
               <div className="w-14 h-14 bg-gradient-to-br from-sky-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center text-2xl mb-4 border border-sky-500/20">
-                {item.icon}
+                {renderIcon(item, 'normal')}
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">
                 {item.title}
