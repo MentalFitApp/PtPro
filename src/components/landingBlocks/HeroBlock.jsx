@@ -473,125 +473,205 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
         <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl" />
       </div>
 
-      <div className={`relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 flex flex-col ${alignmentClasses[textAlign]}`}>
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="flex flex-col items-center"
-        >
-          {showBadge && badgeText && (
-            <motion.span 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-4 md:mb-6"
+      {/* Layout side-by-side (immagine a sinistra o destra del testo) */}
+      {showCenteredImage && centeredImage && (centeredImagePosition === 'left-of-text' || centeredImagePosition === 'right-of-text') ? (
+        <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center ${centeredImagePosition === 'right-of-text' ? '' : ''}`}>
+            {/* Immagine - a sinistra su desktop, sopra su mobile quando left-of-text */}
+            <motion.div
+              initial={{ opacity: 0, x: centeredImagePosition === 'left-of-text' ? -50 : 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              className={`${centeredImagePosition === 'right-of-text' ? 'md:order-2' : 'md:order-1'} order-1`}
             >
-              {badgeText}
-            </motion.span>
-          )}
-          
-          {/* Immagine centrata - sopra il titolo */}
-          {showCenteredImage && centeredImage && centeredImagePosition === 'above-title' && (
-            <motion.img
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-              src={centeredImage}
-              alt="Hero"
-              className={`${
-                centeredImageStyle === 'rounded' ? 'rounded-2xl shadow-2xl' : 
-                centeredImageStyle === 'circle' ? 'rounded-full shadow-2xl' : ''
-              }`}
-              style={{ 
-                width: `${centeredImageWidth}%`, 
-                maxWidth: '100%',
-                marginTop: `${centeredImageSpacingTop}px`,
-                marginBottom: `${centeredImageSpacingBottom}px`
-              }}
-            />
-          )}
-          
-          <h1 
-            className="font-bold mb-4 md:mb-6 text-center"
-            style={{ ...titleResponsiveStyle, color: titleColor }}
-          >
-            {renderTitle()}
-          </h1>
-          
-          {/* Immagine centrata - tra titolo e sottotitolo */}
-          {showCenteredImage && centeredImage && centeredImagePosition === 'between-title-subtitle' && (
-            <motion.img
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              src={centeredImage}
-              alt="Hero"
-              className={`${
-                centeredImageStyle === 'rounded' ? 'rounded-2xl shadow-2xl' : 
-                centeredImageStyle === 'circle' ? 'rounded-full shadow-2xl' : ''
-              }`}
-              style={{ 
-                width: `${centeredImageWidth}%`, 
-                maxWidth: '100%',
-                marginTop: `${centeredImageSpacingTop}px`,
-                marginBottom: `${centeredImageSpacingBottom}px`
-              }}
-            />
-          )}
-          
-          <p 
-            className="mb-6 md:mb-8 max-w-2xl text-center"
-            style={{ ...subtitleResponsiveStyle, color: subtitleColor }}
-          >
-            {subtitle}
-          </p>
-          
-          {/* Immagine centrata - sotto il sottotitolo */}
-          {showCenteredImage && centeredImage && centeredImagePosition === 'below-subtitle' && (
-            <motion.img
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              src={centeredImage}
-              alt="Hero"
-              className={`${
-                centeredImageStyle === 'rounded' ? 'rounded-2xl shadow-2xl' : 
-                centeredImageStyle === 'circle' ? 'rounded-full shadow-2xl' : ''
-              }`}
-              style={{ 
-                width: `${centeredImageWidth}%`, 
-                maxWidth: '100%',
-                marginTop: `${centeredImageSpacingTop}px`,
-                marginBottom: `${centeredImageSpacingBottom}px`
-              }}
-            />
-          )}
-          
-          <div className="flex flex-wrap justify-center gap-3 md:gap-4">
-            <motion.a
-              href={getCtaHref()}
-              onClick={handleCtaClick}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300 text-sm md:text-base"
+              <img
+                src={centeredImage}
+                alt="Hero"
+                className={`w-full h-auto ${
+                  centeredImageStyle === 'rounded' ? 'rounded-2xl shadow-2xl' : 
+                  centeredImageStyle === 'circle' ? 'rounded-full shadow-2xl' : ''
+                }`}
+                style={{ 
+                  maxWidth: `${centeredImageWidth}%`,
+                  margin: '0 auto'
+                }}
+              />
+            </motion.div>
+            
+            {/* Contenuto testuale */}
+            <motion.div
+              initial={{ opacity: 0, x: centeredImagePosition === 'left-of-text' ? 50 : -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className={`${centeredImagePosition === 'right-of-text' ? 'md:order-1' : 'md:order-2'} order-2 flex flex-col ${textAlign === 'left' ? 'items-start text-left' : textAlign === 'right' ? 'items-end text-right' : 'items-center text-center md:items-start md:text-left'}`}
             >
-              {ctaText}
-            </motion.a>
-            {secondaryCtaText && (
+              {showBadge && badgeText && (
+                <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-4 md:mb-6">
+                  {badgeText}
+                </span>
+              )}
+              
+              <h1 
+                className="font-bold mb-4 md:mb-6"
+                style={{ ...titleResponsiveStyle, color: titleColor }}
+              >
+                {renderTitle()}
+              </h1>
+              
+              <p 
+                className="mb-6 md:mb-8 max-w-xl"
+                style={{ ...subtitleResponsiveStyle, color: subtitleColor }}
+              >
+                {subtitle}
+              </p>
+              
+              <div className="flex flex-wrap gap-3 md:gap-4">
+                <motion.a
+                  href={getCtaHref()}
+                  onClick={handleCtaClick}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300 text-sm md:text-base"
+                >
+                  {ctaText}
+                </motion.a>
+                {secondaryCtaText && (
+                  <motion.a
+                    href={secondaryCtaLink}
+                    onClick={(e) => scrollToElement(e, secondaryCtaLink)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+                  >
+                    {secondaryCtaText}
+                  </motion.a>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      ) : (
+        /* Layout centrato originale */
+        <div className={`relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 flex flex-col ${alignmentClasses[textAlign]}`}>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="flex flex-col items-center"
+          >
+            {showBadge && badgeText && (
+              <motion.span 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-4 md:mb-6"
+              >
+                {badgeText}
+              </motion.span>
+            )}
+            
+            {/* Immagine centrata - sopra il titolo */}
+            {showCenteredImage && centeredImage && centeredImagePosition === 'above-title' && (
+              <motion.img
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 }}
+                src={centeredImage}
+                alt="Hero"
+                className={`${
+                  centeredImageStyle === 'rounded' ? 'rounded-2xl shadow-2xl' : 
+                  centeredImageStyle === 'circle' ? 'rounded-full shadow-2xl' : ''
+                }`}
+                style={{ 
+                  width: `${centeredImageWidth}%`, 
+                  maxWidth: '100%',
+                  marginTop: `${centeredImageSpacingTop}px`,
+                  marginBottom: `${centeredImageSpacingBottom}px`
+                }}
+              />
+            )}
+            
+            <h1 
+              className="font-bold mb-4 md:mb-6 text-center"
+              style={{ ...titleResponsiveStyle, color: titleColor }}
+            >
+              {renderTitle()}
+            </h1>
+            
+            {/* Immagine centrata - tra titolo e sottotitolo */}
+            {showCenteredImage && centeredImage && centeredImagePosition === 'between-title-subtitle' && (
+              <motion.img
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                src={centeredImage}
+                alt="Hero"
+                className={`${
+                  centeredImageStyle === 'rounded' ? 'rounded-2xl shadow-2xl' : 
+                  centeredImageStyle === 'circle' ? 'rounded-full shadow-2xl' : ''
+                }`}
+                style={{ 
+                  width: `${centeredImageWidth}%`, 
+                  maxWidth: '100%',
+                  marginTop: `${centeredImageSpacingTop}px`,
+                  marginBottom: `${centeredImageSpacingBottom}px`
+                }}
+              />
+            )}
+            
+            <p 
+              className="mb-6 md:mb-8 max-w-2xl text-center"
+              style={{ ...subtitleResponsiveStyle, color: subtitleColor }}
+            >
+              {subtitle}
+            </p>
+            
+            {/* Immagine centrata - sotto il sottotitolo */}
+            {showCenteredImage && centeredImage && centeredImagePosition === 'below-subtitle' && (
+              <motion.img
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+                src={centeredImage}
+                alt="Hero"
+                className={`${
+                  centeredImageStyle === 'rounded' ? 'rounded-2xl shadow-2xl' : 
+                  centeredImageStyle === 'circle' ? 'rounded-full shadow-2xl' : ''
+                }`}
+                style={{ 
+                  width: `${centeredImageWidth}%`, 
+                  maxWidth: '100%',
+                  marginTop: `${centeredImageSpacingTop}px`,
+                  marginBottom: `${centeredImageSpacingBottom}px`
+                }}
+              />
+            )}
+            
+            <div className="flex flex-wrap justify-center gap-3 md:gap-4">
               <motion.a
-                href={secondaryCtaLink}
-                onClick={(e) => scrollToElement(e, secondaryCtaLink)}
+                href={getCtaHref()}
+                onClick={handleCtaClick}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+                className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300 text-sm md:text-base"
               >
-                {secondaryCtaText}
+                {ctaText}
               </motion.a>
-            )}
-          </div>
-        </motion.div>
-      </div>
+              {secondaryCtaText && (
+                <motion.a
+                  href={secondaryCtaLink}
+                  onClick={(e) => scrollToElement(e, secondaryCtaLink)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+                >
+                  {secondaryCtaText}
+                </motion.a>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Scroll indicator */}
       <motion.div 

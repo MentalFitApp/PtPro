@@ -514,7 +514,9 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                         options: [
                           { value: 'above-title', label: 'Sopra il titolo' },
                           { value: 'between-title-subtitle', label: 'Tra titolo e sottotitolo' },
-                          { value: 'below-subtitle', label: 'Sotto il sottotitolo (prima dei pulsanti)' },
+                          { value: 'below-subtitle', label: 'Sotto il sottotitolo' },
+                          { value: 'left-of-text', label: '← Sinistra del testo' },
+                          { value: 'right-of-text', label: 'Destra del testo →' },
                         ]
                       })}
                     </FieldGroup>

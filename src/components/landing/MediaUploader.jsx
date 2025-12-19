@@ -196,6 +196,7 @@ export default function MediaUploader({
             onCropComplete={handleCropComplete}
             onCancel={handleSkipCrop}
             aspectRatio={cropAspectRatio}
+            originalFileName={cropImage.file?.name}
           />
         )}
         
@@ -240,6 +241,7 @@ export default function MediaUploader({
           onCropComplete={handleCropComplete}
           onCancel={handleSkipCrop}
           aspectRatio={cropAspectRatio}
+          originalFileName={cropImage.file?.name}
         />
       )}
       

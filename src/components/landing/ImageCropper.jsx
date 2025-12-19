@@ -6,12 +6,14 @@ import { X, Check, RotateCcw, Crop, ZoomIn, ZoomOut } from 'lucide-react';
 
 /**
  * ImageCropper - Componente per ritagliare immagini prima dell'upload
+ * Supporta PNG con trasparenza
  */
 export default function ImageCropper({ 
   imageUrl, 
   onCropComplete, 
   onCancel,
   aspectRatio = null, // null = libero, 1 = quadrato, 16/9 = landscape, etc.
+  originalFileName = 'image', // Nome file originale per determinare il tipo
 }) {
   const [crop, setCrop] = useState({
     unit: '%',
@@ -24,6 +26,11 @@ export default function ImageCropper({
   const [scale, setScale] = useState(1);
   const [rotate, setRotate] = useState(0);
   const imgRef = useRef(null);
+  
+  // Determina se l'immagine è PNG (per preservare trasparenza)
+  const isPng = imageUrl?.toLowerCase().includes('.png') || 
+                originalFileName?.toLowerCase().endsWith('.png') ||
+                imageUrl?.startsWith('blob:'); // Per sicurezza, tratta blob come PNG
 
   const onImageLoad = useCallback((e) => {
     const { width, height } = e.currentTarget;
@@ -55,12 +62,19 @@ export default function ImageCropper({
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
 
-    const pixelRatio = window.devicePixelRatio || 1;
+    // Calcola dimensioni finali del crop
+    const outputWidth = Math.floor(completedCrop.width * scaleX);
+    const outputHeight = Math.floor(completedCrop.height * scaleY);
 
-    canvas.width = Math.floor(completedCrop.width * scaleX * pixelRatio);
-    canvas.height = Math.floor(completedCrop.height * scaleY * pixelRatio);
+    canvas.width = outputWidth;
+    canvas.height = outputHeight;
 
-    ctx.scale(pixelRatio, pixelRatio);
+    // Per PNG: sfondo trasparente, per altri: sfondo bianco
+    if (!isPng) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
     ctx.imageSmoothingQuality = 'high';
 
     const cropX = completedCrop.x * scaleX;
@@ -68,15 +82,7 @@ export default function ImageCropper({
     const cropWidth = completedCrop.width * scaleX;
     const cropHeight = completedCrop.height * scaleY;
 
-    // Salva contesto
-    ctx.save();
-
-    // Applica trasformazioni
-    ctx.translate(canvas.width / 2 / pixelRatio, canvas.height / 2 / pixelRatio);
-    ctx.rotate((rotate * Math.PI) / 180);
-    ctx.scale(scale, scale);
-    ctx.translate(-canvas.width / 2 / pixelRatio, -canvas.height / 2 / pixelRatio);
-
+    // Disegna l'immagine ritagliata
     ctx.drawImage(
       image,
       cropX,
@@ -85,11 +91,13 @@ export default function ImageCropper({
       cropHeight,
       0,
       0,
-      cropWidth / pixelRatio,
-      cropHeight / pixelRatio
+      outputWidth,
+      outputHeight
     );
 
-    ctx.restore();
+    // Usa PNG per preservare trasparenza, JPEG per altri
+    const mimeType = isPng ? 'image/png' : 'image/jpeg';
+    const quality = isPng ? undefined : 0.95;
 
     return new Promise((resolve) => {
       canvas.toBlob(
@@ -100,17 +108,19 @@ export default function ImageCropper({
           }
           resolve(blob);
         },
-        'image/jpeg',
-        0.95
+        mimeType,
+        quality
       );
     });
-  }, [completedCrop, scale, rotate]);
+  }, [completedCrop, isPng]);
 
   const handleConfirm = async () => {
     const croppedBlob = await getCroppedImg();
     if (croppedBlob) {
-      // Crea un file dal blob
-      const file = new File([croppedBlob], 'cropped-image.jpg', { type: 'image/jpeg' });
+      // Crea un file dal blob con estensione corretta
+      const extension = isPng ? 'png' : 'jpg';
+      const mimeType = isPng ? 'image/png' : 'image/jpeg';
+      const file = new File([croppedBlob], `cropped-image.${extension}`, { type: mimeType });
       onCropComplete(file, URL.createObjectURL(croppedBlob));
     }
   };
