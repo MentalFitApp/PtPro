@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -26,7 +26,9 @@ import {
   MoreHorizontal,
   ArrowLeft,
   Globe,
-} from 'lucide-react';
+  User,
+  ClipboardList,
+}
 
 /**
  * LandingPagesLeads - Pagina dedicata per gestire tutti i leads delle landing pages
@@ -47,6 +49,99 @@ const LandingPagesLeads = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [showDetailPanel, setShowDetailPanel] = useState(false);
+
+  // Mappa dei campi noti con etichette leggibili
+  const knownFieldLabels = {
+    name: 'Nome Completo',
+    nome: 'Nome',
+    cognome: 'Cognome',
+    firstName: 'Nome',
+    lastName: 'Cognome',
+    email: 'Email',
+    phone: 'Telefono',
+    telefono: 'Telefono',
+    message: 'Messaggio',
+    messaggio: 'Messaggio',
+    goal: 'Obiettivo',
+    obiettivo: 'Obiettivo',
+    note: 'Note',
+    eta: 'Età',
+    age: 'Età',
+    citta: 'Città',
+    city: 'Città',
+    indirizzo: 'Indirizzo',
+    address: 'Indirizzo',
+    azienda: 'Azienda',
+    company: 'Azienda',
+    ruolo: 'Ruolo',
+    role: 'Ruolo',
+    budget: 'Budget',
+    interesse: 'Interesse',
+    interest: 'Interesse',
+    preferenza: 'Preferenza',
+    preference: 'Preferenza',
+    servizio: 'Servizio',
+    service: 'Servizio',
+    data: 'Data Preferita',
+    date: 'Data Preferita',
+    orario: 'Orario Preferito',
+    time: 'Orario Preferito',
+  };
+
+  // Campi da escludere dalla visualizzazione (campi di sistema)
+  const excludedFields = [
+    'id', 'source', 'landingPageId', 'status', 'createdAt', 'updatedAt', 
+    'tenantId', 'convertedAt', 'assignedTo', 'utm_source', 'utm_medium', 
+    'utm_campaign', 'utm_term', 'utm_content', 'referrer', 'userAgent',
+  ];
+
+  // Rileva automaticamente tutti i campi presenti nei leads
+  const discoveredFields = useMemo(() => {
+    const fieldsSet = new Set();
+    leads.forEach(lead => {
+      Object.keys(lead).forEach(key => {
+        if (!excludedFields.includes(key) && lead[key] !== null && lead[key] !== undefined && lead[key] !== '') {
+          fieldsSet.add(key);
+        }
+      });
+    });
+    // Ordina con campi comuni prima
+    const priorityOrder = ['nome', 'cognome', 'name', 'firstName', 'lastName', 'email', 'phone', 'telefono', 'message', 'messaggio', 'goal', 'obiettivo'];
+    return Array.from(fieldsSet).sort((a, b) => {
+      const aIndex = priorityOrder.indexOf(a);
+      const bIndex = priorityOrder.indexOf(b);
+      if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+      return aIndex - bIndex;
+    });
+  }, [leads]);
+
+  // Helper per ottenere l'etichetta di un campo
+  const getFieldLabel = (fieldName) => {
+    return knownFieldLabels[fieldName] || fieldName.charAt(0).toUpperCase() + fieldName.slice(1).replace(/([A-Z])/g, ' $1');
+  };
+
+  // Helper per ottenere il nome completo del lead
+  const getLeadDisplayName = (lead) => {
+    if (lead.nome && lead.cognome) return `${lead.nome} ${lead.cognome}`;
+    if (lead.firstName && lead.lastName) return `${lead.firstName} ${lead.lastName}`;
+    if (lead.name) return lead.name;
+    if (lead.nome) return lead.nome;
+    if (lead.cognome) return lead.cognome;
+    return lead.email || 'Senza nome';
+  };
+
+  // Helper per ottenere il telefono del lead
+  const getLeadPhone = (lead) => {
+    return lead.phone || lead.telefono || null;
+  };
+
+  // Helper per ottenere l'email del lead
+  const getLeadEmail = (lead) => {
+    return lead.email || null;
+  };
 
   // Carica landing pages per il filtro
   useEffect(() => {
@@ -111,14 +206,23 @@ const LandingPagesLeads = () => {
       // Filtro per status
       if (filterStatus !== 'all' && lead.status !== filterStatus) return false;
       
-      // Filtro per ricerca
+      // Filtro per ricerca - cerca in tutti i campi
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
-        return (
-          lead.name?.toLowerCase().includes(search) ||
-          lead.email?.toLowerCase().includes(search) ||
-          lead.phone?.toLowerCase().includes(search)
-        );
+        const displayName = getLeadDisplayName(lead).toLowerCase();
+        const email = getLeadEmail(lead)?.toLowerCase() || '';
+        const phone = getLeadPhone(lead)?.toLowerCase() || '';
+        
+        // Cerca anche in tutti gli altri campi
+        const otherFieldsMatch = discoveredFields.some(field => {
+          const value = lead[field];
+          if (typeof value === 'string') {
+            return value.toLowerCase().includes(search);
+          }
+          return false;
+        });
+        
+        return displayName.includes(search) || email.includes(search) || phone.includes(search) || otherFieldsMatch;
       }
       
       return true;
@@ -169,27 +273,25 @@ const LandingPagesLeads = () => {
 
   // Esporta leads in CSV
   const handleExportCSV = () => {
-    const headers = ['Nome', 'Email', 'Telefono', 'Status', 'Data', 'Landing Page', 'Obiettivo', 'Note'];
+    // Usa i campi scoperti dinamicamente + campi di sistema
+    const headers = [...discoveredFields.map(f => getFieldLabel(f)), 'Status', 'Data', 'Landing Page'];
     const rows = filteredLeads.map(lead => {
       const landingPage = landingPages.find(p => p.id === lead.landingPageId);
+      const fieldValues = discoveredFields.map(field => lead[field] || '');
       return [
-        lead.name || '',
-        lead.email || '',
-        lead.phone || '',
+        ...fieldValues,
         lead.status || 'new',
         lead.createdAt?.toLocaleDateString?.('it-IT') || '',
         landingPage?.title || lead.landingPageId || '',
-        lead.goal || '',
-        lead.note || '',
       ];
     });
     
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
     ].join('\n');
     
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' }); // BOM per Excel
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -422,135 +524,98 @@ const LandingPagesLeads = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-700">
                   {filteredLeads.map((lead) => (
-                    <React.Fragment key={lead.id}>
-                      <tr 
-                        className={`hover:bg-slate-700/50 transition-colors cursor-pointer ${
-                          selectedLead?.id === lead.id ? 'bg-green-500/10' : ''
-                        }`}
-                        onClick={() => setSelectedLead(lead.id === selectedLead?.id ? null : lead)}
-                      >
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-semibold">
-                              {(lead.name || lead.email || '?')[0].toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="font-medium text-white">{lead.name || 'Nome non fornito'}</p>
-                              <div className="flex items-center gap-2 text-sm text-slate-400">
-                                {lead.email && (
-                                  <span className="flex items-center gap-1">
-                                    <Mail className="w-3 h-3" />
-                                    {lead.email}
-                                  </span>
-                                )}
-                              </div>
+                    <tr 
+                      key={lead.id}
+                      className={`hover:bg-slate-700/50 transition-colors cursor-pointer ${
+                        selectedLead?.id === lead.id ? 'bg-green-500/10' : ''
+                      }`}
+                      onClick={() => {
+                        setSelectedLead(lead);
+                        setShowDetailPanel(true);
+                      }}
+                    >
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-semibold">
+                            {getLeadDisplayName(lead)[0].toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium text-white">{getLeadDisplayName(lead)}</p>
+                            <div className="flex items-center gap-3 text-sm text-slate-400">
+                              {getLeadEmail(lead) && (
+                                <span className="flex items-center gap-1">
+                                  <Mail className="w-3 h-3" />
+                                  {getLeadEmail(lead)}
+                                </span>
+                              )}
+                              {getLeadPhone(lead) && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="w-3 h-3" />
+                                  {getLeadPhone(lead)}
+                                </span>
+                              )}
                             </div>
                           </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className="px-2 py-1 text-xs bg-slate-700 text-slate-300 rounded-lg">
-                            {getLandingPageName(lead.landingPageId)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          {getStatusBadge(lead.status)}
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className="text-sm text-slate-400">
-                            {formatDate(lead.createdAt)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center justify-end gap-2">
-                            {lead.email && (
-                              <a
-                                href={`mailto:${lead.email}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-2 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-colors"
-                                title="Invia email"
-                              >
-                                <Mail className="w-4 h-4" />
-                              </a>
-                            )}
-                            {lead.phone && (
-                              <a
-                                href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-2 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600/30 transition-colors"
-                                title="WhatsApp"
-                              >
-                                <MessageCircle className="w-4 h-4" />
-                              </a>
-                            )}
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleDeleteLead(lead.id); }}
-                              className="p-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors"
-                              title="Elimina"
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className="px-2 py-1 text-xs bg-slate-700 text-slate-300 rounded-lg">
+                          {getLandingPageName(lead.landingPageId)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        {getStatusBadge(lead.status)}
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className="text-sm text-slate-400">
+                          {formatDate(lead.createdAt)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setSelectedLead(lead);
+                              setShowDetailPanel(true);
+                            }}
+                            className="p-2 bg-slate-600/50 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                            title="Vedi dettagli"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          {getLeadEmail(lead) && (
+                            <a
+                              href={`mailto:${getLeadEmail(lead)}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-2 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/30 transition-colors"
+                              title="Invia email"
                             >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      
-                      {/* Expanded Row */}
-                      {selectedLead?.id === lead.id && (
-                        <tr className="bg-slate-800/50">
-                          <td colSpan={5} className="px-4 py-4">
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              className="space-y-4"
+                              <Mail className="w-4 h-4" />
+                            </a>
+                          )}
+                          {getLeadPhone(lead) && (
+                            <a
+                              href={`https://wa.me/${getLeadPhone(lead).replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-2 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600/30 transition-colors"
+                              title="WhatsApp"
                             >
-                              {/* Contact Info */}
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {lead.phone && (
-                                  <div>
-                                    <label className="text-xs text-slate-400">Telefono</label>
-                                    <p className="text-white flex items-center gap-2">
-                                      <Phone className="w-4 h-4" />
-                                      {lead.phone}
-                                    </p>
-                                  </div>
-                                )}
-                                {lead.goal && (
-                                  <div>
-                                    <label className="text-xs text-slate-400">Obiettivo</label>
-                                    <p className="text-white">{lead.goal}</p>
-                                  </div>
-                                )}
-                                {lead.message && (
-                                  <div className="col-span-2">
-                                    <label className="text-xs text-slate-400">Messaggio</label>
-                                    <p className="text-white">{lead.message}</p>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Status Actions */}
-                              <div className="flex items-center gap-2 pt-2 border-t border-slate-700">
-                                <span className="text-sm text-slate-400 mr-2">Cambia status:</span>
-                                {['new', 'contacted', 'converted', 'lost'].map((status) => (
-                                  <button
-                                    key={status}
-                                    onClick={() => handleUpdateStatus(lead.id, status)}
-                                    className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                                      lead.status === status
-                                        ? 'bg-green-500 text-white'
-                                        : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                                    }`}
-                                  >
-                                    {status === 'new' ? 'Nuovo' : status === 'contacted' ? 'Contattato' : status === 'converted' ? 'Convertito' : 'Perso'}
-                                  </button>
-                                ))}
-                              </div>
-                            </motion.div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
+                              <MessageCircle className="w-4 h-4" />
+                            </a>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteLead(lead.id); }}
+                            className="p-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 transition-colors"
+                            title="Elimina"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -561,8 +626,188 @@ const LandingPagesLeads = () => {
         {/* Footer Info */}
         <div className="text-center text-sm text-slate-500">
           Mostrando {filteredLeads.length} di {leads.length} leads
+          {discoveredFields.length > 0 && (
+            <span className="ml-2">• {discoveredFields.length} campi rilevati</span>
+          )}
         </div>
       </div>
+
+      {/* Lead Detail Panel (Slide-over) */}
+      <AnimatePresence>
+        {showDetailPanel && selectedLead && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDetailPanel(false)}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            />
+            
+            {/* Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-slate-800 border-l border-slate-700 shadow-2xl z-50 overflow-y-auto"
+            >
+              {/* Panel Header */}
+              <div className="sticky top-0 bg-slate-800 border-b border-slate-700 p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold text-lg">
+                    {getLeadDisplayName(selectedLead)[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">{getLeadDisplayName(selectedLead)}</h2>
+                    <p className="text-sm text-slate-400">{getLandingPageName(selectedLead.landingPageId)}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowDetailPanel(false)}
+                  className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+
+              {/* Panel Content */}
+              <div className="p-4 space-y-6">
+                {/* Status Section */}
+                <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+                  <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4" />
+                    Status Lead
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['new', 'contacted', 'converted', 'lost'].map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => handleUpdateStatus(selectedLead.id, status)}
+                        className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                          selectedLead.status === status
+                            ? status === 'new' ? 'bg-blue-500 text-white' :
+                              status === 'contacted' ? 'bg-yellow-500 text-white' :
+                              status === 'converted' ? 'bg-green-500 text-white' :
+                              'bg-red-500 text-white'
+                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        }`}
+                      >
+                        {status === 'new' ? '🆕 Nuovo' : status === 'contacted' ? '📞 Contattato' : status === 'converted' ? '✅ Convertito' : '❌ Perso'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Contact Actions */}
+                <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+                  <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    Azioni Rapide
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {getLeadEmail(selectedLead) && (
+                      <a
+                        href={`mailto:${getLeadEmail(selectedLead)}`}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Mail className="w-4 h-4" />
+                        Invia Email
+                      </a>
+                    )}
+                    {getLeadPhone(selectedLead) && (
+                      <>
+                        <a
+                          href={`tel:${getLeadPhone(selectedLead)}`}
+                          className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-colors"
+                        >
+                          <Phone className="w-4 h-4" />
+                          Chiama
+                        </a>
+                        <a
+                          href={`https://wa.me/${getLeadPhone(selectedLead).replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          WhatsApp
+                        </a>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* All Lead Data */}
+                <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+                  <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Tutti i Dati del Lead
+                  </h3>
+                  <div className="space-y-3">
+                    {discoveredFields.map(field => {
+                      const value = selectedLead[field];
+                      if (value === null || value === undefined || value === '') return null;
+                      
+                      return (
+                        <div key={field} className="flex flex-col">
+                          <label className="text-xs text-slate-500 uppercase tracking-wide">
+                            {getFieldLabel(field)}
+                          </label>
+                          <p className="text-white mt-0.5 break-words">
+                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Metadata */}
+                <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+                  <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Informazioni Sistema
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Creato il</span>
+                      <span className="text-slate-300">{formatDate(selectedLead.createdAt)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Landing Page</span>
+                      <span className="text-slate-300">{getLandingPageName(selectedLead.landingPageId)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Source</span>
+                      <span className="text-slate-300">{selectedLead.source || 'landing_page'}</span>
+                    </div>
+                    {selectedLead.updatedAt && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Ultimo aggiornamento</span>
+                        <span className="text-slate-300">{formatDate(selectedLead.updatedAt)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Delete Button */}
+                <button
+                  onClick={() => {
+                    handleDeleteLead(selectedLead.id);
+                    setShowDetailPanel(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-600/20 text-red-400 rounded-xl hover:bg-red-600/30 transition-colors border border-red-600/30"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  Elimina Lead
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
