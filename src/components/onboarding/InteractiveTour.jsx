@@ -376,7 +376,7 @@ const Spotlight = ({ target, children, position = 'bottom' }) => {
 };
 
 // Componente Modal
-const TourModal = ({ children }) => {
+const TourModal = ({ children, onClose }) => {
   return createPortal(
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <motion.div
@@ -384,12 +384,14 @@ const TourModal = ({ children }) => {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        onClick={onClose}
       />
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
         className="relative z-10 w-full max-w-sm sm:max-w-md my-auto"
+        onClick={(e) => e.stopPropagation()}
       >
         {children}
       </motion.div>
@@ -509,8 +511,19 @@ export default function InteractiveTour({ role = 'admin', onComplete, onSkip }) 
     // Scroll elemento into view se necessario
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      // Se non trova l'elemento, salta automaticamente allo step successivo dopo un breve delay
+      const timer = setTimeout(() => {
+        if (currentStep < steps.length - 1) {
+          setCurrentStep(prev => prev + 1);
+        } else {
+          // Se è l'ultimo step e non trova l'elemento, disattiva il tour
+          setIsActive(false);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
     }
-  }, [currentStep, isModal, findElement, step?.selector, step?.fallbackSelector]);
+  }, [currentStep, isModal, findElement, step?.selector, step?.fallbackSelector, steps.length]);
   
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -579,7 +592,7 @@ export default function InteractiveTour({ role = 'admin', onComplete, onSkip }) 
   if (isModal) {
     return (
       <AnimatePresence>
-        <TourModal>
+        <TourModal onClose={handleSkip}>
           <div className="bg-slate-800/95 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="p-5 sm:p-6 text-center">
               <motion.div
@@ -629,7 +642,7 @@ export default function InteractiveTour({ role = 'admin', onComplete, onSkip }) 
   if (!targetElement) {
     // Se non trova l'elemento, salta allo step successivo
     return (
-      <TourModal>
+      <TourModal onClose={handleSkip}>
         <TourTooltip
           step={step}
           currentIndex={currentStep}

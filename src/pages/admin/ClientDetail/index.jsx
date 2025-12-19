@@ -8,7 +8,8 @@ import {
   Copy, Check, Plus, ZoomIn, CalendarDays, Eye, EyeOff, AlertTriangle,
   Activity, Image, CreditCard, Info, BarChart3, Clock, Tag, ClipboardList,
   Monitor, NotebookPen, CheckCircle, Link2, Loader2, Camera, Upload, TrendingUp,
-  ArrowLeftRight, Heart, Dumbbell, UtensilsCrossed, CalendarClock, XCircle, KeyRound
+  ArrowLeftRight, Heart, Dumbbell, UtensilsCrossed, CalendarClock, XCircle, KeyRound,
+  ArrowLeft
 } from 'lucide-react';
 
 // Firebase & Config
@@ -321,6 +322,15 @@ export default function ClientDetail({ role: propRole }) {
           <div className="space-y-6">
             {/* Header Section */}
             <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
+              {/* Back Button Mobile */}
+              <button
+                onClick={handleGoBack}
+                className="lg:hidden flex items-center gap-2 mb-4 text-slate-400 hover:text-white transition-colors"
+              >
+                <ArrowLeft size={18} />
+                <span className="text-sm font-medium">Torna ai clienti</span>
+              </button>
+              
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div className="space-y-2">
                   <p className="text-xs uppercase tracking-widest text-slate-500 font-medium">Profilo Cliente</p>
