@@ -123,57 +123,123 @@ export async function analyzeScreenshot(base64Image, options = {}) {
     contextPrompt += `\n\nINFORMAZIONI DA PDF ALLEGATO:\n${pdfContent}`;
   }
 
-  const systemPrompt = `Sei un esperto di landing pages e UI/UX design. Il tuo compito è REPLICARE LA STRUTTURA visiva dello screenshot, NON copiare il testo.
+  const systemPrompt = `Sei un ESPERTO SENIOR di UI/UX e landing page design. Il tuo compito è ANALIZZARE PRECISAMENTE la struttura visiva dello screenshot per REPLICARLA.
 
-FOCUS SULLA STRUTTURA - Analizza attentamente:
-1. LAYOUT: Come sono disposte le sezioni? Quante colonne? Come è organizzato lo spazio?
-2. BLOCCHI IMMAGINE: Dove ci sono immagini? Che dimensioni hanno? Sono a sinistra, destra, sfondo?
-3. PULSANTI: Quanti sono? Dove sono posizionati? Sono primari o secondari?
-4. SUDDIVISIONE TESTO: Come è organizzato? Titolo grande + sottotitolo? Liste? Paragrafi?
-5. ELEMENTI VISIVI: Badge, icone, card, separatori, statistiche?
+ANALISI DETTAGLIATA RICHIESTA:
 
-Per ogni sezione indica:
-- Tipo di blocco (hero, features, testimonials, pricing, cta, faq, gallery, stats, text)
-- Struttura interna (es: "immagine a sinistra 50%, testo a destra 50%")
-- Elementi presenti (badge sopra titolo? icone? immagini?)
-- Pulsanti con posizione e stile (primario/secondario)
+1. SEZIONI - Per OGNI sezione visibile identifica:
+   - Tipo: hero, features, testimonials, pricing, faq, cta, stats, gallery, about, logos, comparison
+   - Layout ESATTO: centered, split-left (testo sx/img dx), split-right (img sx/testo dx), fullwidth
+   - Numero di colonne: 1, 2, 3, 4
+   - Allineamento testo: left, center, right
 
-NON copiare il testo letteralmente! Usa placeholder come:
-- "[Titolo principale attrattivo]" invece del testo reale
-- "[Sottotitolo che spiega il valore]" invece del testo reale
-- "[Nome Funzionalità]" per le features
-- "[Testo pulsante CTA]" per i bottoni
+2. IMMAGINI - Per ogni immagine:
+   - Posizione: left, right, center, background, none
+   - Dimensione relativa: small (25%), medium (50%), large (75%), full (100%)
+   - Tipo suggerito: foto-persona, foto-prodotto, illustrazione, icona, screenshot
 
-Rispondi in JSON valido con questa struttura:
+3. ELEMENTI UI:
+   - Badge/tag sopra titoli
+   - Numero di pulsanti CTA e loro stile (primary filled, secondary outline, ghost)
+   - Card con bordi/ombre
+   - Icone accanto al testo
+   - Liste con checkmark
+   - Statistiche/numeri
+
+4. SPACING E PROPORZIONI:
+   - Padding generale: tight, normal, spacious
+   - Gap tra elementi: small, medium, large
+
+5. COLORI (estrai i 3-4 colori dominanti in HEX):
+   - Primario (accento/CTA)
+   - Secondario (hover/accent2)
+   - Background principale
+   - Background card/sezioni
+   - Testo principale e secondario
+
+IMPORTANTE: Non copiare testo! Usa placeholder descrittivi.
+
+Rispondi SOLO con JSON valido:
 {
   "sections": [
-    { 
+    {
       "type": "hero",
-      "layout": "split-left|split-right|centered|fullscreen",
+      "layout": "split-left|split-right|centered|fullwidth",
+      "columns": 1,
+      "textAlign": "left|center|right",
       "hasImage": true,
-      "imagePosition": "left|right|background|none",
+      "imagePosition": "left|right|center|background|none",
+      "imageSize": "small|medium|large|full",
+      "imageSuggestedType": "foto-persona|foto-prodotto|illustrazione",
       "hasBadge": true,
-      "title": "[Titolo principale attrattivo]",
-      "subtitle": "[Sottotitolo persuasivo]",
-      "ctas": [{"label": "[Testo CTA Primario]", "style": "primary"}, {"label": "[Testo Secondario]", "style": "secondary"}]
+      "badgeText": "[Testo badge]",
+      "title": "[Titolo principale accattivante]",
+      "subtitle": "[Sottotitolo descrittivo]",
+      "ctas": [
+        {"label": "[Testo CTA primario]", "style": "primary"},
+        {"label": "[Testo CTA secondario]", "style": "secondary"}
+      ],
+      "padding": "tight|normal|spacious"
     },
     {
       "type": "features",
-      "layout": "grid-3|grid-4|list|alternating",
+      "layout": "grid|list|alternating",
+      "columns": 3,
       "hasIcons": true,
       "hasImages": false,
-      "title": "[Titolo sezione]",
+      "hasCards": true,
+      "sectionTitle": "[Titolo sezione]",
       "features": [
-        {"icon": "💪", "title": "[Nome Feature]", "description": "[Breve descrizione]"}
+        {"icon": "emoji", "title": "[Feature 1]", "description": "[Descrizione breve]"},
+        {"icon": "emoji", "title": "[Feature 2]", "description": "[Descrizione breve]"},
+        {"icon": "emoji", "title": "[Feature 3]", "description": "[Descrizione breve]"}
+      ]
+    },
+    {
+      "type": "stats",
+      "layout": "row|grid",
+      "columns": 4,
+      "stats": [
+        {"value": "XXX+", "label": "[Etichetta]"},
+        {"value": "XX%", "label": "[Etichetta]"}
+      ]
+    },
+    {
+      "type": "testimonials",
+      "layout": "grid|carousel|single",
+      "columns": 3,
+      "hasPhoto": true,
+      "hasRating": true,
+      "testimonials": [
+        {"text": "[Recensione placeholder]", "name": "[Nome]", "role": "[Ruolo/Dettaglio]"}
+      ]
+    },
+    {
+      "type": "pricing",
+      "layout": "cards",
+      "columns": 3,
+      "hasHighlighted": true,
+      "pricing": [
+        {"name": "[Piano]", "price": "XX", "period": "/mese", "features": ["[feat1]", "[feat2]"], "highlighted": false, "ctaLabel": "[CTA]"}
       ]
     }
   ],
-  "colors": ["#colore1", "#colore2", "#colore3"],
-  "overallLayout": "descrizione del layout generale",
-  "style": "minimal|corporate|bold|elegant|playful",
-  "imageSlots": [
-    {"section": 0, "position": "right", "suggestedType": "foto persona|prodotto|illustrazione|icona"}
-  ]
+  "colors": {
+    "primary": "#hex",
+    "secondary": "#hex", 
+    "background": "#hex",
+    "cardBackground": "#hex",
+    "textPrimary": "#hex",
+    "textSecondary": "#hex"
+  },
+  "typography": {
+    "headingStyle": "bold|extrabold|black",
+    "bodySize": "small|medium|large"
+  },
+  "spacing": "tight|normal|spacious",
+  "style": "minimal|corporate|bold|elegant|playful|dark|light",
+  "borderRadius": "none|small|medium|large|full",
+  "hasShadows": true
 }`;
 
   try {

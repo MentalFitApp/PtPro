@@ -1,17 +1,21 @@
 // src/components/admin/ClientHabitsOverview.jsx
 // Vista panoramica delle abitudini del cliente per Admin/Coach
-import React, { useMemo } from 'react';
-import { Droplets, Moon, Footprints, Dumbbell, Apple, TrendingUp, Check, X, Flame, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Droplets, Moon, Footprints, Dumbbell, Apple, Target, Star, TrendingUp, Check, X, Flame, ChevronLeft, ChevronRight, Settings, Edit3, Save } from 'lucide-react';
 import { UnifiedCard, CardHeaderSimple, CardContent } from '../ui/UnifiedCard';
+import { 
+  DEFAULT_HABITS, 
+  DEFAULT_WEEKLY_WORKOUT, 
+  getWeekStart, 
+  calculateWeeklyWorkouts,
+  getFullHabitsConfig,
+  updateWeeklyWorkoutTarget
+} from '../../services/habitSettingsService';
 
-// Stessa struttura habits del client HabitTracker
-const HABITS_CONFIG = [
-  { id: 'water', label: 'Acqua', icon: Droplets, color: 'blue', target: 8 },
-  { id: 'sleep', label: 'Sonno', icon: Moon, color: 'indigo', target: 7 },
-  { id: 'steps', label: 'Passi', icon: Footprints, color: 'green', target: 10000 },
-  { id: 'workout', label: 'Workout', icon: Dumbbell, color: 'rose', target: 1 },
-  { id: 'healthy_meal', label: 'Pasti', icon: Apple, color: 'emerald', target: 3 },
-];
+// Mappa icone per rendering dinamico
+const ICON_MAP = {
+  Droplets, Moon, Footprints, Dumbbell, Apple, Target, Star
+};
 
 const colorClasses = {
   blue: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
@@ -19,16 +23,30 @@ const colorClasses = {
   green: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
   rose: { bg: 'bg-rose-500/20', text: 'text-rose-400', border: 'border-rose-500/30' },
   emerald: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+  purple: { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
 };
 
 /**
  * ClientHabitsOverview - Panoramica settimanale delle abitudini
- * @param {Object} client - Dati del cliente (deve avere .habits e .workoutLog)
+ * Con supporto per target personalizzati e obiettivi custom
+ * @param {Object} client - Dati del cliente (deve avere .habits, .workoutLog, .habitTargets, .customGoals, .weeklyWorkout)
  * @param {Function} onOpenCalendar - Callback per aprire il calendario workout
  */
 export default function ClientHabitsOverview({ client, onOpenCalendar }) {
   const habits = client?.habits || {};
   const workoutLog = client?.workoutLog || {};
+  const habitTargets = client?.habitTargets || {};
+  const customGoals = client?.customGoals || [];
+  const weeklyWorkout = client?.weeklyWorkout || { ...DEFAULT_WEEKLY_WORKOUT };
+  
+  const [showWorkoutSettings, setShowWorkoutSettings] = useState(false);
+  const [newWorkoutTarget, setNewWorkoutTarget] = useState(weeklyWorkout.target);
+  const [savingTarget, setSavingTarget] = useState(false);
+
+  // Ottieni configurazione completa abitudini (default + custom del cliente)
+  const HABITS_CONFIG = useMemo(() => {
+    return getFullHabitsConfig(habitTargets, customGoals);
+  }, [habitTargets, customGoals]);
 
   // Genera ultimi 7 giorni
   const last7Days = useMemo(() => {
@@ -64,6 +82,11 @@ export default function ClientHabitsOverview({ client, onOpenCalendar }) {
     if (value > 0) return 'partial';
     return 'none';
   };
+
+  // Calcola workout settimanale corrente
+  const weeklyWorkoutCurrent = useMemo(() => {
+    return calculateWeeklyWorkouts(habits, workoutLog);
+  }, [habits, workoutLog]);
 
   // Calcola statistiche generali
   const stats = useMemo(() => {
@@ -101,7 +124,22 @@ export default function ClientHabitsOverview({ client, onOpenCalendar }) {
       workoutDays,
       streak,
     };
-  }, [habits, workoutLog, last7Days]);
+  }, [habits, workoutLog, last7Days, HABITS_CONFIG]);
+
+  // Salva nuovo target workout
+  const handleSaveWorkoutTarget = async () => {
+    if (!client?.id || newWorkoutTarget < 1) return;
+    
+    setSavingTarget(true);
+    try {
+      await updateWeeklyWorkoutTarget(client.id, newWorkoutTarget);
+      setShowWorkoutSettings(false);
+      // Il componente padre dovrebbe ricaricare i dati
+    } catch (error) {
+      console.error('Errore salvataggio target:', error);
+    }
+    setSavingTarget(false);
+  };
 
   const StatusCell = ({ status }) => {
     if (status === 'completed') {
@@ -148,11 +186,82 @@ export default function ClientHabitsOverview({ client, onOpenCalendar }) {
         }
       />
       <CardContent>
+        {/* Weekly Workout Progress - Nuova sezione prominente */}
+        <div className="bg-gradient-to-r from-rose-500/10 to-orange-500/10 border border-rose-500/30 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Dumbbell className="text-rose-400" size={20} />
+              <span className="font-semibold text-slate-100">Obiettivo Allenamenti Settimanali</span>
+            </div>
+            <button
+              onClick={() => setShowWorkoutSettings(!showWorkoutSettings)}
+              className="flex items-center gap-1 text-xs px-2 py-1 bg-slate-700/50 text-slate-300 rounded hover:bg-slate-600/50 transition-colors"
+            >
+              <Settings size={12} />
+              Modifica
+            </button>
+          </div>
+          
+          {showWorkoutSettings ? (
+            <div className="bg-slate-800/50 rounded-lg p-3 space-y-3">
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-slate-300">Allenamenti/settimana:</label>
+                <select
+                  value={newWorkoutTarget}
+                  onChange={(e) => setNewWorkoutTarget(parseInt(e.target.value))}
+                  className="px-3 py-1.5 bg-slate-700 border border-slate-600 rounded text-slate-100 text-sm"
+                >
+                  {[1, 2, 3, 4, 5, 6, 7].map(n => (
+                    <option key={n} value={n}>{n} {n === 1 ? 'allenamento' : 'allenamenti'}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleSaveWorkoutTarget}
+                  disabled={savingTarget}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-600 text-white rounded text-sm transition-colors"
+                >
+                  <Save size={14} />
+                  {savingTarget ? 'Salvo...' : 'Salva'}
+                </button>
+              </div>
+              <p className="text-xs text-slate-500">
+                Questo obiettivo è visibile al cliente ma non può essere modificato da lui.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-slate-400">Progresso questa settimana</span>
+                <span className={`font-bold ${
+                  weeklyWorkoutCurrent >= weeklyWorkout.target ? 'text-emerald-400' : 'text-rose-400'
+                }`}>
+                  {weeklyWorkoutCurrent} / {weeklyWorkout.target}
+                </span>
+              </div>
+              <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-500 ${
+                    weeklyWorkoutCurrent >= weeklyWorkout.target 
+                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' 
+                      : 'bg-gradient-to-r from-rose-500 to-orange-400'
+                  }`}
+                  style={{ width: `${Math.min((weeklyWorkoutCurrent / weeklyWorkout.target) * 100, 100)}%` }}
+                />
+              </div>
+              {weeklyWorkoutCurrent >= weeklyWorkout.target && (
+                <div className="mt-2 text-center text-sm text-emerald-400 font-medium">
+                  ✓ Obiettivo settimanale raggiunto!
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
         {/* Summary Cards */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 text-center">
             <div className="text-2xl font-bold text-emerald-400">{stats.workoutDays}/7</div>
-            <div className="text-xs text-slate-400">Workout</div>
+            <div className="text-xs text-slate-400">Workout (7gg)</div>
           </div>
           <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-center cursor-pointer hover:bg-orange-500/20 transition-colors" onClick={onOpenCalendar}>
             <div className="text-2xl font-bold text-orange-400 flex items-center justify-center gap-1">
@@ -166,6 +275,29 @@ export default function ClientHabitsOverview({ client, onOpenCalendar }) {
             <div className="text-xs text-slate-400">Aderenza</div>
           </div>
         </div>
+
+        {/* Custom Goals indicator */}
+        {customGoals.length > 0 && (
+          <div className="mb-4 px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-purple-400">
+              <Star size={14} />
+              <span>Questo cliente ha {customGoals.length} obiettivo/i personale/i</span>
+            </div>
+          </div>
+        )}
+
+        {/* Personalized Targets indicator */}
+        {Object.keys(habitTargets).length > 0 && (
+          <div className="mb-4 px-3 py-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-blue-400">
+              <Edit3 size={14} />
+              <span>Target personalizzati: {Object.entries(habitTargets).map(([k, v]) => {
+                const habit = DEFAULT_HABITS.find(h => h.id === k);
+                return habit ? `${habit.label}: ${v}` : null;
+              }).filter(Boolean).join(', ')}</span>
+            </div>
+          </div>
+        )}
 
         {/* Habit Matrix */}
         <div className="overflow-x-auto">
@@ -183,8 +315,8 @@ export default function ClientHabitsOverview({ client, onOpenCalendar }) {
             </thead>
             <tbody>
               {HABITS_CONFIG.map(habit => {
-                const colors = colorClasses[habit.color];
-                const Icon = habit.icon;
+                const colors = colorClasses[habit.color] || colorClasses.purple;
+                const Icon = ICON_MAP[habit.icon] || Target;
                 
                 return (
                   <tr key={habit.id} className="border-t border-slate-800">
@@ -193,7 +325,17 @@ export default function ClientHabitsOverview({ client, onOpenCalendar }) {
                         <div className={`p-1.5 rounded-md ${colors.bg}`}>
                           <Icon size={14} className={colors.text} />
                         </div>
-                        <span className="text-sm text-slate-300">{habit.label}</span>
+                        <div className="flex flex-col">
+                          <span className="text-sm text-slate-300 flex items-center gap-1">
+                            {habit.label}
+                            {habit.isCustom && (
+                              <Star size={10} className="text-purple-400" />
+                            )}
+                          </span>
+                          <span className="text-[10px] text-slate-500">
+                            {habit.target} {habit.unit}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     {last7Days.map(day => {

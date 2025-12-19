@@ -5,7 +5,7 @@ import { doc, setDoc, onSnapshot, deleteDoc, serverTimestamp } from 'firebase/fi
 import { db, toDate } from '../../firebase';
 import { getTenantSubcollection } from '../../config/tenant';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, Calendar, Clock, X, Check, Trash2, Video } from 'lucide-react';
+import { Phone, Calendar, Clock, X, Check, Trash2, Video, ChevronDown } from 'lucide-react';
 import { notifyCallRequest } from '../../services/notificationService';
 import { useToast } from '../../contexts/ToastContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
@@ -419,4 +419,127 @@ export const CallRequestsBadge = ({ clientId }) => {
   );
 };
 
-export default { ScheduleCallModal, NextCallCard, RequestCallCard, CallRequestsBadge };
+// Componente COMPATTO che combina NextCall + RequestCall in una sola riga
+export const CallsCompactCard = ({ clientId, clientName }) => {
+  const [nextCall, setNextCall] = useState(null);
+  const [hasRequest, setHasRequest] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!clientId) return;
+
+    // Listener prossima chiamata
+    const callRef = doc(getTenantSubcollection(db, 'clients', clientId, 'calls'), 'next');
+    const unsubCall = onSnapshot(callRef, (snap) => {
+      setNextCall(snap.exists() ? { id: snap.id, ...snap.data() } : null);
+    });
+
+    // Listener richiesta
+    const requestRef = doc(getTenantSubcollection(db, 'clients', clientId, 'calls'), 'request');
+    const unsubRequest = onSnapshot(requestRef, (snap) => {
+      setHasRequest(snap.exists() && snap.data()?.status === 'pending');
+    });
+
+    return () => { unsubCall(); unsubRequest(); };
+  }, [clientId]);
+
+  const handleRequest = async () => {
+    setRequesting(true);
+    try {
+      const requestRef = doc(getTenantSubcollection(db, 'clients', clientId, 'calls'), 'request');
+      await setDoc(requestRef, {
+        requestedAt: serverTimestamp(),
+        clientName: clientName || 'Cliente',
+        status: 'pending'
+      });
+      try {
+        await notifyCallRequest(clientName || 'Cliente', clientId);
+      } catch (e) {}
+    } catch (err) {
+      toast.error('Errore nell\'invio');
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    try {
+      const requestRef = doc(getTenantSubcollection(db, 'clients', clientId, 'calls'), 'request');
+      await deleteDoc(requestRef);
+    } catch (err) {}
+  };
+
+  const callDate = nextCall ? toDate(nextCall.scheduledAt) : null;
+  const isPast = callDate && callDate < new Date();
+
+  return (
+    <div className="bg-slate-800/60 backdrop-blur-sm rounded-lg border border-slate-700/50">
+      {/* Header compatto cliccabile */}
+      <button 
+        onClick={() => setExpanded(!expanded)}
+        className="w-full p-2 flex items-center justify-between"
+      >
+        <div className="flex items-center gap-2">
+          <div className={`p-1.5 rounded-md ${nextCall ? 'bg-cyan-500/20' : 'bg-slate-700/50'}`}>
+            <Phone size={14} className={nextCall ? 'text-cyan-400' : 'text-slate-500'} />
+          </div>
+          <div className="text-left">
+            <span className="text-xs font-medium text-slate-200">
+              {nextCall && callDate ? (
+                <>
+                  Chiamata: {callDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                  {' '}<span className="text-slate-400">{callDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>
+                  {isPast && <span className="text-amber-400 ml-1">(passata)</span>}
+                </>
+              ) : (
+                <span className="text-slate-400">Nessuna chiamata programmata</span>
+              )}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {hasRequest && (
+            <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">Richiesta ✓</span>
+          )}
+          <ChevronDown size={14} className={`text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </div>
+      </button>
+
+      {/* Contenuto espanso */}
+      {expanded && (
+        <div className="px-2 pb-2 border-t border-slate-700/50 pt-2 space-y-2">
+          {/* Dettagli chiamata */}
+          {nextCall && callDate && (
+            <div className="text-xs text-slate-400 flex items-center gap-2 flex-wrap">
+              <span>{nextCall.duration} min</span>
+              <span>•</span>
+              <span>{nextCall.callType === 'video' ? 'Video' : 'Telefono'}</span>
+              {nextCall.notes && <span className="italic">"{nextCall.notes}"</span>}
+            </div>
+          )}
+          
+          {/* Azione richiesta */}
+          {hasRequest ? (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-emerald-400">Il coach ti contatterà presto</span>
+              <button onClick={handleCancel} className="text-[10px] text-rose-400 hover:text-rose-300">
+                Annulla
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={handleRequest}
+              disabled={requesting}
+              className="w-full py-1.5 bg-emerald-600/80 hover:bg-emerald-600 disabled:bg-slate-700 text-white rounded text-xs font-medium flex items-center justify-center gap-1"
+            >
+              {requesting ? 'Invio...' : <><Phone size={12} /> Richiedi chiamata</>}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default { ScheduleCallModal, NextCallCard, RequestCallCard, CallRequestsBadge, CallsCompactCard };

@@ -62,11 +62,63 @@ export function usePushNotifications() {
     checkSupport();
   }, []);
 
+  // Registra e ottieni il Service Worker attivo
+  const getServiceWorkerRegistration = async () => {
+    if (!('serviceWorker' in navigator)) {
+      throw new Error('Service Worker non supportato');
+    }
+    
+    // Cerca una registration esistente
+    let registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+    
+    if (!registration) {
+      // Registra il service worker se non esiste
+      console.log('[Push] Registrazione Service Worker...');
+      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    }
+    
+    // Aspetta che il SW sia attivo
+    if (registration.installing) {
+      console.log('[Push] Service Worker in installazione...');
+      await new Promise((resolve) => {
+        registration.installing.addEventListener('statechange', (e) => {
+          if (e.target.state === 'activated') {
+            resolve();
+          }
+        });
+      });
+    } else if (registration.waiting) {
+      console.log('[Push] Service Worker in attesa...');
+      await new Promise((resolve) => {
+        registration.waiting.addEventListener('statechange', (e) => {
+          if (e.target.state === 'activated') {
+            resolve();
+          }
+        });
+      });
+    }
+    
+    // Assicurati che ci sia un SW attivo
+    if (!registration.active) {
+      await navigator.serviceWorker.ready;
+      registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+    }
+    
+    console.log('[Push] Service Worker attivo:', registration.active?.state);
+    return registration;
+  };
+
   // Ottieni o aggiorna token FCM
   const getOrRefreshToken = useCallback(async () => {
     try {
+      // Prima assicurati che il Service Worker sia registrato e attivo
+      const swRegistration = await getServiceWorkerRegistration();
+      
       const messaging = getMessaging();
-      const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
+      const currentToken = await getToken(messaging, { 
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: swRegistration 
+      });
       
       if (currentToken) {
         setToken(currentToken);
