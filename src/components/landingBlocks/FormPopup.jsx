@@ -187,37 +187,37 @@ const FormPopup = ({
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-        onClick={handleClose}
-      >
+      {isOpen && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          onClick={(e) => e.stopPropagation()}
-          className="bg-slate-800 border border-white/10 rounded-2xl p-8 max-w-md w-full relative shadow-2xl"
+          key="form-popup-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={handleClose}
         >
-          {/* Close button */}
-          <button
-            onClick={handleClose}
-            className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-slate-800 border border-white/10 rounded-2xl p-8 max-w-md w-full relative shadow-2xl"
           >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+            {/* Close button */}
+            <button
+              onClick={handleClose}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
 
-          {/* Success state */}
-          {isSubmitted ? (
-            <motion.div
+            {/* Success state */}
+            {isSubmitted ? (
+              <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="text-center py-8"
@@ -381,7 +381,7 @@ const FormPopup = ({
             </>
           )}
         </motion.div>
-      </motion.div>
+      )}
     </AnimatePresence>
   );
 };
