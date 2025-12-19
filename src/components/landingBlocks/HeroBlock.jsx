@@ -53,6 +53,12 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
     splitImageScale = 100,
     splitImageX = 0,
     splitImageY = 0,
+    // Centered image settings
+    showCenteredImage = false,
+    centeredImage = '',
+    centeredImagePosition = 'above-title',
+    centeredImageWidth = 60,
+    centeredImageStyle = 'rounded',
     // Text style settings
     titleColor = '#ffffff',
     subtitleColor = '#cbd5e1',
@@ -482,18 +488,69 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
               {badgeText}
             </motion.span>
           )}
+          
+          {/* Immagine centrata - sopra il titolo */}
+          {showCenteredImage && centeredImage && centeredImagePosition === 'above-title' && (
+            <motion.img
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+              src={centeredImage}
+              alt="Hero"
+              className={`mb-6 md:mb-8 shadow-2xl ${
+                centeredImageStyle === 'rounded' ? 'rounded-2xl' : 
+                centeredImageStyle === 'circle' ? 'rounded-full' : ''
+              }`}
+              style={{ width: `${centeredImageWidth}%`, maxWidth: '100%' }}
+            />
+          )}
+          
           <h1 
             className="font-bold mb-4 md:mb-6 text-center"
             style={{ ...titleResponsiveStyle, color: titleColor }}
           >
             {renderTitle()}
           </h1>
+          
+          {/* Immagine centrata - tra titolo e sottotitolo */}
+          {showCenteredImage && centeredImage && centeredImagePosition === 'between-title-subtitle' && (
+            <motion.img
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              src={centeredImage}
+              alt="Hero"
+              className={`mb-6 md:mb-8 shadow-2xl ${
+                centeredImageStyle === 'rounded' ? 'rounded-2xl' : 
+                centeredImageStyle === 'circle' ? 'rounded-full' : ''
+              }`}
+              style={{ width: `${centeredImageWidth}%`, maxWidth: '100%' }}
+            />
+          )}
+          
           <p 
             className="mb-6 md:mb-8 max-w-2xl text-center"
             style={{ ...subtitleResponsiveStyle, color: subtitleColor }}
           >
             {subtitle}
           </p>
+          
+          {/* Immagine centrata - sotto il sottotitolo */}
+          {showCenteredImage && centeredImage && centeredImagePosition === 'below-subtitle' && (
+            <motion.img
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              src={centeredImage}
+              alt="Hero"
+              className={`mb-6 md:mb-8 shadow-2xl ${
+                centeredImageStyle === 'rounded' ? 'rounded-2xl' : 
+                centeredImageStyle === 'circle' ? 'rounded-full' : ''
+              }`}
+              style={{ width: `${centeredImageWidth}%`, maxWidth: '100%' }}
+            />
+          )}
+          
           <div className="flex flex-wrap justify-center gap-3 md:gap-4">
             <motion.a
               href={getCtaHref()}

@@ -4,6 +4,36 @@ import { DEFAULT_BLOCKS } from '../../services/landingPageService';
 import MediaUploader from '../../components/landing/MediaUploader';
 import FormPopupSettings from '../../components/landing/FormPopupSettings';
 
+// Componenti esterni per evitare re-render e perdita di focus
+const Section = memo(({ title, id, isExpanded, onToggle, children }) => (
+  <div className="border-b border-slate-700">
+    <button
+      onClick={() => onToggle(id)}
+      className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-700/50 transition-colors"
+    >
+      <span className="text-sm font-medium text-white">{title}</span>
+      {isExpanded ? (
+        <ChevronUp className="w-4 h-4 text-slate-400" />
+      ) : (
+        <ChevronDown className="w-4 h-4 text-slate-400" />
+      )}
+    </button>
+    {isExpanded && (
+      <div className="px-4 pb-4 space-y-4">
+        {children}
+      </div>
+    )}
+  </div>
+));
+
+const FieldGroup = memo(({ label, children, hint }) => (
+  <div>
+    <label className="block text-sm text-slate-300 mb-1.5">{label}</label>
+    {children}
+    {hint && <p className="text-xs text-slate-500 mt-1">{hint}</p>}
+  </div>
+));
+
 /**
  * BlockSettingsPanel - Pannello per modificare le impostazioni di un blocco
  * Usa memo per evitare re-render inutili quando il parent cambia
@@ -215,37 +245,8 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
     }
   };
 
-  const Section = ({ title, id, children }) => {
-    const isExpanded = expandedSections.includes(id);
-    return (
-      <div className="border-b border-slate-700">
-        <button
-          onClick={() => toggleSection(id)}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-700/50 transition-colors"
-        >
-          <span className="text-sm font-medium text-white">{title}</span>
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-slate-400" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-slate-400" />
-          )}
-        </button>
-        {isExpanded && (
-          <div className="px-4 pb-4 space-y-4">
-            {children}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const FieldGroup = ({ label, children, hint }) => (
-    <div>
-      <label className="block text-sm text-slate-300 mb-1.5">{label}</label>
-      {children}
-      {hint && <p className="text-xs text-slate-500 mt-1">{hint}</p>}
-    </div>
-  );
+  // Helper per verificare se una sezione è espansa
+  const isSectionExpanded = useCallback((id) => expandedSections.includes(id), [expandedSections]);
 
   // Render settings based on block type
   const renderBlockSettings = () => {
@@ -253,7 +254,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
       case 'hero':
         return (
           <>
-            <Section title="Contenuto" id="content">
+            <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
               <FieldGroup label="Variante">
                 {renderField('variant', localSettings.variant, 'select', {
                   options: [
@@ -273,7 +274,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </FieldGroup>
             </Section>
 
-            <Section title="Pulsante Principale" id="cta">
+            <Section title="Pulsante Principale" id="cta" isExpanded={isSectionExpanded('cta')} onToggle={toggleSection}>
               <FieldGroup label="Testo">
                 {renderField('ctaText', localSettings.ctaText)}
               </FieldGroup>
@@ -347,7 +348,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               )}
             </Section>
 
-            <Section title="Sfondo" id="background">
+            <Section title="Sfondo" id="background" isExpanded={isSectionExpanded('background')} onToggle={toggleSection}>
               <FieldGroup label="Tipo Sfondo">
                 {renderField('backgroundType', localSettings.backgroundType, 'select', {
                   options: [
@@ -450,7 +451,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               )}
             </Section>
 
-            <Section title="Altezza" id="height">
+            <Section title="Altezza" id="height" isExpanded={isSectionExpanded('height')} onToggle={toggleSection}>
               <FieldGroup label="Altezza Minima">
                 {renderField('minHeight', localSettings.minHeight, 'select', {
                   options: [
@@ -463,9 +464,99 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </FieldGroup>
             </Section>
 
+            {/* Sezione Immagine Centrata - solo per variante Centered */}
+            {(localSettings.variant === 'centered' || !localSettings.variant) && (
+              <Section title="Immagine Centrata" id="centeredImage" isExpanded={isSectionExpanded('centeredImage')} onToggle={toggleSection}>
+                <FieldGroup label="Mostra Immagine">
+                  <button
+                    onClick={() => handleChange('showCenteredImage', !localSettings.showCenteredImage)}
+                    className={`relative w-12 h-6 rounded-full transition-colors ${
+                      localSettings.showCenteredImage ? 'bg-sky-500' : 'bg-slate-600'
+                    }`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                      localSettings.showCenteredImage ? 'left-7' : 'left-1'
+                    }`} />
+                  </button>
+                </FieldGroup>
+                {localSettings.showCenteredImage && (
+                  <>
+                    <FieldGroup label="Immagine">
+                      {localSettings.centeredImage ? (
+                        <div className="space-y-2">
+                          <div className="relative rounded-lg overflow-hidden aspect-video">
+                            <img 
+                              src={localSettings.centeredImage} 
+                              alt="Centered Image" 
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              onClick={() => handleChange('centeredImage', '')}
+                              className="absolute top-2 right-2 p-1 bg-red-500 rounded-full hover:bg-red-600"
+                            >
+                              <X className="w-4 h-4 text-white" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <MediaUploader
+                          accept="image"
+                          onUpload={(result) => handleChange('centeredImage', result?.url || result)}
+                          tenantId={tenantId}
+                          pageId={pageId}
+                          blockId={block.id}
+                          compact
+                        />
+                      )}
+                    </FieldGroup>
+                    <FieldGroup label="Posizione Immagine">
+                      {renderField('centeredImagePosition', localSettings.centeredImagePosition || 'above-title', 'select', {
+                        options: [
+                          { value: 'above-title', label: 'Sopra il titolo' },
+                          { value: 'between-title-subtitle', label: 'Tra titolo e sottotitolo' },
+                          { value: 'below-subtitle', label: 'Sotto il sottotitolo (prima dei pulsanti)' },
+                        ]
+                      })}
+                    </FieldGroup>
+                    <FieldGroup label="Larghezza Immagine" hint="In percentuale della larghezza disponibile">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="range"
+                          value={localSettings.centeredImageWidth || 60}
+                          onChange={(e) => handleChange('centeredImageWidth', parseInt(e.target.value))}
+                          min={20}
+                          max={100}
+                          step={5}
+                          className="flex-1"
+                        />
+                        <input
+                          type="number"
+                          value={localSettings.centeredImageWidth || 60}
+                          onChange={(e) => handleChange('centeredImageWidth', parseInt(e.target.value) || 60)}
+                          min={20}
+                          max={100}
+                          className="w-16 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm text-center"
+                        />
+                        <span className="text-slate-400 text-sm">%</span>
+                      </div>
+                    </FieldGroup>
+                    <FieldGroup label="Stile Immagine">
+                      {renderField('centeredImageStyle', localSettings.centeredImageStyle || 'rounded', 'select', {
+                        options: [
+                          { value: 'rounded', label: 'Arrotondata' },
+                          { value: 'circle', label: 'Cerchio' },
+                          { value: 'square', label: 'Quadrata' },
+                        ]
+                      })}
+                    </FieldGroup>
+                  </>
+                )}
+              </Section>
+            )}
+
             {/* Sezione Immagine Laterale - solo per variante Split */}
             {localSettings.variant === 'split' && (
-              <Section title="Immagine Laterale" id="splitImage">
+              <Section title="Immagine Laterale" id="splitImage" isExpanded={isSectionExpanded('splitImage')} onToggle={toggleSection}>
                 <FieldGroup label="Immagine">
                   {localSettings.splitImage ? (
                     <div className="space-y-2">
@@ -600,7 +691,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
             )}
 
             {/* Sezione Stile Testo */}
-            <Section title="Stile Testo" id="textStyle">
+            <Section title="Stile Testo" id="textStyle" isExpanded={isSectionExpanded('textStyle')} onToggle={toggleSection}>
               <FieldGroup label="Colore Titolo">
                 <div className="flex gap-2">
                   <input
@@ -722,7 +813,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
       case 'features':
         return (
           <>
-            <Section title="Contenuto" id="content">
+            <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
               <FieldGroup label="Variante">
                 {renderField('variant', localSettings.variant, 'select', {
                   options: [
@@ -749,7 +840,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </FieldGroup>
             </Section>
 
-            <Section title="Features" id="features">
+            <Section title="Features" id="features" isExpanded={isSectionExpanded('features')} onToggle={toggleSection}>
               {(localSettings.items || []).map((item, index) => (
                 <div key={index} className="p-3 bg-slate-700/50 rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
@@ -852,7 +943,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
       case 'testimonials':
         return (
           <>
-            <Section title="Contenuto" id="content">
+            <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
               <FieldGroup label="Variante">
                 {renderField('variant', localSettings.variant, 'select', {
                   options: [
@@ -877,7 +968,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </FieldGroup>
             </Section>
 
-            <Section title="Testimonianze" id="testimonials">
+            <Section title="Testimonianze" id="testimonials" isExpanded={isSectionExpanded('testimonials')} onToggle={toggleSection}>
               {(localSettings.items || []).map((item, index) => (
                 <div key={index} className="p-3 bg-slate-700/50 rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
@@ -935,7 +1026,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
       case 'pricing':
         return (
           <>
-            <Section title="Contenuto" id="content">
+            <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
               <FieldGroup label="Variante">
                 {renderField('variant', localSettings.variant, 'select', {
                   options: [
@@ -953,7 +1044,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </FieldGroup>
             </Section>
 
-            <Section title="Piani" id="pricing">
+            <Section title="Piani" id="pricing" isExpanded={isSectionExpanded('pricing')} onToggle={toggleSection}>
               {(localSettings.items || []).map((item, index) => (
                 <div key={index} className="p-3 bg-slate-700/50 rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
@@ -1038,7 +1129,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
       case 'form':
         return (
           <>
-            <Section title="Contenuto" id="content">
+            <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
               <FieldGroup label="Variante">
                 {renderField('variant', localSettings.variant, 'select', {
                   options: [
@@ -1060,7 +1151,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </FieldGroup>
             </Section>
 
-            <Section title="Azione Dopo Invio" id="afterSubmit">
+            <Section title="Azione Dopo Invio" id="afterSubmit" isExpanded={isSectionExpanded('afterSubmit')} onToggle={toggleSection}>
               <FieldGroup label="Azione">
                 {renderField('afterSubmitAction', localSettings.afterSubmitAction || 'message', 'select', {
                   options: [
@@ -1122,7 +1213,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               )}
             </Section>
 
-            <Section title="Campi" id="fields">
+            <Section title="Campi" id="fields" isExpanded={isSectionExpanded('fields')} onToggle={toggleSection}>
               {(localSettings.fields || []).map((field, index) => (
                 <div key={index} className="p-3 bg-slate-700/50 rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
@@ -1190,7 +1281,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </button>
             </Section>
 
-            <Section title="Gestione Lead" id="leads">
+            <Section title="Gestione Lead" id="leads" isExpanded={isSectionExpanded('leads')} onToggle={toggleSection}>
               <FieldGroup label="Salva in Leads">
                 <div className="flex items-center gap-3">
                   <input
@@ -1232,7 +1323,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               )}
             </Section>
 
-            <Section title="Privacy" id="privacy">
+            <Section title="Privacy" id="privacy" isExpanded={isSectionExpanded('privacy')} onToggle={toggleSection}>
               <FieldGroup label="Testo Privacy">
                 {renderField('privacyText', localSettings.privacyText, 'textarea', {
                   placeholder: 'Ho letto e accetto la privacy policy'
@@ -1250,7 +1341,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
       case 'faq':
         return (
           <>
-            <Section title="Contenuto" id="content">
+            <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
               <FieldGroup label="Variante">
                 {renderField('variant', localSettings.variant, 'select', {
                   options: [
@@ -1270,7 +1361,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </FieldGroup>
             </Section>
 
-            <Section title="Domande" id="faq">
+            <Section title="Domande" id="faq" isExpanded={isSectionExpanded('faq')} onToggle={toggleSection}>
               {(localSettings.items || []).map((item, index) => (
                 <div key={index} className="p-3 bg-slate-700/50 rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
@@ -1312,7 +1403,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
       case 'cta':
         return (
           <>
-            <Section title="Contenuto" id="content">
+            <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
               <FieldGroup label="Variante">
                 {renderField('variant', localSettings.variant, 'select', {
                   options: [
@@ -1332,7 +1423,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </FieldGroup>
             </Section>
 
-            <Section title="Pulsante Principale" id="mainCta">
+            <Section title="Pulsante Principale" id="mainCta" isExpanded={isSectionExpanded('mainCta')} onToggle={toggleSection}>
               <FieldGroup label="Testo Pulsante">
                 {renderField('ctaText', localSettings.ctaText)}
               </FieldGroup>
@@ -1395,7 +1486,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               )}
             </Section>
 
-            <Section title="Pulsante Secondario" id="secondaryCta">
+            <Section title="Pulsante Secondario" id="secondaryCta" isExpanded={isSectionExpanded('secondaryCta')} onToggle={toggleSection}>
               <FieldGroup label="Mostra Pulsante Secondario">
                 <div className="flex items-center justify-between">
                   {renderField('showSecondaryButton', localSettings.showSecondaryButton, 'boolean')}
@@ -1413,7 +1504,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               )}
             </Section>
 
-            <Section title="Statistiche" id="stats">
+            <Section title="Statistiche" id="stats" isExpanded={isSectionExpanded('stats')} onToggle={toggleSection}>
               <FieldGroup label="Mostra Statistiche">
                 <div className="flex items-center justify-between">
                   {renderField('showStats', localSettings.showStats, 'boolean')}
@@ -1469,7 +1560,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               )}
             </Section>
 
-            <Section title="Stile" id="style">
+            <Section title="Stile" id="style" isExpanded={isSectionExpanded('style')} onToggle={toggleSection}>
               <FieldGroup label="Gradiente Sfondo">
                 {renderField('backgroundGradient', localSettings.backgroundGradient, 'select', {
                   options: [
@@ -1490,7 +1581,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
 
       case 'countdown':
         return (
-          <Section title="Contenuto" id="content">
+          <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
             <FieldGroup label="Variante">
               {renderField('variant', localSettings.variant, 'select', {
                 options: [
@@ -1525,7 +1616,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
       case 'video':
         return (
           <>
-            <Section title="Contenuto" id="content">
+            <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
               <FieldGroup label="Variante">
                 {renderField('variant', localSettings.variant, 'select', {
                   options: [
@@ -1544,7 +1635,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </FieldGroup>
             </Section>
 
-            <Section title="Video" id="video">
+            <Section title="Video" id="video" isExpanded={isSectionExpanded('video')} onToggle={toggleSection}>
               <FieldGroup label="Sorgente Video">
                 {renderField('videoSource', localSettings.videoSource || 'url', 'select', {
                   options: [
@@ -1621,7 +1712,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </FieldGroup>
             </Section>
 
-            <Section title="Opzioni" id="options">
+            <Section title="Opzioni" id="options" isExpanded={isSectionExpanded('options')} onToggle={toggleSection}>
               <FieldGroup label="Autoplay">
                 <div className="flex items-center justify-between">
                   {renderField('autoplay', localSettings.autoplay, 'boolean')}
@@ -1648,7 +1739,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
 
       case 'text':
         return (
-          <Section title="Contenuto" id="content">
+          <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
             <FieldGroup label="Variante">
               {renderField('variant', localSettings.variant, 'select', {
                 options: [
@@ -1676,7 +1767,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
       case 'gallery':
         return (
           <>
-            <Section title="Contenuto" id="content">
+            <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
               <FieldGroup label="Variante">
                 {renderField('variant', localSettings.variant, 'select', {
                   options: [
@@ -1704,7 +1795,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </FieldGroup>
             </Section>
 
-            <Section title="Immagini" id="images">
+            <Section title="Immagini" id="images" isExpanded={isSectionExpanded('images')} onToggle={toggleSection}>
               {(localSettings.images || []).map((image, index) => (
                 <div key={index} className="p-3 bg-slate-700/50 rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
@@ -1767,7 +1858,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </button>
             </Section>
 
-            <Section title="Opzioni" id="options">
+            <Section title="Opzioni" id="options" isExpanded={isSectionExpanded('options')} onToggle={toggleSection}>
               <FieldGroup label="Gap">
                 {renderField('gap', localSettings.gap, 'select', {
                   options: [
@@ -1794,7 +1885,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
       case 'socialProof':
         return (
           <>
-            <Section title="Contenuto" id="content">
+            <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
               <FieldGroup label="Variante">
                 {renderField('variant', localSettings.variant, 'select', {
                   options: [
@@ -1809,7 +1900,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
               </FieldGroup>
             </Section>
 
-            <Section title="Elementi Social Proof" id="items">
+            <Section title="Elementi Social Proof" id="items" isExpanded={isSectionExpanded('items')} onToggle={toggleSection}>
               {(localSettings.items || []).map((item, index) => (
                 <div key={index} className="p-3 bg-slate-700/50 rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
@@ -1900,7 +1991,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
 
       case 'divider':
         return (
-          <Section title="Contenuto" id="content">
+          <Section title="Contenuto" id="content" isExpanded={isSectionExpanded('content')} onToggle={toggleSection}>
             <FieldGroup label="Variante">
               {renderField('variant', localSettings.variant, 'select', {
                 options: [
