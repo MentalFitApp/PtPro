@@ -193,11 +193,34 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
     const imageClass = imageStyleClasses[splitImageStyle] || imageStyleClasses.rounded;
     const isImageLeft = splitImagePosition === 'left';
 
+    // Helper per renderizzare FormPopup
+    const renderFormPopup = () => (
+      <FormPopup
+        isOpen={showFormPopup}
+        onClose={() => setShowFormPopup(false)}
+        settings={{
+          title: formPopupTitle,
+          subtitle: formPopupSubtitle,
+          fields: formPopupFields,
+          customFields: formPopupCustomFields,
+          submitText: formPopupSubmitText,
+          successMessage: formPopupSuccessMessage,
+          afterSubmit: formPopupAfterSubmit,
+          redirectUrl: formPopupRedirectUrl,
+          whatsappNumber: formPopupWhatsappNumber,
+        }}
+        pageId={pageId}
+        tenantId={tenantId}
+        isPreview={isPreview}
+      />
+    );
+
     return (
-      <section 
-        className="relative flex items-center overflow-hidden"
-        style={{ minHeight }}
-      >
+      <>
+        <section 
+          className="relative flex items-center overflow-hidden"
+          style={{ minHeight }}
+        >
         {/* Background */}
         {backgroundType === 'gradient' && (
           <div className={`absolute inset-0 bg-gradient-to-br ${backgroundGradient}`} />
@@ -279,37 +302,20 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
             </motion.div>
           </div>
         </div>
-
-        {/* Form Popup */}
-        <FormPopup
-          isOpen={showFormPopup}
-          onClose={() => setShowFormPopup(false)}
-          settings={{
-            title: formPopupTitle,
-            subtitle: formPopupSubtitle,
-            fields: formPopupFields,
-            customFields: formPopupCustomFields,
-            submitText: formPopupSubmitText,
-            successMessage: formPopupSuccessMessage,
-            afterSubmit: formPopupAfterSubmit,
-            redirectUrl: formPopupRedirectUrl,
-            whatsappNumber: formPopupWhatsappNumber,
-          }}
-          pageId={pageId}
-          tenantId={tenantId}
-          isPreview={isPreview}
-        />
       </section>
+      {renderFormPopup()}
+      </>
     );
   }
 
   // Render per variante Video
   if (variant === 'video' && backgroundVideo) {
     return (
-      <section 
-        className="relative flex items-center justify-center overflow-hidden"
-        style={{ minHeight }}
-      >
+      <>
+        <section 
+          className="relative flex items-center justify-center overflow-hidden"
+          style={{ minHeight }}
+        >
         {/* Video Background */}
         <video
           autoPlay
@@ -365,36 +371,36 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
             </div>
           </motion.div>
         </div>
-
-        {/* Form Popup */}
-        <FormPopup
-          isOpen={showFormPopup}
-          onClose={() => setShowFormPopup(false)}
-          settings={{
-            title: formPopupTitle,
-            subtitle: formPopupSubtitle,
-            fields: formPopupFields,
-            customFields: formPopupCustomFields,
-            submitText: formPopupSubmitText,
-            successMessage: formPopupSuccessMessage,
-            afterSubmit: formPopupAfterSubmit,
-            redirectUrl: formPopupRedirectUrl,
-            whatsappNumber: formPopupWhatsappNumber,
-          }}
-          pageId={pageId}
-          tenantId={tenantId}
-          isPreview={isPreview}
-        />
       </section>
+      <FormPopup
+        isOpen={showFormPopup}
+        onClose={() => setShowFormPopup(false)}
+        settings={{
+          title: formPopupTitle,
+          subtitle: formPopupSubtitle,
+          fields: formPopupFields,
+          customFields: formPopupCustomFields,
+          submitText: formPopupSubmitText,
+          successMessage: formPopupSuccessMessage,
+          afterSubmit: formPopupAfterSubmit,
+          redirectUrl: formPopupRedirectUrl,
+          whatsappNumber: formPopupWhatsappNumber,
+        }}
+        pageId={pageId}
+        tenantId={tenantId}
+        isPreview={isPreview}
+      />
+      </>
     );
   }
 
   // Render default: Centered
   return (
-    <section 
-      className="relative flex items-center justify-center overflow-hidden"
-      style={{ minHeight }}
-    >
+    <>
+      <section 
+        className="relative flex items-center justify-center overflow-hidden"
+        style={{ minHeight }}
+      >
       {/* Background */}
       {backgroundType === 'gradient' && (
         <div className={`absolute inset-0 bg-gradient-to-br ${backgroundGradient}`} />
@@ -484,27 +490,26 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
           <div className="w-1.5 h-3 bg-white/50 rounded-full" />
         </motion.div>
       </motion.div>
-
-      {/* Form Popup */}
-      <FormPopup
-        isOpen={showFormPopup}
-        onClose={() => setShowFormPopup(false)}
-        settings={{
-          title: formPopupTitle,
-          subtitle: formPopupSubtitle,
-          fields: formPopupFields,
-          customFields: formPopupCustomFields,
-          submitText: formPopupSubmitText,
-          successMessage: formPopupSuccessMessage,
-          afterSubmit: formPopupAfterSubmit,
-          redirectUrl: formPopupRedirectUrl,
-          whatsappNumber: formPopupWhatsappNumber,
-        }}
-        pageId={pageId}
-        tenantId={tenantId}
-        isPreview={isPreview}
-      />
     </section>
+    <FormPopup
+      isOpen={showFormPopup}
+      onClose={() => setShowFormPopup(false)}
+      settings={{
+        title: formPopupTitle,
+        subtitle: formPopupSubtitle,
+        fields: formPopupFields,
+        customFields: formPopupCustomFields,
+        submitText: formPopupSubmitText,
+        successMessage: formPopupSuccessMessage,
+        afterSubmit: formPopupAfterSubmit,
+        redirectUrl: formPopupRedirectUrl,
+        whatsappNumber: formPopupWhatsappNumber,
+      }}
+      pageId={pageId}
+      tenantId={tenantId}
+      isPreview={isPreview}
+    />
+    </>
   );
 };
 

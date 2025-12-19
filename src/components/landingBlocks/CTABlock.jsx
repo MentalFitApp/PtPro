@@ -160,45 +160,48 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
   // Variante Banner (full width, compatto)
   if (variant === 'banner') {
     return (
-      <section className={`bg-gradient-to-r ${backgroundGradient} py-8`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="text-xl md:text-2xl font-bold text-white">{title}</h3>
-              {subtitle && (
-                <p className="text-white/80 mt-1">{subtitle}</p>
-              )}
-            </div>
-            <div className="flex gap-4">
-              <motion.a
-                href={getCtaHref()}
-                onClick={handleCtaClick}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="px-6 py-3 bg-white text-slate-900 font-semibold rounded-xl hover:bg-white/90 transition-colors"
-              >
-                {ctaText}
-              </motion.a>
-              {showSecondaryButton && secondaryText && (
-                <a
-                  href={secondaryLink}
-                  onClick={(e) => scrollToElement(e, secondaryLink)}
-                  className="px-6 py-3 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-colors border border-white/30"
+      <>
+        <section className={`bg-gradient-to-r ${backgroundGradient} py-8`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <h3 className="text-xl md:text-2xl font-bold text-white">{title}</h3>
+                {subtitle && (
+                  <p className="text-white/80 mt-1">{subtitle}</p>
+                )}
+              </div>
+              <div className="flex gap-4">
+                <motion.a
+                  href={getCtaHref()}
+                  onClick={handleCtaClick}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-6 py-3 bg-white text-slate-900 font-semibold rounded-xl hover:bg-white/90 transition-colors"
                 >
-                  {secondaryText}
-                </a>
-              )}
+                  {ctaText}
+                </motion.a>
+                {showSecondaryButton && secondaryText && (
+                  <a
+                    href={secondaryLink}
+                    onClick={(e) => scrollToElement(e, secondaryLink)}
+                    className="px-6 py-3 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-colors border border-white/30"
+                  >
+                    {secondaryText}
+                  </a>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </section>
         {renderFormPopup()}
-      </section>
+      </>
     );
   }
 
   // Variante Split (contenuto a sinistra, stats/image a destra)
   if (variant === 'split') {
     return (
+      <>
       <section className={`bg-gradient-to-br ${backgroundGradient} py-20 relative overflow-hidden`}>
         {/* Decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -267,74 +270,77 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
             )}
           </div>
         </div>
-        {renderFormPopup()}
       </section>
+      {renderFormPopup()}
+    </>
     );
   }
 
   // Default: Centered
   return (
-    <section className={`bg-gradient-to-br ${backgroundGradient} py-20 relative overflow-hidden`}>
-      {/* Decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-      </div>
+    <>
+      <section className={`bg-gradient-to-br ${backgroundGradient} py-20 relative overflow-hidden`}>
+        {/* Decorative elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+        </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
-            {title}
-          </h2>
-          {subtitle && (
-            <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto">
-              {subtitle}
-            </p>
-          )}
-
-          {showStats && stats.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-8 mb-10">
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-3xl md:text-4xl font-bold text-white">
-                    {stat.value}
-                  </div>
-                  <div className="text-white/70 text-sm">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="flex flex-wrap justify-center gap-4">
-            <motion.a
-              href={getCtaHref()}
-              onClick={handleCtaClick}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="px-10 py-4 bg-white text-slate-900 font-semibold rounded-xl hover:bg-white/90 transition-all shadow-lg text-lg"
-            >
-              {ctaText}
-            </motion.a>
-            {showSecondaryButton && secondaryText && (
-              <a
-                href={secondaryLink}
-                onClick={(e) => scrollToElement(e, secondaryLink)}
-                className="px-10 py-4 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-colors border border-white/30 text-lg"
-              >
-                {secondaryText}
-              </a>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto">
+                {subtitle}
+              </p>
             )}
-          </div>
-        </motion.div>
-      </div>
+
+            {showStats && stats.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-8 mb-10">
+                {stats.map((stat, index) => (
+                  <div key={index} className="text-center">
+                    <div className="text-3xl md:text-4xl font-bold text-white">
+                      {stat.value}
+                    </div>
+                    <div className="text-white/70 text-sm">
+                      {stat.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-wrap justify-center gap-4">
+              <motion.a
+                href={getCtaHref()}
+                onClick={handleCtaClick}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-10 py-4 bg-white text-slate-900 font-semibold rounded-xl hover:bg-white/90 transition-all shadow-lg text-lg"
+              >
+                {ctaText}
+              </motion.a>
+              {showSecondaryButton && secondaryText && (
+                <a
+                  href={secondaryLink}
+                  onClick={(e) => scrollToElement(e, secondaryLink)}
+                  className="px-10 py-4 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-colors border border-white/30 text-lg"
+                >
+                  {secondaryText}
+                </a>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </section>
       {renderFormPopup()}
-    </section>
+    </>
   );
 };
 
