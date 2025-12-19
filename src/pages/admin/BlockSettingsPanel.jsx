@@ -494,6 +494,35 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                     />
                   )}
                 </FieldGroup>
+                <FieldGroup label="Dimensione Immagine Mobile">
+                  {renderField('splitImageMobileSize', localSettings.splitImageMobileSize || 'large', 'select', {
+                    options: [
+                      { value: 'small', label: 'Piccola' },
+                      { value: 'medium', label: 'Media' },
+                      { value: 'large', label: 'Grande' },
+                      { value: 'full', label: 'Piena larghezza' },
+                    ]
+                  })}
+                </FieldGroup>
+                <FieldGroup label="Adattamento Immagine">
+                  {renderField('splitImageFit', localSettings.splitImageFit || 'cover', 'select', {
+                    options: [
+                      { value: 'cover', label: 'Riempi (ritaglia)' },
+                      { value: 'contain', label: 'Adatta (mostra tutto)' },
+                      { value: 'fill', label: 'Allunga' },
+                    ]
+                  })}
+                </FieldGroup>
+                <FieldGroup label="Altezza Immagine">
+                  {renderField('splitImageHeight', localSettings.splitImageHeight || 'auto', 'select', {
+                    options: [
+                      { value: 'auto', label: 'Automatica' },
+                      { value: 'square', label: 'Quadrata' },
+                      { value: 'portrait', label: 'Verticale (3:4)' },
+                      { value: 'landscape', label: 'Orizzontale (16:9)' },
+                    ]
+                  })}
+                </FieldGroup>
                 <FieldGroup label="Stile Immagine">
                   {renderField('splitImageStyle', localSettings.splitImageStyle || 'rounded', 'select', {
                     options: [
@@ -509,6 +538,14 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                     options: [
                       { value: 'right', label: 'Destra' },
                       { value: 'left', label: 'Sinistra' },
+                    ]
+                  })}
+                </FieldGroup>
+                <FieldGroup label="Layout Mobile">
+                  {renderField('splitMobileLayout', localSettings.splitMobileLayout || 'image-first', 'select', {
+                    options: [
+                      { value: 'image-first', label: 'Immagine sopra' },
+                      { value: 'text-first', label: 'Testo sopra' },
                     ]
                   })}
                 </FieldGroup>

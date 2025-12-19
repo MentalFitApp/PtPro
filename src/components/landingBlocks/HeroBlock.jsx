@@ -47,6 +47,10 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
     splitImage = '',
     splitImageStyle = 'rounded',
     splitImagePosition = 'right',
+    splitImageMobileSize = 'large',
+    splitImageFit = 'cover',
+    splitImageHeight = 'auto',
+    splitMobileLayout = 'image-first',
     // Text style settings
     titleColor = '#ffffff',
     titleSize = 'default',
@@ -190,8 +194,32 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
       blob: 'rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%]',
     };
 
+    // Classi per dimensione mobile
+    const mobileSizeClasses = {
+      small: 'max-w-[200px] mx-auto',
+      medium: 'max-w-[300px] mx-auto',
+      large: 'max-w-[400px] mx-auto',
+      full: 'w-full',
+    };
+
+    // Classi per altezza immagine
+    const heightClasses = {
+      auto: '',
+      square: 'aspect-square',
+      portrait: 'aspect-[3/4]',
+      landscape: 'aspect-video',
+    };
+
+    // Classi per fit immagine
+    const fitClasses = {
+      cover: 'object-cover',
+      contain: 'object-contain',
+      fill: 'object-fill',
+    };
+
     const imageClass = imageStyleClasses[splitImageStyle] || imageStyleClasses.rounded;
     const isImageLeft = splitImagePosition === 'left';
+    const mobileImageFirst = splitMobileLayout === 'image-first';
 
     // Helper per renderizzare FormPopup
     const renderFormPopup = () => (
@@ -239,13 +267,13 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
         )}
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-          <div className={`grid lg:grid-cols-2 gap-8 lg:gap-12 items-center ${isImageLeft ? 'lg:grid-flow-col-dense' : ''}`}>
-            {/* Content - ordine diverso su mobile/desktop in base a posizione */}
+          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center`}>
+            {/* Content */}
             <motion.div
               initial={{ opacity: 0, x: isImageLeft ? 30 : -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
-              className={`flex flex-col ${alignmentClasses[textAlign]} order-2 lg:order-${isImageLeft ? '2' : '1'} px-2 sm:px-0`}
+              className={`flex flex-col ${alignmentClasses[textAlign]} ${mobileImageFirst ? 'order-2' : 'order-1'} lg:order-${isImageLeft ? '2' : '1'}`}
             >
               {showBadge && badgeText && (
                 <span className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-4 md:mb-6 w-fit">
@@ -256,16 +284,16 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
                 {renderTitle()}
               </h1>
               <p 
-                className="text-base md:text-lg lg:text-xl mb-6 md:mb-8 max-w-xl"
+                className="text-base md:text-lg lg:text-xl mb-6 md:mb-8 max-w-xl leading-relaxed"
                 style={{ color: subtitleColor }}
               >
                 {subtitle}
               </p>
-              <div className="flex flex-wrap gap-3 md:gap-4">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4">
                 <a
                   href={getCtaHref()}
                   onClick={handleCtaClick}
-                  className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300 transform hover:-translate-y-0.5 text-sm md:text-base"
+                  className="px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-sky-500 to-cyan-400 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-sky-500/30 transition-all duration-300 transform hover:-translate-y-0.5 text-sm md:text-base text-center"
                 >
                   {ctaText}
                 </a>
@@ -273,7 +301,7 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
                   <a
                     href={secondaryCtaLink}
                     onClick={(e) => scrollToElement(e, secondaryCtaLink)}
-                    className="px-6 md:px-8 py-3 md:py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 text-sm md:text-base"
+                    className="px-6 md:px-8 py-3 md:py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 text-sm md:text-base text-center"
                   >
                     {secondaryCtaText}
                   </a>
@@ -286,13 +314,13 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
               initial={{ opacity: 0, x: isImageLeft ? -30 : 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className={`relative order-1 lg:order-${isImageLeft ? '1' : '2'}`}
+              className={`relative ${mobileImageFirst ? 'order-1' : 'order-2'} lg:order-${isImageLeft ? '1' : '2'} ${mobileSizeClasses[splitImageMobileSize]} lg:max-w-none lg:mx-0`}
             >
               {splitImage ? (
                 <img 
                   src={splitImage} 
                   alt="Hero" 
-                  className={`w-full shadow-2xl ${imageClass} object-cover`}
+                  className={`w-full shadow-2xl ${imageClass} ${fitClasses[splitImageFit]} ${heightClasses[splitImageHeight]}`}
                 />
               ) : (
                 <div className={`aspect-square bg-gradient-to-br from-sky-500/20 to-cyan-500/20 ${imageClass} flex items-center justify-center border border-white/10`}>
