@@ -69,7 +69,7 @@ export default function useClientsState(propRole) {
 
   // === HELPER FUNCTIONS ===
   const getClientPath = useCallback((clientId) => 
-    isCoach ? `/coach/client/${clientId}` : `/client/${clientId}`, 
+    isCoach ? `/coach/client/${clientId}` : `/admin/client/${clientId}`, 
   [isCoach]);
 
   const showNotification = useCallback((message, type = 'error') => {

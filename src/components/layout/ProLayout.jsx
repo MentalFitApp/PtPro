@@ -287,7 +287,7 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
 };
 
 // === DESKTOP HEADER ===
-const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSettings, onNavigateProfile, onNavigateBilling, onLogout, isSidebarCollapsed, availableWorkspaces = [], currentWorkspaceId, onSwitchWorkspace }) => {
+const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSettings, onNavigateProfile, onNavigateBilling, onLogout, isSidebarCollapsed, availableWorkspaces = [], currentWorkspaceId, onSwitchWorkspace, role = 'admin' }) => {
   const user = auth.currentUser;
   const navigate = useNavigate();
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Utente';
@@ -354,7 +354,7 @@ const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSetti
       <div className="flex items-center gap-3">
         {/* ThemeToggle rimosso - dark mode forzata */}
         
-        <NotificationBell />
+        <NotificationBell role={role} />
 
         <div className="relative">
           <button 
@@ -641,7 +641,8 @@ export const ProLayout = () => {
   // Determina il ruolo basandosi sul path
   const getRole = () => {
     if (location.pathname.startsWith('/coach')) return 'coach';
-    if (location.pathname.startsWith('/client')) return 'client';
+    // /client/ (con slash) per le rotte client, NON /clients (lista admin)
+    if (location.pathname.startsWith('/client/')) return 'client';
     if (location.pathname.startsWith('/collaboratore')) return 'collaboratore';
     return 'admin';
   };
@@ -840,6 +841,7 @@ export const ProLayout = () => {
             availableWorkspaces={availableWorkspaces}
             currentWorkspaceId={currentWorkspaceId}
             onSwitchWorkspace={handleSwitchWorkspace}
+            role={role}
           />
         </div>
       )}

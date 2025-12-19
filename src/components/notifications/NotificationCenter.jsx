@@ -8,7 +8,7 @@ import { AnimatePresence, motion } from 'framer-motion';
  * Centro Notifiche Automatiche
  * Mostra alert per scadenze, check-in mancanti, ecc.
  */
-export default function NotificationCenter() {
+export default function NotificationCenter({ role = 'admin' }) {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [showPanel, setShowPanel] = useState(false);
@@ -99,9 +99,14 @@ export default function NotificationCenter() {
     }
   };
 
+  // Helper per costruire il percorso client basato sul ruolo
+  const getClientPath = (clientId) => {
+    return role === 'coach' ? `/coach/client/${clientId}` : `/admin/client/${clientId}`;
+  };
+
   const handleAlertClick = (alert) => {
     if (alert.clientId) {
-      navigate(`/client/${alert.clientId}`);
+      navigate(getClientPath(alert.clientId));
       setShowPanel(false);
     }
   };

@@ -653,7 +653,7 @@ export default function CoachDashboardNew() {
                     .map((activity, idx) => (
                     <div 
                       key={idx}
-                      onClick={() => navigate(`/client/${activity.clientId}?tab=check`)}
+                      onClick={() => navigate(`/coach/client/${activity.clientId}?tab=check`)}
                       className="flex items-center justify-between p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -693,7 +693,7 @@ export default function CoachDashboardNew() {
                     .map((activity, idx) => (
                     <div 
                       key={idx}
-                      onClick={() => navigate(`/client/${activity.clientId}?tab=anamnesi`)}
+                      onClick={() => navigate(`/coach/client/${activity.clientId}?tab=anamnesi`)}
                       className="flex items-center justify-between p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -738,7 +738,7 @@ export default function CoachDashboardNew() {
                   .map((activity, idx) => (
                   <div 
                     key={idx}
-                    onClick={() => navigate(`/client/${activity.clientId}?tab=check`)}
+                    onClick={() => navigate(`/coach/client/${activity.clientId}?tab=check`)}
                     className="flex items-center justify-between p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -777,7 +777,7 @@ export default function CoachDashboardNew() {
                   .map((activity, idx) => (
                   <div 
                     key={idx}
-                    onClick={() => navigate(`/client/${activity.clientId}?tab=anamnesi`)}
+                    onClick={() => navigate(`/coach/client/${activity.clientId}?tab=anamnesi`)}
                     className="flex items-center justify-between p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -822,7 +822,7 @@ export default function CoachDashboardNew() {
                   return (
                     <div 
                       key={client.id}
-                      onClick={() => navigate(`/client/${client.id}`)}
+                      onClick={() => navigate(`/coach/client/${client.id}`)}
                       className="flex items-center justify-between p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -870,7 +870,7 @@ export default function CoachDashboardNew() {
                     return (
                       <div 
                         key={client.id}
-                        onClick={() => navigate(`/client/${client.id}`)}
+                        onClick={() => navigate(`/coach/client/${client.id}`)}
                         className="flex items-center justify-between p-2 bg-slate-700/30 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
                       >
                         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -932,7 +932,7 @@ export default function CoachDashboardNew() {
                     .map((activity, idx) => (
                       <div
                         key={idx}
-                        onClick={() => navigate(`/client/${activity.clientId}?tab=${
+                        onClick={() => navigate(`/coach/client/${activity.clientId}?tab=${
                           activity.type === 'new_client' ? 'info' :
                           activity.type === 'new_check' ? 'check' : 'anamnesi'
                         }`)}

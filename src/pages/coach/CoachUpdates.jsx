@@ -51,7 +51,7 @@ const ActivityItem = ({ item, navigate, variants }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -10 }}
       transition={{ duration: 0.3 }}
-      onClick={() => navigate(`/client/${item.clientId}?tab=${tabMap[item.type]}`)}
+      onClick={() => navigate(`/coach/client/${item.clientId}?tab=${tabMap[item.type]}`)}
       className="w-full flex items-start gap-4 p-3 rounded-lg bg-slate-500/5 hover:bg-slate-500/10 transition-colors text-left"
     >
       <div className="mt-1 flex-shrink-0">{icons[item.type]}</div>

@@ -15,7 +15,14 @@ function toDate(x) {
 }
 
 // --- 2. COMPONENTE COLONNA CON STILI AGGIORNATI ---
-const UpdateColumn = ({ title, icon, items, navigate, tab, onDismiss }) => (
+const UpdateColumn = ({ title, icon, items, navigate, tab, onDismiss, role }) => {
+  // Determina il prefisso route basato sul ruolo
+  const getClientPath = (clientId) => {
+    if (role === 'coach') return `/coach/client/${clientId}`;
+    return `/admin/client/${clientId}`;
+  };
+  
+  return (
   <motion.div 
     variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } }}
     className="bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-4 flex-1 min-w-[280px]"
@@ -37,7 +44,7 @@ const UpdateColumn = ({ title, icon, items, navigate, tab, onDismiss }) => (
             >
               <button
                 className="flex-1 text-left"
-                onClick={() => navigate(`/client/${item.clientId}?tab=${tab}`)}
+                onClick={() => navigate(`${getClientPath(item.clientId)}?tab=${tab}`)}
               >
                 <p className="font-medium text-sm text-slate-200 group-hover:text-rose-400 transition-colors">{item.clientName}</p>
                 <p className="text-xs text-slate-400">
@@ -60,8 +67,9 @@ const UpdateColumn = ({ title, icon, items, navigate, tab, onDismiss }) => (
     </div>
   </motion.div>
 );
+};
 
-export default function Updates() {
+export default function Updates({ role: propRole }) {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [newChecks, setNewChecks] = useState([]);
@@ -71,6 +79,9 @@ export default function Updates() {
     const saved = sessionStorage.getItem('dismissedUpdates');
     return saved ? JSON.parse(saved) : [];
   });
+  
+  // Determina il ruolo
+  const role = propRole || sessionStorage.getItem('app_role') || 'admin';
 
   useEffect(() => {
     // Salva gli ID archiviati nel sessionStorage ogni volta che cambiano
@@ -163,9 +174,9 @@ export default function Updates() {
         initial="hidden"
         animate="visible"
       >
-        <UpdateColumn title="Nuovi Clienti" icon={<UserPlus className="text-rose-400" />} items={filteredNewClients} navigate={navigate} tab="anamnesi" onDismiss={handleDismiss} />
-        <UpdateColumn title="Nuovi Check" icon={<CheckSquare className="text-emerald-400" />} items={filteredNewChecks} navigate={navigate} tab="checks" onDismiss={handleDismiss} />
-        <UpdateColumn title="Nuove Anamnesi" icon={<FileText className="text-amber-400" />} items={filteredNewAnamnesis} navigate={navigate} tab="anamnesi" onDismiss={handleDismiss} />
+        <UpdateColumn title="Nuovi Clienti" icon={<UserPlus className="text-rose-400" />} items={filteredNewClients} navigate={navigate} tab="anamnesi" onDismiss={handleDismiss} role={role} />
+        <UpdateColumn title="Nuovi Check" icon={<CheckSquare className="text-emerald-400" />} items={filteredNewChecks} navigate={navigate} tab="checks" onDismiss={handleDismiss} role={role} />
+        <UpdateColumn title="Nuove Anamnesi" icon={<FileText className="text-amber-400" />} items={filteredNewAnamnesis} navigate={navigate} tab="anamnesi" onDismiss={handleDismiss} role={role} />
       </motion.div>
     </div>
   );

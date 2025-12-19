@@ -8,7 +8,7 @@ import { useNotifications } from '../../hooks/useNotifications';
  * Componente campanella notifiche con dropdown
  * Mostra badge con contatore e lista notifiche al click
  */
-export default function NotificationBell({ className = '' }) {
+export default function NotificationBell({ className = '', role = 'admin' }) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -59,6 +59,12 @@ export default function NotificationBell({ className = '' }) {
     return date.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
   };
 
+  // Helper per costruire il percorso client basato sul ruolo
+  const getClientPath = (clientId, tab = null) => {
+    const basePath = role === 'coach' ? `/coach/client/${clientId}` : `/admin/client/${clientId}`;
+    return tab ? `${basePath}?tab=${tab}` : basePath;
+  };
+
   // Gestisce click su notifica
   const handleNotificationClick = (notification) => {
     // Segna come letta
@@ -73,12 +79,12 @@ export default function NotificationBell({ className = '' }) {
       case 'check_viewed':
       case 'new_check':
         if (data?.clientId) {
-          navigate(`/client/${data.clientId}?tab=check`);
+          navigate(getClientPath(data.clientId, 'check'));
         }
         break;
       case 'new_workout':
         if (data?.clientId) {
-          navigate(`/client/${data.clientId}?tab=workout`);
+          navigate(getClientPath(data.clientId, 'workout'));
         } else {
           navigate('/client/dashboard');
         }

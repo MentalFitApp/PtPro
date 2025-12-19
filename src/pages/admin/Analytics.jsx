@@ -562,7 +562,7 @@ export default function Analytics() {
                     return (
                       <button
                         key={client.id}
-                        onClick={() => navigate(`/client/${client.id}?tab=payments`)}
+                        onClick={() => navigate(`/admin/client/${client.id}?tab=payments`)}
                         className="bg-slate-800/40 p-4 rounded-lg text-left hover:bg-slate-800/60 transition-colors border border-slate-700/50"
                       >
                         <p className="font-medium text-white">{client.name}</p>

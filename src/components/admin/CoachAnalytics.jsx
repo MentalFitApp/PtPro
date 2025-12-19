@@ -403,7 +403,7 @@ export default function CoachAnalytics() {
                   client={client}
                   type="noCheck"
                   daysAgo={client.daysAgo}
-                  onClick={() => navigate(`/client/${client.id}`)}
+                  onClick={() => navigate(`/admin/client/${client.id}`)}
                 />
               ))}
             </div>

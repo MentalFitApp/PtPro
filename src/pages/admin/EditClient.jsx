@@ -114,7 +114,7 @@ export default function EditClient() {
       };
       await updateDoc(clientRef, updatedData);
       showNotification('Cliente aggiornato con successo!', 'success');
-      navigate(`/client/${clientId}`);
+      navigate(`/admin/client/${clientId}`);
     } catch (error) {
       console.error("Errore nell'aggiornamento del cliente:", error.code, error.message);
       if (error.code === 'permission-denied') {
@@ -127,7 +127,7 @@ export default function EditClient() {
 
   const handleCancel = () => {
     reset();
-    navigate(`/client/${clientId}`);
+    navigate(`/admin/client/${clientId}`);
   };
 
   const inputStyle = "w-full p-3 bg-slate-800/40 border border-slate-700/50 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-white placeholder:text-slate-500";
