@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { DynamicBlock } from '../../components/landingBlocks';
+import { DynamicBlock, FormPopup } from '../../components/landingBlocks';
 import { X } from 'lucide-react';
 
 /**
@@ -18,6 +18,7 @@ export default function PublicLandingPage() {
   
   // Exit Intent
   const [showExitIntent, setShowExitIntent] = useState(false);
+  const [showExitIntentForm, setShowExitIntentForm] = useState(false);
   const [exitIntentShown, setExitIntentShown] = useState(false);
 
   useEffect(() => {
@@ -284,21 +285,63 @@ export default function PublicLandingPage() {
                 {page.settings.exitIntent.message || 'Non perdere questa occasione speciale!'}
               </p>
               {page.settings.exitIntent.ctaText && (
-                <a
-                  href={page.settings.exitIntent.ctaLink || '#form'}
+                <button
                   onClick={() => {
+                    const ctaAction = page.settings.exitIntent.ctaAction || 'scroll';
                     setShowExitIntent(false);
-                    trackConversion();
+                    
+                    if (ctaAction === 'form_popup') {
+                      // Apri il form popup
+                      setShowExitIntentForm(true);
+                    } else if (ctaAction === 'whatsapp' && page.settings.exitIntent.ctaWhatsappNumber) {
+                      const cleanNumber = page.settings.exitIntent.ctaWhatsappNumber.replace(/\D/g, '');
+                      const message = page.settings.exitIntent.ctaWhatsappMessage || '';
+                      window.open(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`, '_blank');
+                    } else if (ctaAction === 'redirect' && page.settings.exitIntent.ctaRedirectUrl) {
+                      window.location.href = page.settings.exitIntent.ctaRedirectUrl;
+                    } else {
+                      // Default: scroll to element
+                      const link = page.settings.exitIntent.ctaLink || '#form';
+                      if (link.startsWith('#')) {
+                        const element = document.querySelector(link);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }
+                      trackConversion();
+                    }
                   }}
                   className="inline-block px-6 py-3 bg-gradient-to-r from-sky-500 to-cyan-500 text-white font-semibold rounded-lg hover:from-sky-600 hover:to-cyan-600 transition-all"
                 >
                   {page.settings.exitIntent.ctaText}
-                </a>
+                </button>
               )}
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Exit Intent Form Popup */}
+      {page?.settings?.exitIntent?.ctaAction === 'form_popup' && (
+        <FormPopup
+          isOpen={showExitIntentForm}
+          onClose={() => setShowExitIntentForm(false)}
+          settings={{
+            title: page.settings.exitIntent.formPopupTitle || page.settings.exitIntent.title || 'Richiedi Informazioni',
+            subtitle: page.settings.exitIntent.formPopupSubtitle || page.settings.exitIntent.message || '',
+            fields: page.settings.exitIntent.formPopupFields || 'name,email,phone',
+            customFields: page.settings.exitIntent.formPopupCustomFields || [],
+            submitText: page.settings.exitIntent.formPopupSubmitText || page.settings.exitIntent.ctaText || 'Invia',
+            successMessage: page.settings.exitIntent.formPopupSuccessMessage || 'Grazie! Ti contatteremo presto.',
+            afterSubmit: page.settings.exitIntent.formPopupAfterSubmit || 'message',
+            redirectUrl: page.settings.exitIntent.formPopupRedirectUrl || '',
+            whatsappNumber: page.settings.exitIntent.formPopupWhatsappNumber || '',
+          }}
+          pageId={page?.id}
+          tenantId={tenantId}
+          isPreview={false}
+        />
+      )}
     </>
   );
 }

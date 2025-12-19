@@ -239,11 +239,23 @@ const LandingPageEditor = () => {
     }
   };
 
-  // Memoizza selectedBlock per evitare re-render del pannello settings
-  const selectedBlock = useMemo(() => 
-    blocks.find(b => b.id === selectedBlockId),
-    [blocks, selectedBlockId]
-  );
+  // Memoizza selectedBlock - usa solo l'ID per evitare re-render inutili
+  // Il blocco viene passato come settings separati
+  const selectedBlock = useMemo(() => {
+    if (!selectedBlockId) return null;
+    return blocks.find(b => b.id === selectedBlockId);
+  }, [selectedBlockId]); // Dipende solo da selectedBlockId, non da blocks
+  
+  // Riferimento aggiornato ai blocchi per l'update
+  const blocksRef = React.useRef(blocks);
+  blocksRef.current = blocks;
+  
+  // Settings del blocco selezionato - questo può cambiare
+  const selectedBlockSettings = useMemo(() => {
+    if (!selectedBlockId) return null;
+    const block = blocks.find(b => b.id === selectedBlockId);
+    return block?.settings || {};
+  }, [blocks, selectedBlockId]);
 
   // Callback memoizzato per update del blocco selezionato
   const handleSelectedBlockUpdate = useCallback((settings) => {
@@ -754,6 +766,25 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
   const [containerWidth, setContainerWidth] = useState(page?.settings?.design?.containerWidth || 'default');
   const [globalAnimations, setGlobalAnimations] = useState(page?.settings?.design?.globalAnimations ?? true);
   
+  // Exit Intent settings
+  const [exitIntentEnabled, setExitIntentEnabled] = useState(page?.settings?.exitIntent?.enabled || false);
+  const [exitIntentIcon, setExitIntentIcon] = useState(page?.settings?.exitIntent?.icon || '🎁');
+  const [exitIntentTitle, setExitIntentTitle] = useState(page?.settings?.exitIntent?.title || 'Aspetta!');
+  const [exitIntentMessage, setExitIntentMessage] = useState(page?.settings?.exitIntent?.message || 'Non perdere questa occasione speciale!');
+  const [exitIntentCtaText, setExitIntentCtaText] = useState(page?.settings?.exitIntent?.ctaText || 'Scopri di più');
+  const [exitIntentCtaAction, setExitIntentCtaAction] = useState(page?.settings?.exitIntent?.ctaAction || 'scroll');
+  const [exitIntentCtaLink, setExitIntentCtaLink] = useState(page?.settings?.exitIntent?.ctaLink || '#form');
+  const [exitIntentCtaRedirectUrl, setExitIntentCtaRedirectUrl] = useState(page?.settings?.exitIntent?.ctaRedirectUrl || '');
+  const [exitIntentCtaWhatsappNumber, setExitIntentCtaWhatsappNumber] = useState(page?.settings?.exitIntent?.ctaWhatsappNumber || '');
+  const [exitIntentCtaWhatsappMessage, setExitIntentCtaWhatsappMessage] = useState(page?.settings?.exitIntent?.ctaWhatsappMessage || '');
+  // Form popup settings per exit intent
+  const [exitIntentFormTitle, setExitIntentFormTitle] = useState(page?.settings?.exitIntent?.formPopupTitle || '');
+  const [exitIntentFormSubtitle, setExitIntentFormSubtitle] = useState(page?.settings?.exitIntent?.formPopupSubtitle || '');
+  const [exitIntentFormFields, setExitIntentFormFields] = useState(page?.settings?.exitIntent?.formPopupFields || 'name,email,phone');
+  const [exitIntentFormCustomFields, setExitIntentFormCustomFields] = useState(page?.settings?.exitIntent?.formPopupCustomFields || []);
+  const [exitIntentFormSubmitText, setExitIntentFormSubmitText] = useState(page?.settings?.exitIntent?.formPopupSubmitText || 'Invia');
+  const [exitIntentFormSuccessMessage, setExitIntentFormSuccessMessage] = useState(page?.settings?.exitIntent?.formPopupSuccessMessage || 'Grazie! Ti contatteremo presto.');
+  
   // Se la pagina ha già uno slug, considera già modificato manualmente
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!page?.slug);
   const [seoManuallyEdited, setSeoManuallyEdited] = useState(!!page?.settings?.seo?.title || !!page?.settings?.seo?.description);
@@ -876,6 +907,24 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
             containerWidth,
             globalAnimations,
           },
+          exitIntent: {
+            enabled: exitIntentEnabled,
+            icon: exitIntentIcon,
+            title: exitIntentTitle,
+            message: exitIntentMessage,
+            ctaText: exitIntentCtaText,
+            ctaAction: exitIntentCtaAction,
+            ctaLink: exitIntentCtaLink,
+            ctaRedirectUrl: exitIntentCtaRedirectUrl,
+            ctaWhatsappNumber: exitIntentCtaWhatsappNumber,
+            ctaWhatsappMessage: exitIntentCtaWhatsappMessage,
+            formPopupTitle: exitIntentFormTitle,
+            formPopupSubtitle: exitIntentFormSubtitle,
+            formPopupFields: exitIntentFormFields,
+            formPopupCustomFields: exitIntentFormCustomFields,
+            formPopupSubmitText: exitIntentFormSubmitText,
+            formPopupSuccessMessage: exitIntentFormSuccessMessage,
+          },
         },
       });
     } finally {
@@ -906,10 +955,11 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-700">
+        <div className="flex border-b border-slate-700 overflow-x-auto">
           {[
             { id: 'general', label: 'Generale', icon: '📝' },
             { id: 'design', label: 'Design', icon: '🎨' },
+            { id: 'exitIntent', label: 'Exit Intent', icon: '🚪' },
             { id: 'seo', label: 'SEO', icon: '🔍' },
             { id: 'tracking', label: 'Tracking', icon: '📊' },
           ].map(tab => (
@@ -1143,6 +1193,232 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
                   }`} />
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Tab: Exit Intent */}
+          {activeTab === 'exitIntent' && (
+            <div className="space-y-6">
+              <p className="text-sm text-slate-400">
+                Mostra un popup quando l'utente tenta di lasciare la pagina
+              </p>
+              
+              {/* Enable Toggle */}
+              <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
+                <div>
+                  <p className="text-sm text-white">Attiva Exit Intent</p>
+                  <p className="text-xs text-slate-400">Mostra popup quando il mouse esce dalla pagina</p>
+                </div>
+                <button
+                  onClick={() => setExitIntentEnabled(!exitIntentEnabled)}
+                  className={`w-12 h-6 rounded-full transition-colors ${
+                    exitIntentEnabled ? 'bg-sky-500' : 'bg-slate-600'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full bg-white transform transition-transform ${
+                    exitIntentEnabled ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+
+              {exitIntentEnabled && (
+                <>
+                  {/* Icon */}
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-2">Icona (emoji)</label>
+                    <input
+                      type="text"
+                      value={exitIntentIcon}
+                      onChange={(e) => setExitIntentIcon(e.target.value)}
+                      placeholder="🎁"
+                      className="w-24 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-2xl text-center focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                  </div>
+
+                  {/* Title */}
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">Titolo</label>
+                    <input
+                      type="text"
+                      value={exitIntentTitle}
+                      onChange={(e) => setExitIntentTitle(e.target.value)}
+                      placeholder="Aspetta!"
+                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                  </div>
+
+                  {/* Message */}
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">Messaggio</label>
+                    <textarea
+                      value={exitIntentMessage}
+                      onChange={(e) => setExitIntentMessage(e.target.value)}
+                      rows={2}
+                      placeholder="Non perdere questa occasione speciale!"
+                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                  </div>
+
+                  {/* CTA Text */}
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-1">Testo Pulsante</label>
+                    <input
+                      type="text"
+                      value={exitIntentCtaText}
+                      onChange={(e) => setExitIntentCtaText(e.target.value)}
+                      placeholder="Scopri di più"
+                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                  </div>
+
+                  {/* CTA Action */}
+                  <div>
+                    <label className="block text-sm text-slate-300 mb-2">Azione Pulsante</label>
+                    <select
+                      value={exitIntentCtaAction}
+                      onChange={(e) => setExitIntentCtaAction(e.target.value)}
+                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    >
+                      <option value="scroll">Scroll a sezione</option>
+                      <option value="redirect">Redirect URL</option>
+                      <option value="whatsapp">Apri WhatsApp</option>
+                      <option value="form_popup">Apri Form Popup</option>
+                    </select>
+                  </div>
+
+                  {/* Action-specific fields */}
+                  {exitIntentCtaAction === 'scroll' && (
+                    <div>
+                      <label className="block text-sm text-slate-300 mb-1">ID Sezione (es. #form)</label>
+                      <input
+                        type="text"
+                        value={exitIntentCtaLink}
+                        onChange={(e) => setExitIntentCtaLink(e.target.value)}
+                        placeholder="#form"
+                        className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      />
+                    </div>
+                  )}
+
+                  {exitIntentCtaAction === 'redirect' && (
+                    <div>
+                      <label className="block text-sm text-slate-300 mb-1">URL di destinazione</label>
+                      <input
+                        type="url"
+                        value={exitIntentCtaRedirectUrl}
+                        onChange={(e) => setExitIntentCtaRedirectUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      />
+                    </div>
+                  )}
+
+                  {exitIntentCtaAction === 'whatsapp' && (
+                    <>
+                      <div>
+                        <label className="block text-sm text-slate-300 mb-1">Numero WhatsApp</label>
+                        <input
+                          type="text"
+                          value={exitIntentCtaWhatsappNumber}
+                          onChange={(e) => setExitIntentCtaWhatsappNumber(e.target.value)}
+                          placeholder="+39 333 1234567"
+                          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-slate-300 mb-1">Messaggio predefinito</label>
+                        <input
+                          type="text"
+                          value={exitIntentCtaWhatsappMessage}
+                          onChange={(e) => setExitIntentCtaWhatsappMessage(e.target.value)}
+                          placeholder="Ciao! Vorrei maggiori informazioni..."
+                          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {exitIntentCtaAction === 'form_popup' && (
+                    <div className="space-y-4 p-4 bg-slate-700/30 rounded-lg border border-slate-600">
+                      <h4 className="text-sm font-medium text-white">Impostazioni Form Popup</h4>
+                      
+                      <div>
+                        <label className="block text-sm text-slate-300 mb-1">Titolo Form</label>
+                        <input
+                          type="text"
+                          value={exitIntentFormTitle}
+                          onChange={(e) => setExitIntentFormTitle(e.target.value)}
+                          placeholder={exitIntentTitle || 'Richiedi Informazioni'}
+                          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-slate-300 mb-1">Sottotitolo Form</label>
+                        <input
+                          type="text"
+                          value={exitIntentFormSubtitle}
+                          onChange={(e) => setExitIntentFormSubtitle(e.target.value)}
+                          placeholder="Compila il form per ricevere..."
+                          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-slate-300 mb-2">Campi del Form</label>
+                        <select
+                          value={exitIntentFormFields}
+                          onChange={(e) => setExitIntentFormFields(e.target.value)}
+                          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        >
+                          <option value="name,email">Nome + Email</option>
+                          <option value="name,email,phone">Nome + Email + Telefono</option>
+                          <option value="name,email,phone,message">Nome + Email + Telefono + Messaggio</option>
+                          <option value="custom">Personalizzati (usa preset CTA)</option>
+                        </select>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Per campi personalizzati, configura un blocco CTA con form_popup
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-slate-300 mb-1">Testo pulsante invio</label>
+                        <input
+                          type="text"
+                          value={exitIntentFormSubmitText}
+                          onChange={(e) => setExitIntentFormSubmitText(e.target.value)}
+                          placeholder="Invia"
+                          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-slate-300 mb-1">Messaggio di successo</label>
+                        <input
+                          type="text"
+                          value={exitIntentFormSuccessMessage}
+                          onChange={(e) => setExitIntentFormSuccessMessage(e.target.value)}
+                          placeholder="Grazie! Ti contatteremo presto."
+                          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Preview */}
+                  <div className="p-4 bg-slate-900/50 rounded-lg border border-slate-700">
+                    <p className="text-xs text-slate-400 mb-3">Anteprima</p>
+                    <div className="bg-slate-800 rounded-xl p-6 text-center max-w-xs mx-auto">
+                      <div className="text-4xl mb-3">{exitIntentIcon}</div>
+                      <h4 className="text-lg font-bold text-white mb-1">{exitIntentTitle || 'Aspetta!'}</h4>
+                      <p className="text-sm text-slate-300 mb-4">{exitIntentMessage || 'Non perdere questa occasione!'}</p>
+                      <button className="px-4 py-2 bg-gradient-to-r from-sky-500 to-cyan-500 text-white text-sm font-medium rounded-lg">
+                        {exitIntentCtaText || 'Scopri di più'}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

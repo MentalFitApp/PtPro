@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { X, Plus, Trash2, ChevronDown, ChevronUp, Upload, Video, Image } from 'lucide-react';
 import { DEFAULT_BLOCKS } from '../../services/landingPageService';
 import MediaUploader from '../../components/landing/MediaUploader';
@@ -6,13 +6,15 @@ import FormPopupSettings from '../../components/landing/FormPopupSettings';
 
 /**
  * BlockSettingsPanel - Pannello per modificare le impostazioni di un blocco
+ * Usa memo per evitare re-render inutili quando il parent cambia
  */
-const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
+const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId }) => {
   const [localSettings, setLocalSettings] = useState(block?.settings || {});
   const [expandedSections, setExpandedSections] = useState(['content', 'style']);
   const debounceRef = useRef(null);
   const blockIdRef = useRef(block?.id);
   const localSettingsRef = useRef(localSettings);
+  const isInitialMount = useRef(true);
   
   // Mantieni ref aggiornato
   useEffect(() => {
@@ -1790,7 +1792,13 @@ const BlockSettingsPanel = ({ block, onUpdate, onClose, tenantId, pageId }) => {
       </div>
     </div>
   );
-};
+// Comparatore personalizzato per memo - re-render solo se cambia l'ID del blocco
+}, (prevProps, nextProps) => {
+  // Return true se NON deve re-renderizzare
+  return prevProps.block?.id === nextProps.block?.id &&
+         prevProps.tenantId === nextProps.tenantId &&
+         prevProps.pageId === nextProps.pageId;
+});
 
-// Memoizza il componente per evitare re-render quando le props non cambiano
-export default React.memo(BlockSettingsPanel);
+// Export - già memoizzato nella definizione
+export default BlockSettingsPanel;
