@@ -784,12 +784,53 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
   const [exitIntentFormCustomFields, setExitIntentFormCustomFields] = useState(page?.settings?.exitIntent?.formPopupCustomFields || []);
   const [exitIntentFormSubmitText, setExitIntentFormSubmitText] = useState(page?.settings?.exitIntent?.formPopupSubmitText || 'Invia');
   const [exitIntentFormSuccessMessage, setExitIntentFormSuccessMessage] = useState(page?.settings?.exitIntent?.formPopupSuccessMessage || 'Grazie! Ti contatteremo presto.');
+  const [exitIntentFormAfterSubmit, setExitIntentFormAfterSubmit] = useState(page?.settings?.exitIntent?.formPopupAfterSubmit || 'message');
+  const [exitIntentFormRedirectUrl, setExitIntentFormRedirectUrl] = useState(page?.settings?.exitIntent?.formPopupRedirectUrl || '');
+  const [exitIntentFormWhatsappNumber, setExitIntentFormWhatsappNumber] = useState(page?.settings?.exitIntent?.formPopupWhatsappNumber || '');
+  // Preset disponibili
+  const [exitIntentPresets, setExitIntentPresets] = useState([]);
   
   // Se la pagina ha già uno slug, considera già modificato manualmente
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!page?.slug);
   const [seoManuallyEdited, setSeoManuallyEdited] = useState(!!page?.settings?.seo?.title || !!page?.settings?.seo?.description);
   const [activeTab, setActiveTab] = useState('general');
   const [saving, setSaving] = useState(false);
+
+  // Carica preset per Exit Intent
+  useEffect(() => {
+    const loadPresets = async () => {
+      if (!tenantId) return;
+      try {
+        const { collection, getDocs } = await import('firebase/firestore');
+        const { db } = await import('../../firebase');
+        const presetsRef = collection(db, 'tenants', tenantId, 'form_popup_presets');
+        const snapshot = await getDocs(presetsRef);
+        const tenantPresets = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setExitIntentPresets(tenantPresets);
+      } catch (err) {
+        console.error('Errore caricamento preset:', err);
+      }
+    };
+    loadPresets();
+  }, [tenantId]);
+
+  // Applica preset Exit Intent
+  const applyExitIntentPreset = (preset) => {
+    if (preset.config) {
+      setExitIntentFormTitle(preset.config.formPopupTitle || preset.name || '');
+      setExitIntentFormSubtitle(preset.config.formPopupSubtitle || '');
+      setExitIntentFormFields(preset.config.formPopupFields || 'name,email,phone');
+      setExitIntentFormCustomFields(preset.config.formPopupCustomFields || []);
+      setExitIntentFormSubmitText(preset.config.formPopupSubmitText || 'Invia');
+      setExitIntentFormSuccessMessage(preset.config.formPopupSuccessMessage || 'Grazie!');
+      setExitIntentFormAfterSubmit(preset.config.formPopupAfterSubmit || 'message');
+      setExitIntentFormRedirectUrl(preset.config.formPopupRedirectUrl || '');
+      setExitIntentFormWhatsappNumber(preset.config.formPopupWhatsappNumber || '');
+    }
+  };
 
   // Color scheme options
   const colorSchemes = [
@@ -924,6 +965,9 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
             formPopupCustomFields: exitIntentFormCustomFields,
             formPopupSubmitText: exitIntentFormSubmitText,
             formPopupSuccessMessage: exitIntentFormSuccessMessage,
+            formPopupAfterSubmit: exitIntentFormAfterSubmit,
+            formPopupRedirectUrl: exitIntentFormRedirectUrl,
+            formPopupWhatsappNumber: exitIntentFormWhatsappNumber,
           },
         },
       });
@@ -1340,7 +1384,26 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
 
                   {exitIntentCtaAction === 'form_popup' && (
                     <div className="space-y-4 p-4 bg-slate-700/30 rounded-lg border border-slate-600">
-                      <h4 className="text-sm font-medium text-white">Impostazioni Form Popup</h4>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-white">Impostazioni Form Popup</h4>
+                        
+                        {/* Preset selector */}
+                        {exitIntentPresets.length > 0 && (
+                          <select
+                            onChange={(e) => {
+                              const preset = exitIntentPresets.find(p => p.id === e.target.value);
+                              if (preset) applyExitIntentPreset(preset);
+                            }}
+                            className="px-3 py-1 bg-slate-600 border border-slate-500 rounded text-xs text-white"
+                            defaultValue=""
+                          >
+                            <option value="" disabled>📋 Carica Preset</option>
+                            {exitIntentPresets.map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
                       
                       <div>
                         <label className="block text-sm text-slate-300 mb-1">Titolo Form</label>
@@ -1374,12 +1437,76 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
                           <option value="name,email">Nome + Email</option>
                           <option value="name,email,phone">Nome + Email + Telefono</option>
                           <option value="name,email,phone,message">Nome + Email + Telefono + Messaggio</option>
-                          <option value="custom">Personalizzati (usa preset CTA)</option>
+                          <option value="custom">Personalizzati</option>
                         </select>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Per campi personalizzati, configura un blocco CTA con form_popup
-                        </p>
                       </div>
+
+                      {/* Campi personalizzati */}
+                      {exitIntentFormFields === 'custom' && (
+                        <div className="space-y-3 p-3 bg-slate-800/50 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-slate-400">Campi personalizzati</span>
+                            <button
+                              type="button"
+                              onClick={() => setExitIntentFormCustomFields([
+                                ...exitIntentFormCustomFields,
+                                { id: `field_${Date.now()}`, label: 'Nuovo campo', type: 'text', required: false }
+                              ])}
+                              className="text-xs text-sky-400 hover:text-sky-300"
+                            >
+                              + Aggiungi campo
+                            </button>
+                          </div>
+                          
+                          {exitIntentFormCustomFields.length === 0 ? (
+                            <p className="text-xs text-slate-500 text-center py-2">
+                              Nessun campo. Aggiungi campi o carica un preset.
+                            </p>
+                          ) : (
+                            exitIntentFormCustomFields.map((field, idx) => (
+                              <div key={field.id || idx} className="flex gap-2 items-start">
+                                <input
+                                  type="text"
+                                  value={field.label}
+                                  onChange={(e) => {
+                                    const updated = [...exitIntentFormCustomFields];
+                                    updated[idx] = { ...updated[idx], label: e.target.value };
+                                    setExitIntentFormCustomFields(updated);
+                                  }}
+                                  placeholder="Label"
+                                  className="flex-1 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-xs text-white"
+                                />
+                                <select
+                                  value={field.type}
+                                  onChange={(e) => {
+                                    const updated = [...exitIntentFormCustomFields];
+                                    updated[idx] = { ...updated[idx], type: e.target.value };
+                                    setExitIntentFormCustomFields(updated);
+                                  }}
+                                  className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-xs text-white"
+                                >
+                                  <option value="text">Testo</option>
+                                  <option value="email">Email</option>
+                                  <option value="tel">Telefono</option>
+                                  <option value="textarea">Area testo</option>
+                                  <option value="select">Select</option>
+                                  <option value="date">Data</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = exitIntentFormCustomFields.filter((_, i) => i !== idx);
+                                    setExitIntentFormCustomFields(updated);
+                                  }}
+                                  className="p-1 text-red-400 hover:text-red-300"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
 
                       <div>
                         <label className="block text-sm text-slate-300 mb-1">Testo pulsante invio</label>
@@ -1402,6 +1529,47 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
                           className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                         />
                       </div>
+
+                      {/* Dopo invio */}
+                      <div>
+                        <label className="block text-sm text-slate-300 mb-2">Dopo l'invio</label>
+                        <select
+                          value={exitIntentFormAfterSubmit}
+                          onChange={(e) => setExitIntentFormAfterSubmit(e.target.value)}
+                          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        >
+                          <option value="message">Mostra messaggio di successo</option>
+                          <option value="redirect">Redirect a URL</option>
+                          <option value="whatsapp">Apri WhatsApp</option>
+                          <option value="close">Chiudi popup</option>
+                        </select>
+                      </div>
+
+                      {exitIntentFormAfterSubmit === 'redirect' && (
+                        <div>
+                          <label className="block text-sm text-slate-300 mb-1">URL di redirect</label>
+                          <input
+                            type="url"
+                            value={exitIntentFormRedirectUrl}
+                            onChange={(e) => setExitIntentFormRedirectUrl(e.target.value)}
+                            placeholder="https://..."
+                            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                          />
+                        </div>
+                      )}
+
+                      {exitIntentFormAfterSubmit === 'whatsapp' && (
+                        <div>
+                          <label className="block text-sm text-slate-300 mb-1">Numero WhatsApp</label>
+                          <input
+                            type="text"
+                            value={exitIntentFormWhatsappNumber}
+                            onChange={(e) => setExitIntentFormWhatsappNumber(e.target.value)}
+                            placeholder="+39 333 1234567"
+                            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
 
