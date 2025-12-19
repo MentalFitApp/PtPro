@@ -1,8 +1,9 @@
 // src/pages/admin/DashboardPro.jsx
-// Dashboard Pro - Design moderno con menu profilo stile HubFit
+// Dashboard Pro - Design moderno ispirato a ClientDashboard v2.0
+// Layout ottimizzato per mobile con focus su metriche e azioni rapide
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { collection, onSnapshot, getDocs, doc, getDoc, query, orderBy, limit } from "firebase/firestore";
+import { useNavigate, Link } from "react-router-dom";
+import { collection, onSnapshot, getDocs, doc, getDoc, query, orderBy, limit, updateDoc, setDoc } from "firebase/firestore";
 import { auth, db, toDate } from "../../firebase";
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { signOut } from "firebase/auth";
@@ -19,10 +20,256 @@ import {
   Clock, AlertCircle, CheckCircle, Phone, ArrowUpRight,
   BarChart2, Activity, Target, Zap, Eye, EyeOff,
   Settings, CreditCard, Palette, FileText, ClipboardList,
-  X, ChevronDown, Edit3, ChevronLeft, RefreshCw, MessageCircle
+  X, ChevronDown, Edit3, ChevronLeft, RefreshCw, MessageCircle,
+  Sparkles, UserPlus, Dumbbell, Utensils, Home, LayoutDashboard,
+  Globe, BookOpen, Video, Image, Mail, Link as LinkIcon, Database, Shield,
+  Pencil, Check, GripVertical
 } from "lucide-react";
 
+// ============ AVAILABLE QUICK ACTIONS ============
+const AVAILABLE_ACTIONS = [
+  { id: 'analytics', label: 'Analytics', path: '/analytics', icon: BarChart2, color: 'purple' },
+  { id: 'settings', label: 'Impostazioni', path: '/admin/settings', icon: Settings, color: 'slate' },
+  { id: 'branding', label: 'Branding', path: '/admin/branding', icon: Palette, color: 'pink' },
+  { id: 'clients', label: 'Clienti', path: '/clients', icon: Users, color: 'blue' },
+  { id: 'new-client', label: 'Nuovo Cliente', path: '/new-client', icon: UserPlus, color: 'emerald' },
+  { id: 'calendar', label: 'Calendario', path: '/calendar', icon: Calendar, color: 'cyan' },
+  { id: 'calls', label: 'Chiamate', path: '/calls-calendar', icon: Phone, color: 'cyan' },
+  { id: 'chat', label: 'Chat', path: '/chat', icon: MessageCircle, color: 'purple' },
+  { id: 'exercises', label: 'Esercizi', path: '/exercises', icon: Dumbbell, color: 'blue' },
+  { id: 'foods', label: 'Alimenti', path: '/foods', icon: Utensils, color: 'green' },
+  { id: 'templates', label: 'Template', path: '/templates', icon: FileText, color: 'amber' },
+  { id: 'landing', label: 'Landing Pages', path: '/admin/landing-pages', icon: Globe, color: 'indigo' },
+  { id: 'community', label: 'Community', path: '/community', icon: Users, color: 'violet' },
+  { id: 'payments', label: 'Pagamenti', path: '/payments', icon: CreditCard, color: 'emerald' },
+  { id: 'media', label: 'Media', path: '/admin/media', icon: Image, color: 'rose' },
+  { id: 'invites', label: 'Inviti', path: '/admin/invites', icon: Mail, color: 'sky' },
+  { id: 'links', label: 'Link Utili', path: '/admin/links', icon: LinkIcon, color: 'teal' },
+];
+
+const DEFAULT_QUICK_ACTIONS = ['analytics', 'settings', 'branding'];
+
 // ============ COMPONENTI UI ============
+
+// Loading Skeleton migliorato stile ClientDashboard
+const LoadingSpinner = () => (
+  <div className="min-h-screen px-4 py-4 space-y-4">
+    <div className="h-12 w-48 bg-slate-700/50 rounded-lg animate-pulse" />
+    <div className="h-32 bg-slate-700/50 rounded-2xl animate-pulse" />
+    <div className="grid grid-cols-2 gap-3">
+      <div className="h-24 bg-slate-700/50 rounded-xl animate-pulse" />
+      <div className="h-24 bg-slate-700/50 rounded-xl animate-pulse" />
+    </div>
+    <div className="grid grid-cols-3 gap-3">
+      <div className="h-20 bg-slate-700/50 rounded-xl animate-pulse" />
+      <div className="h-20 bg-slate-700/50 rounded-xl animate-pulse" />
+      <div className="h-20 bg-slate-700/50 rounded-xl animate-pulse" />
+    </div>
+    <div className="h-40 bg-slate-700/50 rounded-xl animate-pulse" />
+  </div>
+);
+
+// Hero Stats Card - Card principale con metriche chiave (ispirato a HeroStreakCard)
+const HeroStatsCard = ({ revenue, totalClients, newClients, showRevenue, onToggleRevenue, periodLabel, isRenewals, onToggleType, renewalsRevenue, onClick }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="relative overflow-hidden rounded-2xl bg-slate-800/30 border border-slate-700/30 backdrop-blur-sm"
+  >
+    {/* Glow effect */}
+    <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl" />
+    <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl" />
+    
+    <div className="relative p-4 sm:p-5">
+      {/* Header con toggle */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className={`p-2 rounded-xl ${isRenewals ? 'bg-cyan-500/20' : 'bg-emerald-500/20'}`}>
+            {isRenewals ? <RefreshCw size={18} className="text-cyan-400" /> : <DollarSign size={18} className="text-emerald-400" />}
+          </div>
+          <span className="text-xs text-slate-400 font-medium">{periodLabel}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onToggleRevenue}
+            className="p-1.5 rounded-lg bg-slate-700/50 text-slate-400 hover:bg-slate-600/50 hover:text-white transition-colors"
+          >
+            {showRevenue ? <Eye size={14} /> : <EyeOff size={14} />}
+          </button>
+        </div>
+      </div>
+      
+      {/* Main Revenue Display con swipe indicator */}
+      <div 
+        className="flex items-center gap-2 cursor-pointer"
+        onClick={onClick}
+      >
+        <button 
+          onClick={(e) => { e.stopPropagation(); onToggleType(); }}
+          className="p-1 rounded-lg hover:bg-slate-700/50 text-slate-500 hover:text-white transition-colors"
+        >
+          <ChevronLeft size={18} />
+        </button>
+        
+        <div className="flex-1 text-center">
+          <motion.p 
+            key={isRenewals ? 'renewals' : 'revenue'}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`text-3xl sm:text-4xl font-bold mb-1 ${isRenewals ? 'text-cyan-400' : 'text-white'}`}
+          >
+            {showRevenue 
+              ? `€${(isRenewals ? renewalsRevenue : revenue).toLocaleString()}`
+              : '€ •••'
+            }
+          </motion.p>
+          <p className={`text-sm ${isRenewals ? 'text-cyan-400/70' : 'text-slate-400'}`}>
+            {isRenewals ? 'Rinnovi' : 'Incasso'}
+          </p>
+        </div>
+        
+        <button 
+          onClick={(e) => { e.stopPropagation(); onToggleType(); }}
+          className="p-1 rounded-lg hover:bg-slate-700/50 text-slate-500 hover:text-white transition-colors"
+        >
+          <ChevronRight size={18} />
+        </button>
+      </div>
+      
+      {/* Dots indicator */}
+      <div className="flex justify-center gap-1.5 mt-3">
+        <div className={`w-1.5 h-1.5 rounded-full transition-colors ${!isRenewals ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+        <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isRenewals ? 'bg-cyan-400' : 'bg-slate-600'}`} />
+      </div>
+      
+      {/* Bottom stats row */}
+      <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-700/50">
+        <div className="text-center">
+          <p className="text-xl font-bold text-white">{totalClients}</p>
+          <p className="text-[10px] text-slate-500">Clienti Attivi</p>
+        </div>
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-1">
+            <p className="text-xl font-bold text-emerald-400">+{newClients}</p>
+            <TrendingUp size={14} className="text-emerald-400" />
+          </div>
+          <p className="text-[10px] text-slate-500">Questo Mese</p>
+        </div>
+      </div>
+    </div>
+  </motion.div>
+);
+
+// Bottone azione primaria grande (stile ClientDashboard)
+const PrimaryActionButton = ({ to, onClick, icon: Icon, label, color, badge }) => {
+  const colorClasses = {
+    blue: 'from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-500/25',
+    green: 'from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-emerald-500/25',
+    purple: 'from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 shadow-purple-500/25',
+    cyan: 'from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 shadow-cyan-500/25',
+    amber: 'from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-amber-500/25',
+  };
+
+  const Wrapper = to ? Link : 'button';
+  const wrapperProps = to ? { to } : { onClick };
+
+  return (
+    <Wrapper {...wrapperProps}>
+      <motion.div
+        whileHover={{ scale: 1.03, y: -2 }}
+        whileTap={{ scale: 0.97 }}
+        className={`relative bg-gradient-to-br ${colorClasses[color]} rounded-xl p-3 sm:p-4 shadow-lg transition-all`}
+      >
+        {badge && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+            {badge}
+          </span>
+        )}
+        <div className="flex flex-col items-center gap-1.5 sm:gap-2">
+          <Icon size={24} className="text-white" />
+          <span className="text-[10px] sm:text-xs font-semibold text-white text-center leading-tight">{label}</span>
+        </div>
+      </motion.div>
+    </Wrapper>
+  );
+};
+
+// Alert compatto con pill badges (stile migliorato)
+const AlertPills = ({ metrics, callRequests, unreadChats, navigate, setActiveTab }) => {
+  const hasAlerts = metrics.expiredCount > 0 || metrics.expiringCount > 0 || callRequests.length > 0 || unreadChats.length > 0;
+  if (!hasAlerts) return null;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-wrap items-center gap-2 p-3 bg-slate-800/20 backdrop-blur-sm rounded-xl border border-slate-700/30"
+    >
+      <AlertCircle size={14} className="text-amber-400 flex-shrink-0" />
+      {metrics.expiredCount > 0 && (
+        <button 
+          onClick={() => navigate('/clients?filter=expired')}
+          className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400 text-xs font-medium hover:bg-rose-500/30 transition-colors"
+        >
+          {metrics.expiredCount} scaduti
+        </button>
+      )}
+      {metrics.expiringCount > 0 && (
+        <button 
+          onClick={() => navigate('/clients?filter=expiring')}
+          className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-medium hover:bg-amber-500/30 transition-colors"
+        >
+          {metrics.expiringCount} in scadenza
+        </button>
+      )}
+      {callRequests.length > 0 && (
+        <button 
+          onClick={() => navigate(`/admin/client/${callRequests[0]?.clientId}`)}
+          className="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-medium hover:bg-cyan-500/30 transition-colors"
+        >
+          📞 {callRequests.length} richieste
+        </button>
+      )}
+      {unreadChats.length > 0 && (
+        <button 
+          onClick={() => setActiveTab(TAB_TYPES.CHAT)}
+          className="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-400 text-xs font-medium hover:bg-purple-500/30 transition-colors"
+        >
+          💬 {unreadChats.length} messaggi
+        </button>
+      )}
+    </motion.div>
+  );
+};
+
+// Mini Stat Card per metriche secondarie
+const MiniStatCard = ({ value, label, icon: Icon, color = 'blue', onClick, trend }) => (
+  <motion.div
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    onClick={onClick}
+    className={`relative overflow-hidden rounded-xl bg-slate-800/20 backdrop-blur-sm border border-slate-700/30 p-3 ${onClick ? 'cursor-pointer' : ''}`}
+  >
+    <div className={`absolute inset-0 bg-gradient-to-br from-${color}-500/5 to-transparent`} />
+    <div className="relative flex items-center gap-3">
+      <div className={`p-2 rounded-lg bg-${color}-500/20 flex-shrink-0`}>
+        <Icon size={16} className={`text-${color}-400`} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1">
+          <p className={`text-lg font-bold text-${color === 'amber' ? 'amber' : 'white'}-${color === 'amber' ? '400' : ''}`}>
+            {value}
+          </p>
+          {trend && (
+            <span className="text-[10px] text-emerald-400">+{trend}</span>
+          )}
+        </div>
+        <p className="text-[10px] text-slate-500 truncate">{label}</p>
+      </div>
+      {onClick && <ChevronRight size={14} className="text-slate-600 flex-shrink-0" />}
+    </div>
+  </motion.div>
+);
 
 // Big Number - Per metriche principali
 const BigNumber = ({ value, label, icon: Icon, trend, trendValue, onClick, toggleIcon }) => (
@@ -69,6 +316,152 @@ const QuickAction = ({ icon: Icon, label, onClick, color = 'blue' }) => (
     <span className="text-xs text-slate-300 font-medium">{label}</span>
   </motion.button>
 );
+
+// Quick Actions Editor Modal
+const QuickActionsEditor = ({ isOpen, onClose, selectedActions, onSave }) => {
+  const [tempSelected, setTempSelected] = useState(selectedActions);
+
+  useEffect(() => {
+    setTempSelected(selectedActions);
+  }, [selectedActions, isOpen]);
+
+  const toggleAction = (actionId) => {
+    if (tempSelected.includes(actionId)) {
+      setTempSelected(tempSelected.filter(id => id !== actionId));
+    } else if (tempSelected.length < 3) {
+      setTempSelected([...tempSelected, actionId]);
+    }
+  };
+
+  const handleSave = () => {
+    onSave(tempSelected);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          onClick={e => e.stopPropagation()}
+          className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden"
+        >
+          {/* Header */}
+          <div className="p-4 border-b border-slate-700/50 flex items-center justify-between bg-slate-800/50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-amber-500/20">
+                <Zap size={18} className="text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Personalizza Azioni</h3>
+                <p className="text-xs text-slate-400">Seleziona fino a 3 azioni rapide</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Selected Actions Preview */}
+          <div className="p-4 bg-slate-800/30 border-b border-slate-700/30">
+            <p className="text-xs text-slate-400 mb-2">Selezionate ({tempSelected.length}/3):</p>
+            <div className="flex gap-2">
+              {tempSelected.length > 0 ? (
+                tempSelected.map(actionId => {
+                  const action = AVAILABLE_ACTIONS.find(a => a.id === actionId);
+                  if (!action) return null;
+                  return (
+                    <div
+                      key={action.id}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-${action.color}-500/20 border border-${action.color}-500/30`}
+                    >
+                      <action.icon size={14} className={`text-${action.color}-400`} />
+                      <span className="text-xs text-white">{action.label}</span>
+                      <button
+                        onClick={() => toggleAction(action.id)}
+                        className="ml-1 p-0.5 rounded hover:bg-slate-700/50"
+                      >
+                        <X size={12} className="text-slate-400" />
+                      </button>
+                    </div>
+                  );
+                })
+              ) : (
+                <span className="text-xs text-slate-500 italic">Nessuna azione selezionata</span>
+              )}
+            </div>
+          </div>
+
+          {/* Actions Grid */}
+          <div className="p-4 overflow-y-auto max-h-[50vh]">
+            <div className="grid grid-cols-2 gap-2">
+              {AVAILABLE_ACTIONS.map(action => {
+                const isSelected = tempSelected.includes(action.id);
+                const isDisabled = !isSelected && tempSelected.length >= 3;
+                
+                return (
+                  <motion.button
+                    key={action.id}
+                    whileHover={{ scale: isDisabled ? 1 : 1.02 }}
+                    whileTap={{ scale: isDisabled ? 1 : 0.98 }}
+                    onClick={() => !isDisabled && toggleAction(action.id)}
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                      isSelected
+                        ? `bg-${action.color}-500/20 border-${action.color}-500/50`
+                        : isDisabled
+                          ? 'bg-slate-800/20 border-slate-700/20 opacity-40 cursor-not-allowed'
+                          : 'bg-slate-800/30 border-slate-700/30 hover:bg-slate-700/30'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${isSelected ? `bg-${action.color}-500/30` : 'bg-slate-700/50'}`}>
+                      <action.icon size={16} className={isSelected ? `text-${action.color}-400` : 'text-slate-400'} />
+                    </div>
+                    <span className={`text-sm font-medium ${isSelected ? 'text-white' : 'text-slate-300'}`}>
+                      {action.label}
+                    </span>
+                    {isSelected && (
+                      <Check size={16} className={`ml-auto text-${action.color}-400`} />
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-slate-700/50 flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors text-sm font-medium"
+            >
+              Annulla
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={tempSelected.length === 0}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Salva
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
 
 // Timeline Item
 const TimelineItem = ({ icon: Icon, title, subtitle, time, color = 'slate', isLast, onClick }) => (
@@ -223,6 +616,39 @@ export default function DashboardPro() {
   const [revenueModalType, setRevenueModalType] = useState('incasso'); // 'incasso' | 'rinnovi'
   const [unreadChats, setUnreadChats] = useState([]);
   const [weeklyChecks, setWeeklyChecks] = useState(0);
+  
+  // Quick Actions personalizzabili (salvate per utente in Firestore)
+  const [quickActions, setQuickActions] = useState(DEFAULT_QUICK_ACTIONS);
+  const [showQuickActionsEditor, setShowQuickActionsEditor] = useState(false);
+  
+  // Carica quick actions dell'utente da Firestore
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    const userDocRef = getTenantDoc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userDocRef, (doc) => {
+      if (doc.exists() && doc.data().dashboardQuickActions) {
+        setQuickActions(doc.data().dashboardQuickActions);
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
+  
+  // Salva quick actions in Firestore per l'utente
+  const handleSaveQuickActions = async (actions) => {
+    setQuickActions(actions);
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    try {
+      const userDocRef = getTenantDoc(db, 'users', user.uid);
+      await setDoc(userDocRef, { dashboardQuickActions: actions }, { merge: true });
+    } catch (error) {
+      console.error('Errore salvataggio quick actions:', error);
+    }
+  };
   
   // Document title dinamico
   useDocumentTitle('Dashboard');
@@ -761,27 +1187,17 @@ export default function DashboardPro() {
   const handleLogout = () => signOut(auth).then(() => navigate('/login'));
 
   if (loading) {
-    return (
-      <div className="min-h-screen pb-20">
-        <div className="w-full px-3 sm:px-6 py-4 space-y-4 sm:space-y-6">
-          <div className="h-8 w-32 bg-slate-700/50 rounded-lg animate-pulse" />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
-          <SkeletonList count={4} />
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      <div className="w-full px-3 sm:px-6 py-4 space-y-4 sm:space-y-6">
-
-        {/* ============ SEARCH BAR ============ */}
+    <div className="min-h-screen pb-20 overflow-x-hidden">
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }}
+        className="w-full px-3 sm:px-4 lg:px-6 py-4 space-y-4"
+      >
+        {/* ============ SEARCH BAR MIGLIORATA ============ */}
         <div className="relative">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -789,61 +1205,106 @@ export default function DashboardPro() {
             placeholder="Cerca clienti..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 transition-colors"
+            className="w-full pl-11 pr-4 py-3 bg-slate-800/20 backdrop-blur-sm border border-slate-700/30 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all"
           />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         {/* ============ ALERTS COMPATTO ============ */}
-        {(metrics.expiredCount > 0 || metrics.expiringCount > 0 || callRequests.length > 0 || unreadChats.length > 0) && (
-          <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/50">
-            <span className="text-xs text-slate-400 mr-1">⚠️ Attenzione:</span>
-            {metrics.expiredCount > 0 && (
-              <button 
-                onClick={() => navigate('/clients?filter=expired')}
-                className="px-2 py-1 rounded-lg bg-rose-500/20 text-rose-400 text-xs font-medium hover:bg-rose-500/30 transition-colors"
-              >
-                {metrics.expiredCount} scaduti
-              </button>
-            )}
-            {metrics.expiringCount > 0 && (
-              <button 
-                onClick={() => navigate('/clients?filter=expiring')}
-                className="px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-medium hover:bg-amber-500/30 transition-colors"
-              >
-                {metrics.expiringCount} in scadenza
-              </button>
-            )}
-            {callRequests.length > 0 && (
-              <button 
-                onClick={() => navigate(`/admin/client/${callRequests[0]?.clientId}`)}
-                className="px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 text-xs font-medium hover:bg-cyan-500/30 transition-colors"
-              >
-                {callRequests.length} richieste chiamata
-              </button>
-            )}
-            {unreadChats.length > 0 && (
-              <button 
-                onClick={() => setActiveTab(TAB_TYPES.CHAT)}
-                className="px-2 py-1 rounded-lg bg-purple-500/20 text-purple-400 text-xs font-medium hover:bg-purple-500/30 transition-colors"
-              >
-                💬 {unreadChats.length} messaggi
-              </button>
-            )}
-          </div>
-        )}
+        <AlertPills 
+          metrics={metrics} 
+          callRequests={callRequests} 
+          unreadChats={unreadChats} 
+          navigate={navigate} 
+          setActiveTab={setActiveTab}
+        />
+
+        {/* ============ HERO STATS CARD (MOBILE) ============ */}
+        <div className="lg:hidden">
+          <HeroStatsCard
+            revenue={metrics.periodRevenue}
+            renewalsRevenue={metrics.renewalsRevenue}
+            totalClients={metrics.totalClients}
+            newClients={metrics.newClients}
+            showRevenue={showRevenue}
+            onToggleRevenue={() => setShowRevenue(!showRevenue)}
+            periodLabel={metrics.periodLabel}
+            isRenewals={showRenewalsOnly}
+            onToggleType={() => setShowRenewalsOnly(!showRenewalsOnly)}
+            onClick={() => {
+              setRevenueModalType(showRenewalsOnly ? 'rinnovi' : 'incasso');
+              setShowRevenueModal(true);
+            }}
+          />
+        </div>
+
+        {/* ============ QUICK ACTIONS - 4 AZIONI PRIMARIE ============ */}
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
+          <PrimaryActionButton 
+            to="/new-client" 
+            icon={UserPlus} 
+            label="Nuovo Cliente" 
+            color="green" 
+          />
+          <PrimaryActionButton 
+            to="/clients" 
+            icon={Users} 
+            label="Clienti" 
+            color="blue"
+            badge={metrics.expiredCount > 0 ? metrics.expiredCount : null}
+          />
+          <PrimaryActionButton 
+            to="/chat" 
+            icon={MessageCircle} 
+            label="Chat" 
+            color="purple"
+            badge={unreadChats.length > 0 ? unreadChats.length : null}
+          />
+          <PrimaryActionButton 
+            to="/calendar" 
+            icon={Calendar} 
+            label="Calendario" 
+            color="cyan" 
+          />
+        </div>
+
+        {/* ============ MINI STATS ROW (MOBILE) ============ */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:hidden">
+          <MiniStatCard
+            value={metrics.expiringCount}
+            label="In Scadenza"
+            icon={Clock}
+            color="amber"
+            onClick={() => navigate('/clients?filter=expiring')}
+          />
+          <MiniStatCard
+            value={upcomingCalls.length}
+            label="Chiamate Settimana"
+            icon={Phone}
+            color="cyan"
+            onClick={() => navigate('/calls-calendar')}
+          />
+        </div>
 
         {/* ============ MAIN GRID ============ */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           
           {/* LEFT COLUMN - Metrics & Content */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          <div className="lg:col-span-2 space-y-4">
             
-            {/* BIG METRICS */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
+            {/* BIG METRICS - SOLO DESKTOP */}
+            <div className="hidden lg:grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 overflow-hidden">
                 <div className="relative">
                   {/* Time Range Filter + Hide Toggle */}
-                  <div className="absolute top-2 right-2 z-10 flex gap-1">
+                  <div className="absolute top-3 right-3 z-10 flex gap-1">
                     {[
                       { key: TIME_RANGES.WEEK, label: 'S' },
                       { key: TIME_RANGES.MONTH, label: 'M' },
@@ -852,7 +1313,7 @@ export default function DashboardPro() {
                       <button
                         key={r.key}
                         onClick={(e) => { e.stopPropagation(); setRevenueTimeRange(r.key); }}
-                        className={`w-6 h-6 rounded-md text-[10px] font-bold transition-colors ${
+                        className={`w-7 h-7 rounded-lg text-xs font-bold transition-colors ${
                           revenueTimeRange === r.key
                             ? 'bg-emerald-500/30 text-emerald-400'
                             : 'bg-slate-700/50 text-slate-400 hover:bg-slate-600/50'
@@ -863,17 +1324,17 @@ export default function DashboardPro() {
                     ))}
                     <button
                       onClick={(e) => { e.stopPropagation(); setShowRevenue(!showRevenue); }}
-                      className="w-6 h-6 rounded-md bg-slate-700/50 text-slate-400 hover:bg-slate-600/50 flex items-center justify-center transition-colors"
+                      className="w-7 h-7 rounded-lg bg-slate-700/50 text-slate-400 hover:bg-slate-600/50 flex items-center justify-center transition-colors"
                     >
-                      {showRevenue ? <Eye size={10} /> : <EyeOff size={10} />}
+                      {showRevenue ? <Eye size={12} /> : <EyeOff size={12} />}
                     </button>
                   </div>
                   
                   {/* Revenue Card with Toggle */}
-                  <div className="p-4 sm:p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className={`p-2 rounded-xl ${showRenewalsOnly ? 'bg-cyan-500/20' : 'bg-emerald-500/20'}`}>
-                        {showRenewalsOnly ? <RefreshCw size={18} className="text-cyan-400" /> : <DollarSign size={18} className="text-emerald-400" />}
+                  <div className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`p-2.5 rounded-xl ${showRenewalsOnly ? 'bg-cyan-500/20' : 'bg-emerald-500/20'}`}>
+                        {showRenewalsOnly ? <RefreshCw size={20} className="text-cyan-400" /> : <DollarSign size={20} className="text-emerald-400" />}
                       </div>
                     </div>
                     
@@ -881,9 +1342,9 @@ export default function DashboardPro() {
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => setShowRenewalsOnly(!showRenewalsOnly)}
-                        className="p-1 rounded-lg hover:bg-slate-700/50 text-slate-500 hover:text-white transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-slate-700/50 text-slate-500 hover:text-white transition-colors"
                       >
-                        <ChevronLeft size={16} />
+                        <ChevronLeft size={18} />
                       </button>
                       
                       <div 
@@ -893,30 +1354,30 @@ export default function DashboardPro() {
                           setShowRevenueModal(true);
                         }}
                       >
-                        <p className="text-2xl sm:text-3xl font-bold text-white mb-1">
+                        <p className="text-3xl font-bold text-white mb-1">
                           {showRevenue 
                             ? `€${(showRenewalsOnly ? metrics.renewalsRevenue : metrics.periodRevenue).toLocaleString()}` 
                             : '€ •••'
                           }
                         </p>
-                        <p className={`text-xs sm:text-sm ${showRenewalsOnly ? 'text-cyan-400' : 'text-slate-400'}`}>
+                        <p className={`text-sm ${showRenewalsOnly ? 'text-cyan-400' : 'text-slate-400'}`}>
                           {showRenewalsOnly ? `Rinnovi ${metrics.periodLabel}` : `Incasso ${metrics.periodLabel}`}
-                          <span className="ml-1 opacity-60">• Dettagli</span>
+                          <span className="ml-1 opacity-60 text-xs">• Dettagli</span>
                         </p>
                       </div>
                       
                       <button 
                         onClick={() => setShowRenewalsOnly(!showRenewalsOnly)}
-                        className="p-1 rounded-lg hover:bg-slate-700/50 text-slate-500 hover:text-white transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-slate-700/50 text-slate-500 hover:text-white transition-colors"
                       >
-                        <ChevronRight size={16} />
+                        <ChevronRight size={18} />
                       </button>
                     </div>
                     
                     {/* Indicator dots */}
                     <div className="flex justify-center gap-1.5 mt-3">
-                      <div className={`w-1.5 h-1.5 rounded-full transition-colors ${!showRenewalsOnly ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-                      <div className={`w-1.5 h-1.5 rounded-full transition-colors ${showRenewalsOnly ? 'bg-cyan-400' : 'bg-slate-600'}`} />
+                      <div className={`w-2 h-2 rounded-full transition-colors ${!showRenewalsOnly ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+                      <div className={`w-2 h-2 rounded-full transition-colors ${showRenewalsOnly ? 'bg-cyan-400' : 'bg-slate-600'}`} />
                     </div>
                   </div>
                 </div>
@@ -925,68 +1386,87 @@ export default function DashboardPro() {
               {/* Clienti Attivi Card - stesso stile di Incasso */}
               <div 
                 onClick={() => navigate('/clients')}
-                className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden cursor-pointer hover:bg-slate-700/40 transition-colors"
+                className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 overflow-hidden cursor-pointer hover:bg-slate-700/30 transition-colors"
               >
-                <div className="p-4 sm:p-5">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="p-2 rounded-xl bg-blue-500/20">
-                      <Users size={18} className="text-blue-400" />
+                <div className="p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="p-2.5 rounded-xl bg-blue-500/20">
+                      <Users size={20} className="text-blue-400" />
                     </div>
                     {metrics.newClients > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">
-                        <TrendingUp size={10} />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">
+                        <TrendingUp size={12} />
                         +{metrics.newClients}
                       </span>
                     )}
                   </div>
-                  <p className="text-2xl sm:text-3xl font-bold text-white mb-1">{metrics.totalClients}</p>
-                  <p className="text-xs sm:text-sm text-slate-400">Clienti Attivi</p>
+                  <p className="text-3xl font-bold text-white mb-1">{metrics.totalClients}</p>
+                  <p className="text-sm text-slate-400">Clienti Attivi</p>
                 </div>
               </div>
             </div>
 
-            {/* SECONDARY METRICS */}
-            <div className="grid grid-cols-2 gap-2 sm:gap-3">
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-3 text-center">
-                <p className="text-xl sm:text-2xl font-bold text-white">{metrics.newClients}</p>
-                <p className="text-[10px] sm:text-xs text-slate-400">Nuovi questo mese</p>
-              </div>
-              <div 
+            {/* SECONDARY METRICS - SOLO DESKTOP */}
+            <div className="hidden lg:grid grid-cols-3 gap-3">
+              <MiniStatCard
+                value={metrics.newClients}
+                label="Nuovi questo mese"
+                icon={UserPlus}
+                color="emerald"
+              />
+              <MiniStatCard
+                value={metrics.expiringCount}
+                label="In Scadenza"
+                icon={Clock}
+                color="amber"
                 onClick={() => navigate('/clients?filter=expiring')}
-                className="bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-3 text-center cursor-pointer hover:bg-slate-700/40 transition-colors"
-              >
-                <p className="text-xl sm:text-2xl font-bold text-amber-400">{metrics.expiringCount}</p>
-                <p className="text-[10px] sm:text-xs text-slate-400">In Scadenza</p>
-              </div>
+              />
+              <MiniStatCard
+                value={weeklyChecks}
+                label="Check Settimana"
+                icon={ClipboardList}
+                color="purple"
+              />
             </div>
 
-            {/* TABBED CONTENT */}
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
-              {/* Tabs Header */}
-              <div className="flex items-center border-b border-slate-700/50 overflow-x-auto scrollbar-hide">
+            {/* TABBED CONTENT - Layout migliorato */}
+            <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 overflow-hidden">
+              {/* Tabs Header - Scroll orizzontale su mobile */}
+              <div className="flex items-center border-b border-slate-700/30 overflow-x-auto scrollbar-hide bg-slate-900/20">
                 {[
                   { key: TAB_TYPES.CLIENTS, label: 'Clienti', icon: Users },
                   { key: TAB_TYPES.SCADENZE, label: 'Scadenze', icon: Clock, badge: metrics.expiringCount + metrics.expiredCount },
                   { key: TAB_TYPES.CHIAMATE, label: 'Chiamate', icon: Phone, badge: upcomingCalls.length },
-                  { key: TAB_TYPES.ANAMNESI, label: 'Anamnesi', icon: FileText, badge: recentAnamnesi.length },
                   { key: TAB_TYPES.CHECKS, label: 'Check', icon: ClipboardList, badge: recentChecks.length },
                   { key: TAB_TYPES.CHAT, label: 'Chat', icon: MessageCircle, badge: unreadChats.length },
+                  { key: TAB_TYPES.ANAMNESI, label: 'Anamnesi', icon: FileText },
                 ].map(tab => (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2.5 text-xs font-medium transition-colors whitespace-nowrap ${
+                    className={`relative flex items-center justify-center gap-1.5 px-3 sm:px-4 py-3 text-xs font-medium transition-all whitespace-nowrap min-w-fit ${
                       activeTab === tab.key 
-                        ? 'text-blue-400 border-b-2 border-blue-400 bg-blue-500/5' 
+                        ? 'text-blue-400 bg-blue-500/10' 
                         : 'text-slate-400 hover:text-white hover:bg-slate-700/30'
                     }`}
                   >
-                    <tab.icon size={14} className="flex-shrink-0" />
-                    <span>{tab.label}</span>
+                    <tab.icon size={15} className="flex-shrink-0" />
+                    <span className="hidden sm:inline">{tab.label}</span>
                     {tab.badge > 0 && (
-                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">
+                      <span className={`min-w-[18px] px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        tab.key === TAB_TYPES.CHAT ? 'bg-purple-500/30 text-purple-400' :
+                        tab.key === TAB_TYPES.SCADENZE ? 'bg-amber-500/30 text-amber-400' :
+                        'bg-blue-500/30 text-blue-400'
+                      }`}>
                         {tab.badge}
                       </span>
+                    )}
+                    {/* Active indicator */}
+                    {activeTab === tab.key && (
+                      <motion.div 
+                        layoutId="activeTab"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-400"
+                      />
                     )}
                   </button>
                 ))}
@@ -1202,13 +1682,15 @@ export default function DashboardPro() {
           </div>
 
           {/* RIGHT COLUMN - Actions & Activity */}
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4">
 
-            {/* TODAY WIDGET */}
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-4">
-              <h2 className="font-semibold text-white mb-3 flex items-center gap-2">
-                <Calendar size={16} className="text-blue-400" />
-                Oggi, {new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long' })}
+            {/* TODAY WIDGET - Compatto */}
+            <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4">
+              <h2 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm">
+                <div className="p-1.5 rounded-lg bg-blue-500/20">
+                  <Calendar size={14} className="text-blue-400" />
+                </div>
+                <span>Oggi, {new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}</span>
               </h2>
               {todayEvents.length > 0 ? (
                 <div className="space-y-1">
@@ -1217,88 +1699,128 @@ export default function DashboardPro() {
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-500 text-center py-2">Nessun evento oggi</p>
+                <p className="text-xs text-slate-500 text-center py-3">✨ Nessun evento oggi</p>
               )}
             </div>
 
-            {/* MINI TREND */}
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-4">
-              <h2 className="font-semibold text-white mb-3 flex items-center gap-2">
-                <BarChart2 size={16} className="text-purple-400" />
-                Questa Settimana
+            {/* MINI TREND - Solo Desktop */}
+            <div className="hidden lg:block bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4">
+              <h2 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm">
+                <div className="p-1.5 rounded-lg bg-purple-500/20">
+                  <BarChart2 size={14} className="text-purple-400" />
+                </div>
+                <span>Questa Settimana</span>
               </h2>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <TrendBar label="Check" value={weeklyChecks} max={Math.max(weeklyChecks, 20)} color="purple" />
                 <TrendBar label="Chat" value={unreadChats.length} max={10} color="pink" />
                 <TrendBar label="Nuovi" value={metrics.newClients} max={5} color="blue" />
               </div>
             </div>
 
-            {/* UPCOMING CALLS */}
+            {/* UPCOMING CALLS - Solo se ci sono */}
             {upcomingCalls.length > 0 && (
-              <div className="bg-cyan-500/10 backdrop-blur-sm rounded-2xl border border-cyan-500/20 p-4">
-                <h2 className="font-semibold text-cyan-300 mb-3 flex items-center gap-2">
-                  <Phone size={16} />
-                  Chiamate questa settimana
+              <div className="bg-cyan-500/5 backdrop-blur-sm rounded-2xl border border-cyan-500/20 p-4">
+                <h2 className="font-semibold text-cyan-300 mb-3 flex items-center gap-2 text-sm">
+                  <div className="p-1.5 rounded-lg bg-cyan-500/20">
+                    <Phone size={14} className="text-cyan-400" />
+                  </div>
+                  <span>Chiamate in arrivo</span>
+                  <span className="ml-auto text-xs bg-cyan-500/20 px-2 py-0.5 rounded-full">{upcomingCalls.length}</span>
                 </h2>
                 <div className="space-y-2">
-                  {upcomingCalls.slice(0, 4).map((call, idx) => {
+                  {upcomingCalls.slice(0, 3).map((call, idx) => {
                     const scheduledDate = toDate(call.scheduledAt) || new Date();
                     const isToday = scheduledDate.toDateString() === new Date().toDateString();
                     return (
-                      <div 
+                      <motion.div 
                         key={idx}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
                         onClick={() => navigate(`/admin/client/${call.clientId}`)}
-                        className="flex items-center gap-3 p-2 rounded-lg bg-slate-900/50 cursor-pointer hover:bg-slate-800/50 transition-colors"
+                        className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/50 cursor-pointer hover:bg-slate-800/50 transition-colors"
                       >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
                           isToday ? 'bg-cyan-500/30 text-cyan-400' : 'bg-slate-700/50 text-slate-400'
                         }`}>
                           <Phone size={14} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-white font-medium truncate">{call.clientName}</p>
-                          <p className="text-xs text-slate-400">
-                            {isToday ? 'Oggi' : scheduledDate.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' })}
+                          <p className="text-[11px] text-slate-400">
+                            {isToday ? '🔴 Oggi' : scheduledDate.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit' })}
                             {' '}{scheduledDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                          call.callType === 'video' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'
-                        }`}>
-                          {call.callType === 'video' ? 'Video' : 'Tel'}
-                        </span>
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>
+                {upcomingCalls.length > 3 && (
+                  <button 
+                    onClick={() => navigate('/calls-calendar')}
+                    className="w-full mt-2 py-2 text-xs text-cyan-400 hover:text-cyan-300 flex items-center justify-center gap-1"
+                  >
+                    Vedi tutte <ArrowUpRight size={12} />
+                  </button>
+                )}
               </div>
             )}
 
-            {/* QUICK ACTIONS */}
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-4">
-              <h2 className="font-semibold text-white mb-3 flex items-center gap-2">
-                <Zap size={16} className="text-amber-400" />
-                Azioni rapide
+            {/* QUICK ACTIONS - Azioni secondarie compatte e personalizzabili */}
+            <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4">
+              <h2 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm">
+                <div className="p-1.5 rounded-lg bg-amber-500/20">
+                  <Zap size={14} className="text-amber-400" />
+                </div>
+                <span>Azioni rapide</span>
+                <button
+                  onClick={() => setShowQuickActionsEditor(true)}
+                  className="ml-auto p-1.5 rounded-lg hover:bg-slate-700/50 text-slate-500 hover:text-white transition-colors"
+                  title="Personalizza"
+                >
+                  <Pencil size={12} />
+                </button>
               </h2>
               <div className="grid grid-cols-3 gap-2">
-                <QuickAction icon={Plus} label="Nuovo Cliente" onClick={() => navigate('/new-client')} color="emerald" />
-                <QuickAction icon={Calendar} label="Calendario" onClick={() => navigate('/calendar')} color="blue" />
-                <QuickAction icon={BarChart2} label="Analytics" onClick={() => navigate('/analytics')} color="purple" />
+                {quickActions.map(actionId => {
+                  const action = AVAILABLE_ACTIONS.find(a => a.id === actionId);
+                  if (!action) return null;
+                  return (
+                    <QuickAction 
+                      key={action.id}
+                      icon={action.icon} 
+                      label={action.label} 
+                      onClick={() => navigate(action.path)} 
+                      color={action.color} 
+                    />
+                  );
+                })}
+                {quickActions.length === 0 && (
+                  <button
+                    onClick={() => setShowQuickActionsEditor(true)}
+                    className="col-span-3 py-4 text-center text-slate-500 hover:text-slate-300 border border-dashed border-slate-700 rounded-xl transition-colors"
+                  >
+                    <Plus size={20} className="mx-auto mb-1" />
+                    <span className="text-xs">Aggiungi azioni</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* ACTIVITY TIMELINE - Scrollabile */}
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-4">
-              <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
-                <Activity size={16} className="text-slate-400" />
-                Attività recenti
-                <span className="ml-auto text-xs text-slate-500">{recentActivity.length} eventi</span>
+            {/* ACTIVITY TIMELINE - Scrollabile con altezza limitata */}
+            <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4">
+              <h2 className="font-semibold text-white mb-3 flex items-center gap-2 text-sm">
+                <div className="p-1.5 rounded-lg bg-slate-600/50">
+                  <Activity size={14} className="text-slate-400" />
+                </div>
+                <span>Attività recenti</span>
+                <span className="ml-auto text-[10px] text-slate-500 bg-slate-700/50 px-2 py-0.5 rounded-full">{recentActivity.length}</span>
               </h2>
-              <div className="max-h-80 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+              <div className="max-h-64 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
                 <div className="space-y-0">
                   {recentActivity.length > 0 ? (
-                    recentActivity.map((item, idx) => (
+                    recentActivity.slice(0, 10).map((item, idx) => (
                       <TimelineItem
                         key={item.id || `activity-${idx}`}
                         icon={item.icon}
@@ -1306,19 +1828,19 @@ export default function DashboardPro() {
                         subtitle={item.subtitle}
                         time={item.time}
                         color={item.color}
-                        isLast={idx === recentActivity.length - 1}
+                        isLast={idx === Math.min(recentActivity.length - 1, 9)}
                         onClick={item.onClick}
                       />
                     ))
                   ) : (
-                    <p className="text-sm text-slate-500 text-center py-4">Nessuna attività recente</p>
+                    <p className="text-xs text-slate-500 text-center py-4">Nessuna attività recente</p>
                   )}
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Modal Dettaglio Incassi/Rinnovi */}
       <AnimatePresence>
@@ -1472,6 +1994,14 @@ export default function DashboardPro() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Quick Actions Editor Modal */}
+      <QuickActionsEditor
+        isOpen={showQuickActionsEditor}
+        onClose={() => setShowQuickActionsEditor(false)}
+        selectedActions={quickActions}
+        onSave={handleSaveQuickActions}
+      />
     </div>
   );
 }
