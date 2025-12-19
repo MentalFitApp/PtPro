@@ -23,61 +23,11 @@ import {
   easings
 } from '../../config/motionConfig';
 
-// === STELLE DI SFONDO (50, stile CEO Dashboard Premium) ===
+// === STELLE ANIMATE - Usa lo stesso sistema di ProLayout ===
+// MainLayout eredita le stelle create da ProLayout, non ne crea di proprie
 const AnimatedStars = () => {
-  const [initialized, setInitialized] = useState(false);
-
-  useEffect(() => {
-    if (initialized) return;
-
-    // Verifica se esiste già un container stelle
-    const existingContainer = document.querySelector('.stars');
-    if (existingContainer) {
-      setInitialized(true);
-      return;
-    }
-
-    const container = document.createElement('div');
-    container.className = 'stars';
-    document.body.appendChild(container);
-
-    // Crea 30 stelle distribuite su tutta la schermata
-    for (let i = 0; i < 35; i++) {
-      const star = document.createElement('div');
-      star.className = 'star';
-
-      // Distribuzione più ampia e uniforme
-      const minDistance = 8; // Distanza minima tra stelle in %
-      let top, left, tooClose;
-      
-      do {
-        top = Math.random() * 100;
-        left = Math.random() * 100;
-        tooClose = false;
-        
-        // Verifica distanza dalle altre stelle già create
-        for (let j = 0; j < container.children.length; j++) {
-          const existingStar = container.children[j];
-          const existingTop = parseFloat(existingStar.style.top);
-          const existingLeft = parseFloat(existingStar.style.left);
-          const distance = Math.sqrt(Math.pow(top - existingTop, 2) + Math.pow(left - existingLeft, 2));
-          
-          if (distance < minDistance) {
-            tooClose = true;
-            break;
-          }
-        }
-      } while (tooClose && container.children.length > 0);
-      
-      star.style.top = `${top}%`;
-      star.style.left = `${left}%`;
-
-      container.appendChild(star);
-    }
-
-    setInitialized(true);
-  }, [initialized]);
-
+  // Le stelle sono già gestite da ProLayout tramite data-bg-preset
+  // Questo componente esiste per retrocompatibilità
   return null;
 };
 
@@ -908,6 +858,28 @@ export default function MainLayout() {
     window.addEventListener('chatSelected', handleChatSelected);
     return () => window.removeEventListener('chatSelected', handleChatSelected);
   }, [isChatPage, isMobile]);
+
+  // Aggiorna branding tenant live (quando salvato dalla pagina /admin/branding)
+  useEffect(() => {
+    const handleTenantBrandingUpdated = (event) => {
+      const detail = event?.detail;
+      const updatedTenantId = detail?.tenantId;
+      const updatedBranding = detail?.branding;
+      if (!updatedTenantId || !updatedBranding) return;
+
+      try {
+        const currentTenantId = localStorage.getItem('tenantId');
+        if (currentTenantId && currentTenantId !== updatedTenantId) return;
+      } catch {
+        // ignore
+      }
+
+      setBranding({ ...defaultBranding, ...updatedBranding });
+    };
+
+    window.addEventListener('tenantBrandingUpdated', handleTenantBrandingUpdated);
+    return () => window.removeEventListener('tenantBrandingUpdated', handleTenantBrandingUpdated);
+  }, []);
 
   return (
     <div className="overflow-x-hidden w-full max-w-full bg-transparent">

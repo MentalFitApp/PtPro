@@ -1,119 +1,97 @@
 // src/config/backgroundPresets.js
-// Catalogo sfondi stellati e opzioni trasparenza
+// Catalogo sfondi stellati con 5 preset diversi - stile login premium
 
 /**
  * Preset sfondi stellati con diverse animazioni
+ * Tutti basati sullo stile premium del login con stelle animate
  */
 export const backgroundPresets = {
-  // Sfondo stellato classico - stelle che cadono lentamente
-  classic: {
-    id: 'classic',
-    name: 'Classico',
-    description: 'Stelle cadenti eleganti',
-    preview: 'linear-gradient(to bottom, #0f172a, #1e1b4b)',
-    type: 'stars',
-    config: {
-      starCount: 25,
-      animation: 'fall',
-      speed: 'slow',
-      colors: ['#8b5cf6', '#f472b6', '#22d3ee', '#fbbf24'],
-      sizeRange: [1, 2],
-      twinkle: true,
-    }
-  },
-  
-  // Nebulosa - stelle più grandi con alone
-  nebula: {
-    id: 'nebula',
-    name: 'Nebulosa',
-    description: 'Stelle brillanti con alone luminoso',
-    preview: 'linear-gradient(to bottom, #1e1b4b, #312e81)',
-    type: 'stars',
-    config: {
-      starCount: 15,
-      animation: 'pulse',
-      speed: 'medium',
-      colors: ['#a78bfa', '#f0abfc', '#67e8f9'],
-      sizeRange: [2, 4],
-      glow: true,
-      twinkle: true,
-    }
-  },
-  
-  // Aurora - onde di luce colorate
-  aurora: {
-    id: 'aurora',
-    name: 'Aurora',
-    description: 'Onde di luce danzanti',
-    preview: 'linear-gradient(135deg, #0f172a, #134e4a, #1e1b4b)',
-    type: 'aurora',
-    config: {
-      waveCount: 3,
-      colors: ['#06b6d4', '#8b5cf6', '#ec4899'],
-      speed: 'slow',
-      opacity: 0.3,
-    }
-  },
-  
-  // Galassia - stelle + polvere cosmica
-  galaxy: {
-    id: 'galaxy',
-    name: 'Galassia',
-    description: 'Polvere cosmica e stelle lontane',
-    preview: 'linear-gradient(to bottom, #020617, #1e1b4b, #0f172a)',
-    type: 'stars',
-    config: {
-      starCount: 40,
-      animation: 'drift',
-      speed: 'very-slow',
-      colors: ['#ffffff', '#e0e7ff', '#c4b5fd', '#fef08a'],
-      sizeRange: [0.5, 1.5],
-      twinkle: true,
-      dustClouds: true,
-    }
-  },
-  
-  // Minimalista - pochissime stelle, molto elegante
-  minimal: {
-    id: 'minimal',
-    name: 'Minimalista',
-    description: 'Poche stelle, massima eleganza',
+  // Cielo Stellato - Default, stile login con twinkle e float dolce
+  // Stelle blu e oro che brillano e fluttuano dolcemente
+  starryNight: {
+    id: 'starryNight',
+    name: 'Cielo Stellato',
+    description: 'Stelle scintillanti come nella notte (Default)',
     preview: 'linear-gradient(to bottom, #0f172a, #1e293b)',
     type: 'stars',
+    isDefault: true,
     config: {
-      starCount: 8,
-      animation: 'twinkle-only',
-      speed: 'very-slow',
-      colors: ['#94a3b8', '#cbd5e1'],
-      sizeRange: [1, 2],
+      starCount: 50,
+      animation: 'twinkle-float',
+      speed: 'medium',
+      colors: ['blue', 'gold'],
+      sizeRange: [1, 3],
       twinkle: true,
+      float: true,
     }
   },
   
-  // Nessuno sfondo animato - solo colore solido
-  solid: {
-    id: 'solid',
-    name: 'Colore Solido',
-    description: 'Sfondo semplice senza animazioni',
-    preview: 'linear-gradient(to bottom, #0f172a, #0f172a)',
-    type: 'solid',
+  // Pioggia di Meteore - stelle che cadono velocemente con scie luminose
+  meteorShower: {
+    id: 'meteorShower',
+    name: 'Pioggia di Meteore',
+    description: 'Stelle cadenti con scie luminose',
+    preview: 'linear-gradient(to bottom, #020617, #0f172a)',
+    type: 'stars',
     config: {
-      baseColor: '#0f172a',
-      allowCustomColor: true,
+      starCount: 30,
+      animation: 'meteor',
+      speed: 'fast',
+      colors: ['white', 'cyan', 'gold'],
+      sizeRange: [1, 2],
+      trails: true,
     }
   },
   
-  // Gradiente statico
-  gradient: {
-    id: 'gradient',
-    name: 'Gradiente',
-    description: 'Sfumatura elegante senza animazioni',
-    preview: 'linear-gradient(135deg, #0f172a, #1e1b4b)',
-    type: 'gradient',
+  // Universo Profondo - stelle che pulsano lentamente con profondità
+  deepSpace: {
+    id: 'deepSpace',
+    name: 'Universo Profondo',
+    description: 'Stelle pulsanti in profondità cosmica',
+    preview: 'linear-gradient(to bottom, #030712, #1e1b4b)',
+    type: 'stars',
     config: {
-      direction: '135deg',
-      colors: ['#0f172a', '#1e1b4b'],
-      allowCustomColors: true,
+      starCount: 60,
+      animation: 'pulse-depth',
+      speed: 'slow',
+      colors: ['white', 'purple', 'pink', 'cyan'],
+      sizeRange: [0.5, 3],
+      depth: true,
+      glow: true,
+    }
+  },
+  
+  // Costellazioni - stelle che si connettono con linee sottili animate
+  constellations: {
+    id: 'constellations',
+    name: 'Costellazioni',
+    description: 'Stelle connesse da linee magiche',
+    preview: 'linear-gradient(to bottom, #0c1222, #1a1a2e)',
+    type: 'stars',
+    config: {
+      starCount: 35,
+      animation: 'constellation',
+      speed: 'very-slow',
+      colors: ['blue', 'white', 'cyan'],
+      sizeRange: [2, 4],
+      connections: true,
+    }
+  },
+  
+  // Polvere di Stelle - particelle sottili che fluttuano in tutte le direzioni
+  stardust: {
+    id: 'stardust',
+    name: 'Polvere di Stelle',
+    description: 'Particelle magiche che danzano',
+    preview: 'linear-gradient(to bottom, #0f172a, #312e81)',
+    type: 'stars',
+    config: {
+      starCount: 80,
+      animation: 'dust',
+      speed: 'medium',
+      colors: ['white', 'gold', 'pink', 'cyan'],
+      sizeRange: [0.5, 2],
+      scatter: true,
     }
   },
 };
@@ -180,7 +158,7 @@ export const solidBackgroundColors = [
  * Default settings
  */
 export const defaultBackgroundSettings = {
-  preset: 'classic',
+  preset: 'starryNight',
   solidColor: '#0f172a',
   gradientColors: ['#0f172a', '#1e1b4b'],
   cardTransparency: 0.6, // 60% opacità (40% trasparente)

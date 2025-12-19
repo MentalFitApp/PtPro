@@ -1,70 +1,15 @@
 // src/components/FormLayout.jsx
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 
-const AnimatedStars = () => {
-  const [initialized, setInitialized] = useState(false);
-
-  useEffect(() => {
-    if (initialized) return;
-
-    // Verifica se esiste già un container stelle
-    const existingContainer = document.querySelector('.stars');
-    if (existingContainer) {
-      setInitialized(true);
-      return;
-    }
-
-    const container = document.createElement('div');
-    container.className = 'stars';
-    document.body.appendChild(container);
-
-    // Crea 30 stelle distribuite su tutta la schermata
-    for (let i = 0; i < 35; i++) {
-      const star = document.createElement('div');
-      star.className = 'star';
-
-      // Distribuzione più ampia e uniforme
-      const minDistance = 8; // Distanza minima tra stelle in %
-      let top, left, tooClose;
-      
-      do {
-        top = Math.random() * 100;
-        left = Math.random() * 100;
-        tooClose = false;
-        
-        // Verifica distanza dalle altre stelle già create
-        for (let j = 0; j < container.children.length; j++) {
-          const existingStar = container.children[j];
-          const existingTop = parseFloat(existingStar.style.top);
-          const existingLeft = parseFloat(existingStar.style.left);
-          const distance = Math.sqrt(Math.pow(top - existingTop, 2) + Math.pow(left - existingLeft, 2));
-          
-          if (distance < minDistance) {
-            tooClose = true;
-            break;
-          }
-        }
-      } while (tooClose && container.children.length > 0);
-      
-      star.style.top = `${top}%`;
-      star.style.left = `${left}%`;
-
-      container.appendChild(star);
-    }
-
-    setInitialized(true);
-  }, [initialized]);
-
-  return null;
-};
+// Le stelle sono gestite centralmente da ProLayout tramite data-bg-preset
+// Non creiamo stelle duplicate qui
 
 export default function FormLayout({ children }) {
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* SFONDO STELLATO */}
       <div className="starry-background"></div>
-      <AnimatedStars />
 
       {/* FORM CON 2 LINEE DORATE + SFUMATURA ROTANTE */}
       <motion.div

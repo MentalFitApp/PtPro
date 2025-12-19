@@ -279,7 +279,7 @@ export default function App() {
               location.pathname === '/' ||
               location.pathname === '/clients' ||
               location.pathname === '/new-client' ||
-              location.pathname.startsWith('/admin/client/') ||
+              location.pathname.startsWith('/client/') ||
               location.pathname.startsWith('/edit/') ||
               location.pathname === '/updates' ||
               location.pathname === '/collaboratori' ||
@@ -421,13 +421,13 @@ export default function App() {
           <Route path="/" element={<AdminDashboard />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/new-client" element={<NewClient />} />
-          <Route path="/admin/client/:clientId" element={<ClientDetail />} />
+          <Route path="/client/:clientId" element={<ClientDetail />} />
           <Route path="/edit/:id" element={<EditClient />} />
           <Route path="/updates" element={<Updates />} />
           <Route path="/admin/checks" element={<AdminChecksList />} />
           <Route path="/admin/anamnesi" element={<AdminAnamnesiList />} />
           <Route path="/chat" element={<Chat />} />
-          <Route path="/admin/client/:id/anamnesi" element={<AdminAnamnesi />} />
+          <Route path="/client/:id/anamnesi" element={<AdminAnamnesi />} />
           <Route path="/collaboratori" element={<Collaboratori />} />
           <Route path="/collaboratore-detail" element={<CollaboratoreDetail />} />
           <Route path="/calendar" element={<CalendarPage />} />

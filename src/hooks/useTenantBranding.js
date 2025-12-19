@@ -65,7 +65,7 @@ export function applyUiDensity(density) {
  */
 export function applyBackgroundPreset(preset, solidColor, gradientColors) {
   const root = document.documentElement;
-  const validPreset = backgroundPresets[preset] ? preset : 'classic';
+  const validPreset = backgroundPresets[preset] ? preset : 'starryNight';
   
   root.setAttribute('data-bg-preset', validPreset);
   
@@ -136,7 +136,7 @@ export function useTenantBranding() {
           
           let colors = defaultBranding.colors;
           let density = 'normal';
-          let bgPreset = 'classic';
+          let bgPreset = 'starryNight';
           let bgSolidColor = '#0f172a';
           let bgGradientColors = ['#0f172a', '#1e1b4b'];
           let cardTransparency = 0.6;
@@ -159,7 +159,7 @@ export function useTenantBranding() {
             density = userData.uiDensity || 'normal';
             
             // Sfondo
-            bgPreset = userData.bgPreset || 'classic';
+            bgPreset = userData.bgPreset || 'starryNight';
             bgSolidColor = userData.bgSolidColor || '#0f172a';
             bgGradientColors = userData.bgGradientColors || ['#0f172a', '#1e1b4b'];
             
@@ -260,10 +260,35 @@ export function useTenantBranding() {
       }
     });
 
+    const handleTenantBrandingUpdated = (event) => {
+      if (!mounted) return;
+      const detail = event?.detail;
+      const updatedTenantId = detail?.tenantId;
+      const updatedBranding = detail?.branding;
+      if (!updatedTenantId || !updatedBranding) return;
+
+      try {
+        const currentTenantId = localStorage.getItem('tenantId');
+        if (currentTenantId && currentTenantId !== updatedTenantId) return;
+      } catch {
+        // ignore
+      }
+
+      const merged = { ...defaultBranding, ...updatedBranding };
+      setBranding(merged);
+      try {
+        localStorage.setItem('tenantBranding', JSON.stringify(merged));
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener('tenantBrandingUpdated', handleTenantBrandingUpdated);
+
     return () => {
       mounted = false;
       unsubscribeAuth();
       if (unsubscribeUser) unsubscribeUser();
+      window.removeEventListener('tenantBrandingUpdated', handleTenantBrandingUpdated);
     };
   }, []);
 

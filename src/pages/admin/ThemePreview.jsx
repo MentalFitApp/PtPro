@@ -29,7 +29,7 @@ export default function ThemePreview() {
     stars: '#38bdf8',
   });
   const [showCustomColors, setShowCustomColors] = useState(false);
-  const [bgPreset, setBgPreset] = useState('classic');
+  const [bgPreset, setBgPreset] = useState('starryNight');
   const [bgSolidColor, setBgSolidColor] = useState('#0f172a');
   const [cardTransparency, setCardTransparency] = useState(0.6);
   const [uiDensity, setUiDensity] = useState('normal');
@@ -142,7 +142,7 @@ export default function ThemePreview() {
   // Reset
   const handleReset = () => {
     handleColorChange('blue');
-    handleBgChange('classic');
+    handleBgChange('starryNight');
     handleTransparencyChange(0.6);
     handleDensityChange('normal');
   };

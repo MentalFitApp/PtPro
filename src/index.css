@@ -223,7 +223,7 @@ button, a, [role="button"], input, select, textarea {
   --card-blur: 12px;
   
   /* Background preset */
-  --bg-preset: 'classic';
+  --bg-preset: 'starryNight';
   --bg-solid-color: #0f172a;
 }
 
@@ -257,26 +257,66 @@ button, a, [role="button"], input, select, textarea {
   --card-blur: 20px;
 }
 
+/* Classe principale per card con trasparenza tema */
+.bg-theme-card {
+  background-color: rgba(30, 41, 59, var(--card-transparency, 0.6)) !important;
+  backdrop-filter: blur(var(--card-blur, 12px)) !important;
+  -webkit-backdrop-filter: blur(var(--card-blur, 12px)) !important;
+}
+
+/* Classe per bordo tema */
+.border-theme {
+  border-color: rgba(71, 85, 105, calc(var(--card-transparency, 0.6) * 0.8)) !important;
+}
+
 /* Apply transparency to common card patterns */
 .bg-slate-800\/60,
 .bg-slate-800\/50,
 .bg-slate-800\/40,
 .bg-slate-900\/60,
 .bg-slate-900\/50,
-.bg-slate-900\/40 {
+.bg-slate-900\/40,
+.bg-slate-800,
+.bg-slate-900 {
   background-color: rgba(30, 41, 59, var(--card-transparency)) !important;
   backdrop-filter: blur(var(--card-blur)) !important;
   -webkit-backdrop-filter: blur(var(--card-blur)) !important;
 }
 
 /* Disable blur on transparency=none */
+[data-card-transparency="none"] .bg-theme-card,
 [data-card-transparency="none"] .bg-slate-800\/60,
 [data-card-transparency="none"] .bg-slate-800\/50,
 [data-card-transparency="none"] .bg-slate-800\/40,
 [data-card-transparency="none"] .bg-slate-900\/60,
 [data-card-transparency="none"] .bg-slate-900\/50,
-[data-card-transparency="none"] .bg-slate-900\/40 {
+[data-card-transparency="none"] .bg-slate-900\/40,
+[data-card-transparency="none"] .bg-slate-800,
+[data-card-transparency="none"] .bg-slate-900 {
   background-color: rgb(30, 41, 59) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-card-transparency="none"] .border-theme {
+  border-color: rgb(71, 85, 105) !important;
+}
+
+/* Contenitore principale con trasparenza per vedere le stelle */
+.bg-theme-bg-primary\/35,
+.bg-theme-bg-primary\/30,
+.bg-theme-bg-primary\/40,
+.bg-theme-bg-primary\/50 {
+  background-color: rgba(2, 6, 23, calc(var(--card-transparency, 0.6) * 0.5)) !important;
+  backdrop-filter: blur(var(--card-blur, 12px)) !important;
+  -webkit-backdrop-filter: blur(var(--card-blur, 12px)) !important;
+}
+
+[data-card-transparency="none"] .bg-theme-bg-primary\/35,
+[data-card-transparency="none"] .bg-theme-bg-primary\/30,
+[data-card-transparency="none"] .bg-theme-bg-primary\/40,
+[data-card-transparency="none"] .bg-theme-bg-primary\/50 {
+  background-color: rgba(2, 6, 23, 0.35) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
@@ -1007,7 +1047,7 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  z-index: -10;
+  z-index: -1;
   /* Modern nebula gradient background */
   background: 
     /* Nebula core glow - top */
@@ -1071,7 +1111,7 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: -9;
+  z-index: 0;
   pointer-events: none;
   overflow: hidden;
 }
@@ -1114,17 +1154,7 @@ body[data-theme="dark"] .star {
   opacity: 0.9;
 }
 
-.star::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: calc(var(--star-width) / -2);
-  width: 4em;
-  height: 1px;
-  background: linear-gradient(to left, rgba(var(--theme-accent-rgb), 0.5), transparent);
-  animation: tail-fade var(--fall-duration) var(--fall-delay) ease-out infinite;
-  z-index: -1;
-}
+/* La coda delle stelle è ora solo per il preset meteor - vedi .star-meteor::after */
 
 /* Star color variants - Uses theme secondary color */
 .star.gold {
@@ -1143,18 +1173,6 @@ body[data-theme="dark"] .star {
   --star-color: var(--theme-primary-light, #60a5fa);
   --star-glow: var(--theme-primary, #3b82f6);
   filter: drop-shadow(0 0 10px var(--theme-primary-light));
-}
-
-.star.gold::after {
-  background: linear-gradient(to left, rgba(var(--theme-accent-rgb), 0.6), transparent);
-}
-
-.star.cyan::after {
-  background: linear-gradient(to left, rgba(34, 211, 238, 0.5), transparent);
-}
-
-.star.indigo::after {
-  background: linear-gradient(to left, rgba(var(--theme-primary-rgb), 0.5), transparent);
 }
 
 /* ========================================
@@ -1256,7 +1274,7 @@ body[data-theme="dark"] .star {
   pointer-events: none;
 }
 
-/* === CLASSIC - Falling Stars === */
+/* === CLASSIC - Falling Stars (legacy, non usato dai nuovi preset) === */
 .star-fall {
   background: radial-gradient(circle at 30% 30%, #ffffff, var(--theme-stars, #38bdf8));
   box-shadow: 
@@ -1268,16 +1286,7 @@ body[data-theme="dark"] .star {
     twinkle-classic 4s ease-in-out infinite;
 }
 
-.star-fall::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: calc(var(--star-size) / -2);
-  width: 4em;
-  height: 1px;
-  background: linear-gradient(to left, rgba(var(--theme-accent-rgb, 59, 130, 246), 0.5), transparent);
-  animation: tail-fade var(--anim-duration) var(--anim-delay) ease-out infinite;
-}
+/* Rimossa la coda - solo meteor ha la scia */
 
 @keyframes twinkle-classic {
   0%, 100% { opacity: 0.4; }
@@ -1289,16 +1298,10 @@ body[data-theme="dark"] .star {
   background: radial-gradient(circle at 30% 30%, #ffffff, #fbbf24);
   box-shadow: 0 0 4px #fbbf24, 0 0 10px #f59e0b;
 }
-.star-fall.gold::after {
-  background: linear-gradient(to left, rgba(251, 191, 36, 0.5), transparent);
-}
 
 .star-fall.cyan {
   background: radial-gradient(circle at 30% 30%, #ffffff, #22d3ee);
   box-shadow: 0 0 4px #22d3ee, 0 0 10px #06b6d4;
-}
-.star-fall.cyan::after {
-  background: linear-gradient(to left, rgba(34, 211, 238, 0.5), transparent);
 }
 
 /* === NEBULA - Pulsing Glow Stars === */
@@ -1525,6 +1528,261 @@ body[data-theme="dark"] .star {
 
 .star-twinkle-slow.minimal {
   background: radial-gradient(circle, #ffffff, #cbd5e1);
+}
+
+/* ========================================
+   5 SFONDI STELLATI PREMIUM
+   Stile login con animazioni diverse
+   ======================================== */
+
+/* === 1. STARRY NIGHT - Twinkle + Float (Default come login) === */
+.star-twinkle-float {
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, var(--star-bg-color, #60a5fa) 100%);
+  box-shadow: 0 0 var(--star-glow-size, 8px) var(--star-glow-color, #60a5fa);
+  animation: 
+    starry-twinkle var(--twinkle-duration, 3s) ease-in-out infinite,
+    starry-float var(--float-duration, 15s) ease-in-out infinite;
+}
+
+.star-twinkle-float.blue {
+  --star-bg-color: #60a5fa;
+  --star-glow-color: #60a5fa;
+  --star-glow-size: 8px;
+}
+
+.star-twinkle-float.gold {
+  --star-bg-color: #fbbf24;
+  --star-glow-color: #fbbf24;
+  --star-glow-size: 14px;
+  box-shadow: 0 0 14px #fbbf24, 0 0 25px #fbbf24;
+}
+
+@keyframes starry-twinkle {
+  0%, 100% { 
+    opacity: var(--star-min-opacity, 0.4);
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.4);
+  }
+}
+
+@keyframes starry-float {
+  0%, 100% { 
+    transform: translate(0, 0);
+  }
+  25% { 
+    transform: translate(3px, -5px);
+  }
+  50% { 
+    transform: translate(-2px, -8px);
+  }
+  75% { 
+    transform: translate(4px, -3px);
+  }
+}
+
+/* === 2. METEOR SHOWER - Stelle cadenti veloci con scie === */
+.star-meteor {
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, var(--meteor-color, #22d3ee) 100%);
+  box-shadow: 0 0 4px var(--meteor-color, #22d3ee);
+  transform: translate3d(100vw, 0, 0);
+  animation: meteor-fall var(--anim-duration, 8s) var(--anim-delay, 0s) linear infinite;
+}
+
+.star-meteor::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  width: 80px;
+  height: 2px;
+  background: linear-gradient(to left, var(--meteor-color, #22d3ee), transparent);
+  transform: translateY(-50%);
+  opacity: 0.8;
+  border-radius: 2px;
+}
+
+.star-meteor.white {
+  --meteor-color: #ffffff;
+}
+
+.star-meteor.cyan {
+  --meteor-color: #22d3ee;
+}
+
+.star-meteor.gold {
+  --meteor-color: #fbbf24;
+  box-shadow: 0 0 8px #fbbf24, 0 0 15px #f59e0b;
+}
+
+@keyframes meteor-fall {
+  0% {
+    transform: translate3d(100vw, -20vh, 0) rotate(-15deg);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(-20vw, 80vh, 0) rotate(-15deg);
+    opacity: 0;
+  }
+}
+
+/* === 3. DEEP SPACE - Stelle pulsanti con profondità === */
+.star-pulse-depth {
+  background: radial-gradient(circle, #ffffff 0%, var(--depth-color, #a78bfa) 40%, transparent 70%);
+  box-shadow: 
+    0 0 calc(var(--star-size, 2px) * 4) var(--depth-color, #a78bfa),
+    0 0 calc(var(--star-size, 2px) * 8) var(--depth-glow, #8b5cf6);
+  animation: deep-pulse var(--anim-duration, 4s) var(--anim-delay, 0s) ease-in-out infinite;
+}
+
+.star-pulse-depth.white {
+  --depth-color: rgba(255, 255, 255, 1);
+  --depth-glow: rgba(255, 255, 255, 0.6);
+}
+
+.star-pulse-depth.purple {
+  --depth-color: #a78bfa;
+  --depth-glow: #8b5cf6;
+}
+
+.star-pulse-depth.pink {
+  --depth-color: #f472b6;
+  --depth-glow: #ec4899;
+}
+
+.star-pulse-depth.cyan {
+  --depth-color: #22d3ee;
+  --depth-glow: #06b6d4;
+}
+
+@keyframes deep-pulse {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: var(--depth-opacity, 0.5);
+    filter: blur(0px);
+  }
+  50% { 
+    transform: scale(1.6);
+    opacity: 1;
+    filter: blur(0.5px);
+  }
+}
+
+/* === 4. CONSTELLATIONS - Stelle con connessioni === */
+.star-constellation {
+  background: radial-gradient(circle, #ffffff 30%, var(--const-color, #60a5fa) 100%);
+  box-shadow: 0 0 10px var(--const-color, #60a5fa), 0 0 20px var(--const-glow, #3b82f6);
+  animation: constellation-glow var(--anim-duration, 5s) var(--anim-delay, 0s) ease-in-out infinite;
+  z-index: 2;
+}
+
+.star-constellation.blue {
+  --const-color: #60a5fa;
+  --const-glow: #3b82f6;
+}
+
+.star-constellation.white {
+  --const-color: #ffffff;
+  --const-glow: rgba(255, 255, 255, 0.5);
+}
+
+.star-constellation.cyan {
+  --const-color: #22d3ee;
+  --const-glow: #06b6d4;
+}
+
+@keyframes constellation-glow {
+  0%, 100% { 
+    opacity: 0.7;
+    box-shadow: 0 0 10px var(--const-color, #60a5fa), 0 0 20px var(--const-glow, #3b82f6);
+  }
+  50% { 
+    opacity: 1;
+    box-shadow: 0 0 15px var(--const-color, #60a5fa), 0 0 30px var(--const-glow, #3b82f6), 0 0 40px var(--const-glow, #3b82f6);
+  }
+}
+
+/* Linee di connessione costellazioni */
+.constellation-line {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.5), transparent);
+  transform-origin: left center;
+  animation: line-pulse 4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes line-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+/* === 5. STARDUST - Particelle che danzano === */
+.star-dust {
+  background: radial-gradient(circle, #ffffff 20%, var(--dust-color, #fbbf24) 80%, transparent 100%);
+  box-shadow: 0 0 5px var(--dust-color, #fbbf24);
+  animation: dust-dance var(--anim-duration, 10s) var(--anim-delay, 0s) ease-in-out infinite;
+}
+
+.star-dust.white {
+  --dust-color: rgba(255, 255, 255, 1);
+}
+
+.star-dust.gold {
+  --dust-color: #fbbf24;
+}
+
+.star-dust.pink {
+  --dust-color: #f472b6;
+}
+
+.star-dust.cyan {
+  --dust-color: #22d3ee;
+}
+
+@keyframes dust-dance {
+  0% { 
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0.3;
+  }
+  25% { 
+    transform: translate(15px, -20px) rotate(90deg);
+    opacity: 0.7;
+  }
+  50% { 
+    transform: translate(-10px, -40px) rotate(180deg);
+    opacity: 1;
+  }
+  75% { 
+    transform: translate(20px, -20px) rotate(270deg);
+    opacity: 0.5;
+  }
+  100% { 
+    transform: translate(0, 0) rotate(360deg);
+    opacity: 0.3;
+  }
+}
+
+/* Effetto scintillio aggiuntivo per stardust */
+.star-dust::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: radial-gradient(circle, var(--dust-color, #fbbf24), transparent 70%);
+  animation: dust-sparkle 2s ease-in-out infinite;
+  opacity: 0.5;
+  border-radius: 50%;
+}
+
+@keyframes dust-sparkle {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.8); opacity: 0.1; }
 }
 
 /* ========================================
