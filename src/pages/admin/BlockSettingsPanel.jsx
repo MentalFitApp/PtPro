@@ -395,7 +395,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                   ) : (
                     <MediaUploader
                       accept="image"
-                      onUpload={(url) => handleChange('backgroundImage', url)}
+                      onUpload={(result) => handleChange('backgroundImage', result?.url || result)}
                       tenantId={tenantId}
                       pageId={pageId}
                       blockId={block.id}
@@ -428,7 +428,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                   ) : (
                     <MediaUploader
                       accept="video"
-                      onUpload={(url) => handleChange('backgroundVideo', url)}
+                      onUpload={(result) => handleChange('backgroundVideo', result?.url || result)}
                       tenantId={tenantId}
                       pageId={pageId}
                       blockId={block.id}
@@ -486,7 +486,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                   ) : (
                     <MediaUploader
                       accept="image"
-                      onUpload={(url) => handleChange('splitImage', url)}
+                      onUpload={(result) => handleChange('splitImage', result?.url || result)}
                       tenantId={tenantId}
                       pageId={pageId}
                       blockId={block.id}
@@ -693,7 +693,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                       ) : (
                         <MediaUploader
                           type="image"
-                          onUpload={(url) => handleArrayItemChange('items', index, 'iconImage', url)}
+                          onUpload={(result) => handleArrayItemChange('items', index, 'iconImage', result?.url || result)}
                           tenantId={tenantId}
                           accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
                         />
@@ -1460,7 +1460,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                   ) : (
                     <MediaUploader
                       accept="video"
-                      onUpload={(url) => handleChange('uploadedVideoUrl', url)}
+                      onUpload={(result) => handleChange('uploadedVideoUrl', result?.url || result)}
                       tenantId={tenantId}
                       pageId={pageId}
                       blockId={block.id}
@@ -1490,7 +1490,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                 ) : (
                   <MediaUploader
                     accept="image"
-                    onUpload={(url) => handleChange('posterImage', url)}
+                    onUpload={(result) => handleChange('posterImage', result?.url || result)}
                     tenantId={tenantId}
                     pageId={pageId}
                     blockId={block.id}
@@ -1613,7 +1613,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                   ) : (
                     <MediaUploader
                       accept="image"
-                      onUpload={(url) => handleArrayItemChange('images', index, 'url', url)}
+                      onUpload={(result) => handleArrayItemChange('images', index, 'url', result?.url || result)}
                       tenantId={tenantId}
                       pageId={pageId}
                       blockId={block.id}
@@ -1748,7 +1748,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                       ) : (
                         <MediaUploader
                           accept="image"
-                          onUpload={(url) => handleArrayItemChange('items', index, 'imageUrl', url)}
+                          onUpload={(result) => handleArrayItemChange('items', index, 'imageUrl', result?.url || result)}
                           tenantId={tenantId}
                           pageId={pageId}
                           blockId={block.id}
