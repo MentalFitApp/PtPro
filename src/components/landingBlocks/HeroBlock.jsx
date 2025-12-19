@@ -59,6 +59,7 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
     centeredImagePosition = 'above-title',
     centeredImageWidth = 60,
     centeredImageStyle = 'rounded',
+    centeredImageSpacing = 24,
     // Text style settings
     titleColor = '#ffffff',
     subtitleColor = '#cbd5e1',
@@ -497,11 +498,15 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
               transition={{ delay: 0.1 }}
               src={centeredImage}
               alt="Hero"
-              className={`mb-6 md:mb-8 ${
+              className={`${
                 centeredImageStyle === 'rounded' ? 'rounded-2xl shadow-2xl' : 
                 centeredImageStyle === 'circle' ? 'rounded-full shadow-2xl' : ''
               }`}
-              style={{ width: `${centeredImageWidth}%`, maxWidth: '100%' }}
+              style={{ 
+                width: `${centeredImageWidth}%`, 
+                maxWidth: '100%',
+                marginBottom: `${centeredImageSpacing}px`
+              }}
             />
           )}
           
@@ -520,11 +525,15 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
               transition={{ delay: 0.2 }}
               src={centeredImage}
               alt="Hero"
-              className={`mb-6 md:mb-8 ${
+              className={`${
                 centeredImageStyle === 'rounded' ? 'rounded-2xl shadow-2xl' : 
                 centeredImageStyle === 'circle' ? 'rounded-full shadow-2xl' : ''
               }`}
-              style={{ width: `${centeredImageWidth}%`, maxWidth: '100%' }}
+              style={{ 
+                width: `${centeredImageWidth}%`, 
+                maxWidth: '100%',
+                marginBottom: `${centeredImageSpacing}px`
+              }}
             />
           )}
           
@@ -543,11 +552,15 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
               transition={{ delay: 0.3 }}
               src={centeredImage}
               alt="Hero"
-              className={`mb-6 md:mb-8 ${
+              className={`${
                 centeredImageStyle === 'rounded' ? 'rounded-2xl shadow-2xl' : 
                 centeredImageStyle === 'circle' ? 'rounded-full shadow-2xl' : ''
               }`}
-              style={{ width: `${centeredImageWidth}%`, maxWidth: '100%' }}
+              style={{ 
+                width: `${centeredImageWidth}%`, 
+                maxWidth: '100%',
+                marginBottom: `${centeredImageSpacing}px`
+              }}
             />
           )}
           
