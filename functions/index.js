@@ -2737,6 +2737,37 @@ exports.completeInvitation = onCall(async (request) => {
       privacyAcceptedAt: acceptPrivacy ? admin.firestore.FieldValue.serverTimestamp() : null,
     });
 
+    // Crea pagamento iniziale nella subcollection payments (se presente importo)
+    if (clientData.rateizzato && clientData.rate && clientData.rate.length > 0) {
+      // Pagamento a rate: crea documenti nella subcollection rates
+      console.log('💳 [INVITE] Creazione rate nella subcollection:', clientData.rate.length, 'rate');
+      for (const rate of clientData.rate) {
+        const rateRef = db.collection(`tenants/${invite.tenantId}/clients/${newUserId}/rates`).doc();
+        await rateRef.set({
+          amount: parseFloat(rate.amount) || 0,
+          dueDate: rate.dueDate ? new Date(rate.dueDate) : null,
+          paid: rate.paid || false,
+          paidDate: rate.paidDate ? new Date(rate.paidDate) : null,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          isRenewal: false,
+          source: 'invite'
+        });
+      }
+    } else if (clientData.paymentAmount && parseFloat(clientData.paymentAmount) > 0) {
+      // Pagamento singolo: crea documento nella subcollection payments
+      console.log('💳 [INVITE] Creazione pagamento nella subcollection:', clientData.paymentAmount);
+      const paymentRef = db.collection(`tenants/${invite.tenantId}/clients/${newUserId}/payments`).doc();
+      await paymentRef.set({
+        amount: parseFloat(clientData.paymentAmount),
+        duration: clientData.duration ? `${clientData.duration} mesi` : null,
+        paymentDate: admin.firestore.FieldValue.serverTimestamp(),
+        paymentMethod: clientData.paymentMethod || null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        isRenewal: false,
+        source: 'invite'
+      });
+    }
+
     // Crea/aggiorna mapping globale utente → tenant con stato attivo
     await db.doc(`user_tenants/${newUserId}`).set({
       [invite.tenantId]: {
