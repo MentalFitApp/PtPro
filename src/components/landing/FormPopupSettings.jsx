@@ -296,6 +296,8 @@ const FormPopupSettings = ({
                   className="px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-sm text-white"
                 >
                   <option value="text">Testo</option>
+                  <option value="name">Nome</option>
+                  <option value="cognome">Cognome</option>
                   <option value="email">Email</option>
                   <option value="tel">Telefono</option>
                   <option value="number">Numero</option>

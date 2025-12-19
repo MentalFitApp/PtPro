@@ -333,10 +333,10 @@ const FormPopup = ({
                         />
                       )}
                       
-                      {/* Text, Email, Tel (default) */}
+                      {/* Text, Email, Tel, Name, Cognome (default) */}
                       {!['textarea', 'select', 'checkbox', 'date', 'number'].includes(field.type) && (
                         <input
-                          type={field.type}
+                          type={['name', 'cognome'].includes(field.type) ? 'text' : field.type}
                           value={formData[field.id] || ''}
                           onChange={(e) => handleChange(field.id, e.target.value)}
                           placeholder={field.placeholder}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Save, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { X, Plus, Save, GripVertical, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { doc, getDoc, setDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getTenantDoc, getTenantCollection } from '../../config/tenant';
@@ -19,20 +19,52 @@ export default function LeadColumnsConfig({ onClose, onSave }) {
     { id: 'dialed', label: 'Dialed', visible: true, locked: false },
     { id: 'note', label: 'Note', visible: true, locked: false },
   ]);
+  const [discoveredFields, setDiscoveredFields] = useState([]);
   const [newColumn, setNewColumn] = useState({ label: '', field: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Carica configurazione esistente
+  // Campi di sistema da escludere dalla scoperta
+  const systemFields = ['id', 'createdAt', 'updatedAt', 'tenantId', 'source', 'landingPageId', 'status'];
+
+  // Carica configurazione esistente e scopri campi dai leads
   useEffect(() => {
-    const loadConfig = async () => {
+    const loadConfigAndDiscoverFields = async () => {
       try {
+        // Carica configurazione colonne esistente
         const configDoc = await getDoc(getTenantDoc(db, 'settings', 'leadColumns'));
+        let existingColumns = columns;
         if (configDoc.exists()) {
           const data = configDoc.data();
           if (data.columns && Array.isArray(data.columns)) {
+            existingColumns = data.columns;
             setColumns(data.columns);
           }
+        }
+
+        // Scopri campi dai leads esistenti
+        const leadsSnapshot = await getDocs(getTenantCollection(db, 'leads'));
+        const allFields = new Set();
+        
+        leadsSnapshot.forEach(doc => {
+          const data = doc.data();
+          Object.keys(data).forEach(key => {
+            if (!systemFields.includes(key)) {
+              allFields.add(key);
+            }
+          });
+        });
+
+        // Trova campi non ancora configurati
+        const configuredFieldIds = existingColumns.map(c => c.field || c.id);
+        const newFields = Array.from(allFields).filter(
+          field => !configuredFieldIds.includes(field)
+        );
+
+        setDiscoveredFields(newFields);
+        
+        if (newFields.length > 0) {
+          console.log('🔍 Campi scoperti non configurati:', newFields);
         }
       } catch (error) {
         console.error('Errore caricamento configurazione colonne:', error);
@@ -40,8 +72,54 @@ export default function LeadColumnsConfig({ onClose, onSave }) {
         setLoading(false);
       }
     };
-    loadConfig();
+    loadConfigAndDiscoverFields();
   }, []);
+
+  // Aggiungi campo scoperto alle colonne
+  const handleAddDiscoveredField = (field) => {
+    const label = field
+      .replace(/_/g, ' ')
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, str => str.toUpperCase())
+      .trim();
+    
+    const newColumnItem = {
+      id: field,
+      label: label,
+      field: field,
+      visible: true,
+      locked: false,
+      custom: true,
+    };
+
+    setColumns([...columns, newColumnItem]);
+    setDiscoveredFields(discoveredFields.filter(f => f !== field));
+    toast.success(`Colonna "${label}" aggiunta!`);
+  };
+
+  // Aggiungi tutti i campi scoperti
+  const handleAddAllDiscoveredFields = () => {
+    const newColumns = discoveredFields.map(field => {
+      const label = field
+        .replace(/_/g, ' ')
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, str => str.toUpperCase())
+        .trim();
+      
+      return {
+        id: field,
+        label: label,
+        field: field,
+        visible: true,
+        locked: false,
+        custom: true,
+      };
+    });
+
+    setColumns([...columns, ...newColumns]);
+    setDiscoveredFields([]);
+    toast.success(`${newColumns.length} colonne aggiunte!`);
+  };
 
   const handleAddColumn = () => {
     if (!newColumn.label.trim() || !newColumn.field.trim()) {
@@ -173,6 +251,39 @@ export default function LeadColumnsConfig({ onClose, onSave }) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Campi scoperti dai leads */}
+          {discoveredFields.length > 0 && (
+            <div className="space-y-3 p-4 bg-purple-900/20 rounded-lg border border-purple-500/30">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-purple-300 flex items-center gap-2">
+                  <Sparkles size={16} />
+                  Campi Scoperti dai Leads ({discoveredFields.length})
+                </h3>
+                <button
+                  onClick={handleAddAllDiscoveredFields}
+                  className="px-3 py-1 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700"
+                >
+                  Aggiungi Tutti
+                </button>
+              </div>
+              <p className="text-xs text-purple-400/70">
+                Questi campi esistono nei tuoi leads ma non sono ancora configurati come colonne:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {discoveredFields.map(field => (
+                  <button
+                    key={field}
+                    onClick={() => handleAddDiscoveredField(field)}
+                    className="px-3 py-1.5 bg-purple-600/30 text-purple-200 text-sm rounded-lg hover:bg-purple-600/50 transition-colors flex items-center gap-1"
+                  >
+                    <Plus size={14} />
+                    {field}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Lista colonne esistenti */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-slate-300 mb-3">Colonne Esistenti</h3>

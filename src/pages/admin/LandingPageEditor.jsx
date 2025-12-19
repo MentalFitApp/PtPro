@@ -1486,11 +1486,15 @@ const PageSettingsModal = ({ page, tenantId, onSave, onClose }) => {
                                   className="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-xs text-white"
                                 >
                                   <option value="text">Testo</option>
+                                  <option value="name">Nome</option>
+                                  <option value="cognome">Cognome</option>
                                   <option value="email">Email</option>
                                   <option value="tel">Telefono</option>
                                   <option value="textarea">Area testo</option>
                                   <option value="select">Select</option>
                                   <option value="date">Data</option>
+                                  <option value="number">Numero</option>
+                                  <option value="checkbox">Checkbox</option>
                                 </select>
                                 <button
                                   type="button"
