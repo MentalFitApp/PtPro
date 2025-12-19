@@ -335,7 +335,6 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
                   alt="Hero" 
                   className={`w-full shadow-2xl ${imageClass} ${fitClasses[splitImageFit]}`}
                 />
-                />
               ) : (
                 <div className={`aspect-square bg-gradient-to-br from-sky-500/20 to-cyan-500/20 ${imageClass} flex items-center justify-center border border-white/10`}>
                   <span className="text-4xl md:text-6xl opacity-50">📷</span>
