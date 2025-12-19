@@ -540,11 +540,12 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                         <span className="text-slate-400 text-sm">%</span>
                       </div>
                     </FieldGroup>
-                    <FieldGroup label="Stile Immagine">
-                      {renderField('centeredImageStyle', localSettings.centeredImageStyle || 'rounded', 'select', {
+                    <FieldGroup label="Stile Immagine" hint="Usa 'Nessuno' per PNG trasparenti">
+                      {renderField('centeredImageStyle', localSettings.centeredImageStyle || 'none', 'select', {
                         options: [
-                          { value: 'rounded', label: 'Arrotondata' },
-                          { value: 'circle', label: 'Cerchio' },
+                          { value: 'none', label: 'Nessuno (per PNG trasparenti)' },
+                          { value: 'rounded', label: 'Arrotondata con ombra' },
+                          { value: 'circle', label: 'Cerchio con ombra' },
                           { value: 'square', label: 'Quadrata' },
                         ]
                       })}
