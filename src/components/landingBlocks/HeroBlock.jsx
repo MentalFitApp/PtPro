@@ -47,16 +47,20 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
     splitImage = '',
     splitImageStyle = 'rounded',
     splitImagePosition = 'right',
-    splitImageMobileSize = 'large',
     splitImageFit = 'cover',
-    splitImageHeight = 'auto',
     splitMobileLayout = 'image-first',
+    // Nuove opzioni avanzate immagine
+    splitImageScale = 100,
+    splitImageX = 0,
+    splitImageY = 0,
     // Text style settings
     titleColor = '#ffffff',
-    titleSize = 'default',
     subtitleColor = '#cbd5e1',
     highlightedWords = '',
     highlightColor = '#0ea5e9',
+    // Dimensioni testo personalizzate
+    titleSizeCustom = 48,
+    subtitleSizeCustom = 18,
   } = settings || {};
 
   const [showFormPopup, setShowFormPopup] = useState(false);
@@ -67,12 +71,26 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
     right: 'text-right items-end',
   };
 
-  // Classi dimensione titolo
-  const titleSizeClasses = {
-    small: 'text-2xl md:text-3xl lg:text-4xl',
-    default: 'text-3xl md:text-4xl lg:text-5xl xl:text-6xl',
-    large: 'text-4xl md:text-5xl lg:text-6xl xl:text-7xl',
-    xlarge: 'text-5xl md:text-6xl lg:text-7xl xl:text-8xl',
+  // Calcola dimensioni responsive per il testo
+  const getTitleStyle = () => ({
+    color: titleColor,
+    fontSize: `${titleSizeCustom * 0.65}px`, // Mobile base
+  });
+  
+  const getSubtitleStyle = () => ({
+    color: subtitleColor,
+    fontSize: `${subtitleSizeCustom}px`,
+  });
+
+  // Stile per desktop (via media query inline non funziona, usiamo clamp)
+  const titleResponsiveStyle = {
+    fontSize: `clamp(${titleSizeCustom * 0.5}px, 5vw, ${titleSizeCustom}px)`,
+    lineHeight: 1.1,
+  };
+
+  const subtitleResponsiveStyle = {
+    fontSize: `clamp(${subtitleSizeCustom * 0.85}px, 2vw, ${subtitleSizeCustom}px)`,
+    lineHeight: 1.5,
   };
 
   // Renderizza titolo con parole evidenziate
@@ -194,32 +212,23 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
       blob: 'rounded-[30%_70%_70%_30%_/_30%_30%_70%_70%]',
     };
 
-    // Classi per dimensione mobile
-    const mobileSizeClasses = {
-      small: 'max-w-[200px] mx-auto',
-      medium: 'max-w-[300px] mx-auto',
-      large: 'max-w-[400px] mx-auto',
-      full: 'w-full',
-    };
-
-    // Classi per altezza immagine
-    const heightClasses = {
-      auto: '',
-      square: 'aspect-square',
-      portrait: 'aspect-[3/4]',
-      landscape: 'aspect-video',
-    };
-
     // Classi per fit immagine
     const fitClasses = {
       cover: 'object-cover',
       contain: 'object-contain',
       fill: 'object-fill',
+      none: 'object-none',
     };
 
     const imageClass = imageStyleClasses[splitImageStyle] || imageStyleClasses.rounded;
     const isImageLeft = splitImagePosition === 'left';
     const mobileImageFirst = splitMobileLayout === 'image-first';
+
+    // Stile immagine con scala e posizione
+    const imageWrapperStyle = {
+      transform: `translate(${splitImageX}%, ${splitImageY}%) scale(${splitImageScale / 100})`,
+      transformOrigin: 'center center',
+    };
 
     // Helper per renderizzare FormPopup
     const renderFormPopup = () => (
@@ -280,12 +289,15 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
                   {badgeText}
                 </span>
               )}
-              <h1 className={`${titleSizeClasses[titleSize] || titleSizeClasses.default} font-bold leading-tight mb-4 md:mb-6`}>
+              <h1 
+                className="font-bold mb-4 md:mb-6"
+                style={{ ...titleResponsiveStyle, color: titleColor }}
+              >
                 {renderTitle()}
               </h1>
               <p 
-                className="text-base md:text-lg lg:text-xl mb-6 md:mb-8 max-w-xl leading-relaxed"
-                style={{ color: subtitleColor }}
+                className="mb-6 md:mb-8 max-w-xl leading-relaxed"
+                style={{ ...subtitleResponsiveStyle, color: subtitleColor }}
               >
                 {subtitle}
               </p>
@@ -314,13 +326,15 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
               initial={{ opacity: 0, x: isImageLeft ? -30 : 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className={`relative ${mobileImageFirst ? 'order-1' : 'order-2'} lg:order-${isImageLeft ? '1' : '2'} ${mobileSizeClasses[splitImageMobileSize]} lg:max-w-none lg:mx-0`}
+              className={`relative ${mobileImageFirst ? 'order-1' : 'order-2'} lg:order-${isImageLeft ? '1' : '2'}`}
+              style={imageWrapperStyle}
             >
               {splitImage ? (
                 <img 
                   src={splitImage} 
                   alt="Hero" 
-                  className={`w-full shadow-2xl ${imageClass} ${fitClasses[splitImageFit]} ${heightClasses[splitImageHeight]}`}
+                  className={`w-full shadow-2xl ${imageClass} ${fitClasses[splitImageFit]}`}
+                />
                 />
               ) : (
                 <div className={`aspect-square bg-gradient-to-br from-sky-500/20 to-cyan-500/20 ${imageClass} flex items-center justify-center border border-white/10`}>
@@ -469,12 +483,15 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
               {badgeText}
             </motion.span>
           )}
-          <h1 className={`${titleSizeClasses[titleSize] || titleSizeClasses.default} font-bold leading-tight mb-4 md:mb-6 text-center`}>
+          <h1 
+            className="font-bold mb-4 md:mb-6 text-center"
+            style={{ ...titleResponsiveStyle, color: titleColor }}
+          >
             {renderTitle()}
           </h1>
           <p 
-            className="text-base md:text-lg lg:text-xl mb-6 md:mb-8 max-w-2xl text-center"
-            style={{ color: subtitleColor }}
+            className="mb-6 md:mb-8 max-w-2xl text-center"
+            style={{ ...subtitleResponsiveStyle, color: subtitleColor }}
           >
             {subtitle}
           </p>

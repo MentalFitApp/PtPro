@@ -494,15 +494,71 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                     />
                   )}
                 </FieldGroup>
-                <FieldGroup label="Dimensione Immagine Mobile">
-                  {renderField('splitImageMobileSize', localSettings.splitImageMobileSize || 'large', 'select', {
-                    options: [
-                      { value: 'small', label: 'Piccola' },
-                      { value: 'medium', label: 'Media' },
-                      { value: 'large', label: 'Grande' },
-                      { value: 'full', label: 'Piena larghezza' },
-                    ]
-                  })}
+                <FieldGroup label="Scala Immagine" hint="Ingrandisci o riduci l'immagine">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      value={localSettings.splitImageScale || 100}
+                      onChange={(e) => handleChange('splitImageScale', parseInt(e.target.value))}
+                      min={50}
+                      max={200}
+                      step={5}
+                      className="flex-1"
+                    />
+                    <input
+                      type="number"
+                      value={localSettings.splitImageScale || 100}
+                      onChange={(e) => handleChange('splitImageScale', parseInt(e.target.value) || 100)}
+                      min={50}
+                      max={200}
+                      className="w-16 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm text-center"
+                    />
+                    <span className="text-slate-400 text-sm">%</span>
+                  </div>
+                </FieldGroup>
+                <FieldGroup label="Posizione Orizzontale (X)" hint="Sposta l'immagine a sinistra/destra">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      value={localSettings.splitImageX || 0}
+                      onChange={(e) => handleChange('splitImageX', parseInt(e.target.value))}
+                      min={-100}
+                      max={100}
+                      step={5}
+                      className="flex-1"
+                    />
+                    <input
+                      type="number"
+                      value={localSettings.splitImageX || 0}
+                      onChange={(e) => handleChange('splitImageX', parseInt(e.target.value) || 0)}
+                      min={-100}
+                      max={100}
+                      className="w-16 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm text-center"
+                    />
+                    <span className="text-slate-400 text-sm">%</span>
+                  </div>
+                </FieldGroup>
+                <FieldGroup label="Posizione Verticale (Y)" hint="Sposta l'immagine in alto/basso">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      value={localSettings.splitImageY || 0}
+                      onChange={(e) => handleChange('splitImageY', parseInt(e.target.value))}
+                      min={-100}
+                      max={100}
+                      step={5}
+                      className="flex-1"
+                    />
+                    <input
+                      type="number"
+                      value={localSettings.splitImageY || 0}
+                      onChange={(e) => handleChange('splitImageY', parseInt(e.target.value) || 0)}
+                      min={-100}
+                      max={100}
+                      className="w-16 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm text-center"
+                    />
+                    <span className="text-slate-400 text-sm">%</span>
+                  </div>
                 </FieldGroup>
                 <FieldGroup label="Adattamento Immagine">
                   {renderField('splitImageFit', localSettings.splitImageFit || 'cover', 'select', {
@@ -510,16 +566,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                       { value: 'cover', label: 'Riempi (ritaglia)' },
                       { value: 'contain', label: 'Adatta (mostra tutto)' },
                       { value: 'fill', label: 'Allunga' },
-                    ]
-                  })}
-                </FieldGroup>
-                <FieldGroup label="Altezza Immagine">
-                  {renderField('splitImageHeight', localSettings.splitImageHeight || 'auto', 'select', {
-                    options: [
-                      { value: 'auto', label: 'Automatica' },
-                      { value: 'square', label: 'Quadrata' },
-                      { value: 'portrait', label: 'Verticale (3:4)' },
-                      { value: 'landscape', label: 'Orizzontale (16:9)' },
+                      { value: 'none', label: 'Nessuno (dimensione originale)' },
                     ]
                   })}
                 </FieldGroup>
@@ -571,15 +618,52 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                   />
                 </div>
               </FieldGroup>
-              <FieldGroup label="Dimensione Titolo">
-                {renderField('titleSize', localSettings.titleSize || 'default', 'select', {
-                  options: [
-                    { value: 'small', label: 'Piccolo (3xl)' },
-                    { value: 'default', label: 'Normale (4xl-6xl)' },
-                    { value: 'large', label: 'Grande (5xl-7xl)' },
-                    { value: 'xlarge', label: 'Extra Grande (6xl-8xl)' },
-                  ]
-                })}
+              <FieldGroup label="Dimensione Titolo" hint="Trascina per regolare la dimensione">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      value={localSettings.titleSizeCustom || 48}
+                      onChange={(e) => handleChange('titleSizeCustom', parseInt(e.target.value))}
+                      min={20}
+                      max={120}
+                      step={1}
+                      className="flex-1"
+                    />
+                    <input
+                      type="number"
+                      value={localSettings.titleSizeCustom || 48}
+                      onChange={(e) => handleChange('titleSizeCustom', parseInt(e.target.value) || 48)}
+                      min={20}
+                      max={120}
+                      className="w-16 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm text-center"
+                    />
+                    <span className="text-slate-400 text-sm">px</span>
+                  </div>
+                  <div className="text-xs text-slate-500">Mobile: automaticamente ridotto del 30%</div>
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Dimensione Sottotitolo" hint="Trascina per regolare la dimensione">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    value={localSettings.subtitleSizeCustom || 18}
+                    onChange={(e) => handleChange('subtitleSizeCustom', parseInt(e.target.value))}
+                    min={12}
+                    max={36}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <input
+                    type="number"
+                    value={localSettings.subtitleSizeCustom || 18}
+                    onChange={(e) => handleChange('subtitleSizeCustom', parseInt(e.target.value) || 18)}
+                    min={12}
+                    max={36}
+                    className="w-16 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm text-center"
+                  />
+                  <span className="text-slate-400 text-sm">px</span>
+                </div>
               </FieldGroup>
               <FieldGroup label="Colore Sottotitolo">
                 <div className="flex gap-2">
