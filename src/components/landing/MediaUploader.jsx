@@ -13,6 +13,7 @@ import {
   FileImage,
   Trash2,
   ExternalLink,
+  Crop,
 } from 'lucide-react';
 import { 
   uploadLandingMedia, 
@@ -21,10 +22,11 @@ import {
   estimateUploadTime,
   MEDIA_TYPES 
 } from '../../services/landingMediaUpload';
+import ImageCropper from './ImageCropper';
 
 /**
  * MediaUploader - Componente per upload immagini e video nelle landing pages
- * Supporta drag & drop, file multipli, progress tracking
+ * Supporta drag & drop, file multipli, progress tracking, crop immagini
  */
 export default function MediaUploader({ 
   tenantId, 
@@ -38,10 +40,14 @@ export default function MediaUploader({
   label = 'Carica Media',
   hint = 'Trascina qui o clicca per caricare',
   compact = false,
+  enableCrop = true, // Abilita crop per immagini
+  cropAspectRatio = null, // null = libero, 1 = quadrato, 16/9, etc.
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploads, setUploads] = useState([]); // { id, file, progress, status, url, error }
   const [error, setError] = useState(null);
+  const [cropImage, setCropImage] = useState(null); // { file, url } per il cropper
+  const [pendingFile, setPendingFile] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleDragOver = useCallback((e) => {
@@ -81,6 +87,20 @@ export default function MediaUploader({
 
     if (validFiles.length === 0) return;
 
+    // Se è un'immagine e crop è abilitato, mostra il cropper
+    const firstFile = validFiles[0];
+    if (enableCrop && firstFile.type.startsWith('image/') && !multiple) {
+      const imageUrl = URL.createObjectURL(firstFile);
+      setCropImage({ file: firstFile, url: imageUrl });
+      setPendingFile(firstFile);
+      return;
+    }
+
+    // Altrimenti procedi con l'upload diretto
+    processUpload(validFiles);
+  };
+
+  const processUpload = (validFiles) => {
     // Aggiungi a lista upload
     const newUploads = validFiles.map((file) => ({
       id: `${Date.now()}-${Math.random()}`,
@@ -97,6 +117,30 @@ export default function MediaUploader({
     for (const upload of newUploads) {
       uploadFile(upload);
     }
+  };
+
+  const handleCropComplete = (croppedFile, previewUrl) => {
+    setCropImage(null);
+    setPendingFile(null);
+    processUpload([croppedFile]);
+  };
+
+  const handleCropCancel = () => {
+    // Carica l'originale senza crop
+    if (pendingFile) {
+      processUpload([pendingFile]);
+    }
+    setCropImage(null);
+    setPendingFile(null);
+  };
+
+  const handleSkipCrop = () => {
+    // Carica l'originale senza crop
+    if (pendingFile) {
+      processUpload([pendingFile]);
+    }
+    setCropImage(null);
+    setPendingFile(null);
   };
 
   const uploadFile = async (upload) => {
@@ -144,39 +188,61 @@ export default function MediaUploader({
   // Versione compatta per blocchi
   if (compact) {
     return (
-      <div className="space-y-2">
-        {currentMedia && (
-          <div className="relative group">
-            {currentMedia.startsWith('data:') || currentMedia.includes('video') ? (
-              <video src={currentMedia} className="w-full h-32 object-cover rounded-lg" />
-            ) : (
-              <img src={currentMedia} alt="" className="w-full h-32 object-cover rounded-lg" />
-            )}
-            <button
-              onClick={() => onUpload?.(null)}
-              className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Trash2 className="w-4 h-4 text-white" />
-            </button>
-          </div>
+      <>
+        {/* Image Cropper Modal */}
+        {cropImage && (
+          <ImageCropper
+            imageUrl={cropImage.url}
+            onCropComplete={handleCropComplete}
+            onCancel={handleSkipCrop}
+            aspectRatio={cropAspectRatio}
+          />
         )}
         
-        <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-600 rounded-lg hover:border-sky-500 cursor-pointer transition-colors">
-          <Upload className="w-4 h-4 text-slate-400" />
-          <span className="text-sm text-slate-400">{label}</span>
-          <input
-            type="file"
-            accept={accept}
-            onChange={(e) => handleFiles(Array.from(e.target.files))}
-            className="hidden"
-          />
-        </label>
-      </div>
+        <div className="space-y-2">
+          {currentMedia && (
+            <div className="relative group">
+              {currentMedia.startsWith('data:') || currentMedia.includes('video') ? (
+                <video src={currentMedia} className="w-full h-32 object-cover rounded-lg" />
+              ) : (
+                <img src={currentMedia} alt="" className="w-full h-32 object-cover rounded-lg" />
+              )}
+              <button
+                onClick={() => onUpload?.(null)}
+                className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Trash2 className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          )}
+          
+          <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-600 rounded-lg hover:border-sky-500 cursor-pointer transition-colors">
+            <Upload className="w-4 h-4 text-slate-400" />
+            <span className="text-sm text-slate-400">{label}</span>
+            <input
+              type="file"
+              accept={accept}
+              onChange={(e) => handleFiles(Array.from(e.target.files))}
+              className="hidden"
+            />
+          </label>
+        </div>
+      </>
     );
   }
 
   return (
     <div className="space-y-4">
+      {/* Image Cropper Modal */}
+      {cropImage && (
+        <ImageCropper
+          imageUrl={cropImage.url}
+          onCropComplete={handleCropComplete}
+          onCancel={handleSkipCrop}
+          aspectRatio={cropAspectRatio}
+        />
+      )}
+      
       {/* Drop Zone */}
       <div
         onDragOver={handleDragOver}

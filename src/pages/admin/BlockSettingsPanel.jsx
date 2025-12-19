@@ -540,12 +540,12 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                         <span className="text-slate-400 text-sm">%</span>
                       </div>
                     </FieldGroup>
-                    <FieldGroup label="Spazio dopo immagine" hint="Distanza tra immagine e testo successivo">
+                    <FieldGroup label="Spazio sopra immagine">
                       <div className="flex items-center gap-3">
                         <input
                           type="range"
-                          value={localSettings.centeredImageSpacing || 24}
-                          onChange={(e) => handleChange('centeredImageSpacing', parseInt(e.target.value))}
+                          value={localSettings.centeredImageSpacingTop || 0}
+                          onChange={(e) => handleChange('centeredImageSpacingTop', parseInt(e.target.value))}
                           min={0}
                           max={80}
                           step={4}
@@ -553,8 +553,30 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                         />
                         <input
                           type="number"
-                          value={localSettings.centeredImageSpacing || 24}
-                          onChange={(e) => handleChange('centeredImageSpacing', parseInt(e.target.value) || 24)}
+                          value={localSettings.centeredImageSpacingTop || 0}
+                          onChange={(e) => handleChange('centeredImageSpacingTop', parseInt(e.target.value) || 0)}
+                          min={0}
+                          max={80}
+                          className="w-16 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm text-center"
+                        />
+                        <span className="text-slate-400 text-sm">px</span>
+                      </div>
+                    </FieldGroup>
+                    <FieldGroup label="Spazio sotto immagine">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="range"
+                          value={localSettings.centeredImageSpacingBottom || 24}
+                          onChange={(e) => handleChange('centeredImageSpacingBottom', parseInt(e.target.value))}
+                          min={0}
+                          max={80}
+                          step={4}
+                          className="flex-1"
+                        />
+                        <input
+                          type="number"
+                          value={localSettings.centeredImageSpacingBottom || 24}
+                          onChange={(e) => handleChange('centeredImageSpacingBottom', parseInt(e.target.value) || 24)}
                           min={0}
                           max={80}
                           className="w-16 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm text-center"

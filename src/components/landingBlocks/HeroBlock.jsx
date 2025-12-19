@@ -59,7 +59,8 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
     centeredImagePosition = 'above-title',
     centeredImageWidth = 60,
     centeredImageStyle = 'rounded',
-    centeredImageSpacing = 24,
+    centeredImageSpacingTop = 0,
+    centeredImageSpacingBottom = 24,
     // Text style settings
     titleColor = '#ffffff',
     subtitleColor = '#cbd5e1',
@@ -505,7 +506,8 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
               style={{ 
                 width: `${centeredImageWidth}%`, 
                 maxWidth: '100%',
-                marginBottom: `${centeredImageSpacing}px`
+                marginTop: `${centeredImageSpacingTop}px`,
+                marginBottom: `${centeredImageSpacingBottom}px`
               }}
             />
           )}
@@ -532,7 +534,8 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
               style={{ 
                 width: `${centeredImageWidth}%`, 
                 maxWidth: '100%',
-                marginBottom: `${centeredImageSpacing}px`
+                marginTop: `${centeredImageSpacingTop}px`,
+                marginBottom: `${centeredImageSpacingBottom}px`
               }}
             />
           )}
@@ -559,7 +562,8 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
               style={{ 
                 width: `${centeredImageWidth}%`, 
                 maxWidth: '100%',
-                marginBottom: `${centeredImageSpacing}px`
+                marginTop: `${centeredImageSpacingTop}px`,
+                marginBottom: `${centeredImageSpacingBottom}px`
               }}
             />
           )}
