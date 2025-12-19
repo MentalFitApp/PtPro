@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../../contexts/ToastContext';
 import { db } from '../../firebase';
@@ -187,7 +188,10 @@ const FormPopup = ({
     onClose();
   };
 
-  return (
+  console.log('🟣 FormPopup render, isOpen:', isOpen, 'formFields:', formFields);
+
+  // Usa createPortal per renderizzare nel body, evitando problemi con overflow/transform dei parent
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -203,12 +207,12 @@ const FormPopup = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-slate-800 border border-white/10 rounded-2xl p-8 max-w-md w-full relative shadow-2xl"
+            className="bg-slate-800 border border-white/10 rounded-2xl p-8 max-w-md w-full relative shadow-2xl max-h-[90vh] overflow-y-auto"
           >
             {/* Close button */}
             <button
               onClick={handleClose}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors z-10"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -218,171 +222,173 @@ const FormPopup = ({
             {/* Success state */}
             {isSubmitted ? (
               <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-8"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-2">Grazie!</h3>
-              <p className="text-slate-300">{successMessage}</p>
-              <button
-                onClick={handleClose}
-                className="mt-6 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-8"
               >
-                Chiudi
-              </button>
-            </motion.div>
-          ) : (
-            <>
-              {/* Header */}
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-white">{title}</h3>
-                {subtitle && (
-                  <p className="text-slate-400 mt-2">{subtitle}</p>
-                )}
-              </div>
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">Grazie!</h3>
+                <p className="text-slate-300">{successMessage}</p>
+                <button
+                  onClick={handleClose}
+                  className="mt-6 px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                >
+                  Chiudi
+                </button>
+              </motion.div>
+            ) : (
+              <>
+                {/* Header */}
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-white">{title}</h3>
+                  {subtitle && (
+                    <p className="text-slate-400 mt-2">{subtitle}</p>
+                  )}
+                </div>
 
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {formFields.map((field) => (
-                  <div key={field.id}>
-                    {field.type !== 'checkbox' && (
-                      <label className="block text-sm font-medium text-slate-300 mb-1">
-                        {field.label}
-                        {field.required && <span className="text-red-400 ml-1">*</span>}
-                      </label>
-                    )}
-                    
-                    {/* Textarea */}
-                    {field.type === 'textarea' && (
-                      <textarea
-                        value={formData[field.id] || ''}
-                        onChange={(e) => handleChange(field.id, e.target.value)}
-                        placeholder={field.placeholder}
-                        rows={3}
-                        className={`w-full px-4 py-3 bg-white/5 border ${
-                          errors[field.id] ? 'border-red-500' : 'border-white/10'
-                        } rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none`}
-                      />
-                    )}
-                    
-                    {/* Select */}
-                    {field.type === 'select' && (
-                      <select
-                        value={formData[field.id] || ''}
-                        onChange={(e) => handleChange(field.id, e.target.value)}
-                        className={`w-full px-4 py-3 bg-white/5 border ${
-                          errors[field.id] ? 'border-red-500' : 'border-white/10'
-                        } rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
-                      >
-                        <option value="" className="bg-slate-800">{field.placeholder || 'Seleziona...'}</option>
-                        {(field.options || []).map((opt, i) => (
-                          <option key={i} value={opt} className="bg-slate-800">{opt}</option>
-                        ))}
-                      </select>
-                    )}
-                    
-                    {/* Checkbox */}
-                    {field.type === 'checkbox' && (
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData[field.id] || false}
-                          onChange={(e) => handleChange(field.id, e.target.checked)}
-                          className={`w-5 h-5 rounded bg-white/5 border ${
-                            errors[field.id] ? 'border-red-500' : 'border-white/10'
-                          } text-blue-500 focus:ring-2 focus:ring-blue-500`}
-                        />
-                        <span className="text-sm text-slate-300">
+                {/* Form */}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {formFields.map((field) => (
+                    <div key={field.id}>
+                      {field.type !== 'checkbox' && (
+                        <label className="block text-sm font-medium text-slate-300 mb-1">
                           {field.label}
                           {field.required && <span className="text-red-400 ml-1">*</span>}
-                        </span>
-                      </label>
-                    )}
-                    
-                    {/* Date */}
-                    {field.type === 'date' && (
-                      <input
-                        type="date"
-                        value={formData[field.id] || ''}
-                        onChange={(e) => handleChange(field.id, e.target.value)}
-                        className={`w-full px-4 py-3 bg-white/5 border ${
-                          errors[field.id] ? 'border-red-500' : 'border-white/10'
-                        } rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
-                      />
-                    )}
-                    
-                    {/* Number */}
-                    {field.type === 'number' && (
-                      <input
-                        type="number"
-                        value={formData[field.id] || ''}
-                        onChange={(e) => handleChange(field.id, e.target.value)}
-                        placeholder={field.placeholder}
-                        className={`w-full px-4 py-3 bg-white/5 border ${
-                          errors[field.id] ? 'border-red-500' : 'border-white/10'
-                        } rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
-                      />
-                    )}
-                    
-                    {/* Text, Email, Tel (default) */}
-                    {!['textarea', 'select', 'checkbox', 'date', 'number'].includes(field.type) && (
-                      <input
-                        type={field.type}
-                        value={formData[field.id] || ''}
-                        onChange={(e) => handleChange(field.id, e.target.value)}
-                        placeholder={field.placeholder}
-                        className={`w-full px-4 py-3 bg-white/5 border ${
-                          errors[field.id] ? 'border-red-500' : 'border-white/10'
-                        } rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
-                      />
-                    )}
-                    
-                    {errors[field.id] && (
-                      <p className="text-red-400 text-sm mt-1">{errors[field.id]}</p>
-                    )}
-                  </div>
-                ))}
+                        </label>
+                      )}
+                      
+                      {/* Textarea */}
+                      {field.type === 'textarea' && (
+                        <textarea
+                          value={formData[field.id] || ''}
+                          onChange={(e) => handleChange(field.id, e.target.value)}
+                          placeholder={field.placeholder}
+                          rows={3}
+                          className={`w-full px-4 py-3 bg-white/5 border ${
+                            errors[field.id] ? 'border-red-500' : 'border-white/10'
+                          } rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none`}
+                        />
+                      )}
+                      
+                      {/* Select */}
+                      {field.type === 'select' && (
+                        <select
+                          value={formData[field.id] || ''}
+                          onChange={(e) => handleChange(field.id, e.target.value)}
+                          className={`w-full px-4 py-3 bg-white/5 border ${
+                            errors[field.id] ? 'border-red-500' : 'border-white/10'
+                          } rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
+                        >
+                          <option value="" className="bg-slate-800">{field.placeholder || 'Seleziona...'}</option>
+                          {(field.options || []).map((opt, i) => (
+                            <option key={i} value={opt} className="bg-slate-800">{opt}</option>
+                          ))}
+                        </select>
+                      )}
+                      
+                      {/* Checkbox */}
+                      {field.type === 'checkbox' && (
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData[field.id] || false}
+                            onChange={(e) => handleChange(field.id, e.target.checked)}
+                            className={`w-5 h-5 rounded bg-white/5 border ${
+                              errors[field.id] ? 'border-red-500' : 'border-white/10'
+                            } text-blue-500 focus:ring-2 focus:ring-blue-500`}
+                          />
+                          <span className="text-sm text-slate-300">
+                            {field.label}
+                            {field.required && <span className="text-red-400 ml-1">*</span>}
+                          </span>
+                        </label>
+                      )}
+                      
+                      {/* Date */}
+                      {field.type === 'date' && (
+                        <input
+                          type="date"
+                          value={formData[field.id] || ''}
+                          onChange={(e) => handleChange(field.id, e.target.value)}
+                          className={`w-full px-4 py-3 bg-white/5 border ${
+                            errors[field.id] ? 'border-red-500' : 'border-white/10'
+                          } rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
+                        />
+                      )}
+                      
+                      {/* Number */}
+                      {field.type === 'number' && (
+                        <input
+                          type="number"
+                          value={formData[field.id] || ''}
+                          onChange={(e) => handleChange(field.id, e.target.value)}
+                          placeholder={field.placeholder}
+                          className={`w-full px-4 py-3 bg-white/5 border ${
+                            errors[field.id] ? 'border-red-500' : 'border-white/10'
+                          } rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
+                        />
+                      )}
+                      
+                      {/* Text, Email, Tel (default) */}
+                      {!['textarea', 'select', 'checkbox', 'date', 'number'].includes(field.type) && (
+                        <input
+                          type={field.type}
+                          value={formData[field.id] || ''}
+                          onChange={(e) => handleChange(field.id, e.target.value)}
+                          placeholder={field.placeholder}
+                          className={`w-full px-4 py-3 bg-white/5 border ${
+                            errors[field.id] ? 'border-red-500' : 'border-white/10'
+                          } rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
+                        />
+                      )}
+                      
+                      {errors[field.id] && (
+                        <p className="text-red-400 text-sm mt-1">{errors[field.id]}</p>
+                      )}
+                    </div>
+                  ))}
 
-                {/* Submit button */}
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
-                  style={accentColor ? { 
-                    background: `linear-gradient(to right, ${accentColor}, ${accentColor}dd)` 
-                  } : {}}
-                >
-                  {isSubmitting ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      Invio in corso...
-                    </span>
-                  ) : (
-                    submitText
-                  )}
-                </button>
+                  {/* Submit button */}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
+                    style={accentColor ? { 
+                      background: `linear-gradient(to right, ${accentColor}, ${accentColor}dd)` 
+                    } : {}}
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        Invio in corso...
+                      </span>
+                    ) : (
+                      submitText
+                    )}
+                  </button>
 
-                {/* Privacy note */}
-                <p className="text-xs text-slate-500 text-center">
-                  Inviando il form accetti la nostra{' '}
-                  <a href="/privacy" target="_blank" className="text-blue-400 hover:underline">
-                    Privacy Policy
-                  </a>
-                </p>
-              </form>
-            </>
-          )}
+                  {/* Privacy note */}
+                  <p className="text-xs text-slate-500 text-center">
+                    Inviando il form accetti la nostra{' '}
+                    <a href="/privacy" target="_blank" className="text-blue-400 hover:underline">
+                      Privacy Policy
+                    </a>
+                  </p>
+                </form>
+              </>
+            )}
+          </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

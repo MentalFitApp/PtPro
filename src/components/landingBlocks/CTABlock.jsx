@@ -95,6 +95,7 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
       
       case 'form_popup':
         e.preventDefault();
+        console.log('🔴 CTA CLICK: form_popup action triggered, setting showFormPopup to true');
         setShowFormPopup(true);
         break;
       
@@ -122,26 +123,29 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
   };
 
   // Helper per renderizzare il FormPopup
-  const renderFormPopup = () => (
-    <FormPopup
-      isOpen={showFormPopup}
-      onClose={() => setShowFormPopup(false)}
-      settings={{
-        title: formPopupTitle,
-        subtitle: formPopupSubtitle,
-        fields: formPopupFields,
-        customFields: formPopupCustomFields,
-        submitText: formPopupSubmitText,
-        successMessage: formPopupSuccessMessage,
-        afterSubmit: formPopupAfterSubmit,
-        redirectUrl: formPopupRedirectUrl,
-        whatsappNumber: formPopupWhatsappNumber,
-      }}
-      pageId={pageId}
-      tenantId={tenantId}
-      isPreview={isPreview}
-    />
-  );
+  const renderFormPopup = () => {
+    console.log('🟢 renderFormPopup called, showFormPopup:', showFormPopup);
+    return (
+      <FormPopup
+        isOpen={showFormPopup}
+        onClose={() => setShowFormPopup(false)}
+        settings={{
+          title: formPopupTitle,
+          subtitle: formPopupSubtitle,
+          fields: formPopupFields,
+          customFields: formPopupCustomFields,
+          submitText: formPopupSubmitText,
+          successMessage: formPopupSuccessMessage,
+          afterSubmit: formPopupAfterSubmit,
+          redirectUrl: formPopupRedirectUrl,
+          whatsappNumber: formPopupWhatsappNumber,
+        }}
+        pageId={pageId}
+        tenantId={tenantId}
+        isPreview={isPreview}
+      />
+    );
+  };
 
   const scrollToElement = (e, href) => {
     if (isPreview) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { DynamicBlock, FormPopup } from '../../components/landingBlocks';
 import { X } from 'lucide-react';
@@ -148,10 +148,14 @@ export default function PublicLandingPage() {
 
   const trackPageView = async () => {
     try {
-      const pageRef = doc(db, `tenants/${tenantId}/${page.isNewSystem ? 'landing_pages' : 'landingPages'}/${page.id}`);
-      await updateDoc(pageRef, {
-        'analytics.views': increment(1),
-        'analytics.lastViewedAt': new Date().toISOString(),
+      // Usa landing_analytics per il tracking pubblico (allow create: if true)
+      await addDoc(collection(db, `tenants/${tenantId}/landing_analytics`), {
+        pageId: page.id,
+        pageSlug: slug,
+        type: 'view',
+        timestamp: serverTimestamp(),
+        userAgent: navigator.userAgent,
+        referrer: document.referrer || null,
       });
     } catch (err) {
       console.error('Error tracking page view:', err);
@@ -162,9 +166,12 @@ export default function PublicLandingPage() {
     if (!page?.id || !tenantId) return;
     
     try {
-      const pageRef = doc(db, `tenants/${tenantId}/${page.isNewSystem ? 'landing_pages' : 'landingPages'}/${page.id}`);
-      await updateDoc(pageRef, {
-        'analytics.conversions': increment(1),
+      // Usa landing_analytics per il tracking pubblico
+      await addDoc(collection(db, `tenants/${tenantId}/landing_analytics`), {
+        pageId: page.id,
+        pageSlug: slug,
+        type: 'conversion',
+        timestamp: serverTimestamp(),
       });
     } catch (err) {
       console.error('Error tracking conversion:', err);
