@@ -28,7 +28,7 @@ import {
   Globe,
   User,
   ClipboardList,
-}
+} from 'lucide-react';
 
 /**
  * LandingPagesLeads - Pagina dedicata per gestire tutti i leads delle landing pages
@@ -120,27 +120,49 @@ const LandingPagesLeads = () => {
 
   // Helper per ottenere l'etichetta di un campo
   const getFieldLabel = (fieldName) => {
-    return knownFieldLabels[fieldName] || fieldName.charAt(0).toUpperCase() + fieldName.slice(1).replace(/([A-Z])/g, ' $1');
+    // Rimuovi prefisso field_ se presente per la ricerca etichetta
+    const cleanName = fieldName.replace(/^field_/, '');
+    return knownFieldLabels[cleanName] || knownFieldLabels[fieldName] || 
+           cleanName.charAt(0).toUpperCase() + cleanName.slice(1).replace(/([A-Z])/g, ' $1');
+  };
+
+  // Helper per cercare un valore in campi con varianti (con o senza field_)
+  const getFieldValue = (lead, ...fieldNames) => {
+    for (const name of fieldNames) {
+      if (lead[name]) return lead[name];
+      if (lead[`field_${name}`]) return lead[`field_${name}`];
+    }
+    return null;
   };
 
   // Helper per ottenere il nome completo del lead
   const getLeadDisplayName = (lead) => {
-    if (lead.nome && lead.cognome) return `${lead.nome} ${lead.cognome}`;
-    if (lead.firstName && lead.lastName) return `${lead.firstName} ${lead.lastName}`;
+    // Cerca nome e cognome in varie forme
+    const nome = getFieldValue(lead, 'nome', 'name', 'firstName', 'Nome');
+    const cognome = getFieldValue(lead, 'cognome', 'lastName', 'Cognome');
+    
+    if (nome && cognome) return `${nome} ${cognome}`;
+    if (nome) return nome;
+    if (cognome) return cognome;
     if (lead.name) return lead.name;
-    if (lead.nome) return lead.nome;
-    if (lead.cognome) return lead.cognome;
+    
+    // Fallback: cerca qualsiasi campo che contenga 'nome' nel nome
+    const nomeField = Object.keys(lead).find(k => 
+      k.toLowerCase().includes('nome') || k.toLowerCase().includes('name')
+    );
+    if (nomeField && lead[nomeField]) return lead[nomeField];
+    
     return lead.email || 'Senza nome';
   };
 
   // Helper per ottenere il telefono del lead
   const getLeadPhone = (lead) => {
-    return lead.phone || lead.telefono || null;
+    return getFieldValue(lead, 'phone', 'telefono', 'tel', 'cellulare', 'mobile');
   };
 
   // Helper per ottenere l'email del lead
   const getLeadEmail = (lead) => {
-    return lead.email || null;
+    return getFieldValue(lead, 'email', 'mail', 'Email');
   };
 
   // Carica landing pages per il filtro

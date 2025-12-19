@@ -29,6 +29,40 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
     }
   }, [columns]);
 
+  // Helper per ottenere un valore cercando varianti del campo
+  const getFieldValue = (lead, ...fieldNames) => {
+    for (const name of fieldNames) {
+      // Cerca prima il campo diretto
+      if (lead[name] !== undefined && lead[name] !== null && lead[name] !== '') return lead[name];
+      // Cerca variante con prefisso field_
+      if (lead[`field_${name}`] !== undefined && lead[`field_${name}`] !== null && lead[`field_${name}`] !== '') return lead[`field_${name}`];
+      // Cerca variante con prima lettera maiuscola
+      const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+      if (lead[capitalized] !== undefined && lead[capitalized] !== null && lead[capitalized] !== '') return lead[capitalized];
+    }
+    return null;
+  };
+
+  // Helper per ottenere il nome del lead
+  const getLeadName = (lead) => {
+    const nome = getFieldValue(lead, 'nome', 'name', 'firstName', 'Nome');
+    const cognome = getFieldValue(lead, 'cognome', 'lastName', 'Cognome');
+    if (nome && cognome) return `${nome} ${cognome}`;
+    if (nome) return nome;
+    if (cognome) return cognome;
+    return getFieldValue(lead, 'email') || '-';
+  };
+
+  // Helper per ottenere telefono
+  const getLeadPhone = (lead) => {
+    return getFieldValue(lead, 'phone', 'number', 'telefono', 'cellulare', 'mobile', 'tel');
+  };
+
+  // Helper per ottenere email
+  const getLeadEmail = (lead) => {
+    return getFieldValue(lead, 'email', 'mail', 'Email');
+  };
+
   const handleToggleStatus = async (leadId, statusId, currentValue) => {
     if (editingLead !== leadId) return; // Solo in modalità editing
     
@@ -58,7 +92,7 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
   };
 
   return (
-    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 overflow-hidden shadow-glow">
+    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 shadow-glow">
       {/* Header con config buttons */}
       <div className="flex items-center justify-between p-4 border-b border-slate-700">
         <h3 className="text-lg font-semibold text-slate-100">Leads ({leads.length})</h3>
@@ -83,17 +117,17 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
       </div>
 
       {/* Tabella con scroll interno */}
-      <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-        <table className="w-full min-w-max">
-          <thead className="bg-slate-900/60 sticky top-0">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-slate-900/60 sticky top-0 z-10">
             <tr className="border-b border-slate-700">
               {localColumns.filter(col => col.visible).map(column => (
-                <th key={column.id} className="px-4 py-3 text-left text-xs font-semibold text-slate-300 whitespace-nowrap">
+                <th key={column.id} className="px-3 py-3 text-left text-xs font-semibold text-slate-300 whitespace-nowrap">
                   {column.label}
                 </th>
               ))}
               {localStatuses.map(status => (
-                <th key={status.id} className="px-4 py-3 text-center text-xs font-semibold text-slate-300">
+                <th key={status.id} className="px-3 py-3 text-center text-xs font-semibold text-slate-300">
                   <div className="flex items-center justify-center gap-1">
                     <span className={`w-2 h-2 rounded-full ${getColorClass(status.color).bg}`} />
                     {status.label}
@@ -117,23 +151,61 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
                 // Funzione per renderizzare celle dinamicamente
                 const renderCell = (column) => {
                   const fieldId = column.field || column.id;
+                  
+                  // Gestione campi speciali con helper
+                  if (fieldId === 'name' || fieldId === 'nome') {
+                    return getLeadName(lead);
+                  }
+                  
+                  if (fieldId === 'number' || fieldId === 'phone' || fieldId === 'telefono') {
+                    const phone = getLeadPhone(lead);
+                    return phone ? (
+                      <a href={`tel:${phone}`} className="text-blue-400 hover:underline">{phone}</a>
+                    ) : '-';
+                  }
+                  
+                  if (fieldId === 'email') {
+                    const email = getLeadEmail(lead);
+                    return email ? (
+                      <span className="max-w-[150px] truncate block">{email}</span>
+                    ) : '-';
+                  }
+                  
+                  // Gestione campo source/fonte
+                  if (fieldId === 'source' || fieldId === 'fonte') {
+                    const source = lead.source || lead.fonte || '-';
+                    return <span className="text-xs bg-slate-700/50 px-2 py-1 rounded">{source}</span>;
+                  }
+                  
+                  // Gestione campo collaboratore
+                  if (fieldId === 'collaboratoreNome' || fieldId === 'collaboratore') {
+                    const collabName = lead.collaboratoreNome || lead.collaboratore || '-';
+                    return <span className="text-xs bg-purple-600/20 text-purple-300 px-2 py-1 rounded">{collabName}</span>;
+                  }
+                  
                   const value = lead[fieldId];
                   
                   // Gestione campi speciali
-                  if (fieldId === 'dataPrenotazione' && value) {
+                  if ((fieldId === 'dataPrenotazione' || fieldId === 'data') && value) {
                     return new Date(value).toLocaleDateString('it-IT');
+                  }
+                  
+                  // Gestione campo ora
+                  if (fieldId === 'oraPrenotazione' || fieldId === 'ora') {
+                    return value || '-';
                   }
                   
                   // Campo note con textarea e pulsante popup
                   if (fieldId === 'note') {
+                    const noteValue = getFieldValue(lead, 'note', 'notes', 'messaggio', 'message');
                     return (
                       <div className="max-w-[200px]">
                         {isEditing ? (
                           <textarea
-                            defaultValue={value || ''}
+                            defaultValue={noteValue || ''}
                             onBlur={(e) => {
-                              if (e.target.value !== value) {
-                                updateDoc(getTenantDoc(db, 'leads', lead.id), { [fieldId]: e.target.value });
+                              if (e.target.value !== noteValue) {
+                                updateDoc(getTenantDoc(db, 'leads', lead.id), { note: e.target.value });
                               }
                             }}
                             className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-sm resize-none"
@@ -142,10 +214,10 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
                           />
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="line-clamp-2 flex-1">{value || '-'}</span>
-                            {value && (
+                            <span className="line-clamp-2 flex-1">{noteValue || '-'}</span>
+                            {noteValue && (
                               <button
-                                onClick={() => setNotePopup({ show: true, leadName: lead.name, note: value })}
+                                onClick={() => setNotePopup({ show: true, leadName: getLeadName(lead), note: noteValue })}
                                 className="p-1 bg-blue-600/20 text-blue-400 rounded hover:bg-blue-600/30 transition-colors flex-shrink-0"
                                 title="Visualizza nota completa"
                               >
@@ -177,13 +249,6 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
                     );
                   }
                   
-                  // Campo email con truncate
-                  if (fieldId === 'email') {
-                    return (
-                      <span className="max-w-[150px] truncate block">{value || '-'}</span>
-                    );
-                  }
-                  
                   // Campo testo standard (editabile)
                   return isEditing ? (
                     <input
@@ -211,9 +276,9 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
                     {localColumns.filter(col => col.visible).map(column => (
                       <td 
                         key={column.id} 
-                        className={`px-4 py-3 text-sm text-slate-300 whitespace-nowrap ${
-                          column.id === 'name' ? 'text-slate-200 font-medium' : ''
-                        }`}
+                        className={`px-3 py-3 text-sm text-slate-300 ${
+                          column.id === 'name' ? 'text-slate-200 font-medium whitespace-nowrap' : ''
+                        } ${column.id === 'note' ? '' : 'whitespace-nowrap'}`}
                       >
                         {renderCell(column)}
                       </td>

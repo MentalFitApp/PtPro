@@ -64,8 +64,10 @@ export default function Collaboratori() {
     { id: 'name', label: 'Nome', visible: true, locked: true },
     { id: 'number', label: 'Telefono', visible: true, locked: false },
     { id: 'email', label: 'Email', visible: true, locked: false },
-    { id: 'dataPrenotazione', label: 'Data', visible: true, locked: false },
+    { id: 'dataPrenotazione', label: 'Data Pren.', visible: true, locked: false },
+    { id: 'oraPrenotazione', label: 'Ora', visible: true, locked: false },
     { id: 'source', label: 'Fonte', visible: true, locked: false },
+    { id: 'collaboratoreNome', label: 'Collaboratore', visible: true, locked: false },
     { id: 'dialed', label: 'Dialed', visible: true, locked: false },
     { id: 'note', label: 'Note', visible: true, locked: false },
   ]);
@@ -261,21 +263,8 @@ export default function Collaboratori() {
     };
     loadStatuses();
     
-    // Carica lead columns
-    const loadColumns = async () => {
-      try {
-        const configDoc = await getDoc(getTenantDoc(db, 'settings', 'leadColumns'));
-        if (configDoc.exists()) {
-          const data = configDoc.data();
-          if (data.columns && Array.isArray(data.columns)) {
-            setLeadColumns(data.columns);
-          }
-        }
-      } catch (error) {
-        console.error('Errore caricamento lead columns:', error);
-      }
-    };
-    loadColumns();
+    // NON caricare leadColumns da Firestore - usiamo le colonne fisse per i leads dei collaboratori
+    // che hanno campi diversi da quelli delle landing pages
 
     const collabQuery = query(getTenantCollection(db, 'collaboratori'), orderBy('nome'));
     const unsubCollab = onSnapshot(collabQuery, snap => {
@@ -660,8 +649,19 @@ export default function Collaboratori() {
 
   const sourceStats = getSourceStats();
 
+  // Helper per ottenere il nome del lead (supporta vari formati)
+  const getLeadName = (lead) => {
+    if (lead.nome && lead.cognome) return `${lead.nome} ${lead.cognome}`;
+    if (lead.field_nome && lead.field_cognome) return `${lead.field_nome} ${lead.field_cognome}`;
+    return lead.name || lead.nome || lead.field_nome || lead.email || '-';
+  };
+
   const filteredLeads = leads.filter(lead => {
-    const matchesSearch = lead.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const leadName = getLeadName(lead).toLowerCase();
+    const matchesSearch = !searchQuery || leadName.includes(searchQuery.toLowerCase()) || 
+                          lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          lead.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          lead.number?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesChiuso = filters.chiuso === 'tutti' || (filters.chiuso === 'si' ? lead.chiuso : !lead.chiuso);
     const matchesShowUp = filters.showUp === 'tutti' || (filters.showUp === 'si' ? lead.showUp : !lead.showUp);
     const matchesOffer = filters.offer === 'tutti' || (filters.offer === 'si' ? lead.offer : !lead.offer);
@@ -931,7 +931,7 @@ export default function Collaboratori() {
 
         {/* MODAL REPORT SETTING */}
         {showReportSetting && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -979,7 +979,7 @@ export default function Collaboratori() {
 
         {/* MODAL REPORT VENDITA */}
         {showReportVendita && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -1030,11 +1030,11 @@ export default function Collaboratori() {
         
         {/* MODAL TABELLA LEADS */}
         {showLeadsTable && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 lg:left-[260px] bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-slate-800/95 backdrop-blur-md rounded-xl p-6 max-w-6xl w-full border border-slate-700 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
+              className="bg-slate-800/95 backdrop-blur-md rounded-xl p-6 max-w-5xl w-full border border-slate-700 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -1048,65 +1048,78 @@ export default function Collaboratori() {
                 </button>
               </div>
               
-              <div className="overflow-y-auto flex-1">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 flex-shrink-0">
                   <div className="flex flex-wrap gap-1.5 text-xs w-full sm:w-auto">
                     <div className="flex items-center gap-1 bg-slate-700/50 rounded px-2 py-1 flex-1 sm:flex-none">
-                <Search size={12} className="text-slate-400" />
-                <input 
-                  type="text" 
-                  value={searchQuery} 
-                  onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
-                  placeholder="Cerca..." 
-                  className="bg-transparent outline-none w-full sm:w-24" 
-                />
-              </div>
+                      <Search size={12} className="text-slate-400" />
+                      <input 
+                        type="text" 
+                        value={searchQuery} 
+                        onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
+                        placeholder="Cerca..." 
+                        className="bg-transparent outline-none w-full sm:w-24" 
+                      />
+                    </div>
 
-              <select 
-                value={filters.chiuso} 
-                onChange={e => { setFilters({ ...filters, chiuso: e.target.value }); setCurrentPage(1); }} 
-                className="bg-slate-700/50 border border-slate-600 rounded px-1.5 py-1 text-[10px] sm:text-xs flex-1 sm:flex-none"
-              >
-                <option value="tutti">Chiuso: Tutti</option>
-                <option value="si">Chiuso: Sì</option>
-                <option value="no">Chiuso: No</option>
-              </select>
+                    <select 
+                      value={selectedCollaboratore || ''}
+                      onChange={e => { setSelectedCollaboratore(e.target.value || null); setCurrentPage(1); }}
+                      className="bg-slate-700/50 border border-slate-600 rounded px-1.5 py-1 text-[10px] sm:text-xs flex-1 sm:flex-none"
+                    >
+                      <option value="">Tutti i Collaboratori</option>
+                      {collaboratori.map(c => (
+                        <option key={c.id} value={c.id}>{c.nome || c.name || c.email?.split('@')[0]}</option>
+                      ))}
+                    </select>
 
-              <select 
-                value={filters.showUp} 
-                onChange={e => { setFilters({ ...filters, showUp: e.target.value }); setCurrentPage(1); }} 
-                className="bg-slate-700/50 border border-slate-600 rounded px-1.5 py-1 text-[10px] sm:text-xs flex-1 sm:flex-none"
-              >
-                <option value="tutti">Show-Up: Tutti</option>
-                <option value="si">Show-Up: Sì</option>
-                <option value="no">Show-Up: No</option>
-              </select>
+                    <select 
+                      value={filters.chiuso} 
+                      onChange={e => { setFilters({ ...filters, chiuso: e.target.value }); setCurrentPage(1); }} 
+                      className="bg-slate-700/50 border border-slate-600 rounded px-1.5 py-1 text-[10px] sm:text-xs flex-1 sm:flex-none"
+                    >
+                      <option value="tutti">Chiuso: Tutti</option>
+                      <option value="si">Chiuso: Sì</option>
+                      <option value="no">Chiuso: No</option>
+                    </select>
 
-              <select 
-                value={filters.offer} 
-                onChange={e => { setFilters({ ...filters, offer: e.target.value }); setCurrentPage(1); }} 
-                className="bg-slate-700/50 border border-slate-600 rounded px-1.5 py-1 text-[10px] sm:text-xs flex-1 sm:flex-none"
-              >
-                <option value="tutti">Warm: Tutti</option>
-                <option value="si">Warm: Sì</option>
-                <option value="no">Warm: No</option>
-              </select>
+                    <select 
+                      value={filters.showUp} 
+                      onChange={e => { setFilters({ ...filters, showUp: e.target.value }); setCurrentPage(1); }} 
+                      className="bg-slate-700/50 border border-slate-600 rounded px-1.5 py-1 text-[10px] sm:text-xs flex-1 sm:flex-none"
+                    >
+                      <option value="tutti">Show-Up: Tutti</option>
+                      <option value="si">Show-Up: Sì</option>
+                      <option value="no">Show-Up: No</option>
+                    </select>
+
+                    <select 
+                      value={filters.offer} 
+                      onChange={e => { setFilters({ ...filters, offer: e.target.value }); setCurrentPage(1); }} 
+                      className="bg-slate-700/50 border border-slate-600 rounded px-1.5 py-1 text-[10px] sm:text-xs flex-1 sm:flex-none"
+                    >
+                      <option value="tutti">Warm: Tutti</option>
+                      <option value="si">Warm: Sì</option>
+                      <option value="no">Warm: No</option>
+                    </select>
                   </div>
                 </div>
 
                 {/* TABELLA LEADS CON STATUS DINAMICI */}
-                <LeadsTable 
-                  key={refreshKey}
-                  leads={paginatedLeads} 
-                  leadStatuses={leadStatuses}
-                  columns={leadColumns}
-                  onRefresh={() => setRefreshKey(prev => prev + 1)}
-                  showConfig={true}
-                />
+                <div className="flex-1 min-h-0 overflow-auto">
+                  <LeadsTable 
+                    key={refreshKey}
+                    leads={paginatedLeads} 
+                    leadStatuses={leadStatuses}
+                    columns={leadColumns}
+                    onRefresh={() => setRefreshKey(prev => prev + 1)}
+                    showConfig={false}
+                  />
+                </div>
                 
                 {/* Paginazione */}
                 {totalPages > 1 && (
-                  <div className="flex justify-center gap-3 mt-4 text-xs">
+                  <div className="flex justify-center gap-3 mt-4 text-xs flex-shrink-0">
                     <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"><ChevronLeft size={14} /></button>
                     <span className="text-slate-300 self-center">Pag {currentPage} di {totalPages}</span>
                     <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"><ChevronRight size={14} /></button>
@@ -1121,7 +1134,7 @@ export default function Collaboratori() {
 
         {/* MODAL LEAD PER FONTE */}
         {showFontiStats && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -1185,7 +1198,7 @@ export default function Collaboratori() {
 
         {/* MODAL COLLABORATORI */}
         {showCollaboratoriList && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -1242,7 +1255,7 @@ export default function Collaboratori() {
 
         {/* POPUP NOTE */}
         {showNotePopup && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-lg w-full border border-slate-700">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-lg font-bold text-slate-100">Nota Completa</h3>
@@ -1255,7 +1268,7 @@ export default function Collaboratori() {
 
         {/* POPUP CONVERTI IN CLIENTE */}
         {showConvertPopup && leadToConvert && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -1309,7 +1322,7 @@ export default function Collaboratori() {
 
         {/* POPUP CREDENZIALI NUOVO COLLABORATORE */}
         {showCredentialsPopup && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -1419,7 +1432,7 @@ export default function Collaboratori() {
 
         {/* POPUP MODIFICA EMAIL */}
         {editingCollab && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-sm w-full border border-slate-700">
               <h3 className="text-lg font-bold text-slate-100 mb-3">Modifica Email</h3>
               <p className="text-sm text-slate-300 mb-4">
@@ -1440,7 +1453,7 @@ export default function Collaboratori() {
 
         {/* MODAL GESTIONE FONTI */}
         {showFontiModal && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
