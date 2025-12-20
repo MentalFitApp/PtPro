@@ -423,6 +423,7 @@ export const CallRequestsBadge = ({ clientId }) => {
 
 // Componente COMPATTO che combina NextCall + RequestCall in una sola riga
 export const CallsCompactCard = ({ clientId, clientName }) => {
+  const toast = useToast();
   const [nextCall, setNextCall] = useState(null);
   const [hasRequest, setHasRequest] = useState(false);
   const [requesting, setRequesting] = useState(false);
