@@ -115,7 +115,7 @@ const ClientAnamnesi = () => {
   const navigate = useNavigate();
   const user = auth.currentUser;
 
-  const { register, handleSubmit, setValue, formState: { isSubmitting } } = useForm();
+  const { register, handleSubmit, setValue, formState: { isSubmitting, errors } } = useForm();
 
   useEffect(() => {
     if (!user) {
