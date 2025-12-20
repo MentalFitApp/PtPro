@@ -9,7 +9,8 @@
         "https://miniature-cod-6vvj6wv5rxr2597w-5173.app.github.dev",
         "https://fitflowpro.vercel.app",
         "https://www.flowfitpro.it",
-        "https://flowfitpro.it"
+        "https://flowfitpro.it",
+        "https://media.flowfitpro.it"
       ],
       "AllowedMethods": [
         "GET",
@@ -19,13 +20,19 @@
         "HEAD"
       ],
       "AllowedHeaders": [
-        "*"
+        "*",
+        "Content-Type",
+        "Content-Disposition",
+        "x-amz-acl",
+        "x-amz-meta-*"
       ],
       "ExposeHeaders": [
         "ETag",
-        "Content-Length"
+        "Content-Length",
+        "Content-Type",
+        "x-amz-meta-originalName"
       ],
-      "MaxAgeSeconds": 3600
+      "MaxAgeSeconds": 86400
     }
   ]
 }

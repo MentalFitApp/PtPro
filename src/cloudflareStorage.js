@@ -7,6 +7,55 @@ import { v4 as uuidv4 } from 'uuid';
  * R2 is S3-compatible, so we use AWS SDK with custom endpoint
  */
 
+// Formati immagine supportati (estensione -> MIME type)
+const IMAGE_EXTENSIONS = {
+  'jpg': 'image/jpeg',
+  'jpeg': 'image/jpeg',
+  'png': 'image/png',
+  'gif': 'image/gif',
+  'webp': 'image/webp',
+  'heic': 'image/heic',
+  'heif': 'image/heif',
+  'avif': 'image/avif',
+  'bmp': 'image/bmp',
+  'tiff': 'image/tiff',
+  'tif': 'image/tiff',
+  'svg': 'image/svg+xml',
+  'ico': 'image/x-icon',
+};
+
+/**
+ * Determina se un file è un'immagine basandosi su MIME type O estensione
+ * Utile per file HEIC che alcuni browser non riconoscono
+ */
+const isImageFile = (file) => {
+  // Check MIME type
+  if (file.type && file.type.startsWith('image/')) return true;
+  
+  // Check estensione se MIME type vuoto o application/octet-stream
+  if (!file.type || file.type === 'application/octet-stream' || file.type === '') {
+    const ext = file.name?.split('.').pop()?.toLowerCase();
+    return ext && IMAGE_EXTENSIONS[ext] !== undefined;
+  }
+  
+  return false;
+};
+
+/**
+ * Ottiene il MIME type corretto per un file
+ * Usa l'estensione se il browser non riconosce il tipo
+ */
+const getImageMimeType = (file) => {
+  // Se il browser ha già identificato un tipo immagine valido, usalo
+  if (file.type && file.type.startsWith('image/') && file.type !== 'application/octet-stream') {
+    return file.type;
+  }
+  
+  // Altrimenti, determina dall'estensione
+  const ext = file.name?.split('.').pop()?.toLowerCase();
+  return IMAGE_EXTENSIONS[ext] || 'image/jpeg'; // Default a JPEG
+};
+
 // Inizializza il client S3 per Cloudflare R2
 let r2Client = null;
 
@@ -42,14 +91,18 @@ const getR2Client = () => {
  */
 export const compressImage = async (file) => {
   // Se non è un'immagine, ritorna il file originale
-  if (!file.type.startsWith('image/')) {
+  if (!isImageFile(file)) {
     return file;
   }
 
   // Determina se è un file HEIC/HEIF (formato iPhone)
+  const ext = file.name?.toLowerCase().split('.').pop();
   const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || 
-                 file.name?.toLowerCase().endsWith('.heic') || 
-                 file.name?.toLowerCase().endsWith('.heif');
+                 ext === 'heic' || ext === 'heif';
+  
+  // Determina se è WebP o AVIF (formati moderni)
+  const isModernFormat = ext === 'webp' || ext === 'avif' || 
+                         file.type === 'image/webp' || file.type === 'image/avif';
 
   // Se è già piccola e non è HEIC, ritorna il file originale
   if (file.size < 200 * 1024 && !isHeic) {
@@ -57,12 +110,24 @@ export const compressImage = async (file) => {
   }
 
   try {
+    // Determina il tipo di output
+    // HEIC/HEIF -> JPEG (per compatibilità browser)
+    // WebP/AVIF -> mantieni (sono già ottimizzati)
+    // Altri -> mantieni originale o JPEG se non supportato
+    let outputType = file.type;
+    if (isHeic) {
+      outputType = 'image/jpeg';
+    } else if (!file.type || file.type === 'application/octet-stream') {
+      outputType = getImageMimeType(file);
+    }
+    
     const options = {
       maxSizeMB: 1, // Dimensione massima 1MB
       maxWidthOrHeight: 1920, // Massima larghezza/altezza 1920px
       useWebWorker: true, // Usa Web Worker per performance migliori
-      // IMPORTANTE: Converti HEIC in JPEG, altrimenti mantieni il tipo originale
-      fileType: isHeic ? 'image/jpeg' : file.type,
+      fileType: outputType,
+      // Aggiungi initialQuality per migliore qualità
+      initialQuality: 0.85,
     };
 
     const compressedFile = await imageCompression(file, options);
@@ -99,12 +164,15 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
     }
   }
 
-  // Validazione tipo file
-  const isImage = file.type.startsWith('image/');
+  // Validazione tipo file - usa le nuove funzioni helper per supportare più formati
+  const isImage = isImageFile(file);
   const isVideo = file.type.startsWith('video/');
   const isAudio = file.type.startsWith('audio/');
+  
   if (!isImage && !isVideo && !isAudio) {
-    throw new Error('Il file deve essere un\'immagine, un video o un audio');
+    // Log per debug
+    console.warn('File type not recognized:', file.type, 'name:', file.name);
+    throw new Error('Il file deve essere un\'immagine, un video o un audio. Formati supportati: JPG, PNG, HEIC, WebP, GIF, AVIF');
   }
 
   try {
@@ -132,6 +200,11 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
     const fileExtension = isHeicFile ? 'jpg' : originalExtension;
     const fileName = `${uuidv4()}.${fileExtension}`;
     const fileKey = `clients/${clientId}/${folder}/${fileName}`;
+    
+    // Determina il ContentType corretto
+    const contentType = isImage 
+      ? (isHeicFile ? 'image/jpeg' : getImageMimeType(fileToUpload))
+      : fileToUpload.type;
 
     // Prepara il comando per l'upload
     const bucketName = import.meta.env.VITE_R2_BUCKET_NAME;
@@ -156,7 +229,7 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
       Bucket: bucketName,
       Key: fileKey,
       Body: new Uint8Array(arrayBuffer),
-      ContentType: fileToUpload.type,
+      ContentType: contentType,
       Metadata: {
         originalName: file.name,
         uploadedAt: new Date().toISOString(),

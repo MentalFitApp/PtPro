@@ -337,6 +337,23 @@ const ClientAnamnesi = () => {
         {isEditing ? (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
 
+            {/* Banner errore validazione */}
+            {errors.gender && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-xl flex items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-full bg-red-500/30 flex items-center justify-center flex-shrink-0">
+                  <X size={20} className="text-red-400" />
+                </div>
+                <div>
+                  <p className="text-red-200 font-medium">Campo obbligatorio mancante</p>
+                  <p className="text-red-300/70 text-sm">Seleziona il tuo sesso per continuare</p>
+                </div>
+              </motion.div>
+            )}
+
             {/* === DATI ANAGRAFICI E MISURE === */}
             <div className={sectionStyle}>
               <h4 className={headingStyle}><FilePenLine size={16} /> Dati Anagrafici e Misure</h4>
@@ -346,11 +363,15 @@ const ClientAnamnesi = () => {
                 <div><label className={labelStyle}>Data di Nascita</label><input type="date" {...register('birthDate')} className={inputStyle} /></div>
                 <div>
                   <label className={labelStyle}>Sesso <span className="text-red-400">*</span></label>
-                  <select {...register('gender', { required: true })} className={inputStyle}>
+                  <select 
+                    {...register('gender', { required: 'Seleziona il tuo sesso' })} 
+                    className={`${inputStyle} ${errors.gender ? 'border-red-500 ring-2 ring-red-500/50' : ''}`}
+                  >
                     <option value="">Seleziona...</option>
                     <option value="male">Maschio</option>
                     <option value="female">Femmina</option>
                   </select>
+                  {errors.gender && <p className="text-red-400 text-xs mt-1">{errors.gender.message}</p>}
                 </div>
                 <div><label className={labelStyle}>Che lavoro fai?</label><input {...register('job')} className={inputStyle} placeholder="Es. Impiegato, studente..." /></div>
                 <div><label className={labelStyle}>Peso (kg)</label><input type="number" step="0.1" {...register('weight')} className={inputStyle} placeholder="Es. 75.5" /></div>
