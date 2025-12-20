@@ -130,115 +130,84 @@ export default function NotificationPermissionModal() {
 
   return (
     <AnimatePresence>
+      {/* Toast-style notification banner - non blocca l'interfaccia */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={handleSkip}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[40] flex items-end sm:items-center justify-center p-4"
+        initial={{ opacity: 0, y: 100 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 100 }}
+        className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-[30] pointer-events-auto"
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 50 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 50 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-slate-900 border border-slate-700/50 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl mb-4 sm:mb-0"
+          className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full overflow-hidden shadow-2xl"
         >
-          {/* Header con icona */}
-          <div className="relative bg-gradient-to-br from-blue-600/20 to-purple-600/20 p-8 text-center">
-            <button
-              onClick={handleSkip}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors"
-            >
-              <X size={20} className="text-slate-400" />
-            </button>
-            
+          {/* Header compatto */}
+          <div className="relative bg-gradient-to-br from-blue-600/20 to-purple-600/20 p-4 flex items-center gap-4">
             <motion.div
               animate={{ 
                 scale: [1, 1.1, 1],
-                rotate: [0, 5, -5, 0]
               }}
               transition={{ 
                 duration: 2,
                 repeat: Infinity,
                 repeatDelay: 1
               }}
-              className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-4 shadow-lg shadow-blue-500/25"
+              className="flex-shrink-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/25"
             >
-              <Bell size={40} className="text-white" />
+              <Bell size={24} className="text-white" />
             </motion.div>
             
-            <h2 className="text-2xl font-bold text-white mb-2">
-              Resta Aggiornato! 🔔
-            </h2>
-            <p className="text-slate-300 text-sm">
-              Attiva le notifiche per non perdere nessun aggiornamento
-            </p>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-bold text-white">
+                Attiva le Notifiche 🔔
+              </h2>
+              <p className="text-slate-300 text-xs">
+                Non perdere nessun aggiornamento
+              </p>
+            </div>
+
+            <button
+              onClick={handleSkip}
+              className="flex-shrink-0 p-2 rounded-full hover:bg-white/10 transition-colors"
+            >
+              <X size={20} className="text-slate-400" />
+            </button>
           </div>
 
-          {/* Contenuto */}
-          <div className="p-6">
+          {/* Contenuto compatto */}
+          <div className="p-4">
             {result === null && (
               <>
-                {/* Lista benefici - diversa per clienti vs admin/coach */}
-                <div className="space-y-3 mb-6">
-                  {(userRole === 'client' ? [
-                    { icon: '💬', text: 'Messaggi dal tuo coach' },
-                    { icon: '📋', text: 'Nuove schede e programmi' },
-                    { icon: '✅', text: 'Promemoria check settimanali' },
-                    { icon: '📅', text: 'Appuntamenti e scadenze' },
-                    { icon: '🎯', text: 'Progressi e obiettivi raggiunti' }
-                  ] : [
-                    { icon: '🎯', text: 'Nuovi lead dalla landing page' },
-                    { icon: '📞', text: 'Richieste chiamata dai clienti' },
-                    { icon: '✅', text: 'Check e anamnesi compilate' },
-                    { icon: '📅', text: 'Eventi e appuntamenti' },
-                    { icon: '💰', text: 'Pagamenti ricevuti' }
-                  ]).map((item, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/50"
-                    >
-                      <span className="text-xl">{item.icon}</span>
-                      <span className="text-slate-200 text-sm">{item.text}</span>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Bottoni */}
-                <div className="space-y-3">
+                {/* Bottoni compatti */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSkip}
+                    className="flex-1 py-2.5 text-slate-400 hover:text-white text-sm transition-colors border border-slate-700 rounded-xl"
+                  >
+                    Dopo
+                  </button>
                   <button
                     onClick={handleEnableNotifications}
                     disabled={isLoading}
-                    className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 disabled:opacity-50"
+                    className="flex-1 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 disabled:opacity-50"
                   >
                     {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
-                        <Bell size={20} />
-                        Attiva Notifiche
+                        <Bell size={16} />
+                        Attiva
                       </>
                     )}
-                  </button>
-                  
-                  <button
-                    onClick={handleSkip}
-                    className="w-full py-3 text-slate-400 hover:text-white text-sm transition-colors"
-                  >
-                    Forse più tardi
                   </button>
                 </div>
 
                 {/* Note iOS */}
-                <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                  <div className="flex items-start gap-2">
-                    <Smartphone size={16} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="mt-3 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Smartphone size={14} className="text-amber-400 flex-shrink-0" />
                     <p className="text-xs text-amber-200/80">
-                      <strong>iOS:</strong> Aggiungi l'app alla Home per ricevere notifiche push
+                      <strong>iOS:</strong> Aggiungi alla Home per le notifiche
                     </p>
                   </div>
                 </div>
