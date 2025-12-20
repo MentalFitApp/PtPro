@@ -60,7 +60,8 @@ service cloud.firestore {
 
     // ==================== PLATFORM ADMINS ====================
     match /platform_admins/{docId} {
-      allow read: if isPlatformCEO();
+      // Lettura permessa a tutti gli autenticati per verificare ruolo CEO al login
+      allow read: if request.auth != null;
       allow write: if isPlatformCEO();
     }
 
@@ -158,9 +159,14 @@ service cloud.firestore {
       // --- COLLABORATORI ---
       match /collaboratori/{collabId} {
         // Tutti i collaboratori possono vedere tutti gli altri collaboratori (per grafici e statistiche di team)
-        allow read, list: if isTenantAdmin(tenantId) || 
-                            request.auth != null && 
-                            exists(/databases/$(database)/documents/tenants/$(tenantId)/collaboratori/$(request.auth.uid));
+        // Ogni utente autenticato può leggere il proprio documento (per verifica ruolo al login)
+        allow read: if isTenantAdmin(tenantId) || 
+                      request.auth.uid == collabId ||
+                      (request.auth != null && 
+                       exists(/databases/$(database)/documents/tenants/$(tenantId)/collaboratori/$(request.auth.uid)));
+        allow list: if isTenantAdmin(tenantId) || 
+                      (request.auth != null && 
+                       exists(/databases/$(database)/documents/tenants/$(tenantId)/collaboratori/$(request.auth.uid)));
         allow create: if isTenantAdmin(tenantId);
         allow update: if isTenantCollaboratore(tenantId, collabId) || isTenantAdmin(tenantId);
         allow delete: if isTenantAdmin(tenantId);

@@ -177,8 +177,14 @@ const ClientDashboard = () => {
       setError('Caricamento lento. Riprova.');
     }, 8000);
 
-    const checkAnamnesiRequirement = async () => {
+    const checkAnamnesiRequirement = async (clientData) => {
       try {
+        // I vecchi clienti (isOldClient) non devono compilare l'anamnesi obbligatoria
+        if (clientData?.isOldClient) {
+          setHasAnamnesi(true); // Considera come se avesse l'anamnesi
+          return;
+        }
+        
         const settingsRef = getTenantDoc(db, 'platform_settings', 'global');
         const settingsSnap = await getDoc(settingsRef);
         
@@ -207,13 +213,14 @@ const ClientDashboard = () => {
 
     const fetchClientData = async () => {
       try {
-        await checkAnamnesiRequirement();
-        
         const clientDocRef = getTenantDoc(db, 'clients', user.uid);
         const docSnap = await getDoc(clientDocRef);
         
         if (docSnap.exists()) {
           const data = docSnap.data();
+          
+          // Controlla anamnesi DOPO aver caricato i dati cliente (per verificare isOldClient)
+          await checkAnamnesiRequirement(data);
           
           if (data.firstLogin === true) {
             clearTimeout(loadingTimeout);

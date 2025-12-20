@@ -184,36 +184,23 @@ const LandingPagesLeads = () => {
     if (!tenantId) return;
 
     const leadsRef = collection(db, `tenants/${tenantId}/leads`);
-    // Query base - filtra solo leads da landing pages
-    const q = query(
-      leadsRef,
-      where('source', '==', 'landing_page'),
-      orderBy('createdAt', 'desc')
-    );
+    // Carica tutti i leads e filtra quelli con landingPageId
+    // (i leads da landing pages possono avere source diversi: 'landing_page', 'form_popup', 'landing_page_form')
+    const q = query(leadsRef, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const leadsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.() || new Date(doc.data().createdAt),
-      }));
+      const leadsData = snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate?.() || new Date(doc.data().createdAt),
+        }))
+        .filter(lead => lead.landingPageId); // Filtra solo quelli con landingPageId
       setLeads(leadsData);
       setIsLoading(false);
     }, (error) => {
       console.error('Errore caricamento leads:', error);
-      // Prova senza filtro source se non esiste l'indice
-      const fallbackQuery = query(leadsRef, orderBy('createdAt', 'desc'));
-      onSnapshot(fallbackQuery, (snapshot) => {
-        const leadsData = snapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate?.() || new Date(doc.data().createdAt),
-          }))
-          .filter(lead => lead.landingPageId); // Filtra solo quelli con landingPageId
-        setLeads(leadsData);
-        setIsLoading(false);
-      });
+      setIsLoading(false);
     });
 
     return () => unsubscribe();
