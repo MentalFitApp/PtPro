@@ -134,13 +134,15 @@ export default function NotificationPermissionModal() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+        onClick={handleSkip}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[40] flex items-end sm:items-center justify-center p-4"
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          initial={{ scale: 0.9, opacity: 0, y: 50 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="bg-slate-900 border border-slate-700/50 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl"
+          exit={{ scale: 0.9, opacity: 0, y: 50 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-slate-900 border border-slate-700/50 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl mb-4 sm:mb-0"
         >
           {/* Header con icona */}
           <div className="relative bg-gradient-to-br from-blue-600/20 to-purple-600/20 p-8 text-center">
