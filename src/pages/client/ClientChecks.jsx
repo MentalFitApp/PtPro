@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, addDoc, doc, updateDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, doc, updateDoc, serverTimestamp, orderBy, getDocs, limit } from 'firebase/firestore';
 import { db, auth } from '../../firebase.js';
 import { useNavigate } from 'react-router-dom';
 import { getTenantSubcollection, getTenantDoc } from '../../config/tenant';
 import { notifyNewCheck } from '../../services/notificationService';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircle2, ImageOff } from 'lucide-react';
+import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircle2, ImageOff, ArrowLeftRight } from 'lucide-react';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
+import PhotoCompare from '../../components/client/PhotoCompare';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadPhoto } from '../../storageUtils.js';
@@ -276,6 +277,8 @@ export default function ClientChecks() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [error, setError] = useState(null);
+  const [showPhotoCompare, setShowPhotoCompare] = useState(false);
+  const [anamnesi, setAnamnesi] = useState(null);
   
   const navigate = useNavigate();
 
@@ -297,6 +300,14 @@ export default function ClientChecks() {
         //   setClientStartDate(new Date());
         // }
         
+        // Carica anamnesi per il confronto foto
+        const anamnesiRef = getTenantSubcollection(db, 'clients', user.uid, 'anamnesi');
+        const anamnesiQuery = query(anamnesiRef, orderBy('createdAt', 'desc'), limit(1));
+        const anamnesiSnap = await getDocs(anamnesiQuery);
+        if (anamnesiSnap.docs.length > 0) {
+          setAnamnesi({ id: anamnesiSnap.docs[0].id, ...anamnesiSnap.docs[0].data() });
+        }
+
         const checksCollectionRef = getTenantSubcollection(db, 'clients', user.uid, 'checks');
         const q = query(checksCollectionRef, orderBy('createdAt', 'desc'));
         const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -486,6 +497,34 @@ export default function ClientChecks() {
     }
   };
 
+  // Controlla se ci sono abbastanza foto per il confronto
+  const hasEnoughPhotosForCompare = () => {
+    const photoTypes = {};
+    
+    // Conta foto dai check
+    checks.forEach(check => {
+      if (check.photoURLs) {
+        Object.entries(check.photoURLs).forEach(([type, url]) => {
+          if (url) {
+            photoTypes[type] = (photoTypes[type] || 0) + 1;
+          }
+        });
+      }
+    });
+    
+    // Conta foto dall'anamnesi
+    if (anamnesi?.photoURLs) {
+      Object.entries(anamnesi.photoURLs).forEach(([type, url]) => {
+        if (url) {
+          photoTypes[type] = (photoTypes[type] || 0) + 1;
+        }
+      });
+    }
+    
+    // Serve almeno un tipo con 2+ foto
+    return Object.values(photoTypes).some(count => count >= 2);
+  };
+
   if (error) return <div className="min-h-screen text-red-400 flex justify-center items-center p-4">{error}</div>;
   if (loading) return (
     <div className="min-h-screen p-4 sm:p-8">
@@ -501,12 +540,22 @@ export default function ClientChecks() {
         <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-50">I miei Check</h1>
-          <button
-            onClick={() => navigate('/client/dashboard')}
-            className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-sm font-semibold rounded-lg transition-colors"
-          >
-            <ArrowLeft size={16} /><span>Dashboard</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {hasEnoughPhotosForCompare() && (
+              <button
+                onClick={() => setShowPhotoCompare(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-purple-500/20"
+              >
+                <ArrowLeftRight size={16} /><span>Confronta Foto</span>
+              </button>
+            )}
+            <button
+              onClick={() => navigate('/client/dashboard')}
+              className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-sm font-semibold rounded-lg transition-colors"
+            >
+              <ArrowLeft size={16} /><span>Dashboard</span>
+            </button>
+          </div>
         </header>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1 bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-4 shadow-glow">
@@ -517,6 +566,15 @@ export default function ClientChecks() {
           </div>
         </motion.div>
       </div>
+      
+      {/* Modal Confronto Foto */}
+      {showPhotoCompare && (
+        <PhotoCompare 
+          checks={checks}
+          anamnesi={anamnesi}
+          onClose={() => setShowPhotoCompare(false)} 
+        />
+      )}
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { db, auth, toDate, calcolaStatoPercorso, updateStatoPercorso } from '../../../../firebase';
-import { getTenantCollection } from '../../../../config/tenant';
+import { getTenantCollection, getTenantDoc } from '../../../../config/tenant';
 import { getClientAnamnesi, getClientPayments, deleteClient } from '../../../../services/clientService';
 import { useDebounce } from '../../../../hooks/useDebounce';
 import { useToast } from '../../../../contexts/ToastContext';
@@ -40,6 +40,10 @@ export default function useClientsState(propRole) {
   const [sortField, setSortField] = useState('startDate');
   const [sortDirection, setSortDirection] = useState('desc');
   const [showArchived, setShowArchived] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
+
+  // === DATI CESTINO ===
+  const [deletedClients, setDeletedClients] = useState([]);
 
   // === UI STATE ===
   const [viewMode, setViewMode] = useState('list');
@@ -69,7 +73,7 @@ export default function useClientsState(propRole) {
 
   // === HELPER FUNCTIONS ===
   const getClientPath = useCallback((clientId) => 
-    isCoach ? `/coach/client/${clientId}` : `/admin/client/${clientId}`, 
+    isCoach ? `/coach/client/${clientId}` : `/client/${clientId}`, 
   [isCoach]);
 
   const showNotification = useCallback((message, type = 'error') => {
@@ -97,13 +101,24 @@ export default function useClientsState(propRole) {
     const q = getTenantCollection(db, 'clients');
     const unsub = onSnapshot(q, async (snap) => {
       try {
-        const clientList = snap.docs.map(doc => {
+        const allDocs = snap.docs.map(doc => {
           const data = doc.data();
+          // Calcola totale rate già pagato (già presente nel documento)
+          const rateArr = Array.isArray(data.rate) ? data.rate : [];
+          const ratePaidTotal = rateArr.filter(r => r.paid).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+          
+          // Calcola anche dai pagamenti legacy nel documento
+          const paymentsArr = Array.isArray(data.payments) ? data.payments : [];
+          const paymentsPaidTotal = paymentsArr.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+          
+          // Usa il totale massimo tra rate pagate e pagamenti
+          const calculatedTotal = Math.max(ratePaidTotal, paymentsPaidTotal);
+          
           return {
             id: doc.id,
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
+            name: data.name || data._archivedData?.name,
+            email: data.email || data._archivedData?.email,
+            phone: data.phone || data._archivedData?.phone,
             scadenza: data.scadenza,
             startDate: data.startDate,
             createdAt: data.createdAt,
@@ -111,77 +126,63 @@ export default function useClientsState(propRole) {
             payments: data.payments || [],
             rate: data.rate || [],
             isArchived: data.isArchived || false,
+            isDeleted: data.isDeleted || false,
+            deletedAt: data.deletedAt,
             archivedAt: data.archivedAt,
             archiveSettings: data.archiveSettings,
-            // Usa campo denormalizzato se disponibile
-            hasAnamnesi: data.hasAnamnesi
+            // Usa campi denormalizzati se disponibili
+            hasAnamnesi: data.hasAnamnesi,
+            // Usa totale denormalizzato, o calcolato da rate/payments
+            totalPaid: data.totalPaid ?? calculatedTotal,
+            // Flag per sapere se abbiamo bisogno di caricare dalla subcollection
+            needsPaymentLoad: data.totalPaid === undefined && calculatedTotal === 0
           };
         });
-
-        // Anamnesi: controlla solo per clienti che non hanno il campo denormalizzato
-        // Usa batch da 10 per evitare troppe query parallele
-        const clientsWithoutAnamnesiField = clientList.filter(c => c.hasAnamnesi === undefined);
-        const anamnesiStatusTemp = {};
         
-        // Inizializza con valori denormalizzati
+        // Separa clienti attivi da quelli nel cestino
+        const clientList = allDocs.filter(c => !c.isDeleted);
+        const trashList = allDocs.filter(c => c.isDeleted);
+
+        // FAST PATH: Mostra subito i clienti senza attendere anamnesi/pagamenti
+        setClients(clientList);
+        setDeletedClients(trashList);
+        setLoading(false);
+        
+        // Inizializza anamnesi status dai campi denormalizzati
+        const anamnesiStatusTemp = {};
         clientList.forEach(c => {
           if (c.hasAnamnesi !== undefined) {
             anamnesiStatusTemp[c.id] = c.hasAnamnesi;
           }
         });
-
-        // Carica in batch da 10 per evitare N+1 estremo
-        const BATCH_SIZE = 10;
-        for (let i = 0; i < clientsWithoutAnamnesiField.length; i += BATCH_SIZE) {
-          const batch = clientsWithoutAnamnesiField.slice(i, i + BATCH_SIZE);
-          const batchResults = await Promise.all(
-            batch.map(client => 
-              getClientAnamnesi(db, client.id, 1)
-                .then(anamnesi => ({ clientId: client.id, hasAnamnesi: anamnesi.length > 0 }))
-                .catch(() => ({ clientId: client.id, hasAnamnesi: false }))
-            )
-          );
-          batchResults.forEach(result => {
-            anamnesiStatusTemp[result.clientId] = result.hasAnamnesi;
-          });
-        }
-        
         setAnamnesiStatus(anamnesiStatusTemp);
-
-        // Badge: clienti senza anamnesi
-        const missingAnamnesi = Object.values(anamnesiStatusTemp).filter(v => !v).length;
-        try {
-          localStorage.setItem('ff_badge_clients', String(missingAnamnesi));
-          window.dispatchEvent(new Event('ff-badges-updated'));
-        } catch {}
-
-        // Pagamenti (solo admin) - carica in batch per evitare N+1 estremo
+        
+        // Inizializza pagamenti dai dati già presenti (rate pagate)
         if (isAdmin) {
           const paymentsTotalsTemp = {};
-          const PAYMENT_BATCH_SIZE = 10;
-          
-          for (let i = 0; i < clientList.length; i += PAYMENT_BATCH_SIZE) {
-            const batch = clientList.slice(i, i + PAYMENT_BATCH_SIZE);
-            const batchResults = await Promise.all(
-              batch.map(async client => {
-                const rateArr = Array.isArray(client.rate) ? client.rate : [];
-                const rateSum = rateArr.filter(r => r.paid).reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
-                const payments = await getClientPayments(db, client.id).catch(() => []);
-                const paymentsSum = payments.reduce((acc, payment) => acc + (Number(payment.amount) || 0), 0);
-                return { clientId: client.id, total: rateSum + paymentsSum };
-              })
-            );
-            batchResults.forEach(result => {
-              paymentsTotalsTemp[result.clientId] = result.total;
-            });
-          }
-          
+          clientList.forEach(c => {
+            // Se c'è totalPaid denormalizzato usalo, altrimenti usa rate
+            paymentsTotalsTemp[c.id] = c.totalPaid || 0;
+          });
           setPaymentsTotals(paymentsTotalsTemp);
+          
+          // LAZY LOAD: Carica pagamenti reali dalla subcollection solo per chi ne ha bisogno
+          const clientsNeedingPaymentLoad = clientList.filter(c => c.needsPaymentLoad);
+          if (clientsNeedingPaymentLoad.length > 0) {
+            loadPaymentsInBackground(clientsNeedingPaymentLoad, paymentsTotalsTemp);
+          }
         }
 
+        // LAZY LOAD: Carica anamnesi mancanti in background (non blocca UI)
+        const clientsWithoutAnamnesiField = clientList.filter(c => c.hasAnamnesi === undefined);
+        if (clientsWithoutAnamnesiField.length > 0) {
+          // Carica in background senza await
+          loadAnamnesiInBackground(clientsWithoutAnamnesiField, anamnesiStatusTemp);
+        }
+
+        // Aggiorna stati percorso in background
         clientList.forEach(client => updateStatoPercorso(client.id));
-        setClients(clientList);
-        setLoading(false);
+        
       } catch (error) {
         showNotification('Errore caricamento clienti', 'error');
         setLoading(false);
@@ -190,6 +191,63 @@ export default function useClientsState(propRole) {
       showNotification('Errore connessione', 'error');
       setLoading(false);
     });
+
+    // Funzione per caricare anamnesi in background
+    const loadAnamnesiInBackground = async (clientsToCheck, existingStatus) => {
+      const BATCH_SIZE = 10;
+      const updatedStatus = { ...existingStatus };
+      
+      for (let i = 0; i < clientsToCheck.length; i += BATCH_SIZE) {
+        const batch = clientsToCheck.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batch.map(client => 
+            getClientAnamnesi(db, client.id, 1)
+              .then(anamnesi => ({ clientId: client.id, hasAnamnesi: anamnesi.length > 0 }))
+              .catch(() => ({ clientId: client.id, hasAnamnesi: false }))
+          )
+        );
+        batchResults.forEach(result => {
+          updatedStatus[result.clientId] = result.hasAnamnesi;
+        });
+        // Aggiorna stato progressivamente
+        setAnamnesiStatus({ ...updatedStatus });
+      }
+      
+      // Aggiorna badge
+      const missingAnamnesi = Object.values(updatedStatus).filter(v => !v).length;
+      try {
+        localStorage.setItem('ff_badge_clients', String(missingAnamnesi));
+        window.dispatchEvent(new Event('ff-badges-updated'));
+      } catch {}
+    };
+
+    // Funzione per caricare pagamenti in background
+    const loadPaymentsInBackground = async (clientsToCheck, existingTotals) => {
+      const BATCH_SIZE = 10;
+      const updatedTotals = { ...existingTotals };
+      
+      for (let i = 0; i < clientsToCheck.length; i += BATCH_SIZE) {
+        const batch = clientsToCheck.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batch.map(client => 
+            getClientPayments(db, client.id, 100)
+              .then(payments => {
+                const total = payments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+                return { clientId: client.id, total };
+              })
+              .catch(() => ({ clientId: client.id, total: 0 }))
+          )
+        );
+        batchResults.forEach(result => {
+          // Aggiorna sempre con il totale dalla subcollection (è la fonte di verità)
+          if (result.total > 0) {
+            updatedTotals[result.clientId] = result.total;
+          }
+        });
+        // Aggiorna stato progressivamente
+        setPaymentsTotals({ ...updatedTotals });
+      }
+    };
 
     return () => unsub();
   }, [navigate, isAdmin, showNotification]);
@@ -266,14 +324,55 @@ export default function useClientsState(propRole) {
     if (!clientToDelete) return;
     try {
       await deleteClient(db, clientToDelete.id);
+      // Sposta nel cestino localmente
+      const deletedClient = clients.find(c => c.id === clientToDelete.id);
+      if (deletedClient) {
+        setDeletedClients(prev => [...prev, { ...deletedClient, isDeleted: true, deletedAt: new Date() }]);
+      }
       setClients(prev => prev.filter(c => c.id !== clientToDelete.id));
-      showNotification('Cliente eliminato!', 'success');
+      showNotification('Cliente spostato nel cestino!', 'success');
     } catch (error) {
       showNotification(error.message || 'Errore eliminazione', 'error');
     } finally {
       setClientToDelete(null);
     }
-  }, [clientToDelete, showNotification]);
+  }, [clientToDelete, clients, showNotification]);
+
+  // Ripristina cliente dal cestino
+  const handleRestore = useCallback(async (clientId) => {
+    try {
+      const clientRef = getTenantDoc(db, 'clients', clientId);
+      const { updateDoc } = await import('firebase/firestore');
+      await updateDoc(clientRef, {
+        isDeleted: false,
+        deletedAt: null,
+        deletedBy: null,
+        status: 'attivo'
+      });
+      // Sposta dalla lista cestino alla lista clienti
+      const restoredClient = deletedClients.find(c => c.id === clientId);
+      if (restoredClient) {
+        setClients(prev => [...prev, { ...restoredClient, isDeleted: false }]);
+        setDeletedClients(prev => prev.filter(c => c.id !== clientId));
+      }
+      showNotification('Cliente ripristinato!', 'success');
+    } catch (error) {
+      showNotification(error.message || 'Errore ripristino', 'error');
+    }
+  }, [deletedClients, showNotification]);
+
+  // Elimina definitivamente dal cestino
+  const handlePermanentDelete = useCallback(async (clientId) => {
+    try {
+      const clientRef = getTenantDoc(db, 'clients', clientId);
+      const { deleteDoc } = await import('firebase/firestore');
+      await deleteDoc(clientRef);
+      setDeletedClients(prev => prev.filter(c => c.id !== clientId));
+      showNotification('Cliente eliminato definitivamente!', 'success');
+    } catch (error) {
+      showNotification(error.message || 'Errore eliminazione definitiva', 'error');
+    }
+  }, [showNotification]);
 
   const toggleSort = useCallback((field) => {
     if (sortField === field) {
@@ -363,6 +462,13 @@ export default function useClientsState(propRole) {
     toggleSort,
     showArchived,
     setShowArchived,
+    
+    // Cestino
+    showTrash,
+    setShowTrash,
+    deletedClients,
+    handleRestore,
+    handlePermanentDelete,
     
     // Filtri avanzati
     filterPanelOpen,

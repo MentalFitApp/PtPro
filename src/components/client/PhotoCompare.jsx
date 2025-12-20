@@ -1,7 +1,7 @@
 // src/components/client/PhotoCompare.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Image, Calendar, ArrowLeftRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Image, Calendar, ArrowLeftRight, ZoomIn, ZoomOut, Move, RotateCcw, RotateCw } from 'lucide-react';
 
 const formatDate = (date) => {
   if (!date) return 'N/D';
@@ -24,6 +24,85 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
   const [rightPhotoIndex, setRightPhotoIndex] = useState(1);
   const [compareMode, setCompareMode] = useState(false); // false = grid, true = compare
   const [sliderPosition, setSliderPosition] = useState(50);
+  
+  // Stato per allineamento foto (zoom, offset e rotazione per entrambe le foto)
+  const [leftTransform, setLeftTransform] = useState({ scale: 1, x: 0, y: 0, rotate: 0 });
+  const [rightTransform, setRightTransform] = useState({ scale: 1, x: 0, y: 0, rotate: 0 });
+  const [activeAdjust, setActiveAdjust] = useState(null); // 'left' | 'right' | null
+  
+  // Stato per drag & drop
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0, startX: 0, startY: 0 });
+  const containerRef = useRef(null);
+
+  // Handler per drag & drop
+  const handleDragStart = useCallback((e, side) => {
+    if (!activeAdjust || activeAdjust !== side) return;
+    
+    e.preventDefault();
+    setIsDragging(true);
+    
+    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+    const transform = side === 'left' ? leftTransform : rightTransform;
+    
+    dragStartRef.current = {
+      x: clientX,
+      y: clientY,
+      startX: transform.x,
+      startY: transform.y
+    };
+  }, [activeAdjust, leftTransform, rightTransform]);
+
+  const handleDragMove = useCallback((e) => {
+    if (!isDragging || !activeAdjust) return;
+    
+    e.preventDefault();
+    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+    
+    const deltaX = clientX - dragStartRef.current.x;
+    const deltaY = clientY - dragStartRef.current.y;
+    
+    const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+    setter(prev => ({
+      ...prev,
+      x: dragStartRef.current.startX + deltaX,
+      y: dragStartRef.current.startY + deltaY
+    }));
+  }, [isDragging, activeAdjust]);
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Event listeners globali per drag
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleDragMove);
+      window.addEventListener('mouseup', handleDragEnd);
+      window.addEventListener('touchmove', handleDragMove, { passive: false });
+      window.addEventListener('touchend', handleDragEnd);
+      
+      return () => {
+        window.removeEventListener('mousemove', handleDragMove);
+        window.removeEventListener('mouseup', handleDragEnd);
+        window.removeEventListener('touchmove', handleDragMove);
+        window.removeEventListener('touchend', handleDragEnd);
+      };
+    }
+  }, [isDragging, handleDragMove, handleDragEnd]);
+
+  // Reset transform quando cambiano le foto selezionate
+  useEffect(() => {
+    setLeftTransform({ scale: 1, x: 0, y: 0, rotate: 0 });
+    setActiveAdjust(null);
+  }, [leftPhotoIndex]);
+
+  useEffect(() => {
+    setRightTransform({ scale: 1, x: 0, y: 0, rotate: 0 });
+    setActiveAdjust(null);
+  }, [rightPhotoIndex]);
 
   // Raggruppa tutte le foto per tipo
   const photosByType = useMemo(() => {
@@ -227,6 +306,166 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
         </button>
       </div>
 
+      {/* Controlli allineamento - solo in modalità slider */}
+      {compareMode && (
+        <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2 sm:gap-3 px-3 py-2 bg-slate-800/60 border-b border-slate-700/50">
+          {/* Selezione foto */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 hidden sm:inline">Allinea:</span>
+            <button
+              onClick={() => setActiveAdjust(activeAdjust === 'left' ? null : 'left')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                activeAdjust === 'left' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              Prima
+            </button>
+            <button
+              onClick={() => setActiveAdjust(activeAdjust === 'right' ? null : 'right')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                activeAdjust === 'right' 
+                  ? 'bg-emerald-600 text-white' 
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              Dopo
+            </button>
+          </div>
+          
+          {activeAdjust && (
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+              {/* Zoom */}
+              <div className="flex items-center gap-1 bg-slate-700/50 rounded-lg px-2 py-1">
+                <button
+                  onClick={() => {
+                    const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                    setter(prev => ({ ...prev, scale: Math.max(0.5, prev.scale - 0.1) }));
+                  }}
+                  className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
+                  title="Zoom -"
+                >
+                  <ZoomOut size={16} />
+                </button>
+                <span className="text-xs text-slate-300 min-w-[36px] text-center font-medium">
+                  {Math.round((activeAdjust === 'left' ? leftTransform : rightTransform).scale * 100)}%
+                </span>
+                <button
+                  onClick={() => {
+                    const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                    setter(prev => ({ ...prev, scale: Math.min(2, prev.scale + 0.1) }));
+                  }}
+                  className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
+                  title="Zoom +"
+                >
+                  <ZoomIn size={16} />
+                </button>
+              </div>
+              
+              {/* Sposta - frecce più precise (5px per click) */}
+              <div className="flex items-center gap-1 bg-slate-700/50 rounded-lg px-2 py-1">
+                <button
+                  onClick={() => {
+                    const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                    setter(prev => ({ ...prev, x: prev.x - 5 }));
+                  }}
+                  className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
+                  title="← Sinistra"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <div className="flex flex-col gap-0.5">
+                  <button
+                    onClick={() => {
+                      const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                      setter(prev => ({ ...prev, y: prev.y - 5 }));
+                    }}
+                    className="p-1 rounded hover:bg-slate-600 text-slate-300"
+                    title="↑ Su"
+                  >
+                    <ChevronLeft size={14} className="rotate-90" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                      setter(prev => ({ ...prev, y: prev.y + 5 }));
+                    }}
+                    className="p-1 rounded hover:bg-slate-600 text-slate-300"
+                    title="↓ Giù"
+                  >
+                    <ChevronRight size={14} className="rotate-90" />
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                    setter(prev => ({ ...prev, x: prev.x + 5 }));
+                  }}
+                  className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
+                  title="→ Destra"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+              
+              {/* Rotazione */}
+              <div className="flex items-center gap-1 bg-slate-700/50 rounded-lg px-2 py-1">
+                <button
+                  onClick={() => {
+                    const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                    setter(prev => ({ ...prev, rotate: prev.rotate - 90 }));
+                  }}
+                  className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
+                  title="Ruota -90°"
+                >
+                  <RotateCcw size={16} />
+                </button>
+                <span className="text-xs text-slate-300 min-w-[32px] text-center font-medium">
+                  {(activeAdjust === 'left' ? leftTransform : rightTransform).rotate}°
+                </span>
+                <button
+                  onClick={() => {
+                    const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                    setter(prev => ({ ...prev, rotate: prev.rotate + 90 }));
+                  }}
+                  className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
+                  title="Ruota +90°"
+                >
+                  <RotateCw size={16} />
+                </button>
+              </div>
+              
+              {/* Reset */}
+              <button
+                onClick={() => {
+                  const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                  setter({ scale: 1, x: 0, y: 0, rotate: 0 });
+                }}
+                className="px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs font-medium"
+                title="Reset tutto"
+              >
+                Reset
+              </button>
+              
+              {/* Fine - per riattivare lo slider */}
+              <button
+                onClick={() => setActiveAdjust(null)}
+                className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium"
+              >
+                ✓ Fine
+              </button>
+            </div>
+          )}
+          
+          {!activeAdjust && (
+            <span className="text-xs text-slate-500 italic">
+              Clicca "Prima" o "Dopo" per regolare
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Photos */}
       <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
         {!compareMode ? (
@@ -312,53 +551,91 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
           </div>
         ) : (
           // Slider compare mode
-          <div className="relative w-full max-w-3xl aspect-[3/4] rounded-xl overflow-hidden">
-            {/* Right photo (background) */}
-            <img 
-              src={rightPhoto?.url} 
-              alt="After"
-              className="absolute inset-0 w-full h-full object-contain"
-            />
-            
-            {/* Left photo (clipped) */}
+          <div className="flex flex-col items-center w-full h-full">
+            {/* Slider container - aspect ratio 3:4 per foto corpo intero */}
             <div 
-              className="absolute inset-0 overflow-hidden"
-              style={{ width: `${sliderPosition}%` }}
+              ref={containerRef}
+              className="relative w-full max-w-2xl mx-auto rounded-xl overflow-hidden bg-slate-900" 
+              style={{ aspectRatio: '3/4', maxHeight: 'calc(100vh - 280px)' }}
             >
-              <img 
-                src={leftPhoto?.url} 
-                alt="Before"
-                className="absolute inset-0 w-full h-full object-contain"
-                style={{ width: `${100 / (sliderPosition / 100)}%`, maxWidth: 'none' }}
-              />
-            </div>
-
-            {/* Slider handle */}
-            <div 
-              className="absolute top-0 bottom-0 w-1 bg-white shadow-lg cursor-ew-resize"
-              style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
-            >
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center">
-                <ArrowLeftRight size={18} className="text-slate-800" />
+              {/* Right photo (background - "Dopo") - Draggable quando attivo */}
+              <div 
+                className={`absolute inset-0 flex items-center justify-center ${activeAdjust === 'right' ? 'cursor-move z-5' : ''}`}
+                onMouseDown={(e) => handleDragStart(e, 'right')}
+                onTouchStart={(e) => handleDragStart(e, 'right')}
+              >
+                <img 
+                  src={rightPhoto?.url} 
+                  alt="After"
+                  className={`w-full h-full object-contain select-none ${activeAdjust === 'right' ? 'pointer-events-none' : ''}`}
+                  draggable={false}
+                  style={{
+                    transform: `translate(${rightTransform.x}px, ${rightTransform.y}px) scale(${rightTransform.scale}) rotate(${rightTransform.rotate}deg)`,
+                    transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+                  }}
+                />
               </div>
-            </div>
+              
+              {/* Left photo (clipped - "Prima") - Draggable quando attivo */}
+              <div 
+                className="absolute inset-0 overflow-hidden"
+                style={{ width: `${sliderPosition}%` }}
+              >
+                <div 
+                  className={`absolute inset-0 flex items-center justify-center ${activeAdjust === 'left' ? 'cursor-move z-5' : ''}`}
+                  style={{ width: `${100 / (sliderPosition / 100)}%` }}
+                  onMouseDown={(e) => handleDragStart(e, 'left')}
+                  onTouchStart={(e) => handleDragStart(e, 'left')}
+                >
+                  <img 
+                    src={leftPhoto?.url} 
+                    alt="Before"
+                    className={`w-full h-full object-contain select-none ${activeAdjust === 'left' ? 'pointer-events-none' : ''}`}
+                    draggable={false}
+                    style={{
+                      transform: `translate(${leftTransform.x}px, ${leftTransform.y}px) scale(${leftTransform.scale}) rotate(${leftTransform.rotate}deg)`,
+                      transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+                    }}
+                  />
+                </div>
+              </div>
 
-            {/* Slider input (invisible, for interaction) */}
-            <input
-              type="range"
-              min="5"
-              max="95"
-              value={sliderPosition}
-              onChange={(e) => setSliderPosition(Number(e.target.value))}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize"
-            />
+              {/* Slider handle */}
+              <div 
+                className="absolute top-0 bottom-0 w-1 bg-white shadow-lg cursor-ew-resize z-10"
+                style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+              >
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center">
+                  <ArrowLeftRight size={18} className="text-slate-800" />
+                </div>
+              </div>
 
-            {/* Labels */}
-            <div className="absolute bottom-4 left-4 px-3 py-1.5 rounded-lg bg-black/70 text-white text-sm">
-              {formatDate(leftPhoto?.date)}
-            </div>
-            <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-lg bg-black/70 text-white text-sm">
-              {formatDate(rightPhoto?.date)}
+              {/* Slider input (invisible, for interaction) - sempre presente, z-index varia */}
+              <input
+                type="range"
+                min="5"
+                max="95"
+                value={sliderPosition}
+                onChange={(e) => setSliderPosition(Number(e.target.value))}
+                className={`absolute inset-0 w-full h-full opacity-0 cursor-ew-resize ${activeAdjust ? 'z-0 pointer-events-none' : 'z-20'}`}
+              />
+
+              {/* Labels */}
+              <div className="absolute bottom-4 left-4 px-3 py-1.5 rounded-lg bg-black/70 text-white text-sm z-10 pointer-events-none">
+                {formatDate(leftPhoto?.date)}
+              </div>
+              <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-lg bg-black/70 text-white text-sm z-10 pointer-events-none">
+                {formatDate(rightPhoto?.date)}
+              </div>
+              
+              {/* Indicatore foto attiva per allineamento */}
+              {activeAdjust && (
+                <div className={`absolute top-4 ${activeAdjust === 'left' ? 'left-4' : 'right-4'} px-3 py-1.5 rounded-lg text-white text-xs font-medium z-30 pointer-events-none ${
+                  activeAdjust === 'left' ? 'bg-blue-600' : 'bg-emerald-600'
+                }`}>
+                  Trascina la foto "{activeAdjust === 'left' ? 'Prima' : 'Dopo'}"
+                </div>
+              )}
             </div>
           </div>
         )}

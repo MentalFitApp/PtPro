@@ -1,6 +1,6 @@
 // src/hooks/useUnreadNotifications.js
 // Hook per contare notifiche non lette
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -235,7 +235,7 @@ export function useUnreadAnamnesi() {
     return () => clearInterval(interval);
   }, []);
 
-  const markAsRead = (clientId) => {
+  const markAsRead = useCallback((clientId) => {
     const user = auth.currentUser;
     const tenantId = localStorage.getItem('tenantId');
     if (!user || !tenantId) return;
@@ -257,9 +257,9 @@ export function useUnreadAnamnesi() {
     
     setUnreadIds(prev => prev.filter(id => id !== clientId));
     setUnreadCount(prev => Math.max(0, prev - 1));
-  };
+  }, []);
 
-  const markAllAsRead = () => {
+  const markAllAsRead = useCallback(() => {
     const user = auth.currentUser;
     const tenantId = localStorage.getItem('tenantId');
     if (!user || !tenantId) return;
@@ -267,18 +267,20 @@ export function useUnreadAnamnesi() {
     const viewedKey = `viewed_anamnesi_${tenantId}_${user.uid}`;
     const timestampsKey = `anamnesi_timestamps_${tenantId}_${user.uid}`;
     
-    const allIds = [...new Set([...JSON.parse(localStorage.getItem(viewedKey) || '[]'), ...unreadIds])];
-    localStorage.setItem(viewedKey, JSON.stringify(allIds));
-    
-    // Aggiorna tutti i timestamp
-    const viewedTimestamps = JSON.parse(localStorage.getItem(timestampsKey) || '{}');
-    const now = Date.now();
-    unreadIds.forEach(id => { viewedTimestamps[id] = now; });
-    localStorage.setItem(timestampsKey, JSON.stringify(viewedTimestamps));
-    
-    setUnreadIds([]);
+    setUnreadIds(currentUnreadIds => {
+      const allIds = [...new Set([...JSON.parse(localStorage.getItem(viewedKey) || '[]'), ...currentUnreadIds])];
+      localStorage.setItem(viewedKey, JSON.stringify(allIds));
+      
+      // Aggiorna tutti i timestamp
+      const viewedTimestamps = JSON.parse(localStorage.getItem(timestampsKey) || '{}');
+      const now = Date.now();
+      currentUnreadIds.forEach(id => { viewedTimestamps[id] = now; });
+      localStorage.setItem(timestampsKey, JSON.stringify(viewedTimestamps));
+      
+      return [];
+    });
     setUnreadCount(0);
-  };
+  }, []);
 
   return { unreadCount, unreadIds, loading, markAsRead, markAllAsRead };
 }
@@ -414,7 +416,7 @@ export function useUnreadChecks() {
     return () => clearInterval(interval);
   }, []);
 
-  const markAsRead = (checkId) => {
+  const markAsRead = useCallback((checkId) => {
     const user = auth.currentUser;
     const tenantId = localStorage.getItem('tenantId');
     if (!user || !tenantId) return;
@@ -428,10 +430,10 @@ export function useUnreadChecks() {
       setUnreadIds(prev => prev.filter(id => id !== checkId));
       setUnreadCount(prev => Math.max(0, prev - 1));
     }
-  };
+  }, []);
   
   // Segna tutti i check di un cliente come letti
-  const markClientChecksAsRead = (clientId) => {
+  const markClientChecksAsRead = useCallback((clientId) => {
     const user = auth.currentUser;
     const tenantId = localStorage.getItem('tenantId');
     if (!user || !tenantId) return;
@@ -439,27 +441,32 @@ export function useUnreadChecks() {
     const viewedKey = `viewed_checks_${tenantId}_${user.uid}`;
     const viewedIds = JSON.parse(localStorage.getItem(viewedKey) || '[]');
     
-    // Trova tutti gli unreadIds che appartengono a questo cliente
-    const clientCheckIds = unreadIds.filter(id => id.startsWith(`${clientId}_`));
-    
-    const newViewedIds = [...new Set([...viewedIds, ...clientCheckIds])];
-    localStorage.setItem(viewedKey, JSON.stringify(newViewedIds));
-    
-    setUnreadIds(prev => prev.filter(id => !id.startsWith(`${clientId}_`)));
-    setUnreadCount(prev => Math.max(0, prev - clientCheckIds.length));
-  };
+    setUnreadIds(currentUnreadIds => {
+      // Trova tutti gli unreadIds che appartengono a questo cliente
+      const clientCheckIds = currentUnreadIds.filter(id => id.startsWith(`${clientId}_`));
+      
+      const newViewedIds = [...new Set([...viewedIds, ...clientCheckIds])];
+      localStorage.setItem(viewedKey, JSON.stringify(newViewedIds));
+      
+      setUnreadCount(prev => Math.max(0, prev - clientCheckIds.length));
+      
+      return currentUnreadIds.filter(id => !id.startsWith(`${clientId}_`));
+    });
+  }, []);
 
-  const markAllAsRead = () => {
+  const markAllAsRead = useCallback(() => {
     const user = auth.currentUser;
     const tenantId = localStorage.getItem('tenantId');
     if (!user || !tenantId) return;
 
     const viewedKey = `viewed_checks_${tenantId}_${user.uid}`;
-    const allIds = [...new Set([...JSON.parse(localStorage.getItem(viewedKey) || '[]'), ...unreadIds])];
-    localStorage.setItem(viewedKey, JSON.stringify(allIds));
-    setUnreadIds([]);
+    setUnreadIds(currentUnreadIds => {
+      const allIds = [...new Set([...JSON.parse(localStorage.getItem(viewedKey) || '[]'), ...currentUnreadIds])];
+      localStorage.setItem(viewedKey, JSON.stringify(allIds));
+      return [];
+    });
     setUnreadCount(0);
-  };
+  }, []);
 
   return { unreadCount, unreadIds, loading, markAsRead, markClientChecksAsRead, markAllAsRead };
 }

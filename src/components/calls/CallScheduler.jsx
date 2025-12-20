@@ -86,121 +86,123 @@ export const ScheduleCallModal = ({ isOpen, onClose, clientId, clientName, exist
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      exit={{ opacity: 0 }} 
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[90] p-4"
-    >
-      <motion.div 
-        initial={{ scale: 0.95, y: 20 }} 
-        animate={{ scale: 1, y: 0 }} 
-        exit={{ scale: 0.95, y: 20 }} 
-        className="bg-slate-900/95 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 w-full max-w-md shadow-2xl"
-      >
-        <div className="flex justify-between items-center mb-5">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-cyan-500/20">
-              <Phone size={20} className="text-cyan-400" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white">Programma Chiamata</h3>
-              <p className="text-sm text-slate-400">{clientName}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-1">
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm text-slate-300 mb-1">Data</label>
-              <input 
-                type="date" 
-                value={date} 
-                onChange={e => setDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-300 mb-1">Ora</label>
-              <input 
-                type="time" 
-                value={time} 
-                onChange={e => setTime(e.target.value)}
-                className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm text-slate-300 mb-1">Durata</label>
-              <select 
-                value={duration} 
-                onChange={e => setDuration(e.target.value)}
-                className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
-              >
-                <option value="15">15 minuti</option>
-                <option value="30">30 minuti</option>
-                <option value="45">45 minuti</option>
-                <option value="60">1 ora</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-slate-300 mb-1">Tipo</label>
-              <select 
-                value={callType} 
-                onChange={e => setCallType(e.target.value)}
-                className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
-              >
-                <option value="video">Video chiamata</option>
-                <option value="phone">Telefonata</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm text-slate-300 mb-1">Note (opzionale)</label>
-            <textarea 
-              value={notes} 
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Es: Revisione scheda, check mensile..."
-              rows={2}
-              className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white resize-none"
-            />
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            {existingCall && (
-              <button 
-                onClick={handleDelete}
-                className="px-4 py-2.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 rounded-lg font-medium flex items-center gap-2"
-              >
-                <Trash2 size={16} /> Elimina
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          exit={{ opacity: 0 }} 
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-[90] p-4"
+        >
+          <motion.div 
+            initial={{ scale: 0.95, y: 20 }} 
+            animate={{ scale: 1, y: 0 }} 
+            exit={{ scale: 0.95, y: 20 }} 
+            className="bg-slate-900/95 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 w-full max-w-md shadow-2xl"
+          >
+            <div className="flex justify-between items-center mb-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-cyan-500/20">
+                  <Phone size={20} className="text-cyan-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Programma Chiamata</h3>
+                  <p className="text-sm text-slate-400">{clientName}</p>
+                </div>
+              </div>
+              <button onClick={onClose} className="text-slate-400 hover:text-white p-1">
+                <X size={20} />
               </button>
-            )}
-            <button 
-              onClick={handleSave}
-              disabled={saving || !date || !time}
-              className="flex-1 py-2.5 bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2"
-            >
-              {saving ? 'Salvataggio...' : (
-                <>
-                  <Check size={16} /> {existingCall ? 'Aggiorna' : 'Programma'}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-slate-300 mb-1">Data</label>
+                  <input 
+                    type="date" 
+                    value={date} 
+                    onChange={e => setDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-300 mb-1">Ora</label>
+                  <input 
+                    type="time" 
+                    value={time} 
+                    onChange={e => setTime(e.target.value)}
+                    className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-slate-300 mb-1">Durata</label>
+                  <select 
+                    value={duration} 
+                    onChange={e => setDuration(e.target.value)}
+                    className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                  >
+                    <option value="15">15 minuti</option>
+                    <option value="30">30 minuti</option>
+                    <option value="45">45 minuti</option>
+                    <option value="60">1 ora</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-300 mb-1">Tipo</label>
+                  <select 
+                    value={callType} 
+                    onChange={e => setCallType(e.target.value)}
+                    className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                  >
+                    <option value="video">Video chiamata</option>
+                    <option value="phone">Telefonata</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Note (opzionale)</label>
+                <textarea 
+                  value={notes} 
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="Es: Revisione scheda, check mensile..."
+                  rows={2}
+                  className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white resize-none"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                {existingCall && (
+                  <button 
+                    onClick={handleDelete}
+                    className="px-4 py-2.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 rounded-lg font-medium flex items-center gap-2"
+                  >
+                    <Trash2 size={16} /> Elimina
+                  </button>
+                )}
+                <button 
+                  onClick={handleSave}
+                  disabled={saving || !date || !time}
+                  className="flex-1 py-2.5 bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2"
+                >
+                  {saving ? 'Salvataggio...' : (
+                    <>
+                      <Check size={16} /> {existingCall ? 'Aggiorna' : 'Programma'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

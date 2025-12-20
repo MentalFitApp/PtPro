@@ -274,7 +274,10 @@ export default function App() {
 
           sessionStorage.setItem('app_role', role || '');
 
+          // Skip route validation if we just navigated (avoid interfering with user navigation)
+          // Solo redireziona se siamo su una pagina completamente non autorizzata
           const isValidSubRoute =
+            // Admin può accedere a tutte le route admin
             (isCurrentUserAdmin && (
               location.pathname === '/' ||
               location.pathname === '/clients' ||
@@ -298,7 +301,17 @@ export default function App() {
               location.pathname === '/courses' ||
               location.pathname.startsWith('/courses/') ||
               location.pathname.startsWith('/admin/course/') ||
-              location.pathname === '/profile'
+              location.pathname === '/profile' ||
+              location.pathname === '/chat' ||
+              location.pathname === '/calendar' ||
+              location.pathname === '/calls-calendar' ||
+              location.pathname === '/guida' ||
+              location.pathname === '/community' ||
+              location.pathname.startsWith('/admin/') ||
+              location.pathname === '/integrations' ||
+              location.pathname === '/branding' ||
+              location.pathname === '/settings' ||
+              location.pathname === '/tenant-settings'
             )) ||
             (isCurrentUserACoach && (
               location.pathname === '/coach' ||

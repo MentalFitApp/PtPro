@@ -2,7 +2,7 @@
 // Versione refactored - Componente principale ridotto che usa moduli estratti
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   User, Mail, Phone, Calendar, FileText, DollarSign, Trash2, Edit,
   Copy, Check, Plus, ZoomIn, CalendarDays, Eye, EyeOff, AlertTriangle,
@@ -74,7 +74,6 @@ export default function ClientDetail({ role: propRole }) {
   const { clientId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') || 'overview';
   const toast = useToast();
   const { formatWeight, formatLength, weightLabel, lengthLabel } = useUserPreferences();
   const { markAsRead: markAnamnesiAsRead } = useUnreadAnamnesi();
@@ -114,8 +113,8 @@ export default function ClientDetail({ role: propRole }) {
     navigate(backPath);
   }, [navigate, backPath]);
 
-  // Imposta titolo nell'header
-  usePageInfo({
+  // Page info memoizzata per evitare loop infiniti
+  const pageInfo = useMemo(() => ({
     pageTitle: client?.name || 'Dettaglio Cliente',
     breadcrumbs: [
       { label: 'Dashboard', to: isCoach ? '/coach' : '/' },
@@ -123,15 +122,19 @@ export default function ClientDetail({ role: propRole }) {
       { label: client?.name || 'Cliente' }
     ],
     backButton: { label: 'Torna ai clienti', onClick: handleGoBack }
-  }, [client?.name, backPath, isCoach, handleGoBack]);
+  }), [client?.name, backPath, isCoach, handleGoBack]);
 
-  // Marca anamnesi e checks come letti
+  // Imposta titolo nell'header
+  usePageInfo(pageInfo, [pageInfo]);
+
+  // Marca anamnesi e checks come letti (una volta sola)
   useEffect(() => {
     if (clientId) {
       markAnamnesiAsRead(clientId);
       markClientChecksAsRead(clientId);
     }
-  }, [clientId, markAnamnesiAsRead, markClientChecksAsRead]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId]); // Solo clientId - le funzioni mark non sono stabili
 
   // Check mobile
   useEffect(() => {
@@ -141,10 +144,13 @@ export default function ClientDetail({ role: propRole }) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Set initial tab from URL
+  // Set tab from URL - legge direttamente searchParams per reagire ai cambiamenti
   useEffect(() => {
-    if (initialTab) setActiveTab(initialTab);
-  }, [initialTab, setActiveTab]);
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams, setActiveTab]);
 
   // === COMPUTED VALUES (memoizzati) ===
   const toNumber = useCallback((val) => { 
@@ -317,7 +323,7 @@ export default function ClientDetail({ role: propRole }) {
   
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-transparent">
+      <div className="bg-transparent">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full px-0 sm:px-0 py-0">
           <div className="space-y-6">
             {/* Header Section */}
@@ -993,83 +999,81 @@ export default function ClientDetail({ role: propRole }) {
         </motion.div>
 
         {/* MODALS */}
-        <AnimatePresence>
-          {modals.renewal && (
-            <RenewalModal 
-              isOpen={modals.renewal} 
-              onClose={() => closeModal('renewal')} 
-              client={client} 
-              onSave={() => {}} 
-            />
-          )}
-          {modals.edit && (
-            <EditClientModal 
-              isOpen={modals.edit} 
-              onClose={() => closeModal('edit')} 
-              client={client} 
-              onSave={() => {}} 
-            />
-          )}
-          {modals.extend && (
-            <ExtendExpiryModal 
-              isOpen={modals.extend} 
-              onClose={() => closeModal('extend')} 
-              client={client} 
-              onSave={() => {}} 
-            />
-          )}
-          {modals.editPayment && (
-            <EditPaymentModal
-              isOpen={modals.editPayment}
-              onClose={() => { closeModal('editPayment'); setEditingPaymentIndex(null); }}
-              payment={editingPaymentIndex !== null ? payments[editingPaymentIndex] : null}
-              client={client}
-              db={db}
-              onSave={() => setEditingPaymentIndex(null)}
-              onDelete={() => setEditingPaymentIndex(null)}
-            />
-          )}
-          {modals.photoZoom?.open && (
-            <PhotoZoomModal 
-              isOpen={modals.photoZoom.open} 
-              onClose={() => closeModal('photoZoom')} 
-              imageUrl={modals.photoZoom.url} 
-              alt={modals.photoZoom.alt} 
-            />
-          )}
-          {modals.photoCompare && (
-            <PhotoCompare 
-              checks={checks} 
-              anamnesi={anamnesi} 
-              onClose={() => closeModal('photoCompare')} 
-            />
-          )}
-          {modals.scheduleCall && (
-            <ScheduleCallModal 
-              isOpen={modals.scheduleCall} 
-              onClose={() => closeModal('scheduleCall')} 
-              clientId={clientId}
-              clientName={client?.name}
-              existingCall={nextCall}
-              onSave={() => {}}
-            />
-          )}
-          {modals.workoutCalendar && (
-            <WorkoutCalendarModal 
-              isOpen={modals.workoutCalendar}
-              onClose={() => closeModal('workoutCalendar')}
-              clientId={clientId}
-            />
-          )}
-          {modals.newCheck && (
-            <NewCheckModal 
-              isOpen={modals.newCheck}
-              onClose={() => closeModal('newCheck')}
-              clientId={clientId}
-              db={db}
-            />
-          )}
-        </AnimatePresence>
+        {modals.renewal && (
+          <RenewalModal 
+            isOpen={modals.renewal} 
+            onClose={() => closeModal('renewal')} 
+            client={client} 
+            onSave={() => {}} 
+          />
+        )}
+        {modals.edit && (
+          <EditClientModal 
+            isOpen={modals.edit} 
+            onClose={() => closeModal('edit')} 
+            client={client} 
+            onSave={() => {}} 
+          />
+        )}
+        {modals.extend && (
+          <ExtendExpiryModal 
+            isOpen={modals.extend} 
+            onClose={() => closeModal('extend')} 
+            client={client} 
+            onSave={() => {}} 
+          />
+        )}
+        {modals.editPayment && (
+          <EditPaymentModal
+            isOpen={modals.editPayment}
+            onClose={() => { closeModal('editPayment'); setEditingPaymentIndex(null); }}
+            payment={editingPaymentIndex !== null ? payments[editingPaymentIndex] : null}
+            client={client}
+            db={db}
+            onSave={() => setEditingPaymentIndex(null)}
+            onDelete={() => setEditingPaymentIndex(null)}
+          />
+        )}
+        {modals.photoZoom?.open && (
+          <PhotoZoomModal 
+            isOpen={modals.photoZoom.open} 
+            onClose={() => closeModal('photoZoom')} 
+            imageUrl={modals.photoZoom.url} 
+            alt={modals.photoZoom.alt} 
+          />
+        )}
+        {modals.photoCompare && (
+          <PhotoCompare 
+            checks={checks} 
+            anamnesi={anamnesi} 
+            onClose={() => closeModal('photoCompare')} 
+          />
+        )}
+        {modals.scheduleCall && (
+          <ScheduleCallModal 
+            isOpen={modals.scheduleCall} 
+            onClose={() => closeModal('scheduleCall')} 
+            clientId={clientId}
+            clientName={client?.name}
+            existingCall={nextCall}
+            onSave={() => {}}
+          />
+        )}
+        {modals.workoutCalendar && (
+          <WorkoutCalendarModal 
+            isOpen={modals.workoutCalendar}
+            onClose={() => closeModal('workoutCalendar')}
+            clientId={clientId}
+          />
+        )}
+        {modals.newCheck && (
+          <NewCheckModal 
+            isOpen={modals.newCheck}
+            onClose={() => closeModal('newCheck')}
+            clientId={clientId}
+            db={db}
+          />
+        )}
       </div>
     </ErrorBoundary>
   );

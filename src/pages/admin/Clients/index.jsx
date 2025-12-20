@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   UserPlus, Search, ArrowUp, ArrowDown, 
   CheckCircle, XCircle, Calendar, Clock, AlertCircle, 
-  Download, Filter, LayoutGrid, List, Archive
+  Download, Filter, LayoutGrid, List, Archive, Trash2, RotateCcw
 } from 'lucide-react';
 
 // Hooks
@@ -29,7 +29,7 @@ import InvitesManager from '../../../components/admin/InvitesManager';
 import FilterPanel, { FilterSection, FilterCheckbox, FilterDateRange } from '../../../components/layout/FilterPanel';
 import KanbanBoard, { KanbanCard } from '../../../components/layout/KanbanBoard';
 import { toDate } from '../../../firebase';
-import { FileText, FilePenLine, Trash2 } from 'lucide-react';
+import { FileText, FilePenLine } from 'lucide-react';
 
 // Utils
 import { exportToCSV } from './utils';
@@ -77,6 +77,12 @@ export default function Clients({ role: propRole }) {
     clientToDelete,
     setClientToDelete,
     handleDelete,
+    // Cestino
+    showTrash,
+    setShowTrash,
+    deletedClients,
+    handleRestore,
+    handlePermanentDelete,
     // Calendario
     meseCalendario,
     setMeseCalendario,
@@ -297,11 +303,12 @@ export default function Clients({ role: propRole }) {
 
           {/* Filter Chips */}
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hidden">
-            <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors ${filter === 'all' ? 'bg-rose-600 text-white preserve-white' : 'bg-slate-700 text-slate-300'}`}>Tutti</button>
-            <button onClick={() => setFilter('active')} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${filter === 'active' ? 'bg-emerald-600 text-white preserve-white' : 'bg-slate-700 text-emerald-400'}`}><CheckCircle size={12} /> Attivi</button>
-            <button onClick={() => setFilter('expiring')} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${filter === 'expiring' ? 'bg-amber-600 text-white preserve-white' : 'bg-slate-700 text-amber-400'}`}><Clock size={12} /> Scadenza</button>
-            <button onClick={() => setFilter('expired')} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${filter === 'expired' ? 'bg-red-600 text-white preserve-white' : 'bg-slate-700 text-red-400'}`}><AlertCircle size={12} /> Scaduti</button>
-            <button onClick={() => setShowArchived(!showArchived)} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${showArchived ? 'bg-slate-600 text-white preserve-white' : 'bg-slate-700 text-slate-400'}`}><Archive size={12} /> {showArchived ? 'Archiviati' : 'Archivio'}</button>
+            <button onClick={() => { setFilter('all'); setShowArchived(false); setShowTrash(false); }} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors ${filter === 'all' && !showArchived && !showTrash ? 'bg-rose-600 text-white preserve-white' : 'bg-slate-700 text-slate-300'}`}>Tutti</button>
+            <button onClick={() => { setFilter('active'); setShowArchived(false); setShowTrash(false); }} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${filter === 'active' ? 'bg-emerald-600 text-white preserve-white' : 'bg-slate-700 text-emerald-400'}`}><CheckCircle size={12} /> Attivi</button>
+            <button onClick={() => { setFilter('expiring'); setShowArchived(false); setShowTrash(false); }} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${filter === 'expiring' ? 'bg-amber-600 text-white preserve-white' : 'bg-slate-700 text-amber-400'}`}><Clock size={12} /> Scadenza</button>
+            <button onClick={() => { setFilter('expired'); setShowArchived(false); setShowTrash(false); }} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${filter === 'expired' ? 'bg-red-600 text-white preserve-white' : 'bg-slate-700 text-red-400'}`}><AlertCircle size={12} /> Scaduti</button>
+            <button onClick={() => { setShowArchived(!showArchived); setShowTrash(false); }} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${showArchived ? 'bg-slate-600 text-white preserve-white' : 'bg-slate-700 text-slate-400'}`}><Archive size={12} /> {showArchived ? 'Archiviati' : 'Archivio'}</button>
+            <button onClick={() => { setShowTrash(!showTrash); setShowArchived(false); }} className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${showTrash ? 'bg-red-600 text-white preserve-white' : 'bg-slate-700 text-slate-400'}`}><Trash2 size={12} /> Cestino {deletedClients.length > 0 && `(${deletedClients.length})`}</button>
           </div>
         </div>
 
@@ -410,10 +417,16 @@ export default function Clients({ role: propRole }) {
                 </button>
               ))}
               <button 
-                onClick={() => setShowArchived(!showArchived)} 
+                onClick={() => { setShowArchived(!showArchived); setShowTrash(false); }} 
                 className={`ml-2 px-2 py-1 text-xs rounded-md flex items-center gap-1 transition-colors ${showArchived ? 'bg-slate-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
               >
                 <Archive size={12} /> {showArchived ? 'Archiviati' : 'Archivio'}
+              </button>
+              <button 
+                onClick={() => { setShowTrash(!showTrash); setShowArchived(false); }} 
+                className={`ml-1 px-2 py-1 text-xs rounded-md flex items-center gap-1 transition-colors ${showTrash ? 'bg-red-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                <Trash2 size={12} /> Cestino {deletedClients.length > 0 && `(${deletedClients.length})`}
               </button>
             </div>
             
@@ -476,7 +489,7 @@ export default function Clients({ role: propRole }) {
         )}
 
         {/* Calendar */}
-        {showCalendar && (
+        {showCalendar && !showTrash && (
           <ClientCalendar
             meseCalendario={meseCalendario}
             setMeseCalendario={setMeseCalendario}
@@ -491,8 +504,71 @@ export default function Clients({ role: propRole }) {
           />
         )}
 
+        {/* CESTINO */}
+        {showTrash && (
+          <div className="mx-3 sm:mx-6">
+            <div className="bg-slate-900/60 border border-red-500/30 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-red-500/20">
+                  <Trash2 size={20} className="text-red-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Cestino</h2>
+                  <p className="text-sm text-slate-400">{deletedClients.length} clienti eliminati</p>
+                </div>
+              </div>
+              
+              {deletedClients.length === 0 ? (
+                <div className="text-center py-8">
+                  <Trash2 size={48} className="mx-auto text-slate-600 mb-3" />
+                  <p className="text-slate-400">Il cestino è vuoto</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {deletedClients.map(client => (
+                    <div key={client.id} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 font-medium">
+                          {client.name?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                        <div>
+                          <p className="font-medium text-white">{client.name || 'Senza nome'}</p>
+                          <p className="text-sm text-slate-400">{client.email || 'Email non disponibile'}</p>
+                          {client.deletedAt && (
+                            <p className="text-xs text-red-400">
+                              Eliminato il {new Date(client.deletedAt?.toDate?.() || client.deletedAt).toLocaleDateString('it-IT')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleRestore(client.id)}
+                          className="px-3 py-1.5 text-sm bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center gap-1"
+                        >
+                          <RotateCcw size={14} /> Ripristina
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Eliminare definitivamente questo cliente? Questa azione non può essere annullata.')) {
+                              handlePermanentDelete(client.id);
+                            }
+                          }}
+                          className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors flex items-center gap-1"
+                        >
+                          <Trash2 size={14} /> Elimina
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Views */}
-        {viewMode === 'list' && (
+        {!showTrash && viewMode === 'list' && (
           <div className="mx-3 sm:mx-6">
             <ClientListView
               clients={filteredAndSortedClients}
@@ -510,7 +586,7 @@ export default function Clients({ role: propRole }) {
           </div>
         )}
 
-        {viewMode === 'card' && (
+        {!showTrash && viewMode === 'card' && (
           <div className="mx-3 sm:mx-6">
             <ClientCardView
               clients={filteredAndSortedClients}
@@ -523,7 +599,7 @@ export default function Clients({ role: propRole }) {
           </div>
         )}
 
-        {viewMode === 'kanban' && (
+        {!showTrash && viewMode === 'kanban' && (
           <div className="mx-3 sm:mx-6">
             <KanbanBoard
               columns={[

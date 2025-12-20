@@ -15,6 +15,23 @@ import InteractiveTour from '../onboarding/InteractiveTour';
 import { PageProvider, usePageContext } from '../../contexts/PageContext';
 import { useUnreadCount } from '../../hooks/useChat';
 
+// Pagine conosciute dell'area cliente (NON admin ClientDetail)
+// /client/:clientId è admin ClientDetail, /client/dashboard è area cliente
+const CLIENT_AREA_PAGES = [
+  'onboarding', 'first-access', 'dashboard', 'anamnesi', 'checks', 
+  'payments', 'chat', 'profile', 'scheda-alimentazione', 'scheda-allenamento',
+  'courses', 'community', 'settings', 'habits', 'forgot-password'
+];
+
+// Verifica se il path è nell'area cliente (non admin ClientDetail)
+const isClientAreaPath = (pathname) => {
+  if (pathname === '/client') return true;
+  if (!pathname.startsWith('/client/')) return false;
+  // Estrae il primo segmento dopo /client/
+  const segment = pathname.split('/')[2];
+  return CLIENT_AREA_PAGES.includes(segment);
+};
+
 // === STELLE ANIMATE - 5 STILI PREMIUM ===
 const AnimatedStars = () => {
   const [initialized, setInitialized] = useState(false);
@@ -690,7 +707,8 @@ export const ProLayout = () => {
   // Determina il ruolo basandosi sul path
   const getRole = () => {
     if (location.pathname.startsWith('/coach')) return 'coach';
-    if (location.pathname.startsWith('/client')) return 'client';
+    // Area cliente: /client/dashboard, /client/settings, etc. (NON /client/:id che è admin)
+    if (isClientAreaPath(location.pathname)) return 'client';
     if (location.pathname.startsWith('/collaboratore')) return 'collaboratore';
     return 'admin';
   };
@@ -877,7 +895,7 @@ export const ProLayout = () => {
 
       {/* Desktop Header */}
       {!isMobile && (
-        <div data-profile-menu className="relative z-10">
+        <div data-profile-menu>
           <DesktopHeader 
             isProfileMenuOpen={isProfileMenuOpen}
             onProfileMenuToggle={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
@@ -895,7 +913,7 @@ export const ProLayout = () => {
 
       {/* Mobile Header */}
       {isMobile && (
-        <div data-profile-menu className="relative z-10">
+        <div data-profile-menu>
           <MobileHeader 
             onMenuOpen={() => setIsMobileSidebarOpen(true)}
             branding={branding}
@@ -914,7 +932,7 @@ export const ProLayout = () => {
 
       {/* Main Content Area */}
       <div 
-        className={`min-h-screen transition-all duration-300 ease-out relative z-[1] ${
+        className={`min-h-screen transition-all duration-300 ease-out ${
           !isMobile 
             ? (isSidebarCollapsed ? 'lg:ml-[76px]' : 'lg:ml-[264px]')
             : ''

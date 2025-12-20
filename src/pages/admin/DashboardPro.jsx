@@ -224,7 +224,7 @@ const AlertPills = ({ metrics, callRequests, unreadChats, navigate, setActiveTab
       )}
       {callRequests.length > 0 && (
         <button 
-          onClick={() => navigate(`/admin/client/${callRequests[0]?.clientId}`)}
+          onClick={() => navigate(`/client/${callRequests[0]?.clientId}`)}
           className="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-medium hover:bg-cyan-500/30 transition-colors"
         >
           📞 {callRequests.length} richieste
@@ -1080,7 +1080,7 @@ export default function DashboardPro() {
           title: `Chiamata ${call.clientName}`,
           time: callDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
           sortTime: callDate,
-          onClick: () => navigate(`/admin/client/${call.clientId}`)
+          onClick: () => navigate(`/client/${call.clientId}`)
         });
       }
     });
@@ -1095,7 +1095,7 @@ export default function DashboardPro() {
           title: `Scade ${client.name}`,
           time: 'Oggi',
           sortTime: exp,
-          onClick: () => navigate(`/admin/client/${client.id}`)
+          onClick: () => navigate(`/client/${client.id}`)
         });
       }
     });
@@ -1123,7 +1123,7 @@ export default function DashboardPro() {
           subtitle: 'Nuovo cliente',
           time: date,
           color: 'blue',
-          onClick: () => navigate(`/admin/client/${c.id}`)
+          onClick: () => navigate(`/client/${c.id}`)
         });
       }
     });
@@ -1481,7 +1481,7 @@ export default function DashboardPro() {
                         <ClientRow 
                           key={client.id} 
                           client={client} 
-                          onClick={() => navigate(`/admin/client/${client.id}`)}
+                          onClick={() => navigate(`/client/${client.id}`)}
                         />
                       ))
                     ) : (
@@ -1515,7 +1515,7 @@ export default function DashboardPro() {
                               ? `Scaduto ${Math.abs(daysLeft)} giorni fa` 
                               : `Scade tra ${daysLeft} giorni - ${exp?.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}`
                             }
-                            onClick={() => navigate(`/admin/client/${client.id}`)}
+                            onClick={() => navigate(`/client/${client.id}`)}
                           />
                         );
                       })
@@ -1549,7 +1549,7 @@ export default function DashboardPro() {
                         return (
                           <div 
                             key={idx}
-                            onClick={() => navigate(`/admin/client/${call.clientId}`)}
+                            onClick={() => navigate(`/client/${call.clientId}`)}
                             className="flex items-center gap-3 p-3 hover:bg-slate-800/50 cursor-pointer transition-colors"
                           >
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -1603,7 +1603,7 @@ export default function DashboardPro() {
                           key={item.id}
                           client={{ name: item.clientName, id: item.clientId }}
                           subtitle={`${toDate(item.createdAt)?.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }) || ''} - ${item.type || 'Anamnesi'}`}
-                          onClick={() => navigate(`/admin/client/${item.clientId}?tab=anamnesi`)}
+                          onClick={() => navigate(`/client/${item.clientId}?tab=anamnesi`)}
                         />
                       ))
                     ) : (
@@ -1622,7 +1622,7 @@ export default function DashboardPro() {
                           key={item.id}
                           client={{ name: item.clientName, id: item.clientId }}
                           subtitle={`${toDate(item.createdAt)?.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }) || ''} - ${item.weight ? formatWeight(item.weight) : 'Check-in'}`}
-                          onClick={() => navigate(`/admin/client/${item.clientId}?tab=checks`)}
+                          onClick={() => navigate(`/client/${item.clientId}?tab=check`)}
                         />
                       ))
                     ) : (
@@ -1737,7 +1737,7 @@ export default function DashboardPro() {
                         key={idx}
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
-                        onClick={() => navigate(`/admin/client/${call.clientId}`)}
+                        onClick={() => navigate(`/client/${call.clientId}`)}
                         className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/50 cursor-pointer hover:bg-slate-800/50 transition-colors"
                       >
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -1898,7 +1898,7 @@ export default function DashboardPro() {
                         {metrics.renewalPaymentsList.map((p, idx) => (
                           <div
                             key={p.id || idx}
-                            onClick={() => { setShowRevenueModal(false); navigate(`/admin/client/${p.clientId}`); }}
+                            onClick={() => { setShowRevenueModal(false); navigate(`/client/${p.clientId}`); }}
                             className="flex items-center justify-between p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 cursor-pointer transition-colors"
                           >
                             <div className="flex items-center gap-3">
@@ -1936,7 +1936,7 @@ export default function DashboardPro() {
                         {metrics.regularPaymentsList.map((p, idx) => (
                           <div
                             key={p.id || idx}
-                            onClick={() => { setShowRevenueModal(false); navigate(`/admin/client/${p.clientId}`); }}
+                            onClick={() => { setShowRevenueModal(false); navigate(`/client/${p.clientId}`); }}
                             className="flex items-center justify-between p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 cursor-pointer transition-colors"
                           >
                             <div className="flex items-center gap-3">

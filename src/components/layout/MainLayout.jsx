@@ -187,8 +187,6 @@ const MobileMenu = ({ isOpen, setIsOpen, isCoach, isCollaboratore, isClient, use
   const links = isCollaboratore ? collaboratoreNavLinks : (isCoach ? coachNavLinks : (isClient ? clientNavLinks : adminNavLinks));
   const [expandedMenus, setExpandedMenus] = useState({});
 
-  const isClientDetailPage = location.pathname.startsWith('/client/');
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -719,16 +717,35 @@ const Sidebar = ({ isCoach, isCollaboratore, isClient, isCollapsed, setIsCollaps
 };
 
 // === MAIN LAYOUT INTELLIGENTE ===
+// Pagine conosciute dell'area cliente (NON admin ClientDetail)
+const CLIENT_AREA_PAGES = [
+  'onboarding', 'first-access', 'dashboard', 'anamnesi', 'checks', 
+  'payments', 'chat', 'profile', 'scheda-alimentazione', 'scheda-allenamento',
+  'courses', 'community', 'settings', 'habits', 'forgot-password'
+];
+
+// Verifica se il path è nell'area cliente (non admin ClientDetail)
+const isClientAreaPath = (pathname) => {
+  if (pathname === '/client') return true;
+  if (!pathname.startsWith('/client/')) return false;
+  // Estrae il primo segmento dopo /client/
+  const segment = pathname.split('/')[2];
+  return CLIENT_AREA_PAGES.includes(segment);
+};
+
 export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  // Usa un trailing slash per evitare che /client matchi /clients
   const matchesBasePath = (basePath) => 
     location.pathname === basePath || location.pathname.startsWith(`${basePath}/`);
 
   const isCoach = matchesBasePath('/coach');
   const isCollaboratore = matchesBasePath('/collaboratore');
-  const isClient = matchesBasePath('/client');
-  const isClientDetailPage = location.pathname.startsWith('/client/');
+  // /client (area cliente) vs /clients (lista clienti admin) vs /client/:id (admin ClientDetail)
+  const isClient = isClientAreaPath(location.pathname);
+  // Admin ClientDetail: /client/:id dove :id NON è una pagina client conosciuta
+  const isClientDetailPage = location.pathname.match(/^\/client\/[^/]+/) !== null && !isClient;
   const isClientsListPage = location.pathname === '/clients';
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     try {
