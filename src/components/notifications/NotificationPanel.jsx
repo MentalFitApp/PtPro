@@ -9,7 +9,7 @@ import { useToast } from '../../contexts/ToastContext';
 
 const VAPID_KEY = 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeDXSXKb4uffOVSupUGHQ4Q0l9Ato';
 
-export default function NotificationPanel({ userType = 'client' }) {
+export default function NotificationPanel({ userType = 'client', showEnableButton = true }) {
   const toast = useToast();
   const [notifications, setNotifications] = useState([]);
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
@@ -171,8 +171,8 @@ export default function NotificationPanel({ userType = 'client' }) {
 
   return (
     <div className="relative">
-      {/* Pulsante Attiva Notifiche */}
-      {!isNotificationsEnabled && (
+      {/* Pulsante Attiva Notifiche - Solo se showEnableButton è true */}
+      {!isNotificationsEnabled && showEnableButton && (
         <motion.button
           onClick={enableNotifications}
           whileHover={{ scale: 1.05 }}
@@ -184,8 +184,8 @@ export default function NotificationPanel({ userType = 'client' }) {
         </motion.button>
       )}
 
-      {/* Campanella con Badge */}
-      {isNotificationsEnabled && (
+      {/* Campanella con Badge - Mostra sempre per client, con o senza notifiche attive */}
+      {(isNotificationsEnabled || userType === 'client') && (
         <button
           onClick={() => setShowPanel(!showPanel)}
           className="relative p-2 hover:bg-white/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"

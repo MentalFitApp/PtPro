@@ -8,20 +8,46 @@ import { v4 as uuidv4 } from 'uuid';
  */
 
 // Formati immagine supportati (estensione -> MIME type)
+// Lista estesa per supportare tutti i formati comuni da smartphone e fotocamere
 const IMAGE_EXTENSIONS = {
+  // JPEG variants
   'jpg': 'image/jpeg',
   'jpeg': 'image/jpeg',
+  'jpe': 'image/jpeg',
+  'jfif': 'image/jpeg',
+  'jif': 'image/jpeg',
+  // PNG
   'png': 'image/png',
+  // GIF
   'gif': 'image/gif',
+  // Modern formats
   'webp': 'image/webp',
+  'avif': 'image/avif',
+  // Apple formats (iPhone/iPad)
   'heic': 'image/heic',
   'heif': 'image/heif',
-  'avif': 'image/avif',
+  'hif': 'image/heif',
+  // RAW formats (fotocamere)
+  'raw': 'image/raw',
+  'cr2': 'image/x-canon-cr2',
+  'nef': 'image/x-nikon-nef',
+  'arw': 'image/x-sony-arw',
+  'dng': 'image/x-adobe-dng',
+  // Legacy formats
   'bmp': 'image/bmp',
+  'dib': 'image/bmp',
   'tiff': 'image/tiff',
   'tif': 'image/tiff',
+  // Vector/other
   'svg': 'image/svg+xml',
   'ico': 'image/x-icon',
+  'cur': 'image/x-icon',
+  // Samsung/Android specific
+  'srw': 'image/x-samsung-srw',
+  // Other common
+  'psd': 'image/vnd.adobe.photoshop',
+  'jp2': 'image/jp2',
+  'jpx': 'image/jpx',
 };
 
 /**
@@ -172,7 +198,7 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
   if (!isImage && !isVideo && !isAudio) {
     // Log per debug
     console.warn('File type not recognized:', file.type, 'name:', file.name);
-    throw new Error('Il file deve essere un\'immagine, un video o un audio. Formati supportati: JPG, PNG, HEIC, WebP, GIF, AVIF');
+    throw new Error('Formato file non supportato. Formati immagine: JPG, PNG, HEIC, WebP, GIF, AVIF, BMP, TIFF e altri');
   }
 
   try {

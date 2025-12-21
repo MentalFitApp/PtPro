@@ -49,7 +49,11 @@ export async function linkGoogleAccount() {
     
     console.log('✅ Account Google collegato:', result.user.email);
     
-    // Aggiorna documento utente nel tenant
+    // Forza refresh del token per assicurarsi che le nuove credenziali siano attive
+    await result.user.getIdToken(true);
+    console.log('✅ Token refreshato dopo linking');
+    
+    // Aggiorna documento utente nel tenant (sia users che clients)
     await updateUserProviders(result.user);
     
     return { 
@@ -183,6 +187,7 @@ export async function unlinkProvider(providerId) {
 /**
  * Aggiorna i provider nel documento utente del tenant
  * Mantiene traccia dei provider collegati per analytics e sicurezza
+ * Aggiorna sia 'users' che 'clients' per supportare entrambi i tipi di utente
  */
 async function updateUserProviders(user) {
   if (!user) return;
@@ -194,13 +199,30 @@ async function updateUserProviders(user) {
       linkedAt: new Date().toISOString()
     }));
     
-    // Aggiorna documento nel tenant
-    const userDocRef = getTenantDoc(db, 'users', user.uid);
-    
-    await updateDoc(userDocRef, {
+    const updateData = {
       linkedProviders: providers,
       lastProviderUpdate: serverTimestamp()
-    });
+    };
+    
+    // Prova ad aggiornare documento 'users' (per community members)
+    try {
+      const userDocRef = getTenantDoc(db, 'users', user.uid);
+      await updateDoc(userDocRef, updateData);
+      console.log('✅ Provider aggiornati in users/', user.uid);
+    } catch (userError) {
+      // Ignora se users non esiste
+      console.log('ℹ️ Documento users non trovato, provo clients...');
+    }
+    
+    // Prova ad aggiornare documento 'clients' (per clienti)
+    try {
+      const clientDocRef = getTenantDoc(db, 'clients', user.uid);
+      await updateDoc(clientDocRef, updateData);
+      console.log('✅ Provider aggiornati in clients/', user.uid);
+    } catch (clientError) {
+      // Ignora se clients non esiste
+      console.log('ℹ️ Documento clients non trovato');
+    }
     
     console.log('✅ Provider aggiornati nel tenant:', providers.length);
     

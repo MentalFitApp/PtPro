@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, addDoc, doc, updateDoc, serverTimestamp, orderBy, getDocs, limit } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, orderBy, getDocs, limit } from 'firebase/firestore';
 import { db, auth } from '../../firebase.js';
 import { useNavigate } from 'react-router-dom';
 import { getTenantSubcollection, getTenantDoc } from '../../config/tenant';
 import { notifyNewCheck } from '../../services/notificationService';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircle2, ImageOff, ArrowLeftRight } from 'lucide-react';
+import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircle2, ImageOff, ArrowLeftRight, Plus, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
 import PhotoCompare from '../../components/client/PhotoCompare';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadPhoto } from '../../storageUtils.js';
@@ -58,7 +59,7 @@ const Notification = ({ message, type, onDismiss }) => (
   </AnimatePresence>
 );
 
-const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, uploadProgress, handleFileChange }) => {
+const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, uploadProgress, handleFileChange, handleRemovePhoto }) => {
   const handleCancel = () => setFormState({ id: null, notes: '', weight: '', photos: {}, photoPreviews: {} });
 
   const PhotoUploader = ({ type, label, preview }) => (
@@ -66,7 +67,25 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
       <label className="block text-sm font-medium text-slate-300">{label}</label>
       <div className="mt-2 flex justify-center items-center w-full h-48 bg-slate-700/30 rounded-lg border-2 border-dashed border-slate-600 hover:border-cyan-500 transition-colors relative group">
         {preview ? (
-          <img src={preview} alt="preview" className="h-full w-full object-contain rounded-lg p-1" />
+          <>
+            <img src={preview} alt="preview" className="h-full w-full object-contain rounded-lg p-1" />
+            {/* Pulsante elimina foto */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemovePhoto(type);
+              }}
+              className="absolute top-2 right-2 p-1.5 bg-red-600/90 hover:bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              title="Rimuovi foto"
+            >
+              <Trash2 size={14} />
+            </button>
+            {/* Overlay per cambiare foto */}
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+              <span className="text-white text-sm font-medium">Cambia foto</span>
+            </div>
+          </>
         ) : (
           <div className="flex flex-col items-center text-slate-400 transition-colors group-hover:text-cyan-400">
             <UploadCloud size={32} />
@@ -176,11 +195,12 @@ const ImageModal = ({ isOpen, imageUrl, onClose }) => (
   </AnimatePresence>
 );
 
-const CheckDetails = ({ check, handleEditClick, formatWeight }) => {
+const CheckDetails = ({ check, handleEditClick, handleDeleteCheck, formatWeight }) => {
   const [photoURLs, setPhotoURLs] = useState({});
   const [modalImage, setModalImage] = useState(null);
   const [failedPhotos, setFailedPhotos] = useState({});
-  const isEditable = check.createdAt ? (new Date() - check.createdAt.toDate()) / (1000 * 60 * 60) < 2 : false; // 2 ore
+  // I clienti possono sempre modificare i propri check
+  const isEditable = true;
 
   useEffect(() => {
     const loadPhotos = async () => {
@@ -205,14 +225,20 @@ const CheckDetails = ({ check, handleEditClick, formatWeight }) => {
       />
       <div className="flex justify-between items-center">
         <h3 className="font-bold text-lg text-cyan-300">Riepilogo del {check.createdAt?.toDate().toLocaleDateString('it-IT') || 'N/D'}</h3>
-        {isEditable && (
+        <div className="flex items-center gap-2">
           <button
             onClick={() => handleEditClick(check)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700/70 text-slate-300 text-sm font-semibold rounded-lg"
+            className="flex items-center gap-2 px-3 py-1.5 bg-cyan-600/50 hover:bg-cyan-600/70 text-white text-sm font-semibold rounded-lg transition-colors"
           >
             <FilePenLine size={14} /> Modifica
           </button>
-        )}
+          <button
+            onClick={() => handleDeleteCheck(check)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-red-600/50 hover:bg-red-600/70 text-white text-sm font-semibold rounded-lg transition-colors"
+          >
+            <Trash2 size={14} /> Elimina
+          </button>
+        </div>
       </div>
       <div className="mt-4 space-y-4">
         <div>
@@ -269,6 +295,7 @@ const CheckDetails = ({ check, handleEditClick, formatWeight }) => {
 
 export default function ClientChecks() {
   const { formatWeight, weightLabel } = useUserPreferences();
+  const { confirm } = useConfirm();
   const [checks, setChecks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -399,6 +426,28 @@ export default function ClientChecks() {
       showNotification("Errore nel caricamento della foto.");
     }
   };
+
+  const handleRemovePhoto = (type) => {
+    try {
+      setFormState(prev => {
+        const newPhotos = { ...prev.photos };
+        const newPreviews = { ...prev.photoPreviews };
+        // Rimuovi la foto dal form
+        delete newPhotos[type];
+        delete newPreviews[type];
+        // Marca la foto come da eliminare (null)
+        newPhotos[type] = null;
+        return {
+          ...prev,
+          photos: newPhotos,
+          photoPreviews: newPreviews
+        };
+      });
+    } catch (err) {
+      console.error("Errore handleRemovePhoto:", err);
+      showNotification("Errore nella rimozione della foto.");
+    }
+  };
   
   const handleEditClick = (check) => {
     try {
@@ -410,19 +459,71 @@ export default function ClientChecks() {
     }
   };
 
+  const handleDeleteCheck = async (check) => {
+    const checkDate = check.createdAt?.toDate().toLocaleDateString('it-IT') || 'questo giorno';
+    
+    const confirmed = await confirm({
+      title: 'Elimina Check',
+      message: `Sei sicuro di voler eliminare il check del ${checkDate}? Questa azione non può essere annullata.`,
+      confirmText: 'Elimina',
+      cancelText: 'Annulla',
+      type: 'danger'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      const checksCollectionRef = getTenantSubcollection(db, 'clients', user.uid, 'checks');
+      await deleteDoc(doc(checksCollectionRef.firestore, checksCollectionRef.path, check.id));
+      showNotification('Check eliminato con successo!', 'success');
+      // Reset form state se stava modificando questo check
+      if (formState.id === check.id) {
+        setFormState({ id: null, notes: '', weight: '', photos: {}, photoPreviews: {} });
+      }
+    } catch (err) {
+      console.error("Errore handleDeleteCheck:", err);
+      showNotification("Errore nell'eliminazione del check.");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const { id, notes, weight, photos } = formState;
-    if (!user || (!id && Object.values(photos).some(p => !p)) || !weight) {
-      showNotification("Compila il peso e carica tutte e 4 le foto se è un nuovo check.");
+    
+    // Per nuovi check, verifica che ci sia almeno il peso
+    // Per modifiche, il peso è comunque richiesto
+    if (!user || !weight) {
+      showNotification("Compila il peso.");
       return;
     }
+    
+    // Per nuovi check, verifica che ci siano tutte e 4 le foto
+    if (!id) {
+      const hasAllPhotos = ['front', 'right', 'left', 'back'].every(type => photos[type]);
+      if (!hasAllPhotos) {
+        showNotification("Carica tutte e 4 le foto per un nuovo check.");
+        return;
+      }
+    }
+    
     setIsUploading(true);
     setUploadProgress(0);
     try {
+      // Forza refresh del token (importante dopo account linking)
+      await user.getIdToken(true);
+      
       const existingCheck = id ? checks.find(c => c.id === id) : null;
       let photoURLs = existingCheck ? { ...existingCheck.photoURLs } : { front: null, right: null, left: null, back: null };
-      const photosToUpload = Object.entries(photos).filter(([, file]) => file);
+      
+      // Gestisci le foto eliminate (marcate come null)
+      Object.entries(photos).forEach(([type, value]) => {
+        if (value === null) {
+          photoURLs[type] = null;
+        }
+      });
+      
+      // Carica solo le nuove foto (file, non null)
+      const photosToUpload = Object.entries(photos).filter(([, file]) => file && file instanceof File);
 
       if (photosToUpload.length > 0) {
         const uploadPromises = photosToUpload.map(async ([type, file]) => {
@@ -481,10 +582,10 @@ export default function ClientChecks() {
     try {
       const checkOnDate = checks.find(c => c.createdAt && c.createdAt.toDate && c.createdAt.toDate().toDateString() === selectedDate.toDateString());
       if (formState.id || !checkOnDate) {
-        return <ClientUploadForm {...{ formState, setFormState, handleSubmit, isUploading, uploadProgress, handleFileChange }} />;
+        return <ClientUploadForm {...{ formState, setFormState, handleSubmit, isUploading, uploadProgress, handleFileChange, handleRemovePhoto }} />;
       }
       if (checkOnDate) {
-        return <CheckDetails check={checkOnDate} handleEditClick={handleEditClick} formatWeight={formatWeight} />;
+        return <CheckDetails check={checkOnDate} handleEditClick={handleEditClick} handleDeleteCheck={handleDeleteCheck} formatWeight={formatWeight} />;
       }
       return (
         <div className="text-center p-8">
@@ -540,7 +641,16 @@ export default function ClientChecks() {
         <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({ message: '', type: '' })} />
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-50">I miei Check</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => {
+                setSelectedDate(new Date());
+                setFormState({ id: null, notes: '', weight: '', photos: {}, photoPreviews: {} });
+              }}
+              className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-cyan-500/20"
+            >
+              <Plus size={16} /><span>Nuovo Check</span>
+            </button>
             {hasEnoughPhotosForCompare() && (
               <button
                 onClick={() => setShowPhotoCompare(true)}
@@ -560,6 +670,20 @@ export default function ClientChecks() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1 bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-4 shadow-glow">
             <Calendar onChange={setSelectedDate} value={selectedDate} tileClassName={tileClassName} />
+            {/* Legenda calendario */}
+            <div className="mt-4 pt-4 border-t border-slate-700 space-y-2">
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <span>Check inviato</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <span className="w-3 h-3 rounded-full bg-rose-500"></span>
+                <span>Giorno consigliato</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                💡 Puoi caricare un check in qualsiasi giorno!
+              </p>
+            </div>
           </div>
           <div className="lg:col-span-2 bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-700 p-6 min-h-[400px] shadow-glow">
             {renderContentForDate()}

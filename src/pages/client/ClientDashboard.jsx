@@ -326,7 +326,7 @@ const ClientDashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <div className="relative z-50">
-              <NotificationPanel userType="client" />
+              <NotificationPanel userType="client" showEnableButton={false} />
             </div>
             <motion.button 
               onClick={() => navigate('/client/profile')} 
