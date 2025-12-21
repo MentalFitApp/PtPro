@@ -325,7 +325,7 @@ const ClientDashboard = () => {
             <p className="text-xs text-slate-500">{branding.clientAreaName}</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative z-50">
+            <div className="relative">
               <NotificationPanel userType="client" showEnableButton={false} />
             </div>
             <motion.button 

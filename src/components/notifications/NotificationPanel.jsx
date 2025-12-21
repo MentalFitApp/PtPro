@@ -206,7 +206,7 @@ export default function NotificationPanel({ userType = 'client', showEnableButto
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="fixed right-2 top-20 w-[calc(100vw-1rem)] sm:w-96 sm:right-4 max-h-[70vh] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-[9999] overflow-hidden"
+            className="fixed right-2 top-20 w-[calc(100vw-1rem)] sm:w-96 sm:right-4 max-h-[70vh] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-slate-700">

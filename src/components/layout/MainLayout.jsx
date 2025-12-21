@@ -1004,7 +1004,7 @@ export default function MainLayout() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 top-full mt-2 w-56 bg-slate-800/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[60]"
+                        className="absolute right-0 top-full mt-2 w-56 bg-slate-800/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[70]"
                       >
                         <div className="p-3 border-b border-slate-700/50">
                           <p className="text-sm font-medium text-white truncate">{auth.currentUser?.displayName || 'Utente'}</p>
