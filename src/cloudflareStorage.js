@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import imageCompression from 'browser-image-compression';
+import heic2any from 'heic2any';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -49,6 +50,12 @@ const IMAGE_EXTENSIONS = {
   'jp2': 'image/jp2',
   'jpx': 'image/jpx',
 };
+
+/**
+ * Accept string per input file - include esplicitamente HEIC per iOS
+ * Usare questa stringa negli input type="file" per garantire compatibilità
+ */
+export const IMAGE_ACCEPT_STRING = 'image/*,.heic,.heif,.HEIC,.HEIF';
 
 /**
  * Determina se un file è un'immagine basandosi su MIME type O estensione
@@ -108,6 +115,31 @@ const getR2Client = () => {
 };
 
 /**
+ * Converte un file HEIC/HEIF in JPEG usando heic2any
+ * @param {File} file - File HEIC da convertire
+ * @returns {Promise<File>} - File JPEG convertito
+ */
+const convertHeicToJpeg = async (file) => {
+  try {
+    const blob = await heic2any({
+      blob: file,
+      toType: 'image/jpeg',
+      quality: 0.85
+    });
+    
+    // heic2any può restituire un array o un singolo blob
+    const resultBlob = Array.isArray(blob) ? blob[0] : blob;
+    
+    // Crea un nuovo File dal blob con nome .jpg
+    const newFileName = file.name.replace(/\.(heic|heif)$/i, '.jpg');
+    return new File([resultBlob], newFileName, { type: 'image/jpeg' });
+  } catch (error) {
+    console.error('Errore conversione HEIC:', error);
+    throw error;
+  }
+};
+
+/**
  * Comprimi un'immagine prima dell'upload
  * Riduce la dimensione del file del 70-80% mantenendo buona qualità
  * Converte automaticamente HEIC/HEIF in JPEG per compatibilità browser
@@ -124,27 +156,36 @@ export const compressImage = async (file) => {
   // Determina se è un file HEIC/HEIF (formato iPhone)
   const ext = file.name?.toLowerCase().split('.').pop();
   const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || 
-                 ext === 'heic' || ext === 'heif';
+                 file.type === '' || file.type === 'application/octet-stream' &&
+                 (ext === 'heic' || ext === 'heif');
+  
+  // Forza controllo estensione per HEIC (iOS a volte non mette il mime type corretto)
+  const isHeicByExtension = ext === 'heic' || ext === 'heif';
+  const needsHeicConversion = isHeic || isHeicByExtension;
   
   // Determina se è WebP o AVIF (formati moderni)
   const isModernFormat = ext === 'webp' || ext === 'avif' || 
                          file.type === 'image/webp' || file.type === 'image/avif';
 
   // Se è già piccola e non è HEIC, ritorna il file originale
-  if (file.size < 200 * 1024 && !isHeic) {
+  if (file.size < 200 * 1024 && !needsHeicConversion) {
     return file;
   }
 
   try {
+    let fileToCompress = file;
+    
+    // Se è HEIC, converti prima in JPEG usando heic2any
+    if (needsHeicConversion) {
+      console.log('Conversione HEIC → JPEG in corso...');
+      fileToCompress = await convertHeicToJpeg(file);
+      console.log('Conversione HEIC completata:', fileToCompress.name);
+    }
+    
     // Determina il tipo di output
-    // HEIC/HEIF -> JPEG (per compatibilità browser)
-    // WebP/AVIF -> mantieni (sono già ottimizzati)
-    // Altri -> mantieni originale o JPEG se non supportato
-    let outputType = file.type;
-    if (isHeic) {
-      outputType = 'image/jpeg';
-    } else if (!file.type || file.type === 'application/octet-stream') {
-      outputType = getImageMimeType(file);
+    let outputType = fileToCompress.type || 'image/jpeg';
+    if (!outputType || outputType === 'application/octet-stream') {
+      outputType = getImageMimeType(fileToCompress);
     }
     
     const options = {
@@ -156,16 +197,19 @@ export const compressImage = async (file) => {
       initialQuality: 0.85,
     };
 
-    const compressedFile = await imageCompression(file, options);
-    console.log(`Compressione${isHeic ? ' (HEIC→JPEG)' : ''}: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedFile.size / 1024).toFixed(2)}KB (${(((file.size - compressedFile.size) / file.size) * 100).toFixed(0)}% riduzione)`);
+    const compressedFile = await imageCompression(fileToCompress, options);
+    console.log(`Compressione${needsHeicConversion ? ' (HEIC→JPEG)' : ''}: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedFile.size / 1024).toFixed(2)}KB (${(((file.size - compressedFile.size) / file.size) * 100).toFixed(0)}% riduzione)`);
     
     return compressedFile;
   } catch (error) {
-    console.warn('Errore nella compressione, uso file originale:', error);
+    console.warn('Errore nella compressione:', error);
+    // Se la conversione HEIC fallisce, prova a ritornare comunque qualcosa
+    if (needsHeicConversion) {
+      console.error('Impossibile convertire HEIC. Il file potrebbe non essere visualizzabile.');
+    }
     return file;
   }
 };
-
 /**
  * Carica un file su Cloudflare R2
  * 

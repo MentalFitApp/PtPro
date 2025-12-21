@@ -17,6 +17,7 @@ import { db, toDate } from '../../../firebase';
 import { CURRENT_TENANT_ID } from '../../../config/tenant';
 import { PAYMENT_METHOD_LABELS } from '../../../constants/payments';
 import { formatDeviceInfo } from '../../../utils/deviceInfo';
+import { IMAGE_ACCEPT_STRING } from '../../../cloudflareStorage';
 
 // Hooks
 import { useUserPreferences } from '../../../hooks/useUserPreferences';
@@ -544,7 +545,7 @@ export default function ClientDetail({ role: propRole }) {
                         </div>
                       ) : (
                         <EmptyState icon={Calendar} description="Nessun check disponibile." />
-                      )}}
+                      )}
                     </CardContent>
                   </UnifiedCard>
                   
@@ -955,7 +956,7 @@ export default function ClientDetail({ role: propRole }) {
                                   )}
                                   <input 
                                     type="file" 
-                                    accept="image/*" 
+                                    accept={IMAGE_ACCEPT_STRING} 
                                     className="hidden" 
                                     onChange={(e) => {
                                       const file = e.target.files?.[0];

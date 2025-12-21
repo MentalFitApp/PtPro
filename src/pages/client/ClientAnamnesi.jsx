@@ -8,6 +8,7 @@ import { ArrowLeft, Save, FilePenLine, Camera, UploadCloud, X } from 'lucide-rea
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadPhoto } from '../../storageUtils.js';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
+import { IMAGE_ACCEPT_STRING } from '../../cloudflareStorage';
 
 const Notification = ({ message, type, onDismiss }) => (
   <AnimatePresence>
@@ -73,7 +74,7 @@ const PhotoUploader = ({ type, label, onFileSelect, previewUrl, disabled }) => {
         </div>
         <input
           type="file"
-          accept="image/*"
+          accept={IMAGE_ACCEPT_STRING}
           onChange={handleChange}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           disabled={disabled}

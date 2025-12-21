@@ -10,6 +10,7 @@ import { ArrowLeft, FilePenLine, UploadCloud, Send, X, AlertTriangle, CheckCircl
 import { useUserPreferences } from '../../hooks/useUserPreferences';
 import PhotoCompare from '../../components/client/PhotoCompare';
 import { useConfirm } from '../../contexts/ConfirmContext';
+import { IMAGE_ACCEPT_STRING, compressImage } from '../../cloudflareStorage';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadPhoto } from '../../storageUtils.js';
@@ -59,14 +60,25 @@ const Notification = ({ message, type, onDismiss }) => (
   </AnimatePresence>
 );
 
-const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, uploadProgress, handleFileChange, handleRemovePhoto }) => {
+const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, uploadProgress, handleFileChange, handleRemovePhoto, photoLoading }) => {
   const handleCancel = () => setFormState({ id: null, notes: '', weight: '', photos: {}, photoPreviews: {} });
 
-  const PhotoUploader = ({ type, label, preview }) => (
+  const PhotoUploader = ({ type, label, preview, isLoading }) => (
     <div className="text-center">
       <label className="block text-sm font-medium text-slate-300">{label}</label>
       <div className="mt-2 flex justify-center items-center w-full h-48 bg-slate-700/30 rounded-lg border-2 border-dashed border-slate-600 hover:border-cyan-500 transition-colors relative group">
-        {preview ? (
+        {isLoading ? (
+          /* Stato di caricamento/conversione */
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800/80 rounded-lg z-20">
+            <div className="w-12 h-12 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mb-3"></div>
+            <p className="text-cyan-400 text-sm font-medium">Elaborazione...</p>
+            <p className="text-slate-500 text-xs mt-1">Conversione in corso</p>
+            {/* Barra di progresso indeterminata */}
+            <div className="w-3/4 h-1.5 bg-slate-700 rounded-full mt-3 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-cyan-500 to-teal-400 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+            </div>
+          </div>
+        ) : preview ? (
           <>
             <img src={preview} alt="preview" className="h-full w-full object-contain rounded-lg p-1" />
             {/* Pulsante elimina foto */}
@@ -94,9 +106,10 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
         )}
         <input
           type="file"
-          accept="image/*"
+          accept={IMAGE_ACCEPT_STRING}
           onChange={(e) => handleFileChange(e, type)}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          disabled={isLoading}
         />
       </div>
     </div>
@@ -133,10 +146,10 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <PhotoUploader type="front" label="Frontale" preview={formState.photoPreviews.front} />
-          <PhotoUploader type="right" label="Laterale Destro" preview={formState.photoPreviews.right} />
-          <PhotoUploader type="left" label="Laterale Sinistro" preview={formState.photoPreviews.left} />
-          <PhotoUploader type="back" label="Posteriore" preview={formState.photoPreviews.back} />
+          <PhotoUploader type="front" label="Frontale" preview={formState.photoPreviews.front} isLoading={photoLoading?.front} />
+          <PhotoUploader type="right" label="Laterale Destro" preview={formState.photoPreviews.right} isLoading={photoLoading?.right} />
+          <PhotoUploader type="left" label="Laterale Sinistro" preview={formState.photoPreviews.left} isLoading={photoLoading?.left} />
+          <PhotoUploader type="back" label="Posteriore" preview={formState.photoPreviews.back} isLoading={photoLoading?.back} />
         </div>
         {isUploading && (
           <div className="w-full bg-slate-700/50 rounded-lg h-3 overflow-hidden">
@@ -305,6 +318,7 @@ export default function ClientChecks() {
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [error, setError] = useState(null);
   const [showPhotoCompare, setShowPhotoCompare] = useState(false);
+  const [photoLoading, setPhotoLoading] = useState({});
   const [anamnesi, setAnamnesi] = useState(null);
   
   const navigate = useNavigate();
@@ -411,22 +425,32 @@ export default function ClientChecks() {
     }
   };
   
-  const handleFileChange = (e, type) => {
+  const handleFileChange = async (e, type) => {
     try {
       const file = e.target.files[0];
       if (file) {
-        setFormState(prev => ({
-          ...prev,
-          photos: { ...prev.photos, [type]: file },
-          photoPreviews: { ...prev.photoPreviews, [type]: URL.createObjectURL(file) }
-        }));
+        // Mostra loading per questo tipo di foto
+        setPhotoLoading(prev => ({ ...prev, [type]: true }));
+        
+        try {
+          // Comprimi/converti l'immagine (HEIC -> JPEG per preview compatibile)
+          const processedFile = await compressImage(file);
+          setFormState(prev => ({
+            ...prev,
+            photos: { ...prev.photos, [type]: processedFile },
+            photoPreviews: { ...prev.photoPreviews, [type]: URL.createObjectURL(processedFile) }
+          }));
+        } finally {
+          // Rimuovi loading per questo tipo di foto
+          setPhotoLoading(prev => ({ ...prev, [type]: false }));
+        }
       }
     } catch (err) {
       console.error("Errore handleFileChange:", err);
+      setPhotoLoading(prev => ({ ...prev, [type]: false }));
       showNotification("Errore nel caricamento della foto.");
     }
   };
-
   const handleRemovePhoto = (type) => {
     try {
       setFormState(prev => {
@@ -582,7 +606,7 @@ export default function ClientChecks() {
     try {
       const checkOnDate = checks.find(c => c.createdAt && c.createdAt.toDate && c.createdAt.toDate().toDateString() === selectedDate.toDateString());
       if (formState.id || !checkOnDate) {
-        return <ClientUploadForm {...{ formState, setFormState, handleSubmit, isUploading, uploadProgress, handleFileChange, handleRemovePhoto }} />;
+        return <ClientUploadForm {...{ formState, setFormState, handleSubmit, isUploading, uploadProgress, handleFileChange, handleRemovePhoto, photoLoading }} />;
       }
       if (checkOnDate) {
         return <CheckDetails check={checkOnDate} handleEditClick={handleEditClick} handleDeleteCheck={handleDeleteCheck} formatWeight={formatWeight} />;

@@ -7,6 +7,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { Play, SkipForward, Check, ChevronRight, Camera, User, MessageSquare, FileText, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useToast } from '../../contexts/ToastContext';
+import { IMAGE_ACCEPT_STRING } from '../../cloudflareStorage';
 
 const OnboardingFlow = () => {
   const navigate = useNavigate();
@@ -388,7 +389,7 @@ const OnboardingFlow = () => {
               <div className="mb-8">
                 <input
                   type="file"
-                  accept="image/*"
+                  accept={IMAGE_ACCEPT_STRING}
                   onChange={handlePhotoChange}
                   className="block w-full text-sm text-slate-300 file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-600 file:text-white hover:file:bg-cyan-500"
                 />
