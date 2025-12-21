@@ -890,7 +890,7 @@ exports.manychatProxy = onCall(
 exports.exchangeOAuthToken = onCall(
   {
     region: 'europe-west1',
-    secrets: ['INSTAGRAM_CLIENT_ID', 'INSTAGRAM_CLIENT_SECRET']
+    secrets: [facebookAppSecret]
   },
   async (request) => {
     // Rate limiting stretto - solo 5 richieste per minuto (operazione sensibile)
@@ -909,6 +909,10 @@ exports.exchangeOAuthToken = onCall(
       });
 
       console.log(`🔐 OAuth exchange per ${provider}, tenant: ${tenantId}, user: ${request.auth.uid}`);
+
+      // Leggi Facebook App ID da env e Secret da secret manager
+      const fbAppId = process.env.FACEBOOK_APP_ID;
+      const fbAppSecret = facebookAppSecret.value();
 
       // Configurazioni provider
       const providerConfigs = {
@@ -935,13 +939,13 @@ exports.exchangeOAuthToken = onCall(
         instagram: {
           // Instagram Graph API usa Facebook OAuth
           tokenUrl: 'https://graph.facebook.com/v18.0/oauth/access_token',
-          clientId: process.env.FACEBOOK_APP_ID,
-          clientSecret: process.env.FACEBOOK_APP_SECRET
+          clientId: fbAppId,
+          clientSecret: fbAppSecret
         },
         whatsapp: {
           tokenUrl: 'https://graph.facebook.com/v18.0/oauth/access_token',
-          clientId: process.env.FACEBOOK_APP_ID,
-          clientSecret: process.env.FACEBOOK_APP_SECRET
+          clientId: fbAppId,
+          clientSecret: fbAppSecret
         }
       };
 
