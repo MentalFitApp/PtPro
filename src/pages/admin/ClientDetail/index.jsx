@@ -47,7 +47,8 @@ import {
   ExtendExpiryModal,
   EditPaymentModal,
   PhotoZoomModal,
-  NewCheckModal
+  NewCheckModal,
+  CheckDetailModal
 } from './modals';
 
 // Components (estratti)
@@ -99,6 +100,7 @@ export default function ClientDetail({ role: propRole }) {
     schedaAllenamento, schedaAlimentazione, schedeLoading,
     latestCheck, previousCheck,
     showAmounts, setShowAmounts, activeTab, setActiveTab, copied,
+    selectedCheck, setSelectedCheck,
     modals, openModal, closeModal, editingPaymentIndex, setEditingPaymentIndex,
     loadingStates, magicLink, nextCall,
     handleDelete, handleResetPassword, generateMagicLink, copyCredentials,
@@ -521,20 +523,28 @@ export default function ClientDetail({ role: propRole }) {
                       {checks.length > 0 ? (
                         <div className="space-y-3">
                           {checks.slice(0, 5).map((check) => (
-                            <ListItemCard key={check.id}>
+                            <ListItemCard 
+                              key={check.id}
+                              onClick={() => { setSelectedCheck(check); openModal('checkDetail'); }}
+                              className="cursor-pointer hover:bg-slate-800/50 transition-colors"
+                            >
                               <div className="flex items-center justify-between text-sm text-slate-200">
                                 <span className="font-semibold">{toDate(check.createdAt)?.toLocaleDateString('it-IT') || 'N/D'}</span>
+                                <Eye size={14} className="text-slate-500" />
                               </div>
                               <div className="mt-2 flex flex-wrap gap-2 text-xs">
                                 {check.weight && <Badge variant="default" size="sm">Peso {formatWeight(check.weight)}</Badge>}
                                 {check.bodyFat && <Badge variant="default" size="sm">BF {check.bodyFat}%</Badge>}
+                                {check.photoURLs && Object.values(check.photoURLs).some(url => url) && (
+                                  <Badge variant="success" size="sm"><Image size={10} className="mr-1" /> Foto</Badge>
+                                )}
                               </div>
                             </ListItemCard>
                           ))}
                         </div>
                       ) : (
                         <EmptyState icon={Calendar} description="Nessun check disponibile." />
-                      )}
+                      )}}
                     </CardContent>
                   </UnifiedCard>
                   
@@ -696,14 +706,22 @@ export default function ClientDetail({ role: propRole }) {
                       {checks.length > 0 ? (
                         <div className="space-y-3">
                           {checks.slice(0, 10).map((check) => (
-                            <ListItemCard key={check.id}>
+                            <ListItemCard 
+                              key={check.id}
+                              onClick={() => { setSelectedCheck(check); openModal('checkDetail'); }}
+                              className="cursor-pointer hover:bg-slate-800/50 transition-colors"
+                            >
                               <div className="flex items-center justify-between text-sm text-slate-200">
                                 <span className="font-semibold">{toDate(check.createdAt)?.toLocaleDateString('it-IT') || 'N/D'}</span>
+                                <Eye size={14} className="text-slate-500" />
                               </div>
                               <div className="mt-2 flex flex-wrap gap-2 text-xs">
                                 {check.weight && <Badge variant="default" size="sm">Peso {formatWeight(check.weight)}</Badge>}
                                 {check.bodyFat && <Badge variant="default" size="sm">BF {check.bodyFat}%</Badge>}
-                                {check.notes && <Badge variant="default" size="sm">Note: {check.notes.slice(0, 30)}</Badge>}
+                                {check.notes && <Badge variant="default" size="sm">Note: {check.notes.slice(0, 30)}...</Badge>}
+                                {check.photoURLs && Object.values(check.photoURLs).some(url => url) && (
+                                  <Badge variant="success" size="sm"><Image size={10} className="mr-1" /> Foto</Badge>
+                                )}
                               </div>
                             </ListItemCard>
                           ))}
@@ -1072,6 +1090,14 @@ export default function ClientDetail({ role: propRole }) {
             onClose={() => closeModal('newCheck')}
             clientId={clientId}
             db={db}
+          />
+        )}
+        {modals.checkDetail && selectedCheck && (
+          <CheckDetailModal 
+            isOpen={modals.checkDetail}
+            onClose={() => { closeModal('checkDetail'); setSelectedCheck(null); }}
+            check={selectedCheck}
+            onPhotoZoom={(url, alt) => openModal('photoZoom', { open: true, url, alt })}
           />
         )}
       </div>

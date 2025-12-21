@@ -36,6 +36,7 @@ export default function useClientDetailState(clientId, backPath, navigate) {
   const [showAmounts, setShowAmounts] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [copied, setCopied] = useState(false);
+  const [selectedCheck, setSelectedCheck] = useState(null);
   
   // === MODALS STATE ===
   const [modals, setModals] = useState({
@@ -48,6 +49,7 @@ export default function useClientDetailState(clientId, backPath, navigate) {
     scheduleCall: false,
     workoutCalendar: false,
     newCheck: false,
+    checkDetail: false,
   });
   
   // === LOADING STATES ===
@@ -360,6 +362,8 @@ export default function useClientDetailState(clientId, backPath, navigate) {
     activeTab,
     setActiveTab,
     copied,
+    selectedCheck,
+    setSelectedCheck,
     
     // Modals
     modals,
