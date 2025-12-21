@@ -933,9 +933,10 @@ exports.exchangeOAuthToken = onCall(
           clientSecret: process.env.ZOOM_CLIENT_SECRET
         },
         instagram: {
-          tokenUrl: 'https://api.instagram.com/oauth/access_token',
-          clientId: process.env.INSTAGRAM_CLIENT_ID,
-          clientSecret: process.env.INSTAGRAM_CLIENT_SECRET
+          // Instagram Graph API usa Facebook OAuth
+          tokenUrl: 'https://graph.facebook.com/v18.0/oauth/access_token',
+          clientId: process.env.FACEBOOK_APP_ID,
+          clientSecret: process.env.FACEBOOK_APP_SECRET
         },
         whatsapp: {
           tokenUrl: 'https://graph.facebook.com/v18.0/oauth/access_token',
@@ -972,23 +973,42 @@ exports.exchangeOAuthToken = onCall(
       const tokenData = await tokenResponse.json();
       console.log(`✅ Token ottenuto per ${provider}`);
 
-      // Per Instagram Basic Display, ottieni user_id
+      // Per Instagram Graph API via Facebook, ottieni Instagram Business Account
       let instagramUserId = null;
+      let instagramUsername = null;
+      let facebookPageId = null;
+      
       if (provider === 'instagram') {
         try {
-          // Ottieni info utente Instagram
-          const userResponse = await fetch(
-            `https://graph.instagram.com/me?fields=id,username&access_token=${tokenData.access_token}`
+          // 1. Prima ottieni le pagine Facebook dell'utente
+          console.log('📱 Recupero pagine Facebook...');
+          const pagesResponse = await fetch(
+            `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,instagram_business_account&access_token=${tokenData.access_token}`
           );
-          const userData = await userResponse.json();
+          const pagesData = await pagesResponse.json();
+          console.log('📄 Pagine trovate:', pagesData);
           
-          if (userData.id) {
-            instagramUserId = userData.id;
-            console.log(`✅ Instagram User ID: ${instagramUserId}, Username: ${userData.username}`);
+          // 2. Trova la prima pagina con Instagram Business Account collegato
+          const pageWithInstagram = pagesData.data?.find(page => page.instagram_business_account);
+          
+          if (pageWithInstagram) {
+            facebookPageId = pageWithInstagram.id;
+            instagramUserId = pageWithInstagram.instagram_business_account.id;
+            console.log(`✅ Trovato Instagram Business Account: ${instagramUserId} per pagina ${pageWithInstagram.name}`);
+            
+            // 3. Ottieni info profilo Instagram
+            const igProfileResponse = await fetch(
+              `https://graph.facebook.com/v18.0/${instagramUserId}?fields=id,username,profile_picture_url,followers_count,follows_count,media_count&access_token=${tokenData.access_token}`
+            );
+            const igProfile = await igProfileResponse.json();
+            instagramUsername = igProfile.username;
+            console.log(`✅ Instagram Username: @${instagramUsername}, Followers: ${igProfile.followers_count}`);
+          } else {
+            console.warn('⚠️ Nessuna pagina Facebook con Instagram Business Account trovata');
+            // L'utente potrebbe non avere un account IG Business collegato
           }
         } catch (igError) {
-          console.error('⚠️ Errore recupero Instagram User:', igError);
-          // Continua comunque, salva almeno il token
+          console.error('⚠️ Errore recupero Instagram Business Account:', igError);
         }
       }
 
@@ -1003,6 +1023,8 @@ exports.exchangeOAuthToken = onCall(
           : null,
         scope: tokenData.scope || '',
         instagram_user_id: instagramUserId,
+        instagram_username: instagramUsername,
+        facebook_page_id: facebookPageId,
         connected_at: admin.firestore.FieldValue.serverTimestamp(),
         last_sync: null
       }, { merge: true });
@@ -1056,6 +1078,10 @@ exports.instagramProxy = onCall(
 
       const { access_token, instagram_user_id } = integrationDoc.data();
 
+      if (!instagram_user_id) {
+        throw new Error('Instagram Business Account non trovato. Assicurati di avere una Pagina Facebook collegata a un account Instagram Business.');
+      }
+
       // Se l'endpoint è /me, sostituisci con l'ID reale dell'utente
       let finalEndpoint = endpoint;
       if (endpoint === '/me' && instagram_user_id) {
@@ -1066,11 +1092,11 @@ exports.instagramProxy = onCall(
         console.log(`📝 Endpoint ${endpoint} sostituito con ${finalEndpoint}`);
       }
 
-      // Costruisci URL Instagram Graph API (Basic Display usa graph.instagram.com)
-      const baseUrl = 'https://graph.instagram.com';
+      // Costruisci URL Instagram Graph API (via Facebook Graph API)
+      const baseUrl = 'https://graph.facebook.com/v18.0';
       const fullUrl = `${baseUrl}${finalEndpoint}${params ? `?${params}&access_token=${access_token}` : `?access_token=${access_token}`}`;
 
-      console.log(`🔗 Chiamata Instagram: ${fullUrl.replace(access_token, 'HIDDEN')}`);
+      console.log(`🔗 Chiamata Instagram Graph API: ${fullUrl.replace(access_token, 'HIDDEN')}`);
 
       const response = await fetch(fullUrl, {
         method: 'GET',

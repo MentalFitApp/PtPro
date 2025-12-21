@@ -73,8 +73,13 @@ export default function OAuthButton({
       }));
 
       // Costruisci URL OAuth - Parametri base
+      // Per Instagram e WhatsApp usa il Facebook App ID
+      const clientId = (provider === 'instagram' || provider === 'whatsapp') 
+        ? import.meta.env.VITE_FACEBOOK_APP_ID 
+        : import.meta.env[`VITE_${provider.toUpperCase()}_CLIENT_ID`];
+      
       const params = new URLSearchParams({
-        client_id: import.meta.env[`VITE_${provider.toUpperCase()}_CLIENT_ID`],
+        client_id: clientId,
         redirect_uri: `${window.location.origin}/oauth/callback`,
         response_type: 'code',
         scope: config.scopes.join(','), // Facebook/Instagram usa virgola

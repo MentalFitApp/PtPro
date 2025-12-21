@@ -41,9 +41,10 @@ export default function InstagramHub() {
       if (configSnap.exists()) {
         const config = configSnap.data();
         setInstagramConfig(config);
-        setIsConnected(!!config.accessToken);
+        // Il backend salva come access_token (snake_case)
+        setIsConnected(!!config.access_token);
         
-        if (config.accessToken) {
+        if (config.access_token) {
           await fetchInstagramData();
         }
       } else {
@@ -545,8 +546,8 @@ function SettingsTab({ config, onRefresh }) {
       const userTenantId = localStorage.getItem('tenantId');
       const configRef = doc(db, `tenants/${userTenantId}/integrations/instagram`);
       await updateDoc(configRef, {
-        accessToken: null,
-        refreshToken: null,
+        access_token: null,
+        refresh_token: null,
         enabled: false,
         disconnectedAt: new Date()
       });
