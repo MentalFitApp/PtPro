@@ -229,7 +229,7 @@ const AnimatedStars = () => {
   return null;
 };
 
-// === MOBILE HEADER (Compatto 48px) ===
+// === MOBILE HEADER (Compatto 56px) ===
 const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenuOpen, onNavigateSettings, onNavigateProfile, onNavigateBilling, onLogout, availableWorkspaces = [], currentWorkspaceId, onSwitchWorkspace }) => {
   const user = auth.currentUser;
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Utente';
@@ -237,10 +237,10 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-40 lg:hidden bg-slate-900/80 backdrop-blur-xl"
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      className="fixed top-0 left-0 right-0 z-40 lg:hidden bg-slate-900/80 backdrop-blur-xl border-b border-blue-500/20"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top) + 4px)' }}
     >
-      <div className="flex items-center justify-between px-3 h-12">
+      <div className="flex items-center justify-between px-4 h-14">
         {/* Left: Menu + Logo */}
         <div className="flex items-center gap-2">
           <button
@@ -254,12 +254,12 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
             <img 
               src={branding.logoUrl} 
               alt={branding.appName}
-              className="h-6 max-w-[80px] object-contain"
+              className="h-8 max-w-[100px] object-contain"
             />
           ) : (
-            <div className="flex items-center gap-1.5">
-              <img src="/logo192.png" alt="FitFlow" className="w-6 h-6 rounded-md" />
-              <span className="text-sm font-semibold text-white">{branding?.appName || 'FitFlow'}</span>
+            <div className="flex items-center gap-2">
+              <img src="/logo192.png" alt="FitFlow" className="w-8 h-8 rounded-lg" />
+              <span className="text-base font-semibold text-white">{branding?.appName || 'FitFlow'}</span>
             </div>
           )}
         </div>
@@ -724,7 +724,7 @@ export const ProLayout = () => {
           className={`min-h-screen ${
             isMobile ? 'pb-16' : ''
           }`}
-          style={isMobile ? { paddingTop: 'calc(48px + env(safe-area-inset-top, 0px))' } : undefined}
+          style={isMobile ? { paddingTop: 'calc(60px + env(safe-area-inset-top, 0px))' } : undefined}
         >
           <div className="w-full">
             <Outlet />

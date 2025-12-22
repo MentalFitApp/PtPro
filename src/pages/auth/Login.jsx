@@ -675,6 +675,27 @@ const Login = () => {
                 }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               />
+              {/* Cappellino di Natale - visibile dal 1 dic al 7 gen */}
+              {(() => {
+                const now = new Date();
+                const month = now.getMonth();
+                const day = now.getDate();
+                const showHat = (month === 11) || (month === 0 && day <= 7);
+                return showHat ? (
+                  <img 
+                    src="/christmas-hat.png" 
+                    alt="🎅"
+                    className="absolute z-20 drop-shadow-lg pointer-events-none"
+                    style={{ 
+                      top: '-20px',
+                      left: '8px',
+                      width: '52px', 
+                      height: '52px',
+                      transform: 'rotate(-10deg)' 
+                    }}
+                  />
+                ) : null;
+              })()}
               <div className="relative w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-blue-500/30 shadow-xl shadow-blue-500/30">
                 <img 
                   src="/logo192.png" 
