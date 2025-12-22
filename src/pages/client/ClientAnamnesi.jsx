@@ -31,13 +31,23 @@ const Notification = ({ message, type, onDismiss }) => (
 );
 
 // === UPLOADER FOTO – COMPONENTE ISOLATO CON STATO LOCALE ===
-const PhotoUploader = ({ type, label, onFileSelect, previewUrl, disabled }) => {
+const PhotoUploader = ({ type, label, onFileSelect, previewUrl, disabled, isLoading }) => {
   const [localPreview, setLocalPreview] = useState(previewUrl);
 
   // Aggiorna l'anteprima quando previewUrl cambia dall'esterno
   useEffect(() => {
     setLocalPreview(previewUrl);
   }, [previewUrl]);
+
+  // Helper per verificare se è un file immagine (supporta HEIC)
+  const isImageFile = (file) => {
+    // Check MIME type standard
+    if (file.type && file.type.startsWith('image/')) return true;
+    // Check estensione per HEIC/HEIF (iOS a volte non mette il mime type)
+    const ext = file.name?.split('.').pop()?.toLowerCase();
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'bmp', 'tiff', 'avif'];
+    return imageExtensions.includes(ext);
+  };
 
   const handleChange = (e) => {
     const file = e.target.files[0];
@@ -48,13 +58,18 @@ const PhotoUploader = ({ type, label, onFileSelect, previewUrl, disabled }) => {
       alert(`File troppo grande: ${file.name}. Limite: 10MB`);
       return;
     }
-    if (!file.type.startsWith('image/')) {
-      alert(`File non valido: ${file.name}`);
+    if (!isImageFile(file)) {
+      alert(`File non valido: ${file.name}. Formati supportati: JPG, PNG, HEIC, WebP, GIF`);
       return;
     }
 
-    const url = URL.createObjectURL(file);
-    setLocalPreview(url);
+    // Per HEIC, non creare preview locale (verrà creata dopo la conversione)
+    const ext = file.name?.split('.').pop()?.toLowerCase();
+    const isHeic = ext === 'heic' || ext === 'heif';
+    if (!isHeic) {
+      const url = URL.createObjectURL(file);
+      setLocalPreview(url);
+    }
     onFileSelect(type, file);
   };
 
@@ -63,7 +78,12 @@ const PhotoUploader = ({ type, label, onFileSelect, previewUrl, disabled }) => {
       <label className="block text-sm font-medium text-slate-300">{label}</label>
       <div className="mt-2 relative group">
         <div className="flex justify-center items-center w-full h-48 bg-slate-700/30 rounded-lg border-2 border-dashed border-slate-600 group-hover:border-cyan-500 transition-colors cursor-pointer">
-          {localPreview ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center text-cyan-400">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+              <p className="mt-2 text-sm">Elaborazione...</p>
+            </div>
+          ) : localPreview ? (
             <img src={localPreview} alt={label} className="h-full w-full object-contain rounded-lg p-1" />
           ) : (
             <div className="flex flex-col items-center text-slate-400 group-hover:text-cyan-400">
@@ -77,7 +97,7 @@ const PhotoUploader = ({ type, label, onFileSelect, previewUrl, disabled }) => {
           accept={IMAGE_ACCEPT_STRING}
           onChange={handleChange}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          disabled={disabled}
+          disabled={disabled || isLoading}
         />
       </div>
     </div>
@@ -162,10 +182,33 @@ const ClientAnamnesi = () => {
     setTimeout(() => setNotification({ message: '', type: '' }), 5000);
   }, []);
 
+  // Stato loading per ogni foto (per conversione HEIC)
+  const [photoLoading, setPhotoLoading] = useState({ front: false, right: false, left: false, back: false });
+
   // === UPLOAD FOTO – OGNI COMPONENTE HA IL SUO STATO ===
-  const handleFileSelect = useCallback((type, file) => {
-    setPhotos(prev => ({ ...prev, [type]: file }));
-    showNotification(`Foto ${type} caricata!`, 'success');
+  const handleFileSelect = useCallback(async (type, file) => {
+    // Attiva loading per questo tipo di foto
+    setPhotoLoading(prev => ({ ...prev, [type]: true }));
+    
+    try {
+      // Importa compressImage per preview (gestisce HEIC)
+      const { compressImage } = await import('../../cloudflareStorage');
+      const processedFile = await compressImage(file);
+      
+      // Crea preview dal file processato (già convertito da HEIC se necessario)
+      const previewUrl = URL.createObjectURL(processedFile);
+      setPhotoPreviews(prev => ({ ...prev, [type]: previewUrl }));
+      setPhotos(prev => ({ ...prev, [type]: processedFile }));
+      showNotification(`Foto ${type} caricata!`, 'success');
+    } catch (err) {
+      console.error(`[Anamnesi] Errore elaborazione foto "${type}":`, err);
+      const errorMessage = err.message?.includes('HEIC') 
+        ? err.message 
+        : "Errore nel caricamento della foto. Riprova con un'altra immagine.";
+      showNotification(errorMessage);
+    } finally {
+      setPhotoLoading(prev => ({ ...prev, [type]: false }));
+    }
   }, [showNotification]);
 
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -436,10 +479,10 @@ const ClientAnamnesi = () => {
               <h4 className={headingStyle}><Camera size={16} /> Foto Iniziali</h4>
               <p className="text-sm text-slate-400 mb-6">Carica 4 foto per il check iniziale: frontale, laterale destro, laterale sinistro e posteriore. Visibili solo a te e al coach.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <PhotoUploader type="front" label="Frontale" onFileSelect={handleFileSelect} previewUrl={photoPreviews.front} disabled={loading || isSubmitting} />
-                <PhotoUploader type="right" label="Laterale Destro" onFileSelect={handleFileSelect} previewUrl={photoPreviews.right} disabled={loading || isSubmitting} />
-                <PhotoUploader type="left" label="Laterale Sinistro" onFileSelect={handleFileSelect} previewUrl={photoPreviews.left} disabled={loading || isSubmitting} />
-                <PhotoUploader type="back" label="Posteriore" onFileSelect={handleFileSelect} previewUrl={photoPreviews.back} disabled={loading || isSubmitting} />
+                <PhotoUploader type="front" label="Frontale" onFileSelect={handleFileSelect} previewUrl={photoPreviews.front} disabled={loading || isSubmitting} isLoading={photoLoading.front} />
+                <PhotoUploader type="right" label="Laterale Destro" onFileSelect={handleFileSelect} previewUrl={photoPreviews.right} disabled={loading || isSubmitting} isLoading={photoLoading.right} />
+                <PhotoUploader type="left" label="Laterale Sinistro" onFileSelect={handleFileSelect} previewUrl={photoPreviews.left} disabled={loading || isSubmitting} isLoading={photoLoading.left} />
+                <PhotoUploader type="back" label="Posteriore" onFileSelect={handleFileSelect} previewUrl={photoPreviews.back} disabled={loading || isSubmitting} isLoading={photoLoading.back} />
               </div>
             </div>
 
