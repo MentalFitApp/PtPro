@@ -596,6 +596,17 @@ export default function ClientChecks() {
       // Carica solo le nuove foto (file, non null)
       const photosToUpload = Object.entries(photos).filter(([, file]) => file && file instanceof File);
       
+      console.log('[ClientChecks] 📷 DEBUG photos state:', {
+        photosObject: photos,
+        entries: Object.entries(photos).map(([type, val]) => ({
+          type,
+          isFile: val instanceof File,
+          isBlob: val instanceof Blob,
+          constructor: val?.constructor?.name,
+          value: val
+        }))
+      });
+      
       console.log('[ClientChecks] 📷 Foto da caricare:', photosToUpload.map(([type, file]) => ({
         type,
         name: file.name,

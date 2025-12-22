@@ -205,7 +205,16 @@ export const compressImage = async (file) => {
       initialQuality: 0.85,
     };
 
-    const compressedFile = await imageCompression(fileToCompress, options);
+    const compressedBlob = await imageCompression(fileToCompress, options);
+    
+    // IMPORTANTE: imageCompression restituisce un Blob, non un File
+    // Dobbiamo convertirlo in File per mantenere il nome e altre proprietà
+    const compressedFile = new File(
+      [compressedBlob], 
+      fileToCompress.name || 'compressed.jpg', 
+      { type: compressedBlob.type || outputType }
+    );
+    
     console.log(`Compressione${needsHeicConversion ? ' (HEIC→JPEG)' : ''}: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedFile.size / 1024).toFixed(2)}KB (${(((file.size - compressedFile.size) / file.size) * 100).toFixed(0)}% riduzione)`);
     
     return compressedFile;
