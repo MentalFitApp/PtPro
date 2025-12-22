@@ -42,12 +42,11 @@ export default defineConfig({
     // La minificazione CSS (esbuild) produce warning su alcuni selettori complessi.
     // Disabilitata per avere build pulita e stabile.
     cssMinify: false,
-    // TEMPORANEO: console.log abilitati per debug upload foto
-    // Rimettere drop_console: true dopo aver risolto il bug
+    // Rimuove console.log in produzione
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: false,  // TEMPORANEO: era true
+        drop_console: true,
         drop_debugger: true
       }
     },
