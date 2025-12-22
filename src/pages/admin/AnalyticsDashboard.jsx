@@ -200,7 +200,7 @@ export default function AnalyticsDashboard() {
           <QuickSummary clientStats={clientStats} checkStats={checkStats} />
           
           {/* Client Distribution - Placeholder for future */}
-          <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 p-4">
+          <div className="rounded-xl bg-slate-800/50 border border-slate-700/30 p-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-blue-500/20">
                 <Users className="w-5 h-5 text-blue-400" />
@@ -280,7 +280,7 @@ export default function AnalyticsDashboard() {
       </div>
       
       {/* Footer Stats */}
-      <div className="rounded-xl bg-gradient-to-r from-slate-800/50 to-slate-700/30 border border-slate-700/50 p-4">
+      <div className="rounded-xl bg-gradient-to-r from-slate-800/50 to-slate-700/30 border border-slate-700/30 p-4">
         <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
           <div className="flex items-center gap-6">
             <div>

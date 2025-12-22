@@ -220,220 +220,48 @@ const AnimatedStars = () => {
   return null;
 };
 
-// === MOBILE HEADER ===
+// === MOBILE HEADER (Compatto 48px) ===
 const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenuOpen, onNavigateSettings, onNavigateProfile, onNavigateBilling, onLogout, availableWorkspaces = [], currentWorkspaceId, onSwitchWorkspace }) => {
   const user = auth.currentUser;
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Utente';
   const photoURL = user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3b82f6&color=fff`;
 
   return (
-    <motion.header
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      className="fixed top-0 left-0 right-0 z-40 lg:hidden bg-theme-bg-secondary/90 backdrop-blur-xl border-b border-theme"
+    <header
+      className="fixed top-0 left-0 right-0 z-40 lg:hidden bg-slate-900/80 backdrop-blur-xl"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-3 h-12">
+        {/* Left: Menu + Logo */}
+        <div className="flex items-center gap-2">
           <button
             onClick={onMenuOpen}
-            className="p-2 rounded-lg hover:bg-theme-bg-tertiary/60 text-theme-text-secondary"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400"
           >
-            <Menu size={22} />
+            <Menu size={20} />
           </button>
           
-          <div className="flex items-center gap-2">
-            {branding?.logoUrl ? (
-              <img 
-                src={branding.logoUrl} 
-                alt={branding.appName}
-                className="h-7 max-w-[100px] object-contain"
-              />
-            ) : (
-              <>
-                <div className="w-7 h-7 rounded-lg overflow-hidden ring-1 ring-blue-500/30">
-                  <img 
-                    src="/logo192.png" 
-                    alt="FitFlow"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <span className="text-sm font-bold text-theme-text-primary">{branding?.appName || 'FitFlow'}</span>
-              </>
-            )}
-          </div>
+          {branding?.logoUrl ? (
+            <img 
+              src={branding.logoUrl} 
+              alt={branding.appName}
+              className="h-6 max-w-[80px] object-contain"
+            />
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <img src="/logo192.png" alt="FitFlow" className="w-6 h-6 rounded-md" />
+              <span className="text-sm font-semibold text-white">{branding?.appName || 'FitFlow'}</span>
+            </div>
+          )}
         </div>
         
-        <div className="flex items-center gap-2">
-          {/* ThemeToggle rimosso - dark mode forzata */}
-          <div className="relative">
-            <button 
-              onClick={onProfileMenuToggle}
-              className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-slate-700 hover:ring-blue-500/50 transition-all"
-            >
-              <img 
-                src={photoURL}
-                alt="User"
-                className="w-full h-full object-cover"
-              />
-            </button>
-            
-            <AnimatePresence>
-              {isProfileMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 w-56 bg-theme-bg-secondary/95 backdrop-blur-xl border border-theme rounded-xl shadow-2xl overflow-hidden z-50"
-                >
-                  <div className="p-3 border-b border-theme">
-                    <p className="text-sm font-medium text-theme-text-primary truncate">{displayName}</p>
-                    <p className="text-xs text-theme-text-secondary truncate">{user?.email}</p>
-                  </div>
-                  
-                  {/* Workspace Selector - solo se ci sono più workspace */}
-                  {availableWorkspaces.length > 1 && (
-                    <div className="py-2 border-b border-theme">
-                      <p className="px-4 py-1 text-xs font-medium text-theme-text-tertiary uppercase tracking-wider flex items-center gap-2">
-                        <Building2 size={12} />
-                        Workspace
-                      </p>
-                      {availableWorkspaces.map((ws) => (
-                        <button
-                          key={ws.id}
-                          onClick={() => onSwitchWorkspace(ws.id)}
-                          className={`w-full flex items-center justify-between gap-3 px-4 py-2 text-sm transition-colors ${
-                            ws.id === currentWorkspaceId 
-                              ? 'bg-theme-accent/10 text-theme-accent' 
-                              : 'text-theme-text-primary hover:bg-theme-bg-tertiary/60'
-                          }`}
-                        >
-                          <span className="truncate">{ws.name}</span>
-                          {ws.id === currentWorkspaceId && (
-                            <Check size={14} className="text-theme-accent flex-shrink-0" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className="py-1">
-                    <button
-                      onClick={onNavigateProfile}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-colors"
-                    >
-                      <User size={16} />
-                      <span>Profilo</span>
-                    </button>
-                    <button
-                      onClick={onNavigateSettings}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-colors"
-                    >
-                      <Settings size={16} />
-                      <span>Impostazioni</span>
-                    </button>
-                    <div className="my-1 border-t border-theme" />
-                    <button
-                      onClick={onLogout}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-500 hover:bg-theme-bg-tertiary/60 transition-colors"
-                    >
-                      <LogOut size={16} />
-                      <span>Esci</span>
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-    </motion.header>
-  );
-};
-
-// === DESKTOP HEADER ===
-const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSettings, onNavigateProfile, onNavigateBilling, onLogout, isSidebarCollapsed, availableWorkspaces = [], currentWorkspaceId, onSwitchWorkspace }) => {
-  const user = auth.currentUser;
-  const navigate = useNavigate();
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Utente';
-  const photoURL = user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3b82f6&color=fff`;
-  
-  // Ottieni info pagina dal context
-  const { pageTitle, pageSubtitle, breadcrumbs, backButton } = usePageContext();
-
-  return (
-    <header 
-      className="fixed top-0 right-0 z-30 hidden lg:flex items-center gap-4 px-6 h-[72px] bg-theme-bg-secondary/80 backdrop-blur-2xl border-b border-theme/50"
-      style={{ left: isSidebarCollapsed ? '76px' : '264px', transition: 'left 0.3s ease' }}
-    >
-      {/* Left side - Page Title, Breadcrumbs, Back Button */}
-      <div className="flex-1 flex items-center gap-4 min-w-0">
-        {/* Back Button */}
-        {backButton && (
-          <motion.button
-            onClick={() => backButton.onClick ? backButton.onClick() : navigate(-1)}
-            whileHover={{ scale: 1.05, x: -2 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-theme-text-secondary hover:text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-all"
-          >
-            <ArrowLeft size={16} />
-            <span className="hidden xl:inline">{backButton.label || 'Indietro'}</span>
-          </motion.button>
-        )}
-        
-        {/* Breadcrumbs */}
-        {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav className="hidden md:flex items-center gap-1.5 text-sm">
-            {breadcrumbs.map((crumb, index) => (
-              <React.Fragment key={index}>
-                {index > 0 && <ChevronRight size={14} className="text-theme-text-tertiary" />}
-                {crumb.to ? (
-                  <button
-                    onClick={() => navigate(crumb.to)}
-                    className="text-theme-text-tertiary hover:text-theme-text-primary transition-colors"
-                  >
-                    {crumb.label}
-                  </button>
-                ) : (
-                  <span className="text-theme-text-primary font-medium">{crumb.label}</span>
-                )}
-              </React.Fragment>
-            ))}
-          </nav>
-        )}
-        
-        {/* Page Title (when no breadcrumbs) */}
-        {pageTitle && (!breadcrumbs || breadcrumbs.length === 0) && (
-          <div className="flex flex-col">
-            <h1 className="text-base font-semibold text-theme-text-primary leading-tight">
-              {pageTitle}
-            </h1>
-            {pageSubtitle && (
-              <p className="text-xs text-theme-text-tertiary">{pageSubtitle}</p>
-            )}
-          </div>
-        )}
-      </div>
-      
-      {/* Right side - Actions */}
-      <div className="flex items-center gap-3">
-        {/* ThemeToggle rimosso - dark mode forzata */}
-        
-        <NotificationBell />
-
+        {/* Right: Avatar */}
         <div className="relative">
           <button 
             onClick={onProfileMenuToggle}
-            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-theme-bg-tertiary/60 transition-colors"
+            className="w-7 h-7 rounded-full overflow-hidden ring-2 ring-white/20 hover:ring-blue-500/50 transition-all"
           >
-            <img 
-              src={photoURL}
-              alt="User"
-              className="w-8 h-8 rounded-full ring-2 ring-theme"
-            />
-            <span className="text-sm font-medium text-theme-text-primary hidden xl:block">{displayName}</span>
-            <ChevronDown size={14} className={`text-theme-text-tertiary transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+            <img src={photoURL} alt="User" className="w-full h-full object-cover" />
           </button>
           
           <AnimatePresence>
@@ -442,62 +270,23 @@ const DesktopHeader = ({ onProfileMenuToggle, isProfileMenuOpen, onNavigateSetti
                 initial={{ opacity: 0, y: 8, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full mt-2 w-56 bg-theme-bg-secondary/95 backdrop-blur-xl border border-theme rounded-xl shadow-2xl overflow-hidden z-50"
+                className="absolute right-0 top-full mt-2 w-48 bg-slate-800/95 backdrop-blur-xl rounded-xl shadow-2xl overflow-hidden z-50"
               >
-                  <div className="p-3 border-b border-theme">
-                    <p className="text-sm font-medium text-theme-text-primary truncate">{displayName}</p>
-                    <p className="text-xs text-theme-text-secondary truncate">{user?.email}</p>
+                <div className="p-3 border-b border-white/10">
+                  <p className="text-sm font-medium text-white truncate">{displayName}</p>
+                  <p className="text-xs text-slate-400 truncate">{user?.email}</p>
                 </div>
-                
-                {/* Workspace Selector - solo se ci sono più workspace */}
-                {availableWorkspaces.length > 1 && (
-                  <div className="py-2 border-b border-theme">
-                    <p className="px-4 py-1 text-xs font-medium text-theme-text-tertiary uppercase tracking-wider flex items-center gap-2">
-                      <Building2 size={12} />
-                      Workspace
-                    </p>
-                    {availableWorkspaces.map((ws) => (
-                      <button
-                        key={ws.id}
-                        onClick={() => onSwitchWorkspace(ws.id)}
-                        className={`w-full flex items-center justify-between gap-3 px-4 py-2 text-sm transition-colors ${
-                          ws.id === currentWorkspaceId 
-                            ? 'bg-theme-accent/10 text-theme-accent' 
-                            : 'text-theme-text-primary hover:bg-theme-bg-tertiary/60'
-                        }`}
-                      >
-                        <span className="truncate">{ws.name}</span>
-                        {ws.id === currentWorkspaceId && (
-                          <Check size={14} className="text-theme-accent flex-shrink-0" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                
                 <div className="py-1">
-                  <button
-                    onClick={onNavigateProfile}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-colors"
-                  >
-                    <User size={16} />
-                    <span>Profilo</span>
+                  <button onClick={onNavigateProfile} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-white/10">
+                    <User size={14} /> Profilo
                   </button>
-                  <button
-                    onClick={onNavigateSettings}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-colors"
-                  >
-                    <Settings size={16} />
-                    <span>Impostazioni</span>
+                  <button onClick={onNavigateSettings} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-white/10">
+                    <Settings size={14} /> Impostazioni
                   </button>
-                    <div className="my-1 border-t border-theme" />
-                  <button
-                    onClick={onLogout}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-500 hover:bg-theme-bg-tertiary/60 transition-colors"
-                  >
-                    <LogOut size={16} />
-                    <span>Esci</span>
+                </div>
+                <div className="border-t border-white/10 py-1">
+                  <button onClick={onLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10">
+                    <LogOut size={14} /> Esci
                   </button>
                 </div>
               </motion.div>
@@ -893,23 +682,7 @@ export const ProLayout = () => {
         onClose={() => setIsMobileSidebarOpen(false)}
       />
 
-      {/* Desktop Header */}
-      {!isMobile && (
-        <div data-profile-menu>
-          <DesktopHeader 
-            isProfileMenuOpen={isProfileMenuOpen}
-            onProfileMenuToggle={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            onNavigateSettings={handleNavigateSettings}
-            onNavigateProfile={handleNavigateProfile}
-            onNavigateBilling={handleNavigateBilling}
-            onLogout={handleLogout}
-            isSidebarCollapsed={isSidebarCollapsed}
-            availableWorkspaces={availableWorkspaces}
-            currentWorkspaceId={currentWorkspaceId}
-            onSwitchWorkspace={handleSwitchWorkspace}
-          />
-        </div>
-      )}
+      {/* Desktop Header - RIMOSSO: tutto integrato nella sidebar */}
 
       {/* Mobile Header */}
       {isMobile && (
@@ -934,15 +707,15 @@ export const ProLayout = () => {
       <div 
         className={`min-h-screen transition-all duration-300 ease-out ${
           !isMobile 
-            ? (isSidebarCollapsed ? 'lg:ml-[76px]' : 'lg:ml-[264px]')
+            ? (isSidebarCollapsed ? 'lg:ml-[64px]' : 'lg:ml-[240px]')
             : ''
         }`}
       >
         <main 
           className={`min-h-screen ${
-            isMobile ? 'pb-16' : 'pt-[72px]'
+            isMobile ? 'pb-16' : ''
           }`}
-          style={isMobile ? { paddingTop: 'calc(56px + env(safe-area-inset-top, 0px))' } : undefined}
+          style={isMobile ? { paddingTop: 'calc(48px + env(safe-area-inset-top, 0px))' } : undefined}
         >
           <div className="w-full">
             <Outlet />

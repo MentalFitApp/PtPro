@@ -218,9 +218,8 @@ button, a, [role="button"], input, select, textarea {
   --density-gap: 1rem;
   --density-radius: 0.75rem;
   
-  /* Card transparency (default: 60% opaco) */
-  --card-transparency: 0.6;
-  --card-blur: 12px;
+  /* Stars opacity (default: 50%) */
+  --stars-opacity: 0.5;
   
   /* Background preset */
   --bg-preset: 'starryNight';
@@ -229,96 +228,38 @@ button, a, [role="button"], input, select, textarea {
 
 /* ========================================
    CARD TRANSPARENCY SYSTEM
+   Controlla la luminosità/opacità delle stelle
    ======================================== */
 
-/* Card transparency levels */
+/* Livelli: opacità stelle */
 [data-card-transparency="none"] {
-  --card-transparency: 1;
-  --card-blur: 0px;
+  --stars-opacity: 0;
 }
 
 [data-card-transparency="subtle"] {
-  --card-transparency: 0.9;
-  --card-blur: 8px;
+  --stars-opacity: 0.25;
 }
 
 [data-card-transparency="medium"] {
-  --card-transparency: 0.7;
-  --card-blur: 12px;
+  --stars-opacity: 0.5;
 }
 
 [data-card-transparency="strong"] {
-  --card-transparency: 0.5;
-  --card-blur: 16px;
+  --stars-opacity: 0.75;
 }
 
 [data-card-transparency="glass"] {
-  --card-transparency: 0.3;
-  --card-blur: 20px;
+  --stars-opacity: 1;
 }
 
-/* Classe principale per card con trasparenza tema */
-.bg-theme-card {
-  background-color: rgba(30, 41, 59, var(--card-transparency, 0.6)) !important;
-  backdrop-filter: blur(var(--card-blur, 12px)) !important;
-  -webkit-backdrop-filter: blur(var(--card-blur, 12px)) !important;
+/* Default */
+:root {
+  --stars-opacity: 0.5;
 }
 
 /* Classe per bordo tema */
 .border-theme {
-  border-color: rgba(71, 85, 105, calc(var(--card-transparency, 0.6) * 0.8)) !important;
-}
-
-/* Apply transparency to common card patterns */
-.bg-slate-800\/60,
-.bg-slate-800\/50,
-.bg-slate-800\/40,
-.bg-slate-900\/60,
-.bg-slate-900\/50,
-.bg-slate-900\/40,
-.bg-slate-800,
-.bg-slate-900 {
-  background-color: rgba(30, 41, 59, var(--card-transparency)) !important;
-  backdrop-filter: blur(var(--card-blur)) !important;
-  -webkit-backdrop-filter: blur(var(--card-blur)) !important;
-}
-
-/* Disable blur on transparency=none */
-[data-card-transparency="none"] .bg-theme-card,
-[data-card-transparency="none"] .bg-slate-800\/60,
-[data-card-transparency="none"] .bg-slate-800\/50,
-[data-card-transparency="none"] .bg-slate-800\/40,
-[data-card-transparency="none"] .bg-slate-900\/60,
-[data-card-transparency="none"] .bg-slate-900\/50,
-[data-card-transparency="none"] .bg-slate-900\/40,
-[data-card-transparency="none"] .bg-slate-800,
-[data-card-transparency="none"] .bg-slate-900 {
-  background-color: rgb(30, 41, 59) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-[data-card-transparency="none"] .border-theme {
-  border-color: rgb(71, 85, 105) !important;
-}
-
-/* Contenitore principale con trasparenza per vedere le stelle */
-.bg-theme-bg-primary\/35,
-.bg-theme-bg-primary\/30,
-.bg-theme-bg-primary\/40,
-.bg-theme-bg-primary\/50 {
-  background-color: rgba(2, 6, 23, calc(var(--card-transparency, 0.6) * 0.5)) !important;
-  backdrop-filter: blur(var(--card-blur, 12px)) !important;
-  -webkit-backdrop-filter: blur(var(--card-blur, 12px)) !important;
-}
-
-[data-card-transparency="none"] .bg-theme-bg-primary\/35,
-[data-card-transparency="none"] .bg-theme-bg-primary\/30,
-[data-card-transparency="none"] .bg-theme-bg-primary\/40,
-[data-card-transparency="none"] .bg-theme-bg-primary\/50 {
-  background-color: rgba(2, 6, 23, 0.35) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  border-color: rgba(71, 85, 105, 0.5) !important;
 }
 
 /* ========================================
@@ -1115,6 +1056,14 @@ body {
   pointer-events: none;
   overflow: hidden;
 }
+
+/* Applica opacità stelle basata su data-card-transparency */
+html[data-card-transparency="none"] .stars { opacity: 0 !important; }
+html[data-card-transparency="subtle"] .stars { opacity: 0.25 !important; }
+html[data-card-transparency="medium"] .stars { opacity: 0.5 !important; }
+html[data-card-transparency="strong"] .stars { opacity: 0.75 !important; }
+html[data-card-transparency="glass"] .stars { opacity: 1 !important; }
+.stars { opacity: 0.5; transition: opacity 0.3s ease; }
 
 /* Rimuovi le vecchie definizioni .star di base - usiamo le nuove classi star-* */
 

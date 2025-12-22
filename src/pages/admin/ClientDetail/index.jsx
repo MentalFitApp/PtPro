@@ -331,14 +331,16 @@ export default function ClientDetail({ role: propRole }) {
           <div className="space-y-6">
             {/* Header Section */}
             <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
-              {/* Back Button Mobile */}
-              <button
+              {/* Back Button - Visibile sempre */}
+              <motion.button
                 onClick={handleGoBack}
-                className="lg:hidden flex items-center gap-2 mb-4 text-slate-400 hover:text-white transition-colors"
+                whileHover={{ x: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-2 mb-4 text-slate-400 hover:text-white transition-colors group"
               >
-                <ArrowLeft size={18} />
+                <ArrowLeft size={18} className="group-hover:-translate-x-0.5 transition-transform" />
                 <span className="text-sm font-medium">Torna ai clienti</span>
-              </button>
+              </motion.button>
               
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div className="space-y-2">

@@ -310,7 +310,7 @@ export default function SuperAdminSettings() {
     <div className="min-h-screen p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6 mb-6">
+        <div className="bg-slate-800/20 backdrop-blur-sm rounded-xl border border-slate-700/30 p-4 sm:p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-600/20 rounded-lg">
@@ -323,7 +323,7 @@ export default function SuperAdminSettings() {
             </div>
             <button
               onClick={() => loadAllUsers()}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 text-white rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800/20 hover:bg-slate-800/60 border border-slate-700/30 text-white rounded-lg transition-colors"
             >
               <RefreshCw size={16} />
               Ricarica
@@ -402,28 +402,28 @@ export default function SuperAdminSettings() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-xl border border-slate-700/30 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Crown size={16} className="text-rose-400" />
               <span className="text-sm text-slate-400">SuperAdmins</span>
             </div>
             <p className="text-2xl font-bold text-white">{superadmins.length}</p>
           </div>
-          <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-xl border border-slate-700/30 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Shield size={16} className="text-purple-400" />
               <span className="text-sm text-slate-400">Admins</span>
             </div>
             <p className="text-2xl font-bold text-white">{admins.length}</p>
           </div>
-          <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-xl border border-slate-700/30 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Users size={16} className="text-blue-400" />
               <span className="text-sm text-slate-400">Coaches</span>
             </div>
             <p className="text-2xl font-bold text-white">{coaches.length}</p>
           </div>
-          <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-xl border border-slate-700/30 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Users size={16} className="text-slate-400" />
               <span className="text-sm text-slate-400">Totale Utenti</span>
@@ -434,22 +434,22 @@ export default function SuperAdminSettings() {
 
         {/* Search (sticky on mobile) */}
         <div className="mb-6 sticky top-2 z-20">
-          <div className="bg-slate-900/70 backdrop-blur rounded-xl border border-slate-700/50 p-2">
+          <div className="bg-slate-900/70 backdrop-blur rounded-xl border border-slate-700/30 p-2">
             <input
               type="text"
               placeholder="Cerca per nome, email o ruolo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-800/40 border border-slate-700/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-slate-800/20 border border-slate-700/30 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
 
         {/* Users Table (desktop) */}
-        <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden hidden sm:block">
+        <div className="bg-slate-800/20 backdrop-blur-sm rounded-xl border border-slate-700/30 overflow-hidden hidden sm:block">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-800/40 border-b border-slate-700/50">
+              <thead className="bg-slate-800/20 border-b border-slate-700/30">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Utente</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Email</th>

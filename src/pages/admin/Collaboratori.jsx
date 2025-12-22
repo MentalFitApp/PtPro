@@ -35,14 +35,14 @@ const ReportStatus = ({ collaboratori }) => {
   }, [collaboratori]);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-slate-900/40 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-slate-700/50 mx-3 sm:mx-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-4 sm:p-5 border border-slate-700/30 mx-3 sm:mx-6">
       <h2 className="text-sm font-semibold text-white mb-3">Stato Report Oggi</h2>
       <div className="flex gap-4 text-sm">
         <p><span className="text-slate-400">Completati:</span> <span className="text-emerald-400 font-medium">{collaboratori.length - missingReports.length}</span></p>
         <p><span className="text-slate-400">Mancanti:</span> <span className="text-red-400 font-medium">{missingReports.length}</span></p>
       </div>
       {missingReports.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-slate-700/50">
+        <div className="mt-3 pt-3 border-t border-slate-700/30">
           <p className="text-red-400 text-xs font-medium mb-1">Mancanti:</p>
           <ul className="list-disc pl-4 text-xs text-slate-300">
             {missingReports.map(name => <li key={name} className="truncate">{name}</li>)}
@@ -681,7 +681,7 @@ export default function Collaboratori() {
       <div className="py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* HEADER */}
-        <motion.header className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6 mx-3 sm:mx-6">
+        <motion.header className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4 sm:p-6 mx-3 sm:mx-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="space-y-1">
               <p className="text-xs uppercase tracking-widest text-slate-500 font-medium">Team</p>
@@ -712,9 +712,9 @@ export default function Collaboratori() {
           </div>
           
           {/* Add collaborator form */}
-          <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-700/50">
-            <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@esempio.com" className="px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm flex-1 focus:outline-none focus:border-blue-500/50" />
-            <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-sm">
+          <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-700/30">
+            <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="email@esempio.com" className="px-3 py-2 bg-slate-800/50 border border-slate-700/30 rounded-lg text-sm flex-1 focus:outline-none focus:border-blue-500/50" />
+            <select value={newRole} onChange={e => setNewRole(e.target.value)} className="px-3 py-2 bg-slate-800/50 border border-slate-700/30 rounded-lg text-sm">
               <option>Setter</option>
               <option>Marketing</option>
               <option>Vendita</option>
@@ -741,7 +741,7 @@ export default function Collaboratori() {
               <motion.div 
                 key={i} 
                 whileTap={{ scale: 0.98 }} 
-                className="bg-slate-900/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50 text-center"
+                className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-4 border border-slate-700/30 text-center"
               >
                 <p className={`text-2xl font-bold text-${stat.color}-400 mb-1`}>{stat.value}</p>
                 <h3 className="text-xs font-medium text-slate-400">{stat.label}</h3>
@@ -762,7 +762,7 @@ export default function Collaboratori() {
               <motion.div 
                 key={i} 
                 whileHover={{ scale: 1.02 }} 
-                className="bg-slate-900/40 backdrop-blur-sm rounded-xl p-5 border border-slate-700/50"
+                className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-5 border border-slate-700/30"
               >
                 <h3 className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-2">{stat.label}</h3>
                 <p className={`text-4xl font-bold text-${stat.color}-400`}>{stat.value}</p>
@@ -789,7 +789,7 @@ export default function Collaboratori() {
             <motion.button
               onClick={() => setShowReportSetting(true)}
               whileHover={{ scale: 1.03 }}
-              className="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg p-4 border border-slate-700/50 hover:border-cyan-500/50 transition-all text-left"
+              className="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg p-4 border border-slate-700/30 hover:border-cyan-500/50 transition-all text-left"
             >
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded bg-cyan-600/20">
@@ -803,7 +803,7 @@ export default function Collaboratori() {
             <motion.button
               onClick={() => setShowReportVendita(true)}
               whileHover={{ scale: 1.03 }}
-              className="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg p-4 border border-slate-700/50 hover:border-rose-500/50 transition-all text-left"
+              className="w-full bg-slate-800/60 backdrop-blur-sm rounded-lg p-4 border border-slate-700/30 hover:border-rose-500/50 transition-all text-left"
             >
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded bg-rose-600/20">
@@ -849,7 +849,7 @@ export default function Collaboratori() {
           {/* REPORT SETTING */}
           <button 
             onClick={() => setShowReportSetting(true)}
-            className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
+            className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
           >
             <div className="flex flex-col gap-3">
               <div className="p-3 rounded-lg bg-cyan-500/10 w-fit">
@@ -865,7 +865,7 @@ export default function Collaboratori() {
           {/* REPORT VENDITA */}
           <button 
             onClick={() => setShowReportVendita(true)}
-            className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
+            className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
           >
             <div className="flex flex-col gap-3">
               <div className="p-3 rounded-lg bg-rose-500/10 w-fit">
@@ -881,7 +881,7 @@ export default function Collaboratori() {
           {/* TABELLA LEADS */}
           <button 
             onClick={() => setShowLeadsTable(true)}
-            className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
+            className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
           >
             <div className="flex flex-col gap-3">
               <div className="p-3 rounded-lg bg-blue-500/10 w-fit">
@@ -897,7 +897,7 @@ export default function Collaboratori() {
           {/* LEAD PER FONTE */}
           <button 
             onClick={() => setShowFontiStats(true)}
-            className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
+            className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
           >
             <div className="flex flex-col gap-3">
               <div className="p-3 rounded-lg bg-purple-500/10 w-fit">
@@ -915,7 +915,7 @@ export default function Collaboratori() {
         <div className="mx-3 sm:mx-6">
           <button 
             onClick={() => setShowCollaboratoriList(true)}
-            className="w-full bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
+            className="w-full bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4 lg:p-5 hover:bg-slate-800/50 hover:border-slate-600/50 transition-all text-left"
           >
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-lg bg-emerald-500/10 flex-shrink-0">
@@ -935,7 +935,7 @@ export default function Collaboratori() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-slate-800/95 backdrop-blur-md rounded-xl p-6 max-w-md w-full border border-slate-700 shadow-2xl"
+              className="bg-slate-800/95 backdrop-blur-md rounded-2xl p-6 max-w-md w-full border border-slate-700 shadow-2xl"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -983,7 +983,7 @@ export default function Collaboratori() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-slate-800/95 backdrop-blur-md rounded-xl p-6 max-w-md w-full border border-slate-700 shadow-2xl"
+              className="bg-slate-800/95 backdrop-blur-md rounded-2xl p-6 max-w-md w-full border border-slate-700 shadow-2xl"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -1034,7 +1034,7 @@ export default function Collaboratori() {
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-slate-800/95 backdrop-blur-md rounded-xl p-6 max-w-5xl w-full border border-slate-700 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
+              className="bg-slate-800/95 backdrop-blur-md rounded-2xl p-6 max-w-5xl w-full border border-slate-700 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -1138,7 +1138,7 @@ export default function Collaboratori() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-slate-800/95 backdrop-blur-md rounded-xl p-6 max-w-2xl w-full border border-slate-700 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col"
+              className="bg-slate-800/95 backdrop-blur-md rounded-2xl p-6 max-w-2xl w-full border border-slate-700 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -1202,7 +1202,7 @@ export default function Collaboratori() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-slate-800/95 backdrop-blur-md rounded-xl p-6 max-w-3xl w-full border border-slate-700 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col"
+              className="bg-slate-800/95 backdrop-blur-md rounded-2xl p-6 max-w-3xl w-full border border-slate-700 shadow-2xl max-h-[80vh] overflow-hidden flex flex-col"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -1256,7 +1256,7 @@ export default function Collaboratori() {
         {/* POPUP NOTE */}
         {showNotePopup && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-lg w-full border border-slate-700">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-slate-800/90 backdrop-blur-md rounded-2xl p-6 max-w-lg w-full border border-slate-700">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-lg font-bold text-slate-100">Nota Completa</h3>
                 <button onClick={() => setShowNotePopup(false)} className="text-slate-400 hover:text-white"><X size={18} /></button>
@@ -1272,7 +1272,7 @@ export default function Collaboratori() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-md w-full border border-slate-700"
+              className="bg-slate-800/90 backdrop-blur-md rounded-2xl p-6 max-w-md w-full border border-slate-700"
             >
               <h3 className="text-xl font-bold text-emerald-400 mb-3 flex items-center gap-2">
                 <CheckCircle size={24} /> Lead Chiuso!
@@ -1326,7 +1326,7 @@ export default function Collaboratori() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-md w-full border border-emerald-500"
+              className="bg-slate-800/90 backdrop-blur-md rounded-2xl p-6 max-w-md w-full border border-emerald-500"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-emerald-400 flex items-center gap-2">
@@ -1433,7 +1433,7 @@ export default function Collaboratori() {
         {/* POPUP MODIFICA EMAIL */}
         {editingCollab && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-sm w-full border border-slate-700">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-slate-800/90 backdrop-blur-md rounded-2xl p-6 max-w-sm w-full border border-slate-700">
               <h3 className="text-lg font-bold text-slate-100 mb-3">Modifica Email</h3>
               <p className="text-sm text-slate-300 mb-4">
                 Nuova email per <strong>{collaboratori.find(c => c.id === editingCollab)?.nome || 'utente'}</strong>
@@ -1457,7 +1457,7 @@ export default function Collaboratori() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-slate-800/90 backdrop-blur-md rounded-xl p-6 max-w-md w-full border border-slate-700 max-h-[80vh] overflow-y-auto"
+              className="bg-slate-800/90 backdrop-blur-md rounded-2xl p-6 max-w-md w-full border border-slate-700 max-h-[80vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-slate-100">Gestisci Fonti Lead</h3>

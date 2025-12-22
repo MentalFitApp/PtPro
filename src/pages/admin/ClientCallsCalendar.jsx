@@ -203,10 +203,10 @@ export default function ClientCallsCalendar() {
         <div className="grid lg:grid-cols-3 gap-6">
           
           {/* Calendario */}
-          <div className="lg:col-span-2 bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
+          <div className="lg:col-span-2 bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 overflow-hidden">
             
             {/* Month Navigation */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-700/50">
+            <div className="flex items-center justify-between p-4 border-b border-slate-700/30">
               <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors">
                 <ChevronLeft size={20} />
               </button>
@@ -219,7 +219,7 @@ export default function ClientCallsCalendar() {
             </div>
             
             {/* Days Header */}
-            <div className="grid grid-cols-7 border-b border-slate-700/50">
+            <div className="grid grid-cols-7 border-b border-slate-700/30">
               {DAYS.map(day => (
                 <div key={day} className="p-2 text-center text-xs font-medium text-slate-400">
                   {day}
@@ -288,7 +288,7 @@ export default function ClientCallsCalendar() {
           <div className="space-y-4">
             
             {/* Selected Day Details */}
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-4">
+            <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4">
               <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                 <Calendar size={16} className="text-cyan-400" />
                 {selectedDay 
@@ -373,7 +373,7 @@ export default function ClientCallsCalendar() {
             </div>
 
             {/* Upcoming Calls Summary */}
-            <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-4">
+            <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4">
               <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                 <Clock size={16} className="text-slate-400" />
                 Prossime chiamate

@@ -143,7 +143,7 @@ const HeroStatsCard = ({ revenue, totalClients, newClients, showRevenue, onToggl
       </div>
       
       {/* Bottom stats row */}
-      <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-700/50">
+      <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-700/30">
         <div className="text-center">
           <p className="text-xl font-bold text-white">{totalClients}</p>
           <p className="text-[10px] text-slate-500">Clienti Attivi</p>
@@ -354,10 +354,10 @@ const QuickActionsEditor = ({ isOpen, onClose, selectedActions, onSave }) => {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           onClick={e => e.stopPropagation()}
-          className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden"
+          className="bg-slate-900 border border-slate-700/30 rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden"
         >
           {/* Header */}
-          <div className="p-4 border-b border-slate-700/50 flex items-center justify-between bg-slate-800/50">
+          <div className="p-4 border-b border-slate-700/30 flex items-center justify-between bg-slate-800/50">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-amber-500/20">
                 <Zap size={18} className="text-amber-400" />
@@ -442,7 +442,7 @@ const QuickActionsEditor = ({ isOpen, onClose, selectedActions, onSave }) => {
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t border-slate-700/50 flex gap-3">
+          <div className="p-4 border-t border-slate-700/30 flex gap-3">
             <button
               onClick={onClose}
               className="flex-1 py-2.5 px-4 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors text-sm font-medium"
@@ -1857,10 +1857,10 @@ export default function DashboardPro() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden"
+              className="bg-slate-900 border border-slate-700/30 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden"
             >
               {/* Header */}
-              <div className={`p-4 border-b border-slate-700/50 flex items-center justify-between ${revenueModalType === 'rinnovi' ? 'bg-cyan-900/30' : 'bg-emerald-900/30'}`}>
+              <div className={`p-4 border-b border-slate-700/30 flex items-center justify-between ${revenueModalType === 'rinnovi' ? 'bg-cyan-900/30' : 'bg-emerald-900/30'}`}>
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-xl ${revenueModalType === 'rinnovi' ? 'bg-cyan-500/20' : 'bg-emerald-500/20'}`}>
                     {revenueModalType === 'rinnovi' ? (
@@ -1891,7 +1891,7 @@ export default function DashboardPro() {
                   <div className="space-y-2">
                     {metrics.renewalPaymentsList?.length > 0 ? (
                       <>
-                        <div className="flex items-center justify-between text-sm text-slate-400 px-2 pb-2 border-b border-slate-700/50">
+                        <div className="flex items-center justify-between text-sm text-slate-400 px-2 pb-2 border-b border-slate-700/30">
                           <span>Totale Rinnovi</span>
                           <span className="text-cyan-400 font-bold">€{metrics.renewalsRevenue?.toLocaleString()}</span>
                         </div>
@@ -1929,7 +1929,7 @@ export default function DashboardPro() {
                   <div className="space-y-2">
                     {metrics.regularPaymentsList?.length > 0 ? (
                       <>
-                        <div className="flex items-center justify-between text-sm text-slate-400 px-2 pb-2 border-b border-slate-700/50">
+                        <div className="flex items-center justify-between text-sm text-slate-400 px-2 pb-2 border-b border-slate-700/30">
                           <span>Totale Incassi (esclusi rinnovi)</span>
                           <span className="text-emerald-400 font-bold">€{metrics.periodRevenue?.toLocaleString()}</span>
                         </div>
@@ -1966,7 +1966,7 @@ export default function DashboardPro() {
               </div>
 
               {/* Footer con toggle */}
-              <div className="p-4 border-t border-slate-700/50 flex justify-center gap-2">
+              <div className="p-4 border-t border-slate-700/30 flex justify-center gap-2">
                 <button
                   onClick={() => setRevenueModalType('incasso')}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${

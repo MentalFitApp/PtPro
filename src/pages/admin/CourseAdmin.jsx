@@ -261,7 +261,7 @@ export default function CourseAdmin() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50">
+      <div className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/30">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

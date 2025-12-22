@@ -76,7 +76,7 @@ const SecondaryLink = ({ to, icon: Icon, label }) => (
     <motion.div
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className="flex items-center gap-2 px-3 py-2 bg-slate-800/40 hover:bg-slate-700/50 rounded-lg border border-slate-700/30 transition-all"
+      className="flex items-center gap-2 px-3 py-2 bg-slate-800/20 hover:bg-slate-700/50 rounded-lg border border-slate-700/30 transition-all"
     >
       <Icon size={16} className="text-slate-400" />
       <span className="text-xs text-slate-300">{label}</span>
@@ -97,7 +97,7 @@ const SubscriptionProgress = ({ daysLeft, totalDays = 30 }) => {
         ? 'bg-red-500/10 border-red-500/30' 
         : isUrgent 
           ? 'bg-orange-500/10 border-orange-500/30' 
-          : 'bg-slate-800/40 border-slate-700/50'
+          : 'bg-slate-800/20 border-slate-700/30'
     }`}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-slate-400">Abbonamento</span>
@@ -331,14 +331,14 @@ const ClientDashboard = () => {
             <motion.button 
               onClick={() => navigate('/client/profile')} 
               whileTap={{ scale: 0.95 }}
-              className="p-2 bg-slate-800/60 hover:bg-slate-700/60 rounded-lg border border-slate-700/50"
+              className="p-2 bg-slate-800/60 hover:bg-slate-700/60 rounded-lg border border-slate-700/30"
             >
               <User size={18} className="text-slate-300" />
             </motion.button>
             <motion.button 
               onClick={handleLogout} 
               whileTap={{ scale: 0.95 }}
-              className="p-2 bg-slate-800/60 hover:bg-slate-700/60 rounded-lg border border-slate-700/50"
+              className="p-2 bg-slate-800/60 hover:bg-slate-700/60 rounded-lg border border-slate-700/30"
             >
               <LogOut size={18} className="text-slate-400" />
             </motion.button>

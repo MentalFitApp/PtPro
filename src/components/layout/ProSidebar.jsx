@@ -14,7 +14,7 @@ import {
   ChevronRight, ChevronLeft, BarChart3, BellRing, UserCheck,
   BookOpen, Target, Activity, Plus, Palette, Layout, Link2,
   Dumbbell, Utensils, Shield, CreditCard, LogOut, HelpCircle,
-  Zap, Package, Menu, X
+  Zap, Package, Menu, X, User
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
@@ -143,30 +143,58 @@ const getNavConfig = (role, isSuperAdmin = false) => {
 
 // === SIDEBAR LOGO ===
 const SidebarLogo = ({ isCollapsed, branding }) => {
+  // Mostra cappellino di Natale dal 1 dicembre al 7 gennaio
+  const now = new Date();
+  const month = now.getMonth(); // 0-11
+  const day = now.getDate();
+  const showChristmasHat = (month === 11) || (month === 0 && day <= 7); // Dicembre o Gennaio 1-7
+  
+  // Posizione manuale del cappellino: modifica top e left per regolare
+  const ChristmasHat = () => (
+    <img 
+      src="/christmas-hat.png" 
+      alt="🎅"
+      className="absolute z-10 drop-shadow-lg pointer-events-none"
+      style={{ 
+        top: '-16px',    // Distanza dall'alto (negativo = più su)
+        left: '8px',     // Distanza da sinistra (aumenta per spostare a destra)
+        width: '44px', 
+        height: '44px',
+        transform: 'rotate(-10deg)' 
+      }}
+    />
+  );
+  
   if (isCollapsed) {
     return branding?.logoUrl ? (
-      <motion.img 
-        src={branding.logoUrl} 
-        alt={branding.appName}
-        className="h-9 w-9 object-contain mx-auto"
-        whileHover={{ scale: 1.05 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-      />
-    ) : (
-      <motion.div 
-        className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 mx-auto shadow-lg shadow-blue-500/20"
-        whileHover={{ scale: 1.05, rotate: 2 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-      >
-        <img 
-          src="/logo192.png" 
-          alt="FitFlow"
-          className="w-full h-full object-cover"
+      <div className="relative mx-auto">
+        {showChristmasHat && <ChristmasHat />}
+        <motion.img 
+          src={branding.logoUrl} 
+          alt={branding.appName}
+          className="h-9 w-9 object-contain"
+          whileHover={{ scale: 1.05 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         />
-      </motion.div>
+      </div>
+    ) : (
+      <div className="relative mx-auto">
+        {showChristmasHat && <ChristmasHat />}
+        <motion.div 
+          className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/20"
+          whileHover={{ scale: 1.05, rotate: 2 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        >
+          <img 
+            src="/logo192.png" 
+            alt="FitFlow"
+            className="w-full h-full object-cover"
+          />
+        </motion.div>
+      </div>
     );
   }
-
+  
   return (
     <motion.div 
       className="flex items-center gap-3"
@@ -175,25 +203,31 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
     >
       {branding?.logoUrl ? (
-        <motion.img 
-          src={branding.logoUrl} 
-          alt={branding.appName}
-          className="h-9 max-w-[140px] object-contain"
-          whileHover={{ scale: 1.02 }}
-        />
+        <div className="relative">
+          {showChristmasHat && <ChristmasHat />}
+          <motion.img 
+            src={branding.logoUrl} 
+            alt={branding.appName}
+            className="h-9 max-w-[140px] object-contain"
+            whileHover={{ scale: 1.02 }}
+          />
+        </div>
       ) : (
         <>
-          <motion.div 
-            className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/25"
-            whileHover={{ scale: 1.05, rotate: 2 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-          >
-            <img 
-              src="/logo192.png" 
-              alt="FitFlow"
-              className="w-full h-full object-cover"
-            />
-          </motion.div>
+          <div className="relative">
+            {showChristmasHat && <ChristmasHat />}
+            <motion.div 
+              className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/25"
+              whileHover={{ scale: 1.05, rotate: 2 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            >
+              <img 
+                src="/logo192.png" 
+                alt="FitFlow"
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+          </div>
           <div className="flex flex-col">
             <h1 className="text-base font-bold text-theme-text-primary leading-tight">{branding?.appName || 'FitFlow'}</h1>
             <span className="text-[10px] font-medium text-blue-400/70 tracking-wider uppercase">Pro</span>
@@ -433,6 +467,7 @@ export const ProSidebar = ({
   const location = useLocation();
   const [branding, setBranding] = useState(defaultBranding);
   const [userIsSuperAdmin, setUserIsSuperAdmin] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const user = auth.currentUser;
   
   // Hook per notifiche non lette
@@ -497,6 +532,7 @@ export const ProSidebar = ({
   };
 
   const handleNavigateProfile = () => {
+    setIsUserMenuOpen(false);
     const profilePaths = {
       admin: '/profile',
       coach: '/coach/profile',
@@ -506,58 +542,88 @@ export const ProSidebar = ({
     navigate(profilePaths[role] || '/profile');
   };
 
+  const handleNavigateSettings = () => {
+    setIsUserMenuOpen(false);
+    const settingsPaths = {
+      admin: '/settings',
+      coach: '/coach/settings',
+      client: '/client/settings',
+      collaboratore: '/collaboratore/settings'
+    };
+    navigate(settingsPaths[role] || '/settings');
+  };
+
+  const handleNavigateBilling = () => {
+    setIsUserMenuOpen(false);
+    navigate('/billing');
+  };
+
+  // Chiudi menu quando si clicca fuori
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (isUserMenuOpen && !e.target.closest('[data-user-menu]')) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isUserMenuOpen]);
+
   return (
     <motion.aside
       initial={false}
-      animate={{ width: isCollapsed ? 76 : 264 }}
+      animate={{ width: isCollapsed ? 64 : 240 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className={`fixed top-0 left-0 h-screen bg-theme-bg-secondary/80 backdrop-blur-2xl border-r border-theme/50 z-40 flex flex-col shadow-xl shadow-black/10 ${className}`}
+      className={`fixed top-0 left-0 h-screen bg-slate-900/60 backdrop-blur-xl z-40 flex flex-col border-r border-blue-500/20 shadow-[1px_0_15px_rgba(59,130,246,0.15)] ${className}`}
     >
       {/* Gradient overlay for depth */}
       <div className="absolute inset-0 bg-gradient-to-b from-blue-500/[0.02] via-transparent to-sky-500/[0.02] pointer-events-none" />
       
-      {/* Header */}
-      <div className={`relative h-[72px] px-4 flex items-center border-b border-theme/50 ${isCollapsed ? 'px-4' : ''}`}>
-        <div className="flex items-center justify-between w-full">
-          <SidebarLogo isCollapsed={isCollapsed} branding={branding} />
-          <AnimatePresence mode="wait">
-            {!isCollapsed && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                onClick={onToggleCollapse}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-2 rounded-xl bg-theme-bg-tertiary/40 hover:bg-theme-bg-tertiary text-theme-text-secondary hover:text-theme-text-primary transition-all"
-                title="Comprimi sidebar"
-              >
-                <ChevronLeft size={16} />
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </div>
-        
+      {/* Header con logo */}
+      <div className={`relative h-[64px] px-3 pt-3 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+        <SidebarLogo isCollapsed={isCollapsed} branding={branding} />
         <AnimatePresence mode="wait">
-          {isCollapsed && (
+          {!isCollapsed && (
             <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
               onClick={onToggleCollapse}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              className="w-full mt-3 p-2 rounded-xl bg-theme-bg-tertiary/40 hover:bg-theme-bg-tertiary text-theme-text-secondary hover:text-theme-text-primary transition-all flex items-center justify-center"
-              title="Espandi sidebar"
+              className="p-1.5 rounded-lg bg-theme-bg-tertiary/40 hover:bg-theme-bg-tertiary text-theme-text-secondary hover:text-theme-text-primary transition-all"
+              title="Comprimi sidebar"
             >
-              <ChevronRight size={16} />
+              <ChevronLeft size={14} />
             </motion.button>
           )}
         </AnimatePresence>
       </div>
 
+      {/* Collapse button when collapsed */}
+      <AnimatePresence mode="wait">
+        {isCollapsed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="px-2 pb-2"
+          >
+            <motion.button
+              onClick={onToggleCollapse}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-full p-2 rounded-lg bg-theme-bg-tertiary/40 hover:bg-theme-bg-tertiary text-theme-text-secondary hover:text-theme-text-primary transition-all flex items-center justify-center"
+              title="Espandi sidebar"
+            >
+              <ChevronRight size={16} />
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Navigation */}
-      <nav className="relative flex-1 p-3 overflow-y-auto scrollbar-hide">
+      <nav className="relative flex-1 px-2 py-1 overflow-y-auto scrollbar-hide">
         {navConfig.sections.map((section, idx) => (
           <NavSection
             key={section.title}
@@ -570,27 +636,139 @@ export const ProSidebar = ({
         ))}
       </nav>
 
-      {/* Help */}
-      <AnimatePresence>
-        {!isCollapsed && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="px-3 pb-3"
-          >
+      {/* User Profile Section */}
+      <div className="relative px-2 pb-2 pt-1 border-t border-white/5">
+        {/* Help button */}
+        <AnimatePresence mode="wait">
+          {!isCollapsed ? (
             <motion.button
-              whileHover={{ x: 3, scale: 1.01 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              whileHover={{ x: 2 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-theme-text-secondary hover:text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-all"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-theme-text-secondary hover:text-theme-text-primary hover:bg-theme-bg-tertiary/60 transition-all mb-2"
               onClick={() => navigate('/guida')}
             >
-              <HelpCircle size={18} className="text-amber-400/70" />
+              <HelpCircle size={16} className="text-amber-400/70" />
               <span className="font-medium">Aiuto</span>
             </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          ) : (
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-full flex items-center justify-center p-2 rounded-lg text-theme-text-secondary hover:text-amber-400 hover:bg-theme-bg-tertiary/60 transition-all mb-2"
+              onClick={() => navigate('/guida')}
+              title="Aiuto"
+            >
+              <HelpCircle size={18} className="text-amber-400/70" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+        
+        {/* User profile with dropdown */}
+        <div className="relative" data-user-menu>
+          <AnimatePresence mode="wait">
+            {!isCollapsed ? (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="w-full flex items-center gap-2.5 p-2 rounded-xl bg-gradient-to-r from-theme-bg-tertiary/40 to-transparent hover:from-theme-bg-tertiary/60 transition-all"
+              >
+                <div className="relative flex-shrink-0">
+                  <img 
+                    src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.displayName || 'U')}&background=3b82f6&color=fff`}
+                    alt="User"
+                    className="w-9 h-9 rounded-lg ring-1 ring-theme/50 shadow-md"
+                  />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900" />
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-xs font-semibold text-theme-text-primary truncate">{user?.displayName || 'Utente'}</p>
+                  <p className="text-[10px] text-theme-text-tertiary truncate">{user?.email}</p>
+                </div>
+                <Settings size={14} className="text-theme-text-tertiary" />
+              </motion.button>
+            ) : (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="w-full flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-theme-bg-tertiary/40 transition-all"
+              >
+                <div className="relative">
+                  <img 
+                    src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.displayName || 'U')}&background=3b82f6&color=fff`}
+                    alt="User"
+                    className="w-9 h-9 rounded-lg ring-1 ring-theme/50 shadow-md"
+                    title={user?.displayName || 'Profilo'}
+                  />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900" />
+                </div>
+              </motion.button>
+            )}
+          </AnimatePresence>
+          
+          {/* Dropdown menu */}
+          <AnimatePresence>
+            {isUserMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className={`absolute bottom-full mb-2 ${isCollapsed ? 'left-0' : 'left-0 right-0'} min-w-[180px] bg-slate-800/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 overflow-hidden z-50`}
+              >
+                {/* User info header */}
+                <div className="p-3 border-b border-white/10">
+                  <p className="text-sm font-medium text-white truncate">{user?.displayName || 'Utente'}</p>
+                  <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                </div>
+                
+                {/* Menu items */}
+                <div className="py-1">
+                  <button 
+                    onClick={handleNavigateProfile} 
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 transition-colors"
+                  >
+                    <User size={14} /> Profilo
+                  </button>
+                  <button 
+                    onClick={handleNavigateSettings} 
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 transition-colors"
+                  >
+                    <Settings size={14} /> Impostazioni
+                  </button>
+                  {role === 'admin' && (
+                    <button 
+                      onClick={handleNavigateBilling} 
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 transition-colors"
+                    >
+                      <CreditCard size={14} /> Abbonamento
+                    </button>
+                  )}
+                </div>
+                
+                {/* Logout */}
+                <div className="border-t border-white/10 py-1">
+                  <button 
+                    onClick={handleLogout} 
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors"
+                  >
+                    <LogOut size={14} /> Esci
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </motion.aside>
   );
 };
@@ -660,13 +838,13 @@ export const MobileSidebar = ({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -300, opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 350 }}
-            className="fixed left-0 top-0 h-screen w-[280px] bg-theme-bg-secondary/95 backdrop-blur-2xl border-r border-theme/50 z-50 flex flex-col lg:hidden shadow-2xl shadow-black/30"
+            className="fixed left-0 top-0 h-screen w-[280px] bg-slate-900/70 backdrop-blur-xl z-50 flex flex-col lg:hidden"
           >
             {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-blue-500/[0.02] via-transparent to-sky-500/[0.02] pointer-events-none" />
             
             {/* Header */}
-            <div className="relative p-4 border-b border-theme/50 flex items-center justify-between">
+            <div className="relative p-4 flex items-center justify-between">
               <SidebarLogo isCollapsed={false} branding={branding} />
               <motion.button
                 onClick={onClose}

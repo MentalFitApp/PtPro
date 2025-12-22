@@ -262,10 +262,10 @@ export default function StatisticheDashboard() {
         </h1>
         <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-            className="px-2 py-1.5 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-xs flex-1 sm:flex-none" />
+            className="px-2 py-1.5 bg-slate-800 text-slate-100 rounded-lg border border-slate-700/30 focus:outline-none focus:border-blue-500 text-xs flex-1 sm:flex-none" />
           <span className="text-slate-400 text-xs">→</span>
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-            className="px-2 py-1.5 bg-slate-800 text-slate-100 rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 text-xs flex-1 sm:flex-none" />
+            className="px-2 py-1.5 bg-slate-800 text-slate-100 rounded-lg border border-slate-700/30 focus:outline-none focus:border-blue-500 text-xs flex-1 sm:flex-none" />
           <button onClick={() => {
             const d = new Date(); d.setDate(d.getDate() - 6);
             setStartDate(d.toISOString().split('T')[0]);
@@ -282,32 +282,32 @@ export default function StatisticheDashboard() {
           <DollarSign size={24} className="sm:w-7 sm:h-7" /> Funnel Vendita
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4">
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <p className="text-xs sm:text-sm text-slate-400 truncate">Call Fissate</p>
             <p className="text-xl sm:text-2xl font-bold text-amber-300 truncate">{salesStats.fissate}</p>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <p className="text-xs sm:text-sm text-slate-400 truncate">Call Fatte</p>
             <p className="text-xl sm:text-2xl font-bold text-green-300 truncate">{salesStats.fatte}</p>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <p className="text-xs sm:text-sm text-slate-400 truncate">Warms</p>
             <p className="text-xl sm:text-2xl font-bold text-yellow-300 truncate">{salesStats.offers}</p>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <p className="text-xs sm:text-sm text-slate-400 truncate">Chiuse</p>
             <p className="text-xl sm:text-2xl font-bold text-rose-300 truncate">{salesStats.chiuse}</p>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <p className="text-xs sm:text-sm text-slate-400 truncate">% Show-Up</p>
             <p className="text-xl sm:text-2xl font-bold text-emerald-300 truncate">{salesStats.showUpRate}%</p>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <p className="text-xs sm:text-sm text-slate-400 truncate">% Warm</p>
             <p className="text-[10px] text-slate-500">(Sulle fatte)</p>
             <p className="text-xl sm:text-2xl font-bold text-yellow-300 truncate">{salesStats.warmRate}%</p>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <p className="text-xs sm:text-sm text-slate-400 truncate">% Chiuse</p>
             <p className="text-[10px] text-slate-500">(Sulle fatte)</p>
             <p className="text-xl sm:text-2xl font-bold text-rose-300 truncate">{salesStats.closeRate}%</p>
@@ -321,19 +321,19 @@ export default function StatisticheDashboard() {
           <Phone size={24} className="sm:w-7 sm:h-7" /> Attività Setting
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <p className="text-xs sm:text-sm text-slate-400 truncate">Dialed</p>
             <p className="text-xl sm:text-2xl font-bold text-blue-300 truncate">{settingStats.dialed}</p>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <p className="text-xs sm:text-sm text-slate-400 truncate">Risposte</p>
             <p className="text-xl sm:text-2xl font-bold text-cyan-300 truncate">{settingStats.risposteRate}%</p>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <p className="text-xs sm:text-sm text-slate-400 truncate">Follow-Ups</p>
             <p className="text-xl sm:text-2xl font-bold text-green-300 truncate">{settingStats.followUps}</p>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <p className="text-xs sm:text-sm text-slate-400 truncate">Prenotate</p>
             <p className="text-xl sm:text-2xl font-bold text-rose-300 truncate">{settingStats.prenotateRate}%</p>
           </div>
@@ -346,7 +346,7 @@ export default function StatisticheDashboard() {
           <Users size={24} className="sm:w-7 sm:h-7" /> Lead Totali
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs sm:text-sm text-slate-400">Lead Totali</p>
@@ -355,7 +355,7 @@ export default function StatisticheDashboard() {
               <Users size={24} className="sm:w-7 sm:h-7 text-amber-400" />
             </div>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs sm:text-sm text-slate-400">Show-Up</p>
@@ -364,7 +364,7 @@ export default function StatisticheDashboard() {
               <UserCheck size={24} className="sm:w-7 sm:h-7 text-emerald-400" />
             </div>
           </div>
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+          <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs sm:text-sm text-slate-400">Chiusi</p>
@@ -383,7 +383,7 @@ export default function StatisticheDashboard() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {leadsBySetter.map((s, i) => (
-            <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <div key={i} className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
               <div className="flex items-center justify-between mb-2 sm:mb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 bg-slate-600 rounded-full flex items-center justify-center text-xs font-bold text-slate-300">
@@ -427,7 +427,7 @@ export default function StatisticheDashboard() {
             { title: 'Risposte', key: 'risposte', color: 'text-cyan-300', icon: UserCheck },
             { title: 'Call Prenotate', key: 'callPrenotate', color: 'text-rose-300', icon: Target },
           ].map((table, i) => (
-            <div key={i} className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-5 border border-slate-700">
+            <div key={i} className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-slate-700/30">
               <h3 className="text-sm sm:text-lg font-semibold text-slate-100 mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
                 <table.icon size={16} className="sm:w-5 sm:h-5" /> <span className="truncate">{table.title}</span>
               </h3>
@@ -451,7 +451,7 @@ export default function StatisticheDashboard() {
         </div>
 
         {/* TABELLA COMPLETA DMS */}
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 sm:p-6 border border-slate-700">
+        <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-slate-700/30">
           <h3 className="text-sm sm:text-lg font-semibold text-slate-200 mb-3 sm:mb-4">Tabella Completa DMS</h3>
           <div className="mobile-table-wrapper relative -mx-3 sm:mx-0">
             <table className="w-full text-xs sm:text-sm text-left min-w-[500px]">

@@ -291,7 +291,7 @@ const ClientSchedaAlimentazione = () => {
         </motion.div>
 
         {/* Day Selector - Responsive */}
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl lg:rounded-2xl p-1.5 lg:p-2.5 shadow-lg">
+        <div className="bg-slate-800/50 border border-slate-700/30 rounded-xl lg:rounded-2xl p-1.5 lg:p-2.5 shadow-lg">
           <div className="flex gap-1 lg:gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
             {GIORNI_SETTIMANA.map(giorno => (
               <button
@@ -323,7 +323,7 @@ const ClientSchedaAlimentazione = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.03 }}
-                className="bg-slate-800/40 border border-slate-700/50 rounded-xl lg:rounded-2xl p-2.5 lg:p-4 shadow-lg hover:border-emerald-600/30 transition-all"
+                className="bg-slate-800/20 border border-slate-700/30 rounded-xl lg:rounded-2xl p-2.5 lg:p-4 shadow-lg hover:border-emerald-600/30 transition-all"
               >
                 {/* Header Pasto */}
                 <div className="flex items-center justify-between mb-2 lg:mb-3">
@@ -392,7 +392,7 @@ const ClientSchedaAlimentazione = () => {
             </h3>
           </div>
           <div className="grid grid-cols-5 gap-1.5 lg:gap-4">
-            <div className="bg-slate-900/60 rounded-lg lg:rounded-xl p-1.5 lg:p-4 border border-slate-700/50 text-center shadow-glow">
+            <div className="bg-slate-900/60 rounded-lg lg:rounded-xl p-1.5 lg:p-4 border border-slate-700/30 text-center shadow-glow">
               <div className="text-emerald-200 font-bold text-sm lg:text-2xl">{dayTotals.quantita.toFixed(0)}</div>
               <div className="text-slate-400 text-[9px] lg:text-sm mt-0.5 lg:mt-1">Quantità (g)</div>
             </div>
@@ -417,12 +417,12 @@ const ClientSchedaAlimentazione = () => {
 
         {/* Integration Notes - Responsive */}
         {schedaData.integrazione && (
-          <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl lg:rounded-2xl p-2.5 lg:p-4 shadow-lg">
+          <div className="bg-slate-800/20 border border-slate-700/30 rounded-xl lg:rounded-2xl p-2.5 lg:p-4 shadow-lg">
             <h3 className="text-xs lg:text-lg font-bold text-slate-100 mb-1.5 lg:mb-2 flex items-center gap-1 lg:gap-2">
               <span className="text-base lg:text-xl">💊</span>
               Integrazione
             </h3>
-            <p className="text-slate-300 text-[11px] lg:text-sm whitespace-pre-wrap bg-slate-900/40 rounded-lg p-2 lg:p-3">{schedaData.integrazione}</p>
+            <p className="text-slate-300 text-[11px] lg:text-sm whitespace-pre-wrap bg-slate-800/20 rounded-lg p-2 lg:p-3">{schedaData.integrazione}</p>
           </div>
         )}
       </div>

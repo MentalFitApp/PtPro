@@ -130,7 +130,7 @@ export default function EditClient() {
     navigate(`/admin/client/${clientId}`);
   };
 
-  const inputStyle = "w-full p-3 bg-slate-800/40 border border-slate-700/50 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-white placeholder:text-slate-500";
+  const inputStyle = "w-full p-3 bg-slate-800/20 border border-slate-700/30 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-white placeholder:text-slate-500";
   const labelStyle = "block mb-1.5 text-sm font-medium text-slate-300";
   const errorStyle = "text-red-400 text-sm mt-1";
 
@@ -145,7 +145,7 @@ export default function EditClient() {
         animate={{ opacity: 1, y: 0 }}
       >
         {/* Header */}
-        <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6 mb-6">
+        <div className="bg-slate-800/20 backdrop-blur-sm rounded-xl border border-slate-700/30 p-4 sm:p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl sm:text-2xl font-semibold text-white">Modifica Cliente</h1>
@@ -153,7 +153,7 @@ export default function EditClient() {
             </div>
             <button 
               onClick={handleCancel}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 rounded-lg text-sm text-slate-300 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800/20 hover:bg-slate-800/60 border border-slate-700/30 rounded-lg text-sm text-slate-300 transition-colors"
             >
               <ArrowLeft size={16} /> Indietro
             </button>
@@ -161,7 +161,7 @@ export default function EditClient() {
         </div>
 
         {/* Form */}
-        <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
+        <div className="bg-slate-800/20 backdrop-blur-sm rounded-xl border border-slate-700/30 p-4 sm:p-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
               <label className={labelStyle}>Nome e Cognome*</label>
@@ -202,7 +202,7 @@ export default function EditClient() {
               />
               {errors.phone && <p className={errorStyle}>{errors.phone.message}</p>}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-5 border-t border-slate-700/50">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-5 border-t border-slate-700/30">
               <div>
                 <label className={labelStyle}>Stato Cliente*</label>
                 <select 
@@ -251,7 +251,7 @@ export default function EditClient() {
               <motion.button
                 type="button"
                 onClick={handleCancel}
-                className="flex items-center gap-2 px-5 py-2.5 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 text-white font-medium rounded-lg transition-colors"
+                className="flex items-center gap-2 px-5 py-2.5 bg-slate-800/20 hover:bg-slate-800/60 border border-slate-700/30 text-white font-medium rounded-lg transition-colors"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >

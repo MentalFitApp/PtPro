@@ -468,7 +468,7 @@ export default function CalendarPage() {
         <h1 className="text-3xl font-bold text-slate-50">Calendario</h1>
         <div className="flex items-center gap-4 flex-wrap min-w-0">
           {/* Switch vista (anche mobile) */}
-          <div className="flex items-center bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden text-xs sm:text-sm">
+          <div className="flex items-center bg-slate-800/30 border border-slate-700 rounded-xl overflow-hidden text-xs sm:text-sm">
             <button onClick={() => setView('month')} className={`px-3 py-1.5 ${view==='month'?'bg-slate-700 text-white':'text-slate-300 hover:text-white'}`}>Mese</button>
             <button onClick={() => setView('week')} className={`px-3 py-1.5 border-l border-slate-700 ${view==='week'?'bg-slate-700 text-white':'text-slate-300 hover:text-white'}`}>Settimana</button>
             <button onClick={() => setView('day')} className={`px-3 py-1.5 border-l border-slate-700 ${view==='day'?'bg-slate-700 text-white':'text-slate-300 hover:text-white'}`}>Giorno</button>
@@ -480,7 +480,7 @@ export default function CalendarPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
               notificationsEnabled
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
-                : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700'
+                : 'bg-slate-800/30 text-slate-300 hover:bg-slate-700/50 border border-slate-700'
             }`}
           >
             {notificationsEnabled ? (
@@ -1165,7 +1165,7 @@ export default function CalendarPage() {
               className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-emerald-500/30 shadow-2xl shadow-emerald-500/10 w-full max-w-md max-h-[90vh] flex flex-col"
             >
               {/* Header fisso */}
-              <div className="flex justify-between items-center p-4 sm:p-6 border-b border-slate-700/50 flex-shrink-0">
+              <div className="flex justify-between items-center p-4 sm:p-6 border-b border-slate-700/30 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="p-2 sm:p-3 bg-emerald-500/20 rounded-xl">
                     <Phone className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
@@ -1192,45 +1192,45 @@ export default function CalendarPage() {
                         Solo lettura: non puoi modificare questo lead.
                       </div>
                     )}
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                  <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
                     <label className="text-xs text-slate-400 uppercase tracking-wide">Nome</label>
                     <p className="text-lg font-semibold text-slate-100 mt-1">{selectedLead.leadData.name}</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
                       <label className="text-xs text-slate-400 uppercase tracking-wide">Data</label>
                       <p className="text-sm font-medium text-slate-100 mt-1">
                         {new Date(selectedLead.date).toLocaleDateString('it-IT')}
                       </p>
                     </div>
-                    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
                       <label className="text-xs text-slate-400 uppercase tracking-wide">Ora</label>
                       <p className="text-sm font-medium text-slate-100 mt-1">{selectedLead.time}</p>
                     </div>
                   </div>
 
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                  <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
                     <label className="text-xs text-slate-400 uppercase tracking-wide">Telefono</label>
                     <p className="text-lg font-mono text-emerald-400 mt-1">{selectedLead.leadData.number}</p>
                   </div>
 
                   {selectedLead.leadData.email && (
-                    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
                       <label className="text-xs text-slate-400 uppercase tracking-wide">Email</label>
                       <p className="text-sm text-slate-100 mt-1">{selectedLead.leadData.email}</p>
                     </div>
                   )}
 
                   {selectedLead.leadData.source && (
-                    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
                       <label className="text-xs text-slate-400 uppercase tracking-wide">Provenienza</label>
                       <p className="text-sm text-slate-100 mt-1">{selectedLead.leadData.source}</p>
                     </div>
                   )}
 
                   {selectedLead.leadData.note && (
-                    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
                       <label className="text-xs text-slate-400 uppercase tracking-wide">Note</label>
                       <p className="text-sm text-slate-300 mt-1 whitespace-pre-wrap">{selectedLead.leadData.note}</p>
                     </div>
@@ -1386,7 +1386,7 @@ export default function CalendarPage() {
                       <label className="block text-xs text-slate-400 mb-2">Status Lead</label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {leadStatuses.map(status => (
-                          <label key={status.id} className="flex items-center gap-2 text-slate-200 p-2 rounded-lg bg-slate-800/40 border border-slate-700/50 hover:bg-slate-700/40 transition-colors cursor-pointer">
+                          <label key={status.id} className="flex items-center gap-2 text-slate-200 p-2 rounded-lg bg-slate-800/20 border border-slate-700/30 hover:bg-slate-700/40 transition-colors cursor-pointer">
                             <input 
                               type="checkbox" 
                               checked={!!leadForm[status.id]} 
@@ -1404,15 +1404,15 @@ export default function CalendarPage() {
                     <div>
                       <label className="block text-xs text-slate-400 mb-2">Altri Flag</label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        <label className="flex items-center gap-2 text-slate-200 p-2 rounded-lg bg-slate-800/40 border border-slate-700/50 hover:bg-slate-700/40 transition-colors cursor-pointer">
+                        <label className="flex items-center gap-2 text-slate-200 p-2 rounded-lg bg-slate-800/20 border border-slate-700/30 hover:bg-slate-700/40 transition-colors cursor-pointer">
                           <input type="checkbox" checked={!!leadForm.riprenotato} onChange={(e)=>setLeadForm({...leadForm, riprenotato: e.target.checked})} className="accent-blue-600" />
                           <span className="text-sm">Riprenotato</span>
                         </label>
-                        <label className="flex items-center gap-2 text-slate-200 p-2 rounded-lg bg-slate-800/40 border border-slate-700/50 hover:bg-slate-700/40 transition-colors cursor-pointer">
+                        <label className="flex items-center gap-2 text-slate-200 p-2 rounded-lg bg-slate-800/20 border border-slate-700/30 hover:bg-slate-700/40 transition-colors cursor-pointer">
                           <input type="checkbox" checked={!!leadForm.settingCall} onChange={(e)=>setLeadForm({...leadForm, settingCall: e.target.checked})} className="accent-blue-600" />
                           <span className="text-sm">Setting Call</span>
                         </label>
-                        <label className="flex items-center gap-2 text-slate-200 p-2 rounded-lg bg-slate-800/40 border border-slate-700/50 hover:bg-slate-700/40 transition-colors cursor-pointer">
+                        <label className="flex items-center gap-2 text-slate-200 p-2 rounded-lg bg-slate-800/20 border border-slate-700/30 hover:bg-slate-700/40 transition-colors cursor-pointer">
                           <input type="checkbox" checked={!!leadForm.target} onChange={(e)=>setLeadForm({...leadForm, target: e.target.checked})} className="accent-blue-600" />
                           <span className="text-sm">Target</span>
                         </label>

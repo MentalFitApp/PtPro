@@ -397,7 +397,7 @@ export default function PlatformSettings() {
     <div className="min-h-screen">
       <div className="max-w-[1920px] mx-auto">
         {/* Header Mobile */}
-        <div className="lg:hidden px-4 py-4 border-b border-slate-700/50 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="lg:hidden px-4 py-4 border-b border-slate-700/30 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
           <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2 mb-1">
             <SettingsIcon className="text-blue-400" size={24} />
             Gestione Piattaforma
@@ -430,9 +430,9 @@ export default function PlatformSettings() {
         {/* Layout Desktop/Mobile */}
         <div className="flex flex-col lg:flex-row">
           {/* Sidebar Desktop - Sticky */}
-          <aside className="hidden lg:block lg:w-72 xl:w-80 bg-slate-900/30 border-r border-slate-700/50 sticky top-0 h-screen overflow-y-auto">
+          <aside className="hidden lg:block lg:w-72 xl:w-80 bg-slate-900/30 border-r border-slate-700/30 sticky top-0 h-screen overflow-y-auto">
             {/* Header Sidebar */}
-            <div className="p-6 border-b border-slate-700/50">
+            <div className="p-6 border-b border-slate-700/30">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-blue-600/20 rounded-lg">
                   <SettingsIcon className="text-blue-400" size={24} />
@@ -530,7 +530,7 @@ export default function PlatformSettings() {
           </aside>
 
           {/* Mobile Tabs */}
-          <div className="lg:hidden flex gap-2 px-4 py-3 overflow-x-auto bg-slate-900/50 border-b border-slate-700/50">
+          <div className="lg:hidden flex gap-2 px-4 py-3 overflow-x-auto bg-slate-900/50 border-b border-slate-700/30">
             {tabs.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -593,7 +593,7 @@ export default function PlatformSettings() {
 
               {activeTab === 'clients' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-1 bg-slate-800/50 border border-slate-700/50 rounded-2xl p-4">
+            <div className="lg:col-span-1 bg-slate-800/50 border border-slate-700/30 rounded-2xl p-4">
               <div className="mb-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
@@ -638,7 +638,7 @@ export default function PlatformSettings() {
 
             <div className="lg:col-span-2">
               {selectedClient ? (
-                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-4 lg:p-6">
+                <div className="bg-slate-800/50 border border-slate-700/30 rounded-2xl p-4 lg:p-6">
                   <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
                     <div>
                       <h2 className="text-xl font-bold text-slate-100">{selectedClient.name}</h2>
@@ -713,7 +713,7 @@ export default function PlatformSettings() {
                             className={`p-3 rounded-lg border-2 transition-all text-left ${
                               isEnabled
                                 ? 'border-emerald-500/50 bg-emerald-500/10'
-                                : 'border-slate-700/50 bg-slate-900/30'
+                                : 'border-slate-700/30 bg-slate-900/30'
                             }`}
                             title={page.description}
                           >
@@ -752,7 +752,7 @@ export default function PlatformSettings() {
                             className={`p-3 rounded-lg border-2 transition-all text-left ${
                               isEnabled
                                 ? 'border-blue-500/50 bg-blue-500/10'
-                                : 'border-slate-700/50 bg-slate-900/30'
+                                : 'border-slate-700/30 bg-slate-900/30'
                             }`}
                             title={feature.description}
                           >
@@ -795,7 +795,7 @@ export default function PlatformSettings() {
                   </button>
                 </div>
               ) : (
-                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-12 text-center">
+                <div className="bg-slate-800/50 border border-slate-700/30 rounded-2xl p-12 text-center">
                   <Shield size={48} className="text-slate-600 mx-auto mb-4" />
                   <p className="text-slate-400">Seleziona un cliente per gestire i permessi</p>
                 </div>
@@ -805,7 +805,7 @@ export default function PlatformSettings() {
         )}
 
         {activeTab === 'global' && (
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+          <div className="bg-slate-800/50 border border-slate-700/30 rounded-2xl p-6">
             <h2 className="text-xl font-bold text-slate-100 mb-4">Impostazioni Globali Piattaforma</h2>
             <p className="text-slate-400 text-sm mb-6">
               Queste impostazioni si applicano a tutti i clienti del tuo tenant
@@ -894,7 +894,7 @@ export default function PlatformSettings() {
 
               <div className="bg-slate-900/50 border border-slate-700/30 rounded-lg p-4">
                 {/* Toggle Video Benvenuto */}
-                <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-700/50">
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-700/30">
                   <div className="flex items-center gap-3">
                     <Video className={globalSettings.welcomeVideo?.enabled ? 'text-blue-400' : 'text-slate-500'} size={24} />
                     <div>
@@ -1153,7 +1153,7 @@ export default function PlatformSettings() {
                         </div>
 
                         {isDisabled && (
-                          <div className="mt-3 pt-3 border-t border-slate-700/50">
+                          <div className="mt-3 pt-3 border-t border-slate-700/30">
                             {isEditing ? (
                               <div className="space-y-2">
                                 <label className="text-xs text-slate-400">Messaggio mostrato ai clienti:</label>
@@ -1298,7 +1298,7 @@ export default function PlatformSettings() {
                         </div>
 
                         {isDisabled && (
-                          <div className="mt-3 pt-3 border-t border-slate-700/50">
+                          <div className="mt-3 pt-3 border-t border-slate-700/30">
                             {isEditing ? (
                               <div className="space-y-2">
                                 <label className="text-xs text-slate-400">Messaggio mostrato ai clienti:</label>
@@ -1413,7 +1413,7 @@ export default function PlatformSettings() {
         )}
 
         {activeTab === 'features' && (
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+          <div className="bg-slate-800/50 border border-slate-700/30 rounded-2xl p-6">
             <h2 className="text-xl font-bold text-slate-100 mb-4">Funzionalità Piattaforma</h2>
             <p className="text-slate-400 text-sm mb-6">
               Panoramica di tutte le funzionalità disponibili e loro descrizione

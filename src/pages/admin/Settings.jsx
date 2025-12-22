@@ -445,13 +445,13 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen pb-20">
-      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-6 py-4 space-y-4">
         
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 rounded-xl bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50 transition-colors"
+            className="p-2 rounded-xl bg-slate-800/20 backdrop-blur-sm border border-slate-700/30 text-slate-400 hover:text-white hover:bg-slate-700/30 transition-colors"
           >
             <ArrowLeft size={20} />
           </button>
@@ -466,7 +466,8 @@ export default function Settings() {
         />
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 border-b border-slate-700/50 mb-6 overflow-x-auto">
+        <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 overflow-hidden">
+        <div className="flex items-center gap-1 border-b border-slate-700/30 overflow-x-auto scrollbar-hide">
           <TabButton 
             active={activeTab === TABS.PROFILE} 
             icon={User} 
@@ -511,7 +512,7 @@ export default function Settings() {
           >
             {/* ============ PROFILE TAB ============ */}
             {activeTab === TABS.PROFILE && (
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+              <div className="p-4 sm:p-6">
                 <div className="space-y-6">
                   {/* Avatar */}
                   <div className="flex items-center gap-4">
@@ -544,7 +545,7 @@ export default function Settings() {
                         type="text"
                         value={profile.displayName}
                         onChange={(e) => setProfile(p => ({ ...p, displayName: e.target.value }))}
-                        className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                        className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                         placeholder="Il tuo nome"
                       />
                       <button
@@ -580,7 +581,7 @@ export default function Settings() {
                     <select
                       value={profile.timezone}
                       onChange={(e) => setProfile(p => ({ ...p, timezone: e.target.value }))}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                     >
                       <option value="Europe/Rome">(GMT +01:00) Europe/Rome</option>
                       <option value="Europe/London">(GMT +00:00) Europe/London</option>
@@ -595,7 +596,7 @@ export default function Settings() {
                     <select
                       value={profile.country}
                       onChange={(e) => setProfile(p => ({ ...p, country: e.target.value }))}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                     >
                       <option value="IT">🇮🇹 Italy</option>
                       <option value="US">🇺🇸 United States</option>
@@ -613,7 +614,7 @@ export default function Settings() {
                         <Scale size={14} />
                         Unità Peso
                       </label>
-                      <div className="flex rounded-xl overflow-hidden border border-slate-700/50">
+                      <div className="flex rounded-xl overflow-hidden border border-slate-700/30">
                         <button
                           onClick={() => setProfile(p => ({ ...p, weightUnit: 'kg' }))}
                           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
@@ -642,7 +643,7 @@ export default function Settings() {
                         <Ruler size={14} />
                         Unità Lunghezza
                       </label>
-                      <div className="flex rounded-xl overflow-hidden border border-slate-700/50">
+                      <div className="flex rounded-xl overflow-hidden border border-slate-700/30">
                         <button
                           onClick={() => setProfile(p => ({ ...p, lengthUnit: 'cm' }))}
                           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
@@ -688,9 +689,9 @@ export default function Settings() {
 
             {/* ============ BRANDING TAB ============ */}
             {activeTab === TABS.BRANDING && (
-              <div className="grid lg:grid-cols-2 gap-6">
+              <div className="grid lg:grid-cols-2 gap-4 p-4 sm:p-6">
                 {/* Form */}
-                <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                <div className="bg-slate-700/20 backdrop-blur-sm rounded-2xl border border-slate-600/30 p-4 sm:p-5">
                   <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
                     <Palette size={18} className="text-blue-400" />
                     Elementi
@@ -724,7 +725,7 @@ export default function Settings() {
                           type="text"
                           value={brandingForm.appName}
                           onChange={(e) => setBrandingForm(f => ({ ...f, appName: e.target.value.slice(0, 25) }))}
-                          className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                          className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                           placeholder="Nome app"
                           maxLength={25}
                         />
@@ -742,7 +743,7 @@ export default function Settings() {
                           type="text"
                           value={brandingForm.tagline}
                           onChange={(e) => setBrandingForm(f => ({ ...f, tagline: e.target.value.slice(0, 35) }))}
-                          className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                          className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                           placeholder="Slogan"
                           maxLength={35}
                         />
@@ -766,7 +767,7 @@ export default function Settings() {
                           type="text"
                           value={brandingForm.primaryColor.toUpperCase()}
                           onChange={(e) => setBrandingForm(f => ({ ...f, primaryColor: e.target.value }))}
-                          className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500/50 font-mono"
+                          className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50 font-mono"
                         />
                       </div>
                     </div>
@@ -787,7 +788,7 @@ export default function Settings() {
                 </div>
 
                 {/* Preview */}
-                <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                <div className="bg-slate-700/20 backdrop-blur-sm rounded-2xl border border-slate-600/30 p-4 sm:p-5">
                   <h3 className="font-semibold text-white mb-4">Anteprima</h3>
                   <p className="text-sm text-slate-400 mb-6">Vedi come appare il brand ai tuoi clienti.</p>
                   
@@ -847,7 +848,7 @@ export default function Settings() {
 
             {/* ============ NOTIFICATIONS TAB ============ */}
             {activeTab === TABS.NOTIFICATIONS && (
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+              <div className="p-4 sm:p-6">
                 <h3 className="font-semibold text-white mb-2">Preferenze Notifiche</h3>
                 <p className="text-sm text-slate-400 mb-6">Scegli quali notifiche vuoi ricevere.</p>
                 
@@ -1035,7 +1036,7 @@ export default function Settings() {
 
             {/* ============ PASSWORD TAB ============ */}
             {activeTab === TABS.PASSWORD && (
-              <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 max-w-md">
+              <div className="p-4 sm:p-6 max-w-md">
                 <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
                   <Lock size={18} />
                   Cambia Password
@@ -1051,7 +1052,7 @@ export default function Settings() {
                         type={showPasswords.old ? 'text' : 'password'}
                         value={passwordForm.oldPassword}
                         onChange={(e) => setPasswordForm(f => ({ ...f, oldPassword: e.target.value }))}
-                        className="w-full px-4 py-3 pr-12 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                        className="w-full px-4 py-3 pr-12 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                       />
                       <button
                         type="button"
@@ -1071,7 +1072,7 @@ export default function Settings() {
                         type={showPasswords.new ? 'text' : 'password'}
                         value={passwordForm.newPassword}
                         onChange={(e) => setPasswordForm(f => ({ ...f, newPassword: e.target.value }))}
-                        className="w-full px-4 py-3 pr-12 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                        className="w-full px-4 py-3 pr-12 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                       />
                       <button
                         type="button"
@@ -1091,7 +1092,7 @@ export default function Settings() {
                         type={showPasswords.confirm ? 'text' : 'password'}
                         value={passwordForm.confirmPassword}
                         onChange={(e) => setPasswordForm(f => ({ ...f, confirmPassword: e.target.value }))}
-                        className="w-full px-4 py-3 pr-12 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                        className="w-full px-4 py-3 pr-12 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                       />
                       <button
                         type="button"
@@ -1116,8 +1117,8 @@ export default function Settings() {
 
             {/* ============ DANGER TAB ============ */}
             {activeTab === TABS.DANGER && (
-              <div className="max-w-md">
-                <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+              <div className="p-4 sm:p-6 max-w-md">
+                <div className="bg-slate-900/30 rounded-xl border border-slate-700/30 p-4 sm:p-5">
                   <h3 className="font-semibold text-white mb-2">Elimina Account</h3>
                   <p className="text-sm text-slate-400 mb-6">
                     Il tuo account e tutti i dati associati verranno programmati per l'eliminazione.
@@ -1147,6 +1148,7 @@ export default function Settings() {
             )}
           </motion.div>
         </AnimatePresence>
+        </div>
       </div>
     </div>
   );

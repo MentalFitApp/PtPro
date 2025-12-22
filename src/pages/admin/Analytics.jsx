@@ -23,24 +23,24 @@ const StatCard = ({ title, value, icon, trend, trendValue, isCurrency = false, i
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-slate-900/40 backdrop-blur-sm p-5 rounded-xl border border-slate-700/50"
+      className="bg-slate-800/30 backdrop-blur-sm p-4 sm:p-5 rounded-xl border border-slate-700/30 hover:bg-slate-700/30 transition-all"
     >
-      <div className="flex items-center gap-3 text-slate-400 mb-3">
-        <div className="p-2 rounded-lg bg-slate-800/50">
-          {React.cloneElement(icon, { size: 18 })}
+      <div className="flex items-center gap-2 text-slate-400 mb-2">
+        <div className="p-1.5 rounded-lg bg-slate-700/50">
+          {React.cloneElement(icon, { size: 16 })}
         </div>
-        <p className="text-sm font-medium">{title}</p>
+        <p className="text-xs font-medium">{title}</p>
       </div>
-      <p className="text-3xl font-bold text-white mb-2">
+      <p className="text-2xl sm:text-3xl font-bold text-white mb-1">
         {isCurrency 
           ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value) 
           : isPercentage ? `${value}%` : value
         }
       </p>
-      {subtitle && <p className="text-xs text-slate-400 mb-2">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-slate-400 mb-1">{subtitle}</p>}
       {trendValue && TrendIcon && (
-        <div className={`flex items-center gap-1 text-sm ${trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>
-          <TrendIcon size={16} />
+        <div className={`flex items-center gap-1 text-xs ${trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>
+          <TrendIcon size={14} />
           <span>{trendValue}</span>
         </div>
       )}
@@ -377,33 +377,33 @@ export default function Analytics() {
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto w-full space-y-6">
+      <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 space-y-4">
         {/* Header */}
-        <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
+        <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4 sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-700/50"
+                className="p-2 rounded-xl bg-slate-800/30 hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors border border-slate-700/30"
               >
                 <ArrowLeft size={20} />
               </button>
               <div>
                 <p className="text-xs uppercase tracking-widest text-slate-500 font-medium">Analytics</p>
-                <h1 className="text-2xl font-bold text-white">Dashboard Metriche</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-white">Dashboard Metriche</h1>
               </div>
             </div>
 
             {/* Period Selector */}
-            <div className="flex gap-1 bg-slate-800/30 p-1 rounded-lg">
+            <div className="flex gap-1 bg-slate-900/30 p-1 rounded-xl">
               {['month', 'quarter', 'year'].map(period => (
                 <button
                   key={period}
                   onClick={() => setSelectedPeriod(period)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                     selectedPeriod === period
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                      ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
                   }`}
                 >
                   {period === 'month' ? 'Mese' : period === 'quarter' ? 'Trimestre' : 'Anno'}
@@ -414,13 +414,13 @@ export default function Analytics() {
         </div>
 
         {/* Analytics Tabs */}
-        <div className="flex gap-1 bg-slate-900/40 p-1.5 rounded-xl border border-slate-700/50">
+        <div className="flex gap-1 bg-slate-800/20 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-700/30">
           <button
             onClick={() => setActiveTab('business')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
               activeTab === 'business'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
             }`}
           >
             <DollarSign size={16} />
@@ -428,10 +428,10 @@ export default function Analytics() {
           </button>
           <button
             onClick={() => setActiveTab('courses')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
               activeTab === 'courses'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
             }`}
           >
             <GraduationCap size={16} />
@@ -441,14 +441,16 @@ export default function Analytics() {
 
         {/* Business Analytics */}
         {activeTab === 'business' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Revenue Metrics */}
-            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <DollarSign size={20} className="text-emerald-400" />
+            <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4 sm:p-5">
+              <h2 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-emerald-500/20">
+                  <DollarSign size={16} className="text-emerald-400" />
+                </div>
                 Revenue Tracking
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
                 <StatCard
                   title="Revenue Totale"
                   value={revenueMetrics.currentRevenue}
@@ -483,12 +485,14 @@ export default function Analytics() {
             </div>
 
             {/* Retention Metrics */}
-            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Users size={20} className="text-blue-400" />
+            <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4 sm:p-5">
+              <h2 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-blue-500/20">
+                  <Users size={16} className="text-blue-400" />
+                </div>
                 Client Retention
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
                 <StatCard
                   title="Clienti Attivi"
                   value={retentionMetrics.activeClients}
@@ -519,12 +523,14 @@ export default function Analytics() {
             </div>
 
             {/* Engagement Metrics */}
-            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Activity size={20} className="text-amber-400" />
+            <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4 sm:p-5">
+              <h2 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-amber-500/20">
+                  <Activity size={16} className="text-amber-400" />
+                </div>
                 Engagement Metrics
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <StatCard
                   title="Check-in per Cliente"
                   value={engagementMetrics.avgChecksPerClient}
@@ -548,12 +554,14 @@ export default function Analytics() {
 
             {/* At Risk Clients */}
             {retentionMetrics.atRiskCount > 0 && (
-              <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-red-400 mb-4 flex items-center gap-2">
-                  <UserX size={20} />
+              <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-4 sm:p-5">
+                <h2 className="text-base sm:text-lg font-semibold text-rose-400 mb-3 flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-rose-500/20">
+                    <UserX size={16} className="text-rose-400" />
+                  </div>
                   Clienti a Rischio ({retentionMetrics.atRiskCount})
                 </h2>
-                <p className="text-sm text-slate-400 mb-4">
+                <p className="text-xs sm:text-sm text-slate-400 mb-4">
                   Questi clienti hanno abbonamenti in scadenza nei prossimi 15 giorni
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -563,10 +571,10 @@ export default function Analytics() {
                       <button
                         key={client.id}
                         onClick={() => navigate(`/admin/client/${client.id}?tab=payments`)}
-                        className="bg-slate-800/40 p-4 rounded-lg text-left hover:bg-slate-800/60 transition-colors border border-slate-700/50"
+                        className="bg-slate-800/30 p-3 sm:p-4 rounded-xl text-left hover:bg-slate-700/40 transition-colors border border-slate-700/30"
                       >
-                        <p className="font-medium text-white">{client.name}</p>
-                        <p className="text-sm text-red-400 mt-1">Scade tra {daysLeft} giorni</p>
+                        <p className="font-medium text-white text-sm">{client.name}</p>
+                        <p className="text-xs text-rose-400 mt-1">Scade tra {daysLeft} giorni</p>
                       </button>
                     );
                   })}
@@ -578,13 +586,15 @@ export default function Analytics() {
 
         {/* Courses Analytics */}
         {activeTab === 'courses' && (
-          <div className="space-y-6">
-            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <GraduationCap size={20} className="text-cyan-400" />
+          <div className="space-y-4">
+            <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4 sm:p-5">
+              <h2 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-cyan-500/20">
+                  <GraduationCap size={16} className="text-cyan-400" />
+                </div>
                 Statistiche Corsi
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
                 <StatCard
                   title="Corsi Totali"
                   value={courses.length}
@@ -616,9 +626,9 @@ export default function Analytics() {
             </div>
 
             {/* Top Courses */}
-            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Corsi Più Popolari</h3>
-              <div className="space-y-3">
+            <div className="bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4 sm:p-5">
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-4">Corsi Più Popolari</h3>
+              <div className="space-y-2 sm:space-y-3">
                 {courses
                   .map(course => ({
                     ...course,
@@ -627,24 +637,24 @@ export default function Analytics() {
                   .sort((a, b) => b.enrollmentCount - a.enrollmentCount)
                   .slice(0, 5)
                   .map((course, index) => (
-                    <div key={course.id} className="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-slate-700/50 hover:bg-slate-800/60 transition-colors">
+                    <div key={course.id} className="flex items-center justify-between p-3 bg-slate-800/30 rounded-xl border border-slate-700/30 hover:bg-slate-700/40 transition-colors">
                       <div className="flex items-center gap-3">
-                        <span className="text-xl font-bold text-slate-500">#{index + 1}</span>
+                        <span className="text-lg font-bold text-slate-500">#{index + 1}</span>
                         <div>
-                          <h4 className="font-medium text-white">{course.title}</h4>
-                          <p className="text-sm text-slate-400">{course.enrollmentCount} iscritti</p>
+                          <h4 className="font-medium text-white text-sm">{course.title}</h4>
+                          <p className="text-xs text-slate-400">{course.enrollmentCount} iscritti</p>
                         </div>
                       </div>
                       <button
                         onClick={() => navigate(`/admin/course/${course.id}/manage`)}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                        className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
                       >
                         Gestisci
                       </button>
                     </div>
                   ))}
                 {courses.length === 0 && (
-                  <p className="text-center text-slate-400 py-4">Nessun corso disponibile</p>
+                  <p className="text-center text-slate-400 py-4 text-sm">Nessun corso disponibile</p>
                 )}
               </div>
             </div>

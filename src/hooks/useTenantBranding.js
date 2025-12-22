@@ -81,24 +81,27 @@ export function applyBackgroundPreset(preset, solidColor, gradientColors) {
 }
 
 /**
- * Applica la trasparenza delle card
- * @param {number} transparency - Valore da 0 a 1 (0 = trasparente, 1 = opaco)
+ * Applica la luminosità delle stelle
+ * @param {number} transparency - Valore da 0 a 1 (0 = stelle luminose, 1 = stelle spente)
  */
 export function applyCardTransparency(transparency) {
   const root = document.documentElement;
   
-  // Determina il livello di trasparenza
+  // Determina il livello
   let level = 'medium';
-  if (transparency >= 0.95) level = 'none';
+  if (transparency >= 0.95) level = 'none';       // Stelle spente
   else if (transparency >= 0.85) level = 'subtle';
   else if (transparency >= 0.6) level = 'medium';
   else if (transparency >= 0.4) level = 'strong';
-  else level = 'glass';
+  else level = 'glass';                           // Stelle luminose
+  
+  // Opacità stelle (inverso: slider alto = stelle meno visibili)
+  const starsOpacity = 1 - transparency;
   
   root.setAttribute('data-card-transparency', level);
-  root.style.setProperty('--card-transparency', transparency.toString());
+  root.style.setProperty('--stars-opacity', starsOpacity.toFixed(2));
   
-  console.log('🔲 Card transparency applied:', level, `(${Math.round(transparency * 100)}%)`);
+  console.log('✨ Stars brightness:', level, `(opacity: ${Math.round(starsOpacity * 100)}%)`);
 }
 
 /**
@@ -139,7 +142,7 @@ export function useTenantBranding() {
           let bgPreset = 'starryNight';
           let bgSolidColor = '#0f172a';
           let bgGradientColors = ['#0f172a', '#1e1b4b'];
-          let cardTransparency = 0.6;
+          let cardTransparency = 0.5; // Default 50%
           
           if (userSnap.exists()) {
             const userData = userSnap.data();
@@ -163,8 +166,8 @@ export function useTenantBranding() {
             bgSolidColor = userData.bgSolidColor || '#0f172a';
             bgGradientColors = userData.bgGradientColors || ['#0f172a', '#1e1b4b'];
             
-            // Trasparenza card
-            cardTransparency = userData.cardTransparency !== undefined ? userData.cardTransparency : 0.6;
+            // Trasparenza card (default 50%)
+            cardTransparency = userData.cardTransparency !== undefined ? userData.cardTransparency : 0.5;
             
             setUserColors({
               colorPreset: userData.colorPreset || 'blue',

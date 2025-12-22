@@ -252,7 +252,7 @@ const ClientHabits = () => {
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate(-1)}
-              className="p-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50"
+              className="p-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/30"
             >
               <ArrowLeft size={20} className="text-slate-300" />
             </motion.button>
@@ -284,7 +284,7 @@ const ClientHabits = () => {
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Stats oggi */}
-        <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+        <div className="bg-slate-800/20 rounded-xl p-4 border border-slate-700/30">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-white flex items-center gap-2">
               <Calendar size={16} className="text-blue-400" />
@@ -387,7 +387,7 @@ const ClientHabits = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={`p-3 rounded-xl border transition-all ${
-                  isComplete ? `${colors.bg} ${colors.border}` : 'bg-slate-800/40 border-slate-700/50'
+                  isComplete ? `${colors.bg} ${colors.border}` : 'bg-slate-800/20 border-slate-700/30'
                 }`}
               >
                 <div className="flex items-center justify-between">

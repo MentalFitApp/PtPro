@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, Download, Trash2, Link as LinkIcon, Settings, Bell, BellOff, 
-  Check, Smartphone, Mail, User, Lock, AlertCircle, Key, Eye, EyeOff, Loader2
+  Check, Smartphone, Mail, User, Lock, AlertCircle, Key, Eye, EyeOff, Loader2,
+  Sparkles, RotateCcw
 } from 'lucide-react';
 import GDPRSettings from '../../components/settings/GDPRSettings';
 import LinkAccountCard from '../../components/LinkAccountCard';
@@ -10,8 +11,9 @@ import ChangeEmailCard from '../../components/settings/ChangeEmailCard';
 import { auth, db } from '../../firebase';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { getMessaging, getToken } from 'firebase/messaging';
-import { setDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
+import { setDoc, serverTimestamp, getDoc, updateDoc, doc } from 'firebase/firestore';
 import { getTenantDoc } from '../../config/tenant';
+import { applyCardTransparency } from '../../hooks/useTenantBranding';
 
 const VAPID_KEY = 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeDXSXKb4uffOVSupUGHQ4Q0l9Ato';
 
@@ -23,6 +25,8 @@ const ClientSettings = () => {
   const [notificationStatus, setNotificationStatus] = useState('unknown');
   const [isEnablingNotifications, setIsEnablingNotifications] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [starsOpacity, setStarsOpacity] = useState(0.5);
+  const [savingAppearance, setSavingAppearance] = useState(false);
   
   // State per cambio password
   const [passwordForm, setPasswordForm] = useState({
@@ -43,6 +47,25 @@ const ClientSettings = () => {
     } else {
       setNotificationStatus(Notification.permission);
     }
+    
+    // Carica preferenze aspetto utente
+    const loadAppearance = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data.cardTransparency !== undefined) {
+            setStarsOpacity(data.cardTransparency);
+            applyCardTransparency(data.cardTransparency);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading appearance:', error);
+      }
+    };
+    loadAppearance();
   }, []);
 
   const handleEnableNotifications = async () => {
@@ -161,6 +184,13 @@ const ClientSettings = () => {
       color: 'blue'
     },
     {
+      id: 'appearance',
+      label: 'Aspetto',
+      icon: Sparkles,
+      description: 'Personalizza l\'interfaccia',
+      color: 'amber'
+    },
+    {
       id: 'notifications',
       label: 'Notifiche',
       icon: Bell,
@@ -180,7 +210,7 @@ const ClientSettings = () => {
     <div className="min-h-screen">
       <div className="max-w-[1920px] mx-auto">
         {/* Header Mobile */}
-        <div className="lg:hidden px-4 py-4 border-b border-slate-700/50 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="lg:hidden px-4 py-4 border-b border-slate-700/30 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
           <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2 mb-1">
             <Settings className="text-cyan-400" size={24} />
             Impostazioni
@@ -214,8 +244,8 @@ const ClientSettings = () => {
         {/* Layout Desktop/Mobile */}
         <div className="flex flex-col lg:flex-row">
           {/* Sidebar Desktop */}
-          <aside className="hidden lg:block lg:w-72 xl:w-80 bg-slate-900/30 border-r border-slate-700/50 sticky top-0 h-screen overflow-y-auto">
-            <div className="p-6 border-b border-slate-700/50">
+          <aside className="hidden lg:block lg:w-72 xl:w-80 bg-slate-900/30 border-r border-slate-700/30 sticky top-0 h-screen overflow-y-auto">
+            <div className="p-6 border-b border-slate-700/30">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-cyan-600/20 rounded-lg">
                   <Settings className="text-cyan-400" size={24} />
@@ -239,19 +269,22 @@ const ClientSettings = () => {
                 const bgActiveClasses = {
                   blue: 'bg-blue-600/20 border-2 border-blue-500/50',
                   emerald: 'bg-emerald-600/20 border-2 border-emerald-500/50',
-                  purple: 'bg-purple-600/20 border-2 border-purple-500/50'
+                  purple: 'bg-purple-600/20 border-2 border-purple-500/50',
+                  amber: 'bg-amber-600/20 border-2 border-amber-500/50'
                 };
                 
                 const indicatorClasses = {
                   blue: 'bg-blue-500',
                   emerald: 'bg-emerald-500',
-                  purple: 'bg-purple-500'
+                  purple: 'bg-purple-500',
+                  amber: 'bg-amber-500'
                 };
                 
                 const iconActiveClasses = {
                   blue: 'text-blue-400',
                   emerald: 'text-emerald-400',
-                  purple: 'text-purple-400'
+                  purple: 'text-purple-400',
+                  amber: 'text-amber-400'
                 };
                 
                 return (
@@ -295,7 +328,7 @@ const ClientSettings = () => {
           </aside>
 
           {/* Mobile Tabs */}
-          <div className="lg:hidden flex gap-2 px-4 py-3 overflow-x-auto bg-slate-900/50 border-b border-slate-700/50">
+          <div className="lg:hidden flex gap-2 px-4 py-3 overflow-x-auto bg-slate-900/50 border-b border-slate-700/30">
             {tabs.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -342,7 +375,7 @@ const ClientSettings = () => {
                     </div>
 
                     {/* Cambio Email */}
-                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50">
+                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
                       <div className="flex items-center gap-3 mb-4">
                         <Mail className="text-blue-400" size={24} />
                         <h3 className="text-xl font-bold text-white">Cambio Email</h3>
@@ -351,7 +384,7 @@ const ClientSettings = () => {
                     </div>
 
                     {/* Cambio Password */}
-                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50">
+                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
                       <div className="flex items-center gap-3 mb-4">
                         <Key className="text-amber-400" size={24} />
                         <h3 className="text-xl font-bold text-white">Cambio Password</h3>
@@ -442,7 +475,7 @@ const ClientSettings = () => {
                     </div>
 
                     {/* Account Collegati */}
-                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50">
+                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
                       <div className="flex items-center gap-3 mb-4">
                         <LinkIcon className="text-indigo-400" size={24} />
                         <h3 className="text-xl font-bold text-white">Account Collegati</h3>
@@ -451,6 +484,154 @@ const ClientSettings = () => {
                         Collega Google o Facebook per accedere più velocemente.
                       </p>
                       <LinkAccountCard />
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* TAB: Aspetto */}
+                {activeTab === 'appearance' && (
+                  <motion.div
+                    key="appearance"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-6"
+                  >
+                    {/* Header */}
+                    <div className="hidden lg:block mb-8">
+                      <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                        <Sparkles className="text-amber-400" size={28} />
+                        Aspetto
+                      </h2>
+                      <p className="text-slate-400 mt-1">
+                        Personalizza l'aspetto dell'interfaccia
+                      </p>
+                    </div>
+
+                    {/* Luminosità Stelle */}
+                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <Sparkles className="text-amber-400" size={24} />
+                          <h3 className="text-xl font-bold text-white">Luminosità Stelle</h3>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setStarsOpacity(0.5);
+                            applyCardTransparency(0.5);
+                          }}
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
+                        >
+                          <RotateCcw size={14} />
+                          Reset
+                        </button>
+                      </div>
+                      <p className="text-slate-400 mb-6">
+                        Regola la luminosità delle stelle animate nello sfondo.
+                      </p>
+
+                      <div className="space-y-4">
+                        {/* Slider */}
+                        <div className="space-y-3">
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={1 - starsOpacity}
+                            onChange={(e) => {
+                              const newValue = 1 - parseFloat(e.target.value);
+                              setStarsOpacity(newValue);
+                              applyCardTransparency(newValue);
+                            }}
+                            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                          />
+                          <div className="flex justify-between text-xs text-slate-500">
+                            <span>Spente</span>
+                            <span className="text-amber-400 font-medium">{Math.round((1 - starsOpacity) * 100)}%</span>
+                            <span>Luminose</span>
+                          </div>
+                        </div>
+
+                        {/* Quick Presets */}
+                        <div className="grid grid-cols-4 gap-2">
+                          {[
+                            { value: 1, label: 'Spente' },
+                            { value: 0.75, label: 'Basse' },
+                            { value: 0.5, label: 'Medie' },
+                            { value: 0, label: 'Luminose' },
+                          ].map((p) => (
+                            <button
+                              key={p.value}
+                              onClick={() => {
+                                setStarsOpacity(p.value);
+                                applyCardTransparency(p.value);
+                              }}
+                              className={`py-2 text-xs rounded-lg border transition-all ${
+                                Math.abs(starsOpacity - p.value) < 0.1
+                                  ? 'border-amber-500 bg-amber-500/10 text-amber-400'
+                                  : 'border-slate-700 text-slate-500 hover:border-slate-600'
+                              }`}
+                            >
+                              {p.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Preview */}
+                        <div className="relative mt-4 p-4 rounded-xl border border-slate-700 overflow-hidden bg-slate-900/50">
+                          <div className="absolute inset-0 overflow-hidden">
+                            {[...Array(15)].map((_, i) => (
+                              <div
+                                key={i}
+                                className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+                                style={{
+                                  left: `${Math.random() * 100}%`,
+                                  top: `${Math.random() * 100}%`,
+                                  opacity: 1 - starsOpacity,
+                                  animationDelay: `${Math.random() * 2}s`
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <div className="relative text-center py-4">
+                            <p className="text-sm text-slate-300">Anteprima stelle</p>
+                            <p className="text-xs text-slate-500 mt-1">Opacità: {Math.round((1 - starsOpacity) * 100)}%</p>
+                          </div>
+                        </div>
+
+                        {/* Save Button */}
+                        <button
+                          onClick={async () => {
+                            const user = auth.currentUser;
+                            if (!user) return;
+                            setSavingAppearance(true);
+                            try {
+                              await setDoc(doc(db, 'users', user.uid), {
+                                cardTransparency: starsOpacity,
+                                updatedAt: new Date().toISOString(),
+                              }, { merge: true });
+                              showNotification('success', 'Preferenze salvate!');
+                            } catch (error) {
+                              console.error('Error saving:', error);
+                              showNotification('error', 'Errore nel salvataggio');
+                            } finally {
+                              setSavingAppearance(false);
+                            }
+                          }}
+                          disabled={savingAppearance}
+                          className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:from-slate-600 disabled:to-slate-600 text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2"
+                        >
+                          {savingAppearance ? (
+                            <Loader2 size={20} className="animate-spin" />
+                          ) : (
+                            <>
+                              <Check size={20} />
+                              Salva Preferenze
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -476,7 +657,7 @@ const ClientSettings = () => {
                     </div>
 
                     {/* Notifiche Push */}
-                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50">
+                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
                       <div className="flex items-center gap-3 mb-4">
                         <Bell className="text-purple-400" size={24} />
                         <h3 className="text-xl font-bold text-white">Notifiche Push</h3>
@@ -543,7 +724,7 @@ const ClientSettings = () => {
                     </div>
 
                     {/* Info Notifiche */}
-                    <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
+                    <div className="bg-slate-800/20 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
                       <h4 className="text-lg font-semibold text-white mb-3">Cosa riceverai</h4>
                       <ul className="space-y-2 text-slate-400">
                         <li className="flex items-center gap-2">
@@ -588,7 +769,7 @@ const ClientSettings = () => {
                     </div>
 
                     {/* Privacy e GDPR */}
-                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50">
+                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
                       <div className="flex items-center gap-3 mb-4">
                         <Shield className="text-emerald-400" size={24} />
                         <h3 className="text-xl font-bold text-white">I Tuoi Dati</h3>
@@ -600,7 +781,7 @@ const ClientSettings = () => {
                     </div>
 
                     {/* Info Diritti */}
-                    <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
+                    <div className="bg-slate-800/20 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
                       <h4 className="text-lg font-semibold text-white mb-3">I Tuoi Diritti</h4>
                       <ul className="space-y-3 text-slate-400">
                         <li className="flex items-start gap-2">

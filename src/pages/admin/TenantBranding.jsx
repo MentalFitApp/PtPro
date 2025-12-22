@@ -353,7 +353,7 @@ export default function TenantBranding() {
         )}
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 border-b border-slate-700/50 overflow-x-auto">
+        <div className="flex items-center gap-1 border-b border-slate-700/30 overflow-x-auto">
           <TabButton active={activeTab === TABS.TENANT} icon={Building2} label="Tenant" onClick={() => setActiveTab(TABS.TENANT)} />
           <TabButton active={activeTab === TABS.PERSONAL} icon={Palette} label="Personale" onClick={() => setActiveTab(TABS.PERSONAL)} />
         </div>

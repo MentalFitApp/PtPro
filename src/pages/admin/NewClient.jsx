@@ -302,10 +302,10 @@ Ti aspettiamo! 💪`;
     setUseCustomDate(false);
   };
 
-  const inputStyle = "w-full p-3 bg-slate-800/40 border border-slate-700/50 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder:text-slate-500 transition-colors";
+  const inputStyle = "w-full p-3 bg-slate-800/20 border border-slate-700/30 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder:text-slate-500 transition-colors";
   const labelStyle = "block mb-1.5 text-sm font-medium text-slate-300";
-  const sectionStyle = "bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-4 sm:p-6";
-  const headingStyle = "font-semibold mb-4 text-base text-white border-b border-slate-700/50 pb-3 flex items-center gap-2";
+  const sectionStyle = "bg-slate-800/20 backdrop-blur-sm rounded-xl border border-slate-700/30 p-4 sm:p-6";
+  const headingStyle = "font-semibold mb-4 text-base text-white border-b border-slate-700/30 pb-3 flex items-center gap-2";
   const errorStyle = "text-red-400 text-sm mt-1";
 
   return (
@@ -335,7 +335,7 @@ Ti aspettiamo! 💪`;
             </div>
             <button 
               onClick={() => navigate('/clients')} 
-              className="flex items-center gap-2 px-4 py-2 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 text-slate-300 text-sm rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800/20 hover:bg-slate-800/60 border border-slate-700/30 text-slate-300 text-sm rounded-lg transition-colors"
             >
               <ArrowLeft size={16}/> Indietro
             </button>
@@ -521,7 +521,7 @@ Ti aspettiamo! 💪`;
             </div>
 
             {/* Rateizzazione */}
-            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-700/50">
+            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-700/30">
               <label className="font-medium text-white text-sm">Pagamento Rateizzato:</label>
               <input 
                 type="checkbox" 
@@ -536,7 +536,7 @@ Ti aspettiamo! 💪`;
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-slate-700/50">
+                      <tr className="border-b border-slate-700/30">
                         <th className="px-3 py-2 text-left text-slate-400 font-medium">Importo</th>
                         <th className="px-3 py-2 text-left text-slate-400 font-medium">Scadenza</th>
                         <th className="px-3 py-2 text-left text-slate-400 font-medium">Pagata</th>
@@ -545,7 +545,7 @@ Ti aspettiamo! 💪`;
                     </thead>
                     <tbody>
                       {rates.length > 0 ? rates.map((rate, idx) => (
-                        <tr key={idx} className="border-b border-slate-700/50">
+                        <tr key={idx} className="border-b border-slate-700/30">
                           <td className="px-3 py-2 text-white">€{rate.amount}</td>
                           <td className="px-3 py-2 text-slate-300">
                             {rate.dueDate ? new Date(rate.dueDate).toLocaleDateString('it-IT') : '-'}
@@ -586,13 +586,13 @@ Ti aspettiamo! 💪`;
                     placeholder="Importo (€)" 
                     value={newRate.amount} 
                     onChange={e => setNewRate({ ...newRate, amount: e.target.value })} 
-                    className="flex-1 min-w-[100px] p-3 rounded-lg bg-slate-800/40 border border-slate-700/50 text-white placeholder:text-slate-500" 
+                    className="flex-1 min-w-[100px] p-3 rounded-lg bg-slate-800/20 border border-slate-700/30 text-white placeholder:text-slate-500" 
                   />
                   <input 
                     type="date" 
                     value={newRate.dueDate} 
                     onChange={e => setNewRate({ ...newRate, dueDate: e.target.value })} 
-                    className="flex-1 min-w-[140px] p-3 rounded-lg bg-slate-800/40 border border-slate-700/50 text-white" 
+                    className="flex-1 min-w-[140px] p-3 rounded-lg bg-slate-800/20 border border-slate-700/30 text-white" 
                   />
                   <button 
                     type="button" 
@@ -677,7 +677,7 @@ Ti aspettiamo! 💪`;
             className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4"
           >
             <motion.div
-              className="bg-slate-900/95 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto"
+              className="bg-slate-900/95 backdrop-blur-sm rounded-xl border border-slate-700/30 p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -694,7 +694,7 @@ Ti aspettiamo! 💪`;
               </div>
 
               {/* Codice Invito */}
-              <div className="bg-slate-800/40 rounded-lg p-4 mb-4 border border-slate-700/50">
+              <div className="bg-slate-800/20 rounded-lg p-4 mb-4 border border-slate-700/30">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-slate-400 font-medium">CODICE INVITO</p>
                   <button
@@ -711,7 +711,7 @@ Ti aspettiamo! 💪`;
               </div>
 
               {/* Link Invito */}
-              <div className="bg-slate-800/40 rounded-lg p-4 mb-4 border border-slate-700/50">
+              <div className="bg-slate-800/20 rounded-lg p-4 mb-4 border border-slate-700/30">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs text-slate-400 font-medium">
                     <Link2 size={12} className="inline mr-1" />
@@ -733,7 +733,7 @@ Ti aspettiamo! 💪`;
               {/* QR Code Toggle */}
               <button
                 onClick={() => setShowQrCode(!showQrCode)}
-                className="w-full py-3 px-4 bg-slate-800/40 hover:bg-slate-800/60 border border-slate-700/50 rounded-lg flex items-center justify-center gap-2 text-slate-300 transition-colors mb-4"
+                className="w-full py-3 px-4 bg-slate-800/20 hover:bg-slate-800/60 border border-slate-700/30 rounded-lg flex items-center justify-center gap-2 text-slate-300 transition-colors mb-4"
               >
                 <QrCode size={18} />
                 {showQrCode ? 'Nascondi' : 'Mostra'} QR Code
@@ -840,7 +840,7 @@ Ti aspettiamo! 💪`;
               </div>
 
               {/* Info scadenza */}
-              <div className="mt-4 pt-4 border-t border-slate-700/50 text-center">
+              <div className="mt-4 pt-4 border-t border-slate-700/30 text-center">
                 <p className="text-xs text-slate-400 flex items-center justify-center gap-1">
                   <Clock size={12} />
                   Invito valido per {invitation.expiryDays || 7} giorni
@@ -851,7 +851,7 @@ Ti aspettiamo! 💪`;
               <div className="flex gap-3 mt-4">
                 <button
                   onClick={handleCreateAnother}
-                  className="flex-1 py-2 text-blue-400 hover:text-blue-300 text-sm text-center transition-colors border border-slate-700/50 rounded-lg"
+                  className="flex-1 py-2 text-blue-400 hover:text-blue-300 text-sm text-center transition-colors border border-slate-700/30 rounded-lg"
                 >
                   Crea altro invito
                 </button>
