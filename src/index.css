@@ -70,6 +70,49 @@ button, a, [role="button"], input, select, textarea {
     animation: none !important;
     opacity: 1 !important;
   }
+  
+  /* Disabilita transform/translate animations su mobile per performance */
+  .star {
+    animation: none !important;
+    will-change: auto !important;
+  }
+  
+  /* Stelle statiche su mobile - solo twinkle leggero */
+  .star-static {
+    animation: mobile-twinkle 3s ease-in-out infinite !important;
+  }
+  
+  /* Disabilita Framer Motion transforms pesanti */
+  [style*="transform"] {
+    will-change: auto !important;
+  }
+  
+  /* Riduci tutte le transizioni per iOS */
+  *, *::before, *::after {
+    transition-duration: 0.1s !important;
+  }
+  
+  /* Semplifica box-shadow complesse su mobile */
+  .shadow-2xl {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  }
+  .shadow-xl {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  /* Forza GPU acceleration per elementi fissi */
+  .fixed {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+}
+
+/* Animazione twinkle leggera per mobile */
+@keyframes mobile-twinkle {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
 }
 
 /* Desktop mantiene blur completo */

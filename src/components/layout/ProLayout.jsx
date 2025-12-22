@@ -37,6 +37,12 @@ const AnimatedStars = () => {
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
+    // Detect iOS/mobile per ridurre carico
+    const isMobile = window.matchMedia('(max-width: 1024px)').matches;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isLowPower = isMobile || isIOS;
+    
     // Funzione per creare le stelle in base al preset
     const createStars = () => {
       // Rimuovi stelle esistenti
@@ -58,47 +64,50 @@ const AnimatedStars = () => {
       document.body.appendChild(container);
 
       // Configurazioni per i 5 preset stellati premium
+      // Su mobile/iOS riduciamo drasticamente il numero di stelle
+      const mobileMultiplier = isLowPower ? 0.3 : 1; // 30% stelle su mobile
+      
       const presetConfigs = {
         // 1. CIELO STELLATO - Come il login, twinkle + float dolce
         starryNight: {
-          count: 65,
+          count: Math.round(65 * mobileMultiplier),
           sizeRange: [1, 3.5],
           colors: ['blue', 'gold'],
-          animation: 'twinkle-float',
+          animation: isLowPower ? 'static' : 'twinkle-float', // Animazione semplice su mobile
           twinkleDuration: { min: 2, max: 4 },
           floatDuration: { min: 10, max: 20 },
         },
         // 2. PIOGGIA DI METEORE - Stelle cadenti veloci con scie
         meteorShower: {
-          count: 35,
+          count: Math.round(35 * mobileMultiplier),
           sizeRange: [1, 2.5],
           colors: ['white', 'cyan', 'gold'],
-          animation: 'meteor',
+          animation: isLowPower ? 'static' : 'meteor',
           speed: { min: 4, max: 10 },
         },
         // 3. UNIVERSO PROFONDO - Stelle pulsanti con profondità
         deepSpace: {
-          count: 80,
+          count: Math.round(80 * mobileMultiplier),
           sizeRange: [0.5, 3.5],
           colors: ['white', 'purple', 'pink', 'cyan'],
-          animation: 'pulse-depth',
+          animation: isLowPower ? 'static' : 'pulse-depth',
           speed: { min: 3, max: 6 },
         },
         // 4. COSTELLAZIONI - Stelle connesse
         constellations: {
-          count: 40,
+          count: Math.round(40 * mobileMultiplier),
           sizeRange: [2, 4.5],
           colors: ['blue', 'white', 'cyan'],
-          animation: 'constellation',
+          animation: isLowPower ? 'static' : 'constellation',
           speed: { min: 4, max: 7 },
-          connections: true,
+          connections: !isLowPower, // Disabilita linee su mobile
         },
         // 5. POLVERE DI STELLE - Particelle danzanti
         stardust: {
-          count: 100,
+          count: Math.round(100 * mobileMultiplier),
           sizeRange: [0.5, 2.5],
           colors: ['white', 'gold', 'pink', 'cyan'],
-          animation: 'dust',
+          animation: isLowPower ? 'static' : 'dust',
           speed: { min: 8, max: 15 },
         },
       };
