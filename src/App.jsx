@@ -2,6 +2,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import GlobalUploadBar from './components/ui/GlobalUploadBar';
 import ErrorBoundary from './components/ErrorBoundary';
 import PrivacyBanner from './components/PrivacyBanner';
+import VideoSplash from './components/VideoSplash';
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
@@ -147,6 +148,7 @@ export default function App() {
   });
   const [lastNavigated, setLastNavigated] = useState(null);
   const [initialAuthComplete, setInitialAuthComplete] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -400,6 +402,17 @@ export default function App() {
     <ThemeProvider>
     <TenantProvider>
     <UserPreferencesProvider>
+    
+    {/* Video Splash Screen - mostra ogni volta che l'app si carica */}
+    {showSplash && (
+      <VideoSplash 
+        videoUrl="/videos/splash.mp4"
+        onComplete={() => setShowSplash(false)}
+        showOnce={false}
+        maxDuration={15}
+        allowSkip={true}
+      />
+    )}
       <OnlineStatusMonitor />
       <Suspense fallback={<PageSpinner />}>
         <GlobalUploadBar />
