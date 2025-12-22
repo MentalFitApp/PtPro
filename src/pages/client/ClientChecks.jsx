@@ -426,29 +426,30 @@ export default function ClientChecks() {
   };
   
   const handleFileChange = async (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Mostra loading per questo tipo di foto
+    setPhotoLoading(prev => ({ ...prev, [type]: true }));
+    
     try {
-      const file = e.target.files[0];
-      if (file) {
-        // Mostra loading per questo tipo di foto
-        setPhotoLoading(prev => ({ ...prev, [type]: true }));
-        
-        try {
-          // Comprimi/converti l'immagine (HEIC -> JPEG per preview compatibile)
-          const processedFile = await compressImage(file);
-          setFormState(prev => ({
-            ...prev,
-            photos: { ...prev.photos, [type]: processedFile },
-            photoPreviews: { ...prev.photoPreviews, [type]: URL.createObjectURL(processedFile) }
-          }));
-        } finally {
-          // Rimuovi loading per questo tipo di foto
-          setPhotoLoading(prev => ({ ...prev, [type]: false }));
-        }
-      }
+      // Comprimi/converti l'immagine (HEIC -> JPEG per preview compatibile)
+      const processedFile = await compressImage(file);
+      setFormState(prev => ({
+        ...prev,
+        photos: { ...prev.photos, [type]: processedFile },
+        photoPreviews: { ...prev.photoPreviews, [type]: URL.createObjectURL(processedFile) }
+      }));
     } catch (err) {
       console.error("Errore handleFileChange:", err);
+      // Mostra messaggio specifico per errori HEIC
+      const errorMessage = err.message?.includes('HEIC') 
+        ? err.message 
+        : "Errore nel caricamento della foto. Riprova con un'altra immagine.";
+      showNotification(errorMessage);
+    } finally {
+      // Rimuovi loading per questo tipo di foto
       setPhotoLoading(prev => ({ ...prev, [type]: false }));
-      showNotification("Errore nel caricamento della foto.");
     }
   };
   const handleRemovePhoto = (type) => {
