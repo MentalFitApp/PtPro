@@ -230,6 +230,15 @@ export const compressImage = async (file) => {
  * @returns {Promise<string>} - URL pubblico del file caricato
  */
 export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onProgress = null, isAdmin = false) => {
+  console.log('[uploadToR2] 📤 Inizio upload:', {
+    fileName: file?.name,
+    fileType: file?.type,
+    fileSize: file ? `${(file.size / 1024).toFixed(2)} KB` : 'N/A',
+    clientId,
+    folder,
+    isAdmin
+  });
+  
   if (!file) throw new Error('Nessun file fornito');
 
   // Validazione dimensione file (prima della compressione)
