@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { updateDoc } from 'firebase/firestore';
-import { getTenantDoc } from '../../config/tenant';
+import { updateDoc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
+import { getTenantDoc, getTenantCollection } from '../../config/tenant';
 import { db } from '../../firebase';
-import { Edit2, Save, X, Settings, Columns, FileText } from 'lucide-react';
+import { Edit2, Save, X, Settings, Columns, FileText, Trash2 } from 'lucide-react';
 import LeadStatusConfig from '../dashboard/LeadStatusConfig';
 import LeadColumnsConfig from '../dashboard/LeadColumnsConfig';
 import { useToast } from '../../contexts/ToastContext';
@@ -18,6 +18,7 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
   const [localStatuses, setLocalStatuses] = useState(leadStatuses);
   const [localColumns, setLocalColumns] = useState(columns);
   const [notePopup, setNotePopup] = useState({ show: false, leadName: '', note: '' });
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // ID del lead da eliminare
 
   useEffect(() => {
     setLocalStatuses(leadStatuses);
@@ -74,6 +75,31 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
     } catch (error) {
       console.error('Errore aggiornamento status lead:', error);
       toast.error('Errore nell\'aggiornamento');
+    }
+  };
+
+  const handleDeleteLead = async (leadId) => {
+    try {
+      // Elimina anche gli eventi calendario associati a questo lead
+      const calendarQuery = query(
+        getTenantCollection(db, 'calendarEvents'),
+        where('leadId', '==', leadId)
+      );
+      const calendarSnap = await getDocs(calendarQuery);
+      
+      // Elimina tutti gli eventi trovati
+      const deletePromises = calendarSnap.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+      
+      // Elimina il lead
+      await deleteDoc(getTenantDoc(db, 'leads', leadId));
+      
+      toast.success('Lead ed evento calendario eliminati');
+      setDeleteConfirm(null);
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      console.error('Errore eliminazione lead:', error);
+      toast.error('Errore nell\'eliminazione del lead');
     }
   };
 
@@ -321,23 +347,32 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
                     
                     {/* Azioni */}
                     <td className="px-4 py-3 text-center whitespace-nowrap">
-                      {isEditing ? (
+                      <div className="flex items-center justify-center gap-2">
+                        {isEditing ? (
+                          <button
+                            onClick={() => setEditingLead(null)}
+                            className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-xs flex items-center gap-1"
+                          >
+                            <Save size={14} />
+                            Salva
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setEditingLead(lead.id)}
+                            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs flex items-center gap-1"
+                          >
+                            <Edit2 size={14} />
+                            Modifica
+                          </button>
+                        )}
                         <button
-                          onClick={() => setEditingLead(null)}
-                          className="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-xs flex items-center gap-1 mx-auto"
+                          onClick={() => setDeleteConfirm(lead.id)}
+                          className="p-1.5 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/40 hover:text-red-300 transition-colors"
+                          title="Elimina lead"
                         >
-                          <Save size={14} />
-                          Salva
+                          <Trash2 size={16} />
                         </button>
-                      ) : (
-                        <button
-                          onClick={() => setEditingLead(lead.id)}
-                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs flex items-center gap-1 mx-auto"
-                        >
-                          <Edit2 size={14} />
-                          Modifica
-                        </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -414,6 +449,48 @@ export default function LeadsTable({ leads, leadStatuses, columns = [], onRefres
                 className="px-4 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 text-sm font-medium"
               >
                 Chiudi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center gap-3 p-4 border-b border-slate-700 bg-red-600/10">
+              <div className="p-2 bg-red-600/20 rounded-lg">
+                <Trash2 size={20} className="text-red-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-100">Conferma Eliminazione</h3>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-slate-300">
+                Sei sicuro di voler eliminare questo lead? 
+              </p>
+              <p className="text-slate-400 text-sm mt-2">
+                Questa azione non può essere annullata.
+              </p>
+            </div>
+            
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-700 flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="px-4 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 text-sm font-medium"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={() => handleDeleteLead(deleteConfirm)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium flex items-center gap-2"
+              >
+                <Trash2 size={16} />
+                Elimina
               </button>
             </div>
           </div>

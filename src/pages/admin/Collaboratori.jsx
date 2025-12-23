@@ -15,9 +15,9 @@ import {
 } from 'firebase/auth';
 import { 
   Users, Plus, Key, Trash2, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Eye, 
-  Edit, X, Check, File, DollarSign, CheckCircle, FileText, ChevronDown, ChevronUp
+  Edit, X, Check, File, DollarSign, CheckCircle, FileText, ChevronDown, ChevronUp, Phone, Save, UserPlus
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import SimpleCalendar from '../../components/calendar/SimpleCalendar';
 import LeadsTable from '../../components/leads/LeadsTable';
 
@@ -149,6 +149,17 @@ export default function Collaboratori() {
   const [showCredentialsPopup, setShowCredentialsPopup] = useState(false);
   const [newCredentials, setNewCredentials] = useState({ email: '', password: '' });
 
+  // NUOVO LEAD - Stati per Admin che inserisce lead
+  const [showNewLead, setShowNewLead] = useState(false);
+  const [newLead, setNewLead] = useState({
+    name: '', source: '', number: '', note: '', email: '',
+    dataPrenotazione: '', oraPrenotazione: ''
+  });
+  const [showDateTimePicker, setShowDateTimePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState([]);
+
   // Funzioni per gestire le fonti
   const addFonte = () => {
     if (newFonteName.trim() && !fonti.includes(newFonteName.trim())) {
@@ -279,6 +290,13 @@ export default function Collaboratori() {
       calculateStats(data);
     });
 
+    // Carica eventi calendario per il picker data/ora
+    const calendarQuery = query(getTenantCollection(db, 'calendarEvents'));
+    const unsubCalendar = onSnapshot(calendarQuery, snap => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setCalendarEvents(data);
+    });
+
     const settingQuery = query(getTenantCollection(db, 'settingReports'), orderBy('date', 'desc'));
     const unsubSetting = onSnapshot(settingQuery, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -292,7 +310,7 @@ export default function Collaboratori() {
     });
 
     return () => {
-      unsubCollab(); unsubLeads(); unsubSetting(); unsubSales();
+      unsubCollab(); unsubLeads(); unsubCalendar(); unsubSetting(); unsubSales();
     };
   }, [navigate]);
 
@@ -622,6 +640,135 @@ export default function Collaboratori() {
     }
   };
 
+  // --- GENERA FASCE ORARIE PER IL COLLABORATORE SELEZIONATO ---
+  const generateTimeSlots = (dateStr) => {
+    setSelectedDate(dateStr);
+    
+    const slots = [];
+    // Genera slot ogni 30 minuti dalle 8:00 alle 22:00
+    for (let h = 8; h <= 21; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        slots.push(time);
+      }
+    }
+    slots.push('22:00');
+
+    const occupiedSlots = new Set();
+
+    // Filtra lead dell'admin nella data
+    const leadsOnDate = leads.filter(lead => 
+      lead.dataPrenotazione === dateStr && 
+      lead.collaboratoreId === auth.currentUser.uid
+    );
+    
+    leadsOnDate.forEach(lead => {
+      if (!lead.oraPrenotazione) return;
+      const [hours, minutes] = lead.oraPrenotazione.split(':').map(Number);
+      const duration = 30;
+      let totalMinutes = hours * 60 + minutes;
+      let startMinutes = Math.floor(totalMinutes / 30) * 30;
+      const endMinutes = totalMinutes + duration;
+      
+      while (startMinutes < endMinutes) {
+        const h = Math.floor(startMinutes / 60);
+        const m = startMinutes % 60;
+        const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        occupiedSlots.add(timeStr);
+        startMinutes += 30;
+      }
+    });
+
+    // Filtra eventi calendario dell'admin corrente
+    const eventsOnDate = calendarEvents.filter(e => 
+      e.date === dateStr && 
+      (e.participants?.includes(auth.currentUser.uid) || e.createdBy === auth.currentUser.uid)
+    );
+    
+    eventsOnDate.forEach(event => {
+      if (!event.time) return;
+      const [hours, minutes] = event.time.split(':').map(Number);
+      const duration = event.durationMinutes || 30;
+      let totalMinutes = hours * 60 + minutes;
+      let startMinutes = Math.floor(totalMinutes / 30) * 30;
+      const endMinutes = totalMinutes + duration;
+      
+      while (startMinutes < endMinutes) {
+        const h = Math.floor(startMinutes / 60);
+        const m = startMinutes % 60;
+        const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        occupiedSlots.add(timeStr);
+        startMinutes += 30;
+      }
+    });
+
+    const freeSlots = slots.filter(slot => !occupiedSlots.has(slot));
+    setAvailableSlots(freeSlots);
+  };
+
+  // --- SALVA LEAD (ADMIN) ---
+  const handleSaveNewLead = async () => {
+    if (!newLead.name || !newLead.number || !newLead.dataPrenotazione || !newLead.oraPrenotazione) {
+      setError('Nome, numero, data e ora prenotazione sono obbligatori.');
+      return;
+    }
+
+    try {
+      const leadRef = doc(getTenantCollection(db, 'leads'));
+      const leadId = leadRef.id;
+      
+      // Usa l'admin corrente
+      const adminUid = auth.currentUser.uid;
+      const adminName = auth.currentUser.displayName || auth.currentUser.email?.split('@')[0] || 'Admin';
+      
+      await setDoc(leadRef, {
+        name: newLead.name,
+        number: newLead.number,
+        email: newLead.email || '',
+        source: newLead.source,
+        note: newLead.note,
+        dataPrenotazione: newLead.dataPrenotazione,
+        oraPrenotazione: newLead.oraPrenotazione,
+        collaboratoreId: adminUid,
+        collaboratoreNome: adminName,
+        chiuso: false,
+        showUp: false,
+        timestamp: new Date(),
+        createdByAdmin: true,
+      });
+
+      // Crea automaticamente evento calendario
+      await setDoc(doc(getTenantCollection(db, 'calendarEvents')), {
+        title: `📞 ${newLead.name}`,
+        date: newLead.dataPrenotazione,
+        time: newLead.oraPrenotazione,
+        type: 'lead',
+        durationMinutes: 30,
+        leadId: leadId,
+        leadData: {
+          name: newLead.name,
+          number: newLead.number,
+          email: newLead.email || '',
+          source: newLead.source || '',
+          note: newLead.note || ''
+        },
+        createdBy: adminUid,
+        participants: [adminUid],
+        timestamp: new Date()
+      });
+
+      setSuccess('✅ Lead salvato e aggiunto al calendario!');
+      setTimeout(() => setSuccess(''), 3000);
+      setNewLead({ name: '', source: '', number: '', note: '', email: '', dataPrenotazione: '', oraPrenotazione: '' });
+      setSelectedDate(null);
+      setAvailableSlots([]);
+      setShowNewLead(false);
+    } catch (err) {
+      console.error('Errore salvataggio lead:', err);
+      setError('Errore salvataggio lead.');
+    }
+  };
+
   const getSourceStats = () => {
     const stats = {};
     let totalLeads = 0;
@@ -690,6 +837,14 @@ export default function Collaboratori() {
               </h1>
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <motion.button
+                onClick={() => setShowNewLead(true)}
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition-colors"
+                whileHover={{ scale: 1.02 }}
+                title="Aggiungi nuovo lead"
+              >
+                <UserPlus size={16} /> Nuovo Lead
+              </motion.button>
               <motion.button
                 onClick={handleSyncLeadsToCalendar}
                 className="flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm transition-colors"
@@ -1534,6 +1689,260 @@ export default function Collaboratori() {
             </motion.div>
           </div>
         )}
+
+        {/* MODAL NUOVO LEAD (ADMIN) */}
+        <AnimatePresence>
+          {showNewLead && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+              <motion.div 
+                initial={{ scale: 0.9, y: 20 }} 
+                animate={{ scale: 1, y: 0 }} 
+                exit={{ scale: 0.9, y: 20 }} 
+                className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                      <Phone className="text-blue-400" size={24} />
+                      Nuovo Lead
+                    </h3>
+                    <p className="text-sm text-slate-400 mt-1">Compila i dati del nuovo contatto</p>
+                  </div>
+                  <button 
+                    onClick={() => setShowNewLead(false)} 
+                    className="text-slate-400 hover:text-white hover:bg-slate-700/50 p-2 rounded-lg transition-all"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Nome - Full width */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Nome Completo *
+                    </label>
+                    <input 
+                      type="text" 
+                      value={newLead.name} 
+                      onChange={e => setNewLead({ ...newLead, name: e.target.value })} 
+                      placeholder="Es: Mario Rossi" 
+                      className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      required
+                    />
+                  </div>
+
+                  {/* Fonte e Numero - 2 colonne su desktop */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        Fonte *
+                      </label>
+                      <select 
+                        value={newLead.source} 
+                        onChange={e => setNewLead({ ...newLead, source: e.target.value })} 
+                        className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        required
+                      >
+                        <option value="">Seleziona fonte</option>
+                        {fonti.map(f => <option key={f} value={f}>{getDisplayFonteName(f)}</option>)}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        Numero Telefono *
+                      </label>
+                      <input 
+                        type="tel" 
+                        value={newLead.number} 
+                        onChange={e => setNewLead({ ...newLead, number: e.target.value })} 
+                        placeholder="+39 123 456 7890" 
+                        className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Email (opzionale)
+                    </label>
+                    <input 
+                      type="email" 
+                      value={newLead.email} 
+                      onChange={e => setNewLead({ ...newLead, email: e.target.value })} 
+                      placeholder="email@esempio.com" 
+                      className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+
+                  {/* Data e Ora con Picker Visuale */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Data e Ora Appuntamento *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowDateTimePicker(true)}
+                      className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-left focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:bg-slate-700/60 flex items-center justify-between"
+                    >
+                      {newLead.dataPrenotazione && newLead.oraPrenotazione ? (
+                        <span className="text-white font-medium">
+                          📅 {new Date(newLead.dataPrenotazione).toLocaleDateString('it-IT', { 
+                            weekday: 'short', 
+                            day: 'numeric', 
+                            month: 'short' 
+                          })} alle {newLead.oraPrenotazione}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">Clicca per selezionare data e ora</span>
+                      )}
+                      <CalendarIcon size={20} className="text-blue-400" />
+                    </button>
+                  </div>
+
+                  {/* Note - Full width */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Note (opzionale)
+                    </label>
+                    <textarea 
+                      value={newLead.note} 
+                      onChange={e => setNewLead({ ...newLead, note: e.target.value })} 
+                      placeholder="Aggiungi note o informazioni aggiuntive..." 
+                      className="w-full p-3 sm:p-4 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none" 
+                      rows="3"
+                    />
+                  </div>
+
+                  {/* Pulsanti */}
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                    <motion.button 
+                      onClick={() => setShowNewLead(false)}
+                      className="flex-1 bg-slate-700/50 hover:bg-slate-700 text-white py-3 sm:py-4 rounded-xl font-medium transition-all border border-slate-600/50"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Annulla
+                    </motion.button>
+                    <motion.button 
+                      onClick={handleSaveNewLead} 
+                      className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 sm:py-4 rounded-xl font-medium transition-all shadow-lg flex items-center justify-center gap-2"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Save size={20} />
+                      <span>Salva Lead</span>
+                    </motion.button>
+                  </div>
+
+                  <p className="text-xs text-slate-500 text-center mt-2">
+                    * Campi obbligatori
+                  </p>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* PICKER DATA E ORA */}
+        <AnimatePresence>
+          {showDateTimePicker && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
+              <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/95 rounded-2xl border border-white/10 w-full max-w-lg flex flex-col max-h-[90vh] shadow-glow">
+                {/* Header Fisso */}
+                <div className="flex-shrink-0 flex justify-between items-center p-6 border-b border-white/10">
+                  <h3 className="text-xl font-bold text-white">📅 Seleziona Data e Ora</h3>
+                  <button onClick={() => setShowDateTimePicker(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
+                </div>
+                
+                {/* Contenuto Scrollabile */}
+                <div className="overflow-y-auto flex-1 p-6">
+                  {/* Mini Calendario */}
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-slate-300 mb-3">Seleziona il giorno:</h4>
+                    <div className="grid grid-cols-7 gap-2">
+                      {(() => {
+                        const days = [];
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        for (let i = 0; i < 21; i++) {
+                          const date = new Date(today);
+                          date.setDate(today.getDate() + i);
+                          const year = date.getFullYear();
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const day = String(date.getDate()).padStart(2, '0');
+                          const dateStr = `${year}-${month}-${day}`;
+                          const isSelected = selectedDate === dateStr;
+                          
+                          days.push(
+                            <button
+                              key={dateStr}
+                              type="button"
+                              onClick={() => generateTimeSlots(dateStr)}
+                              className={`p-2 rounded-lg text-center transition-all ${
+                                isSelected 
+                                  ? 'bg-blue-600 text-white font-bold ring-2 ring-blue-400' 
+                                  : 'bg-slate-800/60 text-slate-300 hover:bg-slate-700/60'
+                              }`}
+                            >
+                              <div className="text-xs">{date.toLocaleDateString('it-IT', { weekday: 'short' })}</div>
+                              <div className="text-lg font-bold">{date.getDate()}</div>
+                              <div className="text-xs">{date.toLocaleDateString('it-IT', { month: 'short' })}</div>
+                            </button>
+                          );
+                        }
+                        return days;
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Fasce Orarie */}
+                  {selectedDate && (
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-300 mb-3">
+                        Seleziona l'orario: 
+                        {availableSlots.length > 0 && (
+                          <span className="ml-2 text-xs text-emerald-400">({availableSlots.length} slot liberi)</span>
+                        )}
+                      </h4>
+                      <div className="grid grid-cols-4 gap-2 max-h-[300px] overflow-y-auto">
+                        {availableSlots.map((slot, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setNewLead({ 
+                                ...newLead, 
+                                dataPrenotazione: selectedDate, 
+                                oraPrenotazione: slot 
+                              });
+                              setShowDateTimePicker(false);
+                              setSelectedDate(null);
+                            }}
+                            className="p-3 bg-emerald-600/20 border border-emerald-500/30 rounded-lg text-emerald-300 hover:bg-emerald-600/40 hover:border-emerald-400 transition-all font-medium"
+                          >
+                            {slot}
+                          </button>
+                        ))}
+                        {availableSlots.length === 0 && (
+                          <div className="col-span-4 text-center py-6">
+                            <div className="text-amber-400 text-lg mb-2">⚠️</div>
+                            <p className="text-slate-300 font-medium">Nessuna fascia oraria disponibile</p>
+                            <p className="text-slate-400 text-sm mt-1">Tutti gli slot sono già occupati per questo giorno</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
