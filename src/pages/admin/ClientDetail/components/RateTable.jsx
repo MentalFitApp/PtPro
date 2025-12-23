@@ -1,5 +1,5 @@
 import React, { useState, memo } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Calendar } from 'lucide-react';
 
 /**
  * Tabella per gestire le rate di pagamento
@@ -15,20 +15,50 @@ const RateTable = memo(function RateTable({
 }) {
   const [newRate, setNewRate] = useState({ amount: '', dueDate: '', paid: false });
   const [editIdx, setEditIdx] = useState(null);
-  const [editRate, setEditRate] = useState({ amount: '', dueDate: '' });
+  const [editRate, setEditRate] = useState({ amount: '', dueDate: '', paidDate: '' });
   const [togglingIdx, setTogglingIdx] = useState(null);
+  // Stato per mostrare il picker della data di pagamento
+  const [paymentDatePickerIdx, setPaymentDatePickerIdx] = useState(null);
+  const [selectedPaymentDate, setSelectedPaymentDate] = useState('');
 
   const handleTogglePaid = async (idx, rate) => {
+    if (!rate.paid) {
+      // Se stiamo segnando come pagata, mostriamo il picker per la data
+      setPaymentDatePickerIdx(idx);
+      // Default: oggi
+      setSelectedPaymentDate(new Date().toISOString().split('T')[0]);
+    } else {
+      // Se stiamo segnando come NON pagata, procediamo direttamente
+      setTogglingIdx(idx);
+      try {
+        const update = { ...rate, paid: false, paidDate: null };
+        await onUpdate(idx, update);
+        if (onRatePaymentToggled) {
+          onRatePaymentToggled(false, rate.amount);
+        }
+      } finally {
+        setTogglingIdx(null);
+      }
+    }
+  };
+
+  const confirmPaymentDate = async (idx, rate) => {
     setTogglingIdx(idx);
     try {
-      const update = { ...rate, paid: !rate.paid };
-      update.paidDate = update.paid ? new Date().toISOString() : null;
+      // Usa la data selezionata (imposta a mezzanotte per evitare problemi di timezone)
+      const paymentDate = selectedPaymentDate 
+        ? new Date(selectedPaymentDate + 'T12:00:00').toISOString()
+        : new Date().toISOString();
+      
+      const update = { ...rate, paid: true, paidDate: paymentDate };
       await onUpdate(idx, update);
       if (onRatePaymentToggled) {
-        onRatePaymentToggled(update.paid, rate.amount);
+        onRatePaymentToggled(true, rate.amount);
       }
     } finally {
       setTogglingIdx(null);
+      setPaymentDatePickerIdx(null);
+      setSelectedPaymentDate('');
     }
   };
 
@@ -77,18 +107,49 @@ const RateTable = memo(function RateTable({
                   ) : (rate.dueDate ? new Date(rate.dueDate).toLocaleDateString() : '-')}
                 </td>
                 <td className="px-3 py-2 text-slate-100">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {canEdit && (
                       <input 
                         type="checkbox" 
                         checked={rate.paid} 
-                        disabled={togglingIdx === idx}
+                        disabled={togglingIdx === idx || paymentDatePickerIdx === idx}
                         onChange={() => handleTogglePaid(idx, rate)} 
                         className="w-4 h-4 accent-emerald-500 cursor-pointer disabled:opacity-50"
                       />
                     )}
                     {togglingIdx === idx ? (
                       <span className="text-cyan-300 text-xs animate-pulse">Salvataggio...</span>
+                    ) : paymentDatePickerIdx === idx ? (
+                      // Mostra picker data pagamento
+                      <div className="flex flex-col gap-2 p-2 bg-slate-800 rounded-lg border border-slate-700">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} className="text-cyan-400" />
+                          <span className="text-xs text-slate-300">Data pagamento:</span>
+                        </div>
+                        <input
+                          type="date"
+                          value={selectedPaymentDate}
+                          onChange={e => setSelectedPaymentDate(e.target.value)}
+                          className="p-1 text-xs rounded border border-slate-600 bg-slate-900 text-slate-100"
+                        />
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => confirmPaymentDate(idx, rate)}
+                            className="px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded"
+                          >
+                            Conferma
+                          </button>
+                          <button
+                            onClick={() => {
+                              setPaymentDatePickerIdx(null);
+                              setSelectedPaymentDate('');
+                            }}
+                            className="px-2 py-1 text-xs bg-slate-600 hover:bg-slate-700 text-white rounded"
+                          >
+                            Annulla
+                          </button>
+                        </div>
+                      </div>
                     ) : rate.paid ? (
                       <span className="text-emerald-300 text-xs">
                         {rate.paidDate ? new Date(rate.paidDate).toLocaleDateString('it-IT') : 'Pagata'}

@@ -769,25 +769,25 @@ export default function DashboardPro() {
               }
             });
             
-            // Process legacy rates from client doc
-            if (!isOldClient) {
-              (data.rate || []).forEach(rate => {
-                if (rate.paid && rate.paidDate) {
-                  const rateDate = toDate(rate.paidDate);
-                  if (rateDate) {
-                    result.payments.push({
-                      id: `rate-${clientId}-${rate.paidDate}`,
-                      clientId,
-                      clientName,
-                      amount: parseFloat(rate.amount) || 0,
-                      date: rateDate.toISOString(),
-                      source: 'rate',
-                      isRenewal: false
-                    });
-                  }
+            // Process legacy rates from client doc (anche per oldClient!)
+            // Le rate sono SEMPRE incassi normali, MAI rinnovi
+            (data.rate || []).forEach(rate => {
+              if (rate.paid && rate.paidDate) {
+                const rateDate = toDate(rate.paidDate);
+                if (rateDate) {
+                  result.payments.push({
+                    id: `rate-${clientId}-${rate.paidDate}`,
+                    clientId,
+                    clientName,
+                    amount: parseFloat(rate.amount) || 0,
+                    date: rateDate.toISOString(),
+                    source: 'rate',
+                    isRenewal: false, // Le rate NON sono mai rinnovi
+                    isRate: true
+                  });
                 }
-              });
-            }
+              }
+            });
             
             // Process calls
             const now = new Date();
@@ -1048,9 +1048,9 @@ export default function DashboardPro() {
       periodLabel,
       newClients: newClientsThisMonth.length,
       retention,
-      // Aggiungi liste dettagliate per il modal
-      renewalPaymentsList: periodPayments.filter(p => p.isRenewal === true),
-      regularPaymentsList: periodPayments.filter(p => p.isRenewal !== true),
+      // Aggiungi liste dettagliate per il modal (ordinate per data decrescente)
+      renewalPaymentsList: periodPayments.filter(p => p.isRenewal === true).sort((a, b) => new Date(b.date) - new Date(a.date)),
+      regularPaymentsList: periodPayments.filter(p => p.isRenewal !== true).sort((a, b) => new Date(b.date) - new Date(a.date)),
       // Clienti inattivi (no check da 7+ giorni)
       inactiveClients: activeClients.filter(c => {
         if (!c.lastCheckDate) return true; // Mai fatto check
