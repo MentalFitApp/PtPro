@@ -1,7 +1,7 @@
 // src/components/client/PhotoCompare.jsx
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Image, Calendar, ArrowLeftRight, ZoomIn, ZoomOut, Move, RotateCcw, RotateCw } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Image, Calendar, ArrowLeftRight, ZoomIn, ZoomOut, Move, RotateCcw, RotateCw, Download, Columns } from 'lucide-react';
 
 const formatDate = (date) => {
   if (!date) return 'N/D';
@@ -24,6 +24,7 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
   const [rightPhotoIndex, setRightPhotoIndex] = useState(1);
   const [compareMode, setCompareMode] = useState(false); // false = grid, true = compare
   const [sliderPosition, setSliderPosition] = useState(50);
+  const [isDownloading, setIsDownloading] = useState(false);
   
   // Stato per allineamento foto (zoom, offset e rotazione per entrambe le foto)
   const [leftTransform, setLeftTransform] = useState({ scale: 1, x: 0, y: 0, rotate: 0 });
@@ -34,6 +35,41 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef({ x: 0, y: 0, startX: 0, startY: 0 });
   const containerRef = useRef(null);
+  const sliderDebounceRef = useRef(null);
+
+  // Carica posizione slider salvata quando cambia tipo foto
+  useEffect(() => {
+    if (selectedType) {
+      const savedPosition = localStorage.getItem(`photoCompare_slider_${selectedType}`);
+      if (savedPosition) {
+        setSliderPosition(Number(savedPosition));
+      }
+    }
+  }, [selectedType]);
+
+  // Auto-save posizione slider con debounce
+  const handleSliderChange = useCallback((value) => {
+    setSliderPosition(value);
+    
+    // Debounce il salvataggio
+    if (sliderDebounceRef.current) {
+      clearTimeout(sliderDebounceRef.current);
+    }
+    sliderDebounceRef.current = setTimeout(() => {
+      if (selectedType) {
+        localStorage.setItem(`photoCompare_slider_${selectedType}`, String(value));
+      }
+    }, 500);
+  }, [selectedType]);
+
+  // Cleanup debounce
+  useEffect(() => {
+    return () => {
+      if (sliderDebounceRef.current) {
+        clearTimeout(sliderDebounceRef.current);
+      }
+    };
+  }, []);
 
   // Handler per drag & drop
   const handleDragStart = useCallback((e, side) => {
@@ -159,6 +195,209 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
 
   // Foto del tipo selezionato
   const currentPhotos = selectedType ? photosByType[selectedType] || [] : [];
+
+  // Download foto con slider (screenshot della visualizzazione corrente)
+  const downloadSliderView = useCallback(async () => {
+    if (!containerRef.current) return;
+    setIsDownloading(true);
+    
+    try {
+      const container = containerRef.current;
+      const rect = container.getBoundingClientRect();
+      
+      // Crea canvas con le dimensioni del container
+      const canvas = document.createElement('canvas');
+      const scale = 2; // Retina quality
+      canvas.width = rect.width * scale;
+      canvas.height = rect.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+      
+      // Carica entrambe le immagini
+      const leftImg = new window.Image();
+      const rightImg = new window.Image();
+      leftImg.crossOrigin = 'anonymous';
+      rightImg.crossOrigin = 'anonymous';
+      
+      const leftPhoto = currentPhotos[leftPhotoIndex];
+      const rightPhoto = currentPhotos[rightPhotoIndex];
+      
+      await Promise.all([
+        new Promise((resolve, reject) => {
+          leftImg.onload = resolve;
+          leftImg.onerror = reject;
+          leftImg.src = leftPhoto?.url;
+        }),
+        new Promise((resolve, reject) => {
+          rightImg.onload = resolve;
+          rightImg.onerror = reject;
+          rightImg.src = rightPhoto?.url;
+        })
+      ]);
+      
+      // Background nero
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, rect.width, rect.height);
+      
+      // Calcola dimensioni per object-contain
+      const containerAspect = rect.width / rect.height;
+      
+      const drawImageContain = (img, transform, clipWidth = null) => {
+        const imgAspect = img.width / img.height;
+        let drawWidth, drawHeight, offsetX, offsetY;
+        
+        if (imgAspect > containerAspect) {
+          drawWidth = rect.width;
+          drawHeight = rect.width / imgAspect;
+          offsetX = 0;
+          offsetY = (rect.height - drawHeight) / 2;
+        } else {
+          drawHeight = rect.height;
+          drawWidth = rect.height * imgAspect;
+          offsetX = (rect.width - drawWidth) / 2;
+          offsetY = 0;
+        }
+        
+        ctx.save();
+        
+        // Applica clip se necessario
+        if (clipWidth !== null) {
+          ctx.beginPath();
+          ctx.rect(0, 0, clipWidth, rect.height);
+          ctx.clip();
+        }
+        
+        // Applica trasformazioni
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        ctx.translate(centerX + transform.x, centerY + transform.y);
+        ctx.rotate((transform.rotate * Math.PI) / 180);
+        ctx.scale(transform.scale, transform.scale);
+        ctx.translate(-centerX, -centerY);
+        
+        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+        ctx.restore();
+      };
+      
+      // Disegna foto destra (background)
+      drawImageContain(rightImg, rightTransform);
+      
+      // Disegna foto sinistra (clipped)
+      const clipWidth = (sliderPosition / 100) * rect.width;
+      drawImageContain(leftImg, leftTransform, clipWidth);
+      
+      // Disegna linea slider
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(clipWidth, 0);
+      ctx.lineTo(clipWidth, rect.height);
+      ctx.stroke();
+      
+      // Labels
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillStyle = 'white';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 4;
+      ctx.fillText('PRIMA', 20, rect.height - 20);
+      ctx.fillText('DOPO', rect.width - 60, rect.height - 20);
+      
+      // Download
+      const link = document.createElement('a');
+      link.download = `confronto-${selectedType}-slider-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error('Errore download slider view:', err);
+      alert('Errore durante il download. Riprova.');
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [currentPhotos, leftPhotoIndex, rightPhotoIndex, sliderPosition, leftTransform, rightTransform, selectedType]);
+
+  // Download foto affiancate (side by side)
+  const downloadSideBySide = useCallback(async () => {
+    setIsDownloading(true);
+    
+    try {
+      const leftPhoto = currentPhotos[leftPhotoIndex];
+      const rightPhoto = currentPhotos[rightPhotoIndex];
+      
+      // Carica entrambe le immagini
+      const leftImg = new window.Image();
+      const rightImg = new window.Image();
+      leftImg.crossOrigin = 'anonymous';
+      rightImg.crossOrigin = 'anonymous';
+      
+      await Promise.all([
+        new Promise((resolve, reject) => {
+          leftImg.onload = resolve;
+          leftImg.onerror = reject;
+          leftImg.src = leftPhoto?.url;
+        }),
+        new Promise((resolve, reject) => {
+          rightImg.onload = resolve;
+          rightImg.onerror = reject;
+          rightImg.src = rightPhoto?.url;
+        })
+      ]);
+      
+      // Dimensioni canvas - usa altezza massima tra le due foto
+      const maxHeight = Math.max(leftImg.height, rightImg.height);
+      const leftAspect = leftImg.width / leftImg.height;
+      const rightAspect = rightImg.width / rightImg.height;
+      
+      // Scala le larghezze per avere stessa altezza
+      const leftWidth = maxHeight * leftAspect;
+      const rightWidth = maxHeight * rightAspect;
+      
+      const gap = 10; // Gap tra le foto
+      const padding = 40; // Padding per labels
+      const totalWidth = leftWidth + rightWidth + gap;
+      const totalHeight = maxHeight + padding;
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = totalWidth;
+      canvas.height = totalHeight;
+      const ctx = canvas.getContext('2d');
+      
+      // Background
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, totalWidth, totalHeight);
+      
+      // Disegna foto sinistra (PRIMA)
+      ctx.drawImage(leftImg, 0, 0, leftWidth, maxHeight);
+      
+      // Disegna foto destra (DOPO)
+      ctx.drawImage(rightImg, leftWidth + gap, 0, rightWidth, maxHeight);
+      
+      // Labels
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillStyle = 'white';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 4;
+      
+      // Label PRIMA con data
+      const leftDate = leftPhoto?.date ? formatDate(leftPhoto.date) : '';
+      ctx.fillText(`PRIMA${leftDate ? ' - ' + leftDate : ''}`, leftWidth / 2, maxHeight + 25);
+      
+      // Label DOPO con data
+      const rightDate = rightPhoto?.date ? formatDate(rightPhoto.date) : '';
+      ctx.fillText(`DOPO${rightDate ? ' - ' + rightDate : ''}`, leftWidth + gap + rightWidth / 2, maxHeight + 25);
+      
+      // Download
+      const link = document.createElement('a');
+      link.download = `confronto-${selectedType}-affiancate-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error('Errore download side by side:', err);
+      alert('Errore durante il download. Riprova.');
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [currentPhotos, leftPhotoIndex, rightPhotoIndex, selectedType]);
 
   // Se non ci sono foto confrontabili
   if (availableTypes.length === 0) {
@@ -287,23 +526,49 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
       </div>
 
       {/* Toggle mode */}
-      <div className="flex justify-center gap-2 p-3 bg-slate-900/50">
-        <button
-          onClick={() => setCompareMode(false)}
-          className={`px-4 py-1.5 rounded-lg text-sm transition-colors ${
-            !compareMode ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-          }`}
-        >
-          Affiancate
-        </button>
-        <button
-          onClick={() => setCompareMode(true)}
-          className={`px-4 py-1.5 rounded-lg text-sm transition-colors ${
-            compareMode ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-          }`}
-        >
-          Slider
-        </button>
+      <div className="flex flex-wrap justify-center items-center gap-2 p-3 bg-slate-900/50">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCompareMode(false)}
+            className={`px-4 py-1.5 rounded-lg text-sm transition-colors ${
+              !compareMode ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+            }`}
+          >
+            Affiancate
+          </button>
+          <button
+            onClick={() => setCompareMode(true)}
+            className={`px-4 py-1.5 rounded-lg text-sm transition-colors ${
+              compareMode ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+            }`}
+          >
+            Slider
+          </button>
+        </div>
+        
+        {/* Pulsanti Download */}
+        <div className="flex gap-2 ml-4 border-l border-slate-700 pl-4">
+          <button
+            onClick={downloadSideBySide}
+            disabled={isDownloading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 transition-colors disabled:opacity-50"
+            title="Scarica foto affiancate"
+          >
+            <Columns size={16} />
+            <span className="hidden sm:inline">Affiancate</span>
+          </button>
+          {compareMode && (
+            <button
+              onClick={downloadSliderView}
+              disabled={isDownloading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 transition-colors disabled:opacity-50"
+              title="Scarica vista slider"
+            >
+              <Download size={16} />
+              <span className="hidden sm:inline">Slider</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Controlli allineamento - solo in modalità slider */}
@@ -616,7 +881,7 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
                 min="5"
                 max="95"
                 value={sliderPosition}
-                onChange={(e) => setSliderPosition(Number(e.target.value))}
+                onChange={(e) => handleSliderChange(Number(e.target.value))}
                 className={`absolute inset-0 w-full h-full opacity-0 cursor-ew-resize ${activeAdjust ? 'z-0 pointer-events-none' : 'z-20'}`}
               />
 
