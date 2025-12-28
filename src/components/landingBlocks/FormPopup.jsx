@@ -188,8 +188,6 @@ const FormPopup = ({
     onClose();
   };
 
-  console.log('🟣 FormPopup render, isOpen:', isOpen, 'formFields:', formFields);
-
   // Usa createPortal per renderizzare nel body, evitando problemi con overflow/transform dei parent
   return createPortal(
     <AnimatePresence>

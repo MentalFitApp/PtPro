@@ -63,19 +63,14 @@ async function findUserTenant(userId) {
           })
           .map(([tenantId, data]) => ({ tenantId, ...data }));
         
-        console.log('📊 Tenant attivi per utente:', activeTenants.length);
-        
         if (activeTenants.length === 0) {
           // Retrocompatibilità: vecchio formato flat { tenantId: "xyz", role: "client" }
           if (tenantsData.tenantId && isValidTenantId(tenantsData.tenantId)) {
-            console.log('📦 Formato vecchio trovato, usando tenantId diretto:', tenantsData.tenantId);
             return { tenantId: tenantsData.tenantId, allActiveTenants: null };
           }
-          console.log('⚠️ Nessun tenant valido in user_tenants, usando fallback manuale');
           // Non fare return qui - continua con il fallback sotto
         } else if (activeTenants.length === 1) {
           // Un solo tenant attivo → usa quello direttamente
-          console.log('✅ Singolo tenant attivo:', activeTenants[0].tenantId);
           return { tenantId: activeTenants[0].tenantId, allActiveTenants: null };
         } else {
           // Più tenant attivi - verifica se è coach/admin
@@ -85,7 +80,6 @@ async function findUserTenant(userId) {
           
           if (hasCoachOrAdminRole) {
             // Coach/Admin con più tenant → restituisci lista per selettore
-            console.log('👔 Coach/Admin con più tenant:', activeTenants.length);
             return { 
               tenantId: null, 
               allActiveTenants: activeTenants,
@@ -98,13 +92,12 @@ async function findUserTenant(userId) {
               const dateB = b.joinedAt?.toDate?.() || new Date(0);
               return dateB - dateA;
             });
-            console.log('👤 Cliente con più tenant, usando il più recente:', sortedTenants[0].tenantId);
             return { tenantId: sortedTenants[0].tenantId, allActiveTenants: null };
           }
         }
       }
     } catch (e) {
-      console.log('ℹ️ user_tenants non disponibile, usando fallback', e);
+      // user_tenants non disponibile, usando fallback
     }
 
     // 2. FALLBACK: Usa tenant già salvato o cerca manualmente
@@ -117,7 +110,6 @@ async function findUserTenant(userId) {
         const clientRef = doc(db, 'tenants', tenantId, 'clients', userId);
         const clientDoc = await getDoc(clientRef);
         if (clientDoc.exists() && !clientDoc.data().isDeleted) {
-          console.log('✅ Utente trovato come client in:', tenantId);
           return { tenantId, allActiveTenants: null };
         }
       } catch (e) { /* continue */ }
@@ -127,7 +119,6 @@ async function findUserTenant(userId) {
         const collabRef = doc(db, 'tenants', tenantId, 'collaboratori', userId);
         const collabDoc = await getDoc(collabRef);
         if (collabDoc.exists()) {
-          console.log('✅ Utente trovato come collaboratore in:', tenantId);
           return { tenantId, allActiveTenants: null };
         }
       } catch (e) { /* continue */ }
@@ -137,7 +128,6 @@ async function findUserTenant(userId) {
         const adminRef = doc(db, 'tenants', tenantId, 'roles', 'admins');
         const adminDoc = await getDoc(adminRef);
         if (adminDoc.exists() && adminDoc.data()?.uids?.includes(userId)) {
-          console.log('✅ Utente trovato come admin in:', tenantId);
           return { tenantId, allActiveTenants: null };
         }
       } catch (e) { /* continue */ }
@@ -147,7 +137,6 @@ async function findUserTenant(userId) {
         const coachRef = doc(db, 'tenants', tenantId, 'roles', 'coaches');
         const coachDoc = await getDoc(coachRef);
         if (coachDoc.exists() && coachDoc.data()?.uids?.includes(userId)) {
-          console.log('✅ Utente trovato come coach in:', tenantId);
           return { tenantId, allActiveTenants: null };
         }
       } catch (e) { /* continue */ }
@@ -157,7 +146,6 @@ async function findUserTenant(userId) {
         const superadminRef = doc(db, 'tenants', tenantId, 'roles', 'superadmins');
         const superadminDoc = await getDoc(superadminRef);
         if (superadminDoc.exists() && superadminDoc.data()?.uids?.includes(userId)) {
-          console.log('✅ Utente trovato come superadmin in:', tenantId);
           return { tenantId, allActiveTenants: null };
         }
       } catch (e) { /* continue */ }
@@ -166,7 +154,7 @@ async function findUserTenant(userId) {
     // Se niente funziona, usa il tenant salvato o default
     return { tenantId: savedTenant || DEFAULT_TENANT_ID, allActiveTenants: null };
   } catch (error) {
-    console.log('ℹ️ Ricerca tenant: usando default');
+    // Ricerca tenant: usando default
     return { tenantId: getCurrentTenantId() || DEFAULT_TENANT_ID, allActiveTenants: null };
   }
 }
@@ -228,7 +216,6 @@ const Login = () => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       // Se stiamo già facendo il login manualmente, lascia che handleLogin gestisca tutto
       if (isLoggingIn) {
-        console.log('⏳ Login in corso, skippo onAuthStateChanged');
         return;
       }
       
@@ -237,7 +224,6 @@ const Login = () => {
           // Cerca il tenant per questo utente
           let tenantId = localStorage.getItem('tenantId');
           if (!tenantId) {
-            console.log('🔍 Cercando tenant per utente:', user.uid);
             const tenantResult = await findUserTenant(user.uid);
             
             // Se deve selezionare workspace (coach/admin con più tenant)
@@ -252,11 +238,9 @@ const Login = () => {
             tenantId = tenantResult.tenantId;
             if (tenantId) {
               setCurrentTenantId(tenantId);
-              console.log('✅ TenantId trovato e salvato:', tenantId);
             } else {
               // Usa il tenant corrente (fallback)
               tenantId = getCurrentTenantId();
-              console.log('⚠️ Usando tenant di default:', tenantId);
             }
           }
 
@@ -276,16 +260,6 @@ const Login = () => {
           const isClient = clientDoc.exists() && clientDoc.data().isClient === true;
           const isCollaboratore = collabDoc.exists();
 
-          console.log('🔍 Login check:', { 
-            uid: user.uid,
-            tenantId: getCurrentTenantId(),
-            isAdmin, 
-            isCoach, 
-            isClient, 
-            isCollaboratore,
-            collabData: collabDoc.exists() ? collabDoc.data() : 'N/A'
-          });
-
           if (isAdmin) {
             sessionStorage.setItem('app_role', 'admin');
             navigate('/', { replace: true });
@@ -295,7 +269,6 @@ const Login = () => {
           } else if (isCollaboratore) {
             sessionStorage.setItem('app_role', 'collaboratore');
             const hasFirstLogin = collabDoc.data()?.firstLogin === true;
-            console.log('👤 Collaboratore login, firstLogin:', hasFirstLogin);
             navigate(hasFirstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard', { replace: true });
           } else if (isClient) {
             sessionStorage.setItem('app_role', 'client');
@@ -327,7 +300,6 @@ const Login = () => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       // Cerca e salva il tenant per questo utente
-      console.log('🔍 Cercando tenant per utente:', userCredential.user.uid);
       const tenantResult = await findUserTenant(userCredential.user.uid);
       
       // Se deve selezionare workspace (coach/admin con più tenant)
@@ -341,10 +313,8 @@ const Login = () => {
       let tenantId = tenantResult.tenantId;
       if (tenantId) {
         setCurrentTenantId(tenantId);
-        console.log('✅ TenantId trovato al login:', tenantId);
       } else {
         tenantId = getCurrentTenantId();
-        console.log('⚠️ Usando tenant di default:', tenantId);
       }
 
       const adminDocRef = getTenantDoc(db, 'roles', 'admins');
@@ -418,7 +388,6 @@ const Login = () => {
       const userCredential = await signInWithPopup(auth, provider);
       
       // Cerca e salva il tenant per questo utente
-      console.log('🔍 Cercando tenant per utente Google:', userCredential.user.uid);
       const tenantResult = await findUserTenant(userCredential.user.uid);
       
       // Se deve selezionare workspace (coach/admin con più tenant)
@@ -432,10 +401,8 @@ const Login = () => {
       let tenantId = tenantResult.tenantId;
       if (tenantId) {
         setCurrentTenantId(tenantId);
-        console.log('✅ TenantId trovato al login Google:', tenantId);
       } else {
         tenantId = getCurrentTenantId();
-        console.log('⚠️ Usando tenant di default:', tenantId);
       }
 
       // Verifica ruolo
@@ -483,13 +450,10 @@ const Login = () => {
       } else {
         // IMPORTANTE: Se l'utente non esiste come cliente/admin/coach, elimina l'account Auth
         // appena creato da signInWithPopup per evitare utenti orfani
-        console.log('⚠️ Utente Google non autorizzato, eliminazione account Auth...');
         try {
           // Elimina l'utente Auth appena creato (possibile perché è ancora autenticato)
           await userCredential.user.delete();
-          console.log('✅ Account Auth eliminato per utente non autorizzato');
         } catch (deleteError) {
-          console.error('❌ Errore eliminazione account Auth:', deleteError);
           // Se non riesce a eliminare, almeno fa signOut
           await signOut(auth);
         }
@@ -530,7 +494,6 @@ const Login = () => {
   const handleSelectWorkspace = async (workspace) => {
     try {
       setCurrentTenantId(workspace.tenantId);
-      console.log('✅ Workspace selezionato:', workspace.tenantId);
       
       // Redirect basato sul ruolo nel workspace selezionato
       if (workspace.role === 'admin' || workspace.role === 'superadmin') {

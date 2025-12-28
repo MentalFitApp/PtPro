@@ -788,6 +788,7 @@ const ListaEsercizi = ({ onBack }) => {
                           onClick={() => window.open(exercise.videoUrl, '_blank')}
                           className="p-2 text-green-400 hover:bg-green-600/20 rounded-lg transition-colors inline-flex items-center gap-1"
                           title="Guarda video"
+                          aria-label="Guarda video esercizio"
                         >
                           <Video size={16} />
                         </button>
@@ -801,6 +802,7 @@ const ListaEsercizi = ({ onBack }) => {
                           onClick={() => startEdit(exercise)}
                           className="p-2 text-blue-400 hover:bg-blue-600/20 rounded-lg transition-colors"
                           title="Modifica"
+                          aria-label="Modifica esercizio"
                         >
                           <Edit2 size={16} />
                         </button>
@@ -808,6 +810,7 @@ const ListaEsercizi = ({ onBack }) => {
                           onClick={() => handleDeleteExercise(exercise)}
                           className="p-2 text-red-400 hover:bg-red-600/20 rounded-lg transition-colors"
                           title="Elimina"
+                          aria-label="Elimina esercizio"
                           disabled={!exercise.editable}
                         >
                           <Trash2 size={16} />

@@ -12,6 +12,7 @@ import {
 import { useClientsState } from './hooks';
 import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
 import { usePageInfo } from '../../../contexts/PageContext';
+import { useConfirm } from '../../../contexts/ConfirmContext';
 
 // Componenti estratti
 import {
@@ -35,6 +36,7 @@ import { FileText, FilePenLine } from 'lucide-react';
 import { exportToCSV } from './utils';
 
 export default function Clients({ role: propRole }) {
+  const { confirmDelete } = useConfirm();
   const {
     // Ruolo
     isAdmin,
@@ -549,8 +551,9 @@ export default function Clients({ role: propRole }) {
                           <RotateCcw size={14} /> Ripristina
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm('Eliminare definitivamente questo cliente? Questa azione non può essere annullata.')) {
+                          onClick={async () => {
+                            const confirmed = await confirmDelete('questo cliente definitivamente');
+                            if (confirmed) {
                               handlePermanentDelete(client.id);
                             }
                           }}

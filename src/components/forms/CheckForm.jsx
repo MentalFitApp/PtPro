@@ -55,7 +55,7 @@ export default function CheckForm({ clientId, clientName, onSuccess }) {
       try {
         await notifyNewCheck({ notes: data.notes, weight: data.weight }, clientName || 'Cliente', clientId);
       } catch (notifError) {
-        console.log('Notifica check non inviata:', notifError);
+        // Notifica non inviata - non critico
       }
 
       reset();

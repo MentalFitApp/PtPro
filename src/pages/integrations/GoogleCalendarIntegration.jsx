@@ -2,10 +2,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import OAuthButton from '../../components/integrations/OAuthButton';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function GoogleCalendarIntegration() {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
 
   useEffect(() => {
     checkConnection();
@@ -74,7 +76,7 @@ export default function GoogleCalendarIntegration() {
               <OAuthButton 
                 provider="google"
                 onSuccess={() => setConnected(true)}
-                onError={(error) => alert('Errore: ' + error.message)}
+                onError={(error) => toast.error('Errore: ' + error.message)}
               />
             </div>
           )}

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 /**
  * Course Content Manager
@@ -20,6 +21,7 @@ export default function CourseContentManager() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { showToast: toast } = useToast();
+  const { confirmDelete } = useConfirm();
   const [course, setCourse] = useState(null);
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -78,7 +80,7 @@ export default function CourseContentManager() {
       if (courseData) {
         setCourse({ id: courseData.id, ...courseData.data() });
       } else {
-        alert('Corso non trovato');
+        toast.error('Corso non trovato');
         navigate('/course-admin');
         return;
       }
@@ -138,7 +140,7 @@ export default function CourseContentManager() {
 
       setModuleData({ title: '', description: '', order: 1 });
       setShowNewModuleModal(false);
-      alert('Modulo creato con successo!');
+      toast.success('Modulo creato con successo!');
     } catch (error) {
       console.error('Error creating module:', error);
       toast.error('Errore nella creazione del modulo: ' + error.message);
@@ -161,7 +163,7 @@ export default function CourseContentManager() {
 
       setShowEditModuleModal(false);
       setSelectedModule(null);
-      alert('Modulo aggiornato con successo!');
+      toast.success('Modulo aggiornato con successo!');
     } catch (error) {
       console.error('Error updating module:', error);
       toast.error('Errore nell\'aggiornamento del modulo: ' + error.message);
@@ -169,9 +171,8 @@ export default function CourseContentManager() {
   };
 
   const handleDeleteModule = async (moduleId) => {
-    if (!window.confirm('Sei sicuro di voler eliminare questo modulo? Tutte le lezioni verranno eliminate.')) {
-      return;
-    }
+    const confirmed = await confirmDelete('questo modulo e tutte le sue lezioni');
+    if (!confirmed) return;
 
     try {
       // Delete all lessons first
@@ -185,21 +186,21 @@ export default function CourseContentManager() {
 
       // Delete module
       await deleteDoc(doc(db, 'courses', courseId, 'modules', moduleId));
-      alert('Modulo eliminato con successo');
+      toast.success('Modulo eliminato con successo');
     } catch (error) {
       console.error('Error deleting module:', error);
-      alert('Errore nell\'eliminazione del modulo: ' + error.message);
+      toast.error('Errore nell\'eliminazione del modulo: ' + error.message);
     }
   };
 
   const handleCreateLesson = async () => {
     if (!lessonData.title.trim()) {
-      alert('Inserisci un titolo per la lezione');
+      toast.warning('Inserisci un titolo per la lezione');
       return;
     }
 
     if (!selectedModule) {
-      alert('Seleziona un modulo');
+      toast.warning('Seleziona un modulo');
       return;
     }
 
@@ -250,11 +251,11 @@ export default function CourseContentManager() {
       });
       setShowNewLessonModal(false);
       setIsUploading(false);
-      alert('Lezione creata con successo!');
+      toast.success('Lezione creata con successo!');
     } catch (error) {
       console.error('Error creating lesson:', error);
       setIsUploading(false);
-      alert('Errore nella creazione della lezione: ' + error.message);
+      toast.error('Errore nella creazione della lezione: ' + error.message);
     }
   };
 
@@ -296,18 +297,17 @@ export default function CourseContentManager() {
       setShowEditLessonModal(false);
       setSelectedLesson(null);
       setIsUploading(false);
-      alert('Lezione aggiornata con successo!');
+      toast.success('Lezione aggiornata con successo!');
     } catch (error) {
       console.error('Error updating lesson:', error);
       setIsUploading(false);
-      alert('Errore nell\'aggiornamento della lezione: ' + error.message);
+      toast.error('Errore nell\'aggiornamento della lezione: ' + error.message);
     }
   };
 
   const handleDeleteLesson = async (moduleId, lessonId) => {
-    if (!window.confirm('Sei sicuro di voler eliminare questa lezione?')) {
-      return;
-    }
+    const confirmed = await confirmDelete('questa lezione');
+    if (!confirmed) return;
 
     try {
       await deleteDoc(

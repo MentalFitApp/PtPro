@@ -37,7 +37,6 @@ async function findUserTenant(userId) {
     const globalUserRef = doc(db, 'users', userId);
     const globalUserDoc = await getDoc(globalUserRef);
     if (globalUserDoc.exists() && globalUserDoc.data()?.tenantId) {
-      console.log('🏢 Tenant trovato in profilo globale:', globalUserDoc.data().tenantId);
       return globalUserDoc.data().tenantId;
     }
 
@@ -52,7 +51,6 @@ async function findUserTenant(userId) {
         const clientRef = doc(db, 'tenants', tenantId, 'clients', userId);
         const clientDoc = await getDoc(clientRef);
         if (clientDoc.exists()) {
-          console.log('🏢 Tenant trovato (client):', tenantId);
           return tenantId;
         }
       } catch (e) {
@@ -64,7 +62,6 @@ async function findUserTenant(userId) {
         const collabRef = doc(db, 'tenants', tenantId, 'collaboratori', userId);
         const collabDoc = await getDoc(collabRef);
         if (collabDoc.exists()) {
-          console.log('🏢 Tenant trovato (collaboratore):', tenantId);
           return tenantId;
         }
       } catch (e) {
@@ -76,7 +73,6 @@ async function findUserTenant(userId) {
         const adminRef = doc(db, 'tenants', tenantId, 'roles', 'admins');
         const adminDoc = await getDoc(adminRef);
         if (adminDoc.exists() && adminDoc.data()?.uids?.includes(userId)) {
-          console.log('🏢 Tenant trovato (admin):', tenantId);
           return tenantId;
         }
       } catch (e) {
@@ -88,7 +84,6 @@ async function findUserTenant(userId) {
         const coachRef = doc(db, 'tenants', tenantId, 'roles', 'coaches');
         const coachDoc = await getDoc(coachRef);
         if (coachDoc.exists() && coachDoc.data()?.uids?.includes(userId)) {
-          console.log('🏢 Tenant trovato (coach):', tenantId);
           return tenantId;
         }
       } catch (e) {
@@ -100,7 +95,6 @@ async function findUserTenant(userId) {
         const superadminRef = doc(db, 'tenants', tenantId, 'roles', 'superadmins');
         const superadminDoc = await getDoc(superadminRef);
         if (superadminDoc.exists() && superadminDoc.data()?.uids?.includes(userId)) {
-          console.log('🏢 Tenant trovato (superadmin):', tenantId);
           return tenantId;
         }
       } catch (e) {
@@ -108,10 +102,8 @@ async function findUserTenant(userId) {
       }
     }
 
-    console.warn('⚠️ Nessun tenant trovato per utente:', userId);
     return null;
   } catch (error) {
-    console.error('❌ Errore ricerca tenant:', error);
     return null;
   }
 }
@@ -132,7 +124,6 @@ export function TenantProvider({ children }) {
    */
   const updateTenant = useCallback((newTenantId) => {
     if (newTenantId && newTenantId !== tenantId) {
-      console.log('🔄 Cambio tenant:', tenantId, '->', newTenantId);
       setTenantId(newTenantId);
       localStorage.setItem('tenantId', newTenantId);
     }
@@ -175,7 +166,6 @@ export function TenantProvider({ children }) {
                           (coachDoc.exists() && coachDoc.data()?.uids?.includes(userId));
 
         if (isInTenant) {
-          console.log('✅ Tenant salvato confermato:', savedTenantId);
           setTenantId(savedTenantId);
           setIsLoading(false);
           return savedTenantId;
@@ -192,13 +182,11 @@ export function TenantProvider({ children }) {
       }
 
       // Fallback al default
-      console.warn('⚠️ Usando tenant di default:', DEFAULT_TENANT_ID);
       updateTenant(DEFAULT_TENANT_ID);
       setIsLoading(false);
       return DEFAULT_TENANT_ID;
 
     } catch (err) {
-      console.error('❌ Errore rilevamento tenant:', err);
       setError(err.message);
       setIsLoading(false);
       return DEFAULT_TENANT_ID;
@@ -209,7 +197,6 @@ export function TenantProvider({ children }) {
    * Pulisce il tenant (al logout)
    */
   const clearTenant = useCallback(() => {
-    console.log('🧹 Pulizia tenant');
     localStorage.removeItem('tenantId');
     setTenantId(DEFAULT_TENANT_ID);
   }, []);

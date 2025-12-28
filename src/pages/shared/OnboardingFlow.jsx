@@ -7,11 +7,13 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage
 import { Play, SkipForward, Check, ChevronRight, Camera, User, MessageSquare, FileText, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import { IMAGE_ACCEPT_STRING } from '../../cloudflareStorage';
 
 const OnboardingFlow = () => {
   const navigate = useNavigate();
   const toast = useToast();
+  const { confirmAction } = useConfirm();
   const [currentStep, setCurrentStep] = useState(0);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -122,7 +124,8 @@ const OnboardingFlow = () => {
   };
 
   const handleSkipVideo = async () => {
-    if (window.confirm('Sei sicuro di voler saltare il video di benvenuto?')) {
+    const confirmed = await confirmAction('Sei sicuro di voler saltare il video di benvenuto?');
+    if (confirmed) {
       setVideoWatched(true);
       try {
         const user = auth.currentUser;

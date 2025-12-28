@@ -634,9 +634,7 @@ const LandingPageEditor = () => {
             tenantId={tenantId}
             onSave={async (settings) => {
               try {
-                console.log('📝 Salvando settings:', settings);
                 await updateLandingPage(tenantId, pageId, settings);
-                console.log('✅ Settings salvati');
                 setPage(prev => ({ ...prev, ...settings }));
                 toast?.showToast?.('Impostazioni salvate!', 'success');
                 setShowSettings(false);

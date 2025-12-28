@@ -442,12 +442,14 @@ const Dipendenti = () => {
                           <button
                             onClick={(e) => { e.stopPropagation(); modificaPagamento(p); }}
                             className="text-cyan-400 hover:text-cyan-300 p-0.5"
+                            aria-label="Modifica pagamento"
                           >
                             <Edit2 size={10} className="sm:hidden" /><Edit2 size={14} className="hidden sm:block" />
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); eliminaPagamento(p.id); }}
                             className="text-red-400 hover:text-red-300 p-0.5"
+                            aria-label="Elimina pagamento"
                           >
                             <Trash2 size={10} className="sm:hidden" /><Trash2 size={14} className="hidden sm:block" />
                           </button>

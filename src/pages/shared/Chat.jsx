@@ -143,7 +143,7 @@ const playNotificationSound = () => {
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.3);
   } catch (e) {
-    console.log('Audio not supported');
+    // Audio not supported
   }
 };
 
@@ -2723,8 +2723,6 @@ const NewChatModal = ({ isOpen, onClose, onCreate, currentUserRole }) => {
           setActualUserRole(userRole);
         }
         
-        console.log('📨 Chat NewChatModal - Ruolo utente:', userRole, 'currentUserRole prop:', currentUserRole);
-        
         // Carica Admin e Coach (sempre visibili per tutti)
         const adminDoc = await getDoc(doc(db, `tenants/${tenantId}/roles/admins`));
         const coachDoc = await getDoc(doc(db, `tenants/${tenantId}/roles/coaches`));
@@ -2779,8 +2777,6 @@ const NewChatModal = ({ isOpen, onClose, onCreate, currentUserRole }) => {
           const clientsRef = collection(db, `tenants/${tenantId}/clients`);
           const clientsSnapshot = await getDocs(clientsRef);
           
-          console.log('📨 Chat - Caricamento clienti, trovati documenti:', clientsSnapshot.size);
-          
           clientsSnapshot.forEach(clientDoc => {
             const data = clientDoc.data();
             const clientUserId = clientDoc.id; // L'ID del documento È l'userId
@@ -2806,7 +2802,6 @@ const NewChatModal = ({ isOpen, onClose, onCreate, currentUserRole }) => {
           });
         }
         
-        console.log('📨 Chat - Utenti caricati:', userList.length, userList.map(u => ({ name: u.name, role: u.role })));
         setUsers(userList);
       } catch (err) {
         console.error('Error loading users:', err);
@@ -3254,7 +3249,6 @@ export default function Chat() {
           name: name,
           updatedAt: serverTimestamp()
         });
-        console.log('📸 Chat - Aggiornata foto profilo anche in clients collection');
       }
 
       // Aggiorna participantPhotos e participantNames in tutte le chat dove l'utente partecipa
@@ -3274,7 +3268,6 @@ export default function Chat() {
       });
       
       await Promise.all(updatePromises);
-      console.log('📸 Chat - Aggiornati nome e foto in', chatsSnapshot.size, 'chat');
 
       setShowProfileModal(false);
     } catch (err) {
@@ -3480,10 +3473,8 @@ export default function Chat() {
         }
         
         await updateDoc(chatRef, { archivedBy: newArchivedBy });
-        console.log(`📁 Chat ${archive ? 'archiviata' : 'ripristinata'}:`, chatId);
       }
     } catch (err) {
-      console.error('Errore archivio chat:', err);
     }
   };
 
@@ -3505,10 +3496,8 @@ export default function Chat() {
         }
         
         await updateDoc(chatRef, { pinnedBy: newPinnedBy });
-        console.log(`📌 Chat ${pin ? 'fissata' : 'rimossa da fissate'}:`, chatId);
       }
     } catch (err) {
-      console.error('Errore pin chat:', err);
     }
   };
 
@@ -3535,11 +3524,8 @@ export default function Chat() {
           setActiveChat(null);
           if (isMobile) setShowMobileChat(false);
         }
-        
-        console.log('🗑️ Chat eliminata:', chatId);
       }
     } catch (err) {
-      console.error('Errore eliminazione chat:', err);
     }
   };
 
@@ -3553,16 +3539,13 @@ export default function Chat() {
         await updateDoc(chatRef, {
           [`unreadCount.${user?.uid}`]: 0
         });
-        console.log('✅ Chat segnata come letta:', chatId);
       } else {
         // Segna come non letto con 1 messaggio
         await updateDoc(chatRef, {
           [`unreadCount.${user?.uid}`]: 1
         });
-        console.log('📩 Chat segnata come non letta:', chatId);
       }
     } catch (err) {
-      console.error('Errore mark read chat:', err);
     }
   };
 

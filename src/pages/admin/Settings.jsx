@@ -11,6 +11,7 @@ import { getTenantDoc } from '../../config/tenant';
 import { uploadToR2 } from '../../cloudflareStorage';
 import { useTenantBranding } from '../../hooks/useTenantBranding';
 import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import { 
   User, Camera, Mail, Lock, Bell, AlertTriangle, Palette,
   ArrowLeft, Save, Trash2, Eye, EyeOff, Check, Globe, Scale, Ruler, Loader2
@@ -53,6 +54,7 @@ const TabButton = ({ active, icon: Icon, label, onClick, danger }) => (
 export default function Settings() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { confirmDelete } = useConfirm();
   const currentUser = auth.currentUser;
   const { branding, updateBranding, loading: brandingLoading } = useTenantBranding();
   
@@ -60,6 +62,11 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  
+  // Delete account modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
   
   // Profile state
   const [profile, setProfile] = useState({
@@ -399,23 +406,30 @@ export default function Settings() {
   };
 
   // ============ DELETE ACCOUNT ============
-  const deleteAccount = async () => {
-    const confirmed = window.confirm(
-      'Sei sicuro di voler eliminare il tuo account?\n\n' +
+  const initiateDeleteAccount = async () => {
+    const confirmed = await confirmDelete(
+      'il tuo account\n\n' +
       'Questa azione è IRREVERSIBILE e cancellerà:\n' +
-      '- Tutti i tuoi dati\n' +
-      '- Informazioni clienti\n' +
-      '- Programmi di allenamento\n' +
-      '- Storico pagamenti'
+      '• Tutti i tuoi dati\n' +
+      '• Informazioni clienti\n' +
+      '• Programmi di allenamento\n' +
+      '• Storico pagamenti'
     );
 
-    if (!confirmed) return;
+    if (confirmed) {
+      setShowDeleteModal(true);
+    }
+  };
 
-    const password = window.prompt('Inserisci la tua password per confermare:');
-    if (!password) return;
+  const executeDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast.error('Inserisci la password');
+      return;
+    }
 
+    setDeleting(true);
     try {
-      const credential = EmailAuthProvider.credential(currentUser.email, password);
+      const credential = EmailAuthProvider.credential(currentUser.email, deletePassword);
       await reauthenticateWithCredential(currentUser, credential);
       
       // Delete user document
@@ -432,6 +446,9 @@ export default function Settings() {
       } else {
         toast.error('Errore: ' + error.message);
       }
+    } finally {
+      setDeleting(false);
+      setDeletePassword('');
     }
   };
 
@@ -1137,7 +1154,7 @@ export default function Settings() {
                   </div>
 
                   <button
-                    onClick={deleteAccount}
+                    onClick={initiateDeleteAccount}
                     className="w-full py-3 bg-transparent border border-rose-500/50 text-rose-400 hover:bg-rose-500/10 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     <Trash2 size={18} />
@@ -1150,6 +1167,78 @@ export default function Settings() {
         </AnimatePresence>
         </div>
       </div>
+
+      {/* Delete Account Password Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => !deleting && setShowDeleteModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-700"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-rose-500/10 rounded-xl">
+                  <Lock className="text-rose-400" size={24} />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Conferma Password</h3>
+              </div>
+              
+              <p className="text-slate-300 text-sm mb-4">
+                Per completare l'eliminazione del tuo account, inserisci la tua password:
+              </p>
+
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="La tua password"
+                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500 mb-4"
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && executeDeleteAccount()}
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeletePassword('');
+                  }}
+                  disabled={deleting}
+                  className="flex-1 py-3 bg-slate-700 text-slate-300 hover:bg-slate-600 rounded-xl font-medium transition-colors disabled:opacity-50"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={executeDeleteAccount}
+                  disabled={deleting || !deletePassword}
+                  className="flex-1 py-3 bg-rose-500 text-white hover:bg-rose-600 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Eliminando...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      Elimina
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

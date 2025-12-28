@@ -13,6 +13,7 @@ import {
   createUserWithEmailAndPassword, 
   sendPasswordResetEmail
 } from 'firebase/auth';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import { 
   Users, Plus, Key, Trash2, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Eye, 
   Edit, X, Check, File, DollarSign, CheckCircle, FileText, ChevronDown, ChevronUp, Phone, Save, UserPlus
@@ -56,6 +57,7 @@ const ReportStatus = ({ collaboratori }) => {
 
 export default function Collaboratori() {
   const navigate = useNavigate();
+  const { confirmAction } = useConfirm();
   const [collaboratori, setCollaboratori] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [leads, setLeads] = useState([]);
@@ -330,16 +332,12 @@ export default function Collaboratori() {
   const generateTempPassword = () => Math.random().toString(36).slice(-8) + '!';
 
   const handleAddCollaboratore = async () => {
-    console.log('📧 Inizio aggiunta collaboratore, email:', newEmail, 'ruolo:', newRole);
-    
     if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
-      console.error('❌ Email non valida:', newEmail);
       setError('Email non valida.');
       return;
     }
 
     const emailLower = newEmail.trim().toLowerCase();
-    console.log('✅ Email validata:', emailLower);
 
     const tempApp = initializeApp(firebaseConfig, `temp-${Date.now()}`);
     const tempAuth = getAuth(tempApp);
@@ -350,46 +348,36 @@ export default function Collaboratori() {
       let isNewUser = false;
 
       // 1. Controlla se esiste già in questo tenant
-      console.log('🔍 Controllo se collaboratore esiste già nel tenant...');
       const collabQuery = query(getTenantCollection(db, 'collaboratori'), where('email', '==', emailLower));
       const collabSnap = await getDocs(collabQuery);
 
       if (!collabSnap.empty) {
-        console.log('⚠️ Collaboratore già presente nel tenant');
         uid = collabSnap.docs[0].id;
-        if (!window.confirm(`Collaboratore già presente. Aggiornare?`)) {
+        const shouldUpdate = await confirmAction('Collaboratore già presente. Vuoi aggiornare i dati?');
+        if (!shouldUpdate) {
           await deleteApp(tempApp);
           return;
         }
-        console.log('✅ Utente conferma aggiornamento, UID:', uid);
       } else {
-        console.log('✅ Collaboratore non presente, controllo se utente Firebase esiste...');
         
         // 2. Controlla se l'utente Firebase esiste
         const getUidByEmail = httpsCallable(functions, 'getUidByEmail');
-        console.log('📞 Chiamata Cloud Function getUidByEmail...');
         const result = await getUidByEmail({ email: emailLower });
-        console.log('📥 Risposta Cloud Function:', result.data);
         
         if (result.data.uid) {
-          console.log('✅ Utente Firebase esiste, UID:', result.data.uid);
           uid = result.data.uid;
           isNewUser = false;
         } else {
-          console.log('🆕 Utente Firebase NON esiste, creo nuovo account...');
           const tempPassword = generateTempPassword();
-          console.log('🔑 Password temporanea generata:', tempPassword);
           const cred = await createUserWithEmailAndPassword(tempAuth, emailLower, tempPassword);
           uid = cred.user.uid;
           isNewUser = true;
           
           // Salva credenziali per mostrarle all'admin
           setNewCredentials({ email: emailLower, password: tempPassword });
-          console.log('✅ Nuovo account creato, UID:', uid);
         }
       }
 
-      console.log('💾 Salvataggio collaboratore in Firestore...');
       const collabData = {
         uid, 
         email: emailLower, 
@@ -401,10 +389,8 @@ export default function Collaboratori() {
         tracker: {}, 
         personalPipeline: [],
       };
-      console.log('📄 Dati collaboratore:', collabData);
 
       await setDoc(getTenantDoc(db, 'collaboratori', uid), collabData, { merge: true });
-      console.log('✅ Collaboratore salvato');
 
       if (isNewUser) {
         // Mostra popup con credenziali
@@ -412,22 +398,17 @@ export default function Collaboratori() {
         setSuccess('Collaboratore creato! Copia le credenziali temporanee.');
       } else {
         // Per utenti esistenti, invia email reset
-        console.log('📧 Invio email reset password...');
         await sendPasswordResetEmail(tempAuth, emailLower);
-        console.log('✅ Email inviata');
         setSuccess('Collaboratore riaggiunto! Email di reset inviata.');
       }
       
       setNewEmail('');
       setError('');
     } catch (err) {
-      console.error('❌ ERRORE:', err);
-      console.error('Dettagli errore:', err.message, err.code);
       setError('Errore: ' + err.message);
       setSuccess('');
     } finally {
       await deleteApp(tempApp);
-      console.log('🧹 Cleanup completato');
     }
   };
 
@@ -1275,9 +1256,9 @@ export default function Collaboratori() {
                 {/* Paginazione */}
                 {totalPages > 1 && (
                   <div className="flex justify-center gap-3 mt-4 text-xs flex-shrink-0">
-                    <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"><ChevronLeft size={14} /></button>
+                    <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Pagina precedente"><ChevronLeft size={14} /></button>
                     <span className="text-slate-300 self-center">Pag {currentPage} di {totalPages}</span>
-                    <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"><ChevronRight size={14} /></button>
+                    <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="p-1 text-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Pagina successiva"><ChevronRight size={14} /></button>
                   </div>
                 )}
               </div>
@@ -1390,8 +1371,8 @@ export default function Collaboratori() {
                         </div>
                         {isAdmin && !isCurrentUser && (
                           <div className="flex gap-2 ml-2 flex-shrink-0">
-                            <button onClick={(e) => { e.stopPropagation(); setEditingCollab(c.id); setEditEmail(c.email || ''); }} className="p-2 text-yellow-400 hover:bg-slate-600/50 rounded"><Key size={16} /></button>
-                            <button onClick={(e) => { e.stopPropagation(); if (confirm(`Elimina ${displayName}?`)) handleDeleteCollaboratore(c.id); }} className="p-2 text-red-400 hover:bg-slate-600/50 rounded"><Trash2 size={16} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); setEditingCollab(c.id); setEditEmail(c.email || ''); }} className="p-2 text-yellow-400 hover:bg-slate-600/50 rounded" aria-label="Modifica email"><Key size={16} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); if (confirm(`Elimina ${displayName}?`)) handleDeleteCollaboratore(c.id); }} className="p-2 text-red-400 hover:bg-slate-600/50 rounded" aria-label="Elimina collaboratore"><Trash2 size={16} /></button>
                           </div>
                         )}
                       </motion.div>
@@ -1414,7 +1395,7 @@ export default function Collaboratori() {
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-slate-800/90 backdrop-blur-md rounded-2xl p-6 max-w-lg w-full border border-slate-700">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-lg font-bold text-slate-100">Nota Completa</h3>
-                <button onClick={() => setShowNotePopup(false)} className="text-slate-400 hover:text-white"><X size={18} /></button>
+                <button onClick={() => setShowNotePopup(false)} className="text-slate-400 hover:text-white" aria-label="Chiudi nota"><X size={18} /></button>
               </div>
               <p className="text-sm text-slate-300 whitespace-pre-wrap">{currentNote}</p>
             </motion.div>
@@ -1855,7 +1836,7 @@ export default function Collaboratori() {
                 {/* Header Fisso */}
                 <div className="flex-shrink-0 flex justify-between items-center p-6 border-b border-white/10">
                   <h3 className="text-xl font-bold text-white">📅 Seleziona Data e Ora</h3>
-                  <button onClick={() => setShowDateTimePicker(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
+                  <button onClick={() => setShowDateTimePicker(false)} className="text-white hover:text-rose-400" aria-label="Chiudi selettore data"><X size={24} /></button>
                 </div>
                 
                 {/* Contenuto Scrollabile */}

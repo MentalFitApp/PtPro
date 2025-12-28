@@ -869,7 +869,6 @@ export default function MainLayout() {
   // Ascolta quando una chat viene selezionata in UnifiedChat o Community
   useEffect(() => {
     const handleChatSelected = (event) => {
-      console.log('MainLayout - chatSelected event received:', event.detail, 'isChatPage:', isChatPage, 'isMobile:', isMobile);
       setIsChatSelected(event.detail);
     };
     window.addEventListener('chatSelected', handleChatSelected);

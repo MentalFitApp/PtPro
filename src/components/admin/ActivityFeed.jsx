@@ -6,11 +6,13 @@ import {
   AlertCircle, TrendingUp, User, ChevronRight, X,
   Filter, Search, GripVertical
 } from 'lucide-react';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 /**
  * Feed Attività con Drag & Drop e Filtri Avanzati
  */
 export default function ActivityFeed({ activities = [], onActivityClick, clients = [] }) {
+  const { confirmAction } = useConfirm();
   const [sortedActivities, setSortedActivities] = useState(activities);
   const [filter, setFilter] = useState('all'); // 'all' | 'renewal' | 'new_check' | 'new_anamnesi' | 'expiring'
   const [searchQuery, setSearchQuery] = useState('');
@@ -270,8 +272,9 @@ export default function ActivityFeed({ activities = [], onActivityClick, clients
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  if (window.confirm(`Eliminare tutte le ${filteredActivities.length} attività ${filter !== 'all' ? `di tipo "${filter}"` : ''}?`)) {
+                onClick={async () => {
+                  const confirmed = await confirmAction(`Eliminare tutte le ${filteredActivities.length} attività ${filter !== 'all' ? `di tipo "${filter}"` : ''}?`);
+                  if (confirmed) {
                     // Marca attività come dismissate e salva in localStorage
                     const typesToRemove = filter === 'all' 
                       ? ['renewal', 'new_check', 'new_anamnesi', 'expiring']

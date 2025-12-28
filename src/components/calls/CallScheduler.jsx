@@ -331,7 +331,7 @@ export const RequestCallCard = ({ clientId, clientName }) => {
       try {
         await notifyCallRequest(clientName || 'Cliente', clientId);
       } catch (notifError) {
-        console.log('Notifica chiamata non inviata:', notifError);
+        // Notifica non inviata - non critico
       }
     } catch (err) {
       console.error('Errore richiesta chiamata:', err);
@@ -458,7 +458,9 @@ export const CallsCompactCard = ({ clientId, clientName }) => {
       });
       try {
         await notifyCallRequest(clientName || 'Cliente', clientId);
-      } catch (e) {}
+      } catch (e) {
+        // Notifica fallita, ma la richiesta è stata salvata
+      }
     } catch (err) {
       toast.error('Errore nell\'invio');
     } finally {
@@ -470,7 +472,9 @@ export const CallsCompactCard = ({ clientId, clientName }) => {
     try {
       const requestRef = doc(getTenantSubcollection(db, 'clients', clientId, 'calls'), 'request');
       await deleteDoc(requestRef);
-    } catch (err) {}
+    } catch (err) {
+      // Silently fail - la richiesta potrebbe essere già stata cancellata
+    }
   };
 
   const callDate = nextCall ? toDate(nextCall.scheduledAt) : null;

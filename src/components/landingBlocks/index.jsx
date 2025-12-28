@@ -37,8 +37,6 @@ import React, { Suspense, lazy } from 'react';
 const blockCache = {};
 
 export const DynamicBlock = ({ type, settings, isPreview, pageId, tenantId }) => {
-  console.log('🧱 DynamicBlock ricevuto:', { type, hasSettings: !!settings, availableTypes: Object.keys(BLOCK_COMPONENTS) });
-  
   if (!type || !BLOCK_COMPONENTS[type]) {
     console.error('❌ Blocco non riconosciuto:', type);
     return (

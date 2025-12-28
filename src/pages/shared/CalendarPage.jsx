@@ -9,12 +9,14 @@ import { requestNotificationPermission, checkNotificationPermission, scheduleEve
 import { notifyNewEvent } from '../../services/notificationService';
 import CalendarNotesPanel from '../../components/calendar/CalendarNotesPanel';
 import { useToast } from '../../contexts/ToastContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useEscapeKey } from '../../hooks/useKeyboardShortcut';
 
 export default function CalendarPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { confirmDelete } = useConfirm();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -307,7 +309,7 @@ export default function CalendarPage() {
           }, coachId, 'coach');
         }
       } catch (notifError) {
-        console.log('Notifica evento non inviata:', notifError);
+        // Notifica non inviata - non critico
       }
 
       setShowEventModal(false);
@@ -1306,7 +1308,8 @@ export default function CalendarPage() {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={async () => {
-                          if (!window.confirm('Sei sicuro di voler eliminare questa chiamata dal calendario?')) return;
+                          const confirmed = await confirmDelete('questa chiamata dal calendario');
+                          if (!confirmed) return;
                           try {
                             // Elimina l'evento dal calendario
                             await deleteDoc(getTenantDoc(db, 'calendarEvents', selectedLead.id));

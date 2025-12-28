@@ -272,9 +272,6 @@ ${selectedBlock ? `\n⭐ BLOCCO SELEZIONATO: "${selectedBlock.id}" (${selectedBl
       // Chiama OpenAI per elaborare la richiesta
       const response = await callAIAssistant(userMessage, blocksContext, attachmentAnalysis, blocks, selectedBlock);
       
-      // Debug log
-      console.log('🤖 AI Response:', response);
-      
       // Determina se serve conferma
       const actionNeedsConfirm = ['update_block', 'update_all', 'add_block', 'add_blocks', 'delete_block', 'delete_blocks', 'reorder', 'replace_all'].includes(response.action);
       

@@ -201,12 +201,6 @@ export default function Statistiche() {
     const offers = salesReports.reduce((a, r) => a + (parseInt(r.offersFatte) || 0), 0);
     const chiuse = salesReports.reduce((a, r) => a + (parseInt(r.chiuse) || 0), 0);
 
-    // Debug: verifica dati vendita
-    console.log('📊 Sales Stats:', { fissate, fatte, offers, chiuse });
-    if (salesReports.length > 0) {
-      console.log('📝 Primo report vendita:', salesReports[0]);
-    }
-
     return {
       fissate, fatte, offers, chiuse,
       showUpRate: fissate > 0 ? ((fatte / fissate) * 100).toFixed(1) : '0.0',

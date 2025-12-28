@@ -111,6 +111,7 @@ export default function NotificationBell({ className = '', role = 'admin' }) {
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 rounded-lg hover:bg-theme-bg-tertiary/60 text-theme-text-secondary hover:text-theme-text-primary transition-colors"
+        aria-label={`Notifiche${unreadCount > 0 ? ` (${unreadCount} non lette)` : ''}`}
       >
         <Bell size={20} />
         
@@ -155,6 +156,7 @@ export default function NotificationBell({ className = '', role = 'admin' }) {
                 <button
                   onClick={() => setIsOpen(false)}
                   className="p-1 hover:bg-theme-bg-tertiary/60 rounded transition-colors text-theme-text-secondary"
+                  aria-label="Chiudi notifiche"
                 >
                   <X size={16} />
                 </button>

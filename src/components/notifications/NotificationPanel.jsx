@@ -81,26 +81,19 @@ export default function NotificationPanel({ userType = 'client', showEnableButto
         return;
       }
 
-      console.log('🔔 Richiesta permessi notifica...');
       const permission = await Notification.requestPermission();
-      console.log('✅ Permesso notifica:', permission);
       
       if (permission === 'granted') {
         setIsNotificationsEnabled(true);
         
         try {
-          console.log('📱 Ottenendo token FCM...');
           const messaging = getMessaging();
-          console.log('Messaging instance:', messaging ? 'OK' : 'NULL');
           
           const token = await getToken(messaging, {
             vapidKey: VAPID_KEY
           });
           
           if (token) {
-            console.log('✅ Token FCM ottenuto:', token);
-            console.log('💾 Salvando token su Firestore nella collezione fcmTokens...');
-            
             const userId = auth.currentUser.uid;
             const tokenRef = getTenantDoc(db, 'fcmTokens', userId);
             const existingDoc = await getDoc(tokenRef);
@@ -128,7 +121,6 @@ export default function NotificationPanel({ userType = 'client', showEnableButto
                 enabled: true
               });
             }
-            console.log('✅ Token salvato su Firestore con successo!');
             toast.success('Notifiche attivate con successo!');
           } else {
             console.warn('⚠️ Nessun token FCM ottenuto');
@@ -189,6 +181,7 @@ export default function NotificationPanel({ userType = 'client', showEnableButto
         <button
           onClick={() => setShowPanel(!showPanel)}
           className="relative p-2 hover:bg-white/10 rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+          aria-label={`Notifiche${unreadCount > 0 ? ` (${unreadCount} non lette)` : ''}`}
         >
           <Bell size={20} className="sm:w-6 sm:h-6 text-slate-300" />
           {unreadCount > 0 && (
@@ -223,6 +216,7 @@ export default function NotificationPanel({ userType = 'client', showEnableButto
                 <button
                   onClick={() => setShowPanel(false)}
                   className="p-1 hover:bg-white/10 rounded transition-colors"
+                  aria-label="Chiudi notifiche"
                 >
                   <X size={18} className="text-slate-400" />
                 </button>

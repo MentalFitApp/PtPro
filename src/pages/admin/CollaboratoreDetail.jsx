@@ -9,12 +9,14 @@ import { motion } from 'framer-motion';
 import QuickNotifyButton from '../../components/notifications/QuickNotifyButton';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
+import { useToast } from '../../contexts/ToastContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
 
 export default function CollaboratoreDetail() {
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
   const [collaboratore, setCollaboratore] = useState(null);
   const [role, setRole] = useState('');
   const [loading, setLoading] = useState(true);
@@ -245,7 +247,7 @@ export default function CollaboratoreDetail() {
               onClick={() => {
                 const msg = `Email: ${collaboratore.email}\nPassword: ${collaboratore.tempPassword || 'generata al login'}\nLink: https://MentalFitApp.github.io/PtPro/#/login`;
                 navigator.clipboard.writeText(msg);
-                alert('Credenziali copiate!');
+                toast.success('Credenziali copiate!');
               }}
               className="p-2 text-green-400 hover:text-green-300"
               whileHover={{ scale: 1.1 }}

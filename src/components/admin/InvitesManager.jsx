@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { CURRENT_TENANT_ID } from '../../config/tenant';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import { 
   Send, 
   Clock, 
@@ -73,6 +74,7 @@ const StatusBadge = ({ status }) => {
 
 // Invite row component
 const InviteRow = ({ invite, onResend, onCancel, onCopy }) => {
+  const { confirmDelete } = useConfirm();
   const [showActions, setShowActions] = useState(false);
   const [copied, setCopied] = useState(null);
   const [isResending, setIsResending] = useState(false);
@@ -93,7 +95,8 @@ const InviteRow = ({ invite, onResend, onCancel, onCopy }) => {
   };
 
   const handleCancel = async () => {
-    if (window.confirm('Sei sicuro di voler annullare questo invito?')) {
+    const confirmed = await confirmDelete('questo invito');
+    if (confirmed) {
       setIsCancelling(true);
       await onCancel(invite.token);
       setIsCancelling(false);

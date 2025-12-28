@@ -348,7 +348,7 @@ export default function TenantBranding() {
           >
             {message.type === 'success' ? <Check className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
             <span>{message.text}</span>
-            <button onClick={() => setMessage({ type: '', text: '' })} className="ml-auto"><X className="w-4 h-4" /></button>
+            <button onClick={() => setMessage({ type: '', text: '' })} className="ml-auto" aria-label="Chiudi messaggio"><X className="w-4 h-4" /></button>
           </motion.div>
         )}
 

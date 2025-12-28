@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Edit3, X, Eye, EyeOff, RotateCcw, GripVertical } from 'lucide-react';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 /**
  * Componente Personalizzazione Globale Dashboard
@@ -32,6 +33,7 @@ export default function GlobalCustomize({
   feedSettings = {},
   onFeedSettingsChange
 }) {
+  const { confirmAction } = useConfirm();
   const [activePanel, setActivePanel] = useState('kpi'); // 'kpi', 'layout', 'chart', 'feed'
 
   const handleToggleKPI = (kpiId) => {
@@ -41,8 +43,9 @@ export default function GlobalCustomize({
     onKPIsChange?.(newVisible);
   };
 
-  const handleResetAll = () => {
-    if (window.confirm('Ripristinare tutte le personalizzazioni ai valori predefiniti?')) {
+  const handleResetAll = async () => {
+    const confirmed = await confirmAction('Ripristinare tutte le personalizzazioni ai valori predefiniti?');
+    if (confirmed) {
       onLayoutReset?.();
       // Reset KPI to default
       if (availableKPIs.length > 0) {

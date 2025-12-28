@@ -495,7 +495,7 @@ export const ProLayout = () => {
           setAvailableWorkspaces(workspaces);
         }
       } catch (err) {
-        console.log('Errore caricamento workspace:', err);
+        // Errore silenzioso nel caricamento workspace
       }
     };
     

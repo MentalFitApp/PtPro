@@ -115,9 +115,7 @@ export default function Profile() {
         file, 
         currentUser.uid, 
         'profile-photos',
-        (progress) => {
-          console.log('Upload progress:', progress);
-        },
+        null, // progress callback non necessario
         true // isAdmin - nessun limite dimensione
       );
 
@@ -152,11 +150,6 @@ export default function Profile() {
         visibleInChat: profile.visibleInChat,
         updatedAt: serverTimestamp(),
       };
-      
-      console.log('💾 Profile - Salvataggio profilo:', {
-        path: userRef.path,
-        data: dataToSave
-      });
       
       await setDoc(userRef, dataToSave, { merge: true });
 

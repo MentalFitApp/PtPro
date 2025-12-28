@@ -57,8 +57,6 @@ export default function OAuthCallback() {
         redirectUri: `${window.location.origin}/oauth/callback`
       });
 
-      console.log('✅ OAuth completato:', result.data);
-
       // Pulisci localStorage
       localStorage.removeItem('oauth_state');
       localStorage.removeItem('oauth_provider');
@@ -72,7 +70,6 @@ export default function OAuthCallback() {
       }, 2000);
 
     } catch (error) {
-      console.error('❌ Errore OAuth callback:', error);
       setStatus('error');
       setMessage(error.message || 'Errore durante l\'autorizzazione');
 

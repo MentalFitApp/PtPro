@@ -95,7 +95,6 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
       
       case 'form_popup':
         e.preventDefault();
-        console.log('🔴 CTA CLICK: form_popup action triggered, setting showFormPopup to true');
         setShowFormPopup(true);
         break;
       
@@ -124,7 +123,6 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
 
   // Helper per renderizzare il FormPopup
   const renderFormPopup = () => {
-    console.log('🟢 renderFormPopup called, showFormPopup:', showFormPopup);
     return (
       <FormPopup
         isOpen={showFormPopup}

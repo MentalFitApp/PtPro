@@ -66,8 +66,6 @@ const toDate = (x) => {
 };
 
 export default function PaymentManager({ clientId }) {
-  console.log('PaymentManager renderizzato per clientId:', clientId);
-
   const { register, handleSubmit, reset, formState: { isSubmitting, errors } } = useForm({
     defaultValues: {
       amount: '',
@@ -82,7 +80,6 @@ export default function PaymentManager({ clientId }) {
   const [currentExpiry, setCurrentExpiry] = useState(null);
 
   const showNotification = (message, type = 'error') => {
-    console.log('Mostra notifica:', message, type);
     setNotification({ message, type });
     setTimeout(() => setNotification({ message: '', type: '' }), 6000);
   };
@@ -97,7 +94,6 @@ export default function PaymentManager({ clientId }) {
     // Fetch pagamenti
     const q = query(getTenantSubcollection(db, 'clients', clientId, 'payments'), orderBy('paymentDate', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('Pagamenti caricati:', snapshot.docs.length);
       setPayments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, (error) => {
       console.error('Errore fetch pagamenti:', error);
@@ -228,7 +224,6 @@ export default function PaymentManager({ clientId }) {
           <div className="flex gap-3">
             <motion.button 
               onClick={() => {
-                console.log('Cliccato Rinnovo Rapido');
                 onQuickRenew();
               }} 
               className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors z-[100]"
@@ -239,7 +234,6 @@ export default function PaymentManager({ clientId }) {
             </motion.button>
             <motion.button 
               onClick={() => {
-                console.log('Cliccato Aggiungi Rinnovo, showForm:', !showForm);
                 setShowForm(!showForm);
               }} 
               className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold transition-colors z-[100]"
@@ -313,7 +307,6 @@ export default function PaymentManager({ clientId }) {
                 <motion.button 
                   type="button" 
                   onClick={() => {
-                    console.log('Cliccato Annulla form');
                     setShowForm(false);
                     reset();
                   }} 
@@ -341,7 +334,6 @@ export default function PaymentManager({ clientId }) {
               </div>
               <button 
                 onClick={() => {
-                  console.log('Cliccato Elimina pagamento:', p.id);
                   setPaymentToDelete(p);
                 }} 
                 className="p-1.5 text-slate-500 hover:text-red-400 rounded-md transition-colors"

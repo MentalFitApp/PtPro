@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { uploadPhoto } from '../../storageUtils.js';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
 import { IMAGE_ACCEPT_STRING } from '../../cloudflareStorage';
+import { useToast } from '../../contexts/ToastContext';
 
 const Notification = ({ message, type, onDismiss }) => (
   <AnimatePresence>
@@ -55,11 +56,11 @@ const PhotoUploader = ({ type, label, onFileSelect, previewUrl, disabled, isLoad
 
     // Limite aumentato a 10MB per clienti
     if (file.size > 10 * 1024 * 1024) {
-      alert(`File troppo grande: ${file.name}. Limite: 10MB`);
+      showNotification(`File troppo grande: ${file.name}. Limite: 10MB`);
       return;
     }
     if (!isImageFile(file)) {
-      alert(`File non valido: ${file.name}. Formati supportati: JPG, PNG, HEIC, WebP, GIF`);
+      showNotification(`File non valido: ${file.name}. Formati supportati: JPG, PNG, HEIC, WebP, GIF`);
       return;
     }
 

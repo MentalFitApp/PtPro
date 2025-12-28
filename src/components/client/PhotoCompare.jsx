@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Image, Calendar, ArrowLeftRight, ZoomIn, ZoomOut, Move, RotateCcw, RotateCw, Download, Columns } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 
 const formatDate = (date) => {
   if (!date) return 'N/D';
@@ -19,6 +20,7 @@ const PHOTO_TYPES = {
 };
 
 export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) {
+  const toast = useToast();
   const [selectedType, setSelectedType] = useState(null);
   const [leftPhotoIndex, setLeftPhotoIndex] = useState(0);
   const [rightPhotoIndex, setRightPhotoIndex] = useState(1);
@@ -309,7 +311,7 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
       link.click();
     } catch (err) {
       console.error('Errore download slider view:', err);
-      alert('Errore durante il download. Riprova.');
+      toast.error('Errore durante il download. Riprova.');
     } finally {
       setIsDownloading(false);
     }
@@ -393,7 +395,7 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
       link.click();
     } catch (err) {
       console.error('Errore download side by side:', err);
-      alert('Errore durante il download. Riprova.');
+      toast.error('Errore durante il download. Riprova.');
     } finally {
       setIsDownloading(false);
     }

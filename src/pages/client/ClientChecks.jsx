@@ -429,47 +429,23 @@ export default function ClientChecks() {
     const file = e.target.files[0];
     if (!file) return;
     
-    console.log(`[ClientChecks] 📷 Foto selezionata per "${type}":`, {
-      name: file.name,
-      type: file.type,
-      size: `${(file.size / 1024).toFixed(2)} KB`,
-      lastModified: new Date(file.lastModified).toISOString()
-    });
-    
     // Mostra loading per questo tipo di foto
     setPhotoLoading(prev => ({ ...prev, [type]: true }));
     
     try {
-      console.log(`[ClientChecks] ⏳ Inizio elaborazione foto "${type}"...`);
       const startTime = performance.now();
       
       // Comprimi/converti l'immagine (HEIC -> JPEG per preview compatibile)
       const processedFile = await compressImage(file);
       
-      const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
-      console.log(`[ClientChecks] ✅ Elaborazione completata in ${elapsed}s:`, {
-        originalName: file.name,
-        processedName: processedFile.name,
-        originalType: file.type,
-        processedType: processedFile.type,
-        originalSize: `${(file.size / 1024).toFixed(2)} KB`,
-        processedSize: `${(processedFile.size / 1024).toFixed(2)} KB`,
-        reduction: `${(((file.size - processedFile.size) / file.size) * 100).toFixed(0)}%`
-      });
-      
       const previewUrl = URL.createObjectURL(processedFile);
-      console.log(`[ClientChecks] 🖼️ Preview URL creato per "${type}":`, previewUrl);
       
       setFormState(prev => ({
         ...prev,
         photos: { ...prev.photos, [type]: processedFile },
         photoPreviews: { ...prev.photoPreviews, [type]: previewUrl }
       }));
-      
-      console.log(`[ClientChecks] 💾 Foto "${type}" salvata nello stato del form`);
     } catch (err) {
-      console.error(`[ClientChecks] ❌ ERRORE elaborazione foto "${type}":`, err);
-      console.error(`[ClientChecks] Stack trace:`, err.stack);
       // Mostra messaggio specifico per errori HEIC
       const errorMessage = err.message?.includes('HEIC') 
         ? err.message 
@@ -478,7 +454,6 @@ export default function ClientChecks() {
     } finally {
       // Rimuovi loading per questo tipo di foto
       setPhotoLoading(prev => ({ ...prev, [type]: false }));
-      console.log(`[ClientChecks] 🏁 Fine elaborazione foto "${type}"`);
     }
   };
   const handleRemovePhoto = (type) => {
@@ -544,18 +519,9 @@ export default function ClientChecks() {
     e.preventDefault();
     const { id, notes, weight, photos } = formState;
     
-    console.log('[ClientChecks] 📤 handleSubmit chiamato:', {
-      isEdit: !!id,
-      weight,
-      notesLength: notes?.length,
-      photosKeys: Object.keys(photos),
-      photosTypes: Object.entries(photos).map(([k, v]) => `${k}: ${v instanceof File ? 'File' : v === null ? 'null' : typeof v}`)
-    });
-    
     // Per nuovi check, verifica che ci sia almeno il peso
     // Per modifiche, il peso è comunque richiesto
     if (!user || !weight) {
-      console.warn('[ClientChecks] ⚠️ Validazione fallita: peso mancante');
       showNotification("Compila il peso.");
       return;
     }
@@ -564,12 +530,6 @@ export default function ClientChecks() {
     if (!id) {
       const hasAllPhotos = ['front', 'right', 'left', 'back'].every(type => photos[type]);
       if (!hasAllPhotos) {
-        console.warn('[ClientChecks] ⚠️ Validazione fallita: foto mancanti', {
-          front: !!photos.front,
-          right: !!photos.right,
-          left: !!photos.left,
-          back: !!photos.back
-        });
         showNotification("Carica tutte e 4 le foto per un nuovo check.");
         return;
       }
@@ -578,10 +538,8 @@ export default function ClientChecks() {
     setIsUploading(true);
     setUploadProgress(0);
     try {
-      console.log('[ClientChecks] 🔑 Refresh token...');
       // Forza refresh del token (importante dopo account linking)
       await user.getIdToken(true);
-      console.log('[ClientChecks] ✅ Token refreshed');
       
       const existingCheck = id ? checks.find(c => c.id === id) : null;
       let photoURLs = existingCheck ? { ...existingCheck.photoURLs } : { front: null, right: null, left: null, back: null };
@@ -595,72 +553,39 @@ export default function ClientChecks() {
       
       // Carica solo le nuove foto (file, non null)
       const photosToUpload = Object.entries(photos).filter(([, file]) => file && file instanceof File);
-      
-      console.log('[ClientChecks] 📷 DEBUG photos state:', {
-        photosObject: photos,
-        entries: Object.entries(photos).map(([type, val]) => ({
-          type,
-          isFile: val instanceof File,
-          isBlob: val instanceof Blob,
-          constructor: val?.constructor?.name,
-          value: val
-        }))
-      });
-      
-      console.log('[ClientChecks] 📷 Foto da caricare:', photosToUpload.map(([type, file]) => ({
-        type,
-        name: file.name,
-        mimeType: file.type,
-        size: `${(file.size / 1024).toFixed(2)} KB`
-      })));
 
       if (photosToUpload.length > 0) {
         const uploadStartTime = performance.now();
         const uploadPromises = photosToUpload.map(async ([type, file]) => {
-          console.log(`[ClientChecks] ⬆️ Inizio upload "${type}":`, file.name);
-          try {
-            const url = await uploadPhoto(
-              file,
-              user.uid,
-              'check_photos',
-              (p) => {
-                // p.percent: avanza barra fino a 100
-                setUploadProgress(p.percent);
-              }
-            );
-            console.log(`[ClientChecks] ✅ Upload "${type}" completato:`, url);
-            return { type, url };
-          } catch (uploadErr) {
-            console.error(`[ClientChecks] ❌ Upload "${type}" FALLITO:`, uploadErr);
-            throw uploadErr;
-          }
+          const url = await uploadPhoto(
+            file,
+            user.uid,
+            'check_photos',
+            (p) => {
+              // p.percent: avanza barra fino a 100
+              setUploadProgress(p.percent);
+            }
+          );
+          return { type, url };
         });
         const uploadedUrls = await Promise.all(uploadPromises);
-        const uploadElapsed = ((performance.now() - uploadStartTime) / 1000).toFixed(2);
-        console.log(`[ClientChecks] 🏁 Tutti gli upload completati in ${uploadElapsed}s:`, uploadedUrls);
         photoURLs = { ...photoURLs, ...Object.fromEntries(uploadedUrls.map(({ type, url }) => [type, url])) };
       }
-
-      console.log('[ClientChecks] 💾 photoURLs finale:', photoURLs);
       
       const checkData = { notes, weight: parseFloat(weight), photoURLs, createdAt: id ? existingCheck.createdAt : serverTimestamp() };
       if (id) {
-        console.log('[ClientChecks] 📝 Aggiornamento check esistente:', id);
         const checksCollectionRef = getTenantSubcollection(db, 'clients', user.uid, 'checks');
         await updateDoc(doc(checksCollectionRef.firestore, checksCollectionRef.path, id), { ...checkData, lastUpdatedAt: serverTimestamp() });
-        console.log('[ClientChecks] ✅ Check aggiornato');
         showNotification('Check modificato con successo!', 'success');
       } else {
-        console.log('[ClientChecks] 📝 Creazione nuovo check...');
         const newDocRef = await addDoc(getTenantSubcollection(db, 'clients', user.uid, 'checks'), checkData);
-        console.log('[ClientChecks] ✅ Nuovo check creato:', newDocRef.id);
         showNotification('Check caricato con successo!', 'success');
         
         // Invia notifica al coach
         try {
           await notifyNewCheck(checkData, user.displayName || 'Cliente', user.uid);
         } catch (notifError) {
-          console.log('[ClientChecks] ⚠️ Notifica check non inviata:', notifError);
+          // Ignora errori notifica non critici
         }
       }
 
@@ -671,11 +596,8 @@ export default function ClientChecks() {
         console.debug('[ClientChecks] Could not update lastActive:', e.message);
       }
 
-      console.log('[ClientChecks] 🎉 Check completato con successo! Reset form...');
       setFormState({ id: null, notes: '', weight: '', photos: {}, photoPreviews: {} });
     } catch (error) {
-      console.error("[ClientChecks] ❌ ERRORE handleSubmit:", error);
-      console.error("[ClientChecks] Stack trace:", error.stack);
       showNotification("Si è verificato un errore.");
     } finally {
       setTimeout(() => {

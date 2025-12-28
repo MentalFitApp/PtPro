@@ -45,7 +45,7 @@ const CHANNELS = [
 
 export default function Community() {
   const toast = useToast();
-  const { confirmDelete } = useConfirm();
+  const { confirmDelete, confirmAction } = useConfirm();
   const [posts, setPosts] = useState([]);
   const [channels, setChannels] = useState(CHANNELS);
   const [selectedChannel, setSelectedChannel] = useState("wins");
@@ -126,7 +126,6 @@ export default function Community() {
     // Su mobile: nascondi bottom nav quando sidebar è chiusa (= stai chattando)
     // Su desktop: bottom nav sempre visibile (non influenzata)
     const shouldHideBottomNav = !isLargeScreen && !showSidebar;
-    console.log('Community - isLargeScreen:', isLargeScreen, 'showSidebar:', showSidebar, 'shouldHideBottomNav:', shouldHideBottomNav);
     window.dispatchEvent(new CustomEvent('chatSelected', { detail: shouldHideBottomNav }));
   }, [showSidebar, isLargeScreen]);
 
@@ -274,10 +273,8 @@ export default function Community() {
           return 0;
         });
         setPosts(loadedPosts);
-        console.log(`Caricati ${loadedPosts.length} post per canale ${selectedChannel}`);
       },
       (error) => {
-        console.error("Errore caricamento post:", error);
         // Fallback senza orderBy se c'è un errore di indice
         const simpleQuery = query(
           getTenantCollection(db, 'community_posts'),
@@ -330,7 +327,6 @@ export default function Community() {
       });
       toast.success('Post eliminato');
     } catch (error) {
-      console.error('Errore eliminazione post:', error);
       toast.error('Errore durante l\'eliminazione del post');
     }
   };
@@ -370,9 +366,7 @@ export default function Community() {
       });
       
       setNewPost("");
-      console.log("Post inviato con successo");
     } catch (error) {
-      console.error("Errore invio post:", error);
       toast.error("Errore nell'invio del messaggio. Verifica i permessi Firestore.");
     }
   };
@@ -398,7 +392,6 @@ export default function Community() {
       );
       await sendPost(url, 'image');
     } catch (error) {
-      console.error('Errore upload immagine:', error);
       toast.error('Errore durante l\'upload dell\'immagine');
     } finally {
       setIsUploading(false);
@@ -434,7 +427,6 @@ export default function Community() {
           );
           await sendPost(url, 'audio');
         } catch (error) {
-          console.error('Errore upload audio:', error);
           toast.error('Errore durante l\'upload dell\'audio');
         } finally {
           setIsUploading(false);
@@ -448,7 +440,6 @@ export default function Community() {
       setMediaRecorder(recorder);
       setIsRecordingAudio(true);
     } catch (error) {
-      console.error('Errore avvio registrazione:', error);
       toast.error('Impossibile accedere al microfono');
     }
   };
@@ -575,7 +566,6 @@ export default function Community() {
 
     try {
       const roomName = `fitflow-live-${Date.now()}`;
-      console.log('🚀 Avvio creazione stanza Daily.co:', roomName);
       
       // Chiama direttamente l'API Daily.co (no Cloud Function needed!)
       const DAILY_API_KEY = import.meta.env.VITE_DAILY_API_KEY || '76a471284c7f6c54eaa60016b63debb0ded806396a21f64d834f7f874432a85d';
@@ -603,11 +593,8 @@ export default function Community() {
       const roomData = await response.json();
       
       if (!response.ok) {
-        console.error('❌ Errore API Daily.co:', roomData);
         throw new Error(roomData.error || 'Errore creazione stanza');
       }
-
-      console.log('✅ Stanza Daily.co creata:', roomData);
       
       // Salva in Firestore
       const roomDoc = await addDoc(getTenantCollection(db, 'daily_rooms'), {
@@ -622,11 +609,9 @@ export default function Community() {
         title: 'Live Community Session'
       });
 
-      console.log('✅ Stanza salvata in Firestore:', roomDoc.id);
       setActiveGroupCall({ id: roomDoc.id, roomName: roomData.name, url: roomData.url });
       setShowGroupCall(true);
     } catch (error) {
-      console.error('❌ Errore avvio group call:', error);
       toast.error(`Errore creazione live: ${error.message || 'Errore sconosciuto'}`);
     }
   };
@@ -660,11 +645,9 @@ export default function Community() {
         updatedAt: serverTimestamp(),
         updatedBy: auth.currentUser.uid
       }, { merge: true });
-      console.log("Impostazioni salvate con successo", communitySettings);
       // Feedback visivo temporaneo
       setTimeout(() => setSavingSettings(false), 2000);
     } catch (error) {
-      console.error("Errore salvataggio impostazioni:", error);
       setSavingSettings(false);
     }
   };
@@ -701,28 +684,17 @@ export default function Community() {
 
       // Se c'è un file selezionato, caricalo su R2
       if (selectedProfilePhoto) {
-        console.log('📤 Salvataggio profilo - upload foto...', {
-          fileName: selectedProfilePhoto.name,
-          fileSize: selectedProfilePhoto.size,
-          targetUid,
-          isSuperAdmin
-        });
-        
         try {
           photoURL = await uploadToR2(
             selectedProfilePhoto,
             targetUid,
             'profile_photos',
             (progress) => {
-              console.log('📊 Progress:', progress);
               setUploadProgress(progress.percent);
             },
             Boolean(isSuperAdmin) // Assicura che sia un booleano
           );
-          console.log('✅ Upload profilo completato:', photoURL);
         } catch (uploadError) {
-          console.error('❌ Errore upload profilo:', uploadError);
-          console.error('❌ Stack completo:', uploadError.stack);
           throw new Error(`Errore upload foto: ${uploadError.message}`);
         }
       }
@@ -751,7 +723,6 @@ export default function Community() {
       setShowProfileModal(false);
       setEditingProfile(null);
     } catch (error) {
-      console.error("❌ Errore salvataggio profilo:", error);
       toast.error(`Errore durante il salvataggio: ${error.message || 'Errore sconosciuto'}`);
       setIsUploading(false);
       setUploadProgress(0);
@@ -797,32 +768,20 @@ export default function Community() {
 
       // Se c'è un file selezionato, caricalo su R2
       if (selectedProfilePhoto) {
-        console.log('📤 Inizio upload foto profilo...', {
-          fileName: selectedProfilePhoto.name,
-          fileSize: selectedProfilePhoto.size,
-          fileType: selectedProfilePhoto.type,
-          userId: auth.currentUser.uid,
-          isSuperAdmin
-        });
-        
         try {
           photoURL = await uploadToR2(
             selectedProfilePhoto,
             auth.currentUser.uid,
             'profile_photos',
             (progress) => {
-              console.log('📊 Progress:', progress);
               setUploadProgress(progress.percent);
             },
             Boolean(isSuperAdmin) // Assicura che sia un booleano
           );
-          console.log('✅ Upload completato:', photoURL);
         } catch (uploadError) {
-          console.error('❌ Errore upload R2:', uploadError);
-          console.error('❌ Stack completo:', uploadError.stack);
           
           // Offri un fallback: usa un avatar placeholder
-          const shouldContinue = window.confirm(
+          const shouldContinue = await confirmAction(
             `Errore nel caricamento della foto: ${uploadError.message}\n\n` +
             `Vuoi continuare con un avatar placeholder? (Potrai caricare la foto in seguito dal tuo profilo)`
           );
@@ -872,7 +831,6 @@ export default function Community() {
         setOnboardingStep('video');
       }
     } catch (error) {
-      console.error("❌ Errore setup profilo:", error);
       toast.error(`Errore durante il salvataggio: ${error.message || 'Errore sconosciuto'}`);
       setIsUploading(false);
       setUploadProgress(0);
@@ -888,7 +846,7 @@ export default function Community() {
       });
       setShowOnboarding(false);
     } catch (error) {
-      console.error("Errore completamento video:", error);
+      // Silently fail video completion tracking
     }
   };
 
@@ -902,9 +860,8 @@ export default function Community() {
         levelOverride: true,
         updatedAt: serverTimestamp()
       }, { merge: true });
-      console.log(`Livello cambiato per ${userId}: ${newLevel.name}`);
     } catch (error) {
-      console.error("Errore cambio livello:", error);
+      toast.error('Errore durante il cambio livello');
     }
   };
 
@@ -1655,7 +1612,6 @@ export default function Community() {
                                       className="w-full"
                                       style={{ height: '40px' }}
                                       onError={(e) => {
-                                        console.error('Errore caricamento audio:', post.mediaUrl);
                                         e.target.parentElement.innerHTML = '<p class="text-red-400 text-sm">Errore caricamento audio</p>';
                                       }}
                                     />
@@ -2927,7 +2883,6 @@ export default function Community() {
                                       );
                                       setCommunitySettings(prev => ({ ...prev, introVideoUrl: url }));
                                     } catch (error) {
-                                      console.error('Errore upload video:', error);
                                       toast.error('Errore durante l\'upload del video');
                                     } finally {
                                       setUploadingVideo(false);

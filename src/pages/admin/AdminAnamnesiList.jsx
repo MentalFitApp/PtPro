@@ -1,18 +1,23 @@
 // src/pages/admin/AdminAnamnesiList.jsx
 // Lista tutte le anamnesi recenti dei clienti per Admin e Coach
-import React, { useState, useEffect, useMemo } from 'react';
+// OTTIMIZZATO: Paginazione + Query parallele + Caricamento incrementale
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { collection, query, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, getDoc, limit, startAfter, where } from 'firebase/firestore';
 import { db, toDate } from '../../firebase';
 import { getTenantCollection, CURRENT_TENANT_ID } from '../../config/tenant';
 import { motion } from 'framer-motion';
 import { 
   FileText, User, Calendar, ArrowRight, Check, Search, 
-  ClipboardList, Activity, Heart, AlertCircle
+  ClipboardList, Activity, Heart, AlertCircle, Loader2
 } from 'lucide-react';
 import { useUnreadAnamnesi } from '../../hooks/useUnreadNotifications';
 import { UnifiedCard, CardHeaderSimple, CardContent } from '../../components/ui/UnifiedCard';
 import { Badge } from '../../components/ui/Badge';
+
+// Costanti per paginazione
+const BATCH_SIZE = 20; // Numero di clienti per batch
+const PARALLEL_QUERIES = 5; // Query parallele alla volta
 
 export default function AdminAnamnesiList() {
   const navigate = useNavigate();
@@ -20,55 +25,127 @@ export default function AdminAnamnesiList() {
   const isCoachView = location.pathname.startsWith('/coach');
   const [anamnesiList, setAnamnesiList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [hasMore, setHasMore] = useState(true);
   const { unreadIds, markAsRead, markAllAsRead } = useUnreadAnamnesi();
+  
+  // Cache per i clienti già caricati
+  const loadedClientsRef = useRef(new Set());
+  const allClientsRef = useRef([]);
 
   useEffect(() => {
-    loadAllAnamnesi();
+    loadInitialAnamnesi();
   }, []);
 
-  const loadAllAnamnesi = async () => {
+  // Funzione per caricare anamnesi in batch con query parallele
+  const fetchAnamnesiForClients = async (clientDocs) => {
+    const results = [];
+    
+    // Processa in batch paralleli per velocizzare
+    for (let i = 0; i < clientDocs.length; i += PARALLEL_QUERIES) {
+      const batch = clientDocs.slice(i, i + PARALLEL_QUERIES);
+      
+      const batchPromises = batch.map(async (clientDoc) => {
+        const clientData = clientDoc.data();
+        const clientId = clientDoc.id;
+        
+        // Salta se già caricato
+        if (loadedClientsRef.current.has(clientId)) {
+          return null;
+        }
+        
+        try {
+          const anamRef = doc(db, `tenants/${CURRENT_TENANT_ID}/clients/${clientId}/anamnesi/initial`);
+          const anamSnap = await getDoc(anamRef);
+          
+          loadedClientsRef.current.add(clientId);
+          
+          if (anamSnap.exists()) {
+            const anamData = anamSnap.data();
+            return {
+              id: anamSnap.id,
+              clientId,
+              clientName: clientData.name || clientData.email,
+              clientEmail: clientData.email,
+              ...anamData,
+              updatedAt: toDate(anamData.submittedAt || anamData.updatedAt || anamData.completedAt || anamData.createdAt),
+            };
+          }
+        } catch (err) {
+          console.warn(`Errore caricamento anamnesi per ${clientId}:`, err);
+        }
+        return null;
+      });
+      
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults.filter(Boolean));
+    }
+    
+    return results;
+  };
+
+  const loadInitialAnamnesi = async () => {
     try {
       setLoading(true);
+      loadedClientsRef.current.clear();
       
-      // Carica tutti i clienti
+      // Carica solo i primi clienti (ordinati per data creazione più recente se possibile)
       const clientsRef = getTenantCollection(db, 'clients');
       const clientsSnap = await getDocs(clientsRef);
       
-      const allAnamnesi = [];
+      // Memorizza tutti i clienti per il caricamento successivo
+      allClientsRef.current = clientsSnap.docs;
       
-      // Per ogni cliente, controlla se ha anamnesi compilata
-      for (const clientDoc of clientsSnap.docs) {
-        const clientData = clientDoc.data();
-        // Mostra anamnesi di tutti i clienti (anche storici e archiviati)
-        
-        // Controlla anamnesi principale (salvata come 'initial')
-        const anamRef = doc(db, `tenants/${CURRENT_TENANT_ID}/clients/${clientDoc.id}/anamnesi/initial`);
-        const anamSnap = await getDoc(anamRef);
-        
-        if (anamSnap.exists()) {
-          const anamData = anamSnap.data();
-          allAnamnesi.push({
-            id: anamSnap.id,
-            clientId: clientDoc.id,
-            clientName: clientData.name || clientData.email,
-            clientEmail: clientData.email,
-            ...anamData,
-            updatedAt: toDate(anamData.submittedAt || anamData.updatedAt || anamData.completedAt || anamData.createdAt),
-          });
-        }
-      }
+      // Carica solo il primo batch
+      const firstBatch = clientsSnap.docs.slice(0, BATCH_SIZE);
+      const anamnesiResults = await fetchAnamnesiForClients(firstBatch);
       
       // Ordina per data aggiornamento decrescente
-      allAnamnesi.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+      anamnesiResults.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
       
-      setAnamnesiList(allAnamnesi);
+      setAnamnesiList(anamnesiResults);
+      setHasMore(clientsSnap.docs.length > BATCH_SIZE);
     } catch (error) {
       console.error('Errore caricamento anamnesi:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Carica più anamnesi quando l'utente scrolla o clicca "Carica altri"
+  const loadMoreAnamnesi = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    
+    try {
+      setLoadingMore(true);
+      
+      const loadedCount = loadedClientsRef.current.size;
+      const remainingClients = allClientsRef.current.filter(
+        doc => !loadedClientsRef.current.has(doc.id)
+      );
+      
+      if (remainingClients.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      
+      const nextBatch = remainingClients.slice(0, BATCH_SIZE);
+      const newAnamnesi = await fetchAnamnesiForClients(nextBatch);
+      
+      setAnamnesiList(prev => {
+        const combined = [...prev, ...newAnamnesi];
+        combined.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        return combined;
+      });
+      
+      setHasMore(remainingClients.length > BATCH_SIZE);
+    } catch (error) {
+      console.error('Errore caricamento altre anamnesi:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMore]);
 
   // Filtra per ricerca
   const filteredAnamnesi = useMemo(() => {
@@ -167,14 +244,14 @@ export default function AdminAnamnesiList() {
         {/* Anamnesi List */}
         <UnifiedCard>
           <CardContent>
-            {filteredAnamnesi.length === 0 ? (
+            {filteredAnamnesi.length === 0 && !loading ? (
               <div className="text-center py-12 text-slate-400">
                 <FileText className="mx-auto mb-4 text-slate-600" size={48} />
                 <p>Nessuna anamnesi trovata</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredAnamnesi.slice(0, 50).map((anam, idx) => {
+                {filteredAnamnesi.map((anam, idx) => {
                   const unread = isUnread(anam.clientId); // Usa clientId
                   const completeness = getCompleteness(anam);
                   
@@ -247,6 +324,28 @@ export default function AdminAnamnesiList() {
                     </motion.div>
                   );
                 })}
+                
+                {/* Pulsante Carica Altri */}
+                {hasMore && !searchQuery && (
+                  <div className="pt-4 text-center">
+                    <button
+                      onClick={loadMoreAnamnesi}
+                      disabled={loadingMore}
+                      className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex items-center gap-2 mx-auto"
+                    >
+                      {loadingMore ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          Caricamento...
+                        </>
+                      ) : (
+                        <>
+                          Carica altre anamnesi
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

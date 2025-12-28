@@ -104,17 +104,13 @@ export default function CollaboratoreDashboard() {
 
   // --- CARICA UTENTE LOGGATO ---
   useEffect(() => {
-    console.log('🏁 CollaboratoreDashboard mounted, user:', auth.currentUser?.uid);
-    
     if (!auth.currentUser) {
-      console.warn('⚠️ No user, redirecting to login');
       navigate('/login');
       return;
     }
 
     const fetchCollab = async () => {
       try {
-        console.log('📥 Fetching collaboratore doc...');
         const collabDocRef = getTenantDoc(db, 'collaboratori', auth.currentUser.uid);
         const collabDoc = await getDoc(collabDocRef);
         
@@ -126,7 +122,6 @@ export default function CollaboratoreDashboard() {
         }
         
         const data = collabDoc.data();
-        console.log('✅ Collaboratore data loaded:', data);
         
         setCollaboratore(data);
         setProfile({ 
@@ -160,9 +155,7 @@ export default function CollaboratoreDashboard() {
     };
 
     // Esegui fetch e aspetta che finisca prima di fare altre query
-    fetchCollab().then(() => {
-      console.log('✅ Collaboratore loaded, now safe to query leads');
-    }).catch((err) => {
+    fetchCollab().catch((err) => {
       console.error('❌ Failed to load collaboratore:', err);
     });
 
@@ -172,11 +165,8 @@ export default function CollaboratoreDashboard() {
   // Query leads SEPARATA - solo dopo che collaboratore è caricato
   useEffect(() => {
     if (!auth.currentUser || !collaboratore || loading) {
-      console.log('⏸️ Skipping leads query - not ready yet');
       return;
     }
-
-    console.log('🚀 Ready to query leads for:', collaboratore.name);
     
     let unsub = () => {};
     let timeoutId = null;
@@ -190,7 +180,6 @@ export default function CollaboratoreDashboard() {
       }, 8000);
       
       try {
-        console.log('📊 Setting up leads listener...');
         const leadsQuery = query(
           getTenantCollection(db, 'leads'),
           where('collaboratoreId', '==', auth.currentUser.uid),
@@ -200,7 +189,6 @@ export default function CollaboratoreDashboard() {
         unsub = onSnapshot(leadsQuery, 
           (snap) => {
             if (timeoutId) clearTimeout(timeoutId);
-            console.log('✅ Leads loaded:', snap.size);
             const leadsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             setMyLeads(leadsData);
           }, 
@@ -237,14 +225,6 @@ export default function CollaboratoreDashboard() {
 
     const unsub = onSnapshot(eventsQuery, (snap) => {
       const events = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      console.log('📅 EVENTI CARICATI:', events.length);
-      console.table(events.map(e => ({
-        Titolo: e.title,
-        Data: e.date,
-        Ora: e.time,
-        Durata: e.durationMinutes + 'min',
-        Tipo: e.type
-      })));
       setCalendarEvents(events);
     }, (err) => {
       console.error('❌ Errore caricamento eventi calendario:', err);
@@ -255,36 +235,17 @@ export default function CollaboratoreDashboard() {
 
   // --- FETCH TUTTI I COLLABORATORI ---
   useEffect(() => {
-    console.log('🔄 Caricamento tutti i collaboratori...');
-    console.log('🔍 Tenant path:', `tenants/${CURRENT_TENANT_ID}/collaboratori`);
-    
     const collRef = getTenantCollection(db, 'collaboratori');
-    console.log('🔍 Collection path:', collRef.path);
     
     const unsub = onSnapshot(collRef, (snap) => {
-      console.log('📊 Snapshot ricevuto - dimensione:', snap.size);
-      console.log('📊 Snapshot vuoto?', snap.empty);
-      
       const collabs = snap.docs.map(d => {
         const data = d.data();
-        console.log('👤 Collaboratore:', { id: d.id, name: data.name, role: data.role });
         return { id: d.id, ...data };
       });
-      
-      console.log('📊 Totale collaboratori caricati:', collabs.length);
-      console.log('📊 Lista completa:', collabs.map(c => ({ 
-        id: c.id,
-        name: c.name, 
-        role: c.role, 
-        hasReports: !!c.dailyReports,
-        reportsCount: c.dailyReports?.length || 0
-      })));
       
       setAllCollaboratori(collabs);
     }, (error) => {
       console.error('❌ Errore caricamento collaboratori:', error);
-      console.error('❌ Error code:', error.code);
-      console.error('❌ Error message:', error.message);
     });
     return () => unsub();
   }, []);
@@ -364,7 +325,6 @@ export default function CollaboratoreDashboard() {
 
   // --- GENERA FASCE ORARIE ---
   const generateTimeSlots = (dateStr) => {
-    console.log('\n🎯 === GENERAZIONE SLOT PER:', dateStr, '===');
     setSelectedDate(dateStr);
     
     const slots = [];
@@ -382,11 +342,9 @@ export default function CollaboratoreDashboard() {
 
     // 1. Filtra da myLeads (lead già creati)
     const leadsOnDate = myLeads.filter(lead => lead.dataPrenotazione === dateStr);
-    console.log('📋 Lead trovati:', leadsOnDate.length);
     
     leadsOnDate.forEach(lead => {
       if (!lead.oraPrenotazione) return;
-      console.log('  📞', lead.name, 'alle', lead.oraPrenotazione);
       
       const [hours, minutes] = lead.oraPrenotazione.split(':').map(Number);
       const duration = 30;
@@ -908,7 +866,7 @@ export default function CollaboratoreDashboard() {
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-md shadow-glow">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Profilo</h3>
-                <button onClick={() => setShowProfile(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
+                <button onClick={() => setShowProfile(false)} className="text-white hover:text-rose-400" aria-label="Chiudi profilo"><X size={24} /></button>
               </div>
               <div className="space-y-4">
                 <div className="flex flex-col items-center">
@@ -959,7 +917,7 @@ export default function CollaboratoreDashboard() {
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-md shadow-glow">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Tracker DMS</h3>
-                <button onClick={() => setShowTracker(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
+                <button onClick={() => setShowTracker(false)} className="text-white hover:text-rose-400" aria-label="Chiudi tracker"><X size={24} /></button>
               </div>
               <div className="space-y-4">
                 <input type="number" value={tracker.outreachTotale} onChange={e => setTracker({ ...tracker, outreachTotale: e.target.value })} placeholder="Outreach Totale" className="p-3 bg-slate-800/70 border border-white/10 rounded-lg text-white w-full" />
@@ -1133,7 +1091,7 @@ export default function CollaboratoreDashboard() {
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto shadow-glow">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">I miei Lead</h3>
-                <button onClick={() => setShowMyLeads(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
+                <button onClick={() => setShowMyLeads(false)} className="text-white hover:text-rose-400" aria-label="Chiudi lista lead"><X size={24} /></button>
               </div>
               <div className="overflow-x-auto -mx-2 sm:mx-0">
                 <table className="w-full text-xs sm:text-sm text-left text-slate-300">
@@ -1184,7 +1142,7 @@ export default function CollaboratoreDashboard() {
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto shadow-glow">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Report Passati</h3>
-                <button onClick={() => setShowPastReports(false)} className="text-white hover:text-rose-400"><X size={24} /></button>
+                <button onClick={() => setShowPastReports(false)} className="text-white hover:text-rose-400" aria-label="Chiudi report"><X size={24} /></button>
               </div>
               <div className="space-y-4">
                 {pastReports.map((report, i) => (
@@ -1319,7 +1277,7 @@ export default function CollaboratoreDashboard() {
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/80 rounded-2xl border border-white/10 p-6 w-full max-w-md shadow-glow">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">Elimina Lead</h3>
-                <button onClick={() => setLeadToDelete(null)} className="text-white hover:text-rose-400"><X size={24} /></button>
+                <button onClick={() => setLeadToDelete(null)} className="text-white hover:text-rose-400" aria-label="Annulla eliminazione"><X size={24} /></button>
               </div>
               <p className="text-slate-300 mb-4">
                 Sei sicuro di voler eliminare il lead <strong>{leadToDelete.name}</strong>?

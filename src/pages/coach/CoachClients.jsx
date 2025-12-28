@@ -314,9 +314,9 @@ export default function CoachClients() {
         {showCalendar && (
           <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-slate-700 shadow-glow mb-6">
             <div className="flex justify-between items-center mb-4">
-              <button onClick={() => setMeseCalendario(addMonths(meseCalendario, -1))} className="p-2 hover:bg-slate-700 rounded-lg"><ChevronLeft size={18} className="text-slate-400"/></button>
+              <button onClick={() => setMeseCalendario(addMonths(meseCalendario, -1))} className="p-2 hover:bg-slate-700 rounded-lg" aria-label="Mese precedente"><ChevronLeft size={18} className="text-slate-400"/></button>
               <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2"><Calendar size={18}/> {format(meseCalendario, "MMMM yyyy")}</h3>
-              <button onClick={() => setMeseCalendario(addMonths(meseCalendario, 1))} className="p-2 hover:bg-slate-700 rounded-lg"><ChevronRight size={18} className="text-slate-400"/></button>
+              <button onClick={() => setMeseCalendario(addMonths(meseCalendario, 1))} className="p-2 hover:bg-slate-700 rounded-lg" aria-label="Mese successivo"><ChevronRight size={18} className="text-slate-400"/></button>
             </div>
             <div className="grid grid-cols-7 gap-1 md:gap-3 text-center text-xs md:text-sm">
               {['D', 'L', 'M', 'M', 'G', 'V', 'S'].map((d, i) => (

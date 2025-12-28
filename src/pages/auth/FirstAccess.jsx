@@ -101,17 +101,13 @@ const FirstAccess = () => {
     }
 
     try {
-      console.log('🔐 Aggiornamento password per', userType);
-      
       // Aggiorna la password in Firebase Auth
       await updatePassword(user, newPassword);
-      console.log('✅ Password aggiornata in Firebase Auth');
 
       // Aggiorna documento corretto nella struttura multi-tenant
       const collectionName = userType === 'client' ? 'clients' : 'collaboratori';
       const userDocRef = getTenantDoc(db, collectionName, user.uid);
       await updateDoc(userDocRef, { firstLogin: false });
-      console.log(`✅ Campo firstLogin aggiornato a false per ${userType}:`, user.uid);
 
       // Mostra messaggio di successo
       setSuccess("Password aggiornata con successo! Accesso in corso...");
@@ -131,7 +127,6 @@ const FirstAccess = () => {
         const onboardingCompleted = userDoc.data()?.onboardingCompleted;
 
         if (hasOnboarding && !onboardingCompleted) {
-          console.log('✅ Reindirizzamento a onboarding');
           navigate('/client/onboarding', { replace: true });
           return;
         }
@@ -139,10 +134,8 @@ const FirstAccess = () => {
 
       // Altrimenti reindirizza alla dashboard appropriata
       const dashboardPath = userType === 'client' ? '/client/dashboard' : '/collaboratore/dashboard';
-      console.log('✅ Reindirizzamento a:', dashboardPath);
       navigate(dashboardPath, { replace: true });
     } catch (err) {
-      console.error("Errore aggiornamento password:", err.code, err.message, { uid: user?.uid, userType });
       
       // Gestisci errori specifici
       if (err.code === 'auth/too-many-requests') {

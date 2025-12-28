@@ -31,7 +31,6 @@ export default function LinkAccountCard() {
   async function loadProviders() {
     const linkedProviders = await getLinkedProviders(currentUser);
     setProviders(linkedProviders);
-    console.log('🔗 Provider collegati:', linkedProviders);
   }
 
   async function handleLinkGoogle() {

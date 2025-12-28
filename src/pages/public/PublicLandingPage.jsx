@@ -94,13 +94,7 @@ export default function PublicLandingPage() {
       
       if (!publishedSnap.empty) {
         const foundPage = publishedSnap.docs[0].data();
-        console.log('✅ Pagina pubblicata trovata:', { 
-          id: publishedSnap.docs[0].id,
-          slug: foundPage.slug
-        });
         pageData = { id: publishedSnap.docs[0].id, ...foundPage, isNewSystem: true };
-      } else {
-        console.log('🔍 Nessuna pagina pubblicata trovata con slug:', slug, 'in tenant:', foundTenantId);
       }
       
       // Se non trovata nel nuovo sistema, prova vecchio sistema
@@ -140,7 +134,6 @@ export default function PublicLandingPage() {
       
       setLoading(false);
     } catch (err) {
-      console.error('Load page error:', err);
       setError(err.message);
       setLoading(false);
     }
@@ -158,7 +151,7 @@ export default function PublicLandingPage() {
         referrer: document.referrer || null,
       });
     } catch (err) {
-      console.error('Error tracking page view:', err);
+      // Silently fail tracking
     }
   };
 
@@ -174,7 +167,7 @@ export default function PublicLandingPage() {
         timestamp: serverTimestamp(),
       });
     } catch (err) {
-      console.error('Error tracking conversion:', err);
+      // Silently fail tracking
     }
   };
 
@@ -381,7 +374,7 @@ const LegacySection = ({ section, index, tenantId, pageId, onConversion }) => {
       setFormData({});
       onConversion?.();
     } catch (err) {
-      console.error('Form submit error:', err);
+      // Form submission failed - user sees no success message
     } finally {
       setSubmitting(false);
     }

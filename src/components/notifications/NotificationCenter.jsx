@@ -130,6 +130,7 @@ export default function NotificationCenter({ role = 'admin' }) {
       <button
         onClick={() => setShowPanel(!showPanel)}
         className="relative p-2 rounded-lg hover:bg-white/10 transition-colors"
+        aria-label={`Centro notifiche${totalAlerts > 0 ? ` (${totalAlerts} avvisi)` : ''}`}
       >
         <Bell size={20} className={totalAlerts > 0 ? 'text-rose-400' : 'text-slate-400'} />
         
@@ -169,6 +170,7 @@ export default function NotificationCenter({ role = 'admin' }) {
               <button
                 onClick={() => setShowPanel(false)}
                 className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+                aria-label="Chiudi notifiche"
               >
                 <X size={18} className="text-slate-400" />
               </button>

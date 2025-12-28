@@ -25,7 +25,6 @@ export const ThemeProvider = ({ children }) => {
   // Toggle disabilitato per ora
   const toggleTheme = () => {
     // No-op: dark mode forzata
-    console.log('Theme toggle disabled - dark mode forced');
   };
 
   const value = {

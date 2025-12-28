@@ -23,10 +23,6 @@ export default function LinkAccountBanner() {
     if (currentUser) {
       const shouldShow = shouldShowLinkSuggestion(currentUser);
       setShow(shouldShow);
-      
-      if (shouldShow) {
-        console.log('💡 Mostro suggerimento collegamento Google');
-      }
     }
   }, [currentUser]);
 
