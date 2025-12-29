@@ -1,0 +1,131 @@
+{
+  "totalExercises": 1324,
+  "lastUpdated": "2025-12-28T02:06:04.483Z",
+  "resolution": "360",
+  "categories": [
+    {
+      "bodyPart": "upper arms",
+      "bodyPartIt": "Braccia",
+      "count": 292,
+      "fileName": "upper-arms.json"
+    },
+    {
+      "bodyPart": "upper legs",
+      "bodyPartIt": "Gambe",
+      "count": 227,
+      "fileName": "upper-legs.json"
+    },
+    {
+      "bodyPart": "back",
+      "bodyPartIt": "Schiena",
+      "count": 203,
+      "fileName": "back.json"
+    },
+    {
+      "bodyPart": "waist",
+      "bodyPartIt": "Addome",
+      "count": 169,
+      "fileName": "waist.json"
+    },
+    {
+      "bodyPart": "chest",
+      "bodyPartIt": "Petto",
+      "count": 163,
+      "fileName": "chest.json"
+    },
+    {
+      "bodyPart": "shoulders",
+      "bodyPartIt": "Spalle",
+      "count": 143,
+      "fileName": "shoulders.json"
+    },
+    {
+      "bodyPart": "lower legs",
+      "bodyPartIt": "Polpacci",
+      "count": 59,
+      "fileName": "lower-legs.json"
+    },
+    {
+      "bodyPart": "lower arms",
+      "bodyPartIt": "Avambracci",
+      "count": 37,
+      "fileName": "lower-arms.json"
+    },
+    {
+      "bodyPart": "cardio",
+      "bodyPartIt": "Cardio",
+      "count": 29,
+      "fileName": "cardio.json"
+    },
+    {
+      "bodyPart": "neck",
+      "bodyPartIt": "Collo",
+      "count": 2,
+      "fileName": "neck.json"
+    }
+  ],
+  "bodyParts": [
+    "back",
+    "cardio",
+    "chest",
+    "lower arms",
+    "lower legs",
+    "neck",
+    "shoulders",
+    "upper arms",
+    "upper legs",
+    "waist"
+  ],
+  "targets": [
+    "abductors",
+    "abs",
+    "adductors",
+    "biceps",
+    "calves",
+    "cardiovascular system",
+    "delts",
+    "forearms",
+    "glutes",
+    "hamstrings",
+    "hip flexors",
+    "lats",
+    "levator scapulae",
+    "pectorals",
+    "quads",
+    "serratus anterior",
+    "spine",
+    "traps",
+    "triceps",
+    "upper back"
+  ],
+  "equipment": [
+    "assisted",
+    "band",
+    "barbell",
+    "body weight",
+    "bosu ball",
+    "cable",
+    "dumbbell",
+    "elliptical machine",
+    "ez barbell",
+    "hammer",
+    "kettlebell",
+    "leverage machine",
+    "medicine ball",
+    "olympic barbell",
+    "resistance band",
+    "roller",
+    "rope",
+    "skierg machine",
+    "sled machine",
+    "smith machine",
+    "stability ball",
+    "stationary bike",
+    "stepmill machine",
+    "tire",
+    "trap bar",
+    "upper body ergometer",
+    "weighted",
+    "wheel roller"
+  ]
+}

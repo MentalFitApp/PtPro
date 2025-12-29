@@ -40,3 +40,6 @@ coverage/
 service-account.json
 .env.vercel
 .vercel
+# ExerciseDB data files with API keys in URLs
+data/exercisedb/*-translated.json
+data/exercisedb/*-r2.json

@@ -589,10 +589,10 @@ const SchedaAlimentazione = () => {
     exportNutritionCardToPDF(schedaData, clientName);
   };
 
-  // Preset Management
+  // Preset Management - Multi-tenant
   const loadPresets = async () => {
     try {
-      const presetsRef = collection(db, 'preset_alimentazione');
+      const presetsRef = getTenantCollection(db, 'preset_alimentazione');
       const snapshot = await getDocs(presetsRef);
       const presets = [];
       snapshot.forEach(doc => {
@@ -611,7 +611,7 @@ const SchedaAlimentazione = () => {
     }
     
     try {
-      const presetsRef = collection(db, 'preset_alimentazione');
+      const presetsRef = getTenantCollection(db, 'preset_alimentazione');
       await addDoc(presetsRef, {
         name: presetName,
         data: schedaData,

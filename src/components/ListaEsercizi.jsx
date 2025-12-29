@@ -8,38 +8,6 @@ import { uploadToR2 } from '../cloudflareStorage';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 
-const ATTREZZI = [
-  'Bilanciere',
-  'Manubri',
-  'Macchina',
-  'Cavi',
-  'Corpo libero',
-  'Kettlebell',
-  'Bande elastiche',
-  'TRX',
-  'Palla medica',
-  'Swiss ball',
-  'Sbarra per trazioni',
-  'Panca'
-];
-
-const GRUPPI_MUSCOLARI = [
-  'Petto',
-  'Schiena',
-  'Spalle',
-  'Bicipiti',
-  'Tricipiti',
-  'Gambe',
-  'Quadricipiti',
-  'Femorali',
-  'Polpacci',
-  'Glutei',
-  'Addominali',
-  'Core',
-  'Avambracci',
-  'Trapezio'
-];
-
 const ListaEsercizi = ({ onBack }) => {
   const toast = useToast();
   const { confirmDelete } = useConfirm();
@@ -48,6 +16,8 @@ const ListaEsercizi = ({ onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAttrezzo, setSelectedAttrezzo] = useState('');
   const [selectedGruppo, setSelectedGruppo] = useState('');
+  const [attrezziOptions, setAttrezziOptions] = useState([]);
+  const [gruppiOptions, setGruppiOptions] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState('all'); // 'all', 'global', 'custom'
   const [isAddingExercise, setIsAddingExercise] = useState(false);
   const [editingExercise, setEditingExercise] = useState(null);
@@ -60,6 +30,11 @@ const ListaEsercizi = ({ onBack }) => {
   const [useGlobalDatabase, setUseGlobalDatabase] = useState(true);
   const [globalExercises, setGlobalExercises] = useState([]);
   const [customExercises, setCustomExercises] = useState([]);
+  // Paginazione
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
+  // Preview esercizio
+  const [previewExercise, setPreviewExercise] = useState(null);
   const [formData, setFormData] = useState({
     nome: '',
     attrezzo: '',
@@ -140,9 +115,26 @@ const ListaEsercizi = ({ onBack }) => {
         }
       });
 
+      const allExercises = Array.from(exerciseMap.values());
+      
       setGlobalExercises(globalExercisesData);
       setCustomExercises(customExercisesData);
-      setExercises(Array.from(exerciseMap.values()));
+      setExercises(allExercises);
+      
+      // Estrai opzioni uniche per i filtri
+      const attrezziSet = new Set();
+      const gruppiSet = new Set();
+      
+      allExercises.forEach(ex => {
+        const attrezzo = ex.attrezzo || ex.equipmentIt || ex.equipment;
+        const gruppo = ex.gruppoMuscolare || ex.bodyPartIt || ex.bodyPart;
+        
+        if (attrezzo) attrezziSet.add(attrezzo);
+        if (gruppo) gruppiSet.add(gruppo);
+      });
+      
+      setAttrezziOptions(Array.from(attrezziSet).sort());
+      setGruppiOptions(Array.from(gruppiSet).sort());
     } catch (error) {
       console.error('Errore nel caricamento degli esercizi:', error);
     }
@@ -319,25 +311,43 @@ const ListaEsercizi = ({ onBack }) => {
 
   const startEdit = (exercise) => {
     setEditingExercise(exercise);
+    // Supporta sia vecchi campi che nuovi da ExerciseDB
     setFormData({
-      nome: exercise.nome,
-      attrezzo: exercise.attrezzo,
-      gruppoMuscolare: exercise.gruppoMuscolare,
-      descrizione: exercise.descrizione || '',
-      videoUrl: exercise.videoUrl || '',
+      nome: exercise.nome || exercise.nameIt || exercise.name || '',
+      attrezzo: exercise.attrezzo || exercise.equipmentIt || exercise.equipment || '',
+      gruppoMuscolare: exercise.gruppoMuscolare || exercise.bodyPartIt || exercise.bodyPart || '',
+      descrizione: exercise.descrizione || exercise.description || '',
+      videoUrl: exercise.videoUrl || exercise.gifUrl || '',
       isCustom: exercise.source === 'custom'
     });
   };
 
   const filteredExercises = exercises.filter(exercise => {
-    const matchesSearch = exercise.nome.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAttrezzo = !selectedAttrezzo || exercise.attrezzo === selectedAttrezzo;
-    const matchesGruppo = !selectedGruppo || exercise.gruppoMuscolare === selectedGruppo;
+    // Supporta sia vecchi campi (nome, attrezzo) che nuovi da ExerciseDB (name, nameIt, equipment)
+    const exerciseName = exercise.nome || exercise.nameIt || exercise.name || '';
+    const exerciseEquipment = exercise.attrezzo || exercise.equipmentIt || exercise.equipment || '';
+    const exerciseMuscle = exercise.gruppoMuscolare || exercise.bodyPartIt || exercise.bodyPart || '';
+    
+    const matchesSearch = exerciseName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesAttrezzo = !selectedAttrezzo || exerciseEquipment === selectedAttrezzo;
+    const matchesGruppo = !selectedGruppo || exerciseMuscle === selectedGruppo;
     const matchesCategory = categoryFilter === 'all' || 
       (categoryFilter === 'global' && exercise.source === 'global') ||
       (categoryFilter === 'custom' && exercise.source === 'custom');
     return matchesSearch && matchesAttrezzo && matchesGruppo && matchesCategory;
   });
+
+  // Paginazione
+  const totalPages = Math.ceil(filteredExercises.length / ITEMS_PER_PAGE);
+  const paginatedExercises = filteredExercises.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset pagina quando cambiano i filtri
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedAttrezzo, selectedGruppo, categoryFilter]);
 
   return (
     <motion.div
@@ -488,7 +498,7 @@ const ListaEsercizi = ({ onBack }) => {
                   className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
                 >
                   <option value="">Tutti gli attrezzi</option>
-                  {ATTREZZI.map(attrezzo => (
+                  {attrezziOptions.map(attrezzo => (
                     <option key={attrezzo} value={attrezzo}>{attrezzo}</option>
                   ))}
                 </select>
@@ -504,7 +514,7 @@ const ListaEsercizi = ({ onBack }) => {
                   className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
                 >
                   <option value="">Tutti i gruppi</option>
-                  {GRUPPI_MUSCOLARI.map(gruppo => (
+                  {gruppiOptions.map(gruppo => (
                     <option key={gruppo} value={gruppo}>{gruppo}</option>
                   ))}
                 </select>
@@ -589,7 +599,7 @@ const ListaEsercizi = ({ onBack }) => {
                   className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
                 >
                   <option value="">Seleziona attrezzo</option>
-                  {ATTREZZI.map(attrezzo => (
+                  {attrezziOptions.map(attrezzo => (
                     <option key={attrezzo} value={attrezzo}>{attrezzo}</option>
                   ))}
                 </select>
@@ -605,7 +615,7 @@ const ListaEsercizi = ({ onBack }) => {
                   className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:border-blue-500"
                 >
                   <option value="">Seleziona gruppo</option>
-                  {GRUPPI_MUSCOLARI.map(gruppo => (
+                  {gruppiOptions.map(gruppo => (
                     <option key={gruppo} value={gruppo}>{gruppo}</option>
                   ))}
                 </select>
@@ -741,8 +751,9 @@ const ListaEsercizi = ({ onBack }) => {
             {searchTerm || selectedAttrezzo || selectedGruppo ? 'Nessun esercizio trovato' : 'Nessun esercizio disponibile'}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
               <thead className="bg-slate-800">
                 <tr>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Nome</th>
@@ -754,76 +765,245 @@ const ListaEsercizi = ({ onBack }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700">
-                {filteredExercises.map((exercise) => (
-                  <tr key={exercise.id} className="hover:bg-slate-800/50 transition-colors">
-                    <td className="px-4 py-3 text-slate-200 font-medium">
-                      {exercise.nome}
-                    </td>
-                    <td className="px-4 py-3">
-                      {exercise.source === 'global' ? (
-                        <span className="px-2 py-1 bg-blue-900/30 border border-blue-600/30 text-blue-300 rounded text-xs flex items-center gap-1 w-fit">
-                          <Globe size={12} />
-                          Database Globale
+                {paginatedExercises.map((exercise) => {
+                  // Supporta sia vecchi campi che nuovi da ExerciseDB
+                  const exerciseName = exercise.nome || exercise.nameIt || exercise.name || 'Senza nome';
+                  const exerciseEquipment = exercise.attrezzo || exercise.equipmentIt || exercise.equipment || '-';
+                  const exerciseMuscle = exercise.gruppoMuscolare || exercise.bodyPartIt || exercise.bodyPart || '-';
+                  const exerciseVideo = exercise.videoUrl || exercise.gifUrl || null;
+                  const canEdit = exercise.source === 'custom'; // Solo esercizi custom modificabili
+                  
+                  return (
+                    <tr key={exercise.id} className="hover:bg-slate-800/50 transition-colors">
+                      <td className="px-4 py-3 text-slate-200 font-medium">
+                        {exerciseName}
+                      </td>
+                      <td className="px-4 py-3">
+                        {exercise.source === 'global' ? (
+                          <span className="px-2 py-1 bg-blue-900/30 border border-blue-600/30 text-blue-300 rounded text-xs flex items-center gap-1 w-fit">
+                            <Globe size={12} />
+                            Globale
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 bg-purple-900/30 border border-purple-600/30 text-purple-300 rounded text-xs flex items-center gap-1 w-fit">
+                            <User size={12} />
+                            Custom
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-1 bg-blue-900/30 border border-blue-600/30 text-blue-300 rounded text-xs">
+                          {exerciseEquipment}
                         </span>
-                      ) : (
-                        <span className="px-2 py-1 bg-purple-900/30 border border-purple-600/30 text-purple-300 rounded text-xs flex items-center gap-1 w-fit">
-                          <User size={12} />
-                          Custom
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-1 bg-purple-900/30 border border-purple-600/30 text-purple-300 rounded text-xs">
+                          {exerciseMuscle}
                         </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-1 bg-blue-900/30 border border-blue-600/30 text-blue-300 rounded text-xs">
-                        {exercise.attrezzo}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-1 bg-purple-900/30 border border-purple-600/30 text-purple-300 rounded text-xs">
-                        {exercise.gruppoMuscolare}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {exercise.videoUrl ? (
-                        <button
-                          onClick={() => window.open(exercise.videoUrl, '_blank')}
-                          className="p-2 text-green-400 hover:bg-green-600/20 rounded-lg transition-colors inline-flex items-center gap-1"
-                          title="Guarda video"
-                          aria-label="Guarda video esercizio"
-                        >
-                          <Video size={16} />
-                        </button>
-                      ) : (
-                        <span className="text-slate-600 text-xs">-</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => startEdit(exercise)}
-                          className="p-2 text-blue-400 hover:bg-blue-600/20 rounded-lg transition-colors"
-                          title="Modifica"
-                          aria-label="Modifica esercizio"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteExercise(exercise)}
-                          className="p-2 text-red-400 hover:bg-red-600/20 rounded-lg transition-colors"
-                          title="Elimina"
-                          aria-label="Elimina esercizio"
-                          disabled={!exercise.editable}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {exerciseVideo ? (
+                          <button
+                            onClick={() => setPreviewExercise(exercise)}
+                            className="p-2 text-green-400 hover:bg-green-600/20 rounded-lg transition-colors inline-flex items-center gap-1"
+                            title="Guarda video/GIF"
+                            aria-label="Guarda video esercizio"
+                          >
+                            <Video size={16} />
+                          </button>
+                        ) : (
+                          <span className="text-slate-600 text-xs">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {canEdit ? (
+                            <>
+                              <button
+                                onClick={() => startEdit(exercise)}
+                                className="p-2 text-blue-400 hover:bg-blue-600/20 rounded-lg transition-colors"
+                                title="Modifica"
+                                aria-label="Modifica esercizio"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteExercise(exercise)}
+                                className="p-2 text-red-400 hover:bg-red-600/20 rounded-lg transition-colors"
+                                title="Elimina"
+                                aria-label="Elimina esercizio"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-slate-600 text-xs px-2">Solo lettura</span>
+                          )}
+                        </div>
+                      </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
-          </div>
+            </div>
+
+            {/* Paginazione */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 px-4">
+                <div className="text-sm text-slate-400">
+                  Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredExercises.length)} di {filteredExercises.length} esercizi
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 bg-slate-700 text-slate-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-600 transition-colors"
+                  >
+                    ← Prec
+                  </button>
+                  <span className="text-slate-400 text-sm">
+                    Pagina {currentPage} di {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 bg-slate-700 text-slate-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-600 transition-colors"
+                  >
+                    Succ →
+                  </button>
+                </div>
+              </div>
+            )}
+            </>
         )}
       </div>
+
+      {/* Modal Preview Esercizio */}
+      <AnimatePresence>
+        {previewExercise && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPreviewExercise(null)}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl bg-slate-800 rounded-xl border border-slate-700 p-6 max-h-[90vh] overflow-y-auto"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-slate-100">
+                  {previewExercise.nome || previewExercise.nameIt || previewExercise.name}
+                </h3>
+                <button 
+                  onClick={() => setPreviewExercise(null)} 
+                  className="text-slate-400 hover:text-slate-200 p-2"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              {/* Video/GIF */}
+              <div className="aspect-video bg-slate-900 rounded-lg overflow-hidden mb-4">
+                {previewExercise.gifUrl ? (
+                  <img
+                    src={previewExercise.gifUrl}
+                    alt={previewExercise.nome || previewExercise.nameIt || previewExercise.name}
+                    className="w-full h-full object-contain"
+                  />
+                ) : previewExercise.videoUrl?.includes('youtube.com') || previewExercise.videoUrl?.includes('youtu.be') ? (
+                  <iframe
+                    src={previewExercise.videoUrl}
+                    className="w-full h-full"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  />
+                ) : previewExercise.videoUrl ? (
+                  <video
+                    src={previewExercise.videoUrl}
+                    controls
+                    autoPlay
+                    loop
+                    className="w-full h-full object-contain"
+                  />
+                ) : null}
+              </div>
+
+              {/* Info */}
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-blue-900/30 border border-blue-600/30 text-blue-300 rounded-full text-sm">
+                    {previewExercise.attrezzo || previewExercise.equipmentIt || previewExercise.equipment}
+                  </span>
+                  <span className="px-3 py-1 bg-purple-900/30 border border-purple-600/30 text-purple-300 rounded-full text-sm">
+                    {previewExercise.gruppoMuscolare || previewExercise.bodyPartIt || previewExercise.bodyPart}
+                  </span>
+                  {previewExercise.targetIt && (
+                    <span className="px-3 py-1 bg-emerald-900/30 border border-emerald-600/30 text-emerald-300 rounded-full text-sm">
+                      Target: {previewExercise.targetIt}
+                    </span>
+                  )}
+                  {previewExercise.difficultyIt && (
+                    <span className="px-3 py-1 bg-amber-900/30 border border-amber-600/30 text-amber-300 rounded-full text-sm">
+                      {previewExercise.difficultyIt}
+                    </span>
+                  )}
+                </div>
+
+                {/* Muscoli secondari */}
+                {previewExercise.secondaryMusclesIt && previewExercise.secondaryMusclesIt.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400 mb-1">Muscoli secondari:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {previewExercise.secondaryMusclesIt.map((muscle, i) => (
+                        <span key={i} className="px-2 py-0.5 bg-slate-700 text-slate-300 rounded text-xs">
+                          {muscle}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Descrizione */}
+                {(previewExercise.descrizione || previewExercise.description) && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400 mb-1">Descrizione:</p>
+                    <p className="text-sm text-slate-300">
+                      {previewExercise.descrizione || previewExercise.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Istruzioni */}
+                {previewExercise.instructions && previewExercise.instructions.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400 mb-1">Istruzioni:</p>
+                    <ol className="text-sm text-slate-300 list-decimal list-inside space-y-1">
+                      {previewExercise.instructions.map((instr, i) => (
+                        <li key={i}>{instr}</li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <button
+                onClick={() => setPreviewExercise(null)}
+                className="w-full mt-6 px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+              >
+                Chiudi
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
