@@ -505,7 +505,7 @@ const SchedaAlimentazione = () => {
   const movePastoUp = (pastoIndex) => {
     if (pastoIndex === 0) return;
     setSchedaData(prev => {
-      const newData = { ...prev };
+      const newData = JSON.parse(JSON.stringify(prev));
       const pasti = newData.giorni[selectedDay].pasti;
       [pasti[pastoIndex - 1], pasti[pastoIndex]] = [pasti[pastoIndex], pasti[pastoIndex - 1]];
       return newData;
@@ -516,7 +516,7 @@ const SchedaAlimentazione = () => {
     const pasti = schedaData.giorni[selectedDay].pasti;
     if (pastoIndex === pasti.length - 1) return;
     setSchedaData(prev => {
-      const newData = { ...prev };
+      const newData = JSON.parse(JSON.stringify(prev));
       const pasti = newData.giorni[selectedDay].pasti;
       [pasti[pastoIndex], pasti[pastoIndex + 1]] = [pasti[pastoIndex + 1], pasti[pastoIndex]];
       return newData;
@@ -525,7 +525,7 @@ const SchedaAlimentazione = () => {
 
   const duplicatePasto = (pastoIndex) => {
     setSchedaData(prev => {
-      const newData = { ...prev };
+      const newData = JSON.parse(JSON.stringify(prev));
       const pasto = JSON.parse(JSON.stringify(newData.giorni[selectedDay].pasti[pastoIndex]));
       newData.giorni[selectedDay].pasti.splice(pastoIndex + 1, 0, pasto);
       return newData;
@@ -538,7 +538,7 @@ const SchedaAlimentazione = () => {
     if (!confirmed) return;
     
     setSchedaData(prev => {
-      const newData = { ...prev };
+      const newData = JSON.parse(JSON.stringify(prev));
       newData.giorni[selectedDay].pasti.splice(pastoIndex, 1);
       return newData;
     });
@@ -548,7 +548,7 @@ const SchedaAlimentazione = () => {
   const renamePasto = (pastoIndex, newName) => {
     if (!newName.trim()) return;
     setSchedaData(prev => {
-      const newData = { ...prev };
+      const newData = JSON.parse(JSON.stringify(prev));
       newData.giorni[selectedDay].pasti[pastoIndex].nome = newName.trim();
       return newData;
     });
