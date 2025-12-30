@@ -1,16 +1,12 @@
 // src/pages/dipendenti.jsx
 import React, { useState, useEffect, useMemo } from "react";
-import { db } from "../../firebase";
+import { db, toDate } from "../../firebase";
 import {
-  collection,
   onSnapshot,
   doc,
   setDoc,
   serverTimestamp,
-  query,
   getDocs,
-  orderBy,
-  getDoc,
   deleteDoc,
 } from "firebase/firestore";
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from "../../config/tenant";
@@ -25,10 +21,11 @@ const Dipendenti = () => {
   const [dipendenti, setDipendenti] = useState([]);
   const [pagamenti, setPagamenti] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [incassoMensile, setIncassoMensile] = useState(0);
+  const [incassoNuoviClienti, setIncassoNuoviClienti] = useState(0);
+  const [incassoRinnovi, setIncassoRinnovi] = useState(0);
+  const [includeRenewals, setIncludeRenewals] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [meseCalendario, setMeseCalendario] = useState(new Date());
-  const [periodoRiferimento, setPeriodoRiferimento] = useState({ tipo: 'anno', anno: new Date().getFullYear(), mese: null });
 
   // Form
   const [formDip, setFormDip] = useState({ nome: "", nominativo: "", iban: "", tipo: "percentuale", percentuale: "", fissi: [], ruolo: "Setter" });
@@ -48,52 +45,93 @@ const Dipendenti = () => {
   // Filtro
   const [meseFiltro, setMeseFiltro] = useState(format(new Date(), "yyyy-MM"));
 
-  // === INCASSO PERIODO ===
+  // === INCASSO MESE CORRENTE ===
   useEffect(() => {
-    const loadIncassoMensile = async () => {
+    const loadIncassoMeseCorrente = async () => {
       try {
-        let periodStart, periodEnd;
-        
-        if (periodoRiferimento.tipo === 'anno') {
-          periodStart = new Date(periodoRiferimento.anno, 0, 1); // 1 gennaio
-          periodEnd = new Date(periodoRiferimento.anno, 11, 31, 23, 59, 59); // 31 dicembre
-        } else if (periodoRiferimento.tipo === 'mese') {
-          periodStart = new Date(periodoRiferimento.anno, periodoRiferimento.mese, 1);
-          periodEnd = new Date(periodoRiferimento.anno, periodoRiferimento.mese + 1, 0, 23, 59, 59);
-        } else if (periodoRiferimento.tipo === 'range') {
-          const [startYear, startMonth] = periodoRiferimento.meseInizio.split('-').map(Number);
-          const [endYear, endMonth] = periodoRiferimento.meseFine.split('-').map(Number);
-          periodStart = new Date(startYear, startMonth - 1, 1);
-          periodEnd = new Date(endYear, endMonth, 0, 23, 59, 59);
-        }
+        const now = new Date();
+        const monthStart = startOfMonth(now);
+        const monthEnd = endOfMonth(now);
         
         const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
-        let income = 0;
         
-        for (const clientDoc of clientsSnap.docs) {
-          const clientData = clientDoc.data();
-          if (!clientData.isOldClient) {
-            const paymentsSnap = await getDocs(
-              query(getTenantSubcollection(db, 'clients', clientDoc.id, 'payments'), orderBy('paymentDate', 'desc'))
-            );
+        // Carica tutti i dati in parallelo per ogni cliente
+        const results = await Promise.all(
+          clientsSnap.docs.map(async (clientDoc) => {
+            const clientData = clientDoc.data();
+            const isOldClient = clientData.isOldClient === true;
+            let clientNuovi = 0;
+            let clientRinnovi = 0;
             
+            // Carica payments e rates in parallelo
+            const [paymentsSnap, ratesSnap] = await Promise.all([
+              getDocs(getTenantSubcollection(db, 'clients', clientDoc.id, 'payments')).catch(() => ({ docs: [] })),
+              getDocs(getTenantSubcollection(db, 'clients', clientDoc.id, 'rates')).catch(() => ({ docs: [] }))
+            ]);
+            
+            // 1. Processa payments
             paymentsSnap.docs.forEach(paymentDoc => {
               const paymentData = paymentDoc.data();
-              const paymentDate = paymentData.paymentDate?.toDate();
-              if (paymentDate && paymentDate >= periodStart && paymentDate <= periodEnd && !paymentData.isPast) {
-                income += paymentData.amount || 0;
+              const paymentDate = toDate(paymentData.paymentDate || paymentData.date || paymentData.createdAt);
+              const isRenewal = paymentData.isRenewal === true;
+              
+              if (isOldClient && !isRenewal) return;
+              
+              if (paymentDate && paymentDate >= monthStart && paymentDate <= monthEnd && !paymentData.isPast) {
+                const amount = parseFloat(paymentData.amount) || 0;
+                if (isRenewal) {
+                  clientRinnovi += amount;
+                } else {
+                  clientNuovi += amount;
+                }
               }
             });
-          }
-        }
+            
+            // 2. Processa rates subcollection
+            ratesSnap.docs.forEach(rateDoc => {
+              const rateData = rateDoc.data();
+              if (!rateData.paid || !rateData.paidDate) return;
+              
+              const paidDate = toDate(rateData.paidDate);
+              if (paidDate && paidDate >= monthStart && paidDate <= monthEnd) {
+                const amount = parseFloat(rateData.amount) || 0;
+                if (rateData.isRenewal === true) {
+                  clientRinnovi += amount;
+                } else {
+                  clientNuovi += amount;
+                }
+              }
+            });
+            
+            // 3. Processa rate legacy dal documento cliente
+            (clientData.rate || []).forEach(rate => {
+              if (rate.paid && rate.paidDate) {
+                const rateDate = toDate(rate.paidDate);
+                if (rateDate && rateDate >= monthStart && rateDate <= monthEnd) {
+                  const amount = parseFloat(rate.amount) || 0;
+                  clientNuovi += amount;
+                }
+              }
+            });
+            
+            return { nuovi: clientNuovi, rinnovi: clientRinnovi };
+          })
+        );
         
-        setIncassoMensile(income);
+        // Somma tutti i risultati
+        const totals = results.reduce((acc, r) => ({
+          nuovi: acc.nuovi + r.nuovi,
+          rinnovi: acc.rinnovi + r.rinnovi
+        }), { nuovi: 0, rinnovi: 0 });
+        
+        setIncassoNuoviClienti(totals.nuovi);
+        setIncassoRinnovi(totals.rinnovi);
       } catch (err) {
-        console.error('Errore caricamento incasso periodo:', err);
+        console.error('Errore caricamento incasso mese corrente:', err);
       }
     };
-    loadIncassoMensile();
-  }, [periodoRiferimento]);
+    loadIncassoMeseCorrente();
+  }, []);
 
   // === DIPENDENTI & PAGAMENTI ===
   useEffect(() => {
@@ -131,13 +169,15 @@ const Dipendenti = () => {
   }, [dipendenti]);
 
   // === PROVVIGIONI TOTALI + UTILE NETTO ===
+  const incassoTotale = includeRenewals ? (incassoNuoviClienti + incassoRinnovi) : incassoNuoviClienti;
+  
   const { provvigioniTotali, pagatiTotali, daPagareTotali, utileNetto } = useMemo(() => {
     let provv = 0;
     let pagati = 0;
 
     dipendenti.filter(d => !d.archived).forEach(dip => {
       if (dip.tipo === "percentuale") {
-        provv += (incassoMensile * dip.percentuale) / 100;
+        provv += (incassoTotale * dip.percentuale) / 100;
       } else {
         const fissiMese = dip.fissi
           .filter(f => format(new Date(f.data), "yyyy-MM") === meseFiltro)
@@ -150,9 +190,9 @@ const Dipendenti = () => {
         .reduce((s, p) => s + p.importo, 0);
     });
 
-    const utile = incassoMensile - pagati;
+    const utile = incassoTotale - pagati;
     return { provvigioniTotali: provv, pagatiTotali: pagati, daPagareTotali: provv - pagati, utileNetto: utile };
-  }, [dipendenti, incassoMensile, pagamenti, meseFiltro]);
+  }, [dipendenti, incassoTotale, pagamenti, meseFiltro]);
 
   // === CALENDARIO ===
   const giorniMese = eachDayOfInterval({
@@ -262,88 +302,47 @@ const Dipendenti = () => {
           </button>
         </div>
         
-        {/* SELETTORE PERIODO INCASSO */}
-        <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-4 border border-slate-700">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPeriodoRiferimento({ tipo: 'anno', anno: new Date().getFullYear(), mese: null })}
-                className={`px-4 py-2 text-sm rounded-lg transition ${
-                  periodoRiferimento.tipo === 'anno' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                Anno
-              </button>
-              <button
-                onClick={() => setPeriodoRiferimento({ tipo: 'mese', anno: new Date().getFullYear(), mese: new Date().getMonth() })}
-                className={`px-4 py-2 text-sm rounded-lg transition ${
-                  periodoRiferimento.tipo === 'mese' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                Mese
-              </button>
-              <button
-                onClick={() => setPeriodoRiferimento({ tipo: 'range', meseInizio: format(new Date(), 'yyyy-MM'), meseFine: format(new Date(), 'yyyy-MM') })}
-                className={`px-4 py-2 text-sm rounded-lg transition ${
-                  periodoRiferimento.tipo === 'range' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                Periodo
-              </button>
+        {/* INCASSO MESE CORRENTE */}
+        <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 rounded-xl p-5 border border-emerald-500/20">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="text-xs text-emerald-400 font-medium uppercase mb-1">
+                Incasso {format(new Date(), 'MMMM yyyy')}
+              </p>
+              <p className="text-3xl sm:text-4xl font-bold text-white">
+                {formatCurrency(incassoTotale)}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                {includeRenewals ? 'Nuovi clienti + Rinnovi' : 'Solo nuovi clienti'}
+              </p>
             </div>
             
-            {periodoRiferimento.tipo === 'anno' && (
-              <select
-                value={periodoRiferimento.anno}
-                onChange={(e) => setPeriodoRiferimento({ ...periodoRiferimento, anno: parseInt(e.target.value) })}
-                className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
-              >
-                {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-            )}
-            
-            {periodoRiferimento.tipo === 'mese' && (
-              <div className="flex gap-2">
-                <select
-                  value={periodoRiferimento.mese}
-                  onChange={(e) => setPeriodoRiferimento({ ...periodoRiferimento, mese: parseInt(e.target.value) })}
-                  className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
-                >
-                  {['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'].map((m, i) => (
-                    <option key={i} value={i}>{m}</option>
-                  ))}
-                </select>
-                <select
-                  value={periodoRiferimento.anno}
-                  onChange={(e) => setPeriodoRiferimento({ ...periodoRiferimento, anno: parseInt(e.target.value) })}
-                  className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
-                >
-                  {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            
-            {periodoRiferimento.tipo === 'range' && (
-              <div className="flex flex-col sm:flex-row gap-2 items-center">
+            {/* Checkbox per includere rinnovi */}
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <div className="relative">
                 <input
-                  type="month"
-                  value={periodoRiferimento.meseInizio || format(new Date(), 'yyyy-MM')}
-                  onChange={(e) => setPeriodoRiferimento({ ...periodoRiferimento, meseInizio: e.target.value })}
-                  className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
+                  type="checkbox"
+                  checked={includeRenewals}
+                  onChange={(e) => setIncludeRenewals(e.target.checked)}
+                  className="sr-only peer"
                 />
-                <span className="text-slate-400 text-sm">→</span>
-                <input
-                  type="month"
-                  value={periodoRiferimento.meseFine || format(new Date(), 'yyyy-MM')}
-                  onChange={(e) => setPeriodoRiferimento({ ...periodoRiferimento, meseFine: e.target.value })}
-                  className="px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
-                />
+                <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:bg-cyan-500 transition-colors"></div>
+                <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
               </div>
-            )}
+              <span className="text-sm text-slate-300">Includi rinnovi</span>
+            </label>
+          </div>
+          
+          {/* Dettaglio nuovi vs rinnovi */}
+          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-emerald-500/20">
+            <div>
+              <p className="text-xs text-slate-400">Nuovi clienti</p>
+              <p className="text-lg font-bold text-emerald-400">{formatCurrency(incassoNuoviClienti)}</p>
+            </div>
+            <div className={includeRenewals ? '' : 'opacity-50'}>
+              <p className="text-xs text-slate-400">Rinnovi</p>
+              <p className="text-lg font-bold text-cyan-400">{formatCurrency(incassoRinnovi)}</p>
+            </div>
           </div>
         </div>
         
@@ -360,29 +359,20 @@ const Dipendenti = () => {
       </div>
 
       {/* STATISTICHE + UTILE NETTO */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-xl text-white shadow-lg">
-          <p className="text-sm opacity-90 flex items-center gap-1">
-            <DollarSign size={16} /> 
-            {periodoRiferimento.tipo === 'anno' && `Fatturato ${periodoRiferimento.anno}`}
-            {periodoRiferimento.tipo === 'mese' && `Fatturato ${['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'][periodoRiferimento.mese]} ${periodoRiferimento.anno}`}
-            {periodoRiferimento.tipo === 'range' && `Fatturato ${periodoRiferimento.meseInizio} / ${periodoRiferimento.meseFine}`}
-          </p>
-          <p className="text-2xl font-bold mt-1">{formatCurrency(incassoMensile)}</p>
-        </div>
-        <div className="bg-gradient-to-br from-purple-600 to-purple-800 p-6 rounded-xl text-white shadow-lg">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-purple-600 to-purple-800 p-5 rounded-xl text-white shadow-lg">
           <p className="text-sm opacity-90 flex items-center gap-1"><TrendingUp size={16} /> Utile Netto</p>
           <p className="text-2xl font-bold mt-1">{formatCurrency(utileNetto)}</p>
         </div>
-        <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 p-6 rounded-xl text-white shadow-lg">
+        <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 p-5 rounded-xl text-white shadow-lg">
           <p className="text-sm opacity-90">Provvigioni</p>
           <p className="text-2xl font-bold mt-1">{formatCurrency(provvigioniTotali)}</p>
         </div>
-        <div className="bg-gradient-to-br from-amber-600 to-amber-800 p-6 rounded-xl text-white shadow-lg">
+        <div className="bg-gradient-to-br from-amber-600 to-amber-800 p-5 rounded-xl text-white shadow-lg">
           <p className="text-sm opacity-90">Pagati</p>
           <p className="text-2xl font-bold mt-1">{formatCurrency(pagatiTotali)}</p>
         </div>
-        <div className={`p-6 rounded-xl text-white shadow-lg ${daPagareTotali > 0 ? 'bg-gradient-to-br from-rose-600 to-rose-800' : 'bg-gradient-to-br from-green-600 to-green-800'}`}>
+        <div className={`p-5 rounded-xl text-white shadow-lg ${daPagareTotali > 0 ? 'bg-gradient-to-br from-rose-600 to-rose-800' : 'bg-gradient-to-br from-green-600 to-green-800'}`}>
           <p className="text-sm opacity-90">Da Pagare</p>
           <p className="text-2xl font-bold mt-1">{formatCurrency(daPagareTotali)}</p>
         </div>
@@ -471,7 +461,7 @@ const Dipendenti = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {dipendentiFiltrati.map((dip) => {
           const pagati = pagamenti.filter(p => p.dipId === dip.id && format(p.data, "yyyy-MM") === meseFiltro).reduce((sum, p) => sum + p.importo, 0);
-          const provvigionePercentuale = dip.tipo === "percentuale" ? (incassoMensile * dip.percentuale) / 100 : 0;
+          const provvigionePercentuale = dip.tipo === "percentuale" ? (incassoTotale * dip.percentuale) / 100 : 0;
           const totaleFissi = dip.tipo === "fisso" ? dip.fissi.filter(f => format(new Date(f.data), "yyyy-MM") === meseFiltro).reduce((sum, f) => sum + f.importo, 0) : 0;
           const daPagare = (dip.tipo === "percentuale" ? provvigionePercentuale : totaleFissi) - pagati;
 
@@ -540,15 +530,15 @@ const Dipendenti = () => {
                       type="number" 
                       placeholder="Importo" 
                       value={formPagamento.dipId === dip.id ? (formPagamento.importoBase || "") : (dip.tipo === "percentuale" ? provvigionePercentuale : totaleFissi)} 
-                      readOnly 
-                      className="flex-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600" 
+                      onChange={(e) => setFormPagamento({ ...formPagamento, dipId: dip.id, importoBase: e.target.value })}
+                      className="flex-1 px-3 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500" 
                     />
                     <input 
                       type="number" 
                       placeholder="Bonus" 
                       value={formPagamento.dipId === dip.id ? (formPagamento.bonus || "") : ""}
                       className="w-20 px-2 py-1.5 text-xs bg-slate-700 text-slate-100 rounded border border-slate-600 focus:outline-none focus:border-rose-500" 
-                      onChange={(e) => setFormPagamento({ ...formPagamento, dipId: dip.id, importoBase: (dip.tipo === "percentuale" ? provvigionePercentuale : totaleFissi), bonus: e.target.value })} 
+                      onChange={(e) => setFormPagamento({ ...formPagamento, dipId: dip.id, importoBase: formPagamento.importoBase || (dip.tipo === "percentuale" ? provvigionePercentuale : totaleFissi), bonus: e.target.value })} 
                     />
                   </div>
 

@@ -11,6 +11,11 @@ service cloud.firestore {
              request.auth.uid in get(/databases/$(database)/documents/platform_admins/superadmins).data.uids;
     }
 
+    // Editor temporanei per esercizi globali (RIMUOVERE QUANDO NON PIÙ NECESSARIO)
+    function isGlobalExerciseEditor() {
+      return isTenantSuperAdmin('biondo-fitness-coach');
+    }
+
     // SuperAdmin di un tenant specifico (proprietario business)
     function isTenantSuperAdmin(tenantId) {
       return request.auth != null &&
@@ -622,7 +627,8 @@ service cloud.firestore {
     // --- PLATFORM EXERCISES (database globale esercizi) ---
     match /platform_exercises/{exerciseId} {
       allow read: if request.auth != null; // Tutti gli utenti autenticati possono leggere
-      allow create, update, delete: if isPlatformCEO(); // Solo platform CEO può modificare
+      allow create, delete: if isPlatformCEO(); // Solo platform CEO può creare/eliminare
+      allow update: if isPlatformCEO() || isGlobalExerciseEditor(); // CEO + editor temporanei possono aggiornare
     }
 
     // --- PLATFORM FOODS (database globale alimenti) ---

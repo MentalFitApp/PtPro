@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, X, Save, Filter, Video, Upload, Settings, Globe, User } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Save, Filter, Video, Upload, Settings, Globe, User, Shield } from 'lucide-react';
 import { db, auth } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, or, getDoc, setDoc } from 'firebase/firestore';
-import { getTenantCollection, getTenantDoc } from '../config/tenant';
+import { getTenantCollection, getTenantDoc, getCurrentTenantId } from '../config/tenant';
 import { uploadToR2 } from '../cloudflareStorage';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
+
+// PERMESSI TEMPORANEI: Tenant che possono modificare esercizi globali
+// Rimuovere quando non più necessario
+const GLOBAL_EXERCISE_EDITORS = ['biondo-fitness-coach'];
 
 const ListaEsercizi = ({ onBack }) => {
   const toast = useToast();
@@ -18,6 +22,9 @@ const ListaEsercizi = ({ onBack }) => {
   const [selectedGruppo, setSelectedGruppo] = useState('');
   const [attrezziOptions, setAttrezziOptions] = useState([]);
   const [gruppiOptions, setGruppiOptions] = useState([]);
+  
+  // Verifica se l'utente corrente può modificare esercizi globali
+  const canEditGlobalExercises = GLOBAL_EXERCISE_EDITORS.includes(getCurrentTenantId());
   const [categoryFilter, setCategoryFilter] = useState('all'); // 'all', 'global', 'custom'
   const [isAddingExercise, setIsAddingExercise] = useState(false);
   const [editingExercise, setEditingExercise] = useState(null);
@@ -80,11 +87,15 @@ const ListaEsercizi = ({ onBack }) => {
       if (settings.useGlobalDatabase) {
         const globalRef = collection(db, 'platform_exercises');
         const globalSnap = await getDocs(globalRef);
+        
+        // Verifica se l'utente può modificare esercizi globali
+        const canEditGlobal = GLOBAL_EXERCISE_EDITORS.includes(getCurrentTenantId());
+        
         globalExercisesData = globalSnap.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
           source: 'global',
-          editable: false
+          editable: canEditGlobal // true se tenant ha permesso di modifica globale
         }));
       }
 
@@ -255,12 +266,28 @@ const ListaEsercizi = ({ onBack }) => {
         : getTenantDoc(db, 'exercises', editingExercise.id);
       
       const { isCustom, ...exerciseData } = formData;
-      await updateDoc(exerciseRef, {
+      
+      // Se è un esercizio globale, aggiorna anche nameIt per ExerciseDB
+      const updateData = {
         ...exerciseData,
         videoUrl,
         updatedAt: new Date(),
         updatedBy: auth.currentUser.displayName || 'Admin'
-      });
+      };
+      
+      // Per esercizi globali ExerciseDB, aggiorna anche nameIt
+      if (editingExercise.source === 'global' && editingExercise.nameIt) {
+        updateData.nameIt = exerciseData.nome;
+      }
+      
+      await updateDoc(exerciseRef, updateData);
+      
+      // Messaggio diverso per modifiche globali
+      if (editingExercise.source === 'global') {
+        toast.success(`✅ Esercizio globale "${exerciseData.nome}" aggiornato per tutti i tenant!`);
+      } else {
+        toast.success('Esercizio aggiornato');
+      }
       
       resetForm();
       loadExercises();
@@ -355,6 +382,19 @@ const ListaEsercizi = ({ onBack }) => {
       animate={{ opacity: 1 }}
       className="space-y-6 max-w-full overflow-x-hidden"
     >
+      {/* Banner permessi modifica globale */}
+      {canEditGlobalExercises && (
+        <div className="bg-amber-600/20 border border-amber-500/50 rounded-lg p-4 flex items-center gap-3">
+          <Shield className="text-amber-400 flex-shrink-0" size={24} />
+          <div>
+            <p className="text-amber-200 font-medium">🔓 Permessi Editor Globale Attivi</p>
+            <p className="text-amber-300/70 text-sm">
+              Puoi modificare i nomi degli esercizi globali. Le modifiche saranno visibili a tutti i tenant.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
@@ -771,12 +811,18 @@ const ListaEsercizi = ({ onBack }) => {
                   const exerciseEquipment = exercise.attrezzo || exercise.equipmentIt || exercise.equipment || '-';
                   const exerciseMuscle = exercise.gruppoMuscolare || exercise.bodyPartIt || exercise.bodyPart || '-';
                   const exerciseVideo = exercise.videoUrl || exercise.gifUrl || null;
-                  const canEdit = exercise.source === 'custom'; // Solo esercizi custom modificabili
+                  const canEdit = exercise.editable; // Usa il flag editable dall'esercizio
                   
                   return (
                     <tr key={exercise.id} className="hover:bg-slate-800/50 transition-colors">
                       <td className="px-4 py-3 text-slate-200 font-medium">
                         {exerciseName}
+                        {exercise.source === 'global' && canEdit && (
+                          <span className="ml-2 px-1.5 py-0.5 bg-amber-600/30 text-amber-400 text-[10px] rounded">
+                            <Shield size={10} className="inline mr-0.5" />
+                            EDIT
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {exercise.source === 'global' ? (
