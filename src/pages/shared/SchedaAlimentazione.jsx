@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Copy, RotateCcw, X, Download, Upload, History, FileText, Sparkles, Send, AlertTriangle } from 'lucide-react';
+import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Copy, RotateCcw, X, Download, Upload, History, FileText, Sparkles, Send, AlertTriangle, Edit3 } from 'lucide-react';
 import { db } from '../../firebase';
 import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit, deleteDoc } from 'firebase/firestore';
@@ -18,6 +18,7 @@ import { useEscapeKey } from '../../hooks/useKeyboardShortcut';
 const OBIETTIVI = ['Definizione', 'Massa', 'Mantenimento', 'Dimagrimento', 'Sportivo'];
 const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
 const PASTI = ['Colazione', 'Spuntino', 'Pranzo', 'Spuntino', 'Cena'];
+const TIPI_PASTO = ['Colazione', 'Spuntino Mattina', 'Pranzo', 'Spuntino Pomeriggio', 'Merenda', 'Cena', 'Pre-Workout', 'Post-Workout', 'Spuntino Serale'];
 
 const SchedaAlimentazione = () => {
   const { clientId } = useParams();
@@ -87,6 +88,10 @@ const SchedaAlimentazione = () => {
   // Delete modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  // Edit pasto name
+  const [editingPastoIndex, setEditingPastoIndex] = useState(null);
+  const [editingPastoName, setEditingPastoName] = useState('');
 
   useEffect(() => {
     loadClientAndScheda();
@@ -527,6 +532,35 @@ const SchedaAlimentazione = () => {
     });
   };
 
+  const removePasto = async (pastoIndex) => {
+    const pasto = schedaData.giorni[selectedDay].pasti[pastoIndex];
+    const confirmed = await confirmDelete(`il pasto "${pasto.nome}"`);
+    if (!confirmed) return;
+    
+    setSchedaData(prev => {
+      const newData = { ...prev };
+      newData.giorni[selectedDay].pasti.splice(pastoIndex, 1);
+      return newData;
+    });
+    toast.success(`Pasto "${pasto.nome}" eliminato`);
+  };
+
+  const renamePasto = (pastoIndex, newName) => {
+    if (!newName.trim()) return;
+    setSchedaData(prev => {
+      const newData = { ...prev };
+      newData.giorni[selectedDay].pasti[pastoIndex].nome = newName.trim();
+      return newData;
+    });
+    setEditingPastoIndex(null);
+    setEditingPastoName('');
+  };
+
+  const startEditingPasto = (pastoIndex) => {
+    setEditingPastoIndex(pastoIndex);
+    setEditingPastoName(schedaData.giorni[selectedDay].pasti[pastoIndex].nome);
+  };
+
   const duplicateDayToOthers = (targetDays) => {
     const currentDayData = JSON.parse(JSON.stringify(schedaData.giorni[selectedDay]));
     setSchedaData(prev => {
@@ -952,7 +986,57 @@ const SchedaAlimentazione = () => {
                 className="bg-slate-800/50 border border-slate-700 rounded-xl p-6"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-100">{pasto.nome}</h3>
+                  {isEditMode && editingPastoIndex === pastoIndex ? (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={editingPastoName}
+                        onChange={(e) => setEditingPastoName(e.target.value)}
+                        className="bg-slate-700 border border-slate-600 text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      >
+                        {TIPI_PASTO.map(tipo => (
+                          <option key={tipo} value={tipo}>{tipo}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        value={editingPastoName}
+                        onChange={(e) => setEditingPastoName(e.target.value)}
+                        placeholder="O scrivi un nome personalizzato..."
+                        className="bg-slate-700 border border-slate-600 text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent w-48"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') renamePasto(pastoIndex, editingPastoName);
+                          if (e.key === 'Escape') { setEditingPastoIndex(null); setEditingPastoName(''); }
+                        }}
+                      />
+                      <button
+                        onClick={() => renamePasto(pastoIndex, editingPastoName)}
+                        className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                        title="Conferma"
+                      >
+                        <Save size={16} />
+                      </button>
+                      <button
+                        onClick={() => { setEditingPastoIndex(null); setEditingPastoName(''); }}
+                        className="p-1.5 bg-slate-600 hover:bg-slate-500 text-white rounded-lg"
+                        title="Annulla"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold text-slate-100">{pasto.nome}</h3>
+                      {isEditMode && (
+                        <button
+                          onClick={() => startEditingPasto(pastoIndex)}
+                          className="p-1 text-slate-400 hover:text-emerald-400"
+                          title="Modifica nome pasto"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {isEditMode && (
                     <div className="flex items-center gap-2">
                       <button
@@ -972,8 +1056,16 @@ const SchedaAlimentazione = () => {
                       <button
                         onClick={() => duplicatePasto(pastoIndex)}
                         className="p-2 text-blue-400 hover:text-blue-300"
+                        title="Duplica pasto"
                       >
                         <Copy size={18} />
+                      </button>
+                      <button
+                        onClick={() => removePasto(pastoIndex)}
+                        className="p-2 text-red-400 hover:text-red-300"
+                        title="Elimina pasto"
+                      >
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   )}
