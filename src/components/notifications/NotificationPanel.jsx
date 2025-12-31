@@ -47,14 +47,21 @@ export default function NotificationPanel({ userType = 'client', showEnableButto
       if (newUnreadCount > previousCountRef.current && previousCountRef.current > 0) {
         playNotificationSound();
         
-        // Mostra notifica browser (solo se API Notification supportata)
+        // Mostra notifica browser via ServiceWorker
         if (typeof Notification !== 'undefined' && permission === 'granted' && notifs[0]) {
-          new Notification(notifs[0].title || 'Nuova notifica', {
-            body: notifs[0].body || '',
-            icon: '/PtPro/logo192.png',
-            badge: '/PtPro/logo192.png',
-            tag: 'notification-' + notifs[0].id
-          });
+          try {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+              const registration = await navigator.serviceWorker.ready;
+              registration.showNotification(notifs[0].title || 'Nuova notifica', {
+                body: notifs[0].body || '',
+                icon: '/PtPro/logo192.png',
+                badge: '/PtPro/logo192.png',
+                tag: 'notification-' + notifs[0].id
+              });
+            }
+          } catch (e) {
+            console.log('Notifica browser non disponibile');
+          }
         }
       }
       

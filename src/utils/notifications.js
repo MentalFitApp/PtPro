@@ -71,18 +71,25 @@ export const checkNotificationPermission = () => {
 };
 
 // Invia notifica locale (non serve backend)
-export const sendLocalNotification = (title, options = {}) => {
-  if (Notification.permission === 'granted') {
-    const notification = new Notification(title, {
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      ...options
-    });
-    
-    // Chiudi notifica dopo 5 secondi
-    setTimeout(() => notification.close(), 5000);
-    
-    return notification;
+export const sendLocalNotification = async (title, options = {}) => {
+  if (Notification.permission !== 'granted') return null;
+  
+  try {
+    // Usa ServiceWorkerRegistration se disponibile (preferito)
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(title, {
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        ...options
+      });
+      return true;
+    }
+    // Fallback per contesti dove new Notification funziona
+    return null;
+  } catch (error) {
+    console.log('Notifica locale non disponibile:', error.message);
+    return null;
   }
 };
 

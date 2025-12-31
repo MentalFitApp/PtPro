@@ -131,17 +131,20 @@ const createNotificationInFirestore = async (targetUserId, targetUserType, type,
 };
 
 // ============ INVIA NOTIFICA PUSH (BROWSER) ============
-const sendBrowserNotification = (title, body, icon) => {
+const sendBrowserNotification = async (title, body, _icon) => {
   if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
     try {
-      new Notification(title, {
-        body,
-        icon: '/PtPro/logo192.png',
-        badge: '/PtPro/logo192.png',
-        tag: `notification-${Date.now()}`
-      });
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        const registration = await navigator.serviceWorker.ready;
+        registration.showNotification(title, {
+          body,
+          icon: '/PtPro/logo192.png',
+          badge: '/PtPro/logo192.png',
+          tag: `notification-${Date.now()}`
+        });
+      }
     } catch (error) {
-      console.log('Browser notification non supportata:', error);
+      console.log('Browser notification non supportata:', error.message);
     }
   }
 };

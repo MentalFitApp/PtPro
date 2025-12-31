@@ -206,18 +206,25 @@ export function usePushNotifications() {
     try {
       const messaging = getMessaging();
       
-      const unsubscribe = onMessage(messaging, (payload) => {
+      const unsubscribe = onMessage(messaging, async (payload) => {
         console.log('[Push] Messaggio foreground:', payload);
         
-        // Mostra notifica locale se app in foreground
+        // Mostra notifica locale se app in foreground via ServiceWorker
         if (payload.notification && Notification.permission === 'granted') {
           const { title, body, icon } = payload.notification;
-          new Notification(title, {
-            body,
-            icon: icon || '/icon-192.png',
-            badge: '/icon-72.png',
-            data: payload.data
-          });
+          try {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+              const registration = await navigator.serviceWorker.ready;
+              registration.showNotification(title, {
+                body,
+                icon: icon || '/icon-192.png',
+                badge: '/icon-72.png',
+                data: payload.data
+              });
+            }
+          } catch (e) {
+            console.log('Notifica foreground non disponibile');
+          }
         }
         
         if (callback) callback(payload);
