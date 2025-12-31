@@ -12,7 +12,7 @@ import {
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from "../../config/tenant";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths } from "date-fns";
 import { formatCurrency } from "../../utils/formatters";
-import { Edit2, Trash2, Calendar, TrendingUp, DollarSign, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Edit2, Trash2, Calendar, TrendingUp, DollarSign, ChevronLeft, ChevronRight, ChevronDown, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -30,6 +30,7 @@ const Dipendenti = () => {
   const [includeRenewals, setIncludeRenewals] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [meseCalendario, setMeseCalendario] = useState(new Date());
+  const [calendarioCollapsed, setCalendarioCollapsed] = useState(true);
   const [showEditPagamentoModal, setShowEditPagamentoModal] = useState(false);
 
   // Form
@@ -395,82 +396,94 @@ const Dipendenti = () => {
       </div>
 
       {/* CALENDARIO PAGAMENTI */}
-      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 sm:p-6 border border-slate-700 shadow-xl">
-        <div className="flex justify-between items-center mb-3 sm:mb-4">
-          <button onClick={() => setMeseCalendario(addMonths(meseCalendario, -1))} className="p-1.5 sm:p-2 hover:bg-slate-700 rounded-lg transition">
-            <ChevronLeft size={16} className="text-slate-400 sm:hidden" /><ChevronLeft size={20} className="text-slate-400 hidden sm:block" />
-          </button>
-          <h3 className="text-sm sm:text-lg font-bold text-slate-100 flex items-center gap-1 sm:gap-2">
-            <Calendar size={16} className="sm:hidden" /><Calendar size={20} className="hidden sm:block" /> {format(meseCalendario, "MMMM yyyy")}
+      <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-700 shadow-xl overflow-hidden">
+        <div 
+          className="flex justify-between items-center p-3 cursor-pointer hover:bg-slate-700/50 transition"
+          onClick={() => setCalendarioCollapsed(!calendarioCollapsed)}
+        >
+          <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <Calendar size={16} /> Calendario Pagamenti
           </h3>
-          <button onClick={() => setMeseCalendario(addMonths(meseCalendario, 1))} className="p-1.5 sm:p-2 hover:bg-slate-700 rounded-lg transition">
-            <ChevronRight size={16} className="text-slate-400 sm:hidden" /><ChevronRight size={20} className="text-slate-400 hidden sm:block" />
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400">{format(meseCalendario, "MMMM yyyy")}</span>
+            <ChevronDown size={16} className={`text-slate-400 transition-transform ${calendarioCollapsed ? '' : 'rotate-180'}`} />
+          </div>
         </div>
+        
+        <AnimatePresence>
+          {!calendarioCollapsed && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="p-3 pt-0">
+                <div className="flex justify-between items-center mb-2">
+                  <button onClick={(e) => { e.stopPropagation(); setMeseCalendario(addMonths(meseCalendario, -1)); }} className="p-1 hover:bg-slate-700 rounded transition">
+                    <ChevronLeft size={16} className="text-slate-400" />
+                  </button>
+                  <span className="text-xs font-medium text-slate-300">{format(meseCalendario, "MMMM yyyy")}</span>
+                  <button onClick={(e) => { e.stopPropagation(); setMeseCalendario(addMonths(meseCalendario, 1)); }} className="p-1 hover:bg-slate-700 rounded transition">
+                    <ChevronRight size={16} className="text-slate-400" />
+                  </button>
+                </div>
 
-        <div className="grid grid-cols-7 gap-1 sm:gap-3 text-center text-[10px] sm:text-sm">
-          {['D', 'L', 'M', 'M', 'G', 'V', 'S'].map((d, i) => (
-            <div key={`day-${i}`} className="font-bold text-slate-400 py-1 sm:py-2">
-              <span className="sm:hidden">{d}</span>
-              <span className="hidden sm:inline">{['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][i]}</span>
-            </div>
-          ))}
-          {Array.from({ length: startOfMonth(meseCalendario).getDay() }, (_, i) => (
-            <div key={`empty-${i}`} />
-          ))}
-          {giorniMese.map(giorno => {
-            const pagamentiGiorno = pagamentiDelGiorno(giorno);
-            return (
-              <div
-                key={giorno.toISOString()}
-                className={`min-h-16 sm:min-h-28 p-1.5 sm:p-3 rounded-lg sm:rounded-xl border sm:border-2 transition-all cursor-pointer
-                  ${pagamentiGiorno.length > 0 
-                    ? 'bg-emerald-900/40 border-emerald-600 hover:bg-emerald-900/60' 
-                    : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700/70'
-                  }`}
-              >
-                <p className="text-xs sm:text-sm font-bold text-slate-300 mb-0.5 sm:mb-1">{format(giorno, "d")}</p>
-                <div className="space-y-1 sm:space-y-1.5 max-h-12 sm:max-h-20 overflow-y-auto">
-                  {pagamentiGiorno.map(p => {
-                    const dip = dipendentiMap.get(p.dipId);
+                <div className="grid grid-cols-7 gap-0.5 text-center text-[9px]">
+                  {['D', 'L', 'M', 'M', 'G', 'V', 'S'].map((d, i) => (
+                    <div key={`day-${i}`} className="font-bold text-slate-500 py-1">{d}</div>
+                  ))}
+                  {Array.from({ length: startOfMonth(meseCalendario).getDay() }, (_, i) => (
+                    <div key={`empty-${i}`} />
+                  ))}
+                  {giorniMese.map(giorno => {
+                    const pagamentiGiorno = pagamentiDelGiorno(giorno);
                     return (
-                      <motion.div
-                        key={p.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-gradient-to-r from-rose-600/30 to-purple-600/30 p-1 sm:p-2 rounded-md sm:rounded-lg text-[9px] sm:text-xs flex justify-between items-center"
+                      <div
+                        key={giorno.toISOString()}
+                        className={`min-h-10 p-1 rounded border transition-all cursor-pointer
+                          ${pagamentiGiorno.length > 0 
+                            ? 'bg-emerald-900/40 border-emerald-600/50 hover:bg-emerald-900/60' 
+                            : 'bg-slate-800/30 border-slate-700/50 hover:bg-slate-700/50'
+                          }`}
                       >
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-rose-300 truncate">{dip?.nome}</p>
-                          <p className="text-cyan-300 hidden sm:block">{formatCurrency(p.importo)}</p>
+                        <p className="text-[10px] font-bold text-slate-400">{format(giorno, "d")}</p>
+                        <div className="space-y-0.5 max-h-8 overflow-y-auto">
+                          {pagamentiGiorno.map(p => {
+                            const dip = dipendentiMap.get(p.dipId);
+                            return (
+                              <div
+                                key={p.id}
+                                className="bg-rose-600/30 px-1 py-0.5 rounded text-[8px] flex justify-between items-center group"
+                              >
+                                <span className="font-medium text-rose-300 truncate flex-1">{dip?.nome?.slice(0,6)}</span>
+                                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); modificaPagamento(p); }}
+                                    className="text-cyan-400 hover:text-cyan-300"
+                                  >
+                                    <Edit2 size={8} />
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); eliminaPagamento(p.id); }}
+                                    className="text-red-400 hover:text-red-300"
+                                  >
+                                    <Trash2 size={8} />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                        <div className="flex gap-0.5 sm:gap-1 flex-shrink-0 ml-1">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); modificaPagamento(p); }}
-                            className="text-cyan-400 hover:text-cyan-300 p-0.5"
-                            aria-label="Modifica pagamento"
-                          >
-                            <Edit2 size={10} className="sm:hidden" /><Edit2 size={14} className="hidden sm:block" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); eliminaPagamento(p.id); }}
-                            className="text-red-400 hover:text-red-300 p-0.5"
-                            aria-label="Elimina pagamento"
-                          >
-                            <Trash2 size={10} className="sm:hidden" /><Trash2 size={14} className="hidden sm:block" />
-                          </button>
-                        </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
-                {pagamentiGiorno.length === 0 && (
-                  <p className="hidden sm:block text-xs text-slate-500 italic mt-2">Nessun pagamento</p>
-                )}
               </div>
-            );
-          })}
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ELENCO DIPENDENTI */}
