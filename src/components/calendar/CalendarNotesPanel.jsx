@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   StickyNote, Plus, X, Trash2, Edit2, Save, Check, 
-  AlertCircle, Calendar, Clock, ChevronDown, ChevronUp 
+  AlertCircle, Calendar, Clock, ChevronDown, ChevronUp, Repeat 
 } from 'lucide-react';
 import { 
   collection, query, where, onSnapshot, addDoc, 
@@ -21,6 +21,17 @@ const PRIORITY_COLORS = {
   high: { bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-400', label: 'Alta' },
   urgent: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', label: 'Urgente' }
 };
+
+// Giorni della settimana
+const WEEKDAYS = [
+  { key: 1, label: 'Lun', fullLabel: 'Lunedì' },
+  { key: 2, label: 'Mar', fullLabel: 'Martedì' },
+  { key: 3, label: 'Mer', fullLabel: 'Mercoledì' },
+  { key: 4, label: 'Gio', fullLabel: 'Giovedì' },
+  { key: 5, label: 'Ven', fullLabel: 'Venerdì' },
+  { key: 6, label: 'Sab', fullLabel: 'Sabato' },
+  { key: 0, label: 'Dom', fullLabel: 'Domenica' }
+];
 
 export default function CalendarNotesPanel({ currentDate }) {
   const toast = useToast();
@@ -47,7 +58,12 @@ export default function CalendarNotesPanel({ currentDate }) {
     content: '',
     priority: 'medium',
     date: initialDate,
-    completed: false
+    completed: false,
+    // Campi per task ricorrenti
+    isRecurring: false,
+    time: '',
+    selectedDays: [], // array di numeri: 0=Dom, 1=Lun, 2=Mar, etc
+    weeksToCreate: 4 // quante settimane creare in avanti
   });
 
   // Carica note in real-time
@@ -96,24 +112,68 @@ export default function CalendarNotesPanel({ currentDate }) {
     
     try {
       if (editingNote) {
-        // Aggiorna nota esistente
+        // Aggiorna nota esistente (non supporta modifica ricorrenza)
+        const { isRecurring: _isRecurring, selectedDays: _selectedDays, weeksToCreate: _weeksToCreate, ...noteData } = formData;
         await updateDoc(
           getTenantDoc(db, 'calendarNotes', editingNote.id),
           {
-            ...formData,
+            ...noteData,
             updatedAt: serverTimestamp()
           }
         );
         setEditingNote(null);
+        toast.success('Nota aggiornata');
+      } else if (formData.isRecurring && formData.selectedDays.length > 0) {
+        // Crea task ricorrenti per i giorni selezionati
+        const { isRecurring: _isRecurring, selectedDays, weeksToCreate, date: _date, ...baseData } = formData;
+        const today = new Date();
+        const dates = [];
+        
+        // Genera le date per le prossime N settimane per ogni giorno selezionato
+        for (let week = 0; week < weeksToCreate; week++) {
+          for (const dayOfWeek of selectedDays) {
+            // Calcola la data del prossimo giorno della settimana
+            const targetDate = new Date(today);
+            const currentDay = today.getDay();
+            let daysToAdd = dayOfWeek - currentDay;
+            if (daysToAdd < 0 || (daysToAdd === 0 && week > 0)) {
+              daysToAdd += 7;
+            }
+            daysToAdd += week * 7;
+            targetDate.setDate(today.getDate() + daysToAdd);
+            dates.push(getDateString(targetDate));
+          }
+        }
+        
+        // Rimuovi duplicati e ordina
+        const uniqueDates = [...new Set(dates)].sort();
+        
+        // Crea un task per ogni data
+        const promises = uniqueDates.map(taskDate => 
+          addDoc(getTenantCollection(db, 'calendarNotes'), {
+            ...baseData,
+            date: taskDate,
+            recurringGroupId: `recurring_${Date.now()}`, // ID per raggruppare i task ricorrenti
+            createdBy: auth.currentUser.uid,
+            createdByEmail: auth.currentUser.email,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          })
+        );
+        
+        await Promise.all(promises);
+        toast.success(`Creati ${uniqueDates.length} task ricorrenti`);
       } else {
-        // Crea nuova nota
+        // Crea nuova nota singola
+        const { isRecurring: _isRecurring, selectedDays: _selectedDays, weeksToCreate: _weeksToCreate, ...noteData } = formData;
         await addDoc(getTenantCollection(db, 'calendarNotes'), {
-          ...formData,
+          ...noteData,
           createdBy: auth.currentUser.uid,
           createdByEmail: auth.currentUser.email,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
+        toast.success('Nota creata');
       }
 
       // Reset form
@@ -122,7 +182,11 @@ export default function CalendarNotesPanel({ currentDate }) {
         content: '',
         priority: 'medium',
         date: selectedDate || new Date().toISOString().split('T')[0],
-        completed: false
+        completed: false,
+        isRecurring: false,
+        time: '',
+        selectedDays: [],
+        weeksToCreate: 4
       });
       setShowAddForm(false);
     } catch (error) {
@@ -138,7 +202,11 @@ export default function CalendarNotesPanel({ currentDate }) {
       content: note.content,
       priority: note.priority,
       date: note.date,
-      completed: note.completed || false
+      completed: note.completed || false,
+      time: note.time || '',
+      isRecurring: false, // Non si può modificare come ricorrente
+      selectedDays: [],
+      weeksToCreate: 4
     });
     setShowAddForm(true);
   };
@@ -177,7 +245,11 @@ export default function CalendarNotesPanel({ currentDate }) {
       content: '',
       priority: 'medium',
       date: selectedDate || new Date().toISOString().split('T')[0],
-      completed: false
+      completed: false,
+      isRecurring: false,
+      time: '',
+      selectedDays: [],
+      weeksToCreate: 4
     });
   };
 
@@ -281,7 +353,8 @@ export default function CalendarNotesPanel({ currentDate }) {
                         value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                         className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                        required
+                        required={!formData.isRecurring}
+                        disabled={formData.isRecurring}
                       />
                     </div>
 
@@ -299,13 +372,139 @@ export default function CalendarNotesPanel({ currentDate }) {
                     </div>
                   </div>
 
+                  {/* Sezione Task Ricorrente */}
+                  {!editingNote && (
+                    <div className="space-y-3">
+                      {/* Toggle Ricorrente */}
+                      <div 
+                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                          formData.isRecurring 
+                            ? 'bg-purple-500/10 border-purple-500/50' 
+                            : 'bg-slate-800/30 border-slate-600 hover:border-slate-500'
+                        }`}
+                        onClick={() => setFormData({ ...formData, isRecurring: !formData.isRecurring })}
+                      >
+                        <Repeat className={`w-4 h-4 ${formData.isRecurring ? 'text-purple-400' : 'text-slate-400'}`} />
+                        <span className={`text-sm ${formData.isRecurring ? 'text-purple-300' : 'text-slate-300'}`}>
+                          Task Ricorrente
+                        </span>
+                        <div className={`ml-auto w-10 h-5 rounded-full transition-colors ${
+                          formData.isRecurring ? 'bg-purple-500' : 'bg-slate-600'
+                        }`}>
+                          <div className={`w-4 h-4 rounded-full bg-white shadow transform transition-transform mt-0.5 ${
+                            formData.isRecurring ? 'translate-x-5' : 'translate-x-0.5'
+                          }`} />
+                        </div>
+                      </div>
+
+                      {/* Opzioni Ricorrenza */}
+                      <AnimatePresence>
+                        {formData.isRecurring && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-3 overflow-hidden"
+                          >
+                            {/* Orario */}
+                            <div>
+                              <label className="block text-xs text-slate-400 mb-1">
+                                <Clock className="w-3 h-3 inline mr-1" />
+                                Orario
+                              </label>
+                              <input
+                                type="time"
+                                value={formData.time}
+                                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                                className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                              />
+                            </div>
+
+                            {/* Giorni della settimana */}
+                            <div>
+                              <label className="block text-xs text-slate-400 mb-2">Giorni della settimana</label>
+                              <div className="flex flex-wrap gap-2">
+                                {WEEKDAYS.map(day => {
+                                  const isSelected = formData.selectedDays.includes(day.key);
+                                  return (
+                                    <button
+                                      key={day.key}
+                                      type="button"
+                                      onClick={() => {
+                                        setFormData({
+                                          ...formData,
+                                          selectedDays: isSelected
+                                            ? formData.selectedDays.filter(d => d !== day.key)
+                                            : [...formData.selectedDays, day.key]
+                                        });
+                                      }}
+                                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                        isSelected
+                                          ? 'bg-purple-500 text-white'
+                                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                      }`}
+                                      title={day.fullLabel}
+                                    >
+                                      {day.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Numero settimane */}
+                            <div>
+                              <label className="block text-xs text-slate-400 mb-1">Per quante settimane?</label>
+                              <select
+                                value={formData.weeksToCreate}
+                                onChange={(e) => setFormData({ ...formData, weeksToCreate: parseInt(e.target.value) })}
+                                className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                              >
+                                <option value={1}>1 settimana</option>
+                                <option value={2}>2 settimane</option>
+                                <option value={4}>4 settimane</option>
+                                <option value={8}>8 settimane</option>
+                                <option value={12}>12 settimane</option>
+                              </select>
+                            </div>
+
+                            {/* Preview */}
+                            {formData.selectedDays.length > 0 && (
+                              <div className="p-2 bg-slate-800/50 rounded-lg">
+                                <p className="text-xs text-slate-400">
+                                  Verranno creati <span className="text-purple-400 font-semibold">
+                                    {formData.selectedDays.length * formData.weeksToCreate} task
+                                  </span> ({formData.selectedDays.length} giorni × {formData.weeksToCreate} settimane)
+                                </p>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white font-medium text-sm transition-all"
+                      disabled={formData.isRecurring && formData.selectedDays.length === 0}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white font-medium text-sm transition-all ${
+                        formData.isRecurring && formData.selectedDays.length === 0
+                          ? 'bg-slate-600 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
+                      }`}
                     >
-                      <Save className="w-4 h-4" />
-                      {editingNote ? 'Aggiorna' : 'Salva'}
+                      {formData.isRecurring ? (
+                        <>
+                          <Repeat className="w-4 h-4" />
+                          Crea Task Ricorrenti
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          {editingNote ? 'Aggiorna' : 'Salva'}
+                        </>
+                      )}
                     </button>
                     <button
                       type="button"

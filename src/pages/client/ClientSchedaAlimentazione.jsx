@@ -16,7 +16,7 @@ const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Vene
 
 const ClientSchedaAlimentazione = () => {
   const toast = useToast();
-  const { confirmAction } = useConfirm();
+  const { confirm } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [schedaData, setSchedaData] = useState(null);
   const [selectedDay, setSelectedDay] = useState('Lunedì');
@@ -169,10 +169,11 @@ const ClientSchedaAlimentazione = () => {
   };
 
   const handleResetScheda = async () => {
-    const confirmed = await confirmAction({
+    const confirmed = await confirm({
       title: 'Ripristinare scheda originale?',
       message: 'Sei sicuro di voler ripristinare la scheda originale del coach? Tutte le modifiche andranno perse.',
       confirmText: 'Ripristina',
+      cancelText: 'Annulla',
       type: 'warning'
     });
     if (!confirmed) return;

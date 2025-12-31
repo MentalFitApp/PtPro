@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase'
 import { getTenantCollection, getTenantDoc, getTenantSubcollection, getCoachId } from '../../config/tenant';
-import { ChevronLeft, ChevronRight, Plus, X, Phone, Users, Trash2, Edit, Save, Bell, BellOff } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Phone, Users, Trash2, Edit, Save, Bell, BellOff, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { requestNotificationPermission, checkNotificationPermission, scheduleEventNotifications, setupForegroundMessageListener } from '../../utils/notifications';
 import { notifyNewEvent } from '../../services/notificationService';
@@ -605,6 +605,8 @@ export default function CalendarPage() {
                               ? 'bg-emerald-500 hover:ring-emerald-400'
                               : event.type === 'call'
                               ? 'bg-blue-500 hover:ring-blue-400'
+                              : event.type === 'activity'
+                              ? 'bg-orange-500 hover:ring-orange-400'
                               : 'bg-purple-500 hover:ring-purple-400'
                           }`}
                           title={`${event.time} - ${event.title}`}
@@ -663,6 +665,8 @@ export default function CalendarPage() {
                               ? 'bg-emerald-600/80 text-emerald-100 hover:bg-emerald-500/80' 
                               : ev.type === 'call' 
                               ? 'bg-blue-600/80 text-blue-100 hover:bg-blue-500/80' 
+                              : ev.type === 'activity'
+                              ? 'bg-orange-600/80 text-orange-100 hover:bg-orange-500/80'
                               : 'bg-purple-600/80 text-purple-100 hover:bg-purple-500/80'
                           }`}
                           title={ev.title}
@@ -823,6 +827,7 @@ export default function CalendarPage() {
                                           className={`flex-1 p-1 rounded text-[10px] shadow cursor-pointer overflow-hidden ${
                                             starter.type === 'lead' ? 'bg-emerald-600/90 text-emerald-100 hover:bg-emerald-600' : 
                                             starter.type === 'call' ? 'bg-blue-600/90 text-blue-100 hover:bg-blue-600' : 
+                                            starter.type === 'activity' ? 'bg-orange-600/90 text-orange-100 hover:bg-orange-600' :
                                             'bg-purple-600/90 text-purple-100 hover:bg-purple-600'
                                           }`}
                                           style={{ minWidth: eventsInThisSlot.length > 1 ? `${100 / eventsInThisSlot.length}%` : '100%' }}
@@ -988,6 +993,8 @@ export default function CalendarPage() {
                                     <Phone size={16} className="text-emerald-400" />
                                   ) : event.type === 'call' ? (
                                     <Phone size={16} className="text-blue-400" />
+                                  ) : event.type === 'activity' ? (
+                                    <Zap size={16} className="text-orange-400" />
                                   ) : (
                                     <Users size={16} className="text-purple-400" />
                                   )}
@@ -1098,6 +1105,7 @@ export default function CalendarPage() {
                   >
                     <option value="call">Chiamata</option>
                     <option value="meeting">Riunione</option>
+                    <option value="activity">Attività</option>
                   </select>
                   {!newEvent.allDay && (
                     <div className="grid grid-cols-2 gap-3">
