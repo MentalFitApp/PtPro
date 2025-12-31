@@ -430,7 +430,7 @@ const Dipendenti = () => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-7 gap-0.5 text-center text-[9px]">
+                <div className="grid grid-cols-7 gap-1 text-center text-xs">
                   {['D', 'L', 'M', 'M', 'G', 'V', 'S'].map((d, i) => (
                     <div key={`day-${i}`} className="font-bold text-slate-500 py-1">{d}</div>
                   ))}
@@ -442,34 +442,34 @@ const Dipendenti = () => {
                     return (
                       <div
                         key={giorno.toISOString()}
-                        className={`min-h-10 p-1 rounded border transition-all cursor-pointer
+                        className={`min-h-16 p-1.5 rounded-lg border transition-all cursor-pointer
                           ${pagamentiGiorno.length > 0 
                             ? 'bg-emerald-900/40 border-emerald-600/50 hover:bg-emerald-900/60' 
                             : 'bg-slate-800/30 border-slate-700/50 hover:bg-slate-700/50'
                           }`}
                       >
-                        <p className="text-[10px] font-bold text-slate-400">{format(giorno, "d")}</p>
-                        <div className="space-y-0.5 max-h-8 overflow-y-auto">
+                        <p className="text-xs font-bold text-slate-400 mb-0.5">{format(giorno, "d")}</p>
+                        <div className="space-y-1 max-h-14 overflow-y-auto">
                           {pagamentiGiorno.map(p => {
                             const dip = dipendentiMap.get(p.dipId);
                             return (
                               <div
                                 key={p.id}
-                                className="bg-rose-600/30 px-1 py-0.5 rounded text-[8px] flex justify-between items-center group"
+                                className="bg-rose-600/30 px-1.5 py-1 rounded text-[10px] flex justify-between items-center group"
                               >
-                                <span className="font-medium text-rose-300 truncate flex-1">{dip?.nome?.slice(0,6)}</span>
-                                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition">
+                                <span className="font-semibold text-rose-300 truncate flex-1">{dip?.nome}</span>
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); modificaPagamento(p); }}
                                     className="text-cyan-400 hover:text-cyan-300"
                                   >
-                                    <Edit2 size={8} />
+                                    <Edit2 size={10} />
                                   </button>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); eliminaPagamento(p.id); }}
                                     className="text-red-400 hover:text-red-300"
                                   >
-                                    <Trash2 size={8} />
+                                    <Trash2 size={10} />
                                   </button>
                                 </div>
                               </div>
