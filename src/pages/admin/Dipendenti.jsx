@@ -12,12 +12,16 @@ import {
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from "../../config/tenant";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths } from "date-fns";
 import { formatCurrency } from "../../utils/formatters";
-import { Edit2, Trash2, Calendar, TrendingUp, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Edit2, Trash2, Calendar, TrendingUp, DollarSign, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useConfirm } from '../../contexts/ConfirmContext';
+import { useToast } from '../../contexts/ToastContext';
 
 const RUOLI_DISPONIBILI = ["Setter", "Coach", "Admin", "Manager", "Altro"];
 
 const Dipendenti = () => {
+  const { confirmDelete } = useConfirm();
+  const toast = useToast();
   const [dipendenti, setDipendenti] = useState([]);
   const [pagamenti, setPagamenti] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +30,7 @@ const Dipendenti = () => {
   const [includeRenewals, setIncludeRenewals] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [meseCalendario, setMeseCalendario] = useState(new Date());
+  const [showEditPagamentoModal, setShowEditPagamentoModal] = useState(false);
 
   // Form
   const [formDip, setFormDip] = useState({ nome: "", nominativo: "", iban: "", tipo: "percentuale", percentuale: "", fissi: [], ruolo: "Setter" });
@@ -251,11 +256,15 @@ const Dipendenti = () => {
     }, { merge: true });
     setFormPagamento({ dipId: "", importoBase: "", percentualeDaPagare: 100, bonus: "", data: format(new Date(), "yyyy-MM-dd"), note: "" });
     setEditingPagamento(null);
+    setShowEditPagamentoModal(false);
+    toast.success('Pagamento salvato');
   };
 
   const eliminaPagamento = async (id) => {
-    if (!confirm("Eliminare pagamento?")) return;
+    const confirmed = await confirmDelete('questo pagamento');
+    if (!confirmed) return;
     await deleteDoc(getTenantDoc(db, 'pagamenti_dipendenti', id));
+    toast.success('Pagamento eliminato');
   };
 
   const modificaPagamento = (pagamento) => {
@@ -268,6 +277,13 @@ const Dipendenti = () => {
       data: format(pagamento.data, "yyyy-MM-dd"),
       note: pagamento.note || "",
     });
+    setShowEditPagamentoModal(true);
+  };
+
+  const chiudiModalPagamento = () => {
+    setShowEditPagamentoModal(false);
+    setEditingPagamento(null);
+    setFormPagamento({ dipId: "", importoBase: "", percentualeDaPagare: 100, bonus: "", data: format(new Date(), "yyyy-MM-dd"), note: "" });
   };
 
   const aggiungiFisso = () => {
@@ -633,6 +649,117 @@ const Dipendenti = () => {
           </div>
         </div>
       )}
+
+      {/* MODAL MODIFICA PAGAMENTO */}
+      <AnimatePresence>
+        {showEditPagamentoModal && editingPagamento && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+            onClick={chiudiModalPagamento}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-800 rounded-xl p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-slate-100">Modifica Pagamento</h2>
+                <button onClick={chiudiModalPagamento} className="p-1 hover:bg-slate-700 rounded-lg transition">
+                  <X size={20} className="text-slate-400" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Dipendente</label>
+                  <p className="text-slate-200 font-medium">
+                    {dipendenti.find(d => d.id === formPagamento.dipId)?.nome || 'N/D'}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Importo Base (€)</label>
+                  <input
+                    type="number"
+                    value={formPagamento.importoBase}
+                    onChange={(e) => setFormPagamento({ ...formPagamento, importoBase: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Percentuale Pagata</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="25"
+                    value={formPagamento.percentualeDaPagare}
+                    onChange={(e) => setFormPagamento({ ...formPagamento, percentualeDaPagare: parseInt(e.target.value) })}
+                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                  <div className="flex justify-between text-xs text-slate-500 mt-1">
+                    <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                  </div>
+                  <p className="text-center text-sm text-rose-400 mt-1">{formPagamento.percentualeDaPagare}%</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Bonus (€)</label>
+                  <input
+                    type="number"
+                    value={formPagamento.bonus}
+                    onChange={(e) => setFormPagamento({ ...formPagamento, bonus: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-rose-500"
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Data</label>
+                  <input
+                    type="date"
+                    value={formPagamento.data}
+                    onChange={(e) => setFormPagamento({ ...formPagamento, data: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Note</label>
+                  <input
+                    type="text"
+                    value={formPagamento.note}
+                    onChange={(e) => setFormPagamento({ ...formPagamento, note: e.target.value })}
+                    className="w-full px-4 py-2 bg-slate-700 text-slate-100 rounded-lg border border-slate-600 focus:outline-none focus:border-rose-500"
+                    placeholder="Note opzionali"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={chiudiModalPagamento}
+                    className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    onClick={salvaPagamento}
+                    className="flex-1 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition font-medium"
+                  >
+                    Salva Modifiche
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* PULSANTE NUOVO */}
       <button
