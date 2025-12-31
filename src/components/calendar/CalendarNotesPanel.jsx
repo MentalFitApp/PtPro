@@ -3,11 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   StickyNote, Plus, X, Trash2, Edit2, Save, Check, 
-  AlertCircle, Calendar, Clock, ChevronDown, ChevronUp, Repeat 
+  AlertCircle, Calendar, Clock, ChevronDown, ChevronUp, Repeat, RefreshCw 
 } from 'lucide-react';
 import { 
   collection, query, where, onSnapshot, addDoc, 
-  updateDoc, deleteDoc, doc, serverTimestamp, orderBy 
+  updateDoc, deleteDoc, doc, serverTimestamp, orderBy, getDocs 
 } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { getTenantCollection, getTenantDoc } from '../../config/tenant';
@@ -52,6 +52,7 @@ export default function CalendarNotesPanel({ currentDate }) {
   const [editingNote, setEditingNote] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [selectedDate, setSelectedDate] = useState(initialDate);
+  const [showDeleteRecurringModal, setShowDeleteRecurringModal] = useState(null); // nota da eliminare
   
   const [formData, setFormData] = useState({
     title: '',
@@ -211,15 +212,51 @@ export default function CalendarNotesPanel({ currentDate }) {
     setShowAddForm(true);
   };
 
-  const handleDelete = async (noteId) => {
+  const handleDelete = async (note) => {
+    // Se è un task ricorrente, mostra il modal con opzioni
+    if (note.recurringGroupId) {
+      setShowDeleteRecurringModal(note);
+      return;
+    }
+    
+    // Eliminazione normale
     const confirmed = await confirmDelete('questa nota');
     if (!confirmed) return;
 
     try {
-      await deleteDoc(getTenantDoc(db, 'calendarNotes', noteId));
+      await deleteDoc(getTenantDoc(db, 'calendarNotes', note.id));
+      toast.success('Nota eliminata');
     } catch (error) {
       console.error('Error deleting note:', error);
       toast.error('Errore nell\'eliminazione');
+    }
+  };
+
+  const handleDeleteRecurring = async (deleteAll) => {
+    const note = showDeleteRecurringModal;
+    if (!note) return;
+    
+    try {
+      if (deleteAll) {
+        // Elimina tutti i task con lo stesso recurringGroupId
+        const q = query(
+          getTenantCollection(db, 'calendarNotes'),
+          where('recurringGroupId', '==', note.recurringGroupId)
+        );
+        const snapshot = await getDocs(q);
+        const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+        toast.success(`Eliminati ${snapshot.size} task ricorrenti`);
+      } else {
+        // Elimina solo questo task
+        await deleteDoc(getTenantDoc(db, 'calendarNotes', note.id));
+        toast.success('Task eliminato');
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      toast.error('Errore nell\'eliminazione');
+    } finally {
+      setShowDeleteRecurringModal(null);
     }
   };
 
@@ -577,7 +614,7 @@ export default function CalendarNotesPanel({ currentDate }) {
                                 <Edit2 className="w-3.5 h-3.5 text-slate-400" />
                               </button>
                               <button
-                                onClick={() => handleDelete(note.id)}
+                                onClick={() => handleDelete(note)}
                                 className="p-1 hover:bg-red-500/20 rounded transition-colors"
                                 title="Elimina"
                               >
@@ -618,6 +655,63 @@ export default function CalendarNotesPanel({ currentDate }) {
                 })
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal per eliminazione task ricorrente */}
+      <AnimatePresence>
+        {showDeleteRecurringModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowDeleteRecurringModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-slate-800 rounded-xl p-6 max-w-sm w-full border border-slate-700 shadow-2xl"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-full bg-amber-500/20">
+                  <RefreshCw className="w-5 h-5 text-amber-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white">Elimina Task Ricorrente</h3>
+              </div>
+              
+              <p className="text-slate-300 mb-6">
+                Questo è un task ricorrente. Vuoi eliminare solo questo giorno o tutti i giorni collegati?
+              </p>
+
+              <div className="space-y-3">
+                <button
+                  onClick={() => handleDeleteRecurring(false)}
+                  className="w-full py-2.5 px-4 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Solo questo giorno
+                </button>
+                
+                <button
+                  onClick={() => handleDeleteRecurring(true)}
+                  className="w-full py-2.5 px-4 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Elimina tutti i ricorrenti
+                </button>
+                
+                <button
+                  onClick={() => setShowDeleteRecurringModal(null)}
+                  className="w-full py-2 text-slate-400 hover:text-slate-300 transition-colors"
+                >
+                  Annulla
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
