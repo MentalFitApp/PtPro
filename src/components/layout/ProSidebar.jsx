@@ -9,12 +9,13 @@ import { isSuperAdmin } from '../../utils/superadmin';
 import { defaultBranding } from '../../config/tenantBranding';
 import { useUnreadAnamnesi, useUnreadChecks } from '../../hooks/useUnreadNotifications';
 import { useUnreadCount } from '../../hooks/useChat';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
   Home, Users, FileText, Calendar, Settings, MessageSquare,
   ChevronRight, ChevronLeft, BarChart3, BellRing, UserCheck,
   BookOpen, Target, Activity, Plus, Palette, Layout, Link2,
   Dumbbell, Utensils, Shield, CreditCard, LogOut, HelpCircle,
-  Zap, Package, Menu, X, User
+  Zap, Package, Menu, X, User, Sun, Moon
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
@@ -477,6 +478,9 @@ export const ProSidebar = ({
 
   const navConfig = getNavConfig(role, userIsSuperAdmin);
   
+  // Theme toggle
+  const { theme, toggleTheme, isDark } = useTheme();
+  
   // Badge per le varie voci di menu
   const badges = {
     // Badge per chat
@@ -753,6 +757,17 @@ export const ProSidebar = ({
                       <CreditCard size={14} /> Abbonamento
                     </button>
                   )}
+                  {/* Theme Toggle */}
+                  <button 
+                    onClick={toggleTheme} 
+                    className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:bg-white/10 transition-colors"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      {isDark ? <Sun size={14} className="text-amber-400" /> : <Moon size={14} className="text-blue-400" />}
+                      {isDark ? 'Tema Chiaro' : 'Tema Scuro'}
+                    </span>
+                    <span className="text-xs text-slate-500">{isDark ? '☀️' : '🌙'}</span>
+                  </button>
                 </div>
                 
                 {/* Logout */}
@@ -783,6 +798,7 @@ export const MobileSidebar = ({
   const location = useLocation();
   const [branding, setBranding] = useState(defaultBranding);
   const user = auth.currentUser;
+  const { theme, toggleTheme, isDark } = useTheme();
 
   const navConfig = getNavConfig(role);
 
@@ -885,6 +901,19 @@ export const MobileSidebar = ({
                   <p className="text-xs text-theme-text-tertiary truncate">{user?.email}</p>
                 </div>
               </div>
+              {/* Theme Toggle Button */}
+              <motion.button
+                onClick={toggleTheme}
+                whileHover={{ x: 3 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full mt-2 flex items-center justify-between px-4 py-3 rounded-xl text-sm text-theme-text-secondary hover:bg-theme-bg-tertiary/60 transition-colors"
+              >
+                <span className="flex items-center gap-3">
+                  {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-blue-400" />}
+                  <span className="font-medium">{isDark ? 'Tema Chiaro' : 'Tema Scuro'}</span>
+                </span>
+                <span className="text-xs">{isDark ? '☀️' : '🌙'}</span>
+              </motion.button>
               <motion.button
                 onClick={handleLogout}
                 whileHover={{ x: 3 }}

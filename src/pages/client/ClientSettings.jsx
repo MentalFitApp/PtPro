@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, Download, Trash2, Link as LinkIcon, Settings, Bell, BellOff, 
   Check, Smartphone, Mail, User, Lock, AlertCircle, Key, Eye, EyeOff, Loader2,
-  Sparkles, RotateCcw
+  Sparkles, RotateCcw, Sun, Moon
 } from 'lucide-react';
 import GDPRSettings from '../../components/settings/GDPRSettings';
 import LinkAccountCard from '../../components/LinkAccountCard';
@@ -14,6 +14,7 @@ import { getMessaging, getToken } from 'firebase/messaging';
 import { setDoc, serverTimestamp, getDoc, updateDoc, doc } from 'firebase/firestore';
 import { getTenantDoc } from '../../config/tenant';
 import { applyCardTransparency } from '../../hooks/useTenantBranding';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const VAPID_KEY = 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeDXSXKb4uffOVSupUGHQ4Q0l9Ato';
 
@@ -27,6 +28,7 @@ const ClientSettings = () => {
   const [notification, setNotification] = useState(null);
   const [starsOpacity, setStarsOpacity] = useState(0.5);
   const [savingAppearance, setSavingAppearance] = useState(false);
+  const { theme, toggleTheme, isDark } = useTheme();
   
   // State per cambio password
   const [passwordForm, setPasswordForm] = useState({
@@ -506,6 +508,49 @@ const ClientSettings = () => {
                       <p className="text-slate-400 mt-1">
                         Personalizza l'aspetto dell'interfaccia
                       </p>
+                    </div>
+
+                    {/* Tema Interfaccia */}
+                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
+                      <div className="flex items-center gap-3 mb-4">
+                        {isDark ? <Moon className="text-blue-400" size={24} /> : <Sun className="text-amber-400" size={24} />}
+                        <h3 className="text-xl font-bold text-white">Tema Interfaccia</h3>
+                      </div>
+                      <p className="text-slate-400 mb-6">
+                        Scegli tra modalità chiara o scura per l'interfaccia.
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => isDark && toggleTheme()}
+                          className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${
+                            !isDark 
+                              ? 'border-blue-500 bg-blue-500/10' 
+                              : 'border-slate-700 hover:border-slate-600'
+                          }`}
+                        >
+                          <div className={`p-3 rounded-full ${!isDark ? 'bg-blue-500/20' : 'bg-slate-700'}`}>
+                            <Sun size={24} className={!isDark ? 'text-amber-400' : 'text-slate-500'} />
+                          </div>
+                          <span className={`font-medium ${!isDark ? 'text-white' : 'text-slate-400'}`}>Tema Chiaro</span>
+                          <span className="text-xs text-slate-500">Ideale per uso diurno</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => !isDark && toggleTheme()}
+                          className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${
+                            isDark 
+                              ? 'border-blue-500 bg-blue-500/10' 
+                              : 'border-slate-700 hover:border-slate-600'
+                          }`}
+                        >
+                          <div className={`p-3 rounded-full ${isDark ? 'bg-blue-500/20' : 'bg-slate-700'}`}>
+                            <Moon size={24} className={isDark ? 'text-blue-400' : 'text-slate-500'} />
+                          </div>
+                          <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-400'}`}>Tema Scuro</span>
+                          <span className="text-xs text-slate-500">Ideale per uso notturno</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Luminosità Stelle */}

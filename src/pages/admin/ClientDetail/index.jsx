@@ -9,7 +9,7 @@ import {
   Activity, Image, CreditCard, Info, BarChart3, Clock, Tag, ClipboardList,
   Monitor, NotebookPen, CheckCircle, Link2, Loader2, Camera, Upload, TrendingUp,
   ArrowLeftRight, Heart, Dumbbell, UtensilsCrossed, CalendarClock, XCircle, KeyRound,
-  ArrowLeft
+  ArrowLeft, Package
 } from 'lucide-react';
 
 // Firebase & Config
@@ -478,6 +478,15 @@ export default function ClientDetail({ role: propRole }) {
                         )}
                         {canManagePayments && <InfoField icon={DollarSign} value={`Prezzo: ${client.price ? `€${client.price}` : 'N/D'}`} />}
                         <InfoField icon={FileText} value={`Anamnesi: ${anamnesi ? 'Compilata ✓' : 'Non inviata'}`} />
+                        <InfoField 
+                          icon={Package} 
+                          value={`Percorso: ${
+                            client.planType === 'completo' ? '🎯 Completo' :
+                            client.planType === 'allenamento' ? '💪 Solo Allenamento' :
+                            client.planType === 'alimentazione' ? '🥗 Solo Alimentazione' :
+                            'N/D'
+                          }`} 
+                        />
                         <div className="flex items-center gap-2">
                           <Tag size={16} className="text-slate-400" />
                           <span className="inline-flex items-center gap-2 flex-wrap">

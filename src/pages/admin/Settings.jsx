@@ -9,12 +9,13 @@ import { getMessaging, getToken } from 'firebase/messaging';
 import { db, auth } from '../../firebase';
 import { getTenantDoc } from '../../config/tenant';
 import { uploadToR2 } from '../../cloudflareStorage';
-import { useTenantBranding } from '../../hooks/useTenantBranding';
 import { useToast } from '../../contexts/ToastContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { 
-  User, Camera, Mail, Lock, Bell, AlertTriangle, Palette,
-  ArrowLeft, Save, Trash2, Eye, EyeOff, Check, Globe, Scale, Ruler, Loader2
+  User, Camera, Mail, Lock, Bell, AlertTriangle,
+  ArrowLeft, Save, Trash2, Eye, EyeOff, Check, Globe, Scale, Ruler, Loader2,
+  Sun, Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -23,7 +24,6 @@ const VAPID_KEY = 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeD
 // ============ TABS ============
 const TABS = {
   PROFILE: 'profile',
-  BRANDING: 'branding',
   NOTIFICATIONS: 'notifications',
   PASSWORD: 'password',
   DANGER: 'danger'
@@ -56,7 +56,7 @@ export default function Settings() {
   const toast = useToast();
   const { confirmDelete } = useConfirm();
   const currentUser = auth.currentUser;
-  const { branding, updateBranding, loading: brandingLoading } = useTenantBranding();
+  const { theme, toggleTheme, isDark } = useTheme();
   
   const [activeTab, setActiveTab] = useState(TABS.PROFILE);
   const [loading, setLoading] = useState(true);
@@ -80,15 +80,6 @@ export default function Settings() {
     lengthUnit: 'cm'
   });
   const [previewImage, setPreviewImage] = useState(null);
-  
-  // Branding state
-  const [brandingForm, setBrandingForm] = useState({
-    appName: '',
-    tagline: '',
-    primaryColor: '#3B82F6',
-    logoURL: ''
-  });
-  const [logoPreview, setLogoPreview] = useState(null);
   
   // Password state
   const [passwordForm, setPasswordForm] = useState({
@@ -125,19 +116,6 @@ export default function Settings() {
     }
     loadProfile();
   }, [currentUser, navigate]);
-
-  // Sync branding form when branding loads
-  useEffect(() => {
-    if (branding) {
-      setBrandingForm({
-        appName: branding.appName || '',
-        tagline: branding.tagline || '',
-        primaryColor: branding.primaryColor || '#3B82F6',
-        logoURL: branding.logoURL || ''
-      });
-      setLogoPreview(branding.logoURL);
-    }
-  }, [branding]);
 
   const loadProfile = async () => {
     try {
@@ -178,7 +156,7 @@ export default function Settings() {
   };
 
   // ============ PROFILE HANDLERS ============
-  const handleImageChange = async (e, type = 'profile') => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -197,22 +175,12 @@ export default function Settings() {
     try {
       const reader = new FileReader();
       reader.onloadend = () => {
-        if (type === 'profile') {
-          setPreviewImage(reader.result);
-        } else {
-          setLogoPreview(reader.result);
-        }
+        setPreviewImage(reader.result);
       };
       reader.readAsDataURL(file);
 
-      const folder = type === 'profile' ? 'profile-photos' : 'branding';
-      const photoURL = await uploadToR2(file, currentUser.uid, folder, null, true);
-
-      if (type === 'profile') {
-        setProfile(prev => ({ ...prev, photoURL }));
-      } else {
-        setBrandingForm(prev => ({ ...prev, logoURL: photoURL }));
-      }
+      const photoURL = await uploadToR2(file, currentUser.uid, 'profile-photos', null, true);
+      setProfile(prev => ({ ...prev, photoURL }));
     } catch (error) {
       console.error('Errore upload:', error);
       toast.error('Errore durante il caricamento: ' + error.message);
@@ -246,20 +214,6 @@ export default function Settings() {
       toast.success('Profilo salvato con successo!');
     } catch (error) {
       console.error('Errore salvataggio:', error);
-      toast.error('Errore durante il salvataggio');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // ============ BRANDING HANDLERS ============
-  const saveBranding = async () => {
-    setSaving(true);
-    try {
-      await updateBranding(brandingForm);
-      toast.success('Branding salvato con successo!');
-    } catch (error) {
-      console.error('Errore salvataggio branding:', error);
       toast.error('Errore durante il salvataggio');
     } finally {
       setSaving(false);
@@ -492,12 +446,6 @@ export default function Settings() {
             onClick={() => setActiveTab(TABS.PROFILE)} 
           />
           <TabButton 
-            active={activeTab === TABS.BRANDING} 
-            icon={Palette} 
-            label="Branding" 
-            onClick={() => setActiveTab(TABS.BRANDING)} 
-          />
-          <TabButton 
             active={activeTab === TABS.NOTIFICATIONS} 
             icon={Bell} 
             label="Notifiche" 
@@ -550,7 +498,7 @@ export default function Settings() {
                     <label className="px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-xl text-sm text-white cursor-pointer transition-colors flex items-center gap-2">
                       <Camera size={16} />
                       Cambia Foto
-                      <input type="file" accept="image/*" onChange={(e) => handleImageChange(e, 'profile')} className="hidden" />
+                      <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                     </label>
                   </div>
 
@@ -685,6 +633,41 @@ export default function Settings() {
                     </div>
                   </div>
 
+                  {/* Theme Toggle */}
+                  <div>
+                    <label className="block text-sm text-slate-400 mb-2 flex items-center gap-2">
+                      {isDark ? <Moon size={14} /> : <Sun size={14} />}
+                      Tema Interfaccia
+                    </label>
+                    <div className="flex rounded-xl overflow-hidden border border-slate-700/30">
+                      <button
+                        onClick={() => !isDark && toggleTheme()}
+                        className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                          isDark 
+                            ? 'bg-slate-800 text-white' 
+                            : 'bg-slate-900/50 text-slate-400 hover:bg-slate-800/50'
+                        }`}
+                      >
+                        <Moon size={16} />
+                        Scuro
+                      </button>
+                      <button
+                        onClick={() => isDark && toggleTheme()}
+                        className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                          !isDark 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-slate-900/50 text-slate-400 hover:bg-slate-800/50'
+                        }`}
+                      >
+                        <Sun size={16} />
+                        Chiaro
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">
+                      {isDark ? '🌙 Modalità scura attiva - Ideale per uso notturno' : '☀️ Modalità chiara attiva - Ideale per luce diurna'}
+                    </p>
+                  </div>
+
                   {/* Save Button */}
                   <button
                     onClick={saveProfile}
@@ -700,165 +683,6 @@ export default function Settings() {
                       </>
                     )}
                   </button>
-                </div>
-              </div>
-            )}
-
-            {/* ============ BRANDING TAB ============ */}
-            {activeTab === TABS.BRANDING && (
-              <div className="grid lg:grid-cols-2 gap-4 p-4 sm:p-6">
-                {/* Form */}
-                <div className="bg-slate-700/20 backdrop-blur-sm rounded-2xl border border-slate-600/30 p-4 sm:p-5">
-                  <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                    <Palette size={18} className="text-blue-400" />
-                    Elementi
-                  </h3>
-                  <p className="text-sm text-slate-400 mb-6">Personalizza il brand con il tuo stile unico.</p>
-                  
-                  <div className="space-y-5">
-                    {/* Logo */}
-                    <div>
-                      <label className="block text-sm text-slate-400 mb-2">Icona</label>
-                      <div className="flex items-center gap-4">
-                        {logoPreview ? (
-                          <img src={logoPreview} alt="" className="w-14 h-14 rounded-xl object-cover border border-slate-600" />
-                        ) : (
-                          <div className="w-14 h-14 rounded-xl bg-blue-500 flex items-center justify-center text-white font-bold text-xl">
-                            {brandingForm.appName?.charAt(0) || 'P'}
-                          </div>
-                        )}
-                        <label className="px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 rounded-xl text-sm text-white cursor-pointer transition-colors">
-                          Cambia
-                          <input type="file" accept="image/*" onChange={(e) => handleImageChange(e, 'logo')} className="hidden" />
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* App Name */}
-                    <div>
-                      <label className="block text-sm text-slate-400 mb-2">Nome</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={brandingForm.appName}
-                          onChange={(e) => setBrandingForm(f => ({ ...f, appName: e.target.value.slice(0, 25) }))}
-                          className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
-                          placeholder="Nome app"
-                          maxLength={25}
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
-                          {brandingForm.appName.length} / 25
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Tagline */}
-                    <div>
-                      <label className="block text-sm text-slate-400 mb-2">Headline</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={brandingForm.tagline}
-                          onChange={(e) => setBrandingForm(f => ({ ...f, tagline: e.target.value.slice(0, 35) }))}
-                          className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
-                          placeholder="Slogan"
-                          maxLength={35}
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
-                          {brandingForm.tagline.length} / 35
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Theme Color */}
-                    <div>
-                      <label className="block text-sm text-slate-400 mb-2">Tema</label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="color"
-                          value={brandingForm.primaryColor}
-                          onChange={(e) => setBrandingForm(f => ({ ...f, primaryColor: e.target.value }))}
-                          className="w-10 h-10 rounded-lg cursor-pointer border-0"
-                        />
-                        <input
-                          type="text"
-                          value={brandingForm.primaryColor.toUpperCase()}
-                          onChange={(e) => setBrandingForm(f => ({ ...f, primaryColor: e.target.value }))}
-                          className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50 font-mono"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Save */}
-                    <button
-                      onClick={saveBranding}
-                      disabled={saving}
-                      className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
-                    >
-                      {saving ? 'Salvataggio...' : 'Salva modifiche'}
-                    </button>
-
-                    <button className="w-full text-center text-sm text-slate-500 hover:text-slate-400 transition-colors">
-                      ripristina ai valori predefiniti
-                    </button>
-                  </div>
-                </div>
-
-                {/* Preview */}
-                <div className="bg-slate-700/20 backdrop-blur-sm rounded-2xl border border-slate-600/30 p-4 sm:p-5">
-                  <h3 className="font-semibold text-white mb-4">Anteprima</h3>
-                  <p className="text-sm text-slate-400 mb-6">Vedi come appare il brand ai tuoi clienti.</p>
-                  
-                  {/* Mock Phone */}
-                  <div className="max-w-[280px] mx-auto">
-                    <div 
-                      className="rounded-[2rem] p-4 border-4 border-slate-700"
-                      style={{ background: `linear-gradient(135deg, ${brandingForm.primaryColor}20, ${brandingForm.primaryColor}05)` }}
-                    >
-                      {/* Status bar mock */}
-                      <div className="flex justify-between items-center mb-4 px-2">
-                        <div className="flex items-center gap-2">
-                          {logoPreview ? (
-                            <img src={logoPreview} alt="" className="w-6 h-6 rounded" />
-                          ) : (
-                            <div 
-                              className="w-6 h-6 rounded flex items-center justify-center text-white text-xs font-bold"
-                              style={{ backgroundColor: brandingForm.primaryColor }}
-                            >
-                              {brandingForm.appName?.charAt(0) || 'P'}
-                            </div>
-                          )}
-                          <span className="text-white font-medium text-sm">{brandingForm.appName || 'App Name'}</span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Bell size={14} className="text-slate-400" />
-                        </div>
-                      </div>
-                      
-                      {/* Content mock */}
-                      <div className="bg-slate-900/80 rounded-2xl p-4">
-                        <p className="text-white text-sm mb-1">Ciao Cliente,</p>
-                        <p className="text-slate-400 text-xs">{brandingForm.tagline || 'La tua app di fitness'}</p>
-                        
-                        <div className="mt-4 space-y-2">
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50">
-                            <div className="w-8 h-8 rounded-full" style={{ backgroundColor: brandingForm.primaryColor + '40' }} />
-                            <div className="flex-1">
-                              <div className="h-2 bg-slate-700 rounded w-20" />
-                              <div className="h-1.5 bg-slate-800 rounded w-12 mt-1" />
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/50">
-                            <div className="w-8 h-8 rounded-full" style={{ backgroundColor: brandingForm.primaryColor + '40' }} />
-                            <div className="flex-1">
-                              <div className="h-2 bg-slate-700 rounded w-24" />
-                              <div className="h-1.5 bg-slate-800 rounded w-16 mt-1" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}

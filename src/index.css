@@ -2811,3 +2811,2408 @@ body[data-theme="dark"] .star {
   bottom: 0;
   transform: rotate(45deg);
 }
+
+/* ========================================
+   LIGHT MODE - Complete Override System
+   Transforms all hardcoded dark colors to light equivalents
+   ======================================== */
+
+/* Light mode base setup */
+html.light,
+body.light,
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* ========================================
+   LIGHT MODE: Background Overrides
+   ======================================== */
+[data-theme="light"] {
+  /* Slate backgrounds → Light equivalents */
+  --tw-bg-opacity: 1;
+}
+
+/* Main body and root backgrounds */
+[data-theme="light"] body,
+[data-theme="light"] #root {
+  background-color: #f8fafc !important;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+}
+
+/* Slate-950/900 backgrounds → Light slate/white */
+[data-theme="light"] .bg-slate-950,
+[data-theme="light"] .bg-\[\#020617\],
+[data-theme="light"] .bg-\[\#0a0f1a\] {
+  background-color: #f8fafc !important;
+}
+
+[data-theme="light"] .bg-slate-900,
+[data-theme="light"] .bg-\[\#0f172a\] {
+  background-color: #ffffff !important;
+}
+
+[data-theme="light"] .bg-slate-800,
+[data-theme="light"] .bg-\[\#1e293b\] {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .bg-slate-700,
+[data-theme="light"] .bg-\[\#334155\] {
+  background-color: #e2e8f0 !important;
+}
+
+/* Transparent/opacity backgrounds */
+[data-theme="light"] .bg-slate-900\/90,
+[data-theme="light"] .bg-slate-900\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="light"] .bg-slate-900\/80 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="light"] .bg-slate-900\/60,
+[data-theme="light"] .bg-slate-900\/50 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-theme="light"] .bg-slate-800\/90,
+[data-theme="light"] .bg-slate-800\/95 {
+  background-color: rgba(241, 245, 249, 0.95) !important;
+}
+
+[data-theme="light"] .bg-slate-800\/80 {
+  background-color: rgba(241, 245, 249, 0.9) !important;
+}
+
+[data-theme="light"] .bg-slate-800\/60,
+[data-theme="light"] .bg-slate-800\/50,
+[data-theme="light"] .bg-slate-800\/40,
+[data-theme="light"] .bg-slate-800\/30 {
+  background-color: rgba(241, 245, 249, 0.7) !important;
+}
+
+/* Black backgrounds → Light */
+[data-theme="light"] .bg-black,
+[data-theme="light"] .bg-black\/90,
+[data-theme="light"] .bg-black\/80,
+[data-theme="light"] .bg-black\/50 {
+  background-color: rgba(248, 250, 252, 0.95) !important;
+}
+
+/* ========================================
+   LIGHT MODE: Text Color Overrides
+   ======================================== */
+
+/* White/Light text → Dark text */
+[data-theme="light"] .text-white {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .text-slate-50,
+[data-theme="light"] .text-slate-100 {
+  color: #1e293b !important;
+}
+
+[data-theme="light"] .text-slate-200 {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .text-slate-300 {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Gray text equivalents */
+[data-theme="light"] .text-gray-100,
+[data-theme="light"] .text-gray-200 {
+  color: #374151 !important;
+}
+
+[data-theme="light"] .text-gray-300 {
+  color: #4b5563 !important;
+}
+
+[data-theme="light"] .text-gray-400 {
+  color: #6b7280 !important;
+}
+
+/* Preserve white text on colored backgrounds */
+[data-theme="light"] .preserve-white,
+[data-theme="light"] .bg-blue-500 .text-white,
+[data-theme="light"] .bg-blue-600 .text-white,
+[data-theme="light"] .bg-emerald-500 .text-white,
+[data-theme="light"] .bg-green-500 .text-white,
+[data-theme="light"] .bg-red-500 .text-white,
+[data-theme="light"] .bg-rose-500 .text-white,
+[data-theme="light"] .bg-purple-500 .text-white,
+[data-theme="light"] .bg-violet-500 .text-white,
+[data-theme="light"] .bg-cyan-500 .text-white,
+[data-theme="light"] .bg-sky-500 .text-white,
+[data-theme="light"] .bg-amber-500 .text-white,
+[data-theme="light"] .bg-orange-500 .text-white,
+[data-theme="light"] .bg-gradient-to-r .text-white,
+[data-theme="light"] .bg-gradient-to-br .text-white,
+[data-theme="light"] [class*="bg-gradient"] .text-white,
+[data-theme="light"] button[class*="bg-blue"] .text-white,
+[data-theme="light"] button[class*="bg-emerald"] .text-white,
+[data-theme="light"] button[class*="bg-green"] .text-white,
+[data-theme="light"] button[class*="bg-red"] .text-white,
+[data-theme="light"] button[class*="bg-rose"] .text-white,
+[data-theme="light"] button[class*="bg-gradient"] {
+  color: #ffffff !important;
+}
+
+/* ========================================
+   LIGHT MODE: Border Overrides
+   ======================================== */
+[data-theme="light"] .border-slate-700,
+[data-theme="light"] .border-slate-800 {
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .border-slate-600 {
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .border-slate-700\/50,
+[data-theme="light"] .border-slate-800\/50,
+[data-theme="light"] .border-white\/10,
+[data-theme="light"] .border-white\/5 {
+  border-color: rgba(203, 213, 225, 0.5) !important;
+}
+
+/* ========================================
+   LIGHT MODE: Ring/Focus Overrides
+   ======================================== */
+[data-theme="light"] .ring-slate-700,
+[data-theme="light"] .ring-slate-800 {
+  --tw-ring-color: #cbd5e1 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Divide Overrides
+   ======================================== */
+[data-theme="light"] .divide-slate-700 > :not([hidden]) ~ :not([hidden]),
+[data-theme="light"] .divide-slate-800 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Placeholder Overrides
+   ======================================== */
+[data-theme="light"] .placeholder-slate-400::placeholder,
+[data-theme="light"] .placeholder-slate-500::placeholder,
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Input/Form Overrides
+   ======================================== */
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] input:focus,
+[data-theme="light"] textarea:focus,
+[data-theme="light"] select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* ========================================
+   LIGHT MODE: Card/Container Overrides
+   ======================================== */
+[data-theme="light"] .card,
+[data-theme="light"] .glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .glass,
+[data-theme="light"] .glass-subtle {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(203, 213, 225, 0.5) !important;
+}
+
+[data-theme="light"] .glass-premium,
+[data-theme="light"] .glass-glow {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%) !important;
+  border-color: rgba(59, 130, 246, 0.15) !important;
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.08) !important;
+}
+
+/* ========================================
+   LIGHT MODE: Shadow Overrides
+   ======================================== */
+[data-theme="light"] .shadow-lg,
+[data-theme="light"] .shadow-xl,
+[data-theme="light"] .shadow-2xl {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .shadow-glow,
+[data-theme="light"] .shadow-glow-sm,
+[data-theme="light"] .shadow-glow-lg {
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* ========================================
+   LIGHT MODE: Gradient Text Overrides
+   ======================================== */
+[data-theme="light"] .bg-gradient-to-r.bg-clip-text.text-transparent,
+[data-theme="light"] .bg-gradient-to-br.bg-clip-text.text-transparent {
+  /* Keep gradients visible on light mode */
+  filter: saturate(1.2) brightness(0.9);
+}
+
+/* ========================================
+   LIGHT MODE: Scrollbar
+   ======================================== */
+[data-theme="light"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ========================================
+   LIGHT MODE: Component-specific Overrides
+   ======================================== */
+
+/* Sidebar/Navigation */
+[data-theme="light"] nav,
+[data-theme="light"] aside,
+[data-theme="light"] .sidebar {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Modal/Dialog backgrounds */
+[data-theme="light"] .fixed.inset-0.bg-black\/50,
+[data-theme="light"] .fixed.inset-0.bg-black\/60,
+[data-theme="light"] .fixed.inset-0.bg-black\/70,
+[data-theme="light"] .fixed.inset-0.bg-black\/80 {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+}
+
+/* Dropdown menus */
+[data-theme="light"] [role="menu"],
+[data-theme="light"] [role="listbox"],
+[data-theme="light"] .dropdown-menu {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Tooltips */
+[data-theme="light"] [role="tooltip"],
+[data-theme="light"] .tooltip {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+/* Badges/Pills */
+[data-theme="light"] .badge,
+[data-theme="light"] .pill {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+}
+
+/* Code blocks */
+[data-theme="light"] code,
+[data-theme="light"] pre {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+}
+
+/* Tables */
+[data-theme="light"] table {
+  background-color: #ffffff !important;
+}
+
+[data-theme="light"] thead,
+[data-theme="light"] th {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] tbody tr {
+  border-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Hover states */
+[data-theme="light"] .hover\:bg-slate-700:hover,
+[data-theme="light"] .hover\:bg-slate-800:hover {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .hover\:bg-slate-700\/50:hover,
+[data-theme="light"] .hover\:bg-slate-800\/50:hover {
+  background-color: rgba(241, 245, 249, 0.7) !important;
+}
+
+/* Active states */
+[data-theme="light"] .active\:bg-slate-700:active,
+[data-theme="light"] .active\:bg-slate-800:active {
+  background-color: #e2e8f0 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Stars/Background Animation
+   ======================================== */
+[data-theme="light"] .star,
+[data-theme="light"] .stars-container {
+  opacity: 0.15 !important;
+  filter: invert(0.8) !important;
+}
+
+/* Hide star background completely in light mode for cleaner look */
+[data-theme="light"] .stars-background,
+[data-theme="light"] [class*="StarryBackground"] {
+  opacity: 0 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Icon Colors
+   ======================================== */
+[data-theme="light"] svg.text-white,
+[data-theme="light"] .text-white svg {
+  color: #334155 !important;
+}
+
+[data-theme="light"] svg.text-slate-400,
+[data-theme="light"] .text-slate-400 svg,
+[data-theme="light"] svg.text-slate-500,
+[data-theme="light"] .text-slate-500 svg {
+  color: #64748b !important;
+}
+
+/* ========================================
+   LIGHT MODE: Toast Notifications
+   ======================================== */
+[data-theme="light"] .toast,
+[data-theme="light"] [class*="Toast"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* ========================================
+   LIGHT MODE: Selection
+   ======================================== */
+[data-theme="light"] ::selection {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #0f172a;
+}
+
+/* ========================================
+   LIGHT MODE: Loading/Skeleton States
+   ======================================== */
+[data-theme="light"] .skeleton,
+[data-theme="light"] .animate-pulse {
+  background-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .animate-shimmer {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%) !important;
+  background-size: 200% 100%;
+}
+
+/* ========================================
+   LIGHT MODE: Additional Text Overrides
+   Dashboard specific - ensure all text is readable
+   ======================================== */
+
+/* Slate-500 text - medium gray that needs darkening */
+[data-theme="light"] .text-slate-500 {
+  color: #475569 !important;
+}
+
+/* Slate-600 text */
+[data-theme="light"] .text-slate-600 {
+  color: #334155 !important;
+}
+
+/* Even smaller text sizes need good contrast */
+[data-theme="light"] .text-\[10px\],
+[data-theme="light"] .text-\[11px\],
+[data-theme="light"] .text-\[12px\] {
+  color: #475569 !important;
+}
+
+/* Specific slate-500 combinations */
+[data-theme="light"] p.text-slate-500,
+[data-theme="light"] span.text-slate-500,
+[data-theme="light"] div.text-slate-500 {
+  color: #475569 !important;
+}
+
+/* xs and sm text that uses slate colors */
+[data-theme="light"] .text-xs.text-slate-400,
+[data-theme="light"] .text-xs.text-slate-500,
+[data-theme="light"] .text-sm.text-slate-400,
+[data-theme="light"] .text-sm.text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Fix for truncated text */
+[data-theme="light"] .truncate.text-slate-400,
+[data-theme="light"] .truncate.text-slate-500 {
+  color: #64748b !important;
+}
+
+/* ========================================
+   LIGHT MODE: Dashboard Cards & Components
+   ======================================== */
+
+/* Card backgrounds with transparency */
+[data-theme="light"] .bg-slate-800\/20,
+[data-theme="light"] .bg-slate-800\/30,
+[data-theme="light"] .bg-slate-900\/20,
+[data-theme="light"] .bg-slate-900\/30 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Backdrop blur cards */
+[data-theme="light"] .backdrop-blur-sm.bg-slate-800\/30,
+[data-theme="light"] .backdrop-blur-sm.bg-slate-800\/20,
+[data-theme="light"] .backdrop-blur.bg-slate-800\/30 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Stats cards text */
+[data-theme="light"] .text-xl.font-bold,
+[data-theme="light"] .text-2xl.font-bold,
+[data-theme="light"] .text-3xl.font-bold,
+[data-theme="light"] .text-4xl.font-bold {
+  color: #0f172a !important;
+}
+
+/* But preserve colored text */
+[data-theme="light"] .text-emerald-400,
+[data-theme="light"] .text-cyan-400,
+[data-theme="light"] .text-blue-400,
+[data-theme="light"] .text-purple-400,
+[data-theme="light"] .text-amber-400,
+[data-theme="light"] .text-rose-400,
+[data-theme="light"] .text-red-400,
+[data-theme="light"] .text-green-400,
+[data-theme="light"] .text-orange-400,
+[data-theme="light"] .text-yellow-400,
+[data-theme="light"] .text-pink-400,
+[data-theme="light"] .text-indigo-400,
+[data-theme="light"] .text-violet-400,
+[data-theme="light"] .text-teal-400,
+[data-theme="light"] .text-sky-400 {
+  /* Keep accent colors but make them slightly darker for better visibility */
+  filter: brightness(0.85) saturate(1.1);
+}
+
+/* Preserve 500 colored text unchanged */
+[data-theme="light"] .text-emerald-500,
+[data-theme="light"] .text-cyan-500,
+[data-theme="light"] .text-blue-500,
+[data-theme="light"] .text-purple-500,
+[data-theme="light"] .text-amber-500,
+[data-theme="light"] .text-rose-500,
+[data-theme="light"] .text-red-500,
+[data-theme="light"] .text-green-500 {
+  /* These are already good visibility */
+}
+
+/* ========================================
+   LIGHT MODE: Icon specific overrides
+   ======================================== */
+[data-theme="light"] .text-slate-600 svg,
+[data-theme="light"] svg.text-slate-600 {
+  color: #475569 !important;
+}
+
+/* Chevron and navigation icons */
+[data-theme="light"] .text-slate-500.flex-shrink-0,
+[data-theme="light"] .text-slate-600.flex-shrink-0 {
+  color: #64748b !important;
+}
+
+/* ========================================
+   LIGHT MODE: Borders additional
+   ======================================== */
+[data-theme="light"] .border-slate-700\/30,
+[data-theme="light"] .border-slate-700\/50,
+[data-theme="light"] .border-slate-800\/30,
+[data-theme="light"] .border-slate-800\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Gradient backgrounds in cards
+   ======================================== */
+[data-theme="light"] .bg-gradient-to-br.from-blue-600,
+[data-theme="light"] .bg-gradient-to-br.from-emerald-600,
+[data-theme="light"] .bg-gradient-to-br.from-purple-600 {
+  /* Keep gradients for action buttons */
+}
+
+/* ========================================
+   LIGHT MODE: Progress bars and indicators
+   ======================================== */
+[data-theme="light"] .bg-slate-700\/50.rounded-full,
+[data-theme="light"] .h-1\.5.bg-slate-700\/50,
+[data-theme="light"] .h-2.bg-slate-700 {
+  background-color: #e2e8f0 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Empty states
+   ======================================== */
+[data-theme="light"] .text-slate-500.text-sm,
+[data-theme="light"] .text-slate-500.text-center,
+[data-theme="light"] .text-center.text-slate-500 {
+  color: #64748b !important;
+}
+
+/* ========================================
+   LIGHT MODE: Search input
+   ======================================== */
+[data-theme="light"] input.bg-slate-800\/50,
+[data-theme="light"] input.bg-slate-900\/50,
+[data-theme="light"] .bg-slate-800\/50 input,
+[data-theme="light"] .bg-slate-900\/50 input {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* ========================================
+   LIGHT MODE: Labels and captions
+   ======================================== */
+[data-theme="light"] label.text-slate-400,
+[data-theme="light"] label.text-slate-500,
+[data-theme="light"] .block.text-sm.text-slate-400,
+[data-theme="light"] .block.text-xs.text-slate-400 {
+  color: #475569 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Menu items hover states
+   ======================================== */
+[data-theme="light"] .hover\:bg-slate-600\/50:hover {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+/* ========================================
+   LIGHT MODE: Tabs and segmented controls
+   ======================================== */
+[data-theme="light"] .bg-slate-700\/50.text-slate-400 {
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+}
+
+/* Active tab in light mode */
+[data-theme="light"] .bg-blue-500\/20,
+[data-theme="light"] .bg-emerald-500\/20,
+[data-theme="light"] .bg-cyan-500\/20,
+[data-theme="light"] .bg-purple-500\/20 {
+  /* Keep these for accent backgrounds */
+}
+
+/* ========================================
+   LIGHT MODE: Dashboard specific fixes
+   ======================================== */
+
+/* Period labels and meta text */
+[data-theme="light"] .text-xs.text-slate-400.font-medium {
+  color: #64748b !important;
+}
+
+/* Dot indicators */
+[data-theme="light"] .bg-slate-600 {
+  background-color: #cbd5e1 !important;
+}
+
+/* Time stamps */
+[data-theme="light"] .text-\[10px\].text-slate-500,
+[data-theme="light"] .text-\[10px\].text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Action buttons secondary */
+[data-theme="light"] .text-slate-300 {
+  color: #334155 !important;
+}
+
+/* Italic placeholder text */
+[data-theme="light"] .text-slate-500.italic {
+  color: #94a3b8 !important;
+}
+
+/* Border-t dividers */
+[data-theme="light"] .border-t.border-slate-700\/30 {
+  border-color: #e2e8f0 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Mobile bottom nav
+   ======================================== */
+[data-theme="light"] .bg-gradient-to-t.from-slate-900 {
+  background: linear-gradient(to top, #ffffff, rgba(255, 255, 255, 0.95)) !important;
+}
+
+[data-theme="light"] .border-t.border-slate-700\/30 {
+  border-color: #e2e8f0 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Sidebar glow effects
+   ======================================== */
+[data-theme="light"] .shadow-\[1px_0_15px_rgba\(59\,130\,246\,0\.15\)\] {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ========================================
+   LIGHT MODE: Backdrop/blur backgrounds
+   ======================================== */
+[data-theme="light"] .bg-slate-900\/60.backdrop-blur-xl,
+[data-theme="light"] .bg-slate-900\/70.backdrop-blur-xl,
+[data-theme="light"] .bg-slate-900\/80.backdrop-blur-xl {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* ========================================
+   LIGHT MODE: Hero card glow effects
+   ======================================== */
+[data-theme="light"] .bg-blue-500\/20.blur-3xl,
+[data-theme="light"] .bg-emerald-500\/10.blur-3xl {
+  opacity: 0.3 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Typography hierarchy
+   ======================================== */
+
+/* Ensure main headings are dark */
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4 {
+  color: #0f172a !important;
+}
+
+/* But keep colored headings */
+[data-theme="light"] h1[class*="text-blue"],
+[data-theme="light"] h2[class*="text-blue"],
+[data-theme="light"] h1[class*="text-emerald"],
+[data-theme="light"] h2[class*="text-emerald"],
+[data-theme="light"] h1[class*="gradient"],
+[data-theme="light"] h2[class*="gradient"] {
+  color: inherit !important;
+}
+
+/* ========================================
+   LIGHT MODE: Fix remaining edge cases
+   ======================================== */
+
+/* Ensure all p and span without specific colors inherit properly */
+[data-theme="light"] p:not([class*="text-"]),
+[data-theme="light"] span:not([class*="text-"]) {
+  color: #334155;
+}
+
+/* Fix any remaining white text on cards */
+[data-theme="light"] .rounded-xl .text-white:not(.preserve-white):not([class*="bg-"]) {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .rounded-2xl .text-white:not(.preserve-white):not([class*="bg-"]) {
+  color: #0f172a !important;
+}
+
+/* ========================================
+   LIGHT MODE: Client Component Fixes
+   ======================================== */
+
+/* QuickHabits component */
+[data-theme="light"] .text-slate-400.text-sm.mt-2,
+[data-theme="light"] .text-slate-400.text-xs,
+[data-theme="light"] .text-slate-500.text-xs {
+  color: #64748b !important;
+}
+
+/* HeroStreakCard - streak labels and values */
+[data-theme="light"] .text-slate-400.text-sm,
+[data-theme="light"] .text-slate-300.text-sm {
+  color: #64748b !important;
+}
+
+/* WorkoutPlayer - exercise info */
+[data-theme="light"] .text-slate-400.truncate,
+[data-theme="light"] .text-slate-500.truncate,
+[data-theme="light"] .text-slate-400.line-clamp-2 {
+  color: #64748b !important;
+}
+
+/* Progress bars text */
+[data-theme="light"] .text-slate-500.font-medium,
+[data-theme="light"] .text-slate-400.font-medium {
+  color: #475569 !important;
+}
+
+/* Countdown timer */
+[data-theme="light"] .text-slate-400.text-4xl,
+[data-theme="light"] .text-slate-400.text-5xl,
+[data-theme="light"] .text-slate-400.text-6xl {
+  color: #64748b !important;
+}
+
+/* Generic text-slate overrides with higher specificity */
+[data-theme="light"] div.text-slate-400,
+[data-theme="light"] p.text-slate-400,
+[data-theme="light"] span.text-slate-400 {
+  color: #64748b !important;
+}
+
+[data-theme="light"] div.text-slate-500,
+[data-theme="light"] p.text-slate-500,
+[data-theme="light"] span.text-slate-500 {
+  color: #64748b !important;
+}
+
+[data-theme="light"] div.text-slate-600,
+[data-theme="light"] p.text-slate-600,
+[data-theme="light"] span.text-slate-600 {
+  color: #475569 !important;
+}
+
+/* Labels and descriptions */
+[data-theme="light"] label.text-slate-400,
+[data-theme="light"] label.text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Table header and cells */
+[data-theme="light"] th.text-slate-400,
+[data-theme="light"] td.text-slate-400,
+[data-theme="light"] th.text-slate-500,
+[data-theme="light"] td.text-slate-500 {
+  color: #64748b !important;
+}
+
+/* List items */
+[data-theme="light"] li.text-slate-400,
+[data-theme="light"] li.text-slate-500 {
+  color: #64748b !important;
+}
+
+/* ========================================
+   LIGHT MODE: Specific Dashboard Widgets
+   ======================================== */
+
+/* Stats cards - big numbers */
+[data-theme="light"] .text-3xl.font-bold.text-white,
+[data-theme="light"] .text-4xl.font-bold.text-white,
+[data-theme="light"] .text-5xl.font-bold.text-white {
+  color: #0f172a !important;
+}
+
+/* Widget titles */
+[data-theme="light"] .text-lg.font-semibold.text-white,
+[data-theme="light"] .text-xl.font-semibold.text-white,
+[data-theme="light"] .text-base.font-semibold.text-white {
+  color: #0f172a !important;
+}
+
+/* Small labels beneath stats */
+[data-theme="light"] .text-xs.uppercase.tracking-wider.text-slate-400,
+[data-theme="light"] .text-xs.uppercase.tracking-wider.text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Trend indicators */
+[data-theme="light"] .text-emerald-400 {
+  color: #059669 !important;
+}
+
+[data-theme="light"] .text-rose-400,
+[data-theme="light"] .text-red-400 {
+  color: #dc2626 !important;
+}
+
+/* Activity timestamps */
+[data-theme="light"] .text-\[11px\].text-slate-500,
+[data-theme="light"] .text-\[11px\].text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Modal and Overlay fixes
+   ======================================== */
+[data-theme="light"] .bg-slate-900\/50.backdrop-blur,
+[data-theme="light"] .bg-slate-900\/75.backdrop-blur,
+[data-theme="light"] .bg-black\/50.backdrop-blur {
+  background-color: rgba(100, 116, 139, 0.5) !important;
+}
+
+/* Modal content */
+[data-theme="light"] .bg-slate-800.rounded-xl,
+[data-theme="light"] .bg-slate-800.rounded-2xl,
+[data-theme="light"] .bg-slate-900.rounded-xl,
+[data-theme="light"] .bg-slate-900.rounded-2xl {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* Modal text */
+[data-theme="light"] .bg-slate-800 .text-white,
+[data-theme="light"] .bg-slate-900 .text-white {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .bg-slate-800 .text-slate-300,
+[data-theme="light"] .bg-slate-900 .text-slate-300,
+[data-theme="light"] .bg-slate-800 .text-slate-400,
+[data-theme="light"] .bg-slate-900 .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* ========================================
+   LIGHT MODE: Form and Input fixes
+   ======================================== */
+[data-theme="light"] .bg-slate-700.rounded,
+[data-theme="light"] .bg-slate-700.rounded-lg,
+[data-theme="light"] .bg-slate-700.rounded-xl {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .bg-slate-700\/50 {
+  background-color: rgba(241, 245, 249, 0.7) !important;
+}
+
+/* Select and dropdown */
+[data-theme="light"] select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* ========================================
+   LIGHT MODE: Badge and Tag fixes
+   ======================================== */
+[data-theme="light"] .bg-slate-700.text-slate-300,
+[data-theme="light"] .bg-slate-600.text-slate-200 {
+  background-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+/* Status badges */
+[data-theme="light"] .bg-emerald-500\/20.text-emerald-400 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #059669 !important;
+}
+
+[data-theme="light"] .bg-blue-500\/20.text-blue-400 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: #2563eb !important;
+}
+
+[data-theme="light"] .bg-amber-500\/20.text-amber-400 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #d97706 !important;
+}
+
+[data-theme="light"] .bg-rose-500\/20.text-rose-400 {
+  background-color: rgba(244, 63, 94, 0.15) !important;
+  color: #dc2626 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Notification/Alert fixes
+   ======================================== */
+[data-theme="light"] .bg-emerald-500\/10,
+[data-theme="light"] .bg-green-500\/10 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+[data-theme="light"] .bg-blue-500\/10 {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+[data-theme="light"] .bg-amber-500\/10,
+[data-theme="light"] .bg-yellow-500\/10 {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+
+[data-theme="light"] .bg-rose-500\/10,
+[data-theme="light"] .bg-red-500\/10 {
+  background-color: rgba(244, 63, 94, 0.1) !important;
+}
+
+/* ========================================
+   LIGHT MODE: Empty state and placeholders
+   ======================================== */
+[data-theme="light"] .text-slate-400.text-center,
+[data-theme="light"] .text-slate-500.text-center {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .text-slate-500.text-sm.text-center,
+[data-theme="light"] .text-slate-400.text-sm.text-center {
+  color: #94a3b8 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Icon color fixes
+   ======================================== */
+[data-theme="light"] svg.text-slate-400,
+[data-theme="light"] svg.text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] svg.text-slate-300 {
+  color: #64748b !important;
+}
+
+/* ========================================
+   LIGHT MODE: Link and button hover
+   ======================================== */
+[data-theme="light"] .hover\:bg-slate-700:hover {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .hover\:bg-slate-800:hover {
+  background-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+/* Active states */
+[data-theme="light"] .active\:bg-slate-600:active {
+  background-color: #cbd5e1 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Scrollbar
+   ======================================== */
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
+}
+/* ========================================
+   LIGHT MODE: ClientDetail & Clients Pages
+   ======================================== */
+
+/* Text-slate-300 overrides (used extensively in client pages) */
+[data-theme="light"] .text-slate-300,
+[data-theme="light"] span.text-slate-300,
+[data-theme="light"] p.text-slate-300,
+[data-theme="light"] div.text-slate-300,
+[data-theme="light"] td.text-slate-300 {
+  color: #475569 !important;
+}
+
+/* Table headers */
+[data-theme="light"] th.text-slate-400,
+[data-theme="light"] .text-xs.font-semibold.uppercase.tracking-wider.text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Client row hover states */
+[data-theme="light"] .hover\:text-slate-200:hover {
+  color: #1e293b !important;
+}
+
+/* Back button links */
+[data-theme="light"] .text-slate-400.hover\:text-white {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .text-slate-400.hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+/* Small text labels (10px size) */
+[data-theme="light"] .text-\[10px\].text-slate-400,
+[data-theme="light"] .text-\[10px\].text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Uppercase tracking wider labels */
+[data-theme="light"] .text-xs.uppercase.tracking-widest.text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Badge backgrounds on client list */
+[data-theme="light"] .bg-slate-600\/40.text-slate-300,
+[data-theme="light"] .bg-slate-700\/50.text-slate-400 {
+  background-color: rgba(226, 232, 240, 0.7) !important;
+  color: #475569 !important;
+}
+
+/* Card info labels */
+[data-theme="light"] .bg-slate-800\/50.text-slate-300 {
+  background-color: rgba(241, 245, 249, 0.8) !important;
+  color: #475569 !important;
+}
+
+/* Tab buttons inactive state */
+[data-theme="light"] .text-slate-400.hover\:text-white.hover\:bg-slate-800\/50 {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .text-slate-400.hover\:text-white.hover\:bg-slate-800\/50:hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Search icon */
+[data-theme="light"] .text-slate-400.absolute,
+[data-theme="light"] .absolute .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Button borders */
+[data-theme="light"] .border-slate-700\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .border-slate-600\/50 {
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .border-slate-600 {
+  border-color: #cbd5e1 !important;
+}
+
+/* Payments table */
+[data-theme="light"] tr.bg-slate-900.text-slate-300 {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+}
+
+/* Filter buttons */
+[data-theme="light"] .bg-slate-700.text-slate-300 {
+  background-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .bg-slate-700.text-slate-300:hover {
+  background-color: #cbd5e1 !important;
+}
+
+/* Archive/trash buttons inactive */
+[data-theme="light"] .bg-slate-700.text-slate-400 {
+  background-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+/* Sort buttons */
+[data-theme="light"] .text-slate-500.hover\:text-slate-300 {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .text-slate-500.hover\:text-slate-300:hover {
+  color: #334155 !important;
+}
+
+/* Empty state text */
+[data-theme="light"] .text-center.py-12.text-slate-500,
+[data-theme="light"] .text-center.py-12.text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Avatar placeholder */
+[data-theme="light"] .bg-slate-700.text-slate-400 {
+  background-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+/* Client card borders and backgrounds */
+[data-theme="light"] .rounded-lg.border.border-slate-800.bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Load more button */
+[data-theme="light"] .bg-slate-800\/60.border.border-slate-700\/50.text-slate-300,
+[data-theme="light"] .bg-slate-800\/40.border-t.border-slate-700\/50.text-slate-300 {
+  background-color: rgba(241, 245, 249, 0.8) !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+/* Modal backgrounds */
+[data-theme="light"] .bg-slate-800\/50.backdrop-blur-xl.border.border-slate-700\/50 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Upload icon */
+[data-theme="light"] .text-slate-400.hover\:text-blue-400 {
+  color: #94a3b8 !important;
+}
+
+/* Photo placeholder */
+[data-theme="light"] .bg-slate-800.text-slate-500,
+[data-theme="light"] .h-28.bg-slate-800.text-slate-500 {
+  background-color: #f1f5f9 !important;
+  color: #94a3b8 !important;
+}
+
+/* Check detail modal headers */
+[data-theme="light"] .text-lg.font-bold.text-white,
+[data-theme="light"] .text-xl.font-bold.text-white,
+[data-theme="light"] .text-2xl.font-bold.text-white,
+[data-theme="light"] .text-3xl.font-bold.text-white {
+  color: #0f172a !important;
+}
+
+/* Check detail values */
+[data-theme="light"] .text-xl.font-bold.text-white,
+[data-theme="light"] .text-2xl.font-bold.text-white {
+  color: #0f172a !important;
+}
+
+/* Section labels */
+[data-theme="light"] .text-xs.font-medium.text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Action buttons with slate backgrounds */
+[data-theme="light"] .bg-slate-600.hover\:bg-slate-700.text-white {
+  background-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .bg-slate-600.hover\:bg-slate-700.text-white:hover {
+  background-color: #cbd5e1 !important;
+}
+
+/* Preserve white text on colored buttons */
+[data-theme="light"] .preserve-white,
+[data-theme="light"] .text-white.preserve-white {
+  color: #ffffff !important;
+}
+
+/* Filter panel */
+[data-theme="light"] .bg-slate-800\/50.border.border-slate-700 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Hover states for slate backgrounds */
+[data-theme="light"] .hover\:bg-slate-700\/50:hover {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .hover\:bg-slate-700\/60:hover,
+[data-theme="light"] .hover\:bg-slate-700\/70:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Input fields */
+[data-theme="light"] .bg-slate-700\/50.border.border-slate-600 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .bg-slate-800\/50.border.border-slate-700 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Focus states */
+[data-theme="light"] input:focus,
+[data-theme="light"] textarea:focus,
+[data-theme="light"] select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Calendar button */
+[data-theme="light"] .bg-slate-800\/50.border-slate-700.text-slate-400 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+/* ========================================
+   LIGHT MODE: Admin Pages General
+   ======================================== */
+
+/* Profile page text */
+[data-theme="light"] .text-sm.text-slate-400.mt-1,
+[data-theme="light"] .text-xs.text-slate-400.mt-1,
+[data-theme="light"] .text-xs.text-slate-500.mt-1 {
+  color: #64748b !important;
+}
+
+/* Form labels */
+[data-theme="light"] label.text-slate-300,
+[data-theme="light"] .text-sm.text-slate-300,
+[data-theme="light"] .text-xs.text-slate-300 {
+  color: #475569 !important;
+}
+
+/* Info boxes */
+[data-theme="light"] .bg-slate-900\/20.border.border-slate-700\/20 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-slate-900\/30.border.border-slate-700\/30 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Cursor not allowed input */
+[data-theme="light"] .cursor-not-allowed.text-slate-400 {
+  color: #94a3b8 !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Business History page */
+[data-theme="light"] .text-\[9px\].text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Landing page editor */
+[data-theme="light"] .border-dashed.border-slate-700 {
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .hover\:border-sky-500\/50:hover {
+  border-color: rgba(14, 165, 233, 0.5) !important;
+}
+
+/* Landing page tabs */
+[data-theme="light"] .text-slate-400.hover\:text-white.hover\:bg-slate-700\/30 {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .text-slate-400.hover\:text-white.hover\:bg-slate-700\/30:hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Text-slate-200 (used in some components) */
+[data-theme="light"] .text-slate-200 {
+  color: #334155 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Additional Component Fixes
+   ======================================== */
+
+/* Forms: input style common patterns */
+[data-theme="light"] .bg-slate-800\/50.border.border-slate-700,
+[data-theme="light"] .bg-slate-800\/70.border.border-white\/10 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Form labels */
+[data-theme="light"] .text-sm.font-medium.text-slate-300 {
+  color: #475569 !important;
+}
+
+/* Lists and filters */
+[data-theme="light"] .bg-slate-700.text-slate-300.hover\:bg-slate-600,
+[data-theme="light"] .bg-slate-800.text-slate-300.hover\:bg-slate-700 {
+  background-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .bg-slate-700.text-slate-300.hover\:bg-slate-600:hover,
+[data-theme="light"] .bg-slate-800.text-slate-300.hover\:bg-slate-700:hover {
+  background-color: #cbd5e1 !important;
+}
+
+/* Badge/tag inside lists */
+[data-theme="light"] .bg-slate-700\/50.text-slate-300 {
+  background-color: rgba(226, 232, 240, 0.7) !important;
+  color: #475569 !important;
+}
+
+/* Notification panel */
+[data-theme="light"] .text-slate-300.Bell,
+[data-theme="light"] svg.text-slate-300 {
+  color: #475569 !important;
+}
+
+/* Font-medium text-slate-300 */
+[data-theme="light"] .font-medium.text-slate-300 {
+  color: #475569 !important;
+}
+
+/* Text-lg font-semibold text-slate-200 */
+[data-theme="light"] .text-lg.font-semibold.text-slate-200 {
+  color: #1e293b !important;
+}
+
+/* Hover state: text-slate-400 to text-slate-200 */
+[data-theme="light"] .hover\:text-slate-200:hover {
+  color: #1e293b !important;
+}
+
+/* Notification items */
+[data-theme="light"] .text-sm.font-medium.text-slate-200 {
+  color: #334155 !important;
+}
+
+/* Section headers */
+[data-theme="light"] .font-bold.text-slate-200,
+[data-theme="light"] .font-semibold.text-slate-200 {
+  color: #1e293b !important;
+}
+
+/* Notification center backgrounds */
+[data-theme="light"] .bg-slate-900\/40.border-slate-600\/50.text-slate-300 {
+  background-color: rgba(248, 250, 252, 0.9) !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+/* EditClient page */
+[data-theme="light"] .bg-slate-800\/20.backdrop-blur-sm.border.border-slate-700\/30 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-slate-800\/20.hover\:bg-slate-800\/60 {
+  background-color: #f8fafc !important;
+}
+
+[data-theme="light"] .bg-slate-800\/20.hover\:bg-slate-800\/60:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Collaboratore Detail */
+[data-theme="light"] .bg-slate-700\/50.backdrop-blur-sm.border.border-white\/10 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-slate-700\/50.text-slate-400 {
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .bg-slate-700\/50.text-slate-400.hover\:bg-slate-700\/70:hover {
+  background-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-slate-700\/50.border.border-slate-600 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Calendar page */
+[data-theme="light"] .bg-slate-900\/30 {
+  background-color: #f8fafc !important;
+}
+
+[data-theme="light"] .hover\:bg-slate-700\/30:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Settings page */
+[data-theme="light"] .bg-slate-700\/50.hover\:bg-slate-600\/50 {
+  background-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-slate-700\/50.hover\:bg-slate-600\/50:hover {
+  background-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .bg-slate-900\/50.border.border-slate-700\/30 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* SuperAdmin Settings */
+[data-theme="light"] .bg-slate-800\/60.rounded-2xl.border.border-slate-700 {
+  background-color: rgba(248, 250, 252, 0.9) !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-slate-800\/70.backdrop-blur.border.border-slate-700 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-slate-900\/70.backdrop-blur.border.border-slate-700\/30 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .hover\:bg-slate-700\/30:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Table inside admin pages */
+[data-theme="light"] thead.bg-slate-800\/20.border-b.border-slate-700\/30 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] tr.hover\:bg-slate-700\/30:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Calendar day backgrounds */
+[data-theme="light"] .bg-cyan-500\/30.text-cyan-400 {
+  background-color: rgba(6, 182, 212, 0.15) !important;
+  color: #0891b2 !important;
+}
+
+/* Calendar navigation */
+[data-theme="light"] .bg-slate-800\/50.text-slate-400.hover\:text-white.hover\:bg-slate-700\/50 {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .bg-slate-800\/50.text-slate-400.hover\:text-white.hover\:bg-slate-700\/50:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Selected items in calendar */
+[data-theme="light"] .bg-slate-900\/50.cursor-pointer.hover\:bg-slate-800\/50 {
+  background-color: #f8fafc !important;
+}
+
+[data-theme="light"] .bg-slate-900\/50.cursor-pointer.hover\:bg-slate-800\/50:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Lista Esercizi */
+[data-theme="light"] .bg-slate-700.hover\:bg-slate-600.text-slate-200 {
+  background-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .bg-slate-700.hover\:bg-slate-600.text-slate-200:hover {
+  background-color: #cbd5e1 !important;
+}
+
+/* Check form and payment manager */
+[data-theme="light"] .bg-slate-800\/70.border.border-white\/10.text-slate-200,
+[data-theme="light"] .bg-slate-800\/50.border.border-slate-700.text-slate-200 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+/* Payment manager buttons */
+[data-theme="light"] .text-slate-300.bg-slate-700\/50.hover\:bg-slate-700\/70 {
+  color: #475569 !important;
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .text-slate-300.bg-slate-700\/50.hover\:bg-slate-700\/70:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Additional text classes */
+[data-theme="light"] p.text-slate-300,
+[data-theme="light"] .p-3.bg-slate-800.rounded-lg.text-slate-300 {
+  color: #475569 !important;
+  background-color: #f8fafc !important;
+}
+
+/* Notification system */
+[data-theme="light"] .text-sm.text-slate-400.hover\:text-slate-200 {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .text-sm.text-slate-400.hover\:text-slate-200:hover {
+  color: #334155 !important;
+}
+
+/* Error boundary */
+[data-theme="light"] .text-slate-300.text-lg {
+  color: #475569 !important;
+}
+
+/* Common pattern: hover slate backgrounds */
+[data-theme="light"] .hover\:bg-slate-700:hover {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .hover\:bg-slate-600:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Placeholder text in inputs */
+[data-theme="light"] .placeholder-slate-400::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .placeholder-slate-500::placeholder,
+[data-theme="light"] .placeholder\:text-slate-500::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Focus ring colors */
+[data-theme="light"] .focus\:ring-rose-500:focus {
+  --tw-ring-color: rgba(244, 63, 94, 0.5) !important;
+}
+
+[data-theme="light"] .focus\:ring-blue-500:focus {
+  --tw-ring-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+[data-theme="light"] .focus\:border-rose-500:focus {
+  border-color: #f43f5e !important;
+}
+
+[data-theme="light"] .focus\:border-blue-500:focus {
+  border-color: #3b82f6 !important;
+}
+/* ========================================
+   LIGHT MODE: Sidebar Active Items
+   ======================================== */
+
+/* Active nav item with gradient background - make text darker */
+[data-theme="light"] .bg-gradient-to-r.from-blue-500\/15.to-sky-500\/10.text-blue-400 {
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.12), rgba(14, 165, 233, 0.08)) !important;
+  color: #1d4ed8 !important;
+}
+
+/* Active nav item icon */
+[data-theme="light"] .text-blue-400 {
+  color: #2563eb !important;
+}
+
+/* Active item label - ensure dark text */
+[data-theme="light"] .bg-gradient-to-r.from-blue-500\/15 .truncate.font-medium,
+[data-theme="light"] .from-blue-500\/15 span.truncate {
+  color: #1e40af !important;
+}
+
+/* Active indicator line - make more visible */
+[data-theme="light"] .bg-gradient-to-b.from-blue-400.to-sky-400 {
+  background: linear-gradient(to bottom, #2563eb, #0284c7) !important;
+}
+
+/* Mobile sidebar background */
+[data-theme="light"] .bg-slate-900\/70.backdrop-blur-xl {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Mobile sidebar alternative */
+[data-theme="light"] aside.bg-slate-900\/70 {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+/* Desktop sidebar backgrounds */
+[data-theme="light"] .bg-slate-900\/90.backdrop-blur-2xl,
+[data-theme="light"] .bg-slate-900\/95.backdrop-blur-2xl {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+/* Sidebar border */
+[data-theme="light"] .border-r.border-slate-700\/30,
+[data-theme="light"] .border-r.border-white\/5 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Nav section title */
+[data-theme="light"] .text-theme-text-tertiary\/70,
+[data-theme="light"] .text-\[10px\].font-bold.uppercase.tracking-\[0\.15em\] {
+  color: #64748b !important;
+}
+
+/* Inactive nav items */
+[data-theme="light"] .text-theme-text-secondary {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .text-theme-text-secondary:hover {
+  color: #1e293b !important;
+}
+
+/* Nav item hover states */
+[data-theme="light"] .hover\:bg-theme-bg-tertiary\/60:hover {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .hover\:bg-theme-bg-tertiary\/40:hover {
+  background-color: #f8fafc !important;
+}
+
+/* User section in sidebar */
+[data-theme="light"] .bg-gradient-to-r.from-theme-bg-tertiary\/50.to-transparent {
+  background: linear-gradient(to right, rgba(241, 245, 249, 0.8), transparent) !important;
+}
+
+[data-theme="light"] .border-theme\/30 {
+  border-color: #e2e8f0 !important;
+}
+
+/* User dropdown */
+[data-theme="light"] .bg-theme-bg-secondary\/95.backdrop-blur-xl {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+[data-theme="light"] .border-theme\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+/* User dropdown items */
+[data-theme="light"] .text-theme-text-primary {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .hover\:bg-theme-bg-tertiary\/60:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Close button in mobile sidebar */
+[data-theme="light"] .bg-theme-bg-tertiary\/50.hover\:bg-theme-bg-tertiary {
+  background-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .bg-theme-bg-tertiary\/50.hover\:bg-theme-bg-tertiary:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Sidebar divider */
+[data-theme="light"] .h-px.bg-theme\/50,
+[data-theme="light"] .h-px.bg-gradient-to-r.from-theme-text-tertiary\/20 {
+  background-color: #e2e8f0 !important;
+}
+
+/* Border top in user section */
+[data-theme="light"] .border-t.border-theme\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Logout button */
+[data-theme="light"] .text-rose-400.hover\:bg-rose-500\/10 {
+  color: #e11d48 !important;
+}
+
+[data-theme="light"] .text-rose-400.hover\:bg-rose-500\/10:hover {
+  background-color: rgba(225, 29, 72, 0.08) !important;
+}
+
+/* User avatar ring */
+[data-theme="light"] .ring-theme {
+  --tw-ring-color: #e2e8f0 !important;
+}
+
+/* Online indicator border */
+[data-theme="light"] .border-theme-bg-secondary {
+  border-color: #ffffff !important;
+}
+
+/* Gradient overlay in sidebar - reduce in light mode */
+[data-theme="light"] .bg-gradient-to-b.from-blue-500\/\[0\.02\] {
+  opacity: 0.3 !important;
+}
+
+/* Section separator line */
+[data-theme="light"] .from-theme-text-tertiary\/20.to-transparent {
+  background: linear-gradient(to right, #e2e8f0, transparent) !important;
+}
+
+/* Active nav item span (label text) - HIGH SPECIFICITY */
+[data-theme="light"] button.bg-gradient-to-r span.truncate.font-medium {
+  color: #1e40af !important;
+}
+
+/* Override for any text inside active gradient button */
+[data-theme="light"] .from-blue-500\/15.to-sky-500\/10 * {
+  color: inherit;
+}
+
+[data-theme="light"] .from-blue-500\/15.to-sky-500\/10 span {
+  color: #1e40af !important;
+}
+
+/* Bottom nav bar (mobile) */
+[data-theme="light"] nav.fixed.bottom-0.bg-slate-900\/95,
+[data-theme="light"] .fixed.bottom-0 .bg-slate-900\/95 {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+/* Bottom nav inactive items */
+[data-theme="light"] nav.fixed.bottom-0 .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Bottom nav active items */
+[data-theme="light"] nav.fixed.bottom-0 .text-blue-400 {
+  color: #2563eb !important;
+}
+
+/* ========================================
+   LIGHT MODE: MainLayout Mobile Sidebar
+   ======================================== */
+
+/* Mobile sidebar background */
+[data-theme="light"] .bg-slate-900\/98.backdrop-blur-xl {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+[data-theme="light"] aside.bg-slate-900\/98 {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+/* Mobile sidebar border */
+[data-theme="light"] .border-r.border-slate-700\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .border-b.border-slate-700\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Mobile sidebar header subtitle */
+[data-theme="light"] aside .text-xs.text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Mobile sidebar inactive nav items */
+[data-theme="light"] .text-slate-400.hover\:text-white.hover\:bg-slate-800 {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .text-slate-400.hover\:text-white.hover\:bg-slate-800:hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Mobile sidebar active parent section */
+[data-theme="light"] .bg-slate-800.text-blue-400 {
+  background-color: #eff6ff !important;
+  color: #2563eb !important;
+}
+
+/* Mobile bottom nav bar container */
+[data-theme="light"] .bg-slate-900\/95.border.border-slate-700\/60 {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Bottom nav inactive text */
+[data-theme="light"] .text-slate-300.hover\:text-white.hover\:bg-slate-800\/70,
+[data-theme="light"] .text-slate-300.hover\:text-white.hover\:bg-slate-800\/60 {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .text-slate-300.hover\:text-white.hover\:bg-slate-800\/70:hover,
+[data-theme="light"] .text-slate-300.hover\:text-white.hover\:bg-slate-800\/60:hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Bottom nav active item */
+[data-theme="light"] .text-white.bg-slate-800\/80.border.border-slate-700\/70 {
+  background-color: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1e40af !important;
+}
+
+/* KanbanBoard */
+[data-theme="light"] .bg-slate-800\/30.border.border-slate-700\/50 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-slate-700\/50.border-blue-500\/50 {
+  background-color: #eff6ff !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+[data-theme="light"] .bg-slate-500\/20.border-slate-500\/50.text-slate-400 {
+  background-color: rgba(148, 163, 184, 0.15) !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .bg-slate-900\/50.hover\:bg-slate-800\/70.border.border-slate-700 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-slate-900\/50.hover\:bg-slate-800\/70.border.border-slate-700:hover {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .font-medium.text-slate-200.text-sm {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .text-xs.text-slate-400.truncate {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .text-center.py-8.text-slate-500.text-sm {
+  color: #64748b !important;
+}
+
+/* GripVertical icon */
+[data-theme="light"] svg.text-slate-500 {
+  color: #94a3b8 !important;
+}
+/* ========================================
+   LIGHT MODE: InvitesManager Component
+   ======================================== */
+
+/* Main container - invites panel */
+[data-theme="light"] .bg-slate-900\/40.backdrop-blur-sm.rounded-xl.border.border-slate-700\/50 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Header button hover */
+[data-theme="light"] .hover\:bg-slate-800\/30:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Invites panel title */
+[data-theme="light"] .font-semibold.text-white {
+  color: #0f172a !important;
+}
+
+/* Invites panel subtitle */
+[data-theme="light"] .text-sm.text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Individual invite card */
+[data-theme="light"] .bg-slate-800\/30.hover\:bg-slate-800\/50.border.border-slate-700\/50 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .bg-slate-800\/30.hover\:bg-slate-800\/50.border.border-slate-700\/50:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Code badge */
+[data-theme="light"] .bg-slate-700\/50.px-2.py-0\.5.rounded.font-mono.text-blue-300 {
+  background-color: #eff6ff !important;
+  color: #2563eb !important;
+}
+
+/* Dropdown menu */
+[data-theme="light"] .bg-slate-800.border.border-slate-700.rounded-lg.shadow-xl {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Dropdown items */
+[data-theme="light"] .text-slate-300.hover\:bg-slate-700\/50 {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .text-slate-300.hover\:bg-slate-700\/50:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Filter buttons inactive */
+[data-theme="light"] .bg-slate-800\/50.text-slate-400.hover\:text-white {
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .bg-slate-800\/50.text-slate-400.hover\:text-white:hover {
+  color: #0f172a !important;
+  background-color: #e2e8f0 !important;
+}
+
+/* Refresh button */
+[data-theme="light"] .bg-slate-800\/50.text-slate-400.hover\:text-white.transition-colors {
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+}
+
+/* Empty state text */
+[data-theme="light"] .text-center.py-8 .text-slate-400,
+[data-theme="light"] .text-center.py-8 .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* ========================================
+   LIGHT MODE: ClientDetail Header
+   ======================================== */
+
+/* Main header container */
+[data-theme="light"] .bg-slate-900\/40.backdrop-blur-sm.rounded-xl.border.border-slate-700\/50.p-6 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Back button */
+[data-theme="light"] .text-slate-400.hover\:text-white.transition-colors.group {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .text-slate-400.hover\:text-white.transition-colors.group:hover {
+  color: #0f172a !important;
+}
+
+/* Section label */
+[data-theme="light"] .text-xs.uppercase.tracking-widest.text-slate-500.font-medium {
+  color: #64748b !important;
+}
+
+/* Client name */
+[data-theme="light"] .text-2xl.font-bold.text-white,
+[data-theme="light"] .text-3xl.font-bold.text-white {
+  color: #0f172a !important;
+}
+
+/* Client info badges */
+[data-theme="light"] .bg-blue-500\/10.text-blue-400 {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  color: #2563eb !important;
+}
+
+[data-theme="light"] .bg-emerald-500\/10.text-emerald-400 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  color: #059669 !important;
+}
+
+[data-theme="light"] .bg-amber-500\/10.text-amber-400 {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  color: #d97706 !important;
+}
+
+/* Border-t separator */
+[data-theme="light"] .border-t.border-slate-700\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Generic Container Fixes
+   ======================================== */
+
+/* Any dark container with backdrop blur */
+[data-theme="light"] .bg-slate-900\/40.backdrop-blur-sm {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="light"] .bg-slate-900\/50.backdrop-blur-sm {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="light"] .bg-slate-900\/60.backdrop-blur-sm {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Cards with glass effect */
+[data-theme="light"] .bg-slate-800\/30.rounded-xl,
+[data-theme="light"] .bg-slate-800\/40.rounded-xl,
+[data-theme="light"] .bg-slate-800\/50.rounded-xl {
+  background-color: #ffffff !important;
+}
+
+/* All containers with slate-700 border */
+[data-theme="light"] .border-slate-700\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .border-slate-700\/30 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Status badges - ensure proper contrast */
+[data-theme="light"] .bg-slate-500\/20.text-slate-400.border-slate-500\/30 {
+  background-color: rgba(148, 163, 184, 0.15) !important;
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Loading text */
+[data-theme="light"] .text-slate-400.mt-2,
+[data-theme="light"] p.text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Modal backgrounds */
+[data-theme="light"] .bg-slate-900\/95.backdrop-blur-sm {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+/* Check detail modal header */
+[data-theme="light"] .sticky.top-0.bg-slate-900\/95.backdrop-blur-sm {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+[data-theme="light"] .border-b.border-slate-700 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Info items with slate text */
+[data-theme="light"] .text-slate-400.flex.items-center.gap-2 {
+  color: #64748b !important;
+}
+
+/* Client info rows */
+[data-theme="light"] span.text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Action buttons with slate styles */
+[data-theme="light"] .p-2.rounded-lg.hover\:bg-slate-700\/50.text-slate-400 {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .p-2.rounded-lg.hover\:bg-slate-700\/50.text-slate-400:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Created at timestamp */
+[data-theme="light"] .text-xs.text-slate-500.mt-2 {
+  color: #94a3b8 !important;
+}
+
+/* Flex items text */
+[data-theme="light"] .flex.items-center.gap-2.text-slate-400 {
+  color: #64748b !important;
+}
+
+/* ========================================
+   LIGHT MODE: ClientDetail Tabs Bar
+   ======================================== */
+
+/* Tabs container */
+[data-theme="light"] .bg-slate-900\/40.p-1\.5.rounded-xl.border.border-slate-700\/50 {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Alternative tabs container selector */
+[data-theme="light"] .flex.overflow-x-auto.gap-1.bg-slate-900\/40 {
+  background-color: #f1f5f9 !important;
+}
+
+/* Inactive tab button */
+[data-theme="light"] .text-slate-400.hover\:text-white.hover\:bg-slate-800\/50 {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .text-slate-400.hover\:text-white.hover\:bg-slate-800\/50:hover {
+  color: #0f172a !important;
+  background-color: #e2e8f0 !important;
+}
+
+/* Scrollbar in tabs */
+[data-theme="light"] .scrollbar-thumb-slate-700::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1 !important;
+}
+
+/* ========================================
+   LIGHT MODE: AnamnesiBadge Component
+   ======================================== */
+
+/* Anamnesi inviata (verde) - FIX visibility */
+[data-theme="light"] .bg-emerald-900\/40.text-emerald-300.border-emerald-600\/50 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #047857 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+[data-theme="light"] .bg-emerald-900\/40.text-emerald-300.border-emerald-600\/50:hover {
+  background-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+/* Anamnesi non inviata (grigio) */
+[data-theme="light"] .bg-slate-800\/50.text-slate-400.border-slate-700 {
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .bg-slate-800\/50.text-slate-400.border-slate-700:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Generic emerald-300 text - make darker for light mode */
+[data-theme="light"] .text-emerald-300 {
+  color: #047857 !important;
+}
+
+/* Generic emerald-400 text */
+[data-theme="light"] .text-emerald-400 {
+  color: #059669 !important;
+}
+
+/* Emerald backgrounds with transparency */
+[data-theme="light"] .bg-emerald-900\/40,
+[data-theme="light"] .bg-emerald-900\/60 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+/* Filter button "Attivi" inactive state */
+[data-theme="light"] .bg-slate-700.text-emerald-400 {
+  background-color: #ecfdf5 !important;
+  color: #059669 !important;
+}
+
+[data-theme="light"] .text-emerald-400.hover\:bg-emerald-900\/30:hover {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+/* ========================================
+   LIGHT MODE: More Color Fixes
+   ======================================== */
+
+/* Amber/warning colors - make darker */
+[data-theme="light"] .text-amber-300 {
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .text-amber-400 {
+  color: #d97706 !important;
+}
+
+[data-theme="light"] .bg-amber-900\/40 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+}
+
+/* Red colors */
+[data-theme="light"] .text-red-300 {
+  color: #b91c1c !important;
+}
+
+[data-theme="light"] .text-red-400 {
+  color: #dc2626 !important;
+}
+
+/* Blue colors */
+[data-theme="light"] .text-blue-300 {
+  color: #1d4ed8 !important;
+}
+
+/* Purple colors */
+[data-theme="light"] .text-purple-300 {
+  color: #7c3aed !important;
+}
+
+[data-theme="light"] .text-purple-400 {
+  color: #8b5cf6 !important;
+}
+
+/* Cyan colors */
+[data-theme="light"] .text-cyan-300 {
+  color: #0891b2 !important;
+}
+
+[data-theme="light"] .text-cyan-400 {
+  color: #06b6d4 !important;
+}
+
+/* Sky colors */
+[data-theme="light"] .text-sky-300 {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .text-sky-400 {
+  color: #0ea5e9 !important;
+}
+
+/* ========================================
+   LIGHT MODE: PathStatusBadge & Status Styles
+   ======================================== */
+
+/* Active status - emerald dark bg */
+[data-theme="light"] .bg-emerald-900\/80.text-emerald-300.border.border-emerald-500\/30 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #047857 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+/* Renewed/expiring status - amber dark bg */
+[data-theme="light"] .bg-amber-900\/80.text-amber-300.border.border-amber-500\/30 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #b45309 !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+
+/* Not renewed/expired status - red dark bg */
+[data-theme="light"] .bg-red-900\/80.text-red-400.border.border-red-500\/30 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #b91c1c !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+/* NA status - slate dark bg */
+[data-theme="light"] .bg-slate-700\/80.text-slate-300.border.border-slate-500\/30 {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* ========================================
+   LIGHT MODE: InfoField & Cards in Overview
+   ======================================== */
+
+/* Dark card backgrounds in Overview */
+[data-theme="light"] .border.border-slate-800.bg-slate-900\/60 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .p-3.rounded-lg.border.border-slate-800.bg-slate-900\/60 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Card header text */
+[data-theme="light"] .text-slate-300 span.font-semibold.text-white {
+  color: #0f172a !important;
+}
+
+/* Card content text */
+[data-theme="light"] .text-slate-200.leading-snug {
+  color: #334155 !important;
+}
+
+/* Buttons with border-slate-700 */
+[data-theme="light"] .p-1\.5.rounded-md.border.border-slate-700.text-slate-200 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .p-1\.5.rounded-md.border.border-slate-700.text-slate-200.bg-slate-800 {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+/* Hover states for icon buttons */
+[data-theme="light"] .hover\:text-blue-300:hover {
+  color: #2563eb !important;
+}
+
+[data-theme="light"] .hover\:border-blue-400:hover {
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="light"] .hover\:text-emerald-300:hover {
+  color: #059669 !important;
+}
+
+[data-theme="light"] .hover\:border-emerald-400:hover {
+  border-color: #10b981 !important;
+}
+
+/* ========================================
+   LIGHT MODE: Badge Component
+   ======================================== */
+
+/* Danger badge */
+[data-theme="light"] .Badge[variant="danger"],
+[data-theme="light"] [class*="badge"][class*="danger"] {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #b91c1c !important;
+}
+
+/* Success badge */
+[data-theme="light"] .Badge[variant="success"],
+[data-theme="light"] [class*="badge"][class*="success"] {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #047857 !important;
+}
+
+/* ========================================
+   LIGHT MODE: More Card Backgrounds
+   ======================================== */
+
+/* Any bg-slate-900/60 */
+[data-theme="light"] .bg-slate-900\/60 {
+  background-color: #f8fafc !important;
+}
+
+/* Any bg-slate-900/50 */
+[data-theme="light"] .bg-slate-900\/50 {
+  background-color: #f8fafc !important;
+}
+
+/* Any bg-slate-800/50 */
+[data-theme="light"] .bg-slate-800\/50 {
+  background-color: #f8fafc !important;
+}
+
+/* Any bg-slate-800/30 */
+[data-theme="light"] .bg-slate-800\/30 {
+  background-color: #f8fafc !important;
+}
+
+/* Any border-slate-800 */
+[data-theme="light"] .border-slate-800 {
+  border-color: #e2e8f0 !important;
+}
+
+/* ========================================
+   LIGHT MODE: ListItemCard
+   ======================================== */
+
+[data-theme="light"] .ListItemCard,
+[data-theme="light"] [class*="list-item-card"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* ========================================
+   LIGHT MODE: UnifiedCard backgrounds
+   ======================================== */
+
+[data-theme="light"] .UnifiedCard,
+[data-theme="light"] [class*="unified-card"],
+[data-theme="light"] .glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%) !important;
+  border-color: #e2e8f0 !important;
+}

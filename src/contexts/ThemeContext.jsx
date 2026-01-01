@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const ThemeContext = createContext();
 
@@ -11,25 +11,55 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  // FORZATO DARK MODE - Light mode non ancora implementata correttamente
-  // TODO: riabilitare quando light mode sarà pronta
-  const [theme] = useState('dark');
+  // Inizializza dal localStorage o preferenze sistema
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    // Default: dark mode
+    return 'dark';
+  });
 
   // Applica tema al documento
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    document.body.setAttribute('data-theme', 'dark');
-    localStorage.setItem('theme', 'dark');
+    const root = document.documentElement;
+    const body = document.body;
+    
+    // Rimuovi classi precedenti
+    root.classList.remove('light', 'dark');
+    body.classList.remove('light', 'dark');
+    
+    // Applica nuovo tema
+    root.setAttribute('data-theme', theme);
+    body.setAttribute('data-theme', theme);
+    root.classList.add(theme);
+    body.classList.add(theme);
+    
+    // Salva preferenza
+    localStorage.setItem('theme', theme);
+    
+    // Meta tag per browser
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', theme === 'dark' ? '#0f172a' : '#f8fafc');
+    }
+  }, [theme]);
+
+  // Toggle tema
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   }, []);
 
-  // Toggle disabilitato per ora
-  const toggleTheme = () => {
-    // No-op: dark mode forzata
-  };
+  // Imposta tema specifico
+  const setThemeMode = useCallback((mode) => {
+    if (mode === 'light' || mode === 'dark') {
+      setTheme(mode);
+    }
+  }, []);
 
   const value = {
     theme,
     toggleTheme,
+    setThemeMode,
     isDark: theme === 'dark',
     isLight: theme === 'light'
   };
