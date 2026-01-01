@@ -13,7 +13,14 @@ if (import.meta.env.PROD) {
     sendDefaultPii: true,
     integrations: [
       Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration()
+      Sentry.replayIntegration({
+        // Mostra tutto il testo (non mascherare)
+        maskAllText: false,
+        // Mostra tutte le immagini
+        blockAllMedia: false,
+        // Non mascherare gli input
+        maskAllInputs: false,
+      })
     ],
     // Tracing - Cattura 100% delle transazioni
     tracesSampleRate: 1.0,
@@ -29,6 +36,7 @@ if (import.meta.env.PROD) {
       'ResizeObserver loop completed with undelivered notifications',
       'Non-Error promise rejection captured',
       /Loading chunk \d+ failed/,
+      'Connection to Indexed Database server lost', // IndexedDB browser issue
     ],
   });
 }
