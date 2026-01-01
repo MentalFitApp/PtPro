@@ -199,6 +199,76 @@ const AnimatedStars = () => {
 };
 
 // === LOGIN COMPONENTE COMPLETO ===
+
+// Funzione per creare i pannelli di transizione nel DOM
+const createTransitionPanels = () => {
+  // Rimuovi eventuali pannelli esistenti
+  const existing = document.getElementById('transition-panels');
+  if (existing) existing.remove();
+
+  const container = document.createElement('div');
+  container.id = 'transition-panels';
+  container.innerHTML = `
+    <div class="login-panel-top" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50vh;
+      background: linear-gradient(to bottom, #0f172a, #1e293b);
+      z-index: 9999;
+      transform: translateY(0);
+      transition: transform 1s cubic-bezier(0.76, 0, 0.24, 1);
+    ">
+      <div style="
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(to right, transparent, #3b82f6, transparent);
+      "></div>
+    </div>
+    <div class="login-panel-bottom" style="
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50vh;
+      background: linear-gradient(to top, #0f172a, #1e293b);
+      z-index: 9999;
+      transform: translateY(0);
+      transition: transform 1s cubic-bezier(0.76, 0, 0.24, 1);
+    ">
+      <div style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(to right, transparent, #3b82f6, transparent);
+      "></div>
+    </div>
+  `;
+  document.body.appendChild(container);
+
+  // Forza reflow per far partire la transizione
+  container.offsetHeight;
+
+  // Anima l'apertura
+  requestAnimationFrame(() => {
+    const topPanel = container.querySelector('.login-panel-top');
+    const bottomPanel = container.querySelector('.login-panel-bottom');
+    if (topPanel) topPanel.style.transform = 'translateY(-100%)';
+    if (bottomPanel) bottomPanel.style.transform = 'translateY(100%)';
+  });
+
+  // Rimuovi dopo l'animazione
+  setTimeout(() => {
+    container.remove();
+  }, 1200);
+};
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -209,7 +279,24 @@ const Login = () => {
   const [showWorkspaceSelector, setShowWorkspaceSelector] = useState(false);
   const [availableWorkspaces, setAvailableWorkspaces] = useState([]);
   const [pendingUser, setPendingUser] = useState(null);
+  const [pendingNavigation, setPendingNavigation] = useState(null); // Per ritardare navigate
   const navigate = useNavigate();
+
+  // Quando c'è una navigazione pendente, aspetta un po' poi avvia apertura pannelli
+  useEffect(() => {
+    if (pendingNavigation) {
+      // Aspetta che il loader sia visibile per un po', poi avvia i pannelli
+      const timer = setTimeout(() => {
+        // Crea i pannelli nel DOM (sopravvivono allo smontaggio)
+        createTransitionPanels();
+        // Naviga subito - i pannelli si apriranno sopra la nuova pagina
+        setTimeout(() => {
+          navigate(pendingNavigation.path, pendingNavigation.options);
+        }, 50);
+      }, 1500); // 1.5 secondi di loader visibile
+      return () => clearTimeout(timer);
+    }
+  }, [pendingNavigation, navigate]);
 
   useEffect(() => {
     let isInitialCheck = true;
@@ -262,28 +349,37 @@ const Login = () => {
 
           if (isAdmin) {
             sessionStorage.setItem('app_role', 'admin');
-            navigate('/', { replace: true });
+            setPendingNavigation({ path: '/', options: { replace: true } });
           } else if (isCoach) {
             sessionStorage.setItem('app_role', 'coach');
-            navigate('/coach', { replace: true });
+            setPendingNavigation({ path: '/coach', options: { replace: true } });
           } else if (isCollaboratore) {
             sessionStorage.setItem('app_role', 'collaboratore');
             const hasFirstLogin = collabDoc.data()?.firstLogin === true;
-            navigate(hasFirstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard', { replace: true });
+            setPendingNavigation({ 
+              path: hasFirstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard', 
+              options: { replace: true } 
+            });
           } else if (isClient) {
             sessionStorage.setItem('app_role', 'client');
             const hasFirstLogin = clientDoc.data()?.firstLogin === true;
-            navigate(hasFirstLogin ? '/client/first-access' : '/client/dashboard', { replace: true });
+            setPendingNavigation({ 
+              path: hasFirstLogin ? '/client/first-access' : '/client/dashboard', 
+              options: { replace: true } 
+            });
           } else {
             console.error('❌ Nessun ruolo trovato per:', user.uid);
             setError('Accesso non autorizzato. Contatta l\'amministratore.');
             await signOut(auth);
+            setIsCheckingAuth(false);
           }
         } catch (err) {
           setError('Errore verifica ruolo. Riprova.');
+          setIsCheckingAuth(false);
         }
+      } else {
+        setIsCheckingAuth(false);
       }
-      setIsCheckingAuth(false);
     });
 
     return () => {
@@ -348,19 +444,26 @@ const Login = () => {
 
       if (isAdmin) {
         sessionStorage.setItem('app_role', 'admin');
-        navigate('/');
+        setPendingNavigation({ path: '/', options: {} });
       } else if (isCoach) {
         sessionStorage.setItem('app_role', 'coach');
-        navigate('/coach');
+        setPendingNavigation({ path: '/coach', options: {} });
       } else if (isCollaboratore) {
         sessionStorage.setItem('app_role', 'collaboratore');
-        navigate(collabDoc.data().firstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard');
+        setPendingNavigation({ 
+          path: collabDoc.data().firstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard', 
+          options: {} 
+        });
       } else if (isClient) {
         sessionStorage.setItem('app_role', 'client');
-        navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
+        setPendingNavigation({ 
+          path: clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard', 
+          options: {} 
+        });
       } else {
         setError('Accesso non autorizzato. Contatta l\'amministratore.');
         await signOut(auth);
+        setIsLoggingIn(false);
       }
     } catch (error) {
       setIsLoggingIn(false); // Reset in caso di errore
@@ -437,16 +540,22 @@ const Login = () => {
 
       if (isAdmin) {
         sessionStorage.setItem('app_role', 'admin');
-        navigate('/');
+        setPendingNavigation({ path: '/', options: {} });
       } else if (isCoach) {
         sessionStorage.setItem('app_role', 'coach');
-        navigate('/coach');
+        setPendingNavigation({ path: '/coach', options: {} });
       } else if (isCollaboratore) {
         sessionStorage.setItem('app_role', 'collaboratore');
-        navigate(collabDoc.data().firstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard');
+        setPendingNavigation({ 
+          path: collabDoc.data().firstLogin ? '/collaboratore/first-access' : '/collaboratore/dashboard', 
+          options: {} 
+        });
       } else if (isClient) {
         sessionStorage.setItem('app_role', 'client');
-        navigate(clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard');
+        setPendingNavigation({ 
+          path: clientDoc.data().firstLogin ? '/client/first-access' : '/client/dashboard', 
+          options: {} 
+        });
       } else {
         // IMPORTANTE: Se l'utente non esiste come cliente/admin/coach, elimina l'account Auth
         // appena creato da signInWithPopup per evitare utenti orfani
@@ -494,18 +603,20 @@ const Login = () => {
   const handleSelectWorkspace = async (workspace) => {
     try {
       setCurrentTenantId(workspace.tenantId);
+      setIsLoggingIn(true); // Mostra il loader
       
       // Redirect basato sul ruolo nel workspace selezionato
       if (workspace.role === 'admin' || workspace.role === 'superadmin') {
-        navigate('/admin');
+        setPendingNavigation({ path: '/admin', options: {} });
       } else if (workspace.role === 'coach') {
-        navigate('/coach');
+        setPendingNavigation({ path: '/coach', options: {} });
       } else {
-        navigate('/client');
+        setPendingNavigation({ path: '/client', options: {} });
       }
     } catch (error) {
       console.error('❌ Errore selezione workspace:', error);
       setError('Errore nella selezione del workspace');
+      setIsLoggingIn(false);
     }
   };
 
@@ -569,23 +680,15 @@ const Login = () => {
     );
   }
 
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
-        <div className="relative">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-slate-700 border-t-blue-500"></div>
-          <Zap className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500 w-6 h-6" />
-        </div>
-      </div>
-    );
-  }
+  // Fase di loading/transizione - stesso sfondo ma con loader al centro
+  const showLoadingPhase = isCheckingAuth || isLoggingIn || pendingNavigation;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 relative overflow-hidden">
-      {/* Animated Stars Background */}
+      {/* Animated Stars Background - sempre visibile */}
       <AnimatedStars />
 
-      {/* Animated gradient blobs */}
+      {/* Animated gradient blobs - sempre visibili */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-full blur-3xl"
@@ -615,12 +718,85 @@ const Login = () => {
         />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md relative z-10"
-      >
+      <AnimatePresence mode="wait">
+        {showLoadingPhase ? (
+          /* Fase di Loading - Logo + barra animata */
+          <motion.div
+            key="loader"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col items-center justify-center z-10"
+          >
+            {/* Logo animato */}
+            <motion.div className="relative mb-8">
+              <div className="relative">
+                {/* Glow effect */}
+                <motion.div 
+                  className="absolute inset-0 blur-xl bg-blue-500/30 rounded-full"
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                
+                {/* Logo container */}
+                <motion.div 
+                  className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-blue-500/30"
+                  animate={{ rotateY: [0, 360] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                >
+                  <img 
+                    src="/logo192.png" 
+                    alt="Logo"
+                    className="w-16 h-16 object-contain"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                </motion.div>
+              </div>
+            </motion.div>
+
+            {/* Animated loader bar */}
+            <motion.div 
+              className="w-56 h-1.5 bg-slate-800 rounded-full overflow-hidden"
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: 224 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
+            >
+              <motion.div
+                className="h-full bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500 rounded-full"
+                style={{ backgroundSize: '200% 100%' }}
+                animate={{ 
+                  x: ['-100%', '100%'],
+                  backgroundPosition: ['0% 0%', '100% 0%']
+                }}
+                transition={{ 
+                  duration: 1,
+                  repeat: Infinity,
+                  ease: 'easeInOut'
+                }}
+              />
+            </motion.div>
+
+            {/* Message */}
+            <motion.p
+              className="mt-6 text-slate-400 text-sm tracking-wide"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              {isLoggingIn ? 'Accesso in corso...' : 'Caricamento...'}
+            </motion.p>
+          </motion.div>
+        ) : (
+          /* Form di Login */
+          <motion.div
+            key="form"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+            className="w-full max-w-md relative z-10"
+          >
         {/* Logo e Titolo */}
         <div className="text-center mb-8">
           <motion.div
@@ -837,7 +1013,9 @@ const Login = () => {
             <span>Premium Fitness Management System</span>
           </div>
         </motion.div>
-      </motion.div>
+        </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

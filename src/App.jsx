@@ -13,6 +13,7 @@ import { TenantProvider } from './contexts/TenantContext';
 import { UserPreferencesProvider } from './hooks/useUserPreferences';
 import { getTenantDoc } from './config/tenant';
 import useOnlineStatus from './hooks/useOnlineStatus';
+import FuturisticLoader from './components/ui/FuturisticLoader';
 
 // Import dinamici dei layout
 const ProLayout = React.lazy(() => import('./components/layout/ProLayout'));
@@ -115,17 +116,14 @@ const TermsOfService = React.lazy(() => import('./pages/public/TermsOfServiceDyn
 const AcceptInvite = React.lazy(() => import('./pages/public/AcceptInvite'));
 
 // Spinner
+// Page Spinner per lazy loading
 const PageSpinner = () => (
-  <div className="flex justify-center items-center h-screen w-full bg-slate-900">
-    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
-  </div>
+  <FuturisticLoader isLoading={true} />
 );
 
+// Auth Spinner per verifica autenticazione
 const AuthSpinner = () => (
-  <div className="flex flex-col justify-center items-center min-h-screen bg-slate-900 text-slate-200">
-    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
-    <p className="mt-4 text-sm">Verifica autenticazione...</p>
-  </div>
+  <FuturisticLoader isLoading={true} />
 );
 
 // Componente interno per hook che richiedono i context providers

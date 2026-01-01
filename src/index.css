@@ -5216,3 +5216,163 @@ body.light,
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%) !important;
   border-color: #e2e8f0 !important;
 }
+
+/* ========================================
+   LIGHT MODE: Sidebar Dropdown Menu Fix
+   ======================================== */
+
+/* Sidebar dropdown menu background */
+[data-theme="light"] .bg-slate-800\/95,
+[data-theme="light"] aside .bg-slate-800\/95 {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Dropdown menu text */
+[data-theme="light"] aside .text-slate-300,
+[data-theme="light"] aside .text-slate-400,
+[data-theme="light"] [data-user-menu] .text-slate-300,
+[data-theme="light"] [data-user-menu] .text-slate-400 {
+  color: #334155 !important;
+}
+
+/* Dropdown hover states */
+[data-theme="light"] aside button:hover.bg-white\/10,
+[data-theme="light"] aside .hover\:bg-white\/10:hover,
+[data-theme="light"] [data-user-menu] .hover\:bg-white\/10:hover {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Settings button icon in sidebar - make it visible */
+[data-theme="light"] aside .text-theme-text-tertiary,
+[data-theme="light"] aside Settings {
+  color: #475569 !important;
+}
+
+/* Sidebar Settings icon specifically */
+[data-theme="light"] [data-user-menu] svg,
+[data-theme="light"] aside [data-user-menu] svg {
+  color: #475569 !important;
+}
+
+/* Keep rose color for logout */
+[data-theme="light"] aside .text-rose-400,
+[data-theme="light"] [data-user-menu] .text-rose-400 {
+  color: #e11d48 !important;
+}
+
+/* Keep amber for Sun icon */
+[data-theme="light"] aside .text-amber-400 {
+  color: #f59e0b !important;
+}
+
+/* User menu header in sidebar */
+[data-theme="light"] [data-user-menu] .text-white {
+  color: #0f172a !important;
+}
+
+/* Dividers in dropdown */
+[data-theme="light"] aside .border-white\/10,
+[data-theme="light"] [data-user-menu] .border-white\/10 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Sidebar background in light mode */
+[data-theme="light"] aside.bg-slate-900\/60 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Mobile sidebar background */
+[data-theme="light"] aside.bg-slate-900\/70 {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+/* User profile box in sidebar */
+[data-theme="light"] aside .from-theme-bg-tertiary\/40,
+[data-theme="light"] aside .from-theme-bg-tertiary\/50 {
+  background: linear-gradient(to right, rgba(241, 245, 249, 0.8), transparent) !important;
+}
+
+/* Border for user profile in mobile */
+[data-theme="light"] aside .border-theme\/30 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Nav section title in sidebar */
+[data-theme="light"] aside .text-theme-text-tertiary\/70 {
+  color: #64748b !important;
+}
+
+/* Nav section divider line */
+[data-theme="light"] aside .from-theme-text-tertiary\/20 {
+  background: linear-gradient(to right, #e2e8f0, transparent) !important;
+}
+
+/* ========================================
+   SIDEBAR CUSTOMIZER MODAL - Light Mode
+   ======================================== */
+
+/* Main modal background */
+[data-theme="light"] .sidebar-customizer-modal {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Modal header text */
+[data-theme="light"] .sidebar-customizer-modal .text-white {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .sidebar-customizer-modal .text-slate-400 {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .sidebar-customizer-modal .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Item rows */
+[data-theme="light"] .sidebar-customizer-modal .bg-slate-800\/60 {
+  background-color: rgba(241, 245, 249, 0.8) !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .sidebar-customizer-modal .bg-slate-800\/20 {
+  background-color: rgba(241, 245, 249, 0.3) !important;
+  border-color: rgba(226, 232, 240, 0.5) !important;
+}
+
+/* Icon containers */
+[data-theme="light"] .sidebar-customizer-modal .bg-blue-500\/20 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+[data-theme="light"] .sidebar-customizer-modal .bg-slate-700\/50 {
+  background-color: rgba(226, 232, 240, 0.8) !important;
+}
+
+/* Grip icon color */
+[data-theme="light"] .sidebar-customizer-modal .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+/* Locked badge */
+[data-theme="light"] .sidebar-customizer-modal .bg-slate-800.rounded {
+  background-color: #f1f5f9 !important;
+}
+
+/* Toggle button backgrounds */
+[data-theme="light"] .sidebar-customizer-modal .bg-emerald-500\/20 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+/* Borders */
+[data-theme="light"] .sidebar-customizer-modal .border-slate-700\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Footer buttons */
+[data-theme="light"] .sidebar-customizer-modal button:hover.hover\:bg-slate-800 {
+  background-color: #f1f5f9 !important;
+}

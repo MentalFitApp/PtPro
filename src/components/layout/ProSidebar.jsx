@@ -1,6 +1,6 @@
 // src/components/layout/ProSidebar.jsx
-// Sidebar professionale con sezioni raggruppate
-import React, { useState, useEffect } from 'react';
+// Sidebar professionale con sezioni raggruppate e personalizzazione menu
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { doc, getDoc } from 'firebase/firestore';
@@ -10,12 +10,13 @@ import { defaultBranding } from '../../config/tenantBranding';
 import { useUnreadAnamnesi, useUnreadChecks } from '../../hooks/useUnreadNotifications';
 import { useUnreadCount } from '../../hooks/useChat';
 import { useTheme } from '../../contexts/ThemeContext';
+import SidebarCustomizer, { useSidebarPreferences } from './SidebarCustomizer';
 import {
   Home, Users, FileText, Calendar, Settings, MessageSquare,
   ChevronRight, ChevronLeft, BarChart3, BellRing, UserCheck,
   BookOpen, Target, Activity, Plus, Palette, Layout, Link2,
   Dumbbell, Utensils, Shield, CreditCard, LogOut, HelpCircle,
-  Zap, Package, Menu, X, User, Sun, Moon
+  Zap, Package, Menu, X, User, Sun, Moon, LayoutGrid
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 
@@ -54,10 +55,8 @@ const getNavConfig = (role, isSuperAdmin = false) => {
         {
           title: 'Analytics',
           items: [
-            { to: '/analytics-dashboard', icon: Activity, label: 'Dashboard Analytics' },
             { to: '/business-history', icon: BarChart3, label: 'Business History' },
             { to: '/statistiche', icon: Activity, label: 'Statistiche' },
-            { to: '/analytics', icon: BarChart3, label: 'Report Dettagliato' },
           ]
         },
         {
@@ -469,6 +468,7 @@ export const ProSidebar = ({
   const [branding, setBranding] = useState(defaultBranding);
   const [userIsSuperAdmin, setUserIsSuperAdmin] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
   const user = auth.currentUser;
   
   // Hook per notifiche non lette
@@ -480,6 +480,9 @@ export const ProSidebar = ({
   
   // Theme toggle
   const { theme, toggleTheme, isDark } = useTheme();
+  
+  // Carica preferenze menu personalizzate (si aggiorna automaticamente quando salvate)
+  const { visibleItems, menuItems, loading: menuLoading } = useSidebarPreferences(role);
   
   // Badge per le varie voci di menu
   const badges = {
@@ -628,16 +631,42 @@ export const ProSidebar = ({
 
       {/* Navigation */}
       <nav className="relative flex-1 px-2 py-1 overflow-y-auto scrollbar-hide">
-        {navConfig.sections.map((section, idx) => (
-          <NavSection
-            key={section.title}
-            section={section}
-            isCollapsed={isCollapsed}
-            currentPath={location.pathname}
-            onNavigate={(to) => navigate(to)}
-            badges={badges}
-          />
-        ))}
+        {navConfig.sections.map((section, idx) => {
+          // Se le preferenze non sono caricate o sono vuote, mostra tutto
+          if (menuLoading || visibleItems.length === 0) {
+            return (
+              <NavSection
+                key={section.title}
+                section={section}
+                isCollapsed={isCollapsed}
+                currentPath={location.pathname}
+                onNavigate={(to) => navigate(to)}
+                badges={badges}
+              />
+            );
+          }
+          
+          // Filtra items basandosi sulle preferenze
+          const visiblePaths = new Set(visibleItems.map(i => i.to));
+          const filteredSection = {
+            ...section,
+            items: section.items.filter(item => visiblePaths.has(item.to))
+          };
+          
+          // Non renderizzare sezioni vuote
+          if (filteredSection.items.length === 0) return null;
+          
+          return (
+            <NavSection
+              key={section.title}
+              section={filteredSection}
+              isCollapsed={isCollapsed}
+              currentPath={location.pathname}
+              onNavigate={(to) => navigate(to)}
+              badges={badges}
+            />
+          );
+        })}
       </nav>
 
       {/* User Profile Section */}
@@ -749,6 +778,16 @@ export const ProSidebar = ({
                   >
                     <Settings size={14} /> Impostazioni
                   </button>
+                  {/* Personalizza Menu */}
+                  <button 
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      setIsCustomizerOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-300 hover:bg-white/10 transition-colors"
+                  >
+                    <LayoutGrid size={14} className="text-purple-400" /> Personalizza Menu
+                  </button>
                   {role === 'admin' && (
                     <button 
                       onClick={handleNavigateBilling} 
@@ -784,6 +823,13 @@ export const ProSidebar = ({
           </AnimatePresence>
         </div>
       </div>
+      
+      {/* Modal Personalizza Menu */}
+      <SidebarCustomizer 
+        isOpen={isCustomizerOpen} 
+        onClose={() => setIsCustomizerOpen(false)} 
+        role={role}
+      />
     </motion.aside>
   );
 };
@@ -797,10 +843,15 @@ export const MobileSidebar = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [branding, setBranding] = useState(defaultBranding);
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
   const user = auth.currentUser;
   const { theme, toggleTheme, isDark } = useTheme();
 
   const navConfig = getNavConfig(role);
+  
+  // Carica preferenze menu personalizzate
+  // Carica preferenze menu personalizzate (si aggiorna automaticamente)
+  const { visibleItems, menuItems, loading: menuLoading } = useSidebarPreferences(role);
 
   useEffect(() => {
     const loadBranding = async () => {
@@ -874,15 +925,40 @@ export const MobileSidebar = ({
 
             {/* Navigation */}
             <nav className="relative flex-1 p-3 overflow-y-auto scrollbar-hide">
-              {navConfig.sections.map((section) => (
-                <NavSection
-                  key={section.title}
-                  section={section}
-                  isCollapsed={false}
-                  currentPath={location.pathname}
-                  onNavigate={handleNavigate}
-                />
-              ))}
+              {navConfig.sections.map((section) => {
+                // Se le preferenze non sono caricate o sono vuote, mostra tutto
+                if (menuLoading || visibleItems.length === 0) {
+                  return (
+                    <NavSection
+                      key={section.title}
+                      section={section}
+                      isCollapsed={false}
+                      currentPath={location.pathname}
+                      onNavigate={handleNavigate}
+                    />
+                  );
+                }
+                
+                // Filtra items basandosi sulle preferenze
+                const visiblePaths = new Set(visibleItems.map(i => i.to));
+                const filteredSection = {
+                  ...section,
+                  items: section.items.filter(item => visiblePaths.has(item.to))
+                };
+                
+                // Non renderizzare sezioni vuote
+                if (filteredSection.items.length === 0) return null;
+                
+                return (
+                  <NavSection
+                    key={section.title}
+                    section={filteredSection}
+                    isCollapsed={false}
+                    currentPath={location.pathname}
+                    onNavigate={handleNavigate}
+                  />
+                );
+              })}
             </nav>
 
             {/* User */}
@@ -914,6 +990,18 @@ export const MobileSidebar = ({
                 </span>
                 <span className="text-xs">{isDark ? '☀️' : '🌙'}</span>
               </motion.button>
+              
+              {/* Personalizza Menu Button */}
+              <motion.button
+                onClick={() => setIsCustomizerOpen(true)}
+                whileHover={{ x: 3 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full mt-2 flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-theme-text-secondary hover:bg-theme-bg-tertiary/60 transition-colors"
+              >
+                <LayoutGrid size={18} className="text-purple-400" />
+                <span className="font-medium">Personalizza Menu</span>
+              </motion.button>
+              
               <motion.button
                 onClick={handleLogout}
                 whileHover={{ x: 3 }}
@@ -924,6 +1012,13 @@ export const MobileSidebar = ({
                 <span className="font-medium">Esci</span>
               </motion.button>
             </div>
+            
+            {/* Modal Personalizza Menu */}
+            <SidebarCustomizer 
+              isOpen={isCustomizerOpen} 
+              onClose={() => setIsCustomizerOpen(false)} 
+              role={role}
+            />
           </motion.aside>
         </>
       )}

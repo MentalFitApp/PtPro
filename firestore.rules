@@ -530,6 +530,12 @@ service cloud.firestore {
       allow update: if request.auth != null && request.auth.uid == userId;
       // Solo Platform CEO può eliminare utenti
       allow delete: if isPlatformCEO();
+      
+      // --- PREFERENCES (sotto-collezione per preferenze utente) ---
+      match /preferences/{prefId} {
+        // Ogni utente può leggere e scrivere le proprie preferenze
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
     // --- COURSES (global) ---
