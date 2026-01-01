@@ -2,7 +2,7 @@
 // Dashboard Cliente - Redesign v2.0
 // Layout ottimizzato per mobile con focus su azioni quotidiane
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getAuth, signOut } from 'firebase/auth';
 import { doc, getDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase.js';
@@ -26,6 +26,9 @@ import AnamnesiRequiredModal from '../../components/client/AnamnesiRequiredModal
 import LinkAccountBanner from '../../components/LinkAccountBanner';
 import { CallsCompactCard } from '../../components/calls/CallScheduler';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import NetworkStatusBanner from '../../components/pwa/NetworkStatusBanner';
+import PullToRefresh from '../../components/pwa/PullToRefresh';
+import { runSmartNotificationCheck } from '../../services/smartNotifications';
 
 // Loading skeleton
 const LoadingSpinner = () => (
@@ -141,6 +144,7 @@ const ClientDashboard = () => {
   const [pendingCheckDays, setPendingCheckDays] = useState(null);
   const [lastCheckDate, setLastCheckDate] = useState(null);
   const [heroRefreshKey, setHeroRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
   const auth = getAuth();
   const user = auth.currentUser;
@@ -154,6 +158,15 @@ const ClientDashboard = () => {
       setHeroRefreshKey(prev => prev + 1);
     }, 300);
   };
+
+  // Funzione per ricaricare i dati (usata da pull-to-refresh)
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setHeroRefreshKey(prev => prev + 1);
+    // Simula un piccolo delay per feedback visivo
+    await new Promise(resolve => setTimeout(resolve, 800));
+    setRefreshing(false);
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -254,6 +267,13 @@ const ClientDashboard = () => {
             setPendingCheckDays(-1); // Nessun check mai fatto
           }
           
+          // Esegui smart notification check (una volta al login)
+          try {
+            await runSmartNotificationCheck(user.uid);
+          } catch (e) {
+            console.log('Smart notification check skipped:', e.message);
+          }
+          
           clearTimeout(loadingTimeout);
           setLoading(false);
         } else {
@@ -310,14 +330,19 @@ const ClientDashboard = () => {
   const daysLeft = getDaysLeft();
 
   return (
-    <div className="min-h-screen overflow-x-hidden w-full pb-20">
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }}
-        className="w-full max-w-lg mx-auto px-4 py-4 space-y-4"
-      >
-        {/* Header Minimal */}
-        <header className="flex items-center justify-between">
+    <>
+      {/* Network Status Banner */}
+      <NetworkStatusBanner position="top" />
+      
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="min-h-screen overflow-x-hidden w-full pb-20">
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }}
+            className="w-full max-w-lg mx-auto px-4 py-4 space-y-4"
+          >
+            {/* Header Minimal */}
+            <header className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold text-white">
               Ciao, {clientData.name?.split(' ')[0]}! 👋
@@ -455,8 +480,10 @@ const ClientDashboard = () => {
 
         {/* Celebration Overlay */}
         <CelebrationMoments />
-      </motion.div>
-    </div>
+          </motion.div>
+        </div>
+      </PullToRefresh>
+    </>
   );
 };
 

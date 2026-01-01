@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, Download, Trash2, Link as LinkIcon, Settings, Bell, BellOff, 
   Check, Smartphone, Mail, User, Lock, AlertCircle, Key, Eye, EyeOff, Loader2,
-  Sparkles, RotateCcw, Sun, Moon
+  Sparkles, RotateCcw, Sun, Moon, Zap
 } from 'lucide-react';
+import SmartNotificationSettings from '../../components/notifications/SmartNotificationSettings';
 import GDPRSettings from '../../components/settings/GDPRSettings';
 import LinkAccountCard from '../../components/LinkAccountCard';
 import ChangeEmailCard from '../../components/settings/ChangeEmailCard';
@@ -768,6 +769,18 @@ const ClientSettings = () => {
                       )}
                     </div>
 
+                    {/* Smart Notifications */}
+                    <div className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Zap className="text-amber-400" size={24} />
+                        <h3 className="text-xl font-bold text-white">Smart Reminder</h3>
+                      </div>
+                      <p className="text-slate-400 mb-6">
+                        Configura reminder intelligenti per allenamenti, check-in e obiettivi.
+                      </p>
+                      <SmartNotificationSettings />
+                    </div>
+
                     {/* Info Notifiche */}
                     <div className="bg-slate-800/20 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30">
                       <h4 className="text-lg font-semibold text-white mb-3">Cosa riceverai</h4>
@@ -787,6 +800,10 @@ const ClientSettings = () => {
                         <li className="flex items-center gap-2">
                           <span className="text-xl">📅</span>
                           <span>Appuntamenti e scadenze</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-xl">🔥</span>
+                          <span>Alert streak e traguardi</span>
                         </li>
                       </ul>
                     </div>
