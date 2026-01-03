@@ -73,10 +73,15 @@ exports.uploadToR2 = onCall(
     }
 
     // Verifica che l'utente appartenga al tenant
-    const userDoc = await db.collection('users').doc(request.auth.uid).get();
-    const userData = userDoc.data();
-    if (userData?.tenantId !== tenantId && !userData?.tenants?.includes(tenantId)) {
-      throw new HttpsError('permission-denied', 'Non autorizzato per questo tenant');
+    // Gli utenti sono in tenants/{tenantId}/users/{uid}
+    const userDoc = await db.collection('tenants').doc(tenantId).collection('users').doc(request.auth.uid).get();
+    if (!userDoc.exists) {
+      // Fallback: controlla anche la root collection 'users' per admin/superadmin
+      const rootUserDoc = await db.collection('users').doc(request.auth.uid).get();
+      const rootUserData = rootUserDoc.data();
+      if (!rootUserData || (rootUserData.tenantId !== tenantId && !rootUserData.tenants?.includes(tenantId) && rootUserData.role !== 'superadmin')) {
+        throw new HttpsError('permission-denied', 'Non autorizzato per questo tenant');
+      }
     }
 
     // Converti base64 in Buffer
@@ -169,10 +174,15 @@ exports.deleteFromR2 = onCall(
     }
 
     // Verifica che l'utente appartenga al tenant
-    const userDoc = await db.collection('users').doc(request.auth.uid).get();
-    const userData = userDoc.data();
-    if (userData?.tenantId !== tenantId && !userData?.tenants?.includes(tenantId)) {
-      throw new HttpsError('permission-denied', 'Non autorizzato per questo tenant');
+    // Gli utenti sono in tenants/{tenantId}/users/{uid}
+    const userDoc = await db.collection('tenants').doc(tenantId).collection('users').doc(request.auth.uid).get();
+    if (!userDoc.exists) {
+      // Fallback: controlla anche la root collection 'users' per admin/superadmin
+      const rootUserDoc = await db.collection('users').doc(request.auth.uid).get();
+      const rootUserData = rootUserDoc.data();
+      if (!rootUserData || (rootUserData.tenantId !== tenantId && !rootUserData.tenants?.includes(tenantId) && rootUserData.role !== 'superadmin')) {
+        throw new HttpsError('permission-denied', 'Non autorizzato per questo tenant');
+      }
     }
 
     // Verifica che il fileKey appartenga al tenant (sicurezza extra)
