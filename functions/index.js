@@ -32,10 +32,18 @@ const r2PublicUrl = defineSecret('R2_PUBLIC_URL');
  * Crea un client R2 (S3-compatible) usando i secrets
  */
 const getR2Client = (accountId, accessKeyId, secretAccessKey) => {
+  // Trim per rimuovere eventuali newline/spazi dai secrets
+  const cleanAccountId = accountId.trim();
+  const cleanAccessKeyId = accessKeyId.trim();
+  const cleanSecretAccessKey = secretAccessKey.trim();
+  
   return new S3Client({
     region: 'auto',
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId, secretAccessKey },
+    endpoint: `https://${cleanAccountId}.r2.cloudflarestorage.com`,
+    credentials: { 
+      accessKeyId: cleanAccessKeyId, 
+      secretAccessKey: cleanSecretAccessKey 
+    },
   });
 };
 
@@ -73,9 +81,11 @@ exports.uploadToR2 = onCall(
     }
 
     // Verifica che l'utente appartenga al tenant
-    // Gli utenti sono in tenants/{tenantId}/users/{uid}
+    // Gli utenti possono essere in: tenants/{tenantId}/users/{uid} OPPURE tenants/{tenantId}/clients/{uid}
     const userDoc = await db.collection('tenants').doc(tenantId).collection('users').doc(request.auth.uid).get();
-    if (!userDoc.exists) {
+    const clientDoc = await db.collection('tenants').doc(tenantId).collection('clients').doc(request.auth.uid).get();
+    
+    if (!userDoc.exists && !clientDoc.exists) {
       // Fallback: controlla anche la root collection 'users' per admin/superadmin
       const rootUserDoc = await db.collection('users').doc(request.auth.uid).get();
       const rootUserData = rootUserDoc.data();
@@ -107,11 +117,24 @@ exports.uploadToR2 = onCall(
       fileKey = `clients/${clientId}/${folderName}/${uniqueFileName}`;
     }
 
+    // Sanitizza il nome file per i metadata (solo ASCII)
+    const sanitizedFileName = fileName.replace(/[^\x00-\x7F]/g, '_');
+
+    // DEBUG: Log dei valori secrets (solo prime/ultime 4 cifre per sicurezza)
+    const accId = r2AccountId.value();
+    const accKeyId = r2AccessKeyId.value();
+    const secKey = r2SecretAccessKey.value();
+    console.log(`[uploadToR2] DEBUG - AccountId: ${accId.substring(0,8)}...`);
+    console.log(`[uploadToR2] DEBUG - AccessKeyId: ${accKeyId.substring(0,8)}...${accKeyId.substring(accKeyId.length-4)}`);
+    console.log(`[uploadToR2] DEBUG - SecretKey length: ${secKey.length}, start: ${secKey.substring(0,4)}, end: ${secKey.substring(secKey.length-4)}`);
+    console.log(`[uploadToR2] DEBUG - Bucket: ${r2BucketName.value()}`);
+    console.log(`[uploadToR2] DEBUG - FileKey: ${fileKey}`);
+
     try {
       const client = getR2Client(
-        r2AccountId.value(),
-        r2AccessKeyId.value(),
-        r2SecretAccessKey.value()
+        accId,
+        accKeyId,
+        secKey
       );
 
       const command = new PutObjectCommand({
@@ -120,7 +143,7 @@ exports.uploadToR2 = onCall(
         Body: fileBuffer,
         ContentType: contentType,
         Metadata: {
-          originalName: fileName,
+          originalName: sanitizedFileName,
           uploadedAt: new Date().toISOString(),
           uploadedBy: request.auth.uid,
           tenantId: tenantId,
@@ -174,9 +197,11 @@ exports.deleteFromR2 = onCall(
     }
 
     // Verifica che l'utente appartenga al tenant
-    // Gli utenti sono in tenants/{tenantId}/users/{uid}
+    // Gli utenti possono essere in: tenants/{tenantId}/users/{uid} OPPURE tenants/{tenantId}/clients/{uid}
     const userDoc = await db.collection('tenants').doc(tenantId).collection('users').doc(request.auth.uid).get();
-    if (!userDoc.exists) {
+    const clientDoc = await db.collection('tenants').doc(tenantId).collection('clients').doc(request.auth.uid).get();
+    
+    if (!userDoc.exists && !clientDoc.exists) {
       // Fallback: controlla anche la root collection 'users' per admin/superadmin
       const rootUserDoc = await db.collection('users').doc(request.auth.uid).get();
       const rootUserData = rootUserDoc.data();
