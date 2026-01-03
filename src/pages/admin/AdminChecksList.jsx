@@ -14,6 +14,9 @@ import {
 import { useUnreadChecks } from '../../hooks/useUnreadNotifications';
 import { UnifiedCard, CardHeaderSimple, CardContent } from '../../components/ui/UnifiedCard';
 import { Badge } from '../../components/ui/Badge';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+const CHECKS_PER_PAGE = 15;
 
 export default function AdminChecksList() {
   const navigate = useNavigate();
@@ -23,6 +26,7 @@ export default function AdminChecksList() {
   const [clientsMap, setClientsMap] = useState({}); // Mappa clientId -> clientData
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const { unreadIds, markAsRead, markAllAsRead } = useUnreadChecks();
 
   useEffect(() => {
@@ -101,6 +105,18 @@ export default function AdminChecksList() {
       c.clientEmail?.toLowerCase().includes(q)
     );
   }, [checks, searchQuery]);
+
+  // Paginazione
+  const totalPages = Math.ceil(filteredChecks.length / CHECKS_PER_PAGE);
+  const paginatedChecks = useMemo(() => {
+    const start = (currentPage - 1) * CHECKS_PER_PAGE;
+    return filteredChecks.slice(start, start + CHECKS_PER_PAGE);
+  }, [filteredChecks, currentPage]);
+
+  // Reset pagina quando cambia la ricerca
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   // L'unreadIds contiene "clientId_checkId"
   const isUnread = (check) => unreadIds.includes(`${check.clientId}_${check.id}`);
@@ -214,7 +230,7 @@ export default function AdminChecksList() {
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredChecks.map((check, idx) => {
+                {paginatedChecks.map((check, idx) => {
                   const unread = isUnread(check);
                   
                   return (
@@ -266,6 +282,59 @@ export default function AdminChecksList() {
                     </motion.div>
                   );
                 })}
+
+                {/* Paginazione */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-4 pt-6 border-t border-slate-700 mt-4">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    
+                    <div className="flex items-center gap-2">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                              currentPage === pageNum
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                    
+                    <span className="text-sm text-slate-400 ml-2">
+                      Pagina {currentPage} di {totalPages}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
