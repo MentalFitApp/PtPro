@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   UserPlus, Search, ArrowUp, ArrowDown, 
   CheckCircle, XCircle, Calendar, Clock, AlertCircle, 
-  Download, Filter, LayoutGrid, List, Archive, Trash2, RotateCcw
+  Download, Filter, LayoutGrid, List, Archive, Trash2, RotateCcw, CreditCard
 } from 'lucide-react';
 
 // Hooks
@@ -270,7 +270,7 @@ export default function Clients({ role: propRole }) {
           </div>
 
           {/* Actions */}
-          <div className={`grid ${isAdmin ? 'grid-cols-3' : 'grid-cols-1'} gap-2 mb-3`}>
+          <div className={`grid ${isAdmin ? 'grid-cols-4' : 'grid-cols-1'} gap-2 mb-3`}>
             <button onClick={() => setFilterPanelOpen(true)} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
               <Filter size={16} />
             </button>
@@ -278,6 +278,9 @@ export default function Clients({ role: propRole }) {
               <>
                 <button onClick={() => navigate("/new-client")} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-rose-600 hover:bg-rose-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
                   <UserPlus size={16} />
+                </button>
+                <button onClick={() => navigate("/admin/rates")} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-amber-600 hover:bg-amber-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
+                  <CreditCard size={16} />
                 </button>
                 <button onClick={() => exportToCSV(clients)} className="flex items-center justify-center gap-2 px-3 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
                   <Download size={16} />
@@ -333,6 +336,9 @@ export default function Clients({ role: propRole }) {
                 <>
                   <button onClick={() => navigate("/new-client")} className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
                     <UserPlus size={16} /> Nuovo Cliente
+                  </button>
+                  <button onClick={() => navigate("/admin/rates")} className="flex items-center gap-2 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white preserve-white text-sm font-medium rounded-lg transition-colors">
+                    <CreditCard size={16} /> Rate
                   </button>
                   <button onClick={() => exportToCSV(clients)} className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium rounded-lg transition-colors border border-slate-600">
                     <Download size={16} /> CSV

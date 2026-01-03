@@ -355,7 +355,14 @@ const ListaEsercizi = ({ onBack }) => {
     const exerciseEquipment = exercise.attrezzo || exercise.equipmentIt || exercise.equipment || '';
     const exerciseMuscle = exercise.gruppoMuscolare || exercise.bodyPartIt || exercise.bodyPart || '';
     
-    const matchesSearch = exerciseName.toLowerCase().includes(searchTerm.toLowerCase());
+    // Cerca nel nome E negli alias
+    const searchLower = searchTerm.toLowerCase();
+    const matchesName = exerciseName.toLowerCase().includes(searchLower);
+    const matchesAliases = exercise.aliases && Array.isArray(exercise.aliases) 
+      ? exercise.aliases.some(alias => alias.toLowerCase().includes(searchLower))
+      : false;
+    const matchesSearch = !searchTerm || matchesName || matchesAliases;
+    
     const matchesAttrezzo = !selectedAttrezzo || exerciseEquipment === selectedAttrezzo;
     const matchesGruppo = !selectedGruppo || exerciseMuscle === selectedGruppo;
     const matchesCategory = categoryFilter === 'all' || 

@@ -37,6 +37,7 @@ const EditClient = React.lazy(() => import('./pages/admin/EditClient'));
 const NewClient = React.lazy(() => import('./pages/admin/NewClient'));
 const AdminAnamnesi = React.lazy(() => import('./pages/admin/AdminAnamnesi'));
 const AdminChecksList = React.lazy(() => import('./pages/admin/AdminChecksList'));
+const AdminRatesList = React.lazy(() => import('./pages/admin/AdminRatesList'));
 const AdminAnamnesiList = React.lazy(() => import('./pages/admin/AdminAnamnesiList'));
 const BusinessHistory = React.lazy(() => import('./pages/admin/BusinessHistory'));
 const Collaboratori = React.lazy(() => import('./pages/admin/Collaboratori'));
@@ -444,6 +445,7 @@ export default function App() {
           <Route path="/edit/:id" element={<EditClient />} />
           <Route path="/updates" element={<Updates />} />
           <Route path="/admin/checks" element={<AdminChecksList />} />
+          <Route path="/admin/rates" element={<AdminRatesList />} />
           <Route path="/admin/anamnesi" element={<AdminAnamnesiList />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/client/:id/anamnesi" element={<AdminAnamnesi />} />

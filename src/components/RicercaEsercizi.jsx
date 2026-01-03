@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, X, Play, Globe, User, Eye, Dumbbell, Check } from 'lucide-react';
+import { Search, Plus, X, Play, Globe, User, Eye, Dumbbell, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { BodyMapMini } from './BodyMap';
 import { getMuscleColor } from './MuscleIcons';
 
-const MAX_VISIBLE_EXERCISES = 50; // Limita risultati per performance
+const ITEMS_PER_PAGE = 20; // Esercizi per pagina
 
 const RicercaEsercizi = ({ onAddExercise, onCancel, toast }) => {
   const [exercises, setExercises] = useState([]);
@@ -20,6 +20,7 @@ const RicercaEsercizi = ({ onAddExercise, onCancel, toast }) => {
   const [debouncedTerm, setDebouncedTerm] = useState('');
   const [hoveredId, setHoveredId] = useState(null);
   const [addingId, setAddingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Carica esercizi dal Firestore
   const loadExercises = useCallback(async () => {
@@ -65,40 +66,41 @@ const RicercaEsercizi = ({ onAddExercise, onCancel, toast }) => {
     return () => clearTimeout(t);
   }, [searchTerm]);
 
-  // Filtra esercizi per nome, equipaggiamento e muscolo
-  const filteredExercises = useMemo(() => {
-    const filtered = [];
-    for (const ex of exercises) {
-      const name = (ex.nome || ex.nameIt || ex.name || '').toLowerCase();
-      const equipment = ex.attrezzo || ex.equipmentIt || ex.equipment || '';
-      const muscle = ex.gruppoMuscolare || ex.bodyPartIt || ex.bodyPart || '';
-
-      const nameMatch = !debouncedTerm || name.includes(debouncedTerm);
-      const equipMatch = !selectedEquipment || equipment === selectedEquipment;
-      const muscleMatch = !selectedMuscle || muscle === selectedMuscle;
-
-      if (nameMatch && equipMatch && muscleMatch) {
-        filtered.push(ex);
-        // Limita risultati per performance - mostra solo primi N
-        if (filtered.length >= MAX_VISIBLE_EXERCISES) break;
-      }
+  // Funzione helper per verificare match nel nome o negli alias
+  const matchesSearchTerm = (ex, term) => {
+    if (!term) return true;
+    const name = (ex.nome || ex.nameIt || ex.name || '').toLowerCase();
+    if (name.includes(term)) return true;
+    // Cerca anche negli alias se presenti
+    if (ex.aliases && Array.isArray(ex.aliases)) {
+      return ex.aliases.some(alias => alias.toLowerCase().includes(term));
     }
-    return filtered;
-  }, [exercises, debouncedTerm, selectedEquipment, selectedMuscle]);
+    return false;
+  };
 
-  // Conteggio totale per mostrare all'utente
-  const totalMatchingCount = useMemo(() => {
-    if (!debouncedTerm && !selectedEquipment && !selectedMuscle) return exercises.length;
+  // Filtra TUTTI gli esercizi (senza limite)
+  const allFilteredExercises = useMemo(() => {
     return exercises.filter(ex => {
-      const name = (ex.nome || ex.nameIt || ex.name || '').toLowerCase();
       const equipment = ex.attrezzo || ex.equipmentIt || ex.equipment || '';
       const muscle = ex.gruppoMuscolare || ex.bodyPartIt || ex.bodyPart || '';
-      const nameMatch = !debouncedTerm || name.includes(debouncedTerm);
+
+      const nameMatch = matchesSearchTerm(ex, debouncedTerm);
       const equipMatch = !selectedEquipment || equipment === selectedEquipment;
       const muscleMatch = !selectedMuscle || muscle === selectedMuscle;
+
       return nameMatch && equipMatch && muscleMatch;
-    }).length;
+    });
   }, [exercises, debouncedTerm, selectedEquipment, selectedMuscle]);
+
+  // Paginazione
+  const totalPages = Math.ceil(allFilteredExercises.length / ITEMS_PER_PAGE);
+  const paginatedExercises = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return allFilteredExercises.slice(start, start + ITEMS_PER_PAGE);
+  }, [allFilteredExercises, currentPage]);
+
+  // Conteggio totale
+  const totalMatchingCount = allFilteredExercises.length;
 
   const handleAddExercise = (exercise) => {
     setAddingId(exercise.id);
@@ -111,6 +113,11 @@ const RicercaEsercizi = ({ onAddExercise, onCancel, toast }) => {
     });
     setTimeout(() => setAddingId(null), 150);
   };
+
+  // Reset pagina quando cambiano i filtri
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedTerm, selectedEquipment, selectedMuscle]);
 
   const getExerciseField = (exercise, oldField, newField, newFieldEn) => {
     return exercise[oldField] || exercise[newField] || exercise[newFieldEn] || '';
@@ -229,14 +236,33 @@ const RicercaEsercizi = ({ onAddExercise, onCancel, toast }) => {
             )}
           </div>
 
-          {/* Contatore risultati */}
+          {/* Contatore risultati e Paginazione */}
           <div className="flex items-center justify-between px-1">
             <p className="text-sm text-slate-400">
-              {totalMatchingCount > MAX_VISIBLE_EXERCISES 
-                ? <><span className="text-blue-400 font-semibold">{filteredExercises.length}</span> di <span className="font-semibold">{totalMatchingCount}</span> esercizi (affina la ricerca)</>
-                : <><span className="text-emerald-400 font-semibold">{filteredExercises.length}</span> esercizio{filteredExercises.length !== 1 ? 'i' : ''} trovato{filteredExercises.length !== 1 ? 'i' : ''}</>
-              }
+              <span className="text-emerald-400 font-semibold">{totalMatchingCount}</span> esercizio{totalMatchingCount !== 1 ? 'i' : ''} trovato{totalMatchingCount !== 1 ? 'i' : ''}
+              {totalPages > 1 && <span className="text-slate-500"> • Pagina {currentPage} di {totalPages}</span>}
             </p>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 rounded-lg transition-colors"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <span className="text-sm text-slate-400 min-w-[60px] text-center">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 rounded-lg transition-colors"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -246,7 +272,7 @@ const RicercaEsercizi = ({ onAddExercise, onCancel, toast }) => {
             <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-500 border-t-transparent mb-3"></div>
             <p className="text-slate-400">Caricamento esercizi...</p>
           </div>
-        ) : filteredExercises.length === 0 ? (
+        ) : paginatedExercises.length === 0 ? (
           <div className="text-center py-12">
             <Search size={48} className="mx-auto text-slate-600 mb-4" />
             <p className="text-slate-400 text-lg">Nessun esercizio trovato</p>
@@ -254,7 +280,7 @@ const RicercaEsercizi = ({ onAddExercise, onCancel, toast }) => {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 max-h-[50vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
-            {filteredExercises.map((exercise) => {
+            {paginatedExercises.map((exercise) => {
               const exName = getExerciseField(exercise, 'nome', 'nameIt', 'name');
               const exEquipment = getExerciseField(exercise, 'attrezzo', 'equipmentIt', 'equipment');
               const exMuscle = getExerciseField(exercise, 'gruppoMuscolare', 'bodyPartIt', 'bodyPart');

@@ -10,7 +10,7 @@ import {
   Play, Pause, Download, File, Camera, User, AlertCircle,
   ChevronDown, Clock, Star, Filter, Settings, Volume2, VolumeX,
   Shield, UserCog, Users, Forward, Bold, Italic, Code, AtSign, Link2, ExternalLink,
-  Archive, MailOpen, BellOff, PinOff
+  Archive, MailOpen, BellOff, PinOff, Zap
 } from 'lucide-react';
 import { auth, db, storage } from '../../firebase';
 import { doc, getDoc, updateDoc, onSnapshot, collection, query, where, getDocs, setDoc, serverTimestamp, deleteField, orderBy, limit, addDoc } from 'firebase/firestore';
@@ -121,6 +121,69 @@ const RoleIcon = ({ role, size = 12 }) => {
     default:
       return <User size={size} className="text-slate-400" />;
   }
+};
+
+// ============ QUICK REPLY TEMPLATES ============
+const QUICK_REPLY_TEMPLATES = {
+  admin: [
+    { label: '👋 Benvenuto', text: 'Ciao! Benvenuto nel team. Sono qui per qualsiasi domanda!' },
+    { label: '📅 Appuntamento', text: 'Perfetto! Ti confermo l\'appuntamento. Ti aspetto!' },
+    { label: '✅ Ricevuto', text: 'Ricevuto, grazie! Ti rispondo al più presto.' },
+    { label: '💪 Motivazione', text: 'Ottimo lavoro! Continua così, stai facendo progressi incredibili! 💪🔥' },
+    { label: '📋 Scheda pronta', text: 'La tua nuova scheda è pronta! Trovi tutto nella sezione dedicata.' },
+    { label: '⏰ Promemoria', text: 'Ricordati di completare il check settimanale! È importante per monitorare i progressi.' },
+  ],
+  coach: [
+    { label: '👋 Saluto', text: 'Ciao! Come posso aiutarti oggi?' },
+    { label: '✅ Visto', text: 'Ho visto, perfetto! Continua così! 💪' },
+    { label: '📊 Feedback', text: 'Ottimi progressi! Vedo miglioramenti rispetto alla settimana scorsa.' },
+    { label: '🏋️ Allenamento', text: 'Ricordati di fare stretching prima e dopo l\'allenamento!' },
+    { label: '🥗 Alimentazione', text: 'Come sta andando con il piano alimentare? Hai dubbi?' },
+  ],
+  client: [
+    { label: '👋 Ciao', text: 'Ciao! Avrei una domanda...' },
+    { label: '✅ Fatto', text: 'Fatto! Ho completato l\'allenamento di oggi 💪' },
+    { label: '❓ Domanda', text: 'Avrei bisogno di un chiarimento...' },
+    { label: '🙏 Grazie', text: 'Grazie mille per la disponibilità!' },
+  ]
+};
+
+// Quick Reply Templates Component
+const QuickReplyTemplates = ({ role, onSelect, isOpen, onClose }) => {
+  const templates = QUICK_REPLY_TEMPLATES[role] || QUICK_REPLY_TEMPLATES.client;
+  
+  if (!isOpen) return null;
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+      className="absolute bottom-full left-0 right-0 mb-2 p-2 bg-slate-800/95 backdrop-blur-xl rounded-xl border border-white/10 shadow-2xl max-h-64 overflow-y-auto"
+    >
+      <div className="flex items-center justify-between mb-2 px-2">
+        <span className="text-xs font-medium text-slate-400">Risposte rapide</span>
+        <button onClick={onClose} className="p-1 hover:bg-white/10 rounded">
+          <X size={14} className="text-slate-400" />
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-1.5">
+        {templates.map((template, idx) => (
+          <button
+            key={idx}
+            onClick={() => {
+              onSelect(template.text);
+              onClose();
+            }}
+            className="text-left px-3 py-2 text-sm bg-white/5 hover:bg-cyan-500/20 rounded-lg 
+                       transition-colors text-slate-300 hover:text-white truncate"
+          >
+            {template.label}
+          </button>
+        ))}
+      </div>
+    </motion.div>
+  );
 };
 
 // ============ NOTIFICATION SOUND ============
@@ -915,6 +978,23 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
   const longPressTimer = useRef(null);
   const menuRef = useRef(null);
 
+  // Role-based styling
+  const getRoleRing = (role) => {
+    switch(role) {
+      case 'admin': return 'ring-amber-400/70 shadow-amber-400/20';
+      case 'coach': return 'ring-blue-400/70 shadow-blue-400/20';
+      default: return 'ring-slate-500/50';
+    }
+  };
+
+  const getRoleGradient = (role) => {
+    switch(role) {
+      case 'admin': return 'from-amber-500 to-orange-500';
+      case 'coach': return 'from-blue-500 to-cyan-500';
+      default: return 'from-slate-500 to-slate-600';
+    }
+  };
+
   // Chiudi menu quando si clicca fuori
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -962,7 +1042,6 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
   return (
     <>
       <motion.div
-        whileHover={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
         whileTap={{ scale: 0.98 }}
         onClick={onClick}
         onContextMenu={handleContextMenu}
@@ -971,30 +1050,50 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
         onTouchMove={handleTouchEnd}
         className={cn(
           "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all relative group",
-          isActive ? "bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30" : "hover:bg-white/5",
+          isActive 
+            ? "bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 shadow-lg shadow-cyan-500/10" 
+            : "hover:bg-white/[0.07] hover:border-white/10 border border-transparent",
           isArchived && "opacity-60"
         )}
       >
         {/* Indicatore chat fissata */}
         {isPinned && (
-          <div className="absolute top-1 right-1">
+          <div className="absolute top-1.5 right-1.5">
             <Pin size={12} className="text-yellow-500" />
           </div>
         )}
 
-        {/* Avatar */}
+        {/* Avatar with role ring */}
         <div className="relative flex-shrink-0">
           {otherPhoto ? (
-            <img src={otherPhoto} alt={otherName} className="w-12 h-12 rounded-full object-cover" />
+            <img 
+              src={otherPhoto} 
+              alt={otherName} 
+              className={cn(
+                "w-12 h-12 rounded-full object-cover ring-2 shadow-lg transition-transform group-hover:scale-105",
+                getRoleRing(otherRole)
+              )} 
+            />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 
-                            flex items-center justify-center text-white font-bold">
+            <div className={cn(
+              "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ring-2 shadow-lg transition-transform group-hover:scale-105 bg-gradient-to-br",
+              getRoleGradient(otherRole),
+              getRoleRing(otherRole)
+            )}>
               {otherName.charAt(0).toUpperCase()}
             </div>
           )}
-          {isOnline && (
-            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-slate-800" />
-          )}
+          {/* Status indicator con animazione */}
+          <div className={cn(
+            "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-slate-800 transition-colors",
+            isOnline 
+              ? "bg-green-500 shadow-lg shadow-green-500/50" 
+              : "bg-slate-500"
+          )}>
+            {isOnline && (
+              <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75" />
+            )}
+          </div>
         </div>
 
         {/* Info */}
@@ -1329,13 +1428,19 @@ const MessageBubble = ({
   onForward,
   isFirstInGroup,
   isLastInGroup,
-  participantNames // Nome corretto dalla chat
+  participantNames, // Nome corretto dalla chat
+  isMobile = false
 }) => {
   // Usa il nome dalla chat se disponibile, altrimenti quello salvato nel messaggio
   const displayName = participantNames?.[message.senderId] || message.senderName || 'Utente';
   const [showMenu, setShowMenu] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
+  const [swipeX, setSwipeX] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
   const menuRef = useRef(null);
+  const touchStartX = useRef(0);
+  const longPressTimerRef = useRef(null);
+  const swipeThreshold = 60;
 
   const reactions = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
   const urls = message.type === 'text' ? extractUrls(message.content) : [];
@@ -1351,6 +1456,71 @@ const MessageBubble = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Cleanup long press timer
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Swipe handlers per mobile
+  const handleTouchStart = (e) => {
+    if (!isMobile) return;
+    touchStartX.current = e.touches[0].clientX;
+    setIsSwiping(true);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isMobile || !isSwiping) return;
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - touchStartX.current;
+    // Solo swipe verso destra (per reply)
+    if (diff > 0) {
+      setSwipeX(Math.min(diff, 80));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    // Clear long press timer
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    
+    if (!isMobile) return;
+    if (swipeX > swipeThreshold) {
+      // Trigger reply
+      onReply(message);
+      // Haptic feedback se disponibile
+      if (navigator.vibrate) {
+        navigator.vibrate(10);
+      }
+    }
+    setSwipeX(0);
+    setIsSwiping(false);
+  };
+
+  // Long press handler for mobile context menu
+  const handleLongPressStart = () => {
+    if (!isMobile) return;
+    longPressTimerRef.current = setTimeout(() => {
+      setShowMenu(true);
+      // Haptic feedback
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 500);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
 
   const renderContent = () => {
     if (message.isDeleted) {
@@ -1443,27 +1613,79 @@ const MessageBubble = ({
   };
 
   return (
-    <div className={cn("flex gap-2 group", isOwn ? "flex-row-reverse" : "flex-row")}>
-      {/* Avatar */}
+    <div 
+      className={cn("flex gap-2 group relative px-2", isOwn ? "flex-row-reverse" : "flex-row")}
+      onTouchStart={(e) => {
+        handleTouchStart(e);
+        handleLongPressStart();
+      }}
+      onTouchMove={(e) => {
+        handleTouchMove(e);
+        handleLongPressEnd(); // Cancel long press if moving
+      }}
+      onTouchEnd={() => {
+        handleTouchEnd();
+        handleLongPressEnd();
+      }}
+      onContextMenu={(e) => {
+        if (isMobile) {
+          e.preventDefault();
+          setShowMenu(true);
+        }
+      }}
+      style={{ 
+        transform: `translateX(${swipeX}px)`,
+        transition: isSwiping ? 'none' : 'transform 0.2s ease-out'
+      }}
+    >
+      {/* Swipe Reply Indicator */}
+      {swipeX > 10 && (
+        <div 
+          className={cn(
+            "absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full flex items-center justify-center transition-all",
+            swipeX > swipeThreshold ? "text-cyan-400" : "text-slate-500"
+          )}
+          style={{ opacity: Math.min(swipeX / swipeThreshold, 1) }}
+        >
+          <Reply size={20} />
+        </div>
+      )}
+
+      {/* Avatar with role-colored ring */}
       {!isOwn && showAvatar ? (
         message.senderPhoto ? (
           <img 
             src={message.senderPhoto} 
             alt={displayName} 
-            className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-auto"
+            className={cn(
+              "rounded-full object-cover flex-shrink-0 mt-auto ring-2 transition-transform hover:scale-105",
+              isMobile ? "w-8 h-8" : "w-9 h-9",
+              message.senderRole === 'admin' && "ring-amber-400 shadow-lg shadow-amber-400/30",
+              message.senderRole === 'coach' && "ring-blue-400 shadow-lg shadow-blue-400/30",
+              (!message.senderRole || message.senderRole === 'client') && "ring-slate-400/50"
+            )}
           />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 
-                          flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-auto">
+          <div className={cn(
+            "rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 mt-auto ring-2 transition-transform hover:scale-105",
+            isMobile ? "w-8 h-8 text-sm" : "w-9 h-9 text-base",
+            message.senderRole === 'admin' && "bg-gradient-to-br from-amber-500 to-orange-500 ring-amber-400 shadow-lg shadow-amber-400/30",
+            message.senderRole === 'coach' && "bg-gradient-to-br from-blue-500 to-cyan-500 ring-blue-400 shadow-lg shadow-blue-400/30",
+            (!message.senderRole || message.senderRole === 'client') && "bg-gradient-to-br from-slate-500 to-slate-600 ring-slate-400/50"
+          )}>
             {displayName?.charAt(0).toUpperCase()}
           </div>
         )
       ) : !isOwn ? (
-        <div className="w-8 flex-shrink-0" />
+        <div className={isMobile ? "w-8" : "w-9"} />
       ) : null}
 
       {/* Message */}
-      <div className={cn("max-w-[75%] relative", isOwn && "flex flex-col items-end")}>
+      <div className={cn(
+        "relative", 
+        isOwn && "flex flex-col items-end",
+        isMobile ? "max-w-[80%]" : "max-w-[65%] lg:max-w-[55%]"
+      )}>
         {/* Sender name for group chats */}
         {!isOwn && isFirstInGroup && (
           <p className="text-xs text-slate-500 mb-1 ml-1">{displayName}</p>
@@ -1471,17 +1693,29 @@ const MessageBubble = ({
 
         <div
           className={cn(
-            "relative px-4 py-2.5 rounded-2xl backdrop-blur-md shadow-lg",
+            "relative rounded-2xl shadow-lg transition-all duration-200",
+            isMobile ? "px-3 py-2" : "px-4 py-3",
             isOwn 
-              ? "bg-gradient-to-br from-blue-500/80 to-cyan-500/70 text-white border border-blue-400/30" 
-              : "bg-white/10 text-white border border-white/20",
-            isFirstInGroup && isOwn && "rounded-tr-md",
-            isFirstInGroup && !isOwn && "rounded-tl-md",
-            isLastInGroup && isOwn && "rounded-br-md",
-            isLastInGroup && !isOwn && "rounded-bl-md",
+              ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:shadow-blue-500/20 hover:shadow-xl" 
+              : "bg-slate-800/90 text-white border border-white/10 hover:bg-slate-800 hover:border-white/20",
+            isFirstInGroup && isOwn && "rounded-tr-sm",
+            isFirstInGroup && !isOwn && "rounded-tl-sm",
             message.isPinned && "ring-2 ring-yellow-400/60"
           )}
         >
+          {/* Bubble tail */}
+          {isLastInGroup && (
+            <div 
+              className={cn(
+                "absolute bottom-0 w-3 h-3",
+                isOwn 
+                  ? "right-0 translate-x-1/2 bg-blue-600" 
+                  : "left-0 -translate-x-1/2 bg-slate-800/90",
+                "[clip-path:polygon(0%_0%,100%_0%,100%_100%)]",
+                isOwn && "[clip-path:polygon(0%_0%,100%_0%,0%_100%)]"
+              )}
+            />
+          )}
           {/* Pin indicator */}
           {message.isPinned && (
             <Pin size={12} className="absolute -top-1 -right-1 text-yellow-500" />
@@ -1502,7 +1736,15 @@ const MessageBubble = ({
             )}
             {isOwn && (
               message.readBy?.length > 1 ? (
-                <CheckCheck size={14} className="text-blue-300" />
+                <span className="flex items-center gap-0.5 group/read relative">
+                  <CheckCheck size={14} className="text-blue-300" />
+                  <span className="text-[9px] text-blue-300/80 hidden sm:inline">Visto</span>
+                  {/* Tooltip con orario lettura */}
+                  <span className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-slate-900 text-[10px] text-white 
+                                   rounded shadow-lg opacity-0 group-hover/read:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                    Letto da {message.readBy.length - 1} {message.readBy.length === 2 ? 'persona' : 'persone'}
+                  </span>
+                </span>
               ) : (
                 <Check size={14} className="opacity-60" />
               )
@@ -1618,13 +1860,53 @@ const MessageBubble = ({
   );
 };
 
+// ============ AUDIO WAVEFORM VISUALIZATION ============
+
+const AudioWaveform = ({ isPlaying, progress, barCount = 32 }) => {
+  // Generate pseudo-random but consistent bar heights based on index
+  const getBarHeight = (index) => {
+    const seed = Math.sin(index * 12.9898) * 43758.5453;
+    return 20 + (seed - Math.floor(seed)) * 80; // 20-100%
+  };
+  
+  const bars = Array.from({ length: barCount }, (_, i) => ({
+    height: getBarHeight(i),
+    isPlayed: (i / barCount) * 100 <= progress
+  }));
+
+  return (
+    <div className="flex items-center gap-[2px] h-8 flex-1">
+      {bars.map((bar, index) => (
+        <motion.div
+          key={index}
+          className={cn(
+            "w-1 rounded-full transition-colors duration-200",
+            bar.isPlayed ? "bg-white/80" : "bg-white/30"
+          )}
+          style={{ height: `${bar.height}%` }}
+          animate={isPlaying && bar.isPlayed ? {
+            scaleY: [1, 1.2, 0.8, 1],
+          } : {}}
+          transition={{
+            duration: 0.5,
+            repeat: isPlaying ? Infinity : 0,
+            delay: index * 0.02
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 // ============ AUDIO PLAYER ============
 
 const AudioPlayer = ({ src }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef(null);
+  const waveformRef = useRef(null);
 
   const togglePlay = () => {
     if (audioRef.current) {
@@ -1641,6 +1923,7 @@ const AudioPlayer = ({ src }) => {
     if (audioRef.current) {
       const percent = (audioRef.current.currentTime / audioRef.current.duration) * 100;
       setProgress(percent);
+      setCurrentTime(audioRef.current.currentTime);
     }
   };
 
@@ -1653,6 +1936,17 @@ const AudioPlayer = ({ src }) => {
   const handleEnded = () => {
     setIsPlaying(false);
     setProgress(0);
+    setCurrentTime(0);
+  };
+
+  const handleWaveformClick = (e) => {
+    if (!audioRef.current || !waveformRef.current) return;
+    const rect = waveformRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percent = clickX / rect.width;
+    audioRef.current.currentTime = percent * audioRef.current.duration;
+    setProgress(percent * 100);
+    setCurrentTime(audioRef.current.currentTime);
   };
 
   const formatTime = (time) => {
@@ -1662,7 +1956,7 @@ const AudioPlayer = ({ src }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 min-w-[200px]">
+    <div className="flex items-center gap-3 min-w-[220px] max-w-[300px]">
       <audio
         ref={audioRef}
         src={src}
@@ -1670,24 +1964,78 @@ const AudioPlayer = ({ src }) => {
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}
       />
-      <button
+      <motion.button
         onClick={togglePlay}
+        whileTap={{ scale: 0.9 }}
         className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full 
-                   hover:bg-white/20 transition-colors"
+                   hover:bg-white/20 transition-colors flex-shrink-0"
       >
-        {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
-      </button>
-      <div className="flex-1">
-        <div className="h-1 bg-white/20 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-white/60 rounded-full transition-all"
-            style={{ width: `${progress}%` }}
-          />
+        <AnimatePresence mode="wait">
+          {isPlaying ? (
+            <motion.div
+              key="pause"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0 }}
+            >
+              <Pause size={18} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="play"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0 }}
+            >
+              <Play size={18} className="ml-0.5" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.button>
+      <div className="flex-1 min-w-0">
+        <div 
+          ref={waveformRef}
+          onClick={handleWaveformClick}
+          className="cursor-pointer"
+        >
+          <AudioWaveform isPlaying={isPlaying} progress={progress} barCount={24} />
         </div>
-        <p className="text-xs opacity-60 mt-1">
-          {formatTime(audioRef.current?.currentTime || 0)} / {formatTime(duration)}
-        </p>
+        <div className="flex justify-between mt-1">
+          <span className="text-xs opacity-60">{formatTime(currentTime)}</span>
+          <span className="text-xs opacity-60">{formatTime(duration)}</span>
+        </div>
       </div>
+    </div>
+  );
+};
+
+// ============ LIVE WAVEFORM FOR RECORDING ============
+
+const LiveWaveform = ({ isRecording, barCount = 20 }) => {
+  const [bars, setBars] = useState(() => 
+    Array.from({ length: barCount }, () => 20)
+  );
+
+  useEffect(() => {
+    if (!isRecording) return;
+    
+    const interval = setInterval(() => {
+      setBars(prev => prev.map(() => 20 + Math.random() * 80));
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [isRecording, barCount]);
+
+  return (
+    <div className="flex items-center gap-[3px] h-6 flex-1">
+      {bars.map((height, index) => (
+        <motion.div
+          key={index}
+          className="w-1 rounded-full bg-red-400"
+          animate={{ height: isRecording ? `${height}%` : '20%' }}
+          transition={{ duration: 0.1, ease: 'linear' }}
+        />
+      ))}
     </div>
   );
 };
@@ -1701,18 +2049,23 @@ const AudioRecorder = ({ onSend, onCancel }) => {
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
+  const streamRef = useRef(null);
 
   useEffect(() => {
     startRecording();
     return () => {
       stopRecording();
       if (timerRef.current) clearInterval(timerRef.current);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
     };
   }, []);
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
       mediaRecorderRef.current = new MediaRecorder(stream);
       chunksRef.current = [];
 
@@ -1765,37 +2118,49 @@ const AudioRecorder = ({ onSend, onCancel }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="flex items-center gap-3 px-4 py-3 bg-red-500/20 rounded-2xl border border-red-500/30"
+      className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-red-500/20 to-orange-500/20 rounded-2xl border border-red-500/30 backdrop-blur-sm"
     >
-      <button
+      <motion.button
         onClick={onCancel}
+        whileTap={{ scale: 0.9 }}
         className="p-2 hover:bg-slate-700 rounded-full transition-colors"
       >
         <X size={20} className="text-slate-400" />
-      </button>
+      </motion.button>
 
-      <div className="flex items-center gap-2 flex-1">
-        <div className={cn(
-          "w-3 h-3 rounded-full",
-          isRecording ? "bg-red-500 animate-pulse" : "bg-slate-500"
-        )} />
-        <span className="text-white font-mono">{formatTime(duration)}</span>
+      <div className="flex items-center gap-3 flex-1">
+        <div className="flex items-center gap-2 min-w-[60px]">
+          <motion.div 
+            className="w-3 h-3 rounded-full bg-red-500"
+            animate={isRecording ? { 
+              scale: [1, 1.2, 1],
+              opacity: [1, 0.5, 1]
+            } : {}}
+            transition={{ duration: 1, repeat: Infinity }}
+          />
+          <span className="text-white font-mono text-sm">{formatTime(duration)}</span>
+        </div>
+        <LiveWaveform isRecording={isRecording} barCount={16} />
       </div>
 
       {isRecording ? (
-        <button
+        <motion.button
           onClick={stopRecording}
-          className="p-3 bg-red-500 hover:bg-red-600 rounded-full transition-colors"
+          whileTap={{ scale: 0.9 }}
+          className="p-3 bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-lg shadow-red-500/30"
         >
           <MicOff size={20} className="text-white" />
-        </button>
+        </motion.button>
       ) : (
-        <button
+        <motion.button
           onClick={handleSend}
-          className="p-3 bg-blue-500 hover:bg-blue-600 rounded-full transition-colors"
+          whileTap={{ scale: 0.9 }}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          className="p-3 bg-blue-500 hover:bg-blue-600 rounded-full transition-colors shadow-lg shadow-blue-500/30"
         >
           <Send size={20} className="text-white" />
-        </button>
+        </motion.button>
       )}
     </motion.div>
   );
@@ -1861,53 +2226,76 @@ const ChatHeader = ({
   const isOnline = chat?.onlineStatus?.[otherParticipant];
   const lastSeen = chat?.lastSeen?.[otherParticipant];
 
+  // Role-based ring color
+  const getRingColor = (role) => {
+    switch(role) {
+      case 'admin': return 'ring-amber-400 shadow-amber-400/30';
+      case 'coach': return 'ring-blue-400 shadow-blue-400/30';
+      default: return 'ring-slate-400/50';
+    }
+  };
+
   return (
-    <div className="flex-shrink-0 bg-slate-900/60 backdrop-blur-xl border-b border-white/10">
-      <div className="flex items-center justify-between px-4 py-3">
+    <div className="flex-shrink-0 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
+      <div className="flex items-center justify-between px-3 py-2 md:px-4 md:py-3">
         {/* Left: Back + User Info */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
           <button
             onClick={onBack}
-            className="md:hidden p-2 hover:bg-white/10 rounded-full transition-colors"
+            className="md:hidden p-2.5 -ml-1 hover:bg-white/10 rounded-full transition-colors active:scale-95"
           >
-            <ArrowLeft size={20} className="text-slate-400" />
+            <ArrowLeft size={22} className="text-slate-300" />
           </button>
 
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             {otherPhoto ? (
-              <img src={otherPhoto} alt={otherName} className="w-10 h-10 rounded-full object-cover ring-2 ring-white/20" />
+              <img 
+                src={otherPhoto} 
+                alt={otherName} 
+                className={cn(
+                  "w-10 h-10 md:w-11 md:h-11 rounded-full object-cover ring-2 shadow-lg",
+                  getRingColor(otherRole)
+                )} 
+              />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 
-                              flex items-center justify-center text-white font-bold ring-2 ring-white/20">
+              <div className={cn(
+                "w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center text-white font-bold ring-2 shadow-lg",
+                otherRole === 'admin' && "bg-gradient-to-br from-amber-500 to-orange-500",
+                otherRole === 'coach' && "bg-gradient-to-br from-blue-500 to-cyan-500",
+                (!otherRole || otherRole === 'client') && "bg-gradient-to-br from-slate-500 to-slate-600",
+                getRingColor(otherRole)
+              )}>
                 {otherName.charAt(0).toUpperCase()}
               </div>
             )}
             {isOnline && (
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900 shadow-lg shadow-emerald-500/50" />
+              <motion.div 
+                className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-slate-900"
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
             )}
           </div>
 
-          <div>
-            <h2 className="font-semibold text-white">{otherName}</h2>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <RoleIcon role={otherRole} size={12} />
-                <span className="text-xs text-slate-400">{formatRole(otherRole)}</span>
-              </div>
-              <span className="text-slate-600">•</span>
-              <span className={cn("text-xs", isOnline ? "text-emerald-400" : "text-slate-500")}>
-                {isOnline ? '● Online' : lastSeen ? `Ultimo accesso ${formatMessageTime(lastSeen)}` : 'Offline'}
+          <div className="min-w-0 flex-1">
+            <h2 className="font-semibold text-white truncate text-sm md:text-base">{otherName}</h2>
+            <div className="flex items-center gap-1.5">
+              <RoleIcon role={otherRole} size={12} />
+              <span className="text-[11px] md:text-xs text-slate-400">{formatRole(otherRole)}</span>
+              <span className="text-slate-600 hidden sm:inline">•</span>
+              <span className={cn("text-[11px] md:text-xs hidden sm:inline", isOnline ? "text-emerald-400" : "text-slate-500")}>
+                {isOnline ? 'Online' : lastSeen ? `${formatMessageTime(lastSeen)}` : 'Offline'}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-1">
+        {/* Right: Actions - Touch-friendly 44px hit targets */}
+        <div className="flex items-center -mr-1">
           <button
             onClick={onToggleSound}
             className={cn(
-              "p-2 rounded-full transition-colors",
+              "p-2.5 rounded-full transition-colors active:scale-95",
               soundEnabled ? "hover:bg-white/10 text-slate-400" : "bg-red-500/20 text-red-400"
             )}
             title={soundEnabled ? "Suono attivo" : "Suono disattivato"}
@@ -1917,7 +2305,7 @@ const ChatHeader = ({
           <button
             onClick={onSearch}
             className={cn(
-              "p-2 rounded-full transition-colors",
+              "p-2.5 rounded-full transition-colors active:scale-95",
               isSearchOpen ? "bg-cyan-500/20 text-cyan-400" : "hover:bg-white/10 text-slate-400"
             )}
           >
@@ -2004,13 +2392,15 @@ const MessageInput = ({
   onCancelEdit,
   onSendEdit,
   disabled,
-  isMobile 
+  isMobile,
+  userRole = 'client'
 }) => {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMobileToolbar, setShowMobileToolbar] = useState(false);
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -2441,6 +2831,31 @@ const MessageInput = ({
             </div>
           )}
 
+          {/* Quick Reply Templates Button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowQuickReplies(!showQuickReplies)}
+              disabled={disabled}
+              className={cn(
+                "p-3 rounded-full transition-colors disabled:opacity-50",
+                showQuickReplies ? "bg-cyan-500/20 text-cyan-400" : "hover:bg-slate-700 text-slate-400"
+              )}
+              title="Risposte rapide"
+            >
+              <Zap size={isMobile ? 18 : 20} />
+            </button>
+            <AnimatePresence>
+              {showQuickReplies && (
+                <QuickReplyTemplates
+                  role={userRole}
+                  isOpen={showQuickReplies}
+                  onSelect={(text) => setMessage(text)}
+                  onClose={() => setShowQuickReplies(false)}
+                />
+              )}
+            </AnimatePresence>
+          </div>
+
           {/* Text Input */}
           <div className="flex-1 relative">
             <textarea
@@ -2514,7 +2929,8 @@ const MessagesArea = ({
   onForward,
   typingUsers,
   scrollToMessageId,
-  participantNames
+  participantNames,
+  isMobile = false
 }) => {
   const messagesEndRef = useRef(null);
   const containerRef = useRef(null);
@@ -2605,10 +3021,14 @@ const MessagesArea = ({
       {/* Messages */}
       {groupedMessages.map((group) => (
         <div key={group.date}>
-          {/* Date Separator */}
-          <div className="flex items-center justify-center my-4">
-            <div className="px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-xs text-slate-300 border border-white/10 shadow-lg">
-              {group.date}
+          {/* Date Separator - Elegant pill style */}
+          <div className="flex items-center justify-center my-6">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+              <div className="px-5 py-2 bg-slate-800/80 backdrop-blur-xl rounded-2xl text-xs font-medium text-slate-300 
+                              border border-white/10 shadow-xl shadow-black/20">
+                {group.date}
+              </div>
             </div>
           </div>
 
@@ -2623,7 +3043,18 @@ const MessagesArea = ({
               const isLastInGroup = !nextMsg || nextMsg.senderId !== msg.senderId;
 
               return (
-                <div key={msg.id} id={`message-${msg.id}`} className="transition-colors duration-500">
+                <motion.div 
+                  key={msg.id} 
+                  id={`message-${msg.id}`} 
+                  className="transition-colors duration-500"
+                  initial={{ opacity: 0, y: 10, x: isOwn ? 20 : -20 }}
+                  animate={{ opacity: 1, y: 0, x: 0 }}
+                  transition={{ 
+                    duration: 0.2, 
+                    ease: 'easeOut',
+                    delay: index * 0.02 // Slight stagger for visual appeal
+                  }}
+                >
                   <MessageBubble
                     message={msg}
                     isOwn={isOwn}
@@ -2638,8 +3069,9 @@ const MessagesArea = ({
                     onStar={onStar}
                     onForward={onForward}
                     participantNames={participantNames}
+                    isMobile={isMobile}
                   />
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -3647,6 +4079,7 @@ export default function Chat() {
             typingUsers={typingUsers}
             scrollToMessageId={scrollToMessageId}
             participantNames={activeChat?.participantNames}
+            isMobile={isMobile}
           />
         </div>
 
@@ -3662,6 +4095,7 @@ export default function Chat() {
             onSendEdit={handleEditMessage}
             disabled={uploading}
             isMobile={isMobile}
+            userRole={currentUserRole}
           />
         </div>
 
@@ -3756,8 +4190,8 @@ export default function Chat() {
         {/* Desktop Layout */}
         {!isMobile && (
           <>
-            {/* Sidebar */}
-            <div className="w-80 lg:w-96 flex-shrink-0 border-r border-white/10 flex flex-col bg-slate-900/50 backdrop-blur-sm overflow-hidden">
+            {/* Sidebar - Wider on larger screens */}
+            <div className="w-80 lg:w-[360px] xl:w-[400px] flex-shrink-0 border-r border-white/10 flex flex-col bg-slate-900/50 backdrop-blur-sm overflow-hidden">
               <ChatSidebar
                 chats={(chats || []).filter(c => !c.deletedBy?.includes(user?.uid))}
                 loading={chatsLoading}
