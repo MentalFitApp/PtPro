@@ -120,15 +120,10 @@ exports.uploadToR2 = onCall(
     // Sanitizza il nome file per i metadata (solo ASCII)
     const sanitizedFileName = fileName.replace(/[^\x00-\x7F]/g, '_');
 
-    // DEBUG: Log dei valori secrets (solo prime/ultime 4 cifre per sicurezza)
-    const accId = r2AccountId.value();
-    const accKeyId = r2AccessKeyId.value();
-    const secKey = r2SecretAccessKey.value();
-    console.log(`[uploadToR2] DEBUG - AccountId: ${accId.substring(0,8)}...`);
-    console.log(`[uploadToR2] DEBUG - AccessKeyId: ${accKeyId.substring(0,8)}...${accKeyId.substring(accKeyId.length-4)}`);
-    console.log(`[uploadToR2] DEBUG - SecretKey length: ${secKey.length}, start: ${secKey.substring(0,4)}, end: ${secKey.substring(secKey.length-4)}`);
-    console.log(`[uploadToR2] DEBUG - Bucket: ${r2BucketName.value()}`);
-    console.log(`[uploadToR2] DEBUG - FileKey: ${fileKey}`);
+    // Ottieni i secrets con trim per rimuovere eventuali newline
+    const accId = r2AccountId.value().trim();
+    const accKeyId = r2AccessKeyId.value().trim();
+    const secKey = r2SecretAccessKey.value().trim();
 
     try {
       const client = getR2Client(

@@ -239,15 +239,6 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
       throw new Error('Tenant non configurato');
     }
 
-    // DEBUG LOG - rimuovere dopo test
-    console.log('🔵 [DEBUG UPLOAD] Iniziando upload...');
-    console.log('🔵 [DEBUG UPLOAD] tenantId:', tenantId);
-    console.log('🔵 [DEBUG UPLOAD] clientId:', clientId);
-    console.log('🔵 [DEBUG UPLOAD] fileName:', fileToUpload.name);
-    console.log('🔵 [DEBUG UPLOAD] contentType:', contentType);
-    console.log('🔵 [DEBUG UPLOAD] fileBase64 length:', fileBase64?.length);
-    console.log('🔵 [DEBUG UPLOAD] folder:', folder);
-
     try {
       const result = await uploadFn({
         fileBase64,
@@ -259,17 +250,12 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
         isLandingMedia: false,
       });
       
-      console.log('🟢 [DEBUG UPLOAD] Risultato:', result);
-      
       if (onProgress) onProgress({ stage: 'complete', percent: 100, message: 'Upload completato!' });
       emit({ stage: 'complete', percent: 100, message: 'Upload completato!' });
 
       return result.data.url;
     } catch (uploadError) {
-      console.error('🔴 [DEBUG UPLOAD] Errore chiamata Cloud Function:', uploadError);
-      console.error('🔴 [DEBUG UPLOAD] Errore code:', uploadError.code);
-      console.error('🔴 [DEBUG UPLOAD] Errore details:', uploadError.details);
-      console.error('🔴 [DEBUG UPLOAD] Errore message:', uploadError.message);
+      console.error('Errore upload R2:', uploadError.message);
       throw uploadError;
     }
 
