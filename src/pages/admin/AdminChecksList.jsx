@@ -1,9 +1,9 @@
 // src/pages/admin/AdminChecksList.jsx
 // Lista tutti i check recenti dei clienti per Admin e Coach
-// OTTIMIZZATO: Paginazione + Query parallele + Caricamento incrementale
+// USA query parallele per caricare tutti i check in modo efficiente
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { collection, query, orderBy, limit, getDocs, collectionGroup } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, startAfter, where } from 'firebase/firestore';
 import { db, toDate } from '../../firebase';
 import { getTenantCollection, CURRENT_TENANT_ID } from '../../config/tenant';
 import { motion } from 'framer-motion';
@@ -15,61 +15,59 @@ import { useUnreadChecks } from '../../hooks/useUnreadNotifications';
 import { UnifiedCard, CardHeaderSimple, CardContent } from '../../components/ui/UnifiedCard';
 import { Badge } from '../../components/ui/Badge';
 
-// Costanti per paginazione
-const BATCH_SIZE = 20; // Numero di clienti per batch
-const PARALLEL_QUERIES = 5; // Query parallele alla volta
-const CHECKS_PER_CLIENT = 3; // Check recenti per cliente
-
 export default function AdminChecksList() {
   const navigate = useNavigate();
   const location = useLocation();
   const isCoachView = location.pathname.startsWith('/coach');
   const [checks, setChecks] = useState([]);
+  const [clientsMap, setClientsMap] = useState({}); // Mappa clientId -> clientData
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [hasMore, setHasMore] = useState(true);
   const { unreadIds, markAsRead, markAllAsRead } = useUnreadChecks();
-  
-  // Cache per i clienti già caricati
-  const loadedClientsRef = useRef(new Set());
-  const allClientsRef = useRef([]);
 
   useEffect(() => {
-    loadInitialChecks();
+    loadAllData();
   }, []);
 
-  // Funzione per caricare checks in batch con query parallele
-  const fetchChecksForClients = async (clientDocs) => {
-    const results = [];
-    
-    // Processa in batch paralleli per velocizzare
-    for (let i = 0; i < clientDocs.length; i += PARALLEL_QUERIES) {
-      const batch = clientDocs.slice(i, i + PARALLEL_QUERIES);
+  // Carica TUTTI i check di TUTTI i clienti
+  const loadAllData = async () => {
+    try {
+      setLoading(true);
       
-      const batchPromises = batch.map(async (clientDoc) => {
-        const clientData = clientDoc.data();
+      // 1. Carica tutti i clienti
+      const clientsRef = getTenantCollection(db, 'clients');
+      const clientsSnap = await getDocs(clientsRef);
+      
+      // Crea mappa clienti
+      const map = {};
+      clientsSnap.docs.forEach(doc => {
+        const data = doc.data();
+        map[doc.id] = {
+          name: data.name || data.email,
+          email: data.email
+        };
+      });
+      setClientsMap(map);
+      
+      // 2. Carica TUTTI i check per ogni cliente in parallelo
+      const allChecks = [];
+      
+      const promises = clientsSnap.docs.map(async (clientDoc) => {
         const clientId = clientDoc.id;
-        
-        // Salta se già caricato
-        if (loadedClientsRef.current.has(clientId)) {
-          return [];
-        }
+        const clientInfo = map[clientId] || {};
         
         try {
           const checksRef = collection(db, `tenants/${CURRENT_TENANT_ID}/clients/${clientId}/checks`);
-          const checksQuery = query(checksRef, orderBy('createdAt', 'desc'), limit(CHECKS_PER_CLIENT));
+          const checksQuery = query(checksRef, orderBy('createdAt', 'desc'));
           const checksSnap = await getDocs(checksQuery);
-          
-          loadedClientsRef.current.add(clientId);
           
           return checksSnap.docs.map(checkDoc => {
             const checkData = checkDoc.data();
             return {
               id: checkDoc.id,
               clientId,
-              clientName: clientData.name || clientData.email,
-              clientEmail: clientData.email,
+              clientName: clientInfo.name || 'Cliente',
+              clientEmail: clientInfo.email || '',
               ...checkData,
               createdAt: toDate(checkData.createdAt),
             };
@@ -80,73 +78,19 @@ export default function AdminChecksList() {
         }
       });
       
-      const batchResults = await Promise.all(batchPromises);
-      results.push(...batchResults.flat());
-    }
-    
-    return results;
-  };
-
-  const loadInitialChecks = async () => {
-    try {
-      setLoading(true);
-      loadedClientsRef.current.clear();
+      const results = await Promise.all(promises);
+      results.forEach(checksArray => allChecks.push(...checksArray));
       
-      // Carica la lista clienti
-      const clientsRef = getTenantCollection(db, 'clients');
-      const clientsSnap = await getDocs(clientsRef);
+      // 3. Ordina tutti per data decrescente
+      allChecks.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       
-      // Memorizza tutti i clienti per il caricamento successivo
-      allClientsRef.current = clientsSnap.docs;
-      
-      // Carica solo il primo batch
-      const firstBatch = clientsSnap.docs.slice(0, BATCH_SIZE);
-      const checksResults = await fetchChecksForClients(firstBatch);
-      
-      // Ordina per data decrescente
-      checksResults.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      
-      setChecks(checksResults);
-      setHasMore(clientsSnap.docs.length > BATCH_SIZE);
+      setChecks(allChecks);
     } catch (error) {
       console.error('Errore caricamento checks:', error);
     } finally {
       setLoading(false);
     }
   };
-
-  // Carica più checks quando l'utente scrolla o clicca "Carica altri"
-  const loadMoreChecks = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
-    
-    try {
-      setLoadingMore(true);
-      
-      const remainingClients = allClientsRef.current.filter(
-        doc => !loadedClientsRef.current.has(doc.id)
-      );
-      
-      if (remainingClients.length === 0) {
-        setHasMore(false);
-        return;
-      }
-      
-      const nextBatch = remainingClients.slice(0, BATCH_SIZE);
-      const newChecks = await fetchChecksForClients(nextBatch);
-      
-      setChecks(prev => {
-        const combined = [...prev, ...newChecks];
-        combined.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        return combined;
-      });
-      
-      setHasMore(remainingClients.length > BATCH_SIZE);
-    } catch (error) {
-      console.error('Errore caricamento altri checks:', error);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [loadingMore, hasMore]);
 
   // Filtra per ricerca
   const filteredChecks = useMemo(() => {
@@ -162,11 +106,27 @@ export default function AdminChecksList() {
   const isUnread = (check) => unreadIds.includes(`${check.clientId}_${check.id}`);
 
   const handleViewCheck = (check) => {
-    markAsRead(`${check.clientId}_${check.id}`); // Usa formato combinato
-    // Naviga al ClientDetail con tab check
+    markAsRead(`${check.clientId}_${check.id}`);
     const basePath = isCoachView ? '/coach/client' : '/client';
     navigate(`${basePath}/${check.clientId}?tab=check`);
   };
+
+  // Statistiche rapide
+  const stats = useMemo(() => {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+    weekStart.setHours(0, 0, 0, 0);
+    
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    return {
+      total: checks.length,
+      thisWeek: checks.filter(c => c.createdAt && c.createdAt >= weekStart).length,
+      thisMonth: checks.filter(c => c.createdAt && c.createdAt >= monthStart).length,
+      unread: unreadIds.length
+    };
+  }, [checks, unreadIds]);
 
   if (loading) {
     return (
@@ -196,7 +156,9 @@ export default function AdminChecksList() {
                 </span>
               )}
             </h1>
-            <p className="text-slate-400 mt-1">Visualizza i check-in dei tuoi clienti</p>
+            <p className="text-slate-400 mt-1">
+              {stats.total} check totali • {stats.thisWeek} questa settimana • {stats.thisMonth} questo mese
+            </p>
           </div>
           
           {unreadIds.length > 0 && (
@@ -208,6 +170,26 @@ export default function AdminChecksList() {
               Segna tutti come letti
             </button>
           )}
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl">
+            <div className="text-2xl font-bold text-white">{stats.total}</div>
+            <div className="text-sm text-slate-400">Check totali</div>
+          </div>
+          <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl">
+            <div className="text-2xl font-bold text-purple-400">{stats.thisWeek}</div>
+            <div className="text-sm text-slate-400">Questa settimana</div>
+          </div>
+          <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl">
+            <div className="text-2xl font-bold text-cyan-400">{stats.thisMonth}</div>
+            <div className="text-sm text-slate-400">Questo mese</div>
+          </div>
+          <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl">
+            <div className="text-2xl font-bold text-blue-400">{stats.unread}</div>
+            <div className="text-sm text-slate-400">Non letti</div>
+          </div>
         </div>
 
         {/* Search */}
@@ -233,7 +215,7 @@ export default function AdminChecksList() {
             ) : (
               <div className="space-y-3">
                 {filteredChecks.map((check, idx) => {
-                  const unread = isUnread(check); // Passa l'intero oggetto check
+                  const unread = isUnread(check);
                   
                   return (
                     <motion.div
@@ -284,28 +266,6 @@ export default function AdminChecksList() {
                     </motion.div>
                   );
                 })}
-                
-                {/* Pulsante Carica Altri */}
-                {hasMore && !searchQuery && (
-                  <div className="pt-4 text-center">
-                    <button
-                      onClick={loadMoreChecks}
-                      disabled={loadingMore}
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex items-center gap-2 mx-auto"
-                    >
-                      {loadingMore ? (
-                        <>
-                          <Loader2 size={18} className="animate-spin" />
-                          Caricamento...
-                        </>
-                      ) : (
-                        <>
-                          Carica altri check
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </CardContent>
