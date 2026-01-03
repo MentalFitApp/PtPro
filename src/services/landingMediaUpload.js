@@ -1,4 +1,5 @@
-import { httpsCallable, getFunctions } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../firebase';
 
 /**
  * Landing Page Media Upload Service - VERSIONE SICURA
@@ -91,8 +92,7 @@ export const uploadLandingMedia = async (file, tenantId, pageId, blockId = null,
 
     onProgress?.({ stage: 'uploading', percent: 20, message: 'Caricamento...' });
 
-    // Chiama la Cloud Function
-    const functions = getFunctions(undefined, 'europe-west1');
+    // Chiama la Cloud Function (usa l'istanza functions importata da firebase.js con auth)
     const uploadFn = httpsCallable(functions, 'uploadToR2', {
       timeout: 300000, // 5 minuti per file grandi
     });
@@ -145,7 +145,7 @@ export const deleteLandingMedia = async (fileUrl, tenantId) => {
     const urlObj = new URL(fileUrl);
     const fileKey = urlObj.pathname.slice(1);
 
-    const functions = getFunctions(undefined, 'europe-west1');
+    // Chiama la Cloud Function (usa l'istanza functions importata da firebase.js)
     const deleteFn = httpsCallable(functions, 'deleteFromR2');
 
     await deleteFn({ fileKey, tenantId });

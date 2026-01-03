@@ -1,6 +1,7 @@
 import imageCompression from 'browser-image-compression';
 import heic2any from 'heic2any';
-import { httpsCallable, getFunctions } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from './firebase';
 
 /**
  * Cloudflare R2 Storage - VERSIONE SICURA
@@ -230,8 +231,7 @@ export const uploadToR2 = async (file, clientId, folder = 'anamnesi_photos', onP
     if (onProgress) onProgress({ stage: 'uploading', percent: 30, message: 'Caricamento...' });
     emit({ stage: 'uploading', percent: 30, message: 'Caricamento...' });
 
-    // Chiama la Cloud Function
-    const functions = getFunctions(undefined, 'europe-west1');
+    // Chiama la Cloud Function (usa l'istanza functions importata da firebase.js che ha già l'app autenticata)
     const uploadFn = httpsCallable(functions, 'uploadToR2');
     
     const tenantId = localStorage.getItem('tenantId');
@@ -275,7 +275,7 @@ export const deleteFromR2 = async (fileUrl) => {
     const urlObj = new URL(fileUrl);
     const fileKey = urlObj.pathname.slice(1); // Rimuovi lo slash iniziale
 
-    const functions = getFunctions(undefined, 'europe-west1');
+    // Chiama la Cloud Function (usa l'istanza functions importata da firebase.js)
     const deleteFn = httpsCallable(functions, 'deleteFromR2');
     
     const tenantId = localStorage.getItem('tenantId');
