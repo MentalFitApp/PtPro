@@ -1,8 +1,10 @@
 /**
  * Security Utilities per Cloud Functions
- * - Rate limiting
+ * - Rate limiting (in-memory + Firestore fallback)
  * - Input validation
  * - Request sanitization
+ * 
+ * @updated 03/01/2026 - Aggiunto rate limiting persistente con Firestore
  */
 
 const admin = require('firebase-admin');
@@ -10,10 +12,22 @@ const admin = require('firebase-admin');
 // ============ RATE LIMITING ============
 
 /**
- * Cache in-memory per rate limiting (resettata ad ogni cold start)
- * Per produzione su larga scala, usare Redis o Firestore
+ * Cache in-memory per rate limiting (fast path)
+ * Usata per la maggior parte delle richieste.
+ * Firestore viene usato come fallback per funzioni critiche.
  */
 const rateLimitCache = new Map();
+
+/**
+ * Funzioni che richiedono rate limiting persistente (Firestore)
+ * Queste sono più costose ma sopravvivono ai cold starts
+ */
+const PERSISTENT_RATE_LIMIT_FUNCTIONS = [
+  'completeInvitation',      // Registrazione utenti
+  'exchangeOAuthToken',      // OAuth tokens
+  'completeMagicLinkSetup',  // Setup account
+  'generateMagicLink',       // Magic link generation
+];
 
 /**
  * Configurazione rate limits per funzione
@@ -43,7 +57,7 @@ const RATE_LIMITS = {
 };
 
 /**
- * Verifica rate limit per un utente/IP
+ * Verifica rate limit per un utente/IP (in-memory, fast path)
  * @param {string} identifier - UID utente o IP
  * @param {string} functionName - Nome della funzione
  * @returns {Object} { allowed: boolean, remaining: number, resetAt: Date }
@@ -78,21 +92,81 @@ function checkRateLimit(identifier, functionName) {
 }
 
 /**
- * Middleware per rate limiting
- * Usare all'inizio delle Cloud Functions
+ * Verifica rate limit usando Firestore (persistent, slow path)
+ * Usato per funzioni critiche che devono sopravvivere ai cold starts
+ * @param {string} identifier - UID utente o IP
+ * @param {string} functionName - Nome della funzione
+ * @returns {Promise<Object>} { allowed: boolean, remaining: number }
  */
-function enforceRateLimit(request, functionName) {
+async function checkRateLimitPersistent(identifier, functionName) {
+  const config = RATE_LIMITS[functionName] || RATE_LIMITS.default;
+  const key = `${functionName}_${identifier}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const now = Date.now();
+  const docRef = admin.firestore().collection('_rate_limits').doc(key);
+  
+  try {
+    const result = await admin.firestore().runTransaction(async (transaction) => {
+      const doc = await transaction.get(docRef);
+      let data = doc.exists ? doc.data() : null;
+      
+      // Se non esiste o è scaduto, resetta
+      if (!data || now > data.resetAt) {
+        data = {
+          count: 1,
+          resetAt: now + config.windowMs,
+          functionName,
+          identifier,
+          updatedAt: now
+        };
+        transaction.set(docRef, data);
+        return { allowed: true, remaining: config.maxRequests - 1 };
+      }
+      
+      // Incrementa contatore
+      data.count++;
+      data.updatedAt = now;
+      transaction.update(docRef, data);
+      
+      const allowed = data.count <= config.maxRequests;
+      return { 
+        allowed, 
+        remaining: Math.max(0, config.maxRequests - data.count),
+        resetAt: new Date(data.resetAt)
+      };
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Rate limit Firestore error, fallback to in-memory:', error.message);
+    // Fallback to in-memory se Firestore fallisce
+    return checkRateLimit(identifier, functionName);
+  }
+}
+
+/**
+ * Middleware per rate limiting
+ * Usa automaticamente Firestore per funzioni critiche, altrimenti in-memory
+ */
+async function enforceRateLimit(request, functionName) {
   // Identifica l'utente (preferisci UID, fallback a IP)
   const identifier = request.auth?.uid || 
                     request.rawRequest?.ip || 
                     request.rawRequest?.headers?.['x-forwarded-for'] ||
                     'anonymous';
   
-  const result = checkRateLimit(identifier, functionName);
+  // Usa rate limiting persistente per funzioni critiche
+  const usePersistent = PERSISTENT_RATE_LIMIT_FUNCTIONS.includes(functionName);
+  
+  const result = usePersistent 
+    ? await checkRateLimitPersistent(identifier, functionName)
+    : checkRateLimit(identifier, functionName);
   
   if (!result.allowed) {
-    console.warn(`🚫 Rate limit exceeded for ${identifier} on ${functionName}`);
-    throw new Error(`Troppe richieste. Riprova tra ${Math.ceil((result.resetAt - Date.now()) / 1000)} secondi.`);
+    console.warn(`🚫 Rate limit exceeded for ${identifier} on ${functionName} (persistent: ${usePersistent})`);
+    const waitTime = result.resetAt 
+      ? Math.ceil((result.resetAt - Date.now()) / 1000)
+      : 60;
+    throw new Error(`Troppe richieste. Riprova tra ${waitTime} secondi.`);
   }
   
   return result;
@@ -316,8 +390,10 @@ function sanitizeObject(obj) {
 module.exports = {
   // Rate limiting
   checkRateLimit,
+  checkRateLimitPersistent,
   enforceRateLimit,
   RATE_LIMITS,
+  PERSISTENT_RATE_LIMIT_FUNCTIONS,
   
   // Validation
   validators,

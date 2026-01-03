@@ -11,10 +11,7 @@ service cloud.firestore {
              request.auth.uid in get(/databases/$(database)/documents/platform_admins/superadmins).data.uids;
     }
 
-    // Editor temporanei per esercizi globali (RIMUOVERE QUANDO NON PIÙ NECESSARIO)
-    function isGlobalExerciseEditor() {
-      return isTenantSuperAdmin('biondo-fitness-coach');
-    }
+    // [RIMOSSO 03/01/2026] Editor temporanei - ora solo isPlatformCEO gestisce platform_exercises
 
     // SuperAdmin di un tenant specifico (proprietario business)
     function isTenantSuperAdmin(tenantId) {
@@ -72,8 +69,10 @@ service cloud.firestore {
 
     // ==================== TENANTS (METADATA) ====================
     match /tenants/{tenantId} {
-      // Lettura pubblica per routing landing pages (solo campi pubblici: name, siteSlug, customDomain, status)
-      allow read: if true;
+      // Lettura pubblica per routing landing pages
+      // NOTA: Firestore non permette field-level rules, ma limitiamo a get() singolo documento
+      // La list è riservata a Platform CEO sotto
+      allow get: if true;
       
       // Platform CEO può vedere, creare e gestire tutti i tenants
       allow list: if isPlatformCEO();
@@ -338,9 +337,16 @@ service cloud.firestore {
       }
       
       // --- LEADS (form submissions) ---
+      // NOTA: C'è già una regola leads sopra (riga ~278) per collaboratori.
+      // Questa regola aggiunge il create pubblico per form.
       match /leads/{leadId} {
-        // Chiunque può creare un lead (compilare form pubblici)
-        allow create: if true;
+        // Validazione anti-spam: richiede campi minimi e limita dimensioni
+        allow create: if request.resource.data.keys().hasAny(['email', 'phone', 'name']) &&
+                        request.resource.data.size() < 20 &&
+                        (!request.resource.data.keys().hasAny(['email']) || 
+                         (request.resource.data.email is string && request.resource.data.email.size() < 100)) &&
+                        (!request.resource.data.keys().hasAny(['name']) || 
+                         (request.resource.data.name is string && request.resource.data.name.size() < 200));
         
         // Solo admin possono leggere e gestire i leads
         allow read, list: if isTenantAdmin(tenantId) || isPlatformCEO();
@@ -415,14 +421,22 @@ service cloud.firestore {
       // --- LANDING ANALYTICS ---
       match /landing_analytics/{docId} {
         allow read: if isTenantAdmin(tenantId) || isPlatformCEO();
-        allow create: if true; // Pubblico per tracking visite
+        // Validazione anti-abuse: limita campi e dimensioni per tracking
+        allow create: if request.resource.data.keys().hasAll(['timestamp']) &&
+                        request.resource.data.size() < 15 &&
+                        request.resource.data.timestamp is timestamp;
         allow update, delete: if isTenantAdmin(tenantId) || isPlatformCEO();
       }
       
       // --- SITE VISITS & CONVERSIONS ---
       match /site_visits/{visitId} {
         allow read: if isTenantAdmin(tenantId) || isPlatformCEO();
-        allow create: if true; // Tracking pubblico
+        // Validazione anti-abuse: limita campi per tracking visite
+        allow create: if request.resource.data.keys().hasAll(['timestamp', 'page']) &&
+                        request.resource.data.size() < 20 &&
+                        request.resource.data.timestamp is timestamp &&
+                        request.resource.data.page is string &&
+                        request.resource.data.page.size() < 500;
         allow update, delete: if isPlatformCEO();
       }
       
@@ -512,11 +526,10 @@ service cloud.firestore {
         allow create, update, delete: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
       }
       
-      // --- REGOLA CATCH-ALL per altre collections nel tenant ---
-      // Admin e Coach possono accedere a tutto
-      match /{anyCollection}/{anyDoc} {
-        allow read, write: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
-      }
+      // --- BLOCCO ESPLICITO per collections non definite ---
+      // [FIX SICUREZZA 03/01/2026] Rimossa catch-all rule pericolosa.
+      // Ogni nuova collection DEVE essere definita esplicitamente sopra.
+      // Se vedi errori di permessi, aggiungi la collection qui sopra.
 
     }
 
@@ -633,8 +646,7 @@ service cloud.firestore {
     // --- PLATFORM EXERCISES (database globale esercizi) ---
     match /platform_exercises/{exerciseId} {
       allow read: if request.auth != null; // Tutti gli utenti autenticati possono leggere
-      allow create, delete: if isPlatformCEO(); // Solo platform CEO può creare/eliminare
-      allow update: if isPlatformCEO() || isGlobalExerciseEditor(); // CEO + editor temporanei possono aggiornare
+      allow create, update, delete: if isPlatformCEO(); // Solo platform CEO può gestire
     }
 
     // --- PLATFORM FOODS (database globale alimenti) ---

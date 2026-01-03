@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import DOMPurify from 'dompurify';
 import FormPopup from './FormPopup';
 
 /**
@@ -115,7 +116,9 @@ const HeroBlock = ({ settings, isPreview = false, pageId = null, tenantId = null
       result = result.replace(regex, `<span style="color: ${highlightColor}">$1</span>`);
     });
 
-    return <span style={{ color: titleColor }} dangerouslySetInnerHTML={{ __html: result }} />;
+    // Sanitize per prevenire XSS
+    const sanitizedResult = DOMPurify.sanitize(result, { ALLOWED_TAGS: ['span'], ALLOWED_ATTR: ['style'] });
+    return <span style={{ color: titleColor }} dangerouslySetInnerHTML={{ __html: sanitizedResult }} />;
   };
 
   // Gestisce click sul pulsante principale

@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import DOMPurify from 'dompurify';
 
 /**
  * Text Block - Contenuto testuale libero
@@ -35,7 +36,7 @@ const TextBlock = ({ settings, isPreview = false }) => {
             <div className="absolute -top-6 -left-4 text-8xl text-sky-500/20 font-serif">"</div>
             <div 
               className={`text-2xl md:text-3xl text-white italic leading-relaxed ${alignClass[textAlign]}`}
-              dangerouslySetInnerHTML={{ __html: content }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
             />
             <div className="absolute -bottom-6 -right-4 text-8xl text-sky-500/20 font-serif rotate-180">"</div>
           </motion.blockquote>
@@ -57,7 +58,7 @@ const TextBlock = ({ settings, isPreview = false }) => {
           >
             <div 
               className={`prose prose-invert prose-lg max-w-none ${alignClass[textAlign]}`}
-              dangerouslySetInnerHTML={{ __html: content }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
             />
           </motion.div>
         </div>
@@ -74,7 +75,7 @@ const TextBlock = ({ settings, isPreview = false }) => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className={`prose prose-invert prose-lg max-w-none ${alignClass[textAlign]}`}
-          dangerouslySetInnerHTML={{ __html: content }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
         />
       </div>
     </section>

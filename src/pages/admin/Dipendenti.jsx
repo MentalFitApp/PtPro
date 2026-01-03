@@ -51,13 +51,15 @@ const Dipendenti = () => {
   // Filtro
   const [meseFiltro, setMeseFiltro] = useState(format(new Date(), "yyyy-MM"));
 
-  // === INCASSO MESE CORRENTE ===
+  // === INCASSO MESE FILTRATO ===
   useEffect(() => {
-    const loadIncassoMeseCorrente = async () => {
+    const loadIncassoMeseFiltrato = async () => {
       try {
-        const now = new Date();
-        const monthStart = startOfMonth(now);
-        const monthEnd = endOfMonth(now);
+        // Usa il mese filtrato invece del mese corrente
+        const [year, month] = meseFiltro.split('-').map(Number);
+        const filterDate = new Date(year, month - 1, 1);
+        const monthStart = startOfMonth(filterDate);
+        const monthEnd = endOfMonth(filterDate);
         
         const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
         
@@ -133,11 +135,11 @@ const Dipendenti = () => {
         setIncassoNuoviClienti(totals.nuovi);
         setIncassoRinnovi(totals.rinnovi);
       } catch (err) {
-        console.error('Errore caricamento incasso mese corrente:', err);
+        console.error('Errore caricamento incasso mese filtrato:', err);
       }
     };
-    loadIncassoMeseCorrente();
-  }, []);
+    loadIncassoMeseFiltrato();
+  }, [meseFiltro]); // Ricarica quando cambia il mese filtrato
 
   // === DIPENDENTI & PAGAMENTI ===
   useEffect(() => {

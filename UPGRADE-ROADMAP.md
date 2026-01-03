@@ -1,7 +1,7 @@
 # 🚀 ROADMAP UPGRADE PTPRO
 
 > Documento di pianificazione per miglioramenti piattaforma
-> Ultimo aggiornamento: 17 Dicembre 2025
+> Ultimo aggiornamento: 03 Gennaio 2026
 > Status: IN CORSO
 
 ---
@@ -127,52 +127,47 @@
 
 ---
 
-### 3. Dashboard Analytics Real-time
+### 3. Dashboard Analytics Real-time ✅ COMPLETATO
 
-**Problema attuale:**
-- Statistiche calcolate al momento (lente su tanti dati)
-- Solo dati base: numero clienti, scadenze
-- Nessun trend storico
-- Nessun confronto temporale
-- Admin non ha visione d'insieme rapida
+> **Completato il 03 Gennaio 2026**
 
-**Soluzione proposta:**
+**Problema attuale:** (RISOLTO)
+- ~~Statistiche calcolate al momento (lente su tanti dati)~~
+- ~~Solo dati base: numero clienti, scadenze~~
+- ~~Nessun trend storico~~
+- ~~Nessun confronto temporale~~
+- ~~Admin non ha visione d'insieme rapida~~
 
-**Dashboard Admin:**
-```
-📊 OGGI (17 Dicembre)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Check ricevuti:     8  (+3 vs ieri)
-Messaggi:           45
-Nuovi clienti:      1
-Fatturato:          €450
+**Implementato:**
 
-🔴 RICHIEDE ATTENZIONE
-• 3 clienti inattivi da 7+ giorni
-• 5 abbonamenti in scadenza questa settimana
-• 2 pagamenti in ritardo
+**Dashboard Admin (AnalyticsNew.jsx):**
+- ✅ Revenue card: thisMonth, lastMonth, growth%, ARPU
+- ✅ Clients card: attivi, totali, nuovi mese, retention rate
+- ✅ Engagement card: check settimanali, media per cliente
+- ✅ Sparkline charts per trend visivi (7 giorni)
+- ✅ Alert panel actionable: scadenze, inattivi, check non letti
+- ✅ Click navigazione diretta ai clienti
 
-📈 TREND SETTIMANALE
-[Grafico a barre check giornalieri]
+**Cloud Functions:**
+- `aggregateTenantAnalytics` - Scheduled ogni ora
+- `refreshTenantAnalytics` - Callable per refresh manuale
 
-👥 PERFORMANCE COACH
-Marco: 32 clienti, 12 check/settimana
-Laura: 28 clienti, 15 check/settimana
-```
+**Collection Firestore:**
+- `tenants/{tenantId}/analytics/current` - Dati live
+- `tenants/{tenantId}/analytics/daily_{date}` - Storico
 
-**Implementazione tecnica:**
-- Cloud Functions aggregano dati ogni ora
-- Collection `analytics/daily/{date}` pre-calcolata
-- Caricamento istantaneo (no calcoli real-time)
-- Storico consultabile (confronta mesi/anni)
+**Files:**
+- `src/pages/admin/AnalyticsNew.jsx` - Pagina principale
+- `src/hooks/useAnalyticsData.js` - Hook dati pre-aggregati
+- `src/components/analytics/AnalyticsComponents.jsx` - UI components
 
 **Impatto:**
-- ⏱️ -80% tempo per generare report
+- ⏱️ Caricamento istantaneo (da 5-10s a <1s)
 - 📊 Decisioni basate su dati reali
 - 🎯 Identificazione immediata problemi
 
 **Complessità:** ⭐⭐⭐ Media
-**Tempo stimato:** 2 settimane
+**Tempo stimato:** 2 settimane → **Completato**
 
 ---
 
@@ -1321,8 +1316,8 @@ Sistema corsi integrato per ogni tenant.
 | # | Upgrade | Priorità | Complessità | Tempo | Impatto | Status |
 |---|---------|----------|-------------|-------|---------|--------|
 | 1 | Sistema Inviti | 🔴 CRITICA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐⭐⭐ | ✅ FATTO |
-| 2 | Notifiche Centralizzate | 🔴 CRITICA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐⭐⭐ | ⏳ |
-| 3 | Dashboard Analytics | 🔴 CRITICA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ | ⏳ |
+| 2 | Notifiche Centralizzate | 🔴 CRITICA | ⭐⭐⭐ | 2-3 sett | ⭐⭐⭐⭐⭐ | ✅ FATTO |
+| 3 | Dashboard Analytics V2 | 🔴 CRITICA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ | ✅ FATTO |
 | 4 | Sistema Appuntamenti | 🟠 ALTA | ⭐⭐⭐ | 3 sett | ⭐⭐⭐⭐ | ⏳ |
 | 5 | Automazioni Workflow | 🟠 ALTA | ⭐⭐⭐⭐ | 4-5 sett | ⭐⭐⭐⭐⭐ | ⏳ |
 | 6 | RBAC Permessi | 🟠 ALTA | ⭐⭐⭐⭐ | 3-4 sett | ⭐⭐⭐⭐ | ⏳ |
@@ -1360,10 +1355,37 @@ Sistema corsi integrato per ogni tenant.
 | 38 | Multi-lingua | 🟢 BASSA | ⭐⭐⭐⭐ | 4-5 sett | ⭐⭐⭐⭐ | ⏳ |
 | 39 | Integrazione Advertising | 🟡 MEDIA | ⭐⭐⭐ | 2 sett | ⭐⭐⭐⭐ | ⏳ |
 | 40 | LMS (Corsi) | 🟡 MEDIA | ⭐⭐⭐⭐ | 6-8 sett | ⭐⭐⭐⭐ | ⏳ |
+| 41 | **Security Audit (XSS, Rules)** | 🔴 CRITICA | ⭐⭐ | 1 sett | ⭐⭐⭐⭐⭐ | ✅ FATTO |
+| 42 | **Rate Limiting Persistente** | 🔴 CRITICA | ⭐⭐ | 3 giorni | ⭐⭐⭐⭐ | ✅ FATTO |
 
 ---
 
 ## 📝 CHANGELOG IMPLEMENTAZIONI
+
+### 03 Gennaio 2026
+- ✅ **Dashboard Analytics V2** - COMPLETATO
+  - `AnalyticsNew.jsx` con UI moderna e alerts actionable
+  - `useAnalyticsData.js` hook per dati pre-aggregati (real-time)
+  - `AnalyticsComponents.jsx` UI components riutilizzabili
+  - Cloud Function `aggregateTenantAnalytics` (scheduled ogni ora)
+  - Cloud Function `refreshTenantAnalytics` (callable manuale)
+  - Sparkline charts per trend revenue/checks
+  - Alert panel: clienti scadenza, inattivi, check non letti
+- ✅ **Security Audit completo**
+  - Fix Firestore rules: rimosso `allow create: if true`, catch-all, limitato tenants read
+  - Implementato DOMPurify per tutti i `dangerouslySetInnerHTML`
+  - Sanitizzazione HTML in Chat, Landing Pages, Courses, PageBuilder
+  - Creato `src/utils/sanitize.js` utility riutilizzabile
+- ✅ **Rate Limiting persistente**
+  - Aggiunto rate limiting con Firestore per funzioni critiche
+  - In-memory per funzioni standard (fast path)
+  - Scheduled cleanup `cleanupExpiredRateLimits`
+- ✅ **Aggiornamenti configurazione**
+  - ESLint: `ecmaVersion: 'latest'`
+  - Vite: CSS minification attivata
+  - firebase-admin allineato v13 (root e functions)
+- ✅ **Rimosso workaround hardcoded**
+  - `isGlobalExerciseEditor('biondo-fitness-coach')` rimosso
 
 ### 17 Dicembre 2025
 - ✅ **Sistema Inviti MVP** completato
@@ -1381,6 +1403,7 @@ Sistema corsi integrato per ogni tenant.
   - RenewalModal, EditClientModal, ExtendExpiryModal
   - EditPaymentModal, NewCheckModal, PhotoZoomModal
 - ✅ **ThemePreview** pagina personalizzazione tema
+- ✅ **Sistema Notifiche** completato (FCM + in-app)
 
 ---
 

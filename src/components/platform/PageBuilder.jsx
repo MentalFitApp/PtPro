@@ -1,6 +1,7 @@
 // src/components/platform/PageBuilder.jsx
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import DOMPurify from 'dompurify';
 import {
   Type, Image, Video, Layout, Code, Palette, Eye, Save,
   Plus, Trash2, MoveUp, MoveDown, Copy, Settings, Link,
@@ -1341,7 +1342,7 @@ export default function PageBuilder({ initialBlocks = [], onSave, onClose }) {
                     )}
 
                     {block.type === 'custom' && (
-                      <div dangerouslySetInnerHTML={{ __html: block.props.html }} />
+                      <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(block.props.html) }} />
                     )}
                   </div>
                 </motion.div>

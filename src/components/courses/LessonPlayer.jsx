@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, collection, query, orderBy, setDoc, updateDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { ArrowLeft, Play, Pause, CheckCircle, ChevronRight, ChevronLeft, Clock } from 'lucide-react';
+import DOMPurify from 'dompurify';
 
 import MediaViewer from '../ui/MediaViewer';
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
@@ -251,7 +252,7 @@ export default function LessonPlayer() {
               {lesson.content ? (
                 <div
                   className="prose prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: lesson.content }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(lesson.content) }}
                 />
               ) : (
                 <p className="text-slate-400">

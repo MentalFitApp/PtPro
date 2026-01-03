@@ -1,10 +1,12 @@
-const { onCall } = require('firebase-functions/v2/https');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentCreated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const { enforceRateLimit, validators, validateInput, requireAuth, sanitizeObject } = require('./security');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { v4: uuidv4 } = require('uuid');
 
 admin.initializeApp();
 
@@ -16,6 +18,202 @@ setGlobalOptions({ region: 'europe-west1' });
 // Definisci i secrets (devono essere creati in Firebase Console o via CLI)
 const dailyApiKey = defineSecret('DAILY_API_KEY');
 const facebookAppSecret = defineSecret('FACEBOOK_APP_SECRET');
+
+// R2 Secrets - CRITICHE: mai esporre nel frontend
+const r2AccountId = defineSecret('R2_ACCOUNT_ID');
+const r2AccessKeyId = defineSecret('R2_ACCESS_KEY_ID');
+const r2SecretAccessKey = defineSecret('R2_SECRET_ACCESS_KEY');
+const r2BucketName = defineSecret('R2_BUCKET_NAME');
+const r2PublicUrl = defineSecret('R2_PUBLIC_URL');
+
+// ============ R2 STORAGE FUNCTIONS (SECURE) ============
+
+/**
+ * Crea un client R2 (S3-compatible) usando i secrets
+ */
+const getR2Client = (accountId, accessKeyId, secretAccessKey) => {
+  return new S3Client({
+    region: 'auto',
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: { accessKeyId, secretAccessKey },
+  });
+};
+
+/**
+ * Upload sicuro a R2 - callable dal frontend
+ * Il file viene inviato come base64 per evitare problemi CORS
+ */
+exports.uploadToR2 = onCall(
+  { 
+    secrets: [r2AccountId, r2AccessKeyId, r2SecretAccessKey, r2BucketName, r2PublicUrl],
+    maxInstances: 10,
+    timeoutSeconds: 300, // 5 minuti per file grandi
+    memory: '512MiB',
+  },
+  async (request) => {
+    // Auth obbligatoria
+    if (!request.auth) {
+      throw new Error('Autenticazione richiesta');
+    }
+
+    // Rate limiting
+    enforceRateLimit(request, 'uploadToR2');
+
+    const { fileBase64, fileName, contentType, clientId, folder, tenantId, isLandingMedia } = request.data;
+
+    // Validazioni
+    if (!fileBase64 || !fileName || !contentType) {
+      throw new HttpsError('invalid-argument', 'Parametri mancanti: fileBase64, fileName, contentType');
+    }
+    if (!clientId && !isLandingMedia) {
+      throw new HttpsError('invalid-argument', 'clientId richiesto per upload non-landing');
+    }
+    if (!tenantId) {
+      throw new HttpsError('invalid-argument', 'tenantId richiesto');
+    }
+
+    // Verifica che l'utente appartenga al tenant
+    const userDoc = await db.collection('users').doc(request.auth.uid).get();
+    const userData = userDoc.data();
+    if (userData?.tenantId !== tenantId && !userData?.tenants?.includes(tenantId)) {
+      throw new HttpsError('permission-denied', 'Non autorizzato per questo tenant');
+    }
+
+    // Converti base64 in Buffer
+    const fileBuffer = Buffer.from(fileBase64, 'base64');
+    
+    // Limite dimensione: 50MB per file normali, 100MB per landing media
+    const maxSize = isLandingMedia ? 100 * 1024 * 1024 : 50 * 1024 * 1024;
+    if (fileBuffer.length > maxSize) {
+      throw new HttpsError('invalid-argument', `File troppo grande. Limite: ${maxSize / (1024 * 1024)}MB`);
+    }
+
+    // Genera path univoco
+    const fileExtension = fileName.split('.').pop().toLowerCase();
+    const uniqueFileName = `${uuidv4()}.${fileExtension}`;
+    
+    let fileKey;
+    if (isLandingMedia) {
+      const { pageId, blockId } = request.data;
+      const folderPath = blockId ? `${pageId}/${blockId}` : pageId;
+      fileKey = `landing-media/${tenantId}/${folderPath}/${uniqueFileName}`;
+    } else {
+      const folderName = folder || 'uploads';
+      fileKey = `clients/${clientId}/${folderName}/${uniqueFileName}`;
+    }
+
+    try {
+      const client = getR2Client(
+        r2AccountId.value(),
+        r2AccessKeyId.value(),
+        r2SecretAccessKey.value()
+      );
+
+      const command = new PutObjectCommand({
+        Bucket: r2BucketName.value(),
+        Key: fileKey,
+        Body: fileBuffer,
+        ContentType: contentType,
+        Metadata: {
+          originalName: fileName,
+          uploadedAt: new Date().toISOString(),
+          uploadedBy: request.auth.uid,
+          tenantId: tenantId,
+        },
+      });
+
+      await client.send(command);
+
+      const publicUrl = r2PublicUrl.value();
+      const fileUrl = `${publicUrl}/${fileKey}`;
+
+      console.log(`[uploadToR2] Upload completato: ${fileKey} by ${request.auth.uid}`);
+
+      return {
+        success: true,
+        url: fileUrl,
+        key: fileKey,
+        size: fileBuffer.length,
+      };
+    } catch (error) {
+      console.error('[uploadToR2] Errore:', error);
+      throw new HttpsError('internal', 'Errore durante upload: ' + error.message);
+    }
+  }
+);
+
+/**
+ * Elimina file da R2 - callable dal frontend
+ */
+exports.deleteFromR2 = onCall(
+  { 
+    secrets: [r2AccountId, r2AccessKeyId, r2SecretAccessKey, r2BucketName],
+    maxInstances: 5,
+  },
+  async (request) => {
+    // Auth obbligatoria
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Autenticazione richiesta');
+    }
+
+    // Rate limiting
+    enforceRateLimit(request, 'deleteFromR2');
+
+    const { fileKey, tenantId } = request.data;
+
+    if (!fileKey) {
+      throw new HttpsError('invalid-argument', 'fileKey richiesto');
+    }
+    if (!tenantId) {
+      throw new HttpsError('invalid-argument', 'tenantId richiesto');
+    }
+
+    // Verifica che l'utente appartenga al tenant
+    const userDoc = await db.collection('users').doc(request.auth.uid).get();
+    const userData = userDoc.data();
+    if (userData?.tenantId !== tenantId && !userData?.tenants?.includes(tenantId)) {
+      throw new HttpsError('permission-denied', 'Non autorizzato per questo tenant');
+    }
+
+    // Verifica che il fileKey appartenga al tenant (sicurezza extra)
+    if (!fileKey.includes(`/${tenantId}/`) && !fileKey.includes(`clients/`)) {
+      // Per i file clients/, verifichiamo che il clientId appartenga al tenant
+      const clientIdMatch = fileKey.match(/clients\/([^/]+)\//);
+      if (clientIdMatch) {
+        const clientId = clientIdMatch[1];
+        const clientDoc = await db.collection('tenants').doc(tenantId)
+          .collection('clients').doc(clientId).get();
+        if (!clientDoc.exists) {
+          throw new HttpsError('permission-denied', 'Non autorizzato a eliminare questo file');
+        }
+      } else {
+        throw new HttpsError('permission-denied', 'Non autorizzato a eliminare questo file');
+      }
+    }
+
+    try {
+      const client = getR2Client(
+        r2AccountId.value(),
+        r2AccessKeyId.value(),
+        r2SecretAccessKey.value()
+      );
+
+      const command = new DeleteObjectCommand({
+        Bucket: r2BucketName.value(),
+        Key: fileKey,
+      });
+
+      await client.send(command);
+
+      console.log(`[deleteFromR2] File eliminato: ${fileKey} by ${request.auth.uid}`);
+
+      return { success: true };
+    } catch (error) {
+      console.error('[deleteFromR2] Errore:', error);
+      throw new HttpsError('internal', 'Errore durante eliminazione: ' + error.message);
+    }
+  }
+);
 
 exports.getUidByEmail = onCall(async (request) => {
   // Rate limiting
@@ -661,6 +859,316 @@ exports.cleanupOldNotifications = onSchedule(
     console.log(`✅ Eliminate ${totalDeleted} notifiche vecchie`);
   }
 );
+
+/**
+ * Scheduled: Pulizia rate limits scaduti in Firestore
+ * Esegue ogni giorno alle 4:00
+ */
+exports.cleanupExpiredRateLimits = onSchedule(
+  { schedule: '0 4 * * *', timeZone: 'Europe/Rome' },
+  async () => {
+    console.log('🧹 Pulizia rate limits scaduti...');
+    
+    const now = Date.now();
+    
+    // Elimina rate limits scaduti da più di 1 ora
+    const expiredLimits = await db.collection('_rate_limits')
+      .where('resetAt', '<', now - 3600000) // Scaduti da > 1 ora
+      .limit(500)
+      .get();
+    
+    if (expiredLimits.empty) {
+      console.log('✅ Nessun rate limit da eliminare');
+      return;
+    }
+    
+    const batch = db.batch();
+    expiredLimits.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    
+    console.log(`✅ Eliminati ${expiredLimits.docs.length} rate limits scaduti`);
+  }
+);
+
+// ============================================
+// ANALYTICS AGGREGATION (statistiche pre-calcolate)
+// ============================================
+
+/**
+ * Scheduled: Aggrega statistiche per tutti i tenant
+ * Esegue ogni ora alle :05 (es: 10:05, 11:05, ...)
+ * Salva in tenants/{tenantId}/analytics/current e analytics/daily/{date}
+ */
+exports.aggregateTenantAnalytics = onSchedule(
+  { schedule: '5 * * * *', timeZone: 'Europe/Rome' },
+  async () => {
+    console.log('📊 Avvio aggregazione analytics per tutti i tenant...');
+    
+    const tenantsSnap = await db.collection('tenants').get();
+    let processedCount = 0;
+    
+    for (const tenantDoc of tenantsSnap.docs) {
+      const tenantId = tenantDoc.id;
+      
+      try {
+        await aggregateAnalyticsForTenant(tenantId);
+        processedCount++;
+      } catch (error) {
+        console.error(`❌ Errore aggregazione tenant ${tenantId}:`, error);
+      }
+    }
+    
+    console.log(`✅ Aggregazione completata per ${processedCount}/${tenantsSnap.size} tenant`);
+  }
+);
+
+/**
+ * Callable: Forza aggregazione analytics per un tenant specifico
+ */
+exports.refreshTenantAnalytics = onCall(async (request) => {
+  enforceRateLimit(request, 'triggerStatsAggregation');
+  requireAuth(request);
+  
+  const { tenantId } = validateInput(request.data, {
+    tenantId: validators.tenantId
+  });
+  
+  console.log(`🔄 Refresh manuale analytics per tenant: ${tenantId}`);
+  
+  const stats = await aggregateAnalyticsForTenant(tenantId);
+  return { success: true, stats };
+});
+
+/**
+ * Helper: Aggrega tutte le statistiche per un singolo tenant
+ */
+async function aggregateAnalyticsForTenant(tenantId) {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const tenantRef = db.collection('tenants').doc(tenantId);
+  
+  // ========== CLIENTI ==========
+  const clientsSnap = await tenantRef.collection('clients').get();
+  const clients = clientsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  const activeClients = clients.filter(c => {
+    if (c.isArchived) return false;
+    const expiry = c.scadenza?.toDate ? c.scadenza.toDate() : new Date(c.scadenza);
+    return expiry && expiry > now;
+  });
+  
+  const expiredClients = clients.filter(c => {
+    if (c.isArchived) return false;
+    const expiry = c.scadenza?.toDate ? c.scadenza.toDate() : new Date(c.scadenza);
+    return expiry && expiry <= now;
+  });
+  
+  // Clienti in scadenza nei prossimi 7 giorni
+  const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const expiringClients = clients.filter(c => {
+    if (c.isArchived) return false;
+    const expiry = c.scadenza?.toDate ? c.scadenza.toDate() : new Date(c.scadenza);
+    return expiry && expiry > now && expiry <= sevenDaysFromNow;
+  }).map(c => ({
+    id: c.id,
+    name: c.name,
+    expiry: c.scadenza?.toDate ? c.scadenza.toDate().toISOString() : c.scadenza
+  }));
+  
+  // Clienti nuovi questo mese
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const newThisMonth = clients.filter(c => {
+    const created = c.createdAt?.toDate ? c.createdAt.toDate() : new Date(c.createdAt);
+    return created && created >= monthStart;
+  }).length;
+  
+  // ========== PAGAMENTI ==========
+  let totalRevenueThisMonth = 0;
+  let totalRevenueLastMonth = 0;
+  let totalRevenueThisYear = 0;
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+  
+  // Raccolta pagamenti per tutti i clienti
+  for (const client of clients) {
+    const paymentsSnap = await tenantRef
+      .collection('clients').doc(client.id)
+      .collection('payments').get();
+    
+    for (const payDoc of paymentsSnap.docs) {
+      const payment = payDoc.data();
+      if (payment.isPast) continue;
+      
+      const payDate = payment.paymentDate?.toDate 
+        ? payment.paymentDate.toDate() 
+        : new Date(payment.paymentDate);
+      const amount = payment.amount || 0;
+      
+      if (payDate >= monthStart) {
+        totalRevenueThisMonth += amount;
+      }
+      if (payDate >= lastMonthStart && payDate <= lastMonthEnd) {
+        totalRevenueLastMonth += amount;
+      }
+      if (payDate >= yearStart) {
+        totalRevenueThisYear += amount;
+      }
+    }
+  }
+  
+  const revenueGrowth = totalRevenueLastMonth > 0
+    ? Math.round(((totalRevenueThisMonth - totalRevenueLastMonth) / totalRevenueLastMonth) * 100)
+    : 0;
+  
+  const arpu = activeClients.length > 0
+    ? Math.round(totalRevenueThisMonth / activeClients.length)
+    : 0;
+  
+  // ========== CHECK-INS ==========
+  let checksThisWeek = 0;
+  let checksLastWeek = 0;
+  let checksThisMonth = 0;
+  const weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  const lastWeekStart = new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+  
+  // Check non letti (viewedByCoach = false)
+  let unreadChecks = [];
+  
+  for (const client of clients) {
+    const checksSnap = await tenantRef
+      .collection('clients').doc(client.id)
+      .collection('checks').get();
+    
+    for (const checkDoc of checksSnap.docs) {
+      const check = checkDoc.data();
+      const checkDate = check.createdAt?.toDate 
+        ? check.createdAt.toDate() 
+        : new Date(check.createdAt);
+      
+      if (checkDate >= weekStart) checksThisWeek++;
+      if (checkDate >= lastWeekStart && checkDate < weekStart) checksLastWeek++;
+      if (checkDate >= monthStart) checksThisMonth++;
+      
+      // Check non letti
+      if (!check.viewedByCoach) {
+        unreadChecks.push({
+          id: checkDoc.id,
+          clientId: client.id,
+          clientName: client.name,
+          date: checkDate.toISOString()
+        });
+      }
+    }
+  }
+  
+  // Ordina unread checks per data (più recenti prima) e limita a 10
+  unreadChecks = unreadChecks
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 10);
+  
+  const avgChecksPerClient = activeClients.length > 0
+    ? Math.round((checksThisWeek / activeClients.length) * 10) / 10
+    : 0;
+  
+  // ========== CLIENTI INATTIVI ==========
+  // Clienti attivi senza check negli ultimi 7 giorni
+  const inactiveClients = [];
+  for (const client of activeClients) {
+    const checksSnap = await tenantRef
+      .collection('clients').doc(client.id)
+      .collection('checks')
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .get();
+    
+    if (checksSnap.empty) {
+      inactiveClients.push({
+        id: client.id,
+        name: client.name,
+        lastCheckDaysAgo: null
+      });
+    } else {
+      const lastCheck = checksSnap.docs[0].data();
+      const lastCheckDate = lastCheck.createdAt?.toDate 
+        ? lastCheck.createdAt.toDate() 
+        : new Date(lastCheck.createdAt);
+      const daysSinceCheck = Math.floor((now - lastCheckDate) / (1000 * 60 * 60 * 24));
+      
+      if (daysSinceCheck >= 7) {
+        inactiveClients.push({
+          id: client.id,
+          name: client.name,
+          lastCheckDaysAgo: daysSinceCheck
+        });
+      }
+    }
+  }
+  
+  // ========== SALVA STATS ==========
+  const stats = {
+    // Meta
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    date: today,
+    
+    // Clienti
+    clients: {
+      total: clients.filter(c => !c.isArchived).length,
+      active: activeClients.length,
+      expired: expiredClients.length,
+      newThisMonth,
+      retentionRate: clients.length > 0
+        ? Math.round((activeClients.length / clients.filter(c => !c.isArchived).length) * 100)
+        : 100,
+    },
+    
+    // Revenue
+    revenue: {
+      thisMonth: totalRevenueThisMonth,
+      lastMonth: totalRevenueLastMonth,
+      thisYear: totalRevenueThisYear,
+      growth: revenueGrowth,
+      arpu,
+    },
+    
+    // Check-ins
+    checks: {
+      thisWeek: checksThisWeek,
+      lastWeek: checksLastWeek,
+      thisMonth: checksThisMonth,
+      avgPerClient: avgChecksPerClient,
+      weeklyGrowth: checksLastWeek > 0
+        ? Math.round(((checksThisWeek - checksLastWeek) / checksLastWeek) * 100)
+        : 0,
+    },
+    
+    // Alerts (azioni richieste)
+    alerts: {
+      expiringClients: expiringClients.slice(0, 5), // Max 5
+      inactiveClients: inactiveClients.slice(0, 5), // Max 5
+      unreadChecks: unreadChecks.slice(0, 5), // Max 5
+    },
+    
+    // Contatori alerts
+    alertCounts: {
+      expiring: expiringClients.length,
+      inactive: inactiveClients.length,
+      unreadChecks: unreadChecks.length,
+    },
+  };
+  
+  // Salva in analytics/current (sempre sovrascritto)
+  await tenantRef.collection('analytics').doc('current').set(stats);
+  
+  // Salva anche in analytics/daily/{date} per storico
+  await tenantRef.collection('analytics').doc(`daily_${today}`).set(stats);
+  
+  console.log(`📊 Analytics aggregati per tenant ${tenantId}: ${activeClients.length} attivi, €${totalRevenueThisMonth} questo mese`);
+  
+  return stats;
+}
 
 // ============================================
 // USER-TENANT MAPPING (per login veloce)

@@ -1,33 +1,11 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { v4 as uuidv4 } from 'uuid';
+import { httpsCallable, getFunctions } from 'firebase/functions';
 
 /**
- * Landing Page Media Upload Service
- * Upload video e immagini senza limiti di dimensione per le landing pages
- * Usa Cloudflare R2 per storage economico e performante
+ * Landing Page Media Upload Service - VERSIONE SICURA
+ * 
+ * Upload video e immagini per le landing pages tramite Cloud Function.
+ * Le credenziali R2 non sono più esposte nel frontend.
  */
-
-// Singleton R2 Client
-let r2Client = null;
-
-const getR2Client = () => {
-  if (!r2Client) {
-    const accountId = import.meta.env.VITE_R2_ACCOUNT_ID;
-    const accessKeyId = import.meta.env.VITE_R2_ACCESS_KEY_ID;
-    const secretAccessKey = import.meta.env.VITE_R2_SECRET_ACCESS_KEY;
-
-    if (!accountId || !accessKeyId || !secretAccessKey) {
-      throw new Error('Configurazione R2 mancante');
-    }
-
-    r2Client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-      credentials: { accessKeyId, secretAccessKey },
-    });
-  }
-  return r2Client;
-};
 
 /**
  * Tipi di media supportati
@@ -40,12 +18,12 @@ export const MEDIA_TYPES = {
   },
   video: {
     mimeTypes: ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'],
-    maxSize: 5 * 1024 * 1024 * 1024, // 5GB per video
+    maxSize: 100 * 1024 * 1024, // 100MB per video (limite Cloud Function)
     extensions: ['mp4', 'webm', 'mov', 'avi', 'mkv'],
   },
   audio: {
     mimeTypes: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4'],
-    maxSize: 500 * 1024 * 1024, // 500MB per audio
+    maxSize: 50 * 1024 * 1024, // 50MB per audio
     extensions: ['mp3', 'wav', 'ogg', 'm4a'],
   },
 };
@@ -66,64 +44,31 @@ export const validateMediaFile = (file) => {
   const config = MEDIA_TYPES[mediaType];
 
   if (file.size > config.maxSize) {
-    const maxSizeGB = config.maxSize / (1024 * 1024 * 1024);
     const maxSizeMB = config.maxSize / (1024 * 1024);
-    const sizeStr = maxSizeGB >= 1 ? `${maxSizeGB}GB` : `${maxSizeMB}MB`;
-    throw new Error(`Il file supera il limite di ${sizeStr} per ${mediaType}`);
+    throw new Error(`Il file supera il limite di ${maxSizeMB}MB per ${mediaType}`);
   }
 
   return { mediaType, isValid: true };
 };
 
 /**
- * Upload file multipart per file grandi (> 100MB)
- * Usa chunk di 10MB per upload progressivo
+ * Converte un File in base64
  */
-const uploadLargeFile = async (file, fileKey, onProgress) => {
-  const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
-  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-  const client = getR2Client();
-  const bucketName = import.meta.env.VITE_R2_BUCKET_NAME;
-
-  // Per file grandi, usiamo un approccio diretto con body stream
-  // R2 gestisce internamente il multipart
-  const arrayBuffer = await file.arrayBuffer();
-  
-  const command = new PutObjectCommand({
-    Bucket: bucketName,
-    Key: fileKey,
-    Body: new Uint8Array(arrayBuffer),
-    ContentType: file.type,
-    Metadata: {
-      originalName: file.name,
-      uploadedAt: new Date().toISOString(),
-      fileSize: String(file.size),
-    },
+const fileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const base64 = reader.result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
   });
-
-  // Simula progress
-  let progress = 0;
-  const progressInterval = setInterval(() => {
-    progress = Math.min(progress + 5, 90);
-    onProgress?.({ 
-      stage: 'uploading', 
-      percent: progress, 
-      message: `Caricamento: ${progress}%` 
-    });
-  }, 500);
-
-  try {
-    await client.send(command);
-    clearInterval(progressInterval);
-    onProgress?.({ stage: 'complete', percent: 100, message: 'Upload completato!' });
-  } catch (error) {
-    clearInterval(progressInterval);
-    throw error;
-  }
 };
 
 /**
- * Upload media per landing page
+ * Upload media per landing page tramite Cloud Function SICURA
+ * 
  * @param {File} file - File da caricare
  * @param {string} tenantId - ID del tenant
  * @param {string} pageId - ID della landing page
@@ -137,67 +82,75 @@ export const uploadLandingMedia = async (file, tenantId, pageId, blockId = null,
   // Valida il file
   const { mediaType } = validateMediaFile(file);
   
-  // Genera path univoco
-  const fileExtension = file.name.split('.').pop().toLowerCase();
-  const fileName = `${uuidv4()}.${fileExtension}`;
-  const folder = blockId ? `${pageId}/${blockId}` : pageId;
-  const fileKey = `landing-media/${tenantId}/${folder}/${fileName}`;
-
-  const bucketName = import.meta.env.VITE_R2_BUCKET_NAME;
-  if (!bucketName) throw new Error('VITE_R2_BUCKET_NAME non configurato');
-
   onProgress?.({ stage: 'preparing', percent: 5, message: 'Preparazione upload...' });
 
   try {
-    // Per file > 100MB usa upload ottimizzato
-    if (file.size > 100 * 1024 * 1024) {
-      await uploadLargeFile(file, fileKey, onProgress);
-    } else {
-      // Upload standard per file più piccoli
-      const arrayBuffer = await file.arrayBuffer();
-      
-      const command = new PutObjectCommand({
-        Bucket: bucketName,
-        Key: fileKey,
-        Body: new Uint8Array(arrayBuffer),
-        ContentType: file.type,
-        Metadata: {
-          originalName: file.name,
-          uploadedAt: new Date().toISOString(),
-        },
-      });
+    // Converti file in base64
+    onProgress?.({ stage: 'encoding', percent: 10, message: 'Codifica file...' });
+    const fileBase64 = await fileToBase64(file);
 
-      // Simula progress
-      let progress = 10;
-      const progressInterval = setInterval(() => {
-        progress = Math.min(progress + 15, 85);
-        onProgress?.({ stage: 'uploading', percent: progress, message: 'Caricamento...' });
-      }, 300);
+    onProgress?.({ stage: 'uploading', percent: 20, message: 'Caricamento...' });
 
-      const client = getR2Client();
-      await client.send(command);
-      
-      clearInterval(progressInterval);
-      onProgress?.({ stage: 'complete', percent: 100, message: 'Completato!' });
-    }
+    // Chiama la Cloud Function
+    const functions = getFunctions(undefined, 'europe-west1');
+    const uploadFn = httpsCallable(functions, 'uploadToR2', {
+      timeout: 300000, // 5 minuti per file grandi
+    });
 
-    // Costruisci URL pubblico
-    const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL;
-    const url = publicUrl 
-      ? `${publicUrl}/${fileKey}` 
-      : `https://${bucketName}.r2.cloudflarestorage.com/${fileKey}`;
+    // Simula progress mentre aspettiamo
+    let progress = 20;
+    const progressInterval = setInterval(() => {
+      progress = Math.min(progress + 10, 85);
+      onProgress?.({ stage: 'uploading', percent: progress, message: 'Caricamento...' });
+    }, 1000);
+
+    const result = await uploadFn({
+      fileBase64,
+      fileName: file.name,
+      contentType: file.type,
+      tenantId,
+      pageId,
+      blockId,
+      isLandingMedia: true,
+    });
+
+    clearInterval(progressInterval);
+    onProgress?.({ stage: 'complete', percent: 100, message: 'Completato!' });
 
     return {
-      url,
+      url: result.data.url,
       type: mediaType,
       mimeType: file.type,
       size: file.size,
       name: file.name,
-      key: fileKey,
+      key: result.data.key,
     };
   } catch (error) {
     console.error('Errore upload media:', error);
     throw new Error('Errore durante il caricamento: ' + error.message);
+  }
+};
+
+/**
+ * Elimina media da landing page tramite Cloud Function SICURA
+ * 
+ * @param {string} fileUrl - URL del file da eliminare
+ * @param {string} tenantId - ID del tenant
+ * @returns {Promise<void>}
+ */
+export const deleteLandingMedia = async (fileUrl, tenantId) => {
+  if (!fileUrl) return;
+
+  try {
+    const urlObj = new URL(fileUrl);
+    const fileKey = urlObj.pathname.slice(1);
+
+    const functions = getFunctions(undefined, 'europe-west1');
+    const deleteFn = httpsCallable(functions, 'deleteFromR2');
+
+    await deleteFn({ fileKey, tenantId });
+  } catch (error) {
+    console.error('Errore eliminazione media:', error);
   }
 };
 
@@ -216,7 +169,7 @@ export const formatFileSize = (bytes) => {
  * Calcola durata stimata upload basata su velocità tipica (5MB/s)
  */
 export const estimateUploadTime = (fileSize) => {
-  const speedMBps = 5; // Velocità media stimata
+  const speedMBps = 5;
   const seconds = fileSize / (speedMBps * 1024 * 1024);
   
   if (seconds < 60) return `~${Math.ceil(seconds)} secondi`;
@@ -226,6 +179,7 @@ export const estimateUploadTime = (fileSize) => {
 
 export default {
   uploadLandingMedia,
+  deleteLandingMedia,
   validateMediaFile,
   formatFileSize,
   estimateUploadTime,

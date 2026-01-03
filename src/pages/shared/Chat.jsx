@@ -376,7 +376,11 @@ const formatTextWithStyles = (text) => {
       .replace(codeRegex, '<code class="px-1.5 py-0.5 bg-slate-600/50 rounded text-sm font-mono text-green-400">$1</code>')
       .replace(mentionRegex, '<span class="text-blue-400 font-medium">@$1</span>');
 
-    return <span key={i} dangerouslySetInnerHTML={{ __html: formattedPart }} />;
+    // Sanitize per prevenire XSS
+    const sanitized = formattedPart
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+    return <span key={i} dangerouslySetInnerHTML={{ __html: sanitized }} />;
   });
 };
 

@@ -13,7 +13,6 @@ import { TenantProvider } from './contexts/TenantContext';
 import { UserPreferencesProvider } from './hooks/useUserPreferences';
 import { getTenantDoc } from './config/tenant';
 import useOnlineStatus from './hooks/useOnlineStatus';
-import FuturisticLoader from './components/ui/FuturisticLoader';
 
 // Import dinamici dei layout
 const ProLayout = React.lazy(() => import('./components/layout/ProLayout'));
@@ -47,7 +46,7 @@ const Statistiche = React.lazy(() => import('./pages/admin/Statistiche'));
 const StatisticheDashboard = React.lazy(() => import('./pages/admin/StatisticheDashboard'));
 const Profile = React.lazy(() => import('./pages/admin/Profile'));
 const Settings = React.lazy(() => import('./pages/admin/Settings'));
-const Analytics = React.lazy(() => import('./pages/admin/Analytics'));
+const Analytics = React.lazy(() => import('./pages/admin/AnalyticsNew')); // V2.0 - Pre-aggregated data
 const CourseAdmin = React.lazy(() => import('./pages/admin/CourseAdmin'));
 const CourseContentManager = React.lazy(() => import('./pages/admin/CourseContentManager'));
 const PlatformSettings = React.lazy(() => import('./pages/admin/PlatformSettings'));
@@ -115,15 +114,24 @@ const PrivacyPolicy = React.lazy(() => import('./pages/public/PrivacyPolicyDynam
 const TermsOfService = React.lazy(() => import('./pages/public/TermsOfServiceDynamic'));
 const AcceptInvite = React.lazy(() => import('./pages/public/AcceptInvite'));
 
-// Spinner
-// Page Spinner per lazy loading
+// Spinner semplice per lazy loading (senza delay forzato)
 const PageSpinner = () => (
-  <FuturisticLoader isLoading={true} />
+  <div className="min-h-screen flex items-center justify-center bg-slate-900">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+      <p className="text-slate-400 text-sm">Caricamento...</p>
+    </div>
+  </div>
 );
 
 // Auth Spinner per verifica autenticazione
 const AuthSpinner = () => (
-  <FuturisticLoader isLoading={true} />
+  <div className="min-h-screen flex items-center justify-center bg-slate-900">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+      <p className="text-slate-400 text-sm">Verifica autenticazione...</p>
+    </div>
+  </div>
 );
 
 // Componente interno per hook che richiedono i context providers

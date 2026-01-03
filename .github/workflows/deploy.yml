@@ -51,7 +51,9 @@ jobs:
         
       # 5. Costruisce il sito per la produzione
       - name: Build
-        # QUA È DOVE USIAMO LE CHIAVI SEGRETE
+        # Variabili ambiente per il frontend
+        # NOTA: Le credenziali R2 (ACCESS_KEY, SECRET) non sono più nel frontend
+        # Gli upload vengono gestiti tramite Cloud Functions sicure
         env:
           # Firebase Configuration
           VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
@@ -61,11 +63,8 @@ jobs:
           VITE_MESSAGING_SENDER_ID: ${{ secrets.VITE_MESSAGING_SENDER_ID }}
           VITE_APP_ID: ${{ secrets.VITE_APP_ID }}
           VITE_MEASUREMENT_ID: ${{ secrets.VITE_MEASUREMENT_ID }}
-          # Cloudflare R2 Configuration
-          VITE_R2_ACCOUNT_ID: ${{ secrets.VITE_R2_ACCOUNT_ID }}
-          VITE_R2_ACCESS_KEY_ID: ${{ secrets.VITE_R2_ACCESS_KEY_ID }}
-          VITE_R2_SECRET_ACCESS_KEY: ${{ secrets.VITE_R2_SECRET_ACCESS_KEY }}
-          VITE_R2_BUCKET_NAME: ${{ secrets.VITE_R2_BUCKET_NAME }}
+          # Cloudflare R2 - Solo URL pubblico (per visualizzazione)
+          # Le credenziali sono gestite dai Firebase Secrets nelle Cloud Functions
           VITE_R2_PUBLIC_URL: ${{ secrets.VITE_R2_PUBLIC_URL }}
         run: pnpm run build
         
