@@ -101,6 +101,154 @@ const CONTACT_FIELDS = [
   { id: 'citta', label: 'Città', icon: '📍' },
 ];
 
+// Emoji comuni per le stats
+const STAT_ICONS = ['❓', '⏱️', '🎁', '✅', '🎯', '💪', '🚀', '⚡', '🏆', '📊', '💯', '🔥'];
+
+/**
+ * IntroStatsEditor - Editor per le stats mostrate nell'intro del quiz
+ */
+const IntroStatsEditor = ({ stats, onChange, questions }) => {
+  const defaultStats = [
+    { icon: '❓', value: questions?.length || 0, label: 'Domande', isAutoCount: true },
+    { icon: '⏱️', value: '2 min', label: 'Tempo' },
+    { icon: '🎁', value: '100%', label: 'Gratuito' },
+  ];
+
+  const currentStats = stats.length > 0 ? stats : defaultStats;
+  const [isEditing, setIsEditing] = useState(false);
+
+  const updateStat = (index, field, value) => {
+    const newStats = [...currentStats];
+    newStats[index] = { ...newStats[index], [field]: value };
+    onChange(newStats);
+  };
+
+  const addStat = () => {
+    const newStats = [...currentStats, { icon: '✅', value: 'Nuovo', label: 'Label' }];
+    onChange(newStats);
+  };
+
+  const removeStat = (index) => {
+    const newStats = currentStats.filter((_, i) => i !== index);
+    onChange(newStats);
+  };
+
+  const resetToDefault = () => {
+    onChange([]);
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-white/5 px-4 py-3 flex items-center justify-between">
+        <span className="font-medium text-white">📊 Stats Intro</span>
+        <div className="flex gap-2">
+          {isEditing && stats.length > 0 && (
+            <button
+              onClick={resetToDefault}
+              className="px-2 py-1 text-xs text-slate-400 hover:text-white"
+            >
+              Reset
+            </button>
+          )}
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            className="px-3 py-1 bg-slate-700 text-white text-xs rounded hover:bg-slate-600"
+          >
+            {isEditing ? 'Chiudi' : 'Modifica'}
+          </button>
+        </div>
+      </div>
+      
+      {/* Preview */}
+      <div className="p-4 bg-slate-900/50 flex justify-center gap-6">
+        {currentStats.map((stat, i) => (
+          <div key={i} className="text-center">
+            <div className="text-xl mb-0.5">{stat.icon}</div>
+            <div className="text-sm font-bold text-white">
+              {stat.isAutoCount ? (questions?.length || stat.value) : stat.value}
+            </div>
+            <div className="text-[10px] text-slate-500 uppercase">{stat.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Editor */}
+      {isEditing && (
+        <div className="p-4 border-t border-white/10 space-y-3">
+          {currentStats.map((stat, index) => (
+            <div key={index} className="flex items-center gap-2 p-2 bg-slate-800/50 rounded-lg">
+              {/* Icon selector */}
+              <select
+                value={stat.icon}
+                onChange={(e) => updateStat(index, 'icon', e.target.value)}
+                className="w-14 px-1 py-1 bg-slate-700 border border-slate-600 rounded text-center"
+              >
+                {STAT_ICONS.map(icon => (
+                  <option key={icon} value={icon}>{icon}</option>
+                ))}
+              </select>
+              
+              {/* Value */}
+              {stat.isAutoCount ? (
+                <div className="flex-1 px-2 py-1 bg-slate-700/50 border border-slate-600 rounded text-white text-sm text-center">
+                  Auto ({questions?.length || 0})
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={stat.value}
+                  onChange={(e) => updateStat(index, 'value', e.target.value)}
+                  className="flex-1 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                  placeholder="Valore"
+                />
+              )}
+              
+              {/* Label */}
+              <input
+                type="text"
+                value={stat.label}
+                onChange={(e) => updateStat(index, 'label', e.target.value)}
+                className="w-24 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                placeholder="Label"
+              />
+
+              {/* Auto count toggle */}
+              <label className="flex items-center gap-1 cursor-pointer" title="Conta automatica domande">
+                <input
+                  type="checkbox"
+                  checked={!!stat.isAutoCount}
+                  onChange={(e) => updateStat(index, 'isAutoCount', e.target.checked)}
+                  className="w-3 h-3"
+                />
+                <span className="text-[10px] text-slate-400">Auto</span>
+              </label>
+              
+              {/* Remove */}
+              <button
+                onClick={() => removeStat(index)}
+                className="p-1 text-slate-400 hover:text-red-400"
+                disabled={currentStats.length <= 1}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          
+          {currentStats.length < 4 && (
+            <button
+              onClick={addStat}
+              className="w-full py-2 border border-dashed border-slate-600 rounded-lg text-slate-400 hover:text-white hover:border-slate-500 text-sm flex items-center justify-center gap-1"
+            >
+              <Plus className="w-3 h-3" /> Aggiungi stat
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /**
  * QuizPopupSettings Component
  */
@@ -266,6 +414,45 @@ const QuizPopupSettings = ({
         <FieldGroup label="Colore Secondario">
           {renderField('quizGradientTo', localSettings.quizGradientTo || '#dc2626', 'color')}
         </FieldGroup>
+      </div>
+
+      {/* Stats Intro Personalizzabili */}
+      <IntroStatsEditor 
+        stats={localSettings.introStats || []}
+        onChange={(newStats) => handleChange('introStats', newStats)}
+        questions={questions}
+      />
+
+      {/* Performance */}
+      <div className="border border-white/10 rounded-xl overflow-hidden">
+        <div className="bg-white/5 px-4 py-3">
+          <span className="font-medium text-white">⚡ Performance</span>
+        </div>
+        <div className="p-4 space-y-3">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={localSettings.enableParticles !== false}
+              onChange={(e) => handleChange('enableParticles', e.target.checked)}
+              className="w-4 h-4 rounded bg-slate-700 border-slate-600"
+            />
+            <span className="text-sm text-white">Abilita particelle animate</span>
+          </label>
+          {localSettings.enableParticles !== false && (
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Numero particelle (max 12)</label>
+              <input
+                type="range"
+                min="4"
+                max="12"
+                value={localSettings.particleCount || 8}
+                onChange={(e) => handleChange('particleCount', parseInt(e.target.value))}
+                className="w-full"
+              />
+              <div className="text-xs text-slate-500 text-right">{localSettings.particleCount || 8} particelle</div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Sezione Domande */}

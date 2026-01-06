@@ -31,23 +31,17 @@ jobs:
       # 1. Scarica il codice dal tuo repository
       - name: Checkout
         uses: actions/checkout@v4
-        
-      # 2. Installa pnpm
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
           
-      # 3. Installa Node.js
+      # 2. Installa Node.js
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'pnpm'
+          cache: 'npm'
           
-      # 4. Installa le dipendenze del progetto
+      # 3. Installa le dipendenze del progetto
       - name: Install dependencies
-        run: pnpm install
+        run: npm ci
         
       # 5. Costruisce il sito per la produzione
       - name: Build
@@ -66,9 +60,9 @@ jobs:
           # Cloudflare R2 - Solo URL pubblico (per visualizzazione)
           # Le credenziali sono gestite dai Firebase Secrets nelle Cloud Functions
           VITE_R2_PUBLIC_URL: ${{ secrets.VITE_R2_PUBLIC_URL }}
-        run: pnpm run build
+        run: npm run build
         
-      # 6. Prepara l'artefatto per la pubblicazione
+      # 5. Prepara l'artefatto per la pubblicazione
       - name: Setup Pages
         uses: actions/configure-pages@v5
         

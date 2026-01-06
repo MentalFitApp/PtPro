@@ -42,6 +42,11 @@ const QuizPopup = ({
     redirectUrl = '',
     whatsappNumber = '',
     whatsappMessage = '',
+    // Intro stats personalizzabili
+    introStats = null, // Array di { icon, value, label }
+    // Performance
+    enableParticles = true,
+    particleCount = 8, // Ridotto da 20 per performance
   } = settings;
 
   const toast = useToast();
@@ -348,32 +353,45 @@ const QuizPopup = ({
     return null;
   };
 
-  // Particle effect component
-  const FloatingParticles = () => (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {[...Array(20)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-1 h-1 rounded-full"
-          style={{
-            background: i % 2 === 0 ? gradientFrom : gradientTo,
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-          animate={{
-            y: [0, -30, 0],
-            opacity: [0.2, 0.8, 0.2],
-            scale: [1, 1.5, 1],
-          }}
-          transition={{
-            duration: 3 + Math.random() * 2,
-            repeat: Infinity,
-            delay: Math.random() * 2,
-          }}
-        />
-      ))}
-    </div>
-  );
+  // Particle effect component - OTTIMIZZATO con CSS animations
+  const FloatingParticles = React.memo(() => {
+    if (!enableParticles) return null;
+    
+    // Genera posizioni fisse per evitare re-render
+    const particles = React.useMemo(() => 
+      [...Array(Math.min(particleCount, 12))].map((_, i) => ({
+        id: i,
+        left: `${10 + (i * 73) % 80}%`,
+        top: `${15 + (i * 61) % 70}%`,
+        delay: `${(i * 0.5) % 3}s`,
+        duration: `${3 + (i % 3)}s`,
+        color: i % 2 === 0 ? gradientFrom : gradientTo,
+      })), [particleCount, gradientFrom, gradientTo]
+    );
+    
+    return (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <style>{`
+          @keyframes floatParticle {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+            50% { transform: translateY(-20px) scale(1.3); opacity: 0.7; }
+          }
+        `}</style>
+        {particles.map((p) => (
+          <div
+            key={p.id}
+            className="absolute w-1 h-1 rounded-full will-change-transform"
+            style={{
+              background: p.color,
+              left: p.left,
+              top: p.top,
+              animation: `floatParticle ${p.duration} ease-in-out ${p.delay} infinite`,
+            }}
+          />
+        ))}
+      </div>
+    );
+  });
 
   // Render intro screen
   const renderIntro = () => (
@@ -394,18 +412,24 @@ const QuizPopup = ({
         transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
         className="w-28 h-28 mx-auto mb-8 relative"
       >
-        {/* Rotating rings */}
-        <motion.div
-          className="absolute inset-0 rounded-full border-2 border-dashed"
-          style={{ borderColor: `${accentColor}40` }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+        {/* Rotating rings - CSS animation per performance */}
+        <style>{`
+          @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+          @keyframes spinSlowReverse { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+        `}</style>
+        <div
+          className="absolute inset-0 rounded-full border-2 border-dashed will-change-transform"
+          style={{ 
+            borderColor: `${accentColor}40`,
+            animation: 'spinSlow 20s linear infinite',
+          }}
         />
-        <motion.div
-          className="absolute inset-2 rounded-full border-2 border-dashed"
-          style={{ borderColor: `${gradientTo}40` }}
-          animate={{ rotate: -360 }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+        <div
+          className="absolute inset-2 rounded-full border-2 border-dashed will-change-transform"
+          style={{ 
+            borderColor: `${gradientTo}40`,
+            animation: 'spinSlowReverse 15s linear infinite',
+          }}
         />
         
         {/* Center glow */}
@@ -445,18 +469,18 @@ const QuizPopup = ({
         {subtitle}
       </motion.p>
 
-      {/* Stats with animations */}
+      {/* Stats with animations - PERSONALIZZABILI */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
         className="flex justify-center gap-8 mb-10"
       >
-        {[
+        {(introStats && introStats.length > 0 ? introStats : [
           { value: activeQuestions.length, label: 'Domande', icon: '❓' },
           { value: '2 min', label: 'Tempo', icon: '⏱️' },
           { value: '100%', label: 'Gratuito', icon: '🎁' },
-        ].map((stat, i) => (
+        ]).map((stat, i) => (
           <motion.div
             key={i}
             initial={{ scale: 0 }}
@@ -483,20 +507,17 @@ const QuizPopup = ({
           background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})`,
         }}
       >
-        {/* Shine effect */}
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-          animate={{ x: ['-200%', '200%'] }}
-          transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+        {/* Shine effect - CSS */}
+        <style>{`
+          @keyframes btnShine { 0% { transform: translateX(-200%); } 100% { transform: translateX(200%); } }
+        `}</style>
+        <div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent will-change-transform"
+          style={{ animation: 'btnShine 4s ease-in-out infinite' }}
         />
         <span className="relative flex items-center justify-center gap-3">
           Inizia il Quiz
-          <motion.span
-            animate={{ x: [0, 5, 0] }}
-            transition={{ duration: 1, repeat: Infinity }}
-          >
-            →
-          </motion.span>
+          <span className="inline-block animate-[pulse_1s_ease-in-out_infinite]">→</span>
         </span>
       </motion.button>
     </motion.div>
@@ -968,20 +989,22 @@ const QuizPopup = ({
               boxShadow: `0 25px 100px -20px ${accentColor}30, 0 0 0 1px ${accentColor}10`,
             }}
           >
-            {/* Progress bar */}
+            {/* Progress bar - CSS shimmer per performance */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-white/5 overflow-hidden rounded-t-3xl">
+              <style>{`
+                @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+              `}</style>
               <motion.div
-                className="h-full relative"
+                className="h-full relative overflow-hidden"
                 style={{ background: `linear-gradient(90deg, ${gradientFrom}, ${gradientTo})` }}
                 initial={{ width: '0%' }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.5, ease: 'easeOut' }}
               >
-                {/* Shimmer effect */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                  animate={{ x: ['-100%', '200%'] }}
-                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                {/* Shimmer effect - CSS */}
+                <div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent will-change-transform"
+                  style={{ animation: 'shimmer 2.5s ease-in-out infinite' }}
                 />
               </motion.div>
             </div>
