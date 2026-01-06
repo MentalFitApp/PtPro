@@ -21,16 +21,17 @@ const db = admin.firestore();
 const TENANT_ID = 'biondo-fitness-coach';
 
 // Quiz Questions personalizzate - Include domande a selezione + domande aperte
+// Usa iconType: 'svg' con iconName per icone vettoriali
 const quizQuestions = [
   {
     id: 'problema',
     question: 'Qual è il tuo problema principale?',
     type: 'single',
     options: [
-      { value: 'pancetta', label: 'Pancetta che non va via', icon: '🎯', color: '#f97316' },
-      { value: 'maniglie', label: 'Maniglie dell\'amore', icon: '💪', color: '#ef4444' },
-      { value: 'entrambi', label: 'Entrambi i problemi', icon: '⚡', color: '#8b5cf6' },
-      { value: 'altro', label: 'Altro grasso localizzato', icon: '🔥', color: '#ec4899' },
+      { value: 'pancetta', label: 'Pancetta che non va via', iconType: 'svg', iconName: 'target', color: '#f97316' },
+      { value: 'maniglie', label: 'Maniglie dell\'amore', iconType: 'svg', iconName: 'muscle', color: '#ef4444' },
+      { value: 'entrambi', label: 'Entrambi i problemi', iconType: 'svg', iconName: 'energy', color: '#8b5cf6' },
+      { value: 'altro', label: 'Altro grasso localizzato', iconType: 'svg', iconName: 'fire', color: '#ec4899' },
     ]
   },
   {
@@ -39,11 +40,11 @@ const quizQuestions = [
     type: 'multiple',
     maxSelections: 3,
     options: [
-      { value: 'diete', label: 'Diete restrittive', icon: '🥗' },
-      { value: 'cardio', label: 'Ore di cardio', icon: '🏃' },
-      { value: 'palestra', label: 'Palestra senza guida', icon: '🏋️' },
-      { value: 'integratori', label: 'Integratori vari', icon: '💊' },
-      { value: 'nulla', label: 'Non ho ancora provato nulla', icon: '🌱' },
+      { value: 'diete', label: 'Diete restrittive', iconType: 'svg', iconName: 'diet', color: '#22c55e' },
+      { value: 'cardio', label: 'Ore di cardio', iconType: 'svg', iconName: 'cardio', color: '#3b82f6' },
+      { value: 'palestra', label: 'Palestra senza guida', iconType: 'svg', iconName: 'gym', color: '#64748b' },
+      { value: 'integratori', label: 'Integratori vari', iconType: 'svg', iconName: 'supplement', color: '#a855f7' },
+      { value: 'nulla', label: 'Non ho ancora provato nulla', iconType: 'svg', iconName: 'sprout', color: '#10b981' },
     ]
   },
   {
@@ -51,10 +52,10 @@ const quizQuestions = [
     question: 'Qual è il tuo ostacolo principale?',
     type: 'single',
     options: [
-      { value: 'tempo', label: 'Non ho tempo', icon: '⏰', color: '#3b82f6' },
-      { value: 'motivazione', label: 'Perdo motivazione', icon: '😔', color: '#f59e0b' },
-      { value: 'conoscenza', label: 'Non so cosa fare', icon: '❓', color: '#8b5cf6' },
-      { value: 'costanza', label: 'Non riesco a essere costante', icon: '📉', color: '#ef4444' },
+      { value: 'tempo', label: 'Non ho tempo', iconType: 'svg', iconName: 'time', color: '#f59e0b' },
+      { value: 'motivazione', label: 'Perdo motivazione', iconType: 'svg', iconName: 'motivation', color: '#ef4444' },
+      { value: 'conoscenza', label: 'Non so cosa fare', iconType: 'svg', iconName: 'question', color: '#6366f1' },
+      { value: 'costanza', label: 'Non riesco a essere costante', iconType: 'svg', iconName: 'consistency', color: '#ef4444' },
     ]
   },
   {
@@ -69,10 +70,10 @@ const quizQuestions = [
     question: 'In quanto tempo vorresti vedere risultati?',
     type: 'single',
     options: [
-      { value: '4-settimane', label: '4 settimane', icon: '🚀', color: '#22c55e' },
-      { value: '8-settimane', label: '8 settimane', icon: '📈', color: '#3b82f6' },
-      { value: '12-settimane', label: '12 settimane', icon: '🏆', color: '#f97316' },
-      { value: 'non-so', label: 'Non ho fretta', icon: '🎯', color: '#8b5cf6' },
+      { value: '4-settimane', label: '4 settimane', iconType: 'svg', iconName: 'rocket', color: '#22c55e' },
+      { value: '8-settimane', label: '8 settimane', iconType: 'svg', iconName: 'progress', color: '#3b82f6' },
+      { value: '12-settimane', label: '12 settimane', iconType: 'svg', iconName: 'trophy', color: '#f97316' },
+      { value: 'non-so', label: 'Non ho fretta', iconType: 'svg', iconName: 'target', color: '#8b5cf6' },
     ]
   },
   {
@@ -80,10 +81,10 @@ const quizQuestions = [
     question: 'Quanto sei disposto/a a impegnarti?',
     type: 'single',
     options: [
-      { value: 'tutto', label: 'Sono pronto/a a dare tutto', icon: '💯', color: '#22c55e' },
-      { value: 'molto', label: 'Molto, ma con equilibrio', icon: '⚖️', color: '#3b82f6' },
-      { value: 'moderato', label: 'Impegno moderato', icon: '📊', color: '#f59e0b' },
-      { value: 'poco', label: 'Il minimo indispensabile', icon: '😅', color: '#ef4444' },
+      { value: 'tutto', label: 'Sono pronto/a a dare tutto', iconType: 'svg', iconName: 'fire', color: '#22c55e' },
+      { value: 'molto', label: 'Molto, ma con equilibrio', iconType: 'svg', iconName: 'balance', color: '#3b82f6' },
+      { value: 'moderato', label: 'Impegno moderato', iconType: 'svg', iconName: 'progress', color: '#f59e0b' },
+      { value: 'poco', label: 'Il minimo indispensabile', iconType: 'svg', iconName: 'time', color: '#ef4444' },
     ]
   }
 ];

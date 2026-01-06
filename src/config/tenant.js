@@ -36,6 +36,9 @@ export function getCurrentTenantId() {
   return DEFAULT_TENANT_ID;
 }
 
+// Alias per retrocompatibilità
+export const getTenantId = getCurrentTenantId;
+
 /**
  * @deprecated Usa getCurrentTenantId() per valore dinamico
  * Questa costante è mantenuta per retrocompatibilità ma restituisce

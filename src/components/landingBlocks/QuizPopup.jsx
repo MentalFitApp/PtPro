@@ -5,6 +5,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { db } from '../../firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { incrementPageConversions } from '../../services/landingPageService';
+import { quizIconMap } from './QuizIcons';
 
 /**
  * QuizPopup - Quiz interattivo RIVOLUZIONARIO con animazioni fluide
@@ -56,17 +57,17 @@ const QuizPopup = ({
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  // Default questions with various types
+  // Default questions with various types (using SVG icons)
   const defaultQuestions = [
     {
       id: 'problema',
       question: 'Qual è il tuo problema principale?',
       type: 'single',
       options: [
-        { value: 'pancetta', label: 'Pancetta che non va via', icon: '🎯', color: '#f97316' },
-        { value: 'maniglie', label: 'Maniglie dell\'amore', icon: '💪', color: '#ef4444' },
-        { value: 'entrambi', label: 'Entrambi i problemi', icon: '⚡', color: '#8b5cf6' },
-        { value: 'altro', label: 'Altro grasso localizzato', icon: '🔥', color: '#ec4899' },
+        { value: 'pancetta', label: 'Pancetta che non va via', iconType: 'svg', iconName: 'target', color: '#f97316' },
+        { value: 'maniglie', label: 'Maniglie dell\'amore', iconType: 'svg', iconName: 'muscle', color: '#ef4444' },
+        { value: 'entrambi', label: 'Entrambi i problemi', iconType: 'svg', iconName: 'energy', color: '#8b5cf6' },
+        { value: 'altro', label: 'Altro grasso localizzato', iconType: 'svg', iconName: 'fire', color: '#ec4899' },
       ]
     },
     {
@@ -75,11 +76,11 @@ const QuizPopup = ({
       type: 'multiple',
       maxSelections: 3,
       options: [
-        { value: 'diete', label: 'Diete restrittive', icon: '🥗' },
-        { value: 'cardio', label: 'Ore di cardio', icon: '🏃' },
-        { value: 'palestra', label: 'Palestra senza guida', icon: '🏋️' },
-        { value: 'integratori', label: 'Integratori', icon: '💊' },
-        { value: 'nulla', label: 'Non ho ancora provato nulla', icon: '🌱' },
+        { value: 'diete', label: 'Diete restrittive', iconType: 'svg', iconName: 'diet', color: '#22c55e' },
+        { value: 'cardio', label: 'Ore di cardio', iconType: 'svg', iconName: 'cardio', color: '#3b82f6' },
+        { value: 'palestra', label: 'Palestra senza guida', iconType: 'svg', iconName: 'gym', color: '#64748b' },
+        { value: 'integratori', label: 'Integratori', iconType: 'svg', iconName: 'supplement', color: '#a855f7' },
+        { value: 'nulla', label: 'Non ho ancora provato nulla', iconType: 'svg', iconName: 'sprout', color: '#10b981' },
       ]
     },
     {
@@ -319,6 +320,33 @@ const QuizPopup = ({
   };
 
   const springConfig = { type: 'spring', stiffness: 300, damping: 30 };
+
+  // Helper per renderizzare icona (SVG o emoji)
+  const renderOptionIcon = (option) => {
+    if (option.iconType === 'svg' && option.iconName) {
+      const IconComponent = quizIconMap[option.iconName];
+      if (IconComponent) {
+        return (
+          <div 
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ 
+              background: `${option.color || accentColor}20`,
+            }}
+          >
+            <IconComponent 
+              className="w-6 h-6" 
+              style={{ color: option.color || accentColor }}
+            />
+          </div>
+        );
+      }
+    }
+    // Fallback a emoji se presente
+    if (option.icon) {
+      return <span className="text-2xl flex-shrink-0">{option.icon}</span>;
+    }
+    return null;
+  };
 
   // Particle effect component
   const FloatingParticles = () => (
@@ -569,9 +597,8 @@ const QuizPopup = ({
                     )}
                   </div>
                   
-                  {option.icon && (
-                    <span className="text-2xl flex-shrink-0">{option.icon}</span>
-                  )}
+                  {/* Icona SVG o Emoji */}
+                  {renderOptionIcon(option)}
                   <span className="font-medium text-lg">{option.label}</span>
                   
                   {/* Glow effect on selected */}
