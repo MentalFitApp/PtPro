@@ -33,6 +33,7 @@ import ProgressCharts from '../../../components/client/ProgressCharts';
 import PhotoCompare from '../../../components/client/PhotoCompare';
 import WorkoutCalendarModal from '../../../components/client/WorkoutCalendarModal';
 import ClientHabitsOverview from '../../../components/admin/ClientHabitsOverview';
+import { PhotoPoseSilhouette } from '../../../components/PhotoPoseSilhouette';
 import { 
   UnifiedCard, CardHeader, CardHeaderSimple, CardContent,
   InfoField, DataCard, ListItemCard, CardGrid
@@ -987,7 +988,7 @@ export default function ClientDetail({ role: propRole }) {
                                 />
                               ) : (
                                 <div className="w-full h-28 bg-slate-800 flex items-center justify-center text-slate-500">
-                                  <Camera size={20} />
+                                  <PhotoPoseSilhouette position={pos} size={40} showHint={false} />
                                 </div>
                               )}
                             </div>

@@ -6,6 +6,7 @@ export { default as PricingBlock } from './PricingBlock';
 export { default as CTABlock } from './CTABlock';
 export { default as FormBlock } from './FormBlock';
 export { default as FormPopup } from './FormPopup';
+export { default as QuizPopup } from './QuizPopup';
 export { default as FAQBlock } from './FAQBlock';
 export { default as CountdownBlock } from './CountdownBlock';
 export { default as SocialProofBlock } from './SocialProofBlock';

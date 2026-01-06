@@ -4,7 +4,7 @@ import DOMPurify from 'dompurify';
 
 /**
  * Text Block - Contenuto testuale libero
- * Varianti: standard, quote, highlight
+ * Varianti: standard, quote, highlight, callout
  */
 const TextBlock = ({ settings, isPreview = false }) => {
   const {
@@ -14,6 +14,10 @@ const TextBlock = ({ settings, isPreview = false }) => {
     maxWidth = 'max-w-4xl',
     backgroundColor = 'bg-transparent',
     padding = 'py-12',
+    borderColor = '#0ea5e9',
+    borderLeft = false,
+    borderRadius = '12px',
+    marginTop = '0px',
   } = settings || {};
 
   const alignClass = {
@@ -25,7 +29,7 @@ const TextBlock = ({ settings, isPreview = false }) => {
   // Variante Quote
   if (variant === 'quote') {
     return (
-      <section className={`${backgroundColor} ${padding}`}>
+      <section className={`${backgroundColor} ${padding}`} style={{ marginTop }}>
         <div className={`${maxWidth} mx-auto px-4 sm:px-6 lg:px-8`}>
           <motion.blockquote
             initial={{ opacity: 0, y: 20 }}
@@ -45,19 +49,52 @@ const TextBlock = ({ settings, isPreview = false }) => {
     );
   }
 
-  // Variante Highlight
+  // Variante Highlight - Box colorato con bordo
   if (variant === 'highlight') {
     return (
-      <section className={`${backgroundColor} ${padding}`}>
+      <section className={`${backgroundColor} ${padding}`} style={{ marginTop }}>
         <div className={`${maxWidth} mx-auto px-4 sm:px-6 lg:px-8`}>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="bg-gradient-to-r from-sky-500/10 to-cyan-500/10 border-l-4 border-sky-500 rounded-r-xl p-6 md:p-8"
+            className="border border-white/10"
+            style={{ 
+              background: backgroundColor.includes('gradient') ? undefined : 'rgba(255,255,255,0.03)',
+              borderRadius,
+              borderColor: `${borderColor}40`,
+            }}
           >
             <div 
-              className={`prose prose-invert prose-lg max-w-none ${alignClass[textAlign]}`}
+              className={`prose prose-invert prose-lg max-w-none ${alignClass[textAlign]} p-6 md:p-8`}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
+            />
+          </motion.div>
+        </div>
+      </section>
+    );
+  }
+
+  // Variante Callout - Box con bordo sinistro evidenziato
+  if (variant === 'callout') {
+    return (
+      <section className={`bg-transparent ${padding}`} style={{ marginTop }}>
+        <div className={`${maxWidth} mx-auto px-4 sm:px-6 lg:px-8`}>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className={`${backgroundColor} rounded-xl relative overflow-hidden`}
+            style={{ borderRadius }}
+          >
+            {borderLeft && (
+              <div 
+                className="absolute left-0 top-0 bottom-0 w-1"
+                style={{ backgroundColor: borderColor }}
+              />
+            )}
+            <div 
+              className={`prose prose-invert prose-lg max-w-none ${alignClass[textAlign]} p-6 md:p-8 ${borderLeft ? 'pl-8' : ''}`}
               dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
             />
           </motion.div>
@@ -68,7 +105,7 @@ const TextBlock = ({ settings, isPreview = false }) => {
 
   // Default: Standard
   return (
-    <section className={`${backgroundColor} ${padding}`}>
+    <section className={`${backgroundColor} ${padding}`} style={{ marginTop }}>
       <div className={`${maxWidth} mx-auto px-4 sm:px-6 lg:px-8`}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}

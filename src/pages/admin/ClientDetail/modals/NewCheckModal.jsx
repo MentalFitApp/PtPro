@@ -5,6 +5,7 @@ import { Modal } from '../../../../components/ui/Modal';
 import { getTenantSubcollection } from '../../../../config/tenant';
 import { uploadToR2 } from '../../../../cloudflareStorage';
 import { useToast } from '../../../../contexts/ToastContext';
+import { PhotoPoseSilhouette } from '../../../../components/PhotoPoseSilhouette';
 
 export default function NewCheckModal({ isOpen, onClose, clientId, db }) {
   const toast = useToast();
@@ -178,11 +179,11 @@ export default function NewCheckModal({ isOpen, onClose, clientId, db }) {
                     </button>
                   </div>
                 ) : (
-                  <label className="flex items-center justify-center h-20 cursor-pointer hover:bg-theme-bg-primary/50 transition-colors">
+                  <label className="flex flex-col items-center justify-center h-20 cursor-pointer hover:bg-theme-bg-primary/50 transition-colors">
                     {uploadingPhoto === pos ? (
                       <Loader2 size={20} className="animate-spin text-blue-400" />
                     ) : (
-                      <Camera size={20} className="text-theme-text-secondary" />
+                      <PhotoPoseSilhouette position={pos} size={35} showHint={false} />
                     )}
                     <input
                       type="file"

@@ -10,6 +10,7 @@ import { uploadPhoto } from '../../storageUtils.js';
 import { useUserPreferences } from '../../hooks/useUserPreferences';
 import { IMAGE_ACCEPT_STRING } from '../../cloudflareStorage';
 import { useToast } from '../../contexts/ToastContext';
+import { PhotoPoseSilhouette } from '../../components/PhotoPoseSilhouette';
 
 const Notification = ({ message, type, onDismiss }) => (
   <AnimatePresence>
@@ -88,8 +89,11 @@ const PhotoUploader = ({ type, label, onFileSelect, previewUrl, disabled, isLoad
             <img src={localPreview} alt={label} className="h-full w-full object-contain rounded-lg p-1" />
           ) : (
             <div className="flex flex-col items-center text-slate-400 group-hover:text-cyan-400">
-              <UploadCloud size={32} />
-              <p className="mt-2 text-sm">Clicca per caricare</p>
+              <PhotoPoseSilhouette position={type} size={70} showHint={true} />
+              <div className="flex items-center gap-1 mt-2">
+                <UploadCloud size={16} />
+                <span className="text-sm">Carica</span>
+              </div>
             </div>
           )}
         </div>

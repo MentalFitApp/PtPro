@@ -11,6 +11,7 @@ import { useUserPreferences } from '../../hooks/useUserPreferences';
 import PhotoCompare from '../../components/client/PhotoCompare';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { IMAGE_ACCEPT_STRING, compressImage } from '../../cloudflareStorage';
+import { PhotoPoseSilhouette } from '../../components/PhotoPoseSilhouette';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadPhoto } from '../../storageUtils.js';
@@ -100,8 +101,11 @@ const ClientUploadForm = ({ formState, setFormState, handleSubmit, isUploading, 
           </>
         ) : (
           <div className="flex flex-col items-center text-slate-400 transition-colors group-hover:text-cyan-400">
-            <UploadCloud size={32} />
-            <p className="mt-2 text-sm">Carica foto</p>
+            <PhotoPoseSilhouette position={type} size={70} showHint={true} />
+            <div className="flex items-center gap-1 mt-2">
+              <UploadCloud size={16} />
+              <span className="text-sm">Carica</span>
+            </div>
           </div>
         )}
         <input

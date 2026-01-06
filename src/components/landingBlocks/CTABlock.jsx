@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import FormPopup from './FormPopup';
+import QuizPopup from './QuizPopup';
 
 /**
  * CTA Block - Call to Action section
  * Varianti: centered, split, banner, floating, fullscreen
- * Azioni: scroll, redirect, whatsapp, calendly, phone, form_popup
+ * Azioni: scroll, redirect, whatsapp, calendly, phone, form_popup, quiz_popup
  */
 const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null }) => {
   const {
@@ -15,7 +16,7 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
     ctaText = 'Inizia Ora',
     ctaLink = '#form',
     // Nuove azioni CTA
-    ctaAction = 'scroll', // scroll, redirect, whatsapp, calendly, phone, form_popup
+    ctaAction = 'scroll', // scroll, redirect, whatsapp, calendly, phone, form_popup, quiz_popup
     ctaRedirectUrl = '',
     ctaWhatsappNumber = '',
     ctaWhatsappMessage = 'Ciao! Vorrei maggiori informazioni.',
@@ -31,6 +32,30 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
     formPopupAfterSubmit = 'message',
     formPopupRedirectUrl = '',
     formPopupWhatsappNumber = '',
+    // Quiz Popup settings
+    quizTitle = 'Scopri il tuo profilo',
+    quizSubtitle = 'Rispondi a poche domande per un piano personalizzato',
+    quizQuestions = [],
+    quizContactTitle = 'Ultimo passaggio!',
+    quizContactSubtitle = 'Inserisci i tuoi dati per ricevere i risultati',
+    quizContactFields = ['name', 'email', 'phone'],
+    quizResultsTitle = 'Ecco il tuo profilo',
+    quizResultsSubtitle = 'Un nostro esperto analizzerà le tue risposte',
+    quizSuccessMessage = 'Grazie! Ti contatteremo presto con un piano personalizzato.',
+    quizAccentColor = '#f97316',
+    quizGradientFrom = '#f97316',
+    quizGradientTo = '#dc2626',
+    quizAfterSubmit = 'message',
+    quizRedirectUrl = '',
+    quizWhatsappNumber = '',
+    quizWhatsappMessage = '',
+    // Button styling
+    buttonStyle = 'solid', // solid, gradient, outline, glow
+    buttonGradient = 'from-orange-500 to-red-600',
+    buttonSize = 'lg', // sm, md, lg, xl
+    buttonAnimation = 'none', // none, pulse, bounce, shake
+    glowEffect = false,
+    showArrow = false,
     showSecondaryButton = false,
     secondaryText = '',
     secondaryLink = '',
@@ -38,9 +63,11 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
     backgroundGradient = 'from-sky-600 to-cyan-500',
     showStats = false,
     stats = [],
+    spacing = 'py-20',
   } = settings || {};
 
   const [showFormPopup, setShowFormPopup] = useState(false);
+  const [showQuizPopup, setShowQuizPopup] = useState(false);
 
   // Gestisce click sul pulsante principale
   const handleCtaClick = (e) => {
@@ -98,6 +125,11 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
         setShowFormPopup(true);
         break;
       
+      case 'quiz_popup':
+        e.preventDefault();
+        setShowQuizPopup(true);
+        break;
+      
       default:
         // Default: usa il link come href
         break;
@@ -115,10 +147,66 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
       case 'redirect':
         return ctaRedirectUrl || '#';
       case 'form_popup':
+      case 'quiz_popup':
         return '#';
       default:
         return ctaLink || '#';
     }
+  };
+
+  // Button size classes
+  const buttonSizeClasses = {
+    sm: 'px-4 py-2 text-sm',
+    md: 'px-6 py-3 text-base',
+    lg: 'px-8 py-4 text-lg',
+    xl: 'px-10 py-5 text-xl',
+  };
+
+  // Button animation classes
+  const getButtonAnimation = () => {
+    switch (buttonAnimation) {
+      case 'pulse':
+        return { 
+          animate: { scale: [1, 1.02, 1] },
+          transition: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+        };
+      case 'bounce':
+        return {
+          animate: { y: [0, -5, 0] },
+          transition: { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
+        };
+      case 'shake':
+        return {
+          animate: { x: [0, -3, 3, -3, 3, 0] },
+          transition: { duration: 0.5, repeat: Infinity, repeatDelay: 3 }
+        };
+      default:
+        return {};
+    }
+  };
+
+  // Get button style classes
+  const getButtonClasses = () => {
+    const baseClasses = `${buttonSizeClasses[buttonSize] || buttonSizeClasses.lg} font-bold rounded-xl transition-all shadow-lg`;
+    
+    switch (buttonStyle) {
+      case 'gradient':
+        return `${baseClasses} bg-gradient-to-r ${buttonGradient} text-white hover:opacity-90`;
+      case 'outline':
+        return `${baseClasses} bg-transparent border-2 border-white text-white hover:bg-white/10`;
+      case 'glow':
+        return `${baseClasses} bg-gradient-to-r ${buttonGradient} text-white`;
+      default:
+        return `${baseClasses} bg-white text-slate-900 hover:bg-white/90`;
+    }
+  };
+
+  // Get glow style for button
+  const getGlowStyle = () => {
+    if (!glowEffect && buttonStyle !== 'glow') return {};
+    return {
+      boxShadow: `0 0 30px ${quizAccentColor}60, 0 10px 40px -10px ${quizAccentColor}80`,
+    };
   };
 
   // Helper per renderizzare il FormPopup
@@ -137,6 +225,39 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
           afterSubmit: formPopupAfterSubmit,
           redirectUrl: formPopupRedirectUrl,
           whatsappNumber: formPopupWhatsappNumber,
+        }}
+        pageId={pageId}
+        tenantId={tenantId}
+        isPreview={isPreview}
+      />
+    );
+  };
+
+  // Helper per renderizzare il QuizPopup
+  const renderQuizPopup = () => {
+    return (
+      <QuizPopup
+        isOpen={showQuizPopup}
+        onClose={() => setShowQuizPopup(false)}
+        settings={{
+          title: quizTitle,
+          subtitle: quizSubtitle,
+          questions: quizQuestions,
+          collectContactInfo: true,
+          contactTitle: quizContactTitle,
+          contactSubtitle: quizContactSubtitle,
+          contactFields: quizContactFields,
+          showResults: true,
+          resultsTitle: quizResultsTitle,
+          resultsSubtitle: quizResultsSubtitle,
+          accentColor: quizAccentColor,
+          gradientFrom: quizGradientFrom,
+          gradientTo: quizGradientTo,
+          afterSubmit: quizAfterSubmit,
+          successMessage: quizSuccessMessage,
+          redirectUrl: quizRedirectUrl,
+          whatsappNumber: quizWhatsappNumber,
+          whatsappMessage: quizWhatsappMessage,
         }}
         pageId={pageId}
         tenantId={tenantId}
@@ -196,6 +317,7 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
           </div>
         </section>
         {renderFormPopup()}
+        {renderQuizPopup()}
       </>
     );
   }
@@ -274,6 +396,7 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
         </div>
       </section>
       {renderFormPopup()}
+      {renderQuizPopup()}
     </>
     );
   }
@@ -281,12 +404,14 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
   // Default: Centered
   return (
     <>
-      <section className={`bg-gradient-to-br ${backgroundGradient} py-20 relative overflow-hidden`}>
+      <section className={`${backgroundType === 'transparent' ? 'bg-transparent' : `bg-gradient-to-br ${backgroundGradient}`} ${spacing} relative overflow-hidden`}>
         {/* Decorative elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-        </div>
+        {backgroundType !== 'transparent' && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+          </div>
+        )}
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <motion.div
@@ -294,9 +419,11 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
-              {title}
-            </h2>
+            {title && (
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
+                {title}
+              </h2>
+            )}
             {subtitle && (
               <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto">
                 {subtitle}
@@ -318,30 +445,44 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
               </div>
             )}
 
-            <div className="flex flex-wrap justify-center gap-4">
-              <motion.a
-                href={getCtaHref()}
-                onClick={handleCtaClick}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="px-10 py-4 bg-white text-slate-900 font-semibold rounded-xl hover:bg-white/90 transition-all shadow-lg text-lg"
-              >
-                {ctaText}
-              </motion.a>
-              {showSecondaryButton && secondaryText && (
-                <a
-                  href={secondaryLink}
-                  onClick={(e) => scrollToElement(e, secondaryLink)}
-                  className="px-10 py-4 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-colors border border-white/30 text-lg"
+            {ctaText && (
+              <div className="flex flex-wrap justify-center gap-4">
+                <motion.a
+                  href={getCtaHref()}
+                  onClick={handleCtaClick}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={getButtonClasses()}
+                  style={getGlowStyle()}
+                  {...getButtonAnimation()}
                 >
-                  {secondaryText}
-                </a>
-              )}
-            </div>
+                  {ctaText}
+                  {showArrow && (
+                    <motion.span 
+                      className="inline-block ml-2"
+                      animate={{ x: [0, 4, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      →
+                    </motion.span>
+                  )}
+                </motion.a>
+                {showSecondaryButton && secondaryText && (
+                  <a
+                    href={secondaryLink}
+                    onClick={(e) => scrollToElement(e, secondaryLink)}
+                    className="px-10 py-4 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-colors border border-white/30 text-lg"
+                  >
+                    {secondaryText}
+                  </a>
+                )}
+              </div>
+            )}
           </motion.div>
         </div>
       </section>
       {renderFormPopup()}
+      {renderQuizPopup()}
     </>
   );
 };

@@ -1,0 +1,1032 @@
+import React, { useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
+import { useToast } from '../../contexts/ToastContext';
+import { db } from '../../firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { incrementPageConversions } from '../../services/landingPageService';
+
+/**
+ * QuizPopup - Quiz interattivo RIVOLUZIONARIO con animazioni fluide
+ * Supporta: selezione singola, multipla, testo libero, email, telefono, instagram, ecc.
+ */
+const QuizPopup = ({
+  isOpen,
+  onClose,
+  settings = {},
+  pageId = null,
+  tenantId = null,
+  isPreview = false
+}) => {
+  const {
+    title = 'Scopri il tuo profilo',
+    subtitle = 'Rispondi a poche domande per ricevere un piano personalizzato',
+    questions = [],
+    // Contact form settings
+    collectContactInfo = true,
+    contactTitle = 'Ultimo passaggio!',
+    contactSubtitle = 'Inserisci i tuoi dati per ricevere i risultati',
+    contactFields = ['nome', 'cognome', 'email', 'phone'],
+    // Results settings
+    showResults = true,
+    resultsTitle = 'Ecco il tuo profilo',
+    resultsSubtitle = 'Un nostro esperto analizzerà le tue risposte',
+    // Style
+    accentColor = '#f97316',
+    gradientFrom = '#f97316',
+    gradientTo = '#dc2626',
+    // After submit
+    afterSubmit = 'message',
+    successMessage = 'Grazie! Ti contatteremo presto con un piano personalizzato.',
+    redirectUrl = '',
+    whatsappNumber = '',
+    whatsappMessage = '',
+  } = settings;
+
+  const toast = useToast();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [contactData, setContactData] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [direction, setDirection] = useState(1);
+  const containerRef = useRef(null);
+
+  // Mouse tracking for glow effect
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  // Default questions with various types
+  const defaultQuestions = [
+    {
+      id: 'problema',
+      question: 'Qual è il tuo problema principale?',
+      type: 'single',
+      options: [
+        { value: 'pancetta', label: 'Pancetta che non va via', icon: '🎯', color: '#f97316' },
+        { value: 'maniglie', label: 'Maniglie dell\'amore', icon: '💪', color: '#ef4444' },
+        { value: 'entrambi', label: 'Entrambi i problemi', icon: '⚡', color: '#8b5cf6' },
+        { value: 'altro', label: 'Altro grasso localizzato', icon: '🔥', color: '#ec4899' },
+      ]
+    },
+    {
+      id: 'tentativi',
+      question: 'Cosa hai già provato senza successo?',
+      type: 'multiple',
+      maxSelections: 3,
+      options: [
+        { value: 'diete', label: 'Diete restrittive', icon: '🥗' },
+        { value: 'cardio', label: 'Ore di cardio', icon: '🏃' },
+        { value: 'palestra', label: 'Palestra senza guida', icon: '🏋️' },
+        { value: 'integratori', label: 'Integratori', icon: '💊' },
+        { value: 'nulla', label: 'Non ho ancora provato nulla', icon: '🌱' },
+      ]
+    },
+    {
+      id: 'obiettivo',
+      question: 'Descrivi brevemente il tuo obiettivo',
+      type: 'textarea',
+      placeholder: 'Es: Voglio perdere 5kg di grasso addominale in 3 mesi...',
+      maxLength: 500,
+    }
+  ];
+
+  // Contact field configurations - Supporta nome, cognome, email, telefono, instagram, età, città
+  const contactFieldConfig = {
+    nome: { id: 'nome', label: 'Nome', type: 'text', placeholder: 'Il tuo nome', required: true, icon: '👤' },
+    cognome: { id: 'cognome', label: 'Cognome', type: 'text', placeholder: 'Il tuo cognome', required: true, icon: '👤' },
+    name: { id: 'name', label: 'Nome Completo', type: 'text', placeholder: 'Nome e Cognome', required: true, icon: '👤' },
+    email: { id: 'email', label: 'Email', type: 'email', placeholder: 'La tua email', required: true, icon: '📧' },
+    phone: { id: 'phone', label: 'Telefono', type: 'tel', placeholder: '+39 333 1234567', required: true, icon: '📱' },
+    telefono: { id: 'telefono', label: 'Telefono', type: 'tel', placeholder: '+39 333 1234567', required: true, icon: '📱' },
+    instagram: { id: 'instagram', label: 'Instagram', type: 'text', placeholder: '@tuoprofilo', required: false, icon: '📸' },
+    eta: { id: 'eta', label: 'Età', type: 'number', placeholder: 'La tua età', required: false, icon: '🎂' },
+    citta: { id: 'citta', label: 'Città', type: 'text', placeholder: 'La tua città', required: false, icon: '📍' },
+  };
+
+  const activeQuestions = questions && questions.length > 0 ? questions : defaultQuestions;
+  const totalSteps = activeQuestions.length + (collectContactInfo ? 1 : 0) + 1;
+  const progress = Math.min((currentStep / totalSteps) * 100, 100);
+
+  // Handle mouse move for glow effect
+  const handleMouseMove = (e) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    mouseX.set(e.clientX - rect.left);
+    mouseY.set(e.clientY - rect.top);
+  };
+
+  // Handle answer for different question types
+  const handleAnswer = useCallback((questionId, value, questionType, maxSelections) => {
+    if (questionType === 'multiple') {
+      setAnswers(prev => {
+        const currentAnswers = prev[questionId] || [];
+        if (currentAnswers.includes(value)) {
+          return { ...prev, [questionId]: currentAnswers.filter(v => v !== value) };
+        }
+        if (maxSelections && currentAnswers.length >= maxSelections) {
+          return prev;
+        }
+        return { ...prev, [questionId]: [...currentAnswers, value] };
+      });
+    } else if (questionType === 'single') {
+      setAnswers(prev => ({ ...prev, [questionId]: value }));
+      // Auto advance for single selection
+      setTimeout(() => {
+        setDirection(1);
+        setCurrentStep(prev => prev + 1);
+      }, 400);
+    } else {
+      // Text/textarea - just update the value
+      setAnswers(prev => ({ ...prev, [questionId]: value }));
+    }
+  }, []);
+
+  // Handle contact form change
+  const handleContactChange = (field, value) => {
+    setContactData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Validate contact form
+  const validateContact = () => {
+    const errors = {};
+    const activeFields = contactFields.map(f => contactFieldConfig[f]).filter(Boolean);
+    
+    activeFields.forEach(field => {
+      if (field.required && !contactData[field.id]?.trim()) {
+        errors[field.id] = 'Campo obbligatorio';
+      }
+      if (field.type === 'email' && contactData[field.id]) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactData[field.id])) {
+          errors[field.id] = 'Email non valida';
+        }
+      }
+    });
+    return { isValid: Object.keys(errors).length === 0, errors };
+  };
+
+  // Submit quiz - Salva su leads collection per landing pages
+  const handleSubmit = async () => {
+    if (isPreview) {
+      toast?.showToast?.('Quiz in preview - invio disabilitato', 'info');
+      setIsCompleted(true);
+      setDirection(1);
+      setCurrentStep(totalSteps);
+      return;
+    }
+
+    if (collectContactInfo) {
+      const { isValid } = validateContact();
+      if (!isValid) {
+        toast?.showToast?.('Compila tutti i campi obbligatori', 'error');
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Save quiz lead - SALVA SU tenants/{tenantId}/leads per sezione Landing Pages Leads
+      if (tenantId) {
+        // Flatten quiz answers per una migliore visualizzazione nei leads
+        const flattenedAnswers = {};
+        Object.entries(answers).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            flattenedAnswers[`quiz_${key}`] = value.join(', ');
+          } else {
+            flattenedAnswers[`quiz_${key}`] = value;
+          }
+        });
+
+        const leadData = {
+          // Dati contatto (nome, cognome, email, telefono, instagram, ecc.)
+          ...contactData,
+          // Risposte quiz flatten per visualizzazione
+          ...flattenedAnswers,
+          // Risposte quiz originali
+          quizAnswers: answers,
+          // Metadata
+          source: 'quiz_popup',
+          landingPageId: pageId,
+          status: 'new',
+          createdAt: serverTimestamp(),
+          tenantId,
+        };
+
+        // Salva nella collection leads - visibile in Landing Pages > Leads
+        await addDoc(collection(db, `tenants/${tenantId}/leads`), leadData);
+      }
+
+      // Increment conversions
+      if (pageId && tenantId) {
+        await incrementPageConversions(db, pageId);
+      }
+
+      setIsCompleted(true);
+      setDirection(1);
+      setCurrentStep(totalSteps);
+      handleAfterSubmitAction();
+
+    } catch (error) {
+      console.error('Errore invio quiz:', error);
+      toast?.showToast?.('Errore durante l\'invio. Riprova.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAfterSubmitAction = () => {
+    switch (afterSubmit) {
+      case 'redirect':
+        if (redirectUrl) {
+          setTimeout(() => { window.location.href = redirectUrl; }, 3000);
+        }
+        break;
+      case 'whatsapp':
+        if (whatsappNumber) {
+          setTimeout(() => {
+            let message = whatsappMessage || `Ciao! Ho completato il quiz:\n`;
+            Object.entries(answers).forEach(([key, value]) => {
+              message += `${key}: ${Array.isArray(value) ? value.join(', ') : value}\n`;
+            });
+            const cleanNumber = whatsappNumber.replace(/\D/g, '');
+            window.open(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`, '_blank');
+          }, 2000);
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Navigation
+  const handleClose = () => {
+    setCurrentStep(0);
+    setAnswers({});
+    setContactData({});
+    setIsCompleted(false);
+    setDirection(1);
+    onClose();
+  };
+
+  const goBack = () => {
+    if (currentStep > 0) {
+      setDirection(-1);
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  const goNext = () => {
+    setDirection(1);
+    setCurrentStep(prev => prev + 1);
+  };
+
+  // Check if can proceed from current question
+  const canProceed = () => {
+    if (currentStep === 0) return true;
+    const questionIndex = currentStep - 1;
+    if (questionIndex < activeQuestions.length) {
+      const question = activeQuestions[questionIndex];
+      const answer = answers[question.id];
+      if (question.type === 'multiple') {
+        return answer && answer.length > 0;
+      }
+      if (question.type === 'text' || question.type === 'textarea') {
+        return answer && answer.trim().length > 0;
+      }
+      return !!answer;
+    }
+    return true;
+  };
+
+  // Animation variants
+  const slideVariants = {
+    enter: (dir) => ({
+      x: dir > 0 ? '100%' : '-100%',
+      opacity: 0,
+      scale: 0.95,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      scale: 1,
+    },
+    exit: (dir) => ({
+      x: dir < 0 ? '100%' : '-100%',
+      opacity: 0,
+      scale: 0.95,
+    }),
+  };
+
+  const springConfig = { type: 'spring', stiffness: 300, damping: 30 };
+
+  // Particle effect component
+  const FloatingParticles = () => (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {[...Array(20)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 rounded-full"
+          style={{
+            background: i % 2 === 0 ? gradientFrom : gradientTo,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0.2, 0.8, 0.2],
+            scale: [1, 1.5, 1],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 2,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+          }}
+        />
+      ))}
+    </div>
+  );
+
+  // Render intro screen
+  const renderIntro = () => (
+    <motion.div
+      key="intro"
+      custom={direction}
+      variants={slideVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={springConfig}
+      className="text-center py-6"
+    >
+      {/* Animated logo */}
+      <motion.div
+        initial={{ scale: 0, rotate: -180 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+        className="w-28 h-28 mx-auto mb-8 relative"
+      >
+        {/* Rotating rings */}
+        <motion.div
+          className="absolute inset-0 rounded-full border-2 border-dashed"
+          style={{ borderColor: `${accentColor}40` }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+        />
+        <motion.div
+          className="absolute inset-2 rounded-full border-2 border-dashed"
+          style={{ borderColor: `${gradientTo}40` }}
+          animate={{ rotate: -360 }}
+          transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+        />
+        
+        {/* Center glow */}
+        <div 
+          className="absolute inset-4 rounded-full blur-xl opacity-60"
+          style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
+        />
+        <div 
+          className="absolute inset-4 rounded-full flex items-center justify-center"
+          style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
+        >
+          <motion.span 
+            className="text-4xl"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            🎯
+          </motion.span>
+        </div>
+      </motion.div>
+
+      <motion.h2
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight"
+      >
+        {title}
+      </motion.h2>
+      
+      <motion.p
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="text-slate-400 mb-8 max-w-sm mx-auto text-lg"
+      >
+        {subtitle}
+      </motion.p>
+
+      {/* Stats with animations */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="flex justify-center gap-8 mb-10"
+      >
+        {[
+          { value: activeQuestions.length, label: 'Domande', icon: '❓' },
+          { value: '2 min', label: 'Tempo', icon: '⏱️' },
+          { value: '100%', label: 'Gratuito', icon: '🎁' },
+        ].map((stat, i) => (
+          <motion.div
+            key={i}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.6 + i * 0.1, type: 'spring' }}
+            className="text-center"
+          >
+            <div className="text-2xl mb-1">{stat.icon}</div>
+            <div className="text-xl font-bold text-white">{stat.value}</div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider">{stat.label}</div>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      <motion.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+        whileHover={{ scale: 1.03, boxShadow: `0 20px 60px -15px ${accentColor}80` }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => { setDirection(1); setCurrentStep(1); }}
+        className="w-full py-5 px-8 text-white font-bold text-xl rounded-2xl shadow-2xl transition-all relative overflow-hidden group"
+        style={{ 
+          background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})`,
+        }}
+      >
+        {/* Shine effect */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+          animate={{ x: ['-200%', '200%'] }}
+          transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+        />
+        <span className="relative flex items-center justify-center gap-3">
+          Inizia il Quiz
+          <motion.span
+            animate={{ x: [0, 5, 0] }}
+            transition={{ duration: 1, repeat: Infinity }}
+          >
+            →
+          </motion.span>
+        </span>
+      </motion.button>
+    </motion.div>
+  );
+
+  // Render question based on type
+  const renderQuestion = (questionIndex) => {
+    const question = activeQuestions[questionIndex];
+    if (!question) return null;
+
+    return (
+      <motion.div
+        key={`question-${questionIndex}`}
+        custom={direction}
+        variants={slideVariants}
+        initial="enter"
+        animate="center"
+        exit="exit"
+        transition={springConfig}
+        className="py-4"
+      >
+        {/* Question number badge */}
+        <motion.div
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 300 }}
+          className="w-14 h-14 mx-auto mb-6 rounded-2xl flex items-center justify-center text-white font-bold text-xl relative"
+          style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
+        >
+          <span className="relative z-10">{questionIndex + 1}</span>
+          <motion.div
+            className="absolute inset-0 rounded-2xl"
+            animate={{ rotate: [0, 360] }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+            style={{ 
+              background: `conic-gradient(from 0deg, transparent, ${accentColor}40, transparent)`,
+            }}
+          />
+        </motion.div>
+
+        <motion.h3
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="text-2xl md:text-3xl font-bold text-white text-center mb-8 leading-tight"
+        >
+          {question.question}
+        </motion.h3>
+
+        {/* Render based on question type */}
+        {(question.type === 'single' || question.type === 'multiple') && (
+          <div className="space-y-3">
+            {question.type === 'multiple' && (
+              <p className="text-slate-400 text-center text-sm mb-4">
+                Seleziona {question.maxSelections ? `fino a ${question.maxSelections}` : 'tutte le'} opzioni che si applicano
+              </p>
+            )}
+            {question.options?.map((option, idx) => {
+              const isSelected = question.type === 'multiple'
+                ? (answers[question.id] || []).includes(option.value)
+                : answers[question.id] === option.value;
+
+              return (
+                <motion.button
+                  key={option.value}
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.15 + idx * 0.08 }}
+                  whileHover={{ scale: 1.02, x: 8 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleAnswer(question.id, option.value, question.type, question.maxSelections)}
+                  className={`w-full p-4 rounded-2xl border-2 transition-all text-left flex items-center gap-4 relative overflow-hidden ${
+                    isSelected
+                      ? 'border-transparent text-white'
+                      : 'border-white/10 bg-white/5 hover:border-white/20 text-white'
+                  }`}
+                  style={isSelected ? {
+                    background: `linear-gradient(135deg, ${option.color || gradientFrom}30, ${gradientTo}30)`,
+                    borderColor: option.color || accentColor,
+                  } : {}}
+                >
+                  {/* Selection indicator */}
+                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                    isSelected ? 'border-transparent' : 'border-white/30'
+                  }`}
+                  style={isSelected ? { background: option.color || accentColor } : {}}>
+                    {isSelected && (
+                      <motion.svg
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="w-4 h-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </motion.svg>
+                    )}
+                  </div>
+                  
+                  {option.icon && (
+                    <span className="text-2xl flex-shrink-0">{option.icon}</span>
+                  )}
+                  <span className="font-medium text-lg">{option.label}</span>
+                  
+                  {/* Glow effect on selected */}
+                  {isSelected && (
+                    <motion.div
+                      className="absolute inset-0 opacity-20"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.2 }}
+                      style={{ background: `radial-gradient(circle at 30% 50%, ${option.color || accentColor}, transparent 70%)` }}
+                    />
+                  )}
+                </motion.button>
+              );
+            })}
+
+            {/* Continue button for multiple selection */}
+            {question.type === 'multiple' && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: canProceed() ? 1 : 0.5 }}
+                whileHover={canProceed() ? { scale: 1.02 } : {}}
+                whileTap={canProceed() ? { scale: 0.98 } : {}}
+                onClick={goNext}
+                disabled={!canProceed()}
+                className="w-full mt-6 py-4 px-8 text-white font-bold text-lg rounded-xl transition-all"
+                style={{ 
+                  background: canProceed() 
+                    ? `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})`
+                    : 'rgba(255,255,255,0.1)',
+                }}
+              >
+                Continua →
+              </motion.button>
+            )}
+          </div>
+        )}
+
+        {/* Text input */}
+        {question.type === 'text' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-4"
+          >
+            <input
+              type="text"
+              value={answers[question.id] || ''}
+              onChange={(e) => handleAnswer(question.id, e.target.value, 'text')}
+              placeholder={question.placeholder || 'Scrivi la tua risposta...'}
+              className="w-full px-5 py-4 bg-white/5 border-2 border-white/10 rounded-2xl text-white text-lg placeholder-slate-500 focus:outline-none focus:border-opacity-100 transition-all"
+              style={{ borderColor: answers[question.id] ? accentColor : undefined }}
+            />
+            <motion.button
+              whileHover={canProceed() ? { scale: 1.02 } : {}}
+              whileTap={canProceed() ? { scale: 0.98 } : {}}
+              onClick={goNext}
+              disabled={!canProceed()}
+              className="w-full py-4 px-8 text-white font-bold text-lg rounded-xl transition-all disabled:opacity-50"
+              style={{ 
+                background: canProceed() 
+                  ? `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})`
+                  : 'rgba(255,255,255,0.1)',
+              }}
+            >
+              Continua →
+            </motion.button>
+          </motion.div>
+        )}
+
+        {/* Textarea */}
+        {question.type === 'textarea' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-4"
+          >
+            <div className="relative">
+              <textarea
+                value={answers[question.id] || ''}
+                onChange={(e) => handleAnswer(question.id, e.target.value, 'textarea')}
+                placeholder={question.placeholder || 'Descrivi in dettaglio...'}
+                maxLength={question.maxLength || 500}
+                rows={4}
+                className="w-full px-5 py-4 bg-white/5 border-2 border-white/10 rounded-2xl text-white text-lg placeholder-slate-500 focus:outline-none focus:border-opacity-100 transition-all resize-none"
+                style={{ borderColor: answers[question.id] ? accentColor : undefined }}
+              />
+              {question.maxLength && (
+                <div className="absolute bottom-3 right-3 text-xs text-slate-500">
+                  {(answers[question.id] || '').length}/{question.maxLength}
+                </div>
+              )}
+            </div>
+            <motion.button
+              whileHover={canProceed() ? { scale: 1.02 } : {}}
+              whileTap={canProceed() ? { scale: 0.98 } : {}}
+              onClick={goNext}
+              disabled={!canProceed()}
+              className="w-full py-4 px-8 text-white font-bold text-lg rounded-xl transition-all disabled:opacity-50"
+              style={{ 
+                background: canProceed() 
+                  ? `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})`
+                  : 'rgba(255,255,255,0.1)',
+              }}
+            >
+              Continua →
+            </motion.button>
+          </motion.div>
+        )}
+      </motion.div>
+    );
+  };
+
+  // Render contact form - Supporta tutti i campi richiesti
+  const renderContactForm = () => {
+    const activeFields = contactFields.map(f => contactFieldConfig[f]).filter(Boolean);
+
+    return (
+      <motion.div
+        key="contact"
+        custom={direction}
+        variants={slideVariants}
+        initial="enter"
+        animate="center"
+        exit="exit"
+        transition={springConfig}
+        className="py-4"
+      >
+        <motion.div
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 200 }}
+          className="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center relative"
+          style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
+        >
+          <span className="text-4xl">📝</span>
+        </motion.div>
+
+        <h3 className="text-2xl md:text-3xl font-bold text-white text-center mb-2">{contactTitle}</h3>
+        <p className="text-slate-400 text-center mb-8">{contactSubtitle}</p>
+
+        <div className="space-y-4">
+          {activeFields.map((field, idx) => (
+            <motion.div
+              key={field.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 + idx * 0.08 }}
+            >
+              <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                <span>{field.icon}</span>
+                {field.label}
+                {field.required && <span className="text-red-400">*</span>}
+              </label>
+              <input
+                type={field.type}
+                value={contactData[field.id] || ''}
+                onChange={(e) => handleContactChange(field.id, e.target.value)}
+                placeholder={field.placeholder}
+                className="w-full px-5 py-4 bg-white/5 border-2 border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 transition-all"
+                style={{ 
+                  borderColor: contactData[field.id] ? `${accentColor}50` : undefined 
+                }}
+              />
+            </motion.div>
+          ))}
+
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            whileHover={{ scale: 1.02, boxShadow: `0 20px 60px -15px ${accentColor}60` }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full py-5 px-8 text-white font-bold text-xl rounded-xl shadow-xl transition-all disabled:opacity-50 relative overflow-hidden mt-6"
+            style={{ 
+              background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})`,
+            }}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-3">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full"
+                />
+                Invio in corso...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                🚀 Scopri il tuo profilo
+              </span>
+            )}
+          </motion.button>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Render results/success
+  const renderResults = () => (
+    <motion.div
+      key="results"
+      custom={direction}
+      variants={slideVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={springConfig}
+      className="text-center py-8"
+    >
+      {/* Success animation */}
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+        className="w-28 h-28 mx-auto mb-8 relative"
+      >
+        {/* Celebration rings */}
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute inset-0 rounded-full border-2"
+            style={{ borderColor: i % 2 === 0 ? '#22c55e' : '#10b981' }}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1.5 + i * 0.3, opacity: [0, 0.5, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3 }}
+          />
+        ))}
+        
+        <div className="relative w-full h-full rounded-full bg-gradient-to-br from-green-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-green-500/30">
+          <motion.svg
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="w-14 h-14 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <motion.path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={3}
+              d="M5 13l4 4L19 7"
+            />
+          </motion.svg>
+        </div>
+
+        {/* Confetti */}
+        {[...Array(12)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-3 h-3 rounded-full"
+            style={{ 
+              background: ['#f97316', '#22c55e', '#3b82f6', '#ec4899', '#8b5cf6'][i % 5],
+              top: '50%',
+              left: '50%',
+            }}
+            initial={{ x: 0, y: 0, scale: 0 }}
+            animate={{ 
+              x: Math.cos(i * 30 * Math.PI / 180) * 100,
+              y: Math.sin(i * 30 * Math.PI / 180) * 100,
+              scale: [0, 1, 0],
+              rotate: [0, 360],
+            }}
+            transition={{ duration: 1, delay: 0.4, ease: 'easeOut' }}
+          />
+        ))}
+      </motion.div>
+
+      <motion.h3
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="text-3xl md:text-4xl font-bold text-white mb-4"
+      >
+        {resultsTitle}
+      </motion.h3>
+      
+      <motion.p
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="text-slate-400 mb-8 max-w-sm mx-auto text-lg"
+      >
+        {resultsSubtitle}
+      </motion.p>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+        className="p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-2xl border border-green-500/20 mb-8"
+      >
+        <p className="text-slate-200 text-lg">{successMessage}</p>
+      </motion.div>
+
+      <motion.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={handleClose}
+        className="px-10 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all text-lg"
+      >
+        Chiudi
+      </motion.button>
+    </motion.div>
+  );
+
+  // Determine current content
+  const getCurrentContent = () => {
+    if (currentStep === 0) return renderIntro();
+    
+    const questionIndex = currentStep - 1;
+    if (questionIndex < activeQuestions.length) {
+      return renderQuestion(questionIndex);
+    }
+    
+    if (collectContactInfo && questionIndex === activeQuestions.length) {
+      return renderContactForm();
+    }
+    
+    return renderResults();
+  };
+
+  return createPortal(
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          key="quiz-popup-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          onClick={handleClose}
+          onMouseMove={handleMouseMove}
+        >
+          {/* Animated gradient background */}
+          <motion.div
+            className="absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{
+              background: `radial-gradient(circle at 50% 50%, ${gradientFrom}20 0%, transparent 50%), 
+                           radial-gradient(circle at 0% 100%, ${gradientTo}20 0%, transparent 50%),
+                           rgba(0,0,0,0.95)`,
+            }}
+          />
+          
+          {/* Floating particles */}
+          <FloatingParticles />
+
+          <motion.div
+            ref={containerRef}
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 30 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-gradient-to-b from-slate-800/95 to-slate-900/98 backdrop-blur-xl border border-white/10 rounded-3xl p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
+            style={{ 
+              boxShadow: `0 25px 100px -20px ${accentColor}30, 0 0 0 1px ${accentColor}10`,
+            }}
+          >
+            {/* Progress bar */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-white/5 overflow-hidden rounded-t-3xl">
+              <motion.div
+                className="h-full relative"
+                style={{ background: `linear-gradient(90deg, ${gradientFrom}, ${gradientTo})` }}
+                initial={{ width: '0%' }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+              >
+                {/* Shimmer effect */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                  animate={{ x: ['-100%', '200%'] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                />
+              </motion.div>
+            </div>
+
+            {/* Close button */}
+            <motion.button
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={handleClose}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors z-10 p-2 hover:bg-white/10 rounded-xl"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </motion.button>
+
+            {/* Back button */}
+            <AnimatePresence>
+              {currentStep > 0 && currentStep < totalSteps && !isCompleted && (
+                <motion.button
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  whileHover={{ scale: 1.1, x: -3 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={goBack}
+                  className="absolute top-4 left-4 text-slate-400 hover:text-white transition-colors z-10 p-2 hover:bg-white/10 rounded-xl flex items-center gap-1"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </motion.button>
+              )}
+            </AnimatePresence>
+
+            {/* Content */}
+            <div className="mt-6 overflow-hidden">
+              <AnimatePresence mode="wait" custom={direction}>
+                {getCurrentContent()}
+              </AnimatePresence>
+            </div>
+
+            {/* Step dots */}
+            <AnimatePresence>
+              {currentStep > 0 && currentStep <= activeQuestions.length && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex justify-center gap-2 mt-6"
+                >
+                  {activeQuestions.map((_, idx) => (
+                    <motion.div
+                      key={idx}
+                      className="h-2 rounded-full transition-all duration-500"
+                      animate={{
+                        width: idx < currentStep ? 24 : 8,
+                        background: idx < currentStep 
+                          ? `linear-gradient(90deg, ${gradientFrom}, ${gradientTo})`
+                          : 'rgba(255,255,255,0.1)',
+                      }}
+                    />
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+};
+
+export default QuizPopup;

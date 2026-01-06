@@ -14,7 +14,17 @@ const FeaturesBlock = ({ settings, isPreview = false }) => {
     columns = 3,
     items = [],
     backgroundColor = 'bg-slate-900',
-    cardStyle = 'glass', // glass, solid, outline
+    cardStyle = 'glass', // glass, solid, outline, minimal, none
+    // Checklist variant settings
+    checkColor = '#22c55e',
+    textColor = '#e2e8f0',
+    fontSize = 'text-lg',
+    centered = false,
+    maxWidth = '800px',
+    spacing = 'py-20',
+    iconSize = 'normal', // normal, large
+    titleColor = '#ffffff',
+    titleSize = 'text-3xl md:text-4xl',
   } = settings || {};
 
   // Helper per renderizzare l'icona (emoji o immagine)
@@ -76,8 +86,8 @@ const FeaturesBlock = ({ settings, isPreview = false }) => {
   // Variante List
   if (variant === 'list') {
     return (
-      <section className={`${backgroundColor} py-20`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className={`${backgroundColor} ${spacing}`}>
+        <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth }}>
           {(title || subtitle) && (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -86,7 +96,7 @@ const FeaturesBlock = ({ settings, isPreview = false }) => {
               className="text-center mb-16"
             >
               {title && (
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                <h2 className={`${titleSize} font-bold mb-4`} style={{ color: titleColor }}>
                   {title}
                 </h2>
               )}
@@ -109,19 +119,82 @@ const FeaturesBlock = ({ settings, isPreview = false }) => {
               <motion.div
                 key={index}
                 variants={itemVariants}
-                className={`${getCardClasses()} flex items-start gap-4`}
+                className={`${cardStyle === 'none' || cardStyle === 'minimal' ? '' : getCardClasses()} flex items-start gap-4 ${cardStyle === 'minimal' ? 'py-2' : ''}`}
               >
-                <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-sky-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center text-2xl">
-                  {renderIcon(item, 'normal')}
+                <div className={`flex-shrink-0 ${iconSize === 'large' ? 'w-16 h-16 text-3xl' : 'w-14 h-14 text-2xl'} bg-gradient-to-br from-sky-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center`}>
+                  {renderIcon(item, iconSize)}
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-1">
                     {item.title}
                   </h3>
-                  <p className="text-slate-400">
-                    {item.description}
-                  </p>
+                  {item.description && (
+                    <p className="text-slate-400">
+                      {item.description}
+                    </p>
+                  )}
                 </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+    );
+  }
+
+  // Variante Checklist - stile con checkmarks
+  if (variant === 'checklist') {
+    return (
+      <section className={`${backgroundColor} ${spacing}`}>
+        <div className={`mx-auto px-4 sm:px-6 lg:px-8 ${centered ? 'text-center' : ''}`} style={{ maxWidth }}>
+          {(title || subtitle) && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className={`mb-8 ${centered ? 'text-center' : ''}`}
+            >
+              {title && (
+                <h2 className={`${titleSize} font-bold mb-4`} style={{ color: titleColor }}>
+                  {title}
+                </h2>
+              )}
+              {subtitle && (
+                <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+                  {subtitle}
+                </p>
+              )}
+            </motion.div>
+          )}
+
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className={`space-y-4 ${centered ? 'flex flex-col items-center' : ''}`}
+          >
+            {items.map((item, index) => (
+              <motion.div
+                key={index}
+                variants={itemVariants}
+                className={`flex items-center gap-4 ${fontSize}`}
+              >
+                <div 
+                  className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold"
+                  style={{ backgroundColor: `${checkColor}20`, color: checkColor }}
+                >
+                  {item.icon === '✓' || !item.icon ? (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <span className="text-lg">{item.icon}</span>
+                  )}
+                </div>
+                <span style={{ color: textColor }} className="font-medium">
+                  {item.title}
+                </span>
               </motion.div>
             ))}
           </motion.div>

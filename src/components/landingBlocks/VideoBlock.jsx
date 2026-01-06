@@ -18,6 +18,12 @@ const VideoBlock = ({ settings, isPreview = false }) => {
     showControls = true,
     aspectRatio = '16/9',
     backgroundColor = 'bg-slate-800',
+    // Advanced styling
+    showGlow = true,
+    glowColor = '#0ea5e9',
+    borderRadius = '16px',
+    maxWidth = '900px',
+    padding = 'py-20',
   } = settings || {};
 
   // Parse video URL per embed
@@ -148,8 +154,8 @@ const VideoBlock = ({ settings, isPreview = false }) => {
 
   // Default: Featured (con titolo e decorazioni)
   return (
-    <section className={`${backgroundColor} py-20`}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className={`${backgroundColor} ${padding}`}>
+      <div className="mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth }}>
         {(title || subtitle) && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -177,11 +183,16 @@ const VideoBlock = ({ settings, isPreview = false }) => {
           className="relative"
         >
           {/* Decorative glow */}
-          <div className="absolute -inset-4 bg-gradient-to-r from-sky-500/20 to-cyan-500/20 rounded-3xl blur-xl" />
+          {showGlow && (
+            <div 
+              className="absolute -inset-4 rounded-3xl blur-xl opacity-30"
+              style={{ background: `linear-gradient(135deg, ${glowColor}, ${glowColor}80)` }}
+            />
+          )}
           
           <div 
-            className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/10"
-            style={{ aspectRatio }}
+            className="relative overflow-hidden shadow-2xl border border-white/10"
+            style={{ aspectRatio, borderRadius }}
           >
             {isDirectVideo ? (
               <video
