@@ -3,6 +3,7 @@ import { X, Plus, Trash2, ChevronDown, ChevronUp, Upload, Video, Image } from 'l
 import { DEFAULT_BLOCKS } from '../../services/landingPageService';
 import MediaUploader from '../../components/landing/MediaUploader';
 import FormPopupSettings from '../../components/landing/FormPopupSettings';
+import QuizPopupSettings from '../../components/landing/QuizPopupSettings';
 
 // Componenti esterni per evitare re-render e perdita di focus
 const Section = memo(({ title, id, isExpanded, onToggle, children }) => (
@@ -1479,6 +1480,7 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
                   options: [
                     { value: 'scroll', label: 'Scrolla a sezione' },
                     { value: 'form_popup', label: '📝 Apri Form Popup' },
+                    { value: 'quiz_popup', label: '🎯 Apri Quiz Popup' },
                     { value: 'redirect', label: 'Vai a URL' },
                     { value: 'whatsapp', label: 'Apri WhatsApp' },
                     { value: 'calendly', label: 'Apri Calendly' },
@@ -1495,6 +1497,16 @@ const BlockSettingsPanel = memo(({ block, onUpdate, onClose, tenantId, pageId })
 
               {localSettings.ctaAction === 'form_popup' && (
                 <FormPopupSettings
+                  localSettings={localSettings}
+                  handleChange={handleChange}
+                  renderField={renderField}
+                  FieldGroup={FieldGroup}
+                  tenantId={tenantId}
+                />
+              )}
+
+              {localSettings.ctaAction === 'quiz_popup' && (
+                <QuizPopupSettings
                   localSettings={localSettings}
                   handleChange={handleChange}
                   renderField={renderField}
