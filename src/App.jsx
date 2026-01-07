@@ -184,6 +184,12 @@ export default function App() {
           if (initialAuthComplete && authInfo.user?.uid === currentUser.uid) {
             return;
           }
+          
+          // Se è già autenticato come Platform CEO, mantienilo
+          if (authInfo.isPlatformCEO && authInfo.user?.uid === currentUser.uid) {
+            return;
+          }
+          
           // PRIMA: Verifica se è Platform CEO (livello root, non tenant)
           const platformAdminRef = doc(db, 'platform_admins', 'superadmins');
           const platformAdminDoc = await getDoc(platformAdminRef).catch(() => ({ exists: () => false, data: () => ({ uids: [] }) }));

@@ -331,6 +331,13 @@ export default function CEOPlatformDashboard() {
       loadPlatformData();
     } catch (error) {
       console.error('Error checking Platform CEO:', error);
+      // Se è un errore di rete/blocco, non fare redirect immediato
+      // Potrebbe essere un ad-blocker che blocca Firebase
+      if (error.code === 'unavailable' || error.message?.includes('network') || error.message?.includes('blocked')) {
+        toast.error('Errore di connessione. Disabilita l\'ad-blocker per Firebase.');
+        setLoading(false);
+        return;
+      }
       navigate('/platform-login');
     }
   };
