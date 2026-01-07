@@ -371,8 +371,8 @@ export default function App() {
             error: null
           });
 
-          const publicPaths = ['/login', '/client/forgot-password', '/platform-login', '/platform-dashboard', '/site', '/privacy', '/terms', '/setup', '/invite'];
-          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/platform') || location.pathname.startsWith('/site') || location.pathname.startsWith('/setup/') || location.pathname.startsWith('/invite') || location.pathname === '/privacy' || location.pathname === '/terms');
+          const publicPaths = ['/login', '/client/forgot-password', '/platform-login', '/platform-dashboard', '/site', '/privacy', '/terms', '/setup', '/invite', '/landing', '/demo'];
+          const isPublic = publicPaths.some(p => location.pathname === p || location.pathname.startsWith('/platform') || location.pathname.startsWith('/site') || location.pathname.startsWith('/setup/') || location.pathname.startsWith('/invite') || location.pathname === '/privacy' || location.pathname === '/terms' || location.pathname === '/landing' || location.pathname === '/demo');
           if (!isPublic && !initialAuthComplete) {
             const target = '/login';
             if (lastNavigated !== target) {
