@@ -12,7 +12,7 @@ import { uploadToR2 } from '../cloudflareStorage';
 export const validateFile = (file, type = 'image') => {
   const limits = {
     image: { maxSize: 10 * 1024 * 1024, types: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] }, // 10MB
-    video: { maxSize: 100 * 1024 * 1024, types: ['video/mp4', 'video/webm', 'video/quicktime'] }, // 100MB
+    video: { maxSize: 500 * 1024 * 1024, types: ['video/mp4', 'video/webm', 'video/quicktime'] }, // 500MB
     audio: { maxSize: 25 * 1024 * 1024, types: ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/webm', 'audio/ogg'] }, // 25MB
     document: { maxSize: 10 * 1024 * 1024, types: ['application/pdf', 'application/msword'] }, // 10MB
   };

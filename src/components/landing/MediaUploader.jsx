@@ -144,6 +144,8 @@ export default function MediaUploader({
   };
 
   const uploadFile = async (upload) => {
+    console.log('[MediaUploader] Starting upload:', upload.file.name, { tenantId, pageId, blockId });
+    
     setUploads(prev => prev.map(u => 
       u.id === upload.id ? { ...u, status: 'uploading' } : u
     ));
@@ -155,12 +157,15 @@ export default function MediaUploader({
         pageId,
         blockId,
         ({ percent, message }) => {
+          console.log('[MediaUploader] Progress:', percent, message);
           setUploads(prev => prev.map(u => 
             u.id === upload.id ? { ...u, progress: percent, message } : u
           ));
         }
       );
 
+      console.log('[MediaUploader] Upload complete:', result);
+      
       setUploads(prev => prev.map(u => 
         u.id === upload.id ? { ...u, status: 'complete', url: result.url, result } : u
       ));
@@ -168,6 +173,7 @@ export default function MediaUploader({
       // Notifica parent
       onUpload?.(result);
     } catch (err) {
+      console.error('[MediaUploader] Upload error:', err);
       setUploads(prev => prev.map(u => 
         u.id === upload.id ? { ...u, status: 'error', error: err.message } : u
       ));
@@ -201,6 +207,41 @@ export default function MediaUploader({
         )}
         
         <div className="space-y-2">
+          {/* Errore globale */}
+          {error && (
+            <div className="p-2 bg-red-500/20 border border-red-500/50 rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+              <span className="text-sm text-red-400">{error}</span>
+            </div>
+          )}
+          
+          {/* Upload in corso */}
+          {uploads.length > 0 && (
+            <div className="space-y-2">
+              {uploads.map((upload) => (
+                <div key={upload.id} className="p-2 bg-slate-700/50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    {upload.status === 'uploading' && <Loader2 className="w-4 h-4 text-sky-400 animate-spin" />}
+                    {upload.status === 'complete' && <Check className="w-4 h-4 text-green-400" />}
+                    {upload.status === 'error' && <AlertCircle className="w-4 h-4 text-red-400" />}
+                    <span className="text-sm text-white truncate flex-1">{upload.file.name}</span>
+                  </div>
+                  {upload.status === 'uploading' && (
+                    <div className="w-full bg-slate-600 rounded-full h-1.5">
+                      <div 
+                        className="bg-sky-500 h-1.5 rounded-full transition-all duration-300" 
+                        style={{ width: `${upload.progress}%` }}
+                      />
+                    </div>
+                  )}
+                  {upload.status === 'error' && (
+                    <p className="text-xs text-red-400 mt-1">{upload.error}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          
           {currentMedia && (
             <div className="relative group">
               {currentMedia.startsWith('data:') || currentMedia.includes('video') ? (

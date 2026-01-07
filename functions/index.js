@@ -55,8 +55,8 @@ exports.uploadToR2 = onCall(
   { 
     secrets: [r2AccountId, r2AccessKeyId, r2SecretAccessKey, r2BucketName, r2PublicUrl],
     maxInstances: 10,
-    timeoutSeconds: 300, // 5 minuti per file grandi
-    memory: '512MiB',
+    timeoutSeconds: 540, // 9 minuti per file grandi
+    memory: '2GiB', // 2GB RAM per gestire file fino a 500MB
   },
   async (request) => {
     // Auth obbligatoria
@@ -103,7 +103,7 @@ exports.uploadToR2 = onCall(
     const fileBuffer = Buffer.from(fileBase64, 'base64');
     
     // Limite dimensione: 50MB per file normali, 100MB per landing media
-    const maxSize = isLandingMedia ? 100 * 1024 * 1024 : 50 * 1024 * 1024;
+    const maxSize = isLandingMedia ? 500 * 1024 * 1024 : 50 * 1024 * 1024;
     if (fileBuffer.length > maxSize) {
       throw new HttpsError('invalid-argument', `File troppo grande. Limite: ${maxSize / (1024 * 1024)}MB`);
     }

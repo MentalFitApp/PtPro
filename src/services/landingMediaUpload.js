@@ -19,7 +19,7 @@ export const MEDIA_TYPES = {
   },
   video: {
     mimeTypes: ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'],
-    maxSize: 100 * 1024 * 1024, // 100MB per video (limite Cloud Function)
+    maxSize: 500 * 1024 * 1024, // 500MB per video
     extensions: ['mp4', 'webm', 'mov', 'avi', 'mkv'],
   },
   audio: {
