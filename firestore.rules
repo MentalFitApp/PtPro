@@ -69,13 +69,11 @@ service cloud.firestore {
 
     // ==================== TENANTS (METADATA) ====================
     match /tenants/{tenantId} {
-      // Lettura pubblica per routing landing pages
-      // NOTA: Firestore non permette field-level rules, ma limitiamo a get() singolo documento
-      // La list è riservata a Platform CEO sotto
+      // Lettura pubblica per routing landing pages (get singolo e list per query siteSlug)
       allow get: if true;
+      allow list: if true;  // Necessario per query where('siteSlug', '==', slug)
       
-      // Platform CEO può vedere, creare e gestire tutti i tenants
-      allow list: if isPlatformCEO();
+      // Platform CEO può creare e gestire tutti i tenants
       allow create, update: if isPlatformCEO();
       allow delete: if isPlatformCEO();
       
