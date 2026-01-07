@@ -6,6 +6,7 @@ const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const { enforceRateLimit, validators, validateInput, requireAuth, sanitizeObject } = require('./security');
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { v4: uuidv4 } = require('uuid');
 
 admin.initializeApp();
@@ -251,6 +252,88 @@ exports.deleteFromR2 = onCall(
     } catch (error) {
       console.error('[deleteFromR2] Errore:', error);
       throw new HttpsError('internal', 'Errore durante eliminazione: ' + error.message);
+    }
+  }
+);
+
+/**
+ * Genera un presigned URL per upload diretto a R2
+ * Usato per file grandi (>10MB) per evitare limiti Cloud Functions
+ */
+exports.getR2UploadUrl = onCall(
+  { 
+    secrets: [r2AccountId, r2AccessKeyId, r2SecretAccessKey, r2BucketName, r2PublicUrl],
+    maxInstances: 10,
+  },
+  async (request) => {
+    // Auth obbligatoria
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Autenticazione richiesta');
+    }
+
+    // Rate limiting
+    enforceRateLimit(request, 'getR2UploadUrl');
+
+    const { fileName, contentType, tenantId, pageId, blockId, isLandingMedia } = request.data;
+
+    // Validazioni
+    if (!fileName || !contentType) {
+      throw new HttpsError('invalid-argument', 'Parametri mancanti: fileName, contentType');
+    }
+    if (!tenantId) {
+      throw new HttpsError('invalid-argument', 'tenantId richiesto');
+    }
+
+    // Verifica permessi (admin o coach)
+    const adminsDoc = await db.collection('tenants').doc(tenantId).collection('roles').doc('admins').get();
+    const coachesDoc = await db.collection('tenants').doc(tenantId).collection('roles').doc('coaches').get();
+    
+    const isAdmin = adminsDoc.exists && adminsDoc.data()?.uids?.includes(request.auth.uid);
+    const isCoach = coachesDoc.exists && coachesDoc.data()?.uids?.includes(request.auth.uid);
+    
+    if (!isAdmin && !isCoach) {
+      // Fallback: controlla root users per superadmin
+      const rootUserDoc = await db.collection('users').doc(request.auth.uid).get();
+      const rootUserData = rootUserDoc.data();
+      if (!rootUserData || (rootUserData.tenantId !== tenantId && rootUserData.role !== 'superadmin')) {
+        throw new HttpsError('permission-denied', 'Solo admin e coach possono caricare media');
+      }
+    }
+
+    try {
+      const client = getR2Client(
+        r2AccountId.value(),
+        r2AccessKeyId.value(),
+        r2SecretAccessKey.value()
+      );
+
+      // Genera key unica
+      const ext = fileName.split('.').pop()?.toLowerCase() || 'bin';
+      const uniqueId = uuidv4();
+      let key;
+
+      if (isLandingMedia && pageId) {
+        key = `landing/${tenantId}/${pageId}/${blockId ? blockId + '/' : ''}${uniqueId}.${ext}`;
+      } else {
+        key = `media/${tenantId}/${uniqueId}.${ext}`;
+      }
+
+      // Crea presigned URL (valido 30 minuti)
+      const command = new PutObjectCommand({
+        Bucket: r2BucketName.value(),
+        Key: key,
+        ContentType: contentType,
+      });
+
+      const uploadUrl = await getSignedUrl(client, command, { expiresIn: 1800 });
+      const publicUrl = `${r2PublicUrl.value().replace(/\/$/, '')}/${key}`;
+
+      console.log(`[getR2UploadUrl] URL generato per ${key} by ${request.auth.uid}`);
+
+      return { uploadUrl, publicUrl, key };
+    } catch (error) {
+      console.error('[getR2UploadUrl] Errore:', error);
+      throw new HttpsError('internal', 'Errore generazione URL: ' + error.message);
     }
   }
 );
