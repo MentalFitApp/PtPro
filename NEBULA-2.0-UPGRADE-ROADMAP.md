@@ -109,7 +109,7 @@ const BLUR = 'backdrop-blur-sm';              // Blur leggero (non xl)
 |---|--------|-------|-------|
 | 1 | `LandingPage.jsx` | `/site` | ⬜ |
 | 2 | `PublicLandingPage.jsx` | `/site/:tenantSlug/:slug` | ⬜ |
-| 3 | `Login.jsx` | `/login` | ⬜ |
+| 3 | `Login.jsx` | `/login` | ✅ |
 | 4 | `SetupAccount.jsx` | `/setup/:token` | ⬜ |
 | 5 | `PlatformLogin.jsx` | `/platform-login` | ⬜ |
 | 6 | `ForgotPassword.jsx` | `/client/forgot-password` | ⬜ |

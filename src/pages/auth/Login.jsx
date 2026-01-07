@@ -3,10 +3,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, db } from '../../firebase';
 import { doc, getDoc, updateDoc, serverTimestamp, setDoc, collection, getDocs } from 'firebase/firestore';
-import { Lock, Mail, Eye, EyeOff, ArrowLeft, Zap, Crown, LogIn } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ArrowLeft, Zap, Crown, LogIn, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getTenantDoc, setCurrentTenantId, getCurrentTenantId, DEFAULT_TENANT_ID } from '../../config/tenant';
 import { getDeviceInfo } from '../../utils/deviceInfo';
+import NebulaBackground from '../../components/ui/NebulaBackground';
 
 /**
  * Valida se una stringa può essere un tenantId valido
@@ -159,7 +160,121 @@ async function findUserTenant(userId) {
   }
 }
 
-// === ANIMATED STARS BACKGROUND ===
+// === NEBULA LOADING ANIMATION ===
+const NebulaLoader = ({ message = 'Caricamento...' }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950"
+  >
+    {/* Nebula Background for loader */}
+    <NebulaBackground preset="geometric" className="opacity-50" />
+    
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+      className="relative z-10 flex flex-col items-center"
+    >
+      {/* Animated Logo Container */}
+      <div className="relative mb-8">
+        {/* Outer glow ring */}
+        <motion.div
+          className="absolute -inset-8 rounded-full"
+          style={{
+            background: 'conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.5), transparent, rgba(6, 182, 212, 0.5), transparent)',
+          }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+        />
+        
+        {/* Inner glow */}
+        <motion.div 
+          className="absolute -inset-4 bg-gradient-to-r from-blue-500/30 via-cyan-500/30 to-blue-500/30 rounded-full blur-xl"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        
+        {/* Logo */}
+        <motion.div 
+          className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-2xl shadow-blue-500/40"
+          animate={{ 
+            boxShadow: [
+              '0 25px 50px -12px rgba(59, 130, 246, 0.4)',
+              '0 25px 50px -12px rgba(6, 182, 212, 0.5)',
+              '0 25px 50px -12px rgba(59, 130, 246, 0.4)',
+            ]
+          }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <img 
+            src="/logo192.png" 
+            alt="Logo"
+            className="w-16 h-16 object-contain"
+            onError={(e) => { e.target.style.display = 'none'; }}
+          />
+        </motion.div>
+        
+        {/* Sparkle effects */}
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute"
+            style={{
+              top: ['10%', '70%', '30%'][i],
+              left: ['80%', '10%', '90%'][i],
+            }}
+            animate={{
+              scale: [0, 1, 0],
+              opacity: [0, 1, 0],
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              delay: i * 0.5,
+              ease: 'easeInOut',
+            }}
+          >
+            <Sparkles size={16} className="text-cyan-400" />
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Animated progress bar */}
+      <div className="w-64 h-1.5 bg-slate-800/50 rounded-full overflow-hidden backdrop-blur-sm">
+        <motion.div
+          className="h-full rounded-full"
+          style={{
+            background: 'linear-gradient(90deg, #3b82f6, #06b6d4, #3b82f6)',
+            backgroundSize: '200% 100%',
+          }}
+          animate={{ 
+            x: ['-100%', '100%'],
+            backgroundPosition: ['0% 0%', '100% 0%']
+          }}
+          transition={{ 
+            duration: 1.2,
+            repeat: Infinity,
+            ease: 'easeInOut'
+          }}
+        />
+      </div>
+
+      {/* Message */}
+      <motion.p
+        className="mt-6 text-slate-400 text-sm tracking-wide font-medium"
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        {message}
+      </motion.p>
+    </motion.div>
+  </motion.div>
+);
+
+// === ANIMATED STARS BACKGROUND (Legacy - ora usiamo NebulaBackground) ===
 const AnimatedStars = () => {
   useEffect(() => {
     const existingStars = document.querySelector('.login-stars');
@@ -623,15 +738,15 @@ const Login = () => {
   // Se mostra il selettore workspace
   if (showWorkspaceSelector && availableWorkspaces.length > 0) {
     return (
-      <div className="min-h-screen bg-slate-900 relative overflow-hidden flex items-center justify-center p-4">
-        <AnimatedStars />
+      <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
+        <NebulaBackground preset="aurora" />
         
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md z-10"
         >
-          <div className="bg-slate-800/70 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-6">
+          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/40 rounded-2xl shadow-2xl p-6">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Crown className="text-blue-400" size={32} />
@@ -647,11 +762,11 @@ const Login = () => {
                 <motion.button
                   key={workspace.tenantId}
                   onClick={() => handleSelectWorkspace(workspace)}
-                  className="w-full p-4 bg-slate-700/50 hover:bg-slate-700 border border-slate-600/50 hover:border-blue-500/50 rounded-xl text-left transition-all flex items-center gap-4"
+                  className="w-full p-4 bg-slate-800/40 hover:bg-slate-700/50 border border-slate-700/40 hover:border-blue-500/50 rounded-xl text-left transition-all flex items-center gap-4 backdrop-blur-sm"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/20">
                     {workspace.tenantId?.charAt(0)?.toUpperCase() || 'W'}
                   </div>
                   <div className="flex-1">
@@ -680,162 +795,47 @@ const Login = () => {
     );
   }
 
-  // Fase di loading/transizione - stesso sfondo ma con loader al centro
+  // Fase di loading/transizione - usa NebulaLoader
   const showLoadingPhase = isCheckingAuth || isLoggingIn || pendingNavigation;
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 relative overflow-hidden">
-      {/* Animated Stars Background - sempre visibile */}
-      <AnimatedStars />
+  if (showLoadingPhase) {
+    return <NebulaLoader message={isLoggingIn ? 'Accesso in corso...' : 'Caricamento...'} />;
+  }
 
-      {/* Animated gradient blobs - sempre visibili */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            x: [0, 50, 0],
-            y: [0, 30, 0],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-        <motion.div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.3, 1],
-            x: [0, -50, 0],
-            y: [0, -30, 0],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-      </div>
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Nebula Background */}
+      <NebulaBackground preset="aurora" />
 
       <AnimatePresence mode="wait">
-        {showLoadingPhase ? (
-          /* Fase di Loading - Logo + barra animata */
-          <motion.div
-            key="loader"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.4 }}
-            className="flex flex-col items-center justify-center z-10"
-          >
-            {/* Logo animato */}
-            <motion.div className="relative mb-8">
-              <div className="relative">
-                {/* Glow effect */}
-                <motion.div 
-                  className="absolute inset-0 blur-xl bg-blue-500/30 rounded-full"
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-                
-                {/* Logo container */}
-                <motion.div 
-                  className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-blue-500/30"
-                  animate={{ rotateY: [0, 360] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                >
-                  <img 
-                    src="/logo192.png" 
-                    alt="Logo"
-                    className="w-16 h-16 object-contain"
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                  />
-                </motion.div>
-              </div>
-            </motion.div>
-
-            {/* Animated loader bar */}
-            <motion.div 
-              className="w-56 h-1.5 bg-slate-800 rounded-full overflow-hidden"
-              initial={{ opacity: 0, width: 0 }}
-              animate={{ opacity: 1, width: 224 }}
-              transition={{ delay: 0.2, duration: 0.3 }}
-            >
-              <motion.div
-                className="h-full bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500 rounded-full"
-                style={{ backgroundSize: '200% 100%' }}
-                animate={{ 
-                  x: ['-100%', '100%'],
-                  backgroundPosition: ['0% 0%', '100% 0%']
-                }}
-                transition={{ 
-                  duration: 1,
-                  repeat: Infinity,
-                  ease: 'easeInOut'
-                }}
-              />
-            </motion.div>
-
-            {/* Message */}
-            <motion.p
-              className="mt-6 text-slate-400 text-sm tracking-wide"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              {isLoggingIn ? 'Accesso in corso...' : 'Caricamento...'}
-            </motion.p>
-          </motion.div>
-        ) : (
-          /* Form di Login */
+          {/* Form di Login */}
           <motion.div
             key="form"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
             className="w-full max-w-md relative z-10"
           >
         {/* Logo e Titolo */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="flex items-center justify-center gap-4 mb-6"
+            className="flex items-center justify-center gap-3 mb-4"
           >
             <div className="relative">
               <motion.div
-                className="absolute -inset-3 bg-gradient-to-r from-blue-600/40 to-cyan-600/40 rounded-full blur-xl"
+                className="absolute -inset-2 bg-gradient-to-r from-blue-600/40 to-cyan-600/40 rounded-full blur-xl"
                 animate={{ 
                   opacity: [0.4, 0.7, 0.4],
                   scale: [1, 1.1, 1]
                 }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               />
-              {/* Cappellino di Natale - visibile dal 1 dic al 7 gen */}
-              {(() => {
-                const now = new Date();
-                const month = now.getMonth();
-                const day = now.getDate();
-                const showHat = (month === 11) || (month === 0 && day <= 7);
-                return showHat ? (
-                  <img 
-                    src="/christmas-hat.png" 
-                    alt="🎅"
-                    className="absolute z-20 drop-shadow-lg pointer-events-none"
-                    style={{ 
-                      top: '-20px',
-                      left: '8px',
-                      width: '52px', 
-                      height: '52px',
-                      transform: 'rotate(-10deg)' 
-                    }}
-                  />
-                ) : null;
-              })()}
-              <div className="relative w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-blue-500/30 shadow-xl shadow-blue-500/30">
+
+              <div className="relative w-14 h-14 rounded-xl overflow-hidden ring-2 ring-blue-500/30 shadow-xl shadow-blue-500/30">
                 <img 
                   src="/logo192.png" 
                   alt="FitFlow Logo" 
@@ -845,7 +845,7 @@ const Login = () => {
             </div>
 
             <motion.h1
-              className="text-5xl font-black text-white relative"
+              className="text-4xl font-black text-white relative"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
@@ -860,7 +860,7 @@ const Login = () => {
           </motion.div>
 
           <motion.p
-            className="text-slate-400 text-lg font-medium"
+            className="text-slate-400 text-base font-medium"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
@@ -874,12 +874,12 @@ const Login = () => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4 }}
-          className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-glow p-8 space-y-6"
+          className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/40 rounded-2xl shadow-2xl shadow-black/20 p-6 sm:p-8 space-y-4 sm:space-y-5"
         >
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-4">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-slate-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-slate-300 mb-1.5">
                 Email
               </label>
               <div className="relative group">
@@ -890,7 +890,7 @@ const Login = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="relative w-full pl-12 pr-4 py-3.5 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                  className="relative w-full pl-12 pr-4 py-3 bg-slate-800/40 border border-slate-700/40 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                   placeholder="nome@esempio.com"
                   required
                 />
@@ -899,7 +899,7 @@ const Login = () => {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-slate-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-semibold text-slate-300 mb-1.5">
                 Password
               </label>
               <div className="relative group">
@@ -910,7 +910,7 @@ const Login = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="relative w-full pl-12 pr-12 py-3.5 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                  className="relative w-full pl-12 pr-12 py-3 bg-slate-800/40 border border-slate-700/40 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                   placeholder="••••••••"
                   required
                 />
@@ -931,7 +931,7 @@ const Login = () => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 backdrop-blur-sm"
+                  className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 backdrop-blur-sm"
                 >
                   <p className="text-red-400 text-sm text-center font-medium">{error}</p>
                 </motion.div>
@@ -943,7 +943,7 @@ const Login = () => {
               type="submit"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="relative w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white preserve-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center gap-3 overflow-hidden group"
+              className="relative w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white preserve-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center gap-3 overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <LogIn size={20} className="relative" />
@@ -952,11 +952,11 @@ const Login = () => {
           </form>
 
           {/* Divider */}
-          <div className="relative flex items-center justify-center py-4">
+          <div className="relative flex items-center justify-center py-2">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-700/50"></div>
+              <div className="w-full border-t border-slate-700/40"></div>
             </div>
-            <div className="relative bg-slate-900/80 px-4 text-sm text-slate-500">
+            <div className="relative bg-slate-800/60 backdrop-blur-sm px-4 text-sm text-slate-500 rounded-full">
               oppure
             </div>
           </div>
@@ -967,7 +967,7 @@ const Login = () => {
             onClick={handleGoogleLogin}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full py-3.5 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 flex items-center justify-center gap-3 group shadow-sm hover:shadow-md"
+            className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 flex items-center justify-center gap-3 group shadow-sm hover:shadow-md"
           >
             <img 
               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
@@ -978,12 +978,12 @@ const Login = () => {
           </motion.button>
 
           {/* Info collegamento Google */}
-          <p className="text-xs text-slate-500 text-center pt-2">
+          <p className="text-xs text-slate-500 text-center">
             ℹ️ Funziona solo se hai già collegato Google al tuo account
           </p>
 
           {/* Password Reset Link */}
-          <div className="text-center pt-4 border-t border-slate-700/50">
+          <div className="text-center pt-3 border-t border-slate-700/40">
             <button
               onClick={handleResetPassword}
               className="text-sm text-slate-400 hover:text-cyan-400 transition-colors font-medium inline-flex items-center gap-2 group"
@@ -1003,18 +1003,17 @@ const Login = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="text-center mt-8 space-y-2"
+          className="text-center mt-6 space-y-1"
         >
-          <p className="text-slate-500 text-sm">
-            Powered by <span className="text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text font-bold">FitFlow</span> Platform
+          <p className="text-slate-500 text-xs">
+            Powered by <span className="text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text font-semibold">FitFlow</span> Platform
           </p>
           <div className="flex items-center justify-center gap-2 text-xs text-slate-600">
-            <Crown size={12} className="text-yellow-500" />
-            <span>Premium Fitness Management System</span>
+            <Crown size={10} className="text-yellow-500" />
+            <span>Premium Fitness Management</span>
           </div>
         </motion.div>
         </motion.div>
-        )}
       </AnimatePresence>
     </div>
   );

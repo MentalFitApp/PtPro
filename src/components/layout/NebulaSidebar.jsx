@@ -172,31 +172,9 @@ const colorMap = {
 
 // === SIDEBAR LOGO ===
 const SidebarLogo = ({ isCollapsed, branding }) => {
-  // Mostra cappellino di Natale dal 1 dicembre al 7 gennaio
-  const now = new Date();
-  const month = now.getMonth();
-  const day = now.getDate();
-  const showChristmasHat = (month === 11) || (month === 0 && day <= 7);
-  
-  const ChristmasHat = () => (
-    <img 
-      src="/christmas-hat.png" 
-      alt="🎅"
-      className="absolute z-10 drop-shadow-lg pointer-events-none"
-      style={{ 
-        top: '-14px',
-        left: '6px',
-        width: '40px', 
-        height: '40px',
-        transform: 'rotate(-10deg)' 
-      }}
-    />
-  );
-  
   if (isCollapsed) {
     return (
       <div className="relative mx-auto">
-        {showChristmasHat && <ChristmasHat />}
         {branding?.logoUrl ? (
           <motion.img 
             src={branding.logoUrl} 
@@ -220,7 +198,6 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
     <motion.div className="flex items-center gap-3">
       {branding?.logoUrl ? (
         <div className="relative">
-          {showChristmasHat && <ChristmasHat />}
           <motion.img 
             src={branding.logoUrl} 
             alt={branding.appName}
@@ -231,7 +208,6 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
       ) : (
         <>
           <div className="relative">
-            {showChristmasHat && <ChristmasHat />}
             <motion.div 
               className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-cyan-500/40 shadow-lg shadow-cyan-500/25"
               whileHover={{ scale: 1.05, rotate: 2 }}
@@ -494,7 +470,7 @@ export const NebulaSidebar = ({
       initial={false}
       animate={{ width: isCollapsed ? 72 : 260 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className={`fixed top-0 left-0 h-screen z-40 flex flex-col ${className}`}
+      className={`hidden lg:flex fixed top-0 left-0 h-screen z-40 flex-col ${className}`}
     >
       {/* Glass Background - Light/Dark aware */}
       <div className={`absolute inset-0 backdrop-blur-2xl ${isDark ? 'bg-slate-900/40' : 'bg-white/70'}`} />

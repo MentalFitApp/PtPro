@@ -1120,10 +1120,10 @@ const DashboardDemo = () => {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       {/* NebulaBackground gestito da ProLayout */}
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-24 lg:pb-6">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-24 lg:pb-6 overflow-x-hidden">
         
         {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -596,8 +596,8 @@ const PRESET_COMPONENTS = {
 // ============================================
 // COMPONENTE PRINCIPALE
 // ============================================
-const NebulaBackground = ({ preset = 'cyber', className = '' }) => {
-  const config = PRESET_COMPONENTS[preset] || PRESET_COMPONENTS.cyber;
+const NebulaBackground = ({ preset = 'liquid', className = '' }) => {
+  const config = PRESET_COMPONENTS[preset] || PRESET_COMPONENTS.liquid;
   const { Component } = config;
 
   return (

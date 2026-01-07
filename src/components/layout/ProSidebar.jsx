@@ -144,32 +144,9 @@ const getNavConfig = (role, isSuperAdmin = false) => {
 
 // === SIDEBAR LOGO ===
 const SidebarLogo = ({ isCollapsed, branding }) => {
-  // Mostra cappellino di Natale dal 1 dicembre al 7 gennaio
-  const now = new Date();
-  const month = now.getMonth(); // 0-11
-  const day = now.getDate();
-  const showChristmasHat = (month === 11) || (month === 0 && day <= 7); // Dicembre o Gennaio 1-7
-  
-  // Posizione manuale del cappellino: modifica top e left per regolare
-  const ChristmasHat = () => (
-    <img 
-      src="/christmas-hat.png" 
-      alt="🎅"
-      className="absolute z-10 drop-shadow-lg pointer-events-none"
-      style={{ 
-        top: '-16px',    // Distanza dall'alto (negativo = più su)
-        left: '8px',     // Distanza da sinistra (aumenta per spostare a destra)
-        width: '44px', 
-        height: '44px',
-        transform: 'rotate(-10deg)' 
-      }}
-    />
-  );
-  
   if (isCollapsed) {
     return branding?.logoUrl ? (
       <div className="relative mx-auto">
-        {showChristmasHat && <ChristmasHat />}
         <motion.img 
           src={branding.logoUrl} 
           alt={branding.appName}
@@ -180,7 +157,6 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
       </div>
     ) : (
       <div className="relative mx-auto">
-        {showChristmasHat && <ChristmasHat />}
         <motion.div 
           className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/20"
           whileHover={{ scale: 1.05, rotate: 2 }}
@@ -205,7 +181,6 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
     >
       {branding?.logoUrl ? (
         <div className="relative">
-          {showChristmasHat && <ChristmasHat />}
           <motion.img 
             src={branding.logoUrl} 
             alt={branding.appName}
@@ -216,7 +191,6 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
       ) : (
         <>
           <div className="relative">
-            {showChristmasHat && <ChristmasHat />}
             <motion.div 
               className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/25"
               whileHover={{ scale: 1.05, rotate: 2 }}
