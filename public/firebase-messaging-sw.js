@@ -1,4 +1,4 @@
-// Firebase Messaging Service Worker per PtPro PWA
+// Firebase Messaging Service Worker per FitFlows PWA
 // Gestisce le notifiche push in background per Android e iOS PWA
 
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
@@ -60,7 +60,7 @@ messaging.onBackgroundMessage((payload) => {
   const data = payload.data || {};
   const type = data.type || 'default';
   
-  const notificationTitle = notification.title || `${getNotificationIcon(type)} PtPro`;
+  const notificationTitle = notification.title || `${getNotificationIcon(type)} FitFlows`;
   const notificationOptions = {
     body: notification.body || 'Hai una nuova notifica',
     icon: notification.icon || '/logo192.png',

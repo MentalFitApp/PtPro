@@ -215,12 +215,12 @@ const MobileMenu = ({ isOpen, setIsOpen, isCoach, isCollaboratore, isClient, use
                 <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/30">
                   <img 
                     src="/logo192.png" 
-                    alt="FitFlow"
+                    alt="FitFlows"
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-white">FitFlow</h1>
+                  <h1 className="text-lg font-bold text-white">FitFlows</h1>
                   <p className="text-xs text-slate-400">
                     {isCoach ? 'Coach Panel' : isCollaboratore ? 'Collaboratore' : isClient ? 'Client Area' : 'Admin Panel'}
                   </p>
@@ -565,7 +565,7 @@ const SidebarLogo = ({ isCollapsed }) => {
       <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-blue-500/30 mx-auto shadow-lg shadow-blue-500/30">
         <img 
           src="/logo192.png" 
-          alt="FitFlow"
+          alt="FitFlows"
           className="w-full h-full object-cover"
         />
       </div>
@@ -964,7 +964,7 @@ export default function MainLayout() {
                       <div className="w-6 h-6 rounded-lg overflow-hidden ring-1 ring-blue-500/30">
                         <img 
                           src="/logo192.png" 
-                          alt="FitFlow"
+                          alt="FitFlows"
                           className="w-full h-full object-cover"
                         />
                       </div>

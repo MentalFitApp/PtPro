@@ -838,7 +838,7 @@ const Login = () => {
               <div className="relative w-14 h-14 rounded-xl overflow-hidden ring-2 ring-blue-500/30 shadow-xl shadow-blue-500/30">
                 <img 
                   src="/logo192.png" 
-                  alt="FitFlow Logo" 
+                  alt="FitFlows Logo" 
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -855,7 +855,7 @@ const Login = () => {
                 animate={{ opacity: [0.3, 0.6, 0.3] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               />
-              <span className="relative bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">FitFlow</span>
+              <span className="relative bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">FitFlows</span>
             </motion.h1>
           </motion.div>
 
@@ -1006,7 +1006,7 @@ const Login = () => {
           className="text-center mt-6 space-y-1"
         >
           <p className="text-slate-500 text-xs">
-            Powered by <span className="text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text font-semibold">FitFlow</span> Platform
+            Powered by <span className="text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text font-semibold">FitFlows</span> Platform
           </p>
           <div className="flex items-center justify-center gap-2 text-xs text-slate-600">
             <Crown size={10} className="text-yellow-500" />

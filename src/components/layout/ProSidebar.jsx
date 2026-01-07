@@ -164,7 +164,7 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
         >
           <img 
             src="/logo192.png" 
-            alt="FitFlow"
+            alt="FitFlows"
             className="w-full h-full object-cover"
           />
         </motion.div>
@@ -198,13 +198,13 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
             >
               <img 
                 src="/logo192.png" 
-                alt="FitFlow"
+                alt="FitFlows"
                 className="w-full h-full object-cover"
               />
             </motion.div>
           </div>
           <div className="flex flex-col">
-            <h1 className="text-base font-bold text-theme-text-primary leading-tight">{branding?.appName || 'FitFlow'}</h1>
+            <h1 className="text-base font-bold text-theme-text-primary leading-tight">{branding?.appName || 'FitFlows'}</h1>
             <span className="text-[10px] font-medium text-blue-400/70 tracking-wider uppercase">Pro</span>
           </div>
         </>

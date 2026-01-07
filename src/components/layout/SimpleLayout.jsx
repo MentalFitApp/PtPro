@@ -64,7 +64,7 @@ const Sidebar = () => {
             <UsersRound className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-theme-text-primary">FitFlow Pro</h1>
+            <h1 className="text-lg font-bold text-theme-text-primary">FitFlows Pro</h1>
             <p className="text-xs text-theme-text-secondary">Client Area</p>
           </div>
         </div>

@@ -377,7 +377,7 @@ export default function TenantBranding() {
                     </label>
                     <input type="text" value={formData.appName} onChange={(e) => setFormData({ ...formData, appName: e.target.value })}
                       className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="es. FitFlow Pro" />
+                      placeholder="es. FitFlows Pro" />
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">

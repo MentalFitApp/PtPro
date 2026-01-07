@@ -1,8 +1,8 @@
-// Service Worker - PtPro PWA
+// Service Worker - FitFlows PWA
 // Versione migliorata con offline support e background sync
-const CACHE_NAME = 'ptpro-v4'; // Incrementa per forzare update
-const ASSETS_CACHE = 'ptpro-assets-v4';
-const DATA_CACHE = 'ptpro-data-v2';
+const CACHE_NAME = 'fitflows-v4'; // Incrementa per forzare update
+const ASSETS_CACHE = 'fitflows-assets-v4';
+const DATA_CACHE = 'fitflows-data-v2';
 
 // Assets critici da cachare
 const CRITICAL_ASSETS = [
@@ -194,7 +194,7 @@ function createOfflinePage() {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>PtPro - Offline</title>
+      <title>FitFlows - Offline</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {

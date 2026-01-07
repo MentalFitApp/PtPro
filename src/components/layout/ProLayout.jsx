@@ -122,8 +122,8 @@ const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenu
             />
           ) : (
             <div className="flex items-center gap-2">
-              <img src="/logo192.png" alt="FitFlow" className="w-8 h-8 rounded-lg" />
-              <span className="text-base font-semibold text-white">{branding?.appName || 'FitFlow'}</span>
+              <img src="/logo192.png" alt="FitFlows" className="w-8 h-8 rounded-lg" />
+              <span className="text-base font-semibold text-white">{branding?.appName || 'FitFlows'}</span>
             </div>
           )}
         </div>

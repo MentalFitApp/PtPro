@@ -1,6 +1,6 @@
 {
-  "name": "FitFlow - Personal Trainer App",
-  "short_name": "FitFlow",
+  "name": "FitFlows - Personal Trainer App",
+  "short_name": "FitFlows",
   "description": "Gestisci i tuoi clienti, schede allenamento e piani alimentari. L'app completa per Personal Trainer e Coach.",
   "start_url": "/",
   "scope": "/",

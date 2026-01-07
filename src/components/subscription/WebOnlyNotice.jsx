@@ -78,7 +78,7 @@ export function WebOnlyBanner({
 /**
  * Componente card per sezione pagamenti/abbonamento
  */
-export function SubscriptionWebOnlyCard({ tenantName = "FitFlow" }) {
+export function SubscriptionWebOnlyCard({ tenantName = "FitFlows" }) {
   const isInstalled = useIsInstalledApp();
   
   if (!isInstalled) return null;

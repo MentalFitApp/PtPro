@@ -15,7 +15,7 @@ const TOUR_STEPS = {
     {
       id: 'welcome',
       type: 'modal',
-      title: 'Benvenuto su FitFlow! 🎉',
+      title: 'Benvenuto su FitFlows! 🎉',
       description: 'Ti guiderò attraverso le funzionalità principali della tua piattaforma. Clicca "Iniziamo" per scoprire tutto!',
     },
     {

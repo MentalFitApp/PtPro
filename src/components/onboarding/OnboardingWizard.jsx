@@ -17,7 +17,7 @@ const ONBOARDING_STEPS = {
   admin: [
     {
       id: 'welcome',
-      title: 'Benvenuto su FitFlow! 🎉',
+      title: 'Benvenuto su FitFlows! 🎉',
       description: 'Questa breve guida ti aiuterà a configurare il tuo spazio di lavoro e iniziare a gestire il tuo business.',
       icon: Sparkles,
       color: 'cyan'
@@ -73,7 +73,7 @@ const ONBOARDING_STEPS = {
   coach: [
     {
       id: 'welcome',
-      title: 'Benvenuto su FitFlow! 💪',
+      title: 'Benvenuto su FitFlows! 💪',
       description: 'Sei stato aggiunto come Coach. Ecco come iniziare a gestire i tuoi clienti.',
       icon: Sparkles,
       color: 'cyan'

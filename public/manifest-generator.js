@@ -10,15 +10,15 @@
     const tenantId = localStorage.getItem('tenantId');
     const brandingStr = localStorage.getItem('tenantBranding');
     
-    let appName = 'FitFlow';
-    let shortName = 'FitFlow';
+    let appName = 'FitFlows';
+    let shortName = 'FitFlows';
     let logoUrl = null;
 
     if (brandingStr) {
       try {
         const branding = JSON.parse(brandingStr);
-        appName = branding.appName || 'FitFlow';
-        shortName = branding.appName?.substring(0, 12) || 'FitFlow';
+        appName = branding.appName || 'FitFlows';
+        shortName = branding.appName?.substring(0, 12) || 'FitFlows';
         logoUrl = branding.logoUrl;
       } catch (e) {
         console.debug('Could not parse branding:', e);

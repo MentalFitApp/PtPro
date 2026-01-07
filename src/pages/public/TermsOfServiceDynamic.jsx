@@ -6,14 +6,14 @@ import { doc, getDoc } from 'firebase/firestore';
 
 const defaultContent = {
   title: "Termini e Condizioni di Servizio",
-  subtitle: "Ultimo aggiornamento: 24 Novembre 2025",
-  intro: "Benvenuto su FlowFit Pro. Utilizzando i nostri servizi, accetti di essere vincolato dai seguenti termini e condizioni. Ti invitiamo a leggerli attentamente.",
+  subtitle: "Ultimo aggiornamento: 7 Gennaio 2026",
+  intro: "Benvenuto su FitFlows. Utilizzando i nostri servizi, accetti di essere vincolato dai seguenti termini e condizioni. Ti invitiamo a leggerli attentamente.",
   sections: [
     {
       icon: "scale",
       title: "1. Accettazione dei Termini",
       content: [
-        "Accedendo e utilizzando FlowFit Pro, accetti di essere vincolato da questi Termini e Condizioni",
+        "Accedendo e utilizzando FitFlows, accetti di essere vincolato da questi Termini e Condizioni",
         "Se non accetti questi termini, non utilizzare i nostri servizi",
         "Ci riserviamo il diritto di modificare questi termini in qualsiasi momento",
         "L'uso continuato dopo le modifiche costituisce accettazione dei nuovi termini"
@@ -23,7 +23,7 @@ const defaultContent = {
       icon: "filetext",
       title: "2. Descrizione del Servizio",
       content: [
-        "FlowFit Pro è una piattaforma SaaS per personal trainer e professionisti del fitness",
+        "FitFlows è una piattaforma SaaS per personal trainer e professionisti del fitness",
         "Offriamo strumenti per gestione clienti, schede allenamento, calendario, chat e analytics",
         "Il servizio è fornito \"come disponibile\" senza garanzie di disponibilità continua",
         "Ci riserviamo il diritto di modificare o interrompere servizi con preavviso"
@@ -56,7 +56,7 @@ const defaultContent = {
       icon: "shield",
       title: "5. Proprietà Intellettuale",
       content: [
-        "FlowFit Pro e tutti i suoi contenuti sono di proprietà di FlowFit Pro S.r.l.",
+        "FitFlows e tutti i suoi contenuti sono di proprietà del titolare del servizio",
         "Ti concediamo una licenza limitata, non esclusiva e revocabile per utilizzare il servizio",
         "I contenuti che carichi rimangono di tua proprietà",
         "Ci concedi una licenza per utilizzare i tuoi contenuti al fine di fornire il servizio"
@@ -67,11 +67,11 @@ const defaultContent = {
       title: "6. Pagamenti e Abbonamenti",
       content: [
         "Gli abbonamenti sono fatturati mensilmente o annualmente in base al piano scelto",
-        "I prezzi sono indicati in Euro (€) e IVA esclusa",
-        "Il pagamento avviene tramite carta di credito o bonifico bancario",
+        "I prezzi sono indicati in Euro (€)",
+        "Il pagamento avviene tramite carta di credito o altri metodi disponibili",
         "L'abbonamento si rinnova automaticamente fino a cancellazione",
         "Puoi cancellare in qualsiasi momento dalla dashboard",
-        "I rimborsi sono gestiti caso per caso entro 30 giorni dall'acquisto"
+        "I rimborsi sono gestiti caso per caso entro 14 giorni dall'acquisto"
       ]
     },
     {
@@ -87,27 +87,46 @@ const defaultContent = {
     },
     {
       icon: "alerttriangle",
-      title: "8. Limitazione di Responsabilità",
+      title: "8. ESONERO DI RESPONSABILITÀ - IMPORTANTE",
       content: [
-        "FlowFit Pro è fornito \"come disponibile\" senza garanzie di alcun tipo",
+        "**LEGGERE ATTENTAMENTE QUESTA SEZIONE**",
+        "FitFlows è esclusivamente una **piattaforma tecnologica** che fornisce strumenti software",
+        "I Personal Trainer, Coach, Nutrizionisti e altri professionisti che utilizzano FitFlows sono **soggetti terzi completamente indipendenti**",
+        "FitFlows **NON fornisce** consulenze fitness, mediche, nutrizionali o di altro tipo",
+        "FitFlows **NON verifica** le qualifiche, certificazioni o competenze dei professionisti iscritti",
+        "FitFlows **NON è responsabile** per:",
+        "- Programmi di allenamento o alimentazione creati dai professionisti sulla piattaforma",
+        "- Lesioni, danni alla salute o qualsiasi conseguenza derivante dall'esecuzione di tali programmi",
+        "- La condotta, professionalità o affidabilità dei coach iscritti",
+        "- Controversie economiche o legali tra professionisti e i loro clienti",
+        "- Risultati promessi o attesi dai programmi",
+        "**AVVERTENZA**: Prima di iniziare qualsiasi programma di allenamento o dieta, consulta sempre un medico. Verifica sempre le credenziali del professionista a cui ti affidi."
+      ]
+    },
+    {
+      icon: "alerttriangle",
+      title: "9. Limitazione di Responsabilità",
+      content: [
+        "FitFlows è fornito \"come disponibile\" senza garanzie di alcun tipo",
         "Non garantiamo che il servizio sia ininterrotto o privo di errori",
         "Non siamo responsabili per perdite di dati, profitti o danni indiretti",
         "La nostra responsabilità massima è limitata all'importo pagato negli ultimi 12 mesi",
-        "Non siamo responsabili per contenuti di terze parti o integrazioni esterne"
+        "Non siamo responsabili per contenuti di terze parti o integrazioni esterne",
+        "L'utente utilizza la piattaforma a proprio rischio e pericolo"
       ]
     },
     {
       icon: "shield",
-      title: "9. Indennizzo",
+      title: "10. Indennizzo",
       content: [
         "Accetti di indennizzarci da qualsiasi reclamo derivante dal tuo uso del servizio",
         "Questo include violazioni di questi termini o violazioni di diritti di terzi",
-        "Ci difenderemo a nostre spese, ma puoi partecipare con tuo avvocato"
+        "I professionisti che offrono servizi tramite la piattaforma sono gli unici responsabili delle loro attività"
       ]
     },
     {
       icon: "filetext",
-      title: "10. Modifiche ai Termini",
+      title: "11. Modifiche ai Termini",
       content: [
         "Ci riserviamo il diritto di modificare questi termini in qualsiasi momento",
         "Modifiche sostanziali saranno notificate via email con 30 giorni di anticipo",
@@ -117,19 +136,20 @@ const defaultContent = {
     },
     {
       icon: "scale",
-      title: "11. Legge Applicabile",
+      title: "12. Legge Applicabile",
       content: [
         "Questi termini sono regolati dalla legge italiana",
-        "Qualsiasi controversia sarà gestita dal Tribunale di Roma",
-        "In caso di clausole invalide, le altre rimangono in vigore"
+        "Per qualsiasi controversia si farà riferimento al Foro competente in base alla residenza dell'utente",
+        "In caso di clausole invalide, le altre rimangono in vigore",
+        "Le comunicazioni ufficiali avverranno tramite email"
       ]
     }
   ],
   contact: {
     title: "Contatti Legali",
-    email: "legal@flowfitpro.it",
-    address: "FlowFit Pro S.r.l. - Via Example 123, 00100 Roma, Italia",
-    pec: "flowfitpro@pec.it"
+    email: "legal@fitflows.app",
+    address: "FitFlows - Servizio gestito da privato",
+    pec: "Richieste legali: legal@fitflows.app"
   }
 };
 

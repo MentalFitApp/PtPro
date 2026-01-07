@@ -47,7 +47,7 @@ export async function loadLandingConfig(tenantId) {
           }
         ],
         branding: {
-          appName: tenantData?.name || 'FitFlow',
+          appName: tenantData?.name || 'FitFlows',
           logoUrl: '/logo192.png',
           primaryColor: '#3b82f6',
           accentColor: '#60a5fa'
@@ -56,7 +56,7 @@ export async function loadLandingConfig(tenantId) {
         customDomain: tenantData?.customDomain || null,
         enabled: true,
         seo: {
-          title: `${tenantData?.name || 'FitFlow'} - Gestione Clienti Fitness`,
+          title: `${tenantData?.name || 'FitFlows'} - Gestione Clienti Fitness`,
           description: 'La piattaforma completa per personal trainer professionisti',
           keywords: 'personal trainer, fitness, gestione clienti, schede allenamento'
         }
@@ -111,7 +111,7 @@ export async function loadBrandingConfig(tenantId) {
       tenantId,
       tenantName: tenantData?.name || tenantId,
       config: brandingDoc.exists() ? brandingDoc.data() : {
-        appName: tenantData?.name || 'FitFlow',
+        appName: tenantData?.name || 'FitFlows',
         adminAreaName: 'Area Personale',
         clientAreaName: 'Area Cliente',
         coachAreaName: 'Area Coach',

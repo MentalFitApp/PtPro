@@ -138,7 +138,7 @@ export const colorPresets = {
 };
 
 export const defaultBranding = {
-  appName: 'FitFlow',
+  appName: 'FitFlows',
   adminAreaName: 'Area Personale',
   clientAreaName: 'Area Cliente',
   coachAreaName: 'Area Coach',

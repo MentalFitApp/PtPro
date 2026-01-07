@@ -3,7 +3,7 @@
 
 import { useEffect, useRef } from 'react';
 
-const DEFAULT_TITLE = 'FlowFitPro';
+const DEFAULT_TITLE = 'FitFlows';
 const DEFAULT_DESCRIPTION = 'La piattaforma completa per Personal Trainer e Coach';
 
 /**

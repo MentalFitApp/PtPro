@@ -67,7 +67,7 @@ export default function Community() {
   const [callParticipants, setCallParticipants] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
   const [communitySettings, setCommunitySettings] = useState({
-    name: "FitFlow Community",
+    name: "FitFlows Community",
     description: "Condividi il tuo viaggio fitness",
     autoRecordCalls: true,
     communityEnabled: true,
@@ -205,7 +205,7 @@ export default function Community() {
       const data = doc.data();
       if (data) {
         setCommunitySettings({
-          name: data.name || "FitFlow Community",
+          name: data.name || "FitFlows Community",
           description: data.description || "Condividi il tuo viaggio fitness",
           autoRecordCalls: data.autoRecordCalls ?? true,
           communityEnabled: data.communityEnabled ?? true,

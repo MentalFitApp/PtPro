@@ -7,8 +7,8 @@ import { doc, getDoc } from 'firebase/firestore';
 // Default content se non configurato
 const defaultContent = {
   title: "Privacy Policy",
-  subtitle: "Ultimo aggiornamento: 24 Novembre 2025",
-  intro: "La tua privacy è importante per noi. Questa Privacy Policy spiega come raccogliamo, utilizziamo e proteggiamo i tuoi dati personali quando utilizzi FlowFit Pro.",
+  subtitle: "Ultimo aggiornamento: 7 Gennaio 2026",
+  intro: "La tua privacy è importante per noi. Questa Privacy Policy spiega come raccogliamo, utilizziamo e proteggiamo i tuoi dati personali quando utilizzi FitFlows.",
   sections: [
     {
       icon: "database",
@@ -72,7 +72,7 @@ const defaultContent = {
         "**Diritto di cancellazione**: Puoi richiedere la rimozione dei tuoi dati",
         "**Diritto di limitazione**: Puoi limitare il trattamento dei dati",
         "**Diritto di portabilità**: Puoi ottenere i dati in formato leggibile",
-        "Per esercitare questi diritti: privacy@flowfitpro.it"
+        "Per esercitare questi diritti: privacy@fitflows.app"
       ]
     },
     {
@@ -104,8 +104,23 @@ const defaultContent = {
       ]
     },
     {
+      icon: "shield",
+      title: "10. Esonero Responsabilità - Fornitori di Servizi",
+      content: [
+        "**IMPORTANTE**: FitFlows è una piattaforma tecnologica che mette a disposizione strumenti software",
+        "I Personal Trainer, Coach e professionisti che utilizzano FitFlows per fornire servizi ai propri clienti sono **soggetti terzi indipendenti**",
+        "FitFlows **NON è responsabile** per:",
+        "- La qualità, accuratezza o idoneità dei programmi di allenamento/alimentazione creati dai coach",
+        "- Eventuali danni, lesioni o problemi di salute derivanti dall'esecuzione di tali programmi",
+        "- La condotta professionale dei coach che utilizzano la piattaforma",
+        "- Controversie tra coach e i loro clienti",
+        "Gli utenti sono invitati a verificare le credenziali e qualifiche dei professionisti prima di seguire qualsiasi programma",
+        "In caso di dubbi sulla propria condizione fisica, consultare sempre un medico prima di iniziare qualsiasi programma di allenamento"
+      ]
+    },
+    {
       icon: "filetext",
-      title: "10. Modifiche alla Privacy Policy",
+      title: "11. Modifiche alla Privacy Policy",
       content: [
         "Ci riserviamo il diritto di aggiornare questa policy",
         "Notificheremo modifiche sostanziali via email",
@@ -115,9 +130,9 @@ const defaultContent = {
   ],
   contact: {
     title: "Contatti Privacy",
-    email: "privacy@flowfitpro.it",
-    address: "FlowFit Pro S.r.l. - Via Example 123, 00100 Roma, Italia",
-    dpo: "Data Protection Officer: dpo@flowfitpro.it"
+    email: "privacy@fitflows.app",
+    address: "FitFlows - Servizio gestito da privato",
+    dpo: "Richieste privacy: privacy@fitflows.app"
   }
 };
 
@@ -275,7 +290,7 @@ export default function PrivacyPolicyDynamic() {
       <div className="bg-slate-800/50 border-t border-slate-700/50 py-8">
         <div className="max-w-5xl mx-auto px-6 text-center">
           <p className="text-slate-400 text-sm">
-            © 2025 FlowFit Pro. Tutti i diritti riservati.
+            © 2026 FitFlows. Tutti i diritti riservati.
           </p>
         </div>
       </div>

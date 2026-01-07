@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pt-manager-pro-v1';
+const CACHE_NAME = 'fitflows-v1';
 const urlsToCache = [
   '/PtPro/',
   '/PtPro/index.html',

@@ -139,7 +139,7 @@ export default function PlatformLogin() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl mb-4 shadow-2xl">
             <Crown className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">FitFlow Platform</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">FitFlows Platform</h1>
           <p className="text-slate-400">CEO Dashboard Access</p>
         </div>
 
@@ -158,7 +158,7 @@ export default function PlatformLogin() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                  placeholder="ceo@fitflow.com"
+                  placeholder="ceo@fitflows.com"
                   required
                   autoComplete="email"
                   disabled={loading}
@@ -251,7 +251,7 @@ export default function PlatformLogin() {
           {/* Info */}
           <div className="mt-6 pt-6 border-t border-white/10">
             <p className="text-xs text-slate-400 text-center">
-              Accesso riservato esclusivamente al CEO della piattaforma FitFlow.
+              Accesso riservato esclusivamente al CEO della piattaforma FitFlows.
               <br />
               Gestisci tutti i tenants, subscriptions e analytics globali.
             </p>
@@ -261,7 +261,7 @@ export default function PlatformLogin() {
         {/* Footer */}
         <div className="mt-6 text-center">
           <p className="text-sm text-slate-400">
-            FitFlow Platform © 2025
+            FitFlows Platform © 2025
           </p>
         </div>
       </div>

@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/react';
 import App from './App.jsx';
 import './index.css';
 import './styles/animations.css';
+import { initializeCapacitor } from './utils/capacitor.js';
 
 // Inizializza Sentry per error tracking (solo in produzione)
 if (import.meta.env.PROD) {
@@ -41,7 +42,7 @@ if (import.meta.env.PROD) {
   });
 }
 
-// Registra il service worker per le notifiche push (solo in produzione)
+// Registra il service worker per le notifiche push (solo in produzione e non su native)
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   navigator.serviceWorker
     .register('/firebase-messaging-sw.js')
@@ -52,6 +53,9 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
       console.error('Errore registrazione Service Worker:', error);
     });
 }
+
+// Inizializza Capacitor per piattaforme native (Android/iOS)
+initializeCapacitor();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

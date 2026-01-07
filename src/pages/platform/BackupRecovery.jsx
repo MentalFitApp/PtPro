@@ -148,7 +148,7 @@ export default function BackupRecovery() {
           createdAt: new Date().toISOString(),
           createdBy: auth.currentUser.email,
           version: '1.0.0',
-          platform: 'FitFlow'
+          platform: 'FitFlows'
         },
         data: allData
       };

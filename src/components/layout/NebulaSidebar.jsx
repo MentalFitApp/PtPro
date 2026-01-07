@@ -187,7 +187,7 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
             className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-cyan-500/30 shadow-lg shadow-cyan-500/20"
             whileHover={{ scale: 1.05, rotate: 2 }}
           >
-            <img src="/logo192.png" alt="FitFlow" className="w-full h-full object-cover" />
+            <img src="/logo192.png" alt="FitFlows" className="w-full h-full object-cover" />
           </motion.div>
         )}
       </div>
@@ -212,11 +212,11 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
               className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-cyan-500/40 shadow-lg shadow-cyan-500/25"
               whileHover={{ scale: 1.05, rotate: 2 }}
             >
-              <img src="/logo192.png" alt="FitFlow" className="w-full h-full object-cover" />
+              <img src="/logo192.png" alt="FitFlows" className="w-full h-full object-cover" />
             </motion.div>
           </div>
           <div className="flex flex-col">
-            <h1 className="text-base font-bold text-white leading-tight">{branding?.appName || 'FitFlow'}</h1>
+            <h1 className="text-base font-bold text-white leading-tight">{branding?.appName || 'FitFlows'}</h1>
             <span className="text-[10px] font-medium bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent tracking-wider uppercase flex items-center gap-1">
               <Sparkles size={10} /> Pro
             </span>

@@ -100,7 +100,7 @@ const Sidebar = ({ collapsed, setCollapsed, activePage, setActivePage, handleLog
             >
               <Crown className="w-8 h-8 text-yellow-500" />
               <div>
-                <h1 className="text-lg font-bold text-white">FitFlow</h1>
+                <h1 className="text-lg font-bold text-white">FitFlows</h1>
                 <p className="text-xs text-slate-400">Platform CEO</p>
               </div>
             </motion.div>
@@ -301,6 +301,8 @@ export default function CEOPlatformDashboard() {
   const [currentLandingBlocks, setCurrentLandingBlocks] = useState([]);
   const [editingLegalPage, setEditingLegalPage] = useState(null); // 'privacy' or 'terms'
   const [legalPageContent, setLegalPageContent] = useState(null);
+  const [editingMainLanding, setEditingMainLanding] = useState(false); // Editor landing principale
+  const [mainLandingConfig, setMainLandingConfig] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'active', 'trial', 'expired'
   const [actionLoading, setActionLoading] = useState(false);
   const navigate = useNavigate();
@@ -982,7 +984,7 @@ export default function CEOPlatformDashboard() {
             <div>
               <h1 className="text-2xl font-bold text-white flex items-center gap-3">
                 <Crown className="w-8 h-8 text-yellow-500" />
-                FitFlow Platform Dashboard
+                FitFlows Platform Dashboard
               </h1>
               <p className="text-sm text-slate-400 mt-1">Complete platform overview and management</p>
             </div>
@@ -1477,6 +1479,44 @@ export default function CEOPlatformDashboard() {
                   </div>
                 </div>
               </div>
+
+              {/* 🌟 LANDING PAGE PRINCIPALE FITFLOWS */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-cyan-600/20 p-6 rounded-2xl border border-blue-500/30 backdrop-blur-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                      <Zap className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white mb-1">🚀 Landing Page Principale FitFlows</h3>
+                      <p className="text-slate-400">La pagina che vedono i visitatori su <span className="text-blue-400 font-mono">/landing</span></p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <a
+                      href="/landing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg text-slate-300 hover:text-white transition-all"
+                    >
+                      <Eye size={18} />
+                      <span>Anteprima</span>
+                      <ExternalLink size={14} />
+                    </a>
+                    <button
+                      onClick={() => setEditingMainLanding(true)}
+                      className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-lg text-white font-semibold transition-all shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50"
+                    >
+                      <Edit3 size={18} />
+                      <span>Modifica Landing</span>
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
 
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -3320,6 +3360,201 @@ export default function CEOPlatformDashboard() {
           }}
         />
       )}
+
+      {/* Main Landing Page Editor Modal */}
+      <AnimatePresence>
+        {editingMainLanding && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-4"
+            onClick={() => setEditingMainLanding(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-blue-500/30 max-w-5xl w-full max-h-[95vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600/30 via-purple-600/30 to-cyan-600/30 p-6 border-b border-slate-700/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                      <Zap className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                        🚀 Landing Page Principale FitFlows
+                      </h3>
+                      <p className="text-slate-400 mt-1">
+                        Personalizza la pagina che vedono i visitatori
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setEditingMainLanding(false)}
+                    className="p-3 hover:bg-slate-700/50 rounded-xl transition-colors group"
+                  >
+                    <X className="w-6 h-6 text-slate-400 group-hover:text-white" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 overflow-y-auto max-h-[calc(95vh-180px)]">
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <a
+                    href="/landing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center gap-4 p-5 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-blue-500/50 rounded-xl transition-all"
+                  >
+                    <div className="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center group-hover:bg-blue-600/30 transition-colors">
+                      <Eye className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white">Anteprima Live</p>
+                      <p className="text-sm text-slate-400">Vedi come appare ai visitatori</p>
+                    </div>
+                    <ExternalLink className="w-5 h-5 text-slate-500 ml-auto" />
+                  </a>
+
+                  <button
+                    onClick={() => {
+                      setEditingMainLanding(false);
+                      navigate('/admin/landing-pages');
+                    }}
+                    className="group flex items-center gap-4 p-5 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-purple-500/50 rounded-xl transition-all text-left"
+                  >
+                    <div className="w-12 h-12 bg-purple-600/20 rounded-xl flex items-center justify-center group-hover:bg-purple-600/30 transition-colors">
+                      <Layout className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white">Page Builder</p>
+                      <p className="text-sm text-slate-400">Editor visuale avanzato</p>
+                    </div>
+                  </button>
+
+                  <a
+                    href="https://console.firebase.google.com/project/flowfitpro/firestore"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center gap-4 p-5 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-orange-500/50 rounded-xl transition-all"
+                  >
+                    <div className="w-12 h-12 bg-orange-600/20 rounded-xl flex items-center justify-center group-hover:bg-orange-600/30 transition-colors">
+                      <Database className="w-6 h-6 text-orange-400" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white">Firebase Console</p>
+                      <p className="text-sm text-slate-400">Modifica dati direttamente</p>
+                    </div>
+                    <ExternalLink className="w-5 h-5 text-slate-500 ml-auto" />
+                  </a>
+                </div>
+
+                {/* Sezioni della Landing */}
+                <div className="space-y-6">
+                  <h4 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-400" />
+                    Sezioni della Landing Page
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { name: 'Hero Section', desc: 'Titolo principale, sottotitolo, CTA buttons', icon: '🎯', color: 'blue' },
+                      { name: 'Features', desc: '6 card con icone che mostrano le funzionalità', icon: '✨', color: 'purple' },
+                      { name: 'Pricing', desc: '3 piani: Starter, Professional, Enterprise', icon: '💰', color: 'green' },
+                      { name: 'Testimonials', desc: 'Recensioni di personal trainer soddisfatti', icon: '⭐', color: 'yellow' },
+                      { name: 'CTA Finale', desc: 'Call-to-action finale con gradiente', icon: '🚀', color: 'cyan' },
+                      { name: 'Footer', desc: 'Links, contatti, social media', icon: '📋', color: 'slate' }
+                    ].map((section, index) => (
+                      <motion.div
+                        key={section.name}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className={`p-4 bg-${section.color}-600/10 border border-${section.color}-500/20 rounded-xl`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl">{section.icon}</span>
+                          <div>
+                            <p className="font-medium text-white">{section.name}</p>
+                            <p className="text-sm text-slate-400">{section.desc}</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Come modificare */}
+                <div className="mt-8 p-6 bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-xl">
+                  <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-blue-400" />
+                    Come modificare la Landing Page
+                  </h4>
+                  <div className="space-y-3 text-slate-300 text-sm">
+                    <p className="flex items-start gap-2">
+                      <span className="text-blue-400 font-bold">1.</span>
+                      <span><strong>File sorgente:</strong> <code className="bg-slate-800 px-2 py-1 rounded text-blue-400">src/pages/public/LandingPage.jsx</code></span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-blue-400 font-bold">2.</span>
+                      <span><strong>Configurazione:</strong> La landing carica i dati da <code className="bg-slate-800 px-2 py-1 rounded text-purple-400">tenants/[tenantId]/settings/landing</code> in Firestore</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-blue-400 font-bold">3.</span>
+                      <span><strong>Default config:</strong> Se non ci sono dati in Firestore, usa la configurazione di default nel file JSX</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="text-blue-400 font-bold">4.</span>
+                      <span><strong>Per modificare testi:</strong> Modifica l'oggetto <code className="bg-slate-800 px-2 py-1 rounded text-green-400">defaultLandingConfig</code> nel file JSX</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Path Firestore */}
+                <div className="mt-6 p-4 bg-slate-800/50 border border-slate-700 rounded-xl">
+                  <p className="text-sm text-slate-400 mb-2">Path Firestore per configurazione dinamica:</p>
+                  <code className="text-purple-400 text-sm font-mono">
+                    platform/settings/mainLanding
+                  </code>
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="p-6 border-t border-slate-700/50 bg-slate-800/30">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-slate-400">
+                    💡 Tip: Usa il Page Builder nella sezione Admin per un editor visuale
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setEditingMainLanding(false)}
+                      className="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
+                    >
+                      Chiudi
+                    </button>
+                    <a
+                      href="/landing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-lg text-white font-semibold transition-all flex items-center gap-2"
+                    >
+                      <Eye size={18} />
+                      Vedi Landing Live
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* CSS Styles */}
       <style>{`
