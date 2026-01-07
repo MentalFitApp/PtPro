@@ -1120,13 +1120,13 @@ const DashboardDemo = () => {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden w-full box-border">
       {/* NebulaBackground gestito da ProLayout */}
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-24 lg:pb-6 overflow-x-hidden">
+      <div className="relative w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 space-y-5 pb-24 lg:pb-6 overflow-x-hidden box-border">
         
         {/* Header */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
           <div>
             <motion.h1 
               initial={{ opacity: 0, y: -10 }}
@@ -1165,10 +1165,10 @@ const DashboardDemo = () => {
         </header>
 
         {/* Main Grid */}
-        <div className="grid lg:grid-cols-3 gap-5">
+        <div className="grid lg:grid-cols-3 gap-5 w-full">
           
           {/* Left Column - 2/3 */}
-          <div className="lg:col-span-2 space-y-5">
+          <div className="lg:col-span-2 space-y-5 w-full">
             
             {/* Hero Card - Revenue con toggle Incasso/Rinnovi */}
             <HeroCard 
@@ -1383,7 +1383,7 @@ const DashboardDemo = () => {
           </div>
 
           {/* Right Column - 1/3 */}
-          <div className="space-y-5">
+          <div className="space-y-5 w-full">
             
             {/* Quick Actions - Personalizzabili */}
             <div>
