@@ -14,7 +14,7 @@ import { defaultBranding, colorPresets, uiDensityOptions } from '../../config/te
 import { backgroundPresets, solidBackgroundColors } from '../../config/backgroundPresets';
 import { applyThemeColors, applyUiDensity, applyBackgroundPreset, applyCardTransparency } from '../../hooks/useTenantBranding';
 import { uploadToR2 } from '../../storageUtils';
-import { CURRENT_TENANT_ID } from '../../config/tenant';
+import { getCurrentTenantId } from '../../config/tenant';
 
 // ============ TABS ============
 const TABS = {
@@ -91,7 +91,7 @@ export default function TenantBranding() {
       }
 
       try {
-        const tid = CURRENT_TENANT_ID || localStorage.getItem('tenantId');
+        const tid = getCurrentTenantId() || localStorage.getItem('tenantId');
         setTenantId(tid);
 
         if (tid) {

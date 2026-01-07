@@ -3,13 +3,13 @@ import { motion } from 'framer-motion';
 import { Download, Trash2, AlertTriangle, Check, Loader } from 'lucide-react';
 import { exportUserData, downloadUserDataAsJSON, deleteUserData, canDeleteAccount } from '../../utils/gdprUtils';
 import { auth } from '../../firebase';
-import { CURRENT_TENANT_ID } from '../../config/tenant';
+import { getCurrentTenantId } from '../../config/tenant';
 import { useToast } from '../../contexts/ToastContext';
 
 const GDPRSettings = () => {
   const toast = useToast();
   const currentUser = auth.currentUser;
-  const tenantId = CURRENT_TENANT_ID;
+  const tenantId = getCurrentTenantId();
   const [isExporting, setIsExporting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

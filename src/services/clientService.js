@@ -12,7 +12,7 @@ import {
   doc
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getTenantCollection, getTenantDoc, getTenantSubcollection, CURRENT_TENANT_ID } from '../config/tenant';
+import { getTenantCollection, getTenantDoc, getTenantSubcollection, getCurrentTenantId } from '../config/tenant';
 import { notifyNewCheck, notifyNewAnamnesi, notifyPayment } from './notificationService';
 
 const functions = getFunctions(undefined, 'europe-west1');
@@ -136,7 +136,7 @@ export const deleteClient = async (db, clientId) => {
     // Usa soft-delete tramite Cloud Function
     const softDeleteClient = httpsCallable(functions, 'softDeleteClient');
     const result = await softDeleteClient({
-      tenantId: CURRENT_TENANT_ID,
+      tenantId: getCurrentTenantId(),
       clientId
     });
     
@@ -156,7 +156,7 @@ export const checkArchivedClient = async (email) => {
   try {
     const checkArchived = httpsCallable(functions, 'checkArchivedClient');
     const result = await checkArchived({
-      tenantId: CURRENT_TENANT_ID,
+      tenantId: getCurrentTenantId(),
       email
     });
     return result.data;
@@ -171,7 +171,7 @@ export const reactivateArchivedClient = async (archivedClientId, newUserId, newE
   try {
     const reactivate = httpsCallable(functions, 'reactivateArchivedClient');
     const result = await reactivate({
-      tenantId: CURRENT_TENANT_ID,
+      tenantId: getCurrentTenantId(),
       archivedClientId,
       newUserId,
       newEmail

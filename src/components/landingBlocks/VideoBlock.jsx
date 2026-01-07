@@ -12,6 +12,7 @@ const VideoBlock = ({ settings, isPreview = false }) => {
     subtitle = '',
     videoUrl = '',
     uploadedVideoUrl = '', // Video caricato direttamente
+    videoSource = 'url', // 'url' o 'upload'
     thumbnailUrl = '',
     posterImage = '', // Poster caricato
     autoplay = false,
@@ -28,7 +29,7 @@ const VideoBlock = ({ settings, isPreview = false }) => {
     padding = 'py-20',
   } = settings || {};
 
-  // Usa uploadedVideoUrl se disponibile, altrimenti videoUrl
+  // Usa uploadedVideoUrl se presente o se videoSource è 'upload', altrimenti videoUrl
   const effectiveVideoUrl = uploadedVideoUrl || videoUrl;
   const effectiveThumbnail = posterImage || thumbnailUrl;
 

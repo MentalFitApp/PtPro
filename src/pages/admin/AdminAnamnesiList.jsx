@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, query, orderBy, getDocs, doc, getDoc, limit, startAfter, where } from 'firebase/firestore';
 import { db, toDate } from '../../firebase';
-import { getTenantCollection, CURRENT_TENANT_ID } from '../../config/tenant';
+import { getTenantCollection, getCurrentTenantId } from '../../config/tenant';
 import { motion } from 'framer-motion';
 import { 
   FileText, User, Calendar, ArrowRight, Check, Search, 
@@ -56,7 +56,7 @@ export default function AdminAnamnesiList() {
         }
         
         try {
-          const anamRef = doc(db, `tenants/${CURRENT_TENANT_ID}/clients/${clientId}/anamnesi/initial`);
+          const anamRef = doc(db, `tenants/${getCurrentTenantId()}/clients/${clientId}/anamnesi/initial`);
           const anamSnap = await getDoc(anamRef);
           
           loadedClientsRef.current.add(clientId);

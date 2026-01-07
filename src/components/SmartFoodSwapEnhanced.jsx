@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Check, X, Info, ChevronDown, Search, AlertTriangle, Star, Clock, Sparkles, TrendingUp, Filter } from 'lucide-react';
 import { db, auth } from '../firebase';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
-import { getTenantSubcollection, CURRENT_TENANT_ID } from '../config/tenant';
+import { getTenantSubcollection, getCurrentTenantId } from '../config/tenant';
 import { useToast } from '../contexts/ToastContext';
 
 /**
@@ -490,7 +490,7 @@ export default function SmartFoodSwapEnhanced({
       const user = auth.currentUser;
       if (user) {
         try {
-          const initialRef = doc(db, `tenants/${CURRENT_TENANT_ID}/clients/${user.uid}/anamnesi/initial`);
+          const initialRef = doc(db, `tenants/${getCurrentTenantId()}/clients/${user.uid}/anamnesi/initial`);
           const initialSnap = await getDoc(initialRef);
           
           if (initialSnap.exists()) {

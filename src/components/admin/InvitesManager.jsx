@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { CURRENT_TENANT_ID } from '../../config/tenant';
+import { getCurrentTenantId } from '../../config/tenant';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { 
   Send, 
@@ -286,7 +286,7 @@ export default function InvitesManager({ onInviteCompleted }) {
     try {
       const listInvitations = httpsCallable(functions, 'listInvitations');
       const result = await listInvitations({
-        tenantId: CURRENT_TENANT_ID,
+        tenantId: getCurrentTenantId(),
         limit: 50
       });
 

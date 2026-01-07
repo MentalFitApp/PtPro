@@ -3,7 +3,7 @@ import { doc, onSnapshot, orderBy, query, updateDoc, deleteDoc, addDoc, setDoc, 
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { db, toDate, updateStatoPercorso } from '../../../../firebase';
-import { getTenantDoc, getTenantSubcollection, CURRENT_TENANT_ID } from '../../../../config/tenant';
+import { getTenantDoc, getTenantSubcollection, getCurrentTenantId } from '../../../../config/tenant';
 import { uploadToR2 } from '../../../../cloudflareStorage';
 import normalizePhotoURLs from '../../../../utils/normalizePhotoURLs';
 import { useToast } from '../../../../contexts/ToastContext';
@@ -234,7 +234,7 @@ export default function useClientDetailState(clientId, backPath, navigate) {
       
       const result = await generateMagicLinkFn({
         clientId: client.id,
-        tenantId: CURRENT_TENANT_ID,
+        tenantId: getCurrentTenantId(),
         email: client.email,
         name: client.name
       });

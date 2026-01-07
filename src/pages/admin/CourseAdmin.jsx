@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs, where } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../firebase';
@@ -73,10 +73,18 @@ export default function CourseAdmin() {
 
   // Load courses
   useEffect(() => {
-    const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
+    const tenantId = getCurrentTenantId();
+    const coursesQuery = query(
+      collection(db, 'courses'), 
+      orderBy('createdAt', 'desc')
+    );
+    
     const unsubscribe = onSnapshot(coursesQuery, async (snapshot) => {
+      // Filter courses by tenant
+      const tenantCourses = snapshot.docs.filter(doc => doc.data().tenantId === tenantId);
+      
       const coursesData = await Promise.all(
-        snapshot.docs.map(async (courseDoc) => {
+        tenantCourses.map(async (courseDoc) => {
           const courseData = { id: courseDoc.id, ...courseDoc.data() };
           
           // Count modules and lessons
@@ -92,13 +100,14 @@ export default function CourseAdmin() {
           }
           courseData.lessonsCount = lessonsCount;
           
-          // Count enrollments
+          // Count enrollments for this course and tenant
           const enrollmentsSnap = await getDocs(
-            query(collection(db, 'course_enrollments'))
+            query(collection(db, 'course_enrollments'), 
+              where('courseId', '==', courseDoc.id),
+              where('tenantId', '==', tenantId)
+            )
           );
-          courseData.enrollmentsCount = enrollmentsSnap.docs.filter(
-            doc => doc.data().courseId === courseDoc.id
-          ).length;
+          courseData.enrollmentsCount = enrollmentsSnap.size;
           
           return courseData;
         })

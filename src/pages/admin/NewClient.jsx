@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { CURRENT_TENANT_ID } from '../../config/tenant';
+import { getCurrentTenantId } from '../../config/tenant';
 import { auth, db } from '../../firebase';
 import { 
   Send, 
@@ -96,7 +96,7 @@ export default function NewClient() {
   useEffect(() => {
     const loadTemplate = async () => {
       try {
-        const tenantRef = doc(db, 'tenants', CURRENT_TENANT_ID);
+        const tenantRef = doc(db, 'tenants', getCurrentTenantId());
         const tenantSnap = await getDoc(tenantRef);
         if (tenantSnap.exists() && tenantSnap.data().inviteMessageTemplate) {
           setInviteMessageTemplate(tenantSnap.data().inviteMessageTemplate);
@@ -183,7 +183,7 @@ export default function NewClient() {
 
       const createClientInvitation = httpsCallable(functions, 'createClientInvitation');
       const result = await createClientInvitation({
-        tenantId: CURRENT_TENANT_ID,
+        tenantId: getCurrentTenantId(),
         clientData,
         expiryDays: parseInt(data.expiryDays, 10) || 7,
         welcomeMessage: data.welcomeMessage?.trim() || null,
@@ -254,7 +254,7 @@ Ti aspettiamo! 💪`;
   const saveMessageTemplate = async () => {
     setIsSavingTemplate(true);
     try {
-      const tenantRef = doc(db, 'tenants', CURRENT_TENANT_ID);
+      const tenantRef = doc(db, 'tenants', getCurrentTenantId());
       await updateDoc(tenantRef, {
         inviteMessageTemplate: inviteMessageTemplate
       });

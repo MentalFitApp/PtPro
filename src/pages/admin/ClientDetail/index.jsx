@@ -14,7 +14,7 @@ import {
 
 // Firebase & Config
 import { db, toDate } from '../../../firebase';
-import { CURRENT_TENANT_ID } from '../../../config/tenant';
+import { getCurrentTenantId } from '../../../config/tenant';
 import { PAYMENT_METHOD_LABELS } from '../../../constants/payments';
 import { formatDeviceInfo } from '../../../utils/deviceInfo';
 import { IMAGE_ACCEPT_STRING } from '../../../cloudflareStorage';
@@ -461,7 +461,7 @@ export default function ClientDetail({ role: propRole }) {
                         <div className="flex items-center gap-2">
                           <InfoField icon={Phone} value={client.phone || 'N/D'} />
                           {client.phone && (
-                            <WhatsAppButton client={{ ...client, id: clientId }} tenantId={CURRENT_TENANT_ID} variant="icon" />
+                            <WhatsAppButton client={{ ...client, id: clientId }} tenantId={getCurrentTenantId()} variant="icon" />
                           )}
                         </div>
                         <InfoField icon={Calendar} value={`Scadenza: ${toDate(client.scadenza)?.toLocaleDateString('it-IT') || 'N/D'}`} />

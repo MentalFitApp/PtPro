@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, query, orderBy, limit, getDocs, startAfter, where } from 'firebase/firestore';
 import { db, toDate } from '../../firebase';
-import { getTenantCollection, CURRENT_TENANT_ID } from '../../config/tenant';
+import { getTenantCollection, getCurrentTenantId } from '../../config/tenant';
 import { motion } from 'framer-motion';
 import { 
   Activity, User, Calendar, Scale, TrendingDown, TrendingUp, 
@@ -61,7 +61,7 @@ export default function AdminChecksList() {
         const clientInfo = map[clientId] || {};
         
         try {
-          const checksRef = collection(db, `tenants/${CURRENT_TENANT_ID}/clients/${clientId}/checks`);
+          const checksRef = collection(db, `tenants/${getCurrentTenantId()}/clients/${clientId}/checks`);
           const checksQuery = query(checksRef, orderBy('createdAt', 'desc'));
           const checksSnap = await getDocs(checksQuery);
           

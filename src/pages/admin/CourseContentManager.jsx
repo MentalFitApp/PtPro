@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDocs, getDoc } from 'firebase/firestore';
 import { db, auth, storage } from '../../firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { isSuperAdmin, isAdmin } from '../../utils/superadmin';
+import { getCurrentTenantId } from '../../config/tenant';
 import { 
   ArrowLeft, Plus, Edit, Trash2, Video, FileText, 
   Save, X, Upload, Play, ChevronDown, ChevronRight, 
@@ -74,11 +75,22 @@ export default function CourseContentManager() {
         return;
       }
 
-      // Load course details
-      const courseDoc = await getDocs(query(collection(db, 'courses')));
-      const courseData = courseDoc.docs.find(doc => doc.id === courseId);
-      if (courseData) {
-        setCourse({ id: courseData.id, ...courseData.data() });
+      // Load course details and verify tenant ownership
+      const courseRef = doc(db, 'courses', courseId);
+      const courseDoc = await getDoc(courseRef);
+      
+      if (courseDoc.exists()) {
+        const courseData = courseDoc.data();
+        const tenantId = getCurrentTenantId();
+        
+        // Verify course belongs to current tenant
+        if (courseData.tenantId !== tenantId) {
+          toast.error('Accesso non autorizzato a questo corso');
+          navigate('/course-admin');
+          return;
+        }
+        
+        setCourse({ id: courseDoc.id, ...courseData });
       } else {
         toast.error('Corso non trovato');
         navigate('/course-admin');
