@@ -418,7 +418,7 @@ const BottomNav = ({ isCoach, isClient, isCollaboratore }) => {
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 4px)' }}
       >
         <div className="max-w-5xl mx-auto">
-          <div className="relative bg-slate-900/95 border border-slate-700/60 rounded-2xl shadow-glow backdrop-blur-xl px-2 py-2">
+          <div className="relative bg-gradient-to-t from-slate-900/85 via-slate-900/80 to-slate-900/75 border border-slate-700/40 rounded-2xl shadow-glow backdrop-blur-[40px] backdrop-saturate-150 px-2 py-2">
             <div className="flex items-end justify-between gap-2">
               {items.map((item) => {
                 const isActive = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);

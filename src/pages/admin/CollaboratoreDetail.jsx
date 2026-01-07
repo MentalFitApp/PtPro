@@ -245,7 +245,7 @@ export default function CollaboratoreDetail() {
           {collaboratore.firstLogin && (
             <motion.button
               onClick={() => {
-                const msg = `Email: ${collaboratore.email}\nPassword: ${collaboratore.tempPassword || 'generata al login'}\nLink: https://MentalFitApp.github.io/PtPro/#/login`;
+                const msg = `Email: ${collaboratore.email}\nPassword: ${collaboratore.tempPassword || 'generata al login'}\nLink: ${window.location.origin}/#/login`;
                 navigator.clipboard.writeText(msg);
                 toast.success('Credenziali copiate!');
               }}

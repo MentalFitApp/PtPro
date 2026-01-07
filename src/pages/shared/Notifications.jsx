@@ -13,7 +13,7 @@ const PRESET_NOTIFICATIONS = {
   },
   benvenuto: {
     title: "👋 Benvenuto!",
-    body: "Ciao {name}, benvenuto in MentalFit! Inizia compilando la tua anamnesi.",
+    body: "Ciao {name}, benvenuto! Inizia compilando la tua anamnesi per personalizzare la tua esperienza.",
     icon: "👋"
   },
   check: {

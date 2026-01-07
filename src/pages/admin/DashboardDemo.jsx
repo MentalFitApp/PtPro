@@ -1204,14 +1204,14 @@ const DashboardDemo = () => {
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`relative flex items-center justify-center gap-1.5 px-3 sm:px-4 py-3 text-xs font-medium transition-all whitespace-nowrap min-w-fit ${
+                    className={`relative flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-3 text-xs font-medium transition-all whitespace-nowrap min-w-fit ${
                       activeTab === tab.key 
                         ? 'text-blue-400 bg-blue-500/10' 
                         : 'text-slate-400 hover:text-white hover:bg-slate-700/30'
                     }`}
                   >
-                    <tab.icon size={15} className="flex-shrink-0" />
-                    <span className="hidden sm:inline">{tab.label}</span>
+                    <tab.icon size={16} className="flex-shrink-0" />
+                    <span className={`text-[10px] sm:text-xs ${activeTab === tab.key ? 'block' : 'hidden sm:inline'}`}>{tab.label}</span>
                     {tab.badge > 0 && (
                       <span className={`min-w-[18px] px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                         tab.key === TAB_TYPES.CHAT ? 'bg-purple-500/30 text-purple-400' :

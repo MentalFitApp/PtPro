@@ -186,6 +186,96 @@ npm run android:run  # Terminal 2
 
 ---
 
+## � Screenshot per Play Store
+
+### Requisiti Google Play
+
+- **Minimo**: 2 screenshot
+- **Massimo**: 8 screenshot
+- **Formato**: PNG o JPEG
+- **Dimensione max**: 8 MB per file
+- **Proporzioni**: 16:9 o 9:16
+- **Dimensioni lati**: tra 320 px e 3840 px
+
+### Come Creare Screenshot da PC
+
+#### Opzione 1: Chrome DevTools (Consigliato)
+
+1. **Avvia l'app in dev**:
+   ```bash
+   npm run dev
+   ```
+
+2. **Apri Chrome** e vai su `http://localhost:5173`
+
+3. **Apri DevTools**: `F12` o `Ctrl+Shift+I` (Windows/Linux) / `Cmd+Opt+I` (Mac)
+
+4. **Attiva modalità dispositivo**: Click sull'icona telefono/tablet in alto o premi `Ctrl+Shift+M`
+
+5. **Seleziona dispositivo**: Nel menu dropdown scegli:
+   - **Pixel 5** (1080 x 2340) - Raccomandato per 9:16
+   - **Galaxy S20** (1440 x 3200)
+   - **iPhone 12 Pro** (1170 x 2532)
+
+6. **Naviga nell'app** e posizionati sulla schermata da catturare
+
+7. **Cattura screenshot**:
+   - Click sui 3 puntini in alto a destra nel DevTools
+   - **More tools** → **Capture screenshot** (cattura solo viewport)
+   - Oppure **Capture full size screenshot** (intera pagina con scroll)
+
+8. **Screenshot consigliati da fare**:
+   - Dashboard admin con statistiche
+   - Area clienti con lista
+   - Dettaglio cliente con schede
+   - Chat professionale
+   - Landing page AI generator
+   - Check periodici con foto
+   - Scheda allenamento
+   - Analytics revenue
+
+#### Opzione 2: Dimensioni Custom
+
+Se vuoi dimensioni specifiche:
+
+1. In DevTools, click su **Edit** nel menu dispositivi
+2. **Add custom device**:
+   - **Device name**: Play Store Screenshot
+   - **Width**: 1080
+   - **Height**: 1920
+   - **Device pixel ratio**: 2
+
+#### Opzione 3: Firefox Developer Tools
+
+1. Apri Firefox e vai su `http://localhost:5173`
+2. `F12` → Click icona **Responsive Design Mode** (Ctrl+Shift+M)
+3. Seleziona dimensioni: 1080 x 1920
+4. Click sull'icona **fotocamera** per screenshot
+
+#### Opzione 4: Online Tools
+
+- [Responsive Screenshot Generator](https://websiteresponsive.com/)
+- [Screely](https://screely.com/) - Aggiunge mockup dispositivo
+
+### Post-Processing (Opzionale)
+
+Usa strumenti per migliorare gli screenshot:
+
+- **Mockup dispositivo**: [Mockuphone](https://mockuphone.com/)
+- **Add frame**: [Device Frames](https://deviceframes.com/)
+- **Resize/Optimize**: [TinyPNG](https://tinypng.com/)
+
+### Verifica Finale
+
+Prima di caricare, controlla:
+- ✅ Proporzioni 9:16 (es: 1080x1920)
+- ✅ Dimensione file < 8 MB
+- ✅ Formato PNG o JPEG
+- ✅ Nessun dato sensibile visibile
+- ✅ UI pulita e professionale
+
+---
+
 ## 📋 Checklist Pre-Pubblicazione
 
 - [ ] Cambiare `appId` con package univoco
@@ -195,9 +285,10 @@ npm run android:run  # Terminal 2
 - [ ] Testare su dispositivo reale
 - [ ] Creare keystore e conservarlo al sicuro
 - [ ] Buildare AAB (non APK) per Play Store
-- [ ] Preparare screenshot (min 2) per listing
+- [ ] **Creare 2-8 screenshot** (1080x1920 o 1440x2560)
 - [ ] Scrivere descrizione app
 - [ ] Creare privacy policy (obbligatoria)
+- [ ] Creare feature graphic (1024x500 px)
 
 ---
 

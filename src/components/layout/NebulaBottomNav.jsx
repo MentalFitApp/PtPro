@@ -152,11 +152,11 @@ const NavItem = ({ item, isActive, onClick, unreadCount = 0, isDark = true }) =>
       
       {/* Label */}
       <motion.span 
-        className={`relative z-10 text-[10px] mt-1 font-medium transition-all duration-200 ${
-          isActive ? colors.active : isDark ? 'text-slate-500' : 'text-slate-400'
+        className={`relative z-10 text-[11px] mt-1 font-medium transition-all duration-200 ${
+          isActive ? colors.active : isDark ? 'text-slate-400' : 'text-slate-500'
         }`}
         animate={{ 
-          opacity: isActive ? 1 : 0.7,
+          opacity: isActive ? 1 : 0.85,
           fontWeight: isActive ? 600 : 500
         }}
       >
@@ -206,7 +206,7 @@ export const NebulaBottomNav = ({ role = 'admin', unreadMessages = 0, className 
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {/* Glass Background - Light/Dark aware */}
-      <div className={`absolute inset-0 backdrop-blur-2xl ${isDark ? 'bg-slate-900/70' : 'bg-white/80'}`} />
+      <div className={`absolute inset-0 backdrop-blur-2xl ${isDark ? 'bg-slate-900/95' : 'bg-white/95'}`} />
       
       {/* Top Border Glow */}
       <div className={`absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent ${isDark ? 'via-cyan-500/30' : 'via-cyan-500/40'} to-transparent`} />

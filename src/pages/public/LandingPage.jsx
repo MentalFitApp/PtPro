@@ -449,7 +449,13 @@ export default function LandingPage() {
             return;
           }
         } else {
-          targetTenantId = localStorage.getItem('tenantId') || 'mentalfit-default';
+          // Cerca tenantId dal localStorage, ma NON usare fallback hard-coded
+          targetTenantId = localStorage.getItem('tenantId');
+          if (!targetTenantId) {
+            // Se non c'è tenantId, mostra la landing generica
+            setLoading(false);
+            return;
+          }
           setTenantId(targetTenantId);
         }
 

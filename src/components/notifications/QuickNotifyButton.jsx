@@ -6,7 +6,7 @@ import { Bell, Send, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const QUICK_PRESETS = {
-  benvenuto: { icon: '👋', title: 'Benvenuto!', body: 'Ciao {name}, benvenuto in MentalFit!' },
+  benvenuto: { icon: '👋', title: 'Benvenuto!', body: 'Ciao {name}, benvenuto! Inizia subito la tua esperienza.' },
   check: { icon: '📊', title: 'Tempo di Check', body: 'Ciao {name}, è ora di fare il check settimanale!' },
   motivazione: { icon: '💪', title: 'Continua Così!', body: 'Ciao {name}, stai facendo un ottimo lavoro!' },
   appuntamento: { icon: '📅', title: 'Promemoria', body: 'Ciao {name}, ti ricordo il nostro appuntamento!' },

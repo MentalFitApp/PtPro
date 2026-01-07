@@ -17,7 +17,7 @@ const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-theme-bg-secondary/90 backdrop-blur-2xl border-t border-theme z-50 md:hidden safe-area-bottom">
+    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/85 via-slate-900/80 to-slate-900/75 backdrop-blur-[40px] backdrop-saturate-150 border-t border-slate-700/40 z-50 md:hidden safe-area-bottom shadow-2xl shadow-slate-900/50">
       <div className="px-2 py-2">
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hidden snap-x snap-mandatory pb-1">
           {links.map(link => (
