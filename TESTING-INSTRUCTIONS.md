@@ -3,26 +3,28 @@
 ## 📋 **OVERVIEW**
 Questo documento contiene le istruzioni dettagliate per testare completamente l'applicazione FitFlows utilizzando il tenant di test dedicato.
 
+**Nota sulle Credenziali:** Le password di test sono rappresentate con placeholder `[TEST_PASSWORD_*]` per motivi di sicurezza. Contatta il team di sviluppo per ottenere le password reali o usa gli script di setup per creare account di test.
+
 ## 🔐 **CREDENZIALI DI TEST**
 
 ### **ADMIN** (Gestione completa del business)
 - **Email:** `test-admin@fitflowsapp.com`
-- **Password:** `TestAdmin2026!`
+- **Password:** `[TEST_PASSWORD_ADMIN]`
 - **Tenant:** `test-tenant`
 
 ### **CLIENTE** (Area cliente con check-in)
 - **Email:** `test-client@fitflowsapp.com`
-- **Password:** `TestClient2026!`
+- **Password:** `[TEST_PASSWORD_CLIENT]`
 - **Tenant:** `test-tenant`
 
 ### **COLLABORATORE** (Area dipendente)
 - **Email:** `test-collaboratore@fitflowsapp.com`
-- **Password:** `TestCollab2026!`
+- **Password:** `[TEST_PASSWORD_COLLAB]`
 - **Tenant:** `test-tenant`
 
 ### **COACH** (Gestione clienti e schede)
 - **Email:** `test-coach@fitflowsapp.com`
-- **Password:** `TestCoach2026!`
+- **Password:** `[TEST_PASSWORD_COACH]`
 - **Tenant:** `test-tenant`
 
 ---
