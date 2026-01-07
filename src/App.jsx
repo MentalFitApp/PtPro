@@ -415,6 +415,7 @@ export default function App() {
         <Routes>
         {/* === ROTTE PUBBLICHE === */}
         <Route path="/demo" element={<DashboardDemo />} />
+        <Route path="/landing" element={<LandingPage />} />
         <Route path="/site" element={<LandingPage />} />
         <Route path="/site/:tenantSlug/:slug" element={<PublicLandingPage />} />
         <Route path="/site/:slug" element={<LandingPage />} />
