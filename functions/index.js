@@ -81,11 +81,16 @@ exports.uploadToR2 = onCall(
     }
 
     // Verifica che l'utente appartenga al tenant
-    // Gli utenti possono essere in: tenants/{tenantId}/users/{uid} OPPURE tenants/{tenantId}/clients/{uid}
+    // Check in: users, clients, roles/admins, roles/coaches
     const userDoc = await db.collection('tenants').doc(tenantId).collection('users').doc(request.auth.uid).get();
     const clientDoc = await db.collection('tenants').doc(tenantId).collection('clients').doc(request.auth.uid).get();
+    const adminsDoc = await db.collection('tenants').doc(tenantId).collection('roles').doc('admins').get();
+    const coachesDoc = await db.collection('tenants').doc(tenantId).collection('roles').doc('coaches').get();
     
-    if (!userDoc.exists && !clientDoc.exists) {
+    const isAdmin = adminsDoc.exists && adminsDoc.data()?.uids?.includes(request.auth.uid);
+    const isCoach = coachesDoc.exists && coachesDoc.data()?.uids?.includes(request.auth.uid);
+    
+    if (!userDoc.exists && !clientDoc.exists && !isAdmin && !isCoach) {
       // Fallback: controlla anche la root collection 'users' per admin/superadmin
       const rootUserDoc = await db.collection('users').doc(request.auth.uid).get();
       const rootUserData = rootUserDoc.data();
@@ -192,11 +197,16 @@ exports.deleteFromR2 = onCall(
     }
 
     // Verifica che l'utente appartenga al tenant
-    // Gli utenti possono essere in: tenants/{tenantId}/users/{uid} OPPURE tenants/{tenantId}/clients/{uid}
+    // Check in: users, clients, roles/admins, roles/coaches
     const userDoc = await db.collection('tenants').doc(tenantId).collection('users').doc(request.auth.uid).get();
     const clientDoc = await db.collection('tenants').doc(tenantId).collection('clients').doc(request.auth.uid).get();
+    const adminsDoc = await db.collection('tenants').doc(tenantId).collection('roles').doc('admins').get();
+    const coachesDoc = await db.collection('tenants').doc(tenantId).collection('roles').doc('coaches').get();
     
-    if (!userDoc.exists && !clientDoc.exists) {
+    const isAdmin = adminsDoc.exists && adminsDoc.data()?.uids?.includes(request.auth.uid);
+    const isCoach = coachesDoc.exists && coachesDoc.data()?.uids?.includes(request.auth.uid);
+    
+    if (!userDoc.exists && !clientDoc.exists && !isAdmin && !isCoach) {
       // Fallback: controlla anche la root collection 'users' per admin/superadmin
       const rootUserDoc = await db.collection('users').doc(request.auth.uid).get();
       const rootUserData = rootUserDoc.data();
