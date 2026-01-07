@@ -306,3 +306,108 @@ export const validateLandingPage = (data) => {
     errors
   };
 };
+
+// ==================== MAIN LANDING PAGE (CEO/Platform) ====================
+
+/**
+ * Ottiene la landing page principale della piattaforma (CEO)
+ */
+export const getMainLandingPage = async () => {
+  try {
+    const docRef = doc(db, 'platform', 'mainLanding');
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      // Ritorna configurazione di default se non esiste
+      return {
+        id: 'mainLanding',
+        title: 'FitFlows - Landing Page Principale',
+        slug: 'landing',
+        isPublished: true,
+        blocks: [],
+        branding: {
+          logoUrl: '/logo192.png',
+          appName: 'FitFlows',
+          primaryColor: '#3b82f6',
+          accentColor: '#06b6d4'
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+    
+    return { id: 'mainLanding', ...docSnap.data() };
+  } catch (error) {
+    console.error('Errore getMainLandingPage:', error);
+    throw error;
+  }
+};
+
+/**
+ * Aggiorna la landing page principale della piattaforma (CEO)
+ */
+export const updateMainLandingPage = async (data) => {
+  try {
+    const docRef = doc(db, 'platform', 'mainLanding');
+    await updateDoc(docRef, {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+    return { id: 'mainLanding', ...data };
+  } catch (error) {
+    // Se il documento non esiste, crealo
+    if (error.code === 'not-found') {
+      const { setDoc } = await import('firebase/firestore');
+      await setDoc(docRef, {
+        ...data,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      return { id: 'mainLanding', ...data };
+    }
+    console.error('Errore updateMainLandingPage:', error);
+    throw error;
+  }
+};
+
+/**
+ * Crea/inizializza la landing page principale se non esiste
+ */
+export const initializeMainLandingPage = async (initialData = {}) => {
+  try {
+    const { setDoc } = await import('firebase/firestore');
+    const docRef = doc(db, 'platform', 'mainLanding');
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      const defaultData = {
+        title: 'FitFlows - La Piattaforma per Personal Trainer',
+        slug: 'landing',
+        isPublished: true,
+        blocks: [],
+        branding: {
+          logoUrl: '/logo192.png',
+          appName: 'FitFlows',
+          primaryColor: '#3b82f6',
+          accentColor: '#06b6d4'
+        },
+        seo: {
+          title: 'FitFlows - Gestione Clienti per Personal Trainer',
+          description: 'La piattaforma AI-powered che trasforma personal trainer in imprenditori di successo.',
+          keywords: ['personal trainer', 'fitness', 'gestione clienti', 'schede allenamento']
+        },
+        ...initialData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      await setDoc(docRef, defaultData);
+      return { id: 'mainLanding', ...defaultData };
+    }
+    
+    return { id: 'mainLanding', ...docSnap.data() };
+  } catch (error) {
+    console.error('Errore initializeMainLandingPage:', error);
+    throw error;
+  }
+};

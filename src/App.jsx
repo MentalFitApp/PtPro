@@ -63,6 +63,7 @@ const LandingPagesLeads = React.lazy(() => import('./pages/admin/LandingPagesLea
 const CEOPlatformDashboard = React.lazy(() => import('./pages/platform/CEOPlatformDashboard'));
 const TenantDeepDive = React.lazy(() => import('./pages/platform/TenantDeepDive'));
 const PlatformLogin = React.lazy(() => import('./pages/platform/PlatformLogin'));
+const MainLandingEditor = React.lazy(() => import('./pages/platform/MainLandingEditor'));
 
 // Client Pages
 const ClientDashboard = React.lazy(() => import('./pages/client/ClientDashboard'));
@@ -436,6 +437,9 @@ export default function App() {
         } />
         <Route path="/platform/tenant/:tenantId" element={
           authInfo.isPlatformCEO ? <TenantDeepDive /> : <Navigate to="/platform-login" replace />
+        } />
+        <Route path="/platform/main-landing" element={
+          authInfo.isPlatformCEO ? <MainLandingEditor /> : <Navigate to="/platform-login" replace />
         } />
 
         {/* === ROTTE ADMIN (SOLO ADMIN) === */}

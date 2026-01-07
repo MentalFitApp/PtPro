@@ -643,6 +643,14 @@ service cloud.firestore {
       allow write: if isPlatformCEO();
     }
 
+    // --- PLATFORM MAIN LANDING PAGE (pubblico per lettura) ---
+    match /platform/{docId} {
+      // mainLanding è leggibile pubblicamente per la landing page principale
+      allow read: if docId == 'mainLanding';
+      // Solo CEO può scrivere
+      allow write: if isPlatformCEO();
+    }
+
     // --- PLATFORM EXERCISES (database globale esercizi) ---
     match /platform_exercises/{exerciseId} {
       allow read: if request.auth != null; // Tutti gli utenti autenticati possono leggere

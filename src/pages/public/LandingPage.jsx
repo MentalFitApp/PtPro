@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { 
   Dumbbell, 
@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { db } from '../../firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { DynamicBlock } from '../../components/landingBlocks';
 
 // ==================== ANIMATED COUNTER COMPONENT ====================
 const AnimatedCounter = ({ value, suffix = '', prefix = '', duration = 2 }) => {
@@ -385,11 +386,16 @@ const iconMap = {
 export default function LandingPage() {
   const navigate = useNavigate();
   const { slug } = useParams();
+  const location = useLocation();
   const [config, setConfig] = useState(defaultLandingConfig);
+  const [blocks, setBlocks] = useState([]); // Blocchi dal nuovo sistema editor
   const [tenantId, setTenantId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // Check if this is the main /landing route (CEO landing page)
+  const isMainLanding = location.pathname === '/landing';
 
   // Mouse parallax effect
   useEffect(() => {
@@ -406,6 +412,27 @@ export default function LandingPage() {
   useEffect(() => {
     const loadLandingConfig = async () => {
       try {
+        // Se è la landing principale (/landing), usa solo i default senza query Firestore
+        if (isMainLanding) {
+          // Prova a caricare la config CEO dalla collection platform (opzionale)
+          try {
+            const mainLandingDoc = await getDoc(doc(db, 'platform', 'mainLanding'));
+            if (mainLandingDoc.exists()) {
+              const data = mainLandingDoc.data();
+              // Se ci sono blocchi, li usa. Altrimenti usa la config legacy
+              if (data.blocks && data.blocks.length > 0) {
+                setBlocks(data.blocks);
+              }
+              setConfig({ ...defaultLandingConfig, ...data });
+            }
+          } catch (err) {
+            // Se fallisce, usa semplicemente i default - nessun problema
+            console.log('Using default landing config');
+          }
+          setLoading(false);
+          return;
+        }
+
         let targetTenantId = null;
 
         if (slug) {
@@ -480,6 +507,26 @@ export default function LandingPage() {
       </div>
     );
   }
+
+  // Se ci sono blocchi dal nuovo sistema, renderizza quelli
+  if (blocks.length > 0) {
+    return (
+      <div className="bg-slate-900 min-h-screen">
+        {blocks.map((block, index) => (
+          <DynamicBlock
+            key={block.id || index}
+            type={block.type}
+            settings={block.settings}
+            isPreview={false}
+            pageId="mainLanding"
+            tenantId={null}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // Legacy rendering con config classica (hero, features, ecc.)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white overflow-x-hidden">

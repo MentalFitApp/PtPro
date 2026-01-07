@@ -3426,17 +3426,18 @@ export default function CEOPlatformDashboard() {
                   <button
                     onClick={() => {
                       setEditingMainLanding(false);
-                      navigate('/admin/landing-pages');
+                      navigate('/platform/main-landing');
                     }}
-                    className="group flex items-center gap-4 p-5 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-purple-500/50 rounded-xl transition-all text-left"
+                    className="group flex items-center gap-4 p-5 bg-gradient-to-r from-purple-600/20 to-blue-600/20 hover:from-purple-600/30 hover:to-blue-600/30 border border-purple-500/30 hover:border-purple-500/50 rounded-xl transition-all text-left"
                   >
-                    <div className="w-12 h-12 bg-purple-600/20 rounded-xl flex items-center justify-center group-hover:bg-purple-600/30 transition-colors">
-                      <Layout className="w-6 h-6 text-purple-400" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30 group-hover:scale-105 transition-transform">
+                      <Layout className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <p className="font-semibold text-white">Page Builder</p>
-                      <p className="text-sm text-slate-400">Editor visuale avanzato</p>
+                      <p className="font-semibold text-white">✨ Page Builder</p>
+                      <p className="text-sm text-slate-400">Editor visuale con blocchi</p>
                     </div>
+                    <ChevronRight className="w-5 h-5 text-purple-400 ml-auto" />
                   </button>
 
                   <a
@@ -3500,28 +3501,28 @@ export default function CEOPlatformDashboard() {
                   <div className="space-y-3 text-slate-300 text-sm">
                     <p className="flex items-start gap-2">
                       <span className="text-blue-400 font-bold">1.</span>
-                      <span><strong>File sorgente:</strong> <code className="bg-slate-800 px-2 py-1 rounded text-blue-400">src/pages/public/LandingPage.jsx</code></span>
+                      <span><strong>Page Builder:</strong> Clicca su "Page Builder" per aprire l'editor visuale con blocchi drag & drop</span>
                     </p>
                     <p className="flex items-start gap-2">
                       <span className="text-blue-400 font-bold">2.</span>
-                      <span><strong>Configurazione:</strong> La landing carica i dati da <code className="bg-slate-800 px-2 py-1 rounded text-purple-400">tenants/[tenantId]/settings/landing</code> in Firestore</span>
+                      <span><strong>Blocchi disponibili:</strong> Hero, Features, Pricing, Testimonials, CTA, FAQ, Gallery e altri</span>
                     </p>
                     <p className="flex items-start gap-2">
                       <span className="text-blue-400 font-bold">3.</span>
-                      <span><strong>Default config:</strong> Se non ci sono dati in Firestore, usa la configurazione di default nel file JSX</span>
+                      <span><strong>AI Generator:</strong> Usa il generatore AI per creare contenuti automaticamente</span>
                     </p>
                     <p className="flex items-start gap-2">
                       <span className="text-blue-400 font-bold">4.</span>
-                      <span><strong>Per modificare testi:</strong> Modifica l'oggetto <code className="bg-slate-800 px-2 py-1 rounded text-green-400">defaultLandingConfig</code> nel file JSX</span>
+                      <span><strong>Anteprima:</strong> Visualizza le modifiche in tempo reale prima di salvare</span>
                     </p>
                   </div>
                 </div>
 
                 {/* Path Firestore */}
                 <div className="mt-6 p-4 bg-slate-800/50 border border-slate-700 rounded-xl">
-                  <p className="text-sm text-slate-400 mb-2">Path Firestore per configurazione dinamica:</p>
+                  <p className="text-sm text-slate-400 mb-2">📁 Dati salvati in Firestore:</p>
                   <code className="text-purple-400 text-sm font-mono">
-                    platform/settings/mainLanding
+                    platform/mainLanding
                   </code>
                 </div>
               </div>
@@ -3530,7 +3531,7 @@ export default function CEOPlatformDashboard() {
               <div className="p-6 border-t border-slate-700/50 bg-slate-800/30">
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-slate-400">
-                    💡 Tip: Usa il Page Builder nella sezione Admin per un editor visuale
+                    💡 Tip: Il Page Builder usa lo stesso sistema degli admin tenant
                   </p>
                   <div className="flex gap-3">
                     <button
@@ -3539,15 +3540,16 @@ export default function CEOPlatformDashboard() {
                     >
                       Chiudi
                     </button>
-                    <a
-                      href="/landing"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-lg text-white font-semibold transition-all flex items-center gap-2"
+                    <button
+                      onClick={() => {
+                        setEditingMainLanding(false);
+                        navigate('/platform/main-landing');
+                      }}
+                      className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-lg text-white font-semibold transition-all flex items-center gap-2"
                     >
-                      <Eye size={18} />
-                      Vedi Landing Live
-                    </a>
+                      <Layout size={18} />
+                      Apri Page Builder
+                    </button>
                   </div>
                 </div>
               </div>
