@@ -19,7 +19,7 @@ const ClientCardView = ({
   const navigate = useNavigate();
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 sm:gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
       {clients.map((c) => {
         const expiry = toDate(c.scadenza);
         const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
@@ -28,7 +28,7 @@ const ClientCardView = ({
         return (
           <div 
             key={c.id} 
-            className="bg-slate-900/70 backdrop-blur-xl rounded-xl p-5 border border-slate-800 hover:border-slate-700 transition-all shadow-xl"
+            className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/40 hover:border-slate-600/60 transition-all"
           >
             <div className="flex justify-between items-start mb-3">
               <div className="flex-1">

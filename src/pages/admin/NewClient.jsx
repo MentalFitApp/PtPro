@@ -677,7 +677,7 @@ Ti aspettiamo! 💪`;
             className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50 p-4"
           >
             <motion.div
-              className="bg-slate-900/95 backdrop-blur-sm rounded-xl border border-slate-700/30 p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto"
+              className="bg-slate-800/95 backdrop-blur-sm rounded-xl border border-slate-700/40 p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -814,7 +814,7 @@ Ti aspettiamo! 💪`;
                         <textarea
                           value={inviteMessageTemplate || getDefaultTemplate()}
                           onChange={(e) => setInviteMessageTemplate(e.target.value)}
-                          className="w-full h-48 p-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white text-sm font-mono resize-none focus:outline-none focus:border-blue-500"
+                          className="w-full h-48 p-3 bg-slate-800/40 border border-slate-700/40 rounded-xl text-white text-sm font-mono resize-none focus:outline-none focus:border-blue-500"
                           placeholder="Scrivi il tuo template..."
                         />
                         <div className="mt-2 space-y-2">

@@ -259,7 +259,7 @@ export default function Profile() {
                   value={profile.displayName}
                   onChange={(e) => setProfile({ ...profile, displayName: e.target.value })}
                   placeholder="Es: Mario Rossi"
-                  className="w-full p-3 bg-slate-900/30 border border-slate-700/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors text-white placeholder:text-slate-500 text-sm"
+                  className="w-full p-3 bg-slate-800/40 border border-slate-700/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors text-white placeholder:text-slate-500 text-sm"
                 />
               </div>
 
@@ -271,7 +271,7 @@ export default function Profile() {
                   type="email"
                   value={profile.email}
                   disabled
-                  className="w-full p-3 bg-slate-900/20 border border-slate-700/20 rounded-xl text-slate-400 cursor-not-allowed text-sm"
+                  className="w-full p-3 bg-slate-800/40 border border-slate-700/20 rounded-xl text-slate-400 cursor-not-allowed text-sm"
                 />
                 <p className="text-xs text-slate-500 mt-1">
                   L'email non può essere modificata
@@ -287,7 +287,7 @@ export default function Profile() {
                   value={profile.phone}
                   onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                   placeholder="Es: +39 123 456 7890"
-                  className="w-full p-3 bg-slate-900/30 border border-slate-700/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors text-white placeholder:text-slate-500 text-sm"
+                  className="w-full p-3 bg-slate-800/40 border border-slate-700/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors text-white placeholder:text-slate-500 text-sm"
                 />
               </div>
 
@@ -295,7 +295,7 @@ export default function Profile() {
                 <label className="block text-xs sm:text-sm text-slate-300 mb-2 font-medium">
                   Ruolo
                 </label>
-                <div className="flex items-center gap-2 p-3 bg-slate-900/20 border border-slate-700/20 rounded-xl text-slate-400 text-sm">
+                <div className="flex items-center gap-2 p-3 bg-slate-800/40 border border-slate-700/20 rounded-xl text-slate-400 text-sm">
                   <Briefcase size={16} className="text-slate-500" />
                   <span className="capitalize">
                     {profile.role === 'admin' ? 'Amministratore' : 
@@ -309,7 +309,7 @@ export default function Profile() {
 
               {/* Visibilità Chat - Solo per Admin */}
               {profile.role === 'admin' && (
-                <div className="p-4 bg-slate-900/30 border border-slate-700/30 rounded-xl">
+                <div className="p-4 bg-slate-800/40 border border-slate-700/30 rounded-xl">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-blue-500/20 rounded-lg">
@@ -364,7 +364,7 @@ export default function Profile() {
                   onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                   placeholder="Parlaci un po' di te..."
                   rows={4}
-                  className="w-full p-3 bg-slate-900/30 border border-slate-700/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors resize-none text-white placeholder:text-slate-500 text-sm"
+                  className="w-full p-3 bg-slate-800/40 border border-slate-700/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors resize-none text-white placeholder:text-slate-500 text-sm"
                 />
                 <p className="text-xs text-slate-500 mt-1">
                   Questa descrizione sarà visibile nel tuo profilo

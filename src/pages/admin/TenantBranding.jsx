@@ -77,7 +77,7 @@ export default function TenantBranding() {
   const [userDensity, setUserDensity] = useState('normal');
   
   // Sfondo e trasparenza
-  const [bgPreset, setBgPreset] = useState('starryNight');
+  const [bgPreset, setBgPreset] = useState('aurora');
   const [bgSolidColor, setBgSolidColor] = useState('#0f172a');
   const [cardTransparency, setCardTransparency] = useState(0.6);
 

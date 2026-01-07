@@ -8,7 +8,7 @@ import {
   Home, Users, FileText, Calendar, MessageSquare, BarChart3, 
   BellRing, UserCheck, BookOpen, Target, Activity, Palette, 
   Layout, Link2, Dumbbell, Utensils, Shield, CreditCard,
-  ChevronDown, ChevronUp, Check
+  ChevronDown, ChevronUp, Check, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -19,7 +19,7 @@ import { useToast } from '../../contexts/ToastContext';
 const ICON_MAP = {
   Home, Users, FileText, Calendar, MessageSquare, BarChart3,
   BellRing, UserCheck, BookOpen, Target, Activity, Palette,
-  Layout, Link2, Dumbbell, Utensils, Shield, CreditCard, Settings
+  Layout, Link2, Dumbbell, Utensils, Shield, CreditCard, Settings, Zap
 };
 
 // Configurazione default menu per ruolo
@@ -42,6 +42,7 @@ const DEFAULT_MENU_CONFIG = {
     { id: 'branding', label: 'Branding', icon: 'Palette', to: '/admin/branding', visible: true },
     { id: 'integrations', label: 'Integrazioni', icon: 'Link2', to: '/integrations', visible: true },
     { id: 'platform', label: 'Piattaforma', icon: 'Settings', to: '/platform-settings', visible: true },
+    { id: 'demo', label: '✨ Demo 2.0', icon: 'Zap', to: '/dashboard-demo', visible: true },
   ],
   coach: [
     { id: 'dashboard', label: 'Dashboard', icon: 'Home', to: '/coach', visible: true, locked: true },

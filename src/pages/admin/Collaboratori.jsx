@@ -1092,7 +1092,7 @@ export default function Collaboratori() {
               </div>
               
               {showPastSetting && (
-                <div className="mb-3 p-2 bg-slate-900/50 border border-cyan-800/30 rounded max-h-32 overflow-y-auto text-xs">
+                <div className="mb-3 p-2 bg-slate-800/40 border border-cyan-700/40 rounded-xl max-h-32 overflow-y-auto text-xs">
                   {settingReports.length === 0 ? <p className="text-slate-400">Nessun report</p> : settingReports.map(r => (
                     <button key={r.id} onClick={() => loadPastSettingReport(r)} className="block w-full text-left p-2 hover:bg-cyan-900/30 rounded text-xs">
                       {r.date} → {r.chiamatePrenotate} prenotate
@@ -1140,7 +1140,7 @@ export default function Collaboratori() {
               </div>
               
               {showPastSales && (
-                <div className="mb-3 p-2 bg-slate-900/50 border border-rose-800/30 rounded max-h-32 overflow-y-auto text-xs">
+                <div className="mb-3 p-2 bg-slate-800/40 border border-rose-700/40 rounded-xl max-h-32 overflow-y-auto text-xs">
                   {salesReports.length === 0 ? <p className="text-slate-400">Nessun report</p> : salesReports.map(r => (
                     <button key={r.id} onClick={() => loadPastSalesReport(r)} className="block w-full text-left p-2 hover:bg-rose-900/30 rounded text-xs">
                       {r.date} → {r.chiuse} chiuse
@@ -1288,7 +1288,7 @@ export default function Collaboratori() {
                 </button>
               </div>
               
-              <div className="text-xs text-slate-400 mb-4 p-3 bg-slate-900/50 rounded-lg">
+              <div className="text-xs text-slate-400 mb-4 p-3 bg-slate-800/40 rounded-xl">
                 📊 <strong>% Totale</strong> = quota sul totale dei lead<br/>
                 🟢 <strong>% Show-up</strong> = percentuale di presenze su lead fonte<br/>
                 🔴 <strong>% Chiusura</strong> = percentuale di chiusure su lead fonte
@@ -1416,7 +1416,7 @@ export default function Collaboratori() {
               <p className="text-sm text-slate-300 mb-4">
                 Vuoi aggiungere <strong>{leadToConvert.name}</strong> come nuovo cliente?
               </p>
-              <div className="bg-slate-900/50 p-3 rounded-lg mb-4 text-xs space-y-1">
+              <div className="bg-slate-800/40 p-3 rounded-xl mb-4 text-xs space-y-1">
                 <p><strong>Importo:</strong> €{leadToConvert.amount || 0}</p>
                 <p><strong>Durata:</strong> {leadToConvert.mesi || 0} mesi</p>
               </div>
@@ -1483,7 +1483,7 @@ export default function Collaboratori() {
                 Copia queste credenziali temporanee e inviale al collaboratore:
               </p>
               
-              <div className="space-y-3 bg-slate-900/50 p-4 rounded-lg mb-4">
+              <div className="space-y-3 bg-slate-800/40 p-4 rounded-xl mb-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-400 uppercase">Email</label>
                   <div className="flex items-center gap-2 mt-1">
@@ -1832,7 +1832,7 @@ export default function Collaboratori() {
         <AnimatePresence>
           {showDateTimePicker && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
-              <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-900/95 rounded-2xl border border-white/10 w-full max-w-lg flex flex-col max-h-[90vh] shadow-glow">
+              <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-slate-800/95 backdrop-blur-sm rounded-2xl border border-slate-700/40 w-full max-w-lg flex flex-col max-h-[90vh] shadow-glow">
                 {/* Header Fisso */}
                 <div className="flex-shrink-0 flex justify-between items-center p-6 border-b border-white/10">
                   <h3 className="text-xl font-bold text-white">📅 Seleziona Data e Ora</h3>

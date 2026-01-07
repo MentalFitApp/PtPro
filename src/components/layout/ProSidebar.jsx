@@ -65,6 +65,7 @@ const getNavConfig = (role, isSuperAdmin = false) => {
             { to: '/admin/branding', icon: Palette, label: 'Branding' },
             { to: '/integrations', icon: Link2, label: 'Integrazioni' },
             { to: '/platform-settings', icon: Settings, label: 'Piattaforma' },
+            { to: '/dashboard-demo', icon: Zap, label: '✨ Demo 2.0' },
           ]
         }
       ]

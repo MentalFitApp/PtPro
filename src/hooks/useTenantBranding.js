@@ -65,7 +65,7 @@ export function applyUiDensity(density) {
  */
 export function applyBackgroundPreset(preset, solidColor, gradientColors) {
   const root = document.documentElement;
-  const validPreset = backgroundPresets[preset] ? preset : 'starryNight';
+  const validPreset = backgroundPresets[preset] ? preset : 'aurora';
   
   root.setAttribute('data-bg-preset', validPreset);
   

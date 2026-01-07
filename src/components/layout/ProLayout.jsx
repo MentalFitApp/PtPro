@@ -8,12 +8,16 @@ import { auth, db } from '../../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { ProSidebar, MobileSidebar } from './ProSidebar';
+import { NebulaSidebar, MobileNebulaSidebar } from './NebulaSidebar';
+import { NebulaBottomNav } from './NebulaBottomNav';
 import { setCurrentTenantId, getCurrentTenantId } from '../../config/tenant';
 // import ThemeToggle from '../ui/ThemeToggle'; // TODO: riabilitare quando light mode pronta
 import NotificationBell from '../notifications/NotificationBell';
 import InteractiveTour from '../onboarding/InteractiveTour';
 import { PageProvider, usePageContext } from '../../contexts/PageContext';
 import { useUnreadCount } from '../../hooks/useChat';
+import NebulaBackground from '../ui/NebulaBackground';
+import { backgroundPresets } from '../../config/backgroundPresets';
 
 // Pagine conosciute dell'area cliente (NON admin ClientDetail)
 // /client/:clientId è admin ClientDetail, /client/dashboard è area cliente
@@ -32,189 +36,43 @@ const isClientAreaPath = (pathname) => {
   return CLIENT_AREA_PAGES.includes(segment);
 };
 
-// === STELLE ANIMATE - 5 STILI PREMIUM ===
-const AnimatedStars = () => {
-  const [initialized, setInitialized] = useState(false);
+// === BACKGROUND NEBULA 2.0 - Sostituisce le vecchie stelle ===
+const NebulaStars = () => {
+  const [currentPreset, setCurrentPreset] = useState('aurora');
 
   useEffect(() => {
-    // Detect iOS/mobile per ridurre carico
-    const isMobile = window.matchMedia('(max-width: 1024px)').matches;
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isLowPower = isMobile || isIOS;
-    
-    // Funzione per creare le stelle in base al preset
-    const createStars = () => {
-      // Rimuovi stelle esistenti
-      const existingContainer = document.querySelector('.stars');
-      if (existingContainer) {
-        existingContainer.remove();
-      }
-
-      // Leggi il preset corrente (default: starryNight)
-      const preset = document.documentElement.getAttribute('data-bg-preset') || 'starryNight';
-      
-      // Se è solid o gradient, non creare stelle
-      if (preset === 'solid' || preset === 'gradient') {
-        return;
-      }
-
-      const container = document.createElement('div');
-      container.className = `stars stars-${preset}`;
-      document.body.appendChild(container);
-
-      // Configurazioni per i 5 preset stellati premium
-      // Su mobile/iOS riduciamo drasticamente il numero di stelle
-      const mobileMultiplier = isLowPower ? 0.3 : 1; // 30% stelle su mobile
-      
-      const presetConfigs = {
-        // 1. CIELO STELLATO - Come il login, twinkle + float dolce
-        starryNight: {
-          count: Math.round(65 * mobileMultiplier),
-          sizeRange: [1, 3.5],
-          colors: ['blue', 'gold'],
-          animation: isLowPower ? 'static' : 'twinkle-float', // Animazione semplice su mobile
-          twinkleDuration: { min: 2, max: 4 },
-          floatDuration: { min: 10, max: 20 },
-        },
-        // 2. PIOGGIA DI METEORE - Stelle cadenti veloci con scie
-        meteorShower: {
-          count: Math.round(35 * mobileMultiplier),
-          sizeRange: [1, 2.5],
-          colors: ['white', 'cyan', 'gold'],
-          animation: isLowPower ? 'static' : 'meteor',
-          speed: { min: 4, max: 10 },
-        },
-        // 3. UNIVERSO PROFONDO - Stelle pulsanti con profondità
-        deepSpace: {
-          count: Math.round(80 * mobileMultiplier),
-          sizeRange: [0.5, 3.5],
-          colors: ['white', 'purple', 'pink', 'cyan'],
-          animation: isLowPower ? 'static' : 'pulse-depth',
-          speed: { min: 3, max: 6 },
-        },
-        // 4. COSTELLAZIONI - Stelle connesse
-        constellations: {
-          count: Math.round(40 * mobileMultiplier),
-          sizeRange: [2, 4.5],
-          colors: ['blue', 'white', 'cyan'],
-          animation: isLowPower ? 'static' : 'constellation',
-          speed: { min: 4, max: 7 },
-          connections: !isLowPower, // Disabilita linee su mobile
-        },
-        // 5. POLVERE DI STELLE - Particelle danzanti
-        stardust: {
-          count: Math.round(100 * mobileMultiplier),
-          sizeRange: [0.5, 2.5],
-          colors: ['white', 'gold', 'pink', 'cyan'],
-          animation: isLowPower ? 'static' : 'dust',
-          speed: { min: 8, max: 15 },
-        },
+    // Leggi il preset dal data attribute
+    const updatePreset = () => {
+      const preset = document.documentElement.getAttribute('data-bg-preset') || 'aurora';
+      // Mappa i vecchi preset ai nuovi
+      const presetMap = {
+        'starryNight': 'aurora',
+        'meteorShower': 'aurora',
+        'deepSpace': 'aurora',
+        'constellations': 'constellation',
+        'stardust': 'constellation',
+        'solid': null,
+        'gradient': null,
       };
-
-      const config = presetConfigs[preset] || presetConfigs.starryNight;
-      const stars = [];
-
-      for (let i = 0; i < config.count; i++) {
-        const star = document.createElement('div');
-        const colorClass = config.colors[Math.floor(Math.random() * config.colors.length)];
-        star.className = `star star-${config.animation} ${colorClass}`;
-        
-        // Posizione casuale
-        const top = Math.random() * 100;
-        const left = Math.random() * 100;
-        
-        star.style.top = `${top}%`;
-        star.style.left = `${left}%`;
-        
-        // Dimensione
-        const size = config.sizeRange[0] + Math.random() * (config.sizeRange[1] - config.sizeRange[0]);
-        star.style.setProperty('--star-size', `${size}px`);
-        star.style.width = `${size}px`;
-        star.style.height = `${size}px`;
-        
-        // Animazioni specifiche per preset
-        if (preset === 'starryNight') {
-          // Twinkle + Float come login
-          const twinkleDur = config.twinkleDuration.min + Math.random() * (config.twinkleDuration.max - config.twinkleDuration.min);
-          const floatDur = config.floatDuration.min + Math.random() * (config.floatDuration.max - config.floatDuration.min);
-          star.style.setProperty('--twinkle-duration', `${twinkleDur}s`);
-          star.style.setProperty('--float-duration', `${floatDur}s`);
-          star.style.setProperty('--star-min-opacity', colorClass === 'gold' ? '0.5' : '0.3');
-          star.style.animationDelay = `${Math.random() * -twinkleDur}s, ${Math.random() * -floatDur}s`;
-        } else if (preset === 'meteorShower') {
-          // Stelle cadenti con delay casuali
-          const duration = config.speed.min + Math.random() * (config.speed.max - config.speed.min);
-          star.style.setProperty('--anim-duration', `${duration}s`);
-          star.style.setProperty('--anim-delay', `${Math.random() * 10}s`);
-        } else if (preset === 'deepSpace') {
-          // Profondità visiva
-          const depth = Math.random();
-          const duration = config.speed.min + Math.random() * (config.speed.max - config.speed.min);
-          star.style.setProperty('--anim-duration', `${duration}s`);
-          star.style.setProperty('--anim-delay', `${Math.random() * -duration}s`);
-          star.style.setProperty('--depth-opacity', (0.2 + depth * 0.6).toFixed(2));
-          star.style.opacity = 0.3 + depth * 0.7;
-          star.style.filter = `blur(${(1 - depth) * 0.5}px)`;
-        } else if (preset === 'constellations') {
-          // Stelle per costellazioni
-          const duration = config.speed.min + Math.random() * (config.speed.max - config.speed.min);
-          star.style.setProperty('--anim-duration', `${duration}s`);
-          star.style.setProperty('--anim-delay', `${Math.random() * -duration}s`);
-          stars.push({ el: star, x: left, y: top });
-        } else if (preset === 'stardust') {
-          // Polvere danzante
-          const duration = config.speed.min + Math.random() * (config.speed.max - config.speed.min);
-          star.style.setProperty('--anim-duration', `${duration}s`);
-          star.style.setProperty('--anim-delay', `${Math.random() * -duration}s`);
-        }
-        
-        container.appendChild(star);
-      }
-
-      // Aggiungi linee di connessione per costellazioni
-      if (preset === 'constellations' && config.connections && stars.length > 1) {
-        // Crea connessioni tra stelle vicine
-        const maxDistance = 20; // % dello schermo
-        const connections = [];
-        
-        for (let i = 0; i < stars.length; i++) {
-          for (let j = i + 1; j < stars.length; j++) {
-            const dx = stars[j].x - stars[i].x;
-            const dy = stars[j].y - stars[i].y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance < maxDistance && connections.length < 20) {
-              const line = document.createElement('div');
-              line.className = 'constellation-line';
-              
-              // Calcola posizione e rotazione
-              const length = distance;
-              const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-              
-              line.style.left = `${stars[i].x}%`;
-              line.style.top = `${stars[i].y}%`;
-              line.style.width = `${length}%`;
-              line.style.transform = `rotate(${angle}deg)`;
-              line.style.animationDelay = `${Math.random() * 4}s`;
-              
-              container.appendChild(line);
-              connections.push({ from: i, to: j });
-            }
-          }
-        }
+      
+      // Se è un preset Nebula, usalo direttamente
+      const config = backgroundPresets[preset];
+      if (config && config.type === 'nebula') {
+        setCurrentPreset(config.nebulaPreset);
+      } else if (presetMap[preset] !== undefined) {
+        setCurrentPreset(presetMap[preset]);
+      } else {
+        setCurrentPreset('aurora'); // Default
       }
     };
 
-    // Crea stelle iniziali
-    createStars();
-    setInitialized(true);
+    updatePreset();
 
     // Observer per cambiamenti al preset
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.attributeName === 'data-bg-preset') {
-          createStars();
+          updatePreset();
         }
       });
     });
@@ -226,8 +84,14 @@ const AnimatedStars = () => {
     };
   }, []);
 
-  return null;
+  // Non renderizzare nulla per solid/gradient
+  if (!currentPreset) return null;
+
+  return <NebulaBackground preset={currentPreset} />;
 };
+
+// Legacy AnimatedStars - Manteniamo per retrocompatibilità ma non fa più nulla
+const AnimatedStars = () => null;
 
 // === MOBILE HEADER (Compatto 56px) ===
 const MobileHeader = ({ onMenuOpen, branding, onProfileMenuToggle, isProfileMenuOpen, onNavigateSettings, onNavigateProfile, onNavigateBilling, onLogout, availableWorkspaces = [], currentWorkspaceId, onSwitchWorkspace }) => {
@@ -662,7 +526,7 @@ export const ProLayout = () => {
     return (
       <div className="min-h-screen bg-transparent">
         <div className="starry-background" />
-        <AnimatedStars />
+        <NebulaStars />
         <Outlet />
       </div>
     );
@@ -671,21 +535,21 @@ export const ProLayout = () => {
   return (
     <PageProvider>
     <div className="min-h-screen bg-transparent overflow-x-hidden">
-      {/* Sfondo stellato */}
+      {/* Sfondo Nebula 2.0 */}
       <div className="starry-background" />
-      <AnimatedStars />
+      <NebulaStars />
 
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar - Nebula 2.0 */}
       {!isMobile && (
-        <ProSidebar
+        <NebulaSidebar
           role={role}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         />
       )}
 
-      {/* Mobile Sidebar */}
-      <MobileSidebar
+      {/* Mobile Sidebar - Nebula 2.0 */}
+      <MobileNebulaSidebar
         role={role}
         isOpen={isMobileSidebarOpen}
         onClose={() => setIsMobileSidebarOpen(false)}
@@ -716,7 +580,7 @@ export const ProLayout = () => {
       <div 
         className={`min-h-screen transition-all duration-300 ease-out ${
           !isMobile 
-            ? (isSidebarCollapsed ? 'lg:ml-[64px]' : 'lg:ml-[240px]')
+            ? (isSidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]')
             : ''
         }`}
       >
@@ -732,9 +596,9 @@ export const ProLayout = () => {
         </main>
       </div>
 
-      {/* Bottom Nav (Mobile Only) */}
+      {/* Bottom Nav (Mobile Only) - Nebula 2.0 */}
       {isMobile && (
-        <BottomNav role={role} currentPath={location.pathname} unreadMessages={unreadCount} />
+        <NebulaBottomNav role={role} unreadMessages={unreadCount} />
       )}
 
       {/* Modale richiesta permessi notifiche - TODO: riabilitare quando notifiche implementate */}

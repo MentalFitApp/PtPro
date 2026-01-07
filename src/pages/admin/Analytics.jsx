@@ -395,7 +395,7 @@ export default function Analytics() {
             </div>
 
             {/* Period Selector */}
-            <div className="flex gap-1 bg-slate-900/30 p-1 rounded-xl">
+            <div className="flex gap-1 bg-slate-800/40 backdrop-blur-sm p-1 rounded-xl border border-slate-700/40">
               {['month', 'quarter', 'year'].map(period => (
                 <button
                   key={period}

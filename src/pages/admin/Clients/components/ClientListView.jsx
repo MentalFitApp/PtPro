@@ -39,13 +39,8 @@ const ClientListView = ({
 
   return (
     <>
-      {/* Mobile filter pills */}
-      <div className="md:hidden sticky top-16 z-30 px-3 mb-3">
-        {/* Filter pills handled by parent */}
-      </div>
-
       {/* MOBILE CARD STACK */}
-      <div className="md:hidden space-y-4">
+      <div className="md:hidden space-y-3">
         {displayedClients.map((c) => {
           const expiry = toDate(c.scadenza);
           const daysToExpiry = expiry ? Math.ceil((expiry - new Date()) / (1000 * 60 * 60 * 24)) : null;
@@ -60,7 +55,7 @@ const ClientListView = ({
                 : 'text-emerald-400';
 
           return (
-            <div key={c.id} className="bg-slate-900/70 backdrop-blur-xl border border-slate-800 rounded-xl p-4 shadow-xl">
+            <div key={c.id} className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/40 rounded-xl p-3">
               <div className="flex justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -90,11 +85,11 @@ const ClientListView = ({
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-300">
-                <div className="bg-slate-900/70 rounded-lg px-3 py-2 border border-slate-800">
+                <div className="bg-slate-800/50 rounded-xl px-3 py-2 border border-slate-700/30">
                   <p className="text-[10px] text-slate-400">Inizio</p>
                   <p className="font-medium text-white">{toDate(c.startDate)?.toLocaleDateString('it-IT') || 'N/D'}</p>
                 </div>
-                <div className="bg-slate-900/70 rounded-lg px-3 py-2 border border-slate-800">
+                <div className="bg-slate-800/50 rounded-xl px-3 py-2 border border-slate-700/30">
                   <p className="text-[10px] text-slate-400">Anamnesi</p>
                   <div className="mt-1"><AnamnesiBadge hasAnamnesi={anamnesiStatus[c.id]} /></div>
                 </div>
@@ -131,7 +126,7 @@ const ClientListView = ({
         {hasMore && (
           <button
             onClick={() => setVisibleCount(prev => prev + CLIENTS_PER_PAGE)}
-            className="w-full py-3 mt-2 rounded-xl bg-slate-800/60 border border-slate-700/50 text-slate-300 text-sm font-medium hover:bg-slate-700/60 transition flex items-center justify-center gap-2"
+            className="w-full py-3 mt-2 rounded-xl bg-slate-800/40 border border-slate-700/30 text-slate-300 text-sm font-medium hover:bg-slate-700/50 transition flex items-center justify-center gap-2"
           >
             <ChevronDown size={18} />
             Mostra altri {Math.min(remainingCount, CLIENTS_PER_PAGE)} clienti
@@ -141,11 +136,11 @@ const ClientListView = ({
       </div>
 
       {/* TABLE - Desktop professional view */}
-      <div className="hidden md:block bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 overflow-hidden">
+      <div className="hidden md:block bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/30 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-800/60">
-              <tr className="border-b border-slate-700/50">
+              <tr className="border-b border-slate-700/30">
                 <th className="px-4 py-3 w-12">
                   <input
                     type="checkbox"
@@ -267,7 +262,7 @@ const ClientListView = ({
         {hasMore && (
           <button
             onClick={() => setVisibleCount(prev => prev + CLIENTS_PER_PAGE)}
-            className="w-full py-3 bg-slate-800/40 border-t border-slate-700/50 text-slate-300 text-sm font-medium hover:bg-slate-700/40 transition flex items-center justify-center gap-2"
+            className="w-full py-3 bg-slate-800/40 border-t border-slate-700/30 text-slate-300 text-sm font-medium hover:bg-slate-700/40 transition flex items-center justify-center gap-2"
           >
             <ChevronDown size={18} />
             Mostra altri {Math.min(remainingCount, CLIENTS_PER_PAGE)} clienti

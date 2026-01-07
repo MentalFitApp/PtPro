@@ -1,98 +1,60 @@
 // src/config/backgroundPresets.js
-// Catalogo sfondi stellati con 5 preset diversi - stile login premium
+// Catalogo sfondi con effetti Nebula 2.0 premium
 
 /**
- * Preset sfondi stellati con diverse animazioni
- * Tutti basati sullo stile premium del login con stelle animate
+ * Preset sfondi Nebula 2.0 - Effetti canvas animati premium
+ * Aurora è il default con stelle fluenti
  */
 export const backgroundPresets = {
-  // Cielo Stellato - Default, stile login con twinkle e float dolce
-  // Stelle blu e oro che brillano e fluttuano dolcemente
-  starryNight: {
-    id: 'starryNight',
-    name: 'Cielo Stellato',
-    description: 'Stelle scintillanti come nella notte (Default)',
-    preview: 'linear-gradient(to bottom, #0f172a, #1e293b)',
-    type: 'stars',
+  // AURORA BOREALIS - Default, effetto premium con stelle fluenti
+  aurora: {
+    id: 'aurora',
+    name: '🌌 Aurora Borealis',
+    description: 'Aurora con stelle fluenti (Default)',
+    preview: 'linear-gradient(135deg, #030508, #0a1628, #051a20)',
+    type: 'nebula',
+    nebulaPreset: 'aurora',
     isDefault: true,
-    config: {
-      starCount: 50,
-      animation: 'twinkle-float',
-      speed: 'medium',
-      colors: ['blue', 'gold'],
-      sizeRange: [1, 3],
-      twinkle: true,
-      float: true,
-    }
   },
   
-  // Pioggia di Meteore - stelle che cadono velocemente con scie luminose
-  meteorShower: {
-    id: 'meteorShower',
-    name: 'Pioggia di Meteore',
-    description: 'Stelle cadenti con scie luminose',
-    preview: 'linear-gradient(to bottom, #020617, #0f172a)',
-    type: 'stars',
-    config: {
-      starCount: 30,
-      animation: 'meteor',
-      speed: 'fast',
-      colors: ['white', 'cyan', 'gold'],
-      sizeRange: [1, 2],
-      trails: true,
-    }
+  // RIBBONS - Nastri fluidi eleganti
+  ribbons: {
+    id: 'ribbons',
+    name: '🎀 Nastri Fluidi',
+    description: 'Nastri eleganti che ondeggiano',
+    preview: 'linear-gradient(135deg, #050810, #0a1020, #1a0a30)',
+    type: 'nebula',
+    nebulaPreset: 'ribbons',
   },
   
-  // Universo Profondo - stelle che pulsano lentamente con profondità
-  deepSpace: {
-    id: 'deepSpace',
-    name: 'Universo Profondo',
-    description: 'Stelle pulsanti in profondità cosmica',
-    preview: 'linear-gradient(to bottom, #030712, #1e1b4b)',
-    type: 'stars',
-    config: {
-      starCount: 60,
-      animation: 'pulse-depth',
-      speed: 'slow',
-      colors: ['white', 'purple', 'pink', 'cyan'],
-      sizeRange: [0.5, 3],
-      depth: true,
-      glow: true,
-    }
+  // GEOMETRIC - Esagoni pulsanti
+  geometric: {
+    id: 'geometric',
+    name: '⬡ Geometrico',
+    description: 'Esagoni pulsanti futuristici',
+    preview: 'linear-gradient(135deg, #0f172a, #1e1b4b)',
+    type: 'nebula',
+    nebulaPreset: 'geometric',
   },
   
-  // Costellazioni - stelle che si connettono con linee sottili animate
-  constellations: {
-    id: 'constellations',
-    name: 'Costellazioni',
+  // CONSTELLATION - Stelle connesse
+  constellation: {
+    id: 'constellation',
+    name: '✨ Costellazioni',
     description: 'Stelle connesse da linee magiche',
-    preview: 'linear-gradient(to bottom, #0c1222, #1a1a2e)',
-    type: 'stars',
-    config: {
-      starCount: 35,
-      animation: 'constellation',
-      speed: 'very-slow',
-      colors: ['blue', 'white', 'cyan'],
-      sizeRange: [2, 4],
-      connections: true,
-    }
+    preview: 'linear-gradient(135deg, #0a0f1a, #0c1a2a)',
+    type: 'nebula',
+    nebulaPreset: 'constellation',
   },
   
-  // Polvere di Stelle - particelle sottili che fluttuano in tutte le direzioni
-  stardust: {
-    id: 'stardust',
-    name: 'Polvere di Stelle',
-    description: 'Particelle magiche che danzano',
-    preview: 'linear-gradient(to bottom, #0f172a, #312e81)',
-    type: 'stars',
-    config: {
-      starCount: 80,
-      animation: 'dust',
-      speed: 'medium',
-      colors: ['white', 'gold', 'pink', 'cyan'],
-      sizeRange: [0.5, 2],
-      scatter: true,
-    }
+  // LIQUID METAL - Metallo liquido (per utenti avanzati)
+  liquid: {
+    id: 'liquid',
+    name: '💧 Metallo Liquido',
+    description: 'Effetto metallo liquido futuristico',
+    preview: 'linear-gradient(135deg, #0a0f1a, #0a1a30)',
+    type: 'nebula',
+    nebulaPreset: 'liquid',
   },
 };
 
@@ -155,10 +117,10 @@ export const solidBackgroundColors = [
 ];
 
 /**
- * Default settings
+ * Default settings - Aurora come default
  */
 export const defaultBackgroundSettings = {
-  preset: 'starryNight',
+  preset: 'aurora',
   solidColor: '#0f172a',
   gradientColors: ['#0f172a', '#1e1b4b'],
   cardTransparency: 0.6, // 60% opacità (40% trasparente)

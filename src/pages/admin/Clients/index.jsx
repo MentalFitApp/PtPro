@@ -239,7 +239,7 @@ export default function Clients({ role: propRole }) {
 
       <div className="mobile-container py-4 sm:py-6 space-y-4 sm:space-y-6 mobile-safe-bottom">
         {/* HEADER MOBILE */}
-        <div className="md:hidden bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-2xl p-4 mx-3">
+        <div className="md:hidden bg-slate-800/40 backdrop-blur-sm border border-slate-700/40 rounded-xl p-4 mx-3">
           <h1 className="text-2xl font-bold text-slate-100 mb-2">Clienti</h1>
           
           {/* Stats */}
@@ -264,7 +264,7 @@ export default function Clients({ role: propRole }) {
             <input
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2.5 pl-10 w-full outline-none focus:ring-2 focus:ring-rose-500 text-sm text-slate-200 placeholder:text-slate-500"
+              className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/30 rounded-xl px-3 py-2.5 pl-10 w-full outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-sm text-white placeholder:text-slate-500"
               placeholder="Cerca clienti..."
             />
           </div>
@@ -290,7 +290,7 @@ export default function Clients({ role: propRole }) {
           </div>
 
           {/* View Toggle */}
-          <div className="grid grid-cols-3 gap-1 bg-slate-700/50 border border-slate-600 rounded-lg p-1 mb-3">
+          <div className="grid grid-cols-3 gap-1 bg-slate-800/40 border border-slate-700/30 rounded-xl p-1 mb-3">
             {[
               { key: 'list', icon: List, label: 'Lista' },
               { key: 'card', icon: LayoutGrid, label: 'Card' },
@@ -318,7 +318,7 @@ export default function Clients({ role: propRole }) {
         </div>
 
         {/* HEADER DESKTOP */}
-        <div className="hidden md:block bg-slate-900/60 border border-white/10 shadow-glow rounded-2xl p-6 mx-3 sm:mx-6">
+        <div className="hidden md:block bg-slate-800/40 backdrop-blur-sm border border-slate-700/40 rounded-xl p-5 mx-3 sm:mx-6">
           {/* Riga 1: Titolo + Azioni principali */}
           <div className="flex justify-between items-start gap-4 mb-4">
             <div>
@@ -356,13 +356,13 @@ export default function Clients({ role: propRole }) {
               <input
                 value={searchQuery} 
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 pl-10 w-full outline-none focus:ring-2 focus:ring-rose-500/50 focus:border-rose-500 text-sm text-slate-200 placeholder:text-slate-500"
+                className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/30 rounded-xl px-3 py-2 pl-10 w-full outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-sm text-white placeholder:text-slate-500"
                 placeholder="Cerca cliente..."
               />
             </div>
 
             {/* Filtri rapidi */}
-            <div className="flex items-center gap-1 bg-slate-800/50 rounded-lg p-1 border border-slate-700">
+            <div className="flex items-center gap-1 bg-slate-800/40 rounded-xl p-1 border border-slate-700/30">
               <button onClick={() => setFilter('all')} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${filter === 'all' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400 hover:text-slate-200'}`}>Tutti</button>
               <button onClick={() => setFilter('active')} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${filter === 'active' ? 'bg-emerald-600 text-white preserve-white' : 'text-emerald-400 hover:bg-emerald-900/30'}`}>Attivi</button>
               <button onClick={() => setFilter('expiring')} className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${filter === 'expiring' ? 'bg-amber-600 text-white preserve-white' : 'text-amber-400 hover:bg-amber-900/30'}`}>Scadenza</button>
@@ -372,7 +372,7 @@ export default function Clients({ role: propRole }) {
             {/* Filtri avanzati */}
             <button
               onClick={() => setFilterPanelOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors bg-slate-800/50 text-slate-400 hover:text-slate-200 hover:bg-slate-700 border border-slate-700"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl transition-colors bg-slate-800/40 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-700/30"
             >
               <Filter size={16} /> Filtri
             </button>
@@ -381,7 +381,7 @@ export default function Clients({ role: propRole }) {
             <div className="w-px h-8 bg-slate-700"></div>
 
             {/* Vista */}
-            <div className="flex items-center gap-1 bg-slate-800/50 rounded-lg p-1 border border-slate-700">
+            <div className="flex items-center gap-1 bg-slate-800/40 rounded-xl p-1 border border-slate-700/30">
               {[
                 { key: 'list', icon: List, title: 'Lista' },
                 { key: 'card', icon: LayoutGrid, title: 'Card' },
@@ -439,7 +439,7 @@ export default function Clients({ role: propRole }) {
             </div>
             
             {showCalendar && (
-              <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1 border border-slate-700">
+              <div className="flex gap-1 bg-slate-800/40 rounded-xl p-1 border border-slate-700/30">
                 <button
                   onClick={() => setCalendarType('iscrizioni')}
                   className={`px-3 py-1 text-xs rounded-md transition-colors ${calendarType === 'iscrizioni' ? 'bg-rose-600 text-white preserve-white' : 'text-slate-400'}`}
@@ -462,7 +462,7 @@ export default function Clients({ role: propRole }) {
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mx-3 sm:mx-6 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 flex items-center justify-between"
+            className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
               <CheckCircle className="text-blue-400" size={20} />
@@ -483,7 +483,7 @@ export default function Clients({ role: propRole }) {
         <div className="md:hidden mx-3">
           <button
             onClick={() => setShowCalendar(!showCalendar)}
-            className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${showCalendar ? 'bg-rose-600 text-white preserve-white' : 'bg-slate-700 text-slate-300'}`}
+            className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${showCalendar ? 'bg-rose-600 text-white preserve-white' : 'bg-slate-800/40 border border-slate-700/40 text-slate-300'}`}
           >
             <Calendar size={16} /> {showCalendar ? 'Nascondi' : 'Mostra'} Calendario
           </button>
@@ -515,7 +515,7 @@ export default function Clients({ role: propRole }) {
         {/* CESTINO */}
         {showTrash && (
           <div className="mx-3 sm:mx-6">
-            <div className="bg-slate-900/60 border border-red-500/30 rounded-2xl p-6">
+            <div className="bg-slate-800/40 backdrop-blur-sm border border-red-500/30 rounded-xl p-4">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-red-500/20">
                   <Trash2 size={20} className="text-red-400" />
@@ -534,7 +534,7 @@ export default function Clients({ role: propRole }) {
               ) : (
                 <div className="space-y-2">
                   {deletedClients.map(client => (
-                    <div key={client.id} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                    <div key={client.id} className="flex items-center justify-between p-4 bg-slate-800/40 rounded-xl border border-slate-700/30">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 font-medium">
                           {client.name?.charAt(0)?.toUpperCase() || '?'}
@@ -580,31 +580,31 @@ export default function Clients({ role: propRole }) {
         {!showTrash && viewMode === 'list' && (
           <div className="mx-3 sm:mx-6">
             <ClientListView
-              clients={filteredAndSortedClients}
-              selectedClients={selectedClients}
-              toggleClientSelection={toggleClientSelection}
-              toggleSelectAll={toggleSelectAll}
-              anamnesiStatus={anamnesiStatus}
-              paymentsTotals={paymentsTotals}
-              isAdmin={isAdmin}
-              isCoach={isCoach}
-              filter={filter}
-              onDeleteClient={setClientToDelete}
-              getClientPath={getClientPath}
-            />
+            clients={filteredAndSortedClients}
+            selectedClients={selectedClients}
+            toggleClientSelection={toggleClientSelection}
+            toggleSelectAll={toggleSelectAll}
+            anamnesiStatus={anamnesiStatus}
+            paymentsTotals={paymentsTotals}
+            isAdmin={isAdmin}
+            isCoach={isCoach}
+            filter={filter}
+            onDeleteClient={setClientToDelete}
+            getClientPath={getClientPath}
+          />
           </div>
         )}
 
         {!showTrash && viewMode === 'card' && (
           <div className="mx-3 sm:mx-6">
             <ClientCardView
-              clients={filteredAndSortedClients}
-              anamnesiStatus={anamnesiStatus}
-              paymentsTotals={paymentsTotals}
-              isAdmin={isAdmin}
-              onDeleteClient={setClientToDelete}
-              getClientPath={getClientPath}
-            />
+            clients={filteredAndSortedClients}
+            anamnesiStatus={anamnesiStatus}
+            paymentsTotals={paymentsTotals}
+            isAdmin={isAdmin}
+            onDeleteClient={setClientToDelete}
+            getClientPath={getClientPath}
+          />
           </div>
         )}
 

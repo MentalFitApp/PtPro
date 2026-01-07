@@ -510,7 +510,7 @@ export default function Settings() {
                         type="text"
                         value={profile.displayName}
                         onChange={(e) => setProfile(p => ({ ...p, displayName: e.target.value }))}
-                        className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                        className="flex-1 px-4 py-3 bg-slate-800/40 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                         placeholder="Il tuo nome"
                       />
                       <button
@@ -546,7 +546,7 @@ export default function Settings() {
                     <select
                       value={profile.timezone}
                       onChange={(e) => setProfile(p => ({ ...p, timezone: e.target.value }))}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                      className="w-full px-4 py-3 bg-slate-800/40 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                     >
                       <option value="Europe/Rome">(GMT +01:00) Europe/Rome</option>
                       <option value="Europe/London">(GMT +00:00) Europe/London</option>
@@ -561,7 +561,7 @@ export default function Settings() {
                     <select
                       value={profile.country}
                       onChange={(e) => setProfile(p => ({ ...p, country: e.target.value }))}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                      className="w-full px-4 py-3 bg-slate-800/40 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                     >
                       <option value="IT">🇮🇹 Italy</option>
                       <option value="US">🇺🇸 United States</option>
@@ -585,7 +585,7 @@ export default function Settings() {
                           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
                             profile.weightUnit === 'kg' 
                               ? 'bg-blue-500 text-white' 
-                              : 'bg-slate-900/50 text-slate-400 hover:bg-slate-800/50'
+                              : 'bg-slate-800/40 text-slate-400 hover:bg-slate-800/50'
                           }`}
                         >
                           Metric (kg)
@@ -595,7 +595,7 @@ export default function Settings() {
                           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
                             profile.weightUnit === 'lb' 
                               ? 'bg-blue-500 text-white' 
-                              : 'bg-slate-900/50 text-slate-400 hover:bg-slate-800/50'
+                              : 'bg-slate-800/40 text-slate-400 hover:bg-slate-800/50'
                           }`}
                         >
                           US/Imperial (lb)
@@ -614,7 +614,7 @@ export default function Settings() {
                           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
                             profile.lengthUnit === 'cm' 
                               ? 'bg-blue-500 text-white' 
-                              : 'bg-slate-900/50 text-slate-400 hover:bg-slate-800/50'
+                              : 'bg-slate-800/40 text-slate-400 hover:bg-slate-800/50'
                           }`}
                         >
                           Metric (cm)
@@ -624,7 +624,7 @@ export default function Settings() {
                           className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
                             profile.lengthUnit === 'inch' 
                               ? 'bg-blue-500 text-white' 
-                              : 'bg-slate-900/50 text-slate-400 hover:bg-slate-800/50'
+                              : 'bg-slate-800/40 text-slate-400 hover:bg-slate-800/50'
                           }`}
                         >
                           US/Imperial (inch)
@@ -645,7 +645,7 @@ export default function Settings() {
                         className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
                           isDark 
                             ? 'bg-slate-800 text-white' 
-                            : 'bg-slate-900/50 text-slate-400 hover:bg-slate-800/50'
+                            : 'bg-slate-800/40 text-slate-400 hover:bg-slate-800/50'
                         }`}
                       >
                         <Moon size={16} />
@@ -656,7 +656,7 @@ export default function Settings() {
                         className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
                           !isDark 
                             ? 'bg-blue-500 text-white' 
-                            : 'bg-slate-900/50 text-slate-400 hover:bg-slate-800/50'
+                            : 'bg-slate-800/40 text-slate-400 hover:bg-slate-800/50'
                         }`}
                       >
                         <Sun size={16} />
@@ -701,7 +701,7 @@ export default function Settings() {
                   </h4>
                   <div className="space-y-3">
                     {/* Toggle Notifiche Push - con richiesta permessi browser */}
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 hover:bg-slate-900/50 transition-colors">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-slate-800/40 hover:bg-slate-800/40 transition-colors">
                       <div className="flex items-center gap-3">
                         <span className="text-xl">🔔</span>
                         <div>
@@ -731,7 +731,7 @@ export default function Settings() {
                     </div>
                     
                     {/* Toggle Email */}
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 hover:bg-slate-900/50 transition-colors">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-slate-800/40 hover:bg-slate-800/40 transition-colors">
                       <div className="flex items-center gap-3">
                         <span className="text-xl">📧</span>
                         <div>
@@ -765,7 +765,7 @@ export default function Settings() {
                       { key: 'newClient', label: 'Nuovo Cliente', desc: 'Quando un cliente si registra', icon: '👤' },
                       { key: 'callRequest', label: 'Richiesta Chiamata', desc: 'Quando un cliente richiede una chiamata', icon: '📞' },
                     ].map(item => (
-                      <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 hover:bg-slate-900/50 transition-colors">
+                      <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-slate-800/40 hover:bg-slate-800/40 transition-colors">
                         <div className="flex items-center gap-3">
                           <span className="text-xl">{item.icon}</span>
                           <div>
@@ -801,7 +801,7 @@ export default function Settings() {
                       { key: 'newCheck', label: 'Nuovo Check', desc: 'Quando un cliente invia un check', icon: '✅' },
                       { key: 'message', label: 'Messaggi Chat', desc: 'Nuovi messaggi nella chat', icon: '💬' },
                     ].map(item => (
-                      <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 hover:bg-slate-900/50 transition-colors">
+                      <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-slate-800/40 hover:bg-slate-800/40 transition-colors">
                         <div className="flex items-center gap-3">
                           <span className="text-xl">{item.icon}</span>
                           <div>
@@ -835,7 +835,7 @@ export default function Settings() {
                       { key: 'payments', label: 'Pagamenti', desc: 'Notifiche sui pagamenti ricevuti', icon: '💰' },
                       { key: 'expiring', label: 'Scadenze', desc: 'Abbonamenti in scadenza', icon: '⚠️' },
                     ].map(item => (
-                      <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-slate-900/30 hover:bg-slate-900/50 transition-colors">
+                      <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-slate-800/40 hover:bg-slate-800/40 transition-colors">
                         <div className="flex items-center gap-3">
                           <span className="text-xl">{item.icon}</span>
                           <div>
@@ -893,7 +893,7 @@ export default function Settings() {
                         type={showPasswords.old ? 'text' : 'password'}
                         value={passwordForm.oldPassword}
                         onChange={(e) => setPasswordForm(f => ({ ...f, oldPassword: e.target.value }))}
-                        className="w-full px-4 py-3 pr-12 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                        className="w-full px-4 py-3 pr-12 bg-slate-800/40 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                       />
                       <button
                         type="button"
@@ -913,7 +913,7 @@ export default function Settings() {
                         type={showPasswords.new ? 'text' : 'password'}
                         value={passwordForm.newPassword}
                         onChange={(e) => setPasswordForm(f => ({ ...f, newPassword: e.target.value }))}
-                        className="w-full px-4 py-3 pr-12 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                        className="w-full px-4 py-3 pr-12 bg-slate-800/40 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                       />
                       <button
                         type="button"
@@ -933,7 +933,7 @@ export default function Settings() {
                         type={showPasswords.confirm ? 'text' : 'password'}
                         value={passwordForm.confirmPassword}
                         onChange={(e) => setPasswordForm(f => ({ ...f, confirmPassword: e.target.value }))}
-                        className="w-full px-4 py-3 pr-12 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
+                        className="w-full px-4 py-3 pr-12 bg-slate-800/40 border border-slate-700/30 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                       />
                       <button
                         type="button"
@@ -959,7 +959,7 @@ export default function Settings() {
             {/* ============ DANGER TAB ============ */}
             {activeTab === TABS.DANGER && (
               <div className="p-4 sm:p-6 max-w-md">
-                <div className="bg-slate-900/30 rounded-xl border border-slate-700/30 p-4 sm:p-5">
+                <div className="bg-slate-800/40 rounded-xl border border-slate-700/30 p-4 sm:p-5">
                   <h3 className="font-semibold text-white mb-2">Elimina Account</h3>
                   <p className="text-sm text-slate-400 mb-6">
                     Il tuo account e tutti i dati associati verranno programmati per l'eliminazione.

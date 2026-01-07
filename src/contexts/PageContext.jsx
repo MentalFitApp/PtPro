@@ -45,17 +45,34 @@ export const PageProvider = ({ children }) => {
   );
 };
 
-export const usePageContext = () => useContext(PageContext);
+export const usePageContext = () => {
+  const context = useContext(PageContext);
+  // Fallback se il context non è disponibile (es. durante lazy loading)
+  if (!context) {
+    return {
+      pageTitle: '',
+      pageSubtitle: '',
+      breadcrumbs: [],
+      backButton: null,
+      actions: null,
+      setPageInfo: () => {},
+      clearPageInfo: () => {}
+    };
+  }
+  return context;
+};
 
 // Hook per impostare facilmente le info della pagina
 export const usePageInfo = (info, deps = []) => {
   const { setPageInfo, clearPageInfo } = usePageContext();
   
   React.useEffect(() => {
-    if (info) {
+    if (info && setPageInfo) {
       setPageInfo(info);
     }
-    return () => clearPageInfo();
+    return () => {
+      if (clearPageInfo) clearPageInfo();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 };

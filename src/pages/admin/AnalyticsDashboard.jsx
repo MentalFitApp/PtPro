@@ -121,12 +121,12 @@ export default function AnalyticsDashboard() {
         
         <div className="flex items-center gap-3">
           {/* Time Range Selector */}
-          <div className="flex bg-slate-800 rounded-lg p-1">
+          <div className="flex bg-slate-800/40 backdrop-blur-sm rounded-xl p-1">
             {TIME_RANGES.map(range => (
               <button
                 key={range.id}
                 onClick={() => setTimeRange(range.id)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
                   timeRange === range.id
                     ? 'bg-sky-500 text-white'
                     : 'text-slate-400 hover:text-white'
@@ -140,7 +140,7 @@ export default function AnalyticsDashboard() {
           {/* Refresh */}
           <button
             onClick={refresh}
-            className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-xl bg-slate-800/40 backdrop-blur-sm text-slate-400 hover:text-white hover:bg-slate-700/60 transition-colors border border-slate-700/40"
           >
             <RefreshCw size={18} />
           </button>

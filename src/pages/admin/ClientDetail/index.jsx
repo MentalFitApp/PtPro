@@ -297,7 +297,7 @@ export default function ClientDetail({ role: propRole }) {
   }, []);
 
   const renderAnamnesiField = useCallback((label, value) => (
-    <div className="p-3 rounded-lg bg-slate-900 border border-slate-800">
+    <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/30">
       <p className="text-xs text-slate-400">{label}</p>
       <p className="text-sm text-white mt-1 whitespace-pre-wrap leading-snug">{value || 'N/D'}</p>
     </div>
@@ -328,10 +328,10 @@ export default function ClientDetail({ role: propRole }) {
   return (
     <ErrorBoundary>
       <div className="bg-transparent">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full px-0 sm:px-0 py-0">
-          <div className="space-y-6">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mobile-container py-4 sm:py-6 mobile-safe-bottom">
+          <div className="space-y-4 sm:space-y-6 mx-3 sm:mx-6">
             {/* Header Section */}
-            <div className="bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
+            <div className="bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/40 p-4 sm:p-5">
               {/* Back Button - Visibile sempre */}
               <motion.button
                 onClick={handleGoBack}
@@ -413,7 +413,7 @@ export default function ClientDetail({ role: propRole }) {
             </div>
 
             {/* Tabs */}
-            <div className="flex overflow-x-auto gap-1 bg-slate-900/40 p-1.5 rounded-xl border border-slate-700/50 scrollbar-thin scrollbar-thumb-slate-700">
+            <div className="flex overflow-x-auto gap-1 bg-slate-800/40 p-1.5 rounded-xl border border-slate-700/40 scrollbar-thin scrollbar-thumb-slate-700">
               {tabs.map((tab) => (
                 <button 
                   key={tab.key} 
@@ -498,14 +498,14 @@ export default function ClientDetail({ role: propRole }) {
                       </div>
                       
                       <CardGrid cols={2}>
-                        <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/60">
+                        <div className="p-3 rounded-xl border border-slate-700/40 bg-slate-800/40 backdrop-blur-sm">
                           <div className="flex items-center gap-2 mb-1 text-slate-300">
                             <ClipboardList size={15} />
                             <span className="font-semibold text-white">Goal</span>
                           </div>
                           <p className="text-slate-200 leading-snug min-h-[48px]">{anamnesi?.mainGoal || 'Non impostato'}</p>
                         </div>
-                        <div className="p-3 rounded-lg border border-slate-800 bg-slate-900/60">
+                        <div className="p-3 rounded-xl border border-slate-700/40 bg-slate-800/40 backdrop-blur-sm">
                           <div className="flex items-center gap-2 mb-1 text-slate-300">
                             <AlertTriangle size={15} />
                             <span className="font-semibold text-white">Infortuni</span>
@@ -518,22 +518,22 @@ export default function ClientDetail({ role: propRole }) {
                   
                   <NextCallCard clientId={clientId} isAdmin={isAdmin} onSchedule={() => openModal('scheduleCall')} />
                   
-                  {/* Checks Card */}
-                  <UnifiedCard>
-                    <CardHeaderSimple 
-                      title="Check recenti"
-                      subtitle="Ultimi 5"
-                      action={
-                        <button 
-                          onClick={() => openModal('newCheck')}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
-                        >
-                          <Plus size={14} /> Aggiungi Check
-                        </button>
-                      }
-                    />
-                    <CardContent>
-                      {checks.length > 0 ? (
+                  {/* Checks Card - Solo se ci sono check */}
+                  {checks.length > 0 && (
+                    <UnifiedCard>
+                      <CardHeaderSimple 
+                        title="Check recenti"
+                        subtitle="Ultimi 5"
+                        action={
+                          <button 
+                            onClick={() => openModal('newCheck')}
+                            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                          >
+                            <Plus size={14} /> Aggiungi Check
+                          </button>
+                        }
+                      />
+                      <CardContent>
                         <div className="space-y-3">
                           {checks.slice(0, 5).map((check) => (
                             <ListItemCard 
@@ -555,19 +555,22 @@ export default function ClientDetail({ role: propRole }) {
                             </ListItemCard>
                           ))}
                         </div>
-                      ) : (
-                        <EmptyState icon={Calendar} description="Nessun check disponibile." />
-                      )}
-                    </CardContent>
-                  </UnifiedCard>
+                      </CardContent>
+                    </UnifiedCard>
+                  )}
                   
-                  {/* Progress Card */}
-                  <UnifiedCard>
-                    <CardHeaderSimple title="Progressione" subtitle="Andamento peso e BF" />
-                    <CardContent>
-                      <ProgressCharts checks={checks} />
-                    </CardContent>
-                  </UnifiedCard>
+                  {/* CTA per aggiungere check se non ce ne sono */}
+                  {checks.length === 0 && (
+                    <div className="p-4 rounded-xl border border-dashed border-slate-700/40 bg-slate-800/20 text-center">
+                      <p className="text-sm text-slate-400 mb-2">Nessun check registrato</p>
+                      <button 
+                        onClick={() => openModal('newCheck')}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                      >
+                        <Plus size={14} /> Aggiungi primo Check
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-4">
@@ -614,7 +617,7 @@ export default function ClientDetail({ role: propRole }) {
                             <button 
                               key={idx} 
                               onClick={() => openModal('photoZoom', { open: true, url: photo.url, alt: photo.label })} 
-                              className="relative overflow-hidden rounded-lg group border border-slate-800 bg-slate-900/60"
+                              className="relative overflow-hidden rounded-xl group border border-slate-700/40 bg-slate-800/40 backdrop-blur-sm"
                             >
                               <img src={photo.url} alt={photo.label} className="w-full h-24 object-cover transition-transform group-hover:scale-110" />
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
@@ -624,7 +627,7 @@ export default function ClientDetail({ role: propRole }) {
                           ))}
                         </div>
                       ) : (
-                        <EmptyState icon={Image} description="Nessuna foto caricata." />
+                        <EmptyState icon={Image} description="Nessuna foto caricata." variant="compact" />
                       )}
                     </CardContent>
                   </UnifiedCard>
@@ -646,11 +649,11 @@ export default function ClientDetail({ role: propRole }) {
                       />
                       <CardContent>
                         <CardGrid cols={2} className="mb-3">
-                          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                          <div className="p-3 rounded-xl bg-slate-800/40 backdrop-blur-sm border border-slate-700/40">
                             <p className="text-xs text-slate-400">Pagato</p>
                             <p className="text-lg font-semibold text-white">{showAmounts ? `€${paymentsPaid.toFixed(0)}` : '€ •••'}</p>
                           </div>
-                          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                          <div className="p-3 rounded-xl bg-slate-800/40 backdrop-blur-sm border border-slate-700/40">
                             <p className="text-xs text-slate-400">Totale</p>
                             <p className="text-lg font-semibold text-white">{showAmounts ? `€${paymentsTotal.toFixed(0)}` : '€ •••'}</p>
                           </div>
@@ -663,7 +666,7 @@ export default function ClientDetail({ role: propRole }) {
                               {payments.map((payment, idx) => {
                                 const pDate = toDate(payment.paymentDate);
                                 return (
-                                  <div key={payment.id || idx} className="flex items-center justify-between p-3 bg-slate-900/70 rounded-lg border border-slate-800">
+                                  <div key={payment.id || idx} className="flex items-center justify-between p-3 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700/40">
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium text-white">
@@ -690,6 +693,16 @@ export default function ClientDetail({ role: propRole }) {
                             </div>
                           </div>
                         )}
+                      </CardContent>
+                    </UnifiedCard>
+                  )}
+                  
+                  {/* Progress Card - Solo se ci sono check */}
+                  {checks.length > 0 && (
+                    <UnifiedCard>
+                      <CardHeaderSimple title="Progressione" subtitle="Andamento peso e BF" />
+                      <CardContent>
+                        <ProgressCharts checks={checks} />
                       </CardContent>
                     </UnifiedCard>
                   )}
@@ -740,7 +753,7 @@ export default function ClientDetail({ role: propRole }) {
                           ))}
                         </div>
                       ) : (
-                        <EmptyState icon={Calendar} description="Nessun check." />
+                        <EmptyState icon={Calendar} description="Nessun check." variant="compact" />
                       )}
                     </CardContent>
                   </UnifiedCard>
@@ -769,14 +782,14 @@ export default function ClientDetail({ role: propRole }) {
                           <button 
                             key={idx} 
                             onClick={() => openModal('photoZoom', { open: true, url: photo.url, alt: photo.label })} 
-                            className="relative overflow-hidden rounded-lg group border border-slate-800"
+                            className="relative overflow-hidden rounded-xl group border border-slate-700/40 bg-slate-800/40 backdrop-blur-sm"
                           >
                             <img src={photo.url} alt={photo.label} className="w-full h-28 object-cover" />
                           </button>
                         ))}
                       </div>
                     ) : (
-                      <EmptyState icon={Image} description="Nessuna foto." />
+                      <EmptyState icon={Image} description="Nessuna foto." variant="compact" />
                     )}
                   </CardContent>
                 </UnifiedCard>
@@ -790,11 +803,11 @@ export default function ClientDetail({ role: propRole }) {
                   <CardHeaderSimple title="Pagamenti" />
                   <CardContent>
                     <CardGrid cols={2} className="mb-3">
-                      <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                      <div className="p-3 rounded-xl bg-slate-800/40 backdrop-blur-sm border border-slate-700/40">
                         <p className="text-xs text-slate-400">Pagato</p>
                         <p className="text-lg font-semibold text-white">{showAmounts ? `€${paymentsPaid.toFixed(0)}` : '€ •••'}</p>
                       </div>
-                      <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                      <div className="p-3 rounded-xl bg-slate-800/40 backdrop-blur-sm border border-slate-700/40">
                         <p className="text-xs text-slate-400">Totale</p>
                         <p className="text-lg font-semibold text-white">{showAmounts ? `€${paymentsTotal.toFixed(0)}` : '€ •••'}</p>
                       </div>
@@ -957,8 +970,8 @@ export default function ClientDetail({ role: propRole }) {
                         <p className="text-xs uppercase tracking-widest text-slate-500 font-medium mb-3">Foto Anamnesi</p>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           {['front', 'right', 'left', 'back'].map((pos) => (
-                            <div key={pos} className="rounded-lg border border-slate-800 bg-slate-900 overflow-hidden text-xs text-slate-300">
-                              <div className="px-3 py-2 border-b border-slate-800 capitalize flex items-center justify-between">
+                            <div key={pos} className="rounded-xl border border-slate-700/40 bg-slate-800/40 backdrop-blur-sm overflow-hidden text-xs text-slate-300">
+                              <div className="px-3 py-2 border-b border-slate-700/40 capitalize flex items-center justify-between">
                                 <span>{pos === 'front' ? 'Frontale' : pos === 'back' ? 'Posteriore' : `Laterale ${pos === 'left' ? 'Sx' : 'Dx'}`}</span>
                                 <label className="cursor-pointer p-1 hover:bg-slate-700 rounded">
                                   {loadingStates.uploadingPhoto === pos ? (
@@ -987,7 +1000,7 @@ export default function ClientDetail({ role: propRole }) {
                                   onClick={() => openModal('photoZoom', { open: true, url: anamnesi.photoURLs[pos], alt: pos })}
                                 />
                               ) : (
-                                <div className="w-full h-28 bg-slate-800 flex items-center justify-center text-slate-500">
+                                <div className="w-full h-28 bg-slate-700/40 flex items-center justify-center text-slate-500">
                                   <PhotoPoseSilhouette position={pos} size={40} showHint={false} />
                                 </div>
                               )}
@@ -997,7 +1010,7 @@ export default function ClientDetail({ role: propRole }) {
                       </div>
                     </div>
                   ) : (
-                    <EmptyState icon={FileText} title="Nessuna anamnesi" description="Il cliente non ha compilato l'anamnesi." />
+                    <EmptyState icon={FileText} title="Nessuna anamnesi" description="Il cliente non ha compilato l'anamnesi." variant="compact" />
                   )}
                 </CardContent>
               </UnifiedCard>
@@ -1007,20 +1020,20 @@ export default function ClientDetail({ role: propRole }) {
             {isMobile && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
                 {canEditClient && (
-                  <button onClick={() => openModal('edit')} className="px-3 py-2 border border-slate-700 bg-slate-900 text-slate-200 rounded-lg text-sm flex items-center justify-center gap-2">
+                  <button onClick={() => openModal('edit')} className="px-3 py-2 border border-slate-700/40 bg-slate-800/40 backdrop-blur-sm text-slate-200 rounded-xl text-sm flex items-center justify-center gap-2">
                     <Edit size={14} /> Modifica
                   </button>
                 )}
                 {canManagePayments && (
-                  <button onClick={() => openModal('renewal')} className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm flex items-center justify-center gap-2">
+                  <button onClick={() => openModal('renewal')} className="px-3 py-2 bg-emerald-600 text-white rounded-xl text-sm flex items-center justify-center gap-2">
                     <Plus size={14} /> Rinnovo
                   </button>
                 )}
-                <button onClick={() => openModal('extend')} className="px-3 py-2 bg-cyan-600/80 text-white border border-cyan-500/60 rounded-lg text-sm flex items-center justify-center gap-2">
+                <button onClick={() => openModal('extend')} className="px-3 py-2 bg-cyan-600/80 text-white border border-cyan-500/60 rounded-xl text-sm flex items-center justify-center gap-2">
                   <CalendarDays size={14} /> Prolunga
                 </button>
                 {canDeleteClient && (
-                  <button onClick={handleDelete} className="px-3 py-2 bg-rose-600/80 text-white border border-rose-500/60 rounded-lg text-sm flex items-center justify-center gap-2">
+                  <button onClick={handleDelete} className="px-3 py-2 bg-rose-600/80 text-white border border-rose-500/60 rounded-xl text-sm flex items-center justify-center gap-2">
                     <Trash2 size={14} /> Elimina
                   </button>
                 )}
