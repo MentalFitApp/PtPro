@@ -68,7 +68,9 @@ const fileToBase64 = (file) => {
 };
 
 /**
- * Upload media per landing page tramite Cloud Function SICURA
+ * Upload media per landing page
+ * - File piccoli (<10MB): base64 via Cloud Function
+ * - File grandi (>10MB): upload diretto con presigned URL
  * 
  * @param {File} file - File da caricare
  * @param {string} tenantId - ID del tenant
@@ -85,19 +87,24 @@ export const uploadLandingMedia = async (file, tenantId, pageId, blockId = null,
   
   onProgress?.({ stage: 'preparing', percent: 5, message: 'Preparazione upload...' });
 
+  // Per file > 10MB usa upload diretto con presigned URL
+  const DIRECT_UPLOAD_THRESHOLD = 10 * 1024 * 1024; // 10MB
+  
+  if (file.size > DIRECT_UPLOAD_THRESHOLD) {
+    return uploadLargeFile(file, tenantId, pageId, blockId, mediaType, onProgress);
+  }
+
+  // Per file piccoli usa il metodo base64 esistente
   try {
-    // Converti file in base64
     onProgress?.({ stage: 'encoding', percent: 10, message: 'Codifica file...' });
     const fileBase64 = await fileToBase64(file);
 
     onProgress?.({ stage: 'uploading', percent: 20, message: 'Caricamento...' });
 
-    // Chiama la Cloud Function (usa l'istanza functions importata da firebase.js con auth)
     const uploadFn = httpsCallable(functions, 'uploadToR2', {
-      timeout: 300000, // 5 minuti per file grandi
+      timeout: 300000,
     });
 
-    // Simula progress mentre aspettiamo
     let progress = 20;
     const progressInterval = setInterval(() => {
       progress = Math.min(progress + 10, 85);
@@ -127,6 +134,71 @@ export const uploadLandingMedia = async (file, tenantId, pageId, blockId = null,
     };
   } catch (error) {
     console.error('Errore upload media:', error);
+    throw new Error('Errore durante il caricamento: ' + error.message);
+  }
+};
+
+/**
+ * Upload file grandi con presigned URL (upload diretto a R2)
+ */
+const uploadLargeFile = async (file, tenantId, pageId, blockId, mediaType, onProgress) => {
+  try {
+    onProgress?.({ stage: 'preparing', percent: 10, message: 'Richiesta URL di upload...' });
+
+    // 1. Ottieni presigned URL dalla Cloud Function
+    const getUrlFn = httpsCallable(functions, 'getR2UploadUrl');
+    const urlResult = await getUrlFn({
+      fileName: file.name,
+      contentType: file.type,
+      tenantId,
+      pageId,
+      blockId,
+      isLandingMedia: true,
+    });
+
+    const { uploadUrl, publicUrl, key } = urlResult.data;
+
+    onProgress?.({ stage: 'uploading', percent: 20, message: 'Caricamento diretto...' });
+
+    // 2. Upload diretto a R2 con XMLHttpRequest per tracking progress
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round(20 + (event.loaded / event.total) * 75);
+          onProgress?.({ stage: 'uploading', percent, message: `Caricamento... ${Math.round(event.loaded / 1024 / 1024)}MB / ${Math.round(event.total / 1024 / 1024)}MB` });
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Upload fallito: ${xhr.status} ${xhr.statusText}`));
+        }
+      });
+
+      xhr.addEventListener('error', () => reject(new Error('Errore di rete durante upload')));
+      xhr.addEventListener('abort', () => reject(new Error('Upload annullato')));
+
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.send(file);
+    });
+
+    onProgress?.({ stage: 'complete', percent: 100, message: 'Completato!' });
+
+    return {
+      url: publicUrl,
+      type: mediaType,
+      mimeType: file.type,
+      size: file.size,
+      name: file.name,
+      key,
+    };
+  } catch (error) {
+    console.error('Errore upload file grande:', error);
     throw new Error('Errore durante il caricamento: ' + error.message);
   }
 };
