@@ -11,7 +11,9 @@ const VideoBlock = ({ settings, isPreview = false }) => {
     title = '',
     subtitle = '',
     videoUrl = '',
+    uploadedVideoUrl = '', // Video caricato direttamente
     thumbnailUrl = '',
+    posterImage = '', // Poster caricato
     autoplay = false,
     muted = true,
     loop = false,
@@ -25,6 +27,10 @@ const VideoBlock = ({ settings, isPreview = false }) => {
     maxWidth = '900px',
     padding = 'py-20',
   } = settings || {};
+
+  // Usa uploadedVideoUrl se disponibile, altrimenti videoUrl
+  const effectiveVideoUrl = uploadedVideoUrl || videoUrl;
+  const effectiveThumbnail = posterImage || thumbnailUrl;
 
   // Parse video URL per embed
   const getEmbedUrl = (url) => {
@@ -58,8 +64,8 @@ const VideoBlock = ({ settings, isPreview = false }) => {
     return url;
   };
 
-  const embedUrl = getEmbedUrl(videoUrl);
-  const isDirectVideo = videoUrl && !videoUrl.includes('youtube') && !videoUrl.includes('vimeo');
+  const embedUrl = getEmbedUrl(effectiveVideoUrl);
+  const isDirectVideo = effectiveVideoUrl && !effectiveVideoUrl.includes('youtube') && !effectiveVideoUrl.includes('vimeo');
 
   // Variante Background (video a tutto schermo come sfondo)
   if (variant === 'background') {
@@ -67,7 +73,7 @@ const VideoBlock = ({ settings, isPreview = false }) => {
       <section className="relative h-screen overflow-hidden">
         {isDirectVideo ? (
           <video
-            src={videoUrl}
+            src={effectiveVideoUrl}
             autoPlay={autoplay}
             muted={muted}
             loop={loop}
@@ -125,8 +131,8 @@ const VideoBlock = ({ settings, isPreview = false }) => {
           >
             {isDirectVideo ? (
               <video
-                src={videoUrl}
-                poster={thumbnailUrl}
+                src={effectiveVideoUrl}
+                poster={effectiveThumbnail}
                 controls={showControls}
                 autoPlay={autoplay}
                 muted={muted}
@@ -196,8 +202,8 @@ const VideoBlock = ({ settings, isPreview = false }) => {
           >
             {isDirectVideo ? (
               <video
-                src={videoUrl}
-                poster={thumbnailUrl}
+                src={effectiveVideoUrl}
+                poster={effectiveThumbnail}
                 controls={showControls}
                 autoPlay={autoplay}
                 muted={muted}
