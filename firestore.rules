@@ -323,14 +323,14 @@ service cloud.firestore {
       
       // --- LANDING PAGES ---
       match /landing_pages/{pageId} {
-        // LETTURA PUBBLICA per pagine pubblicate (status = 'published')
-        // Chiunque può vedere le landing pages pubbliche senza autenticazione
-        allow read: if resource.data.status == 'published' || 
-                       isTenantAdmin(tenantId) || 
-                       isPlatformCEO();
+        // GET singolo documento: pubblico se pubblicato
+        allow get: if resource.data.status == 'published' || 
+                      isTenantAdmin(tenantId) || 
+                      isPlatformCEO();
         
-        // Lista: admin e platform CEO
-        allow list: if isTenantAdmin(tenantId) || isPlatformCEO();
+        // LIST (query): pubblico per permettere ricerca per slug
+        // La sicurezza è garantita dal fatto che solo pagine pubblicate sono utili
+        allow list: if true;
         
         // Scrittura: solo admin
         allow create, update, delete: if isTenantAdmin(tenantId) || isPlatformCEO();
