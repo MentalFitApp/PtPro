@@ -578,19 +578,19 @@ export const ProLayout = () => {
 
       {/* Main Content Area */}
       <div 
-        className={`min-h-screen transition-all duration-300 ease-out overflow-x-hidden w-full box-border ${
+        className={`min-h-screen transition-all duration-300 ease-out overflow-x-hidden ${
           !isMobile 
             ? (isSidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]')
             : ''
         }`}
       >
         <main 
-          className={`min-h-screen overflow-x-hidden w-full box-border ${
+          className={`min-h-screen overflow-x-hidden ${
             isMobile ? 'pb-16' : ''
           }`}
           style={isMobile ? { paddingTop: 'calc(60px + env(safe-area-inset-top, 0px))' } : undefined}
         >
-          <div className="w-full overflow-x-hidden box-border">
+          <div className="w-full overflow-x-hidden">
             <Outlet />
           </div>
         </main>

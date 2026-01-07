@@ -3,8 +3,9 @@
  * Permette di configurare domande, campi contatto, stili e comportamento
  */
 import React, { useState } from 'react';
-import { Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Copy, Sparkles } from 'lucide-react';
+import { Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Copy, Sparkles, X, Video } from 'lucide-react';
 import { quizIconMap } from '../landingBlocks/QuizIcons';
+import MediaUploader from './MediaUploader';
 
 // Icone disponibili per le opzioni
 const AVAILABLE_ICONS = [
@@ -732,6 +733,69 @@ const QuizPopupSettings = ({
       
       <FieldGroup label="Sottotitolo Risultati">
         {renderField('quizResultsSubtitle', localSettings.quizResultsSubtitle || 'Le tue risposte sono state registrate')}
+      </FieldGroup>
+
+      {/* Video Post-Quiz */}
+      <FieldGroup label="Video Post-Quiz (opzionale)">
+        <p className="text-xs text-slate-500 mb-3">Mostra un video dopo il completamento del quiz</p>
+        
+        {/* Sorgente Video */}
+        <div className="mb-3">
+          <label className="text-xs text-slate-400 mb-1 block">Sorgente</label>
+          <select
+            value={localSettings.quizResultsVideoSource || 'none'}
+            onChange={(e) => handleChange('quizResultsVideoSource', e.target.value)}
+            className="w-full bg-slate-700/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+          >
+            <option value="none">Nessun video</option>
+            <option value="upload">Carica video</option>
+            <option value="url">URL esterno (YouTube, Vimeo)</option>
+          </select>
+        </div>
+
+        {/* Upload Video */}
+        {localSettings.quizResultsVideoSource === 'upload' && (
+          <div className="space-y-2">
+            {localSettings.quizResultsVideoUploaded ? (
+              <div className="relative rounded-lg overflow-hidden aspect-video bg-slate-700">
+                <video 
+                  src={localSettings.quizResultsVideoUploaded} 
+                  className="w-full h-full object-cover"
+                  controls
+                />
+                <button
+                  onClick={() => handleChange('quizResultsVideoUploaded', '')}
+                  className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-full hover:bg-red-600 transition-colors"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            ) : (
+              <MediaUploader
+                accept="video"
+                onUpload={(result) => handleChange('quizResultsVideoUploaded', result?.url || result)}
+                tenantId={tenantId}
+                compact
+                label="Carica Video"
+                hint="Trascina o clicca per caricare il video"
+              />
+            )}
+          </div>
+        )}
+
+        {/* URL Esterno */}
+        {localSettings.quizResultsVideoSource === 'url' && (
+          <div>
+            <input
+              type="url"
+              value={localSettings.quizResultsVideoUrl || ''}
+              onChange={(e) => handleChange('quizResultsVideoUrl', e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="w-full bg-slate-700/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500"
+            />
+            <p className="text-xs text-slate-500 mt-1">YouTube, Vimeo o URL diretto del video</p>
+          </div>
+        )}
       </FieldGroup>
     </div>
   );

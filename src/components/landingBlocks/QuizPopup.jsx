@@ -32,6 +32,8 @@ const QuizPopup = ({
     showResults = true,
     resultsTitle = 'Ecco il tuo profilo',
     resultsSubtitle = 'Un nostro esperto analizzerà le tue risposte',
+    resultsVideoUrl = '', // Video URL (esterno o caricato)
+    resultsVideoIsUploaded = false, // true se il video è stato caricato direttamente
     // Style
     accentColor = '#f97316',
     gradientFrom = '#f97316',
@@ -910,6 +912,42 @@ const QuizPopup = ({
       >
         {resultsSubtitle}
       </motion.p>
+
+      {/* Video dopo completamento quiz */}
+      {resultsVideoUrl && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.65 }}
+          className="w-full mb-8 rounded-2xl overflow-hidden border border-white/10"
+        >
+          <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+            {resultsVideoIsUploaded ? (
+              // Video caricato direttamente - usa tag video HTML
+              <video
+                src={resultsVideoUrl}
+                className="absolute inset-0 w-full h-full object-cover"
+                controls
+                playsInline
+              />
+            ) : (
+              // Video esterno (YouTube/Vimeo) - usa iframe
+              <iframe
+                src={resultsVideoUrl.includes('youtube.com') || resultsVideoUrl.includes('youtu.be') 
+                  ? resultsVideoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
+                  : resultsVideoUrl.includes('vimeo.com')
+                    ? resultsVideoUrl.replace('vimeo.com/', 'player.vimeo.com/video/')
+                    : resultsVideoUrl
+                }
+                className="absolute inset-0 w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title="Video risultati quiz"
+              />
+            )}
+          </div>
+        </motion.div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

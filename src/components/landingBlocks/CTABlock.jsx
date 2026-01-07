@@ -41,6 +41,9 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
     quizContactFields = ['name', 'email', 'phone'],
     quizResultsTitle = 'Ecco il tuo profilo',
     quizResultsSubtitle = 'Un nostro esperto analizzerà le tue risposte',
+    quizResultsVideoUrl = '', // URL esterno del video (YouTube/Vimeo)
+    quizResultsVideoUploaded = '', // Video caricato direttamente
+    quizResultsVideoSource = 'none', // 'none', 'url', 'upload'
     quizSuccessMessage = 'Grazie! Ti contatteremo presto con un piano personalizzato.',
     quizAccentColor = '#f97316',
     quizGradientFrom = '#f97316',
@@ -250,6 +253,8 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
           showResults: true,
           resultsTitle: quizResultsTitle,
           resultsSubtitle: quizResultsSubtitle,
+          resultsVideoUrl: quizResultsVideoSource === 'upload' ? quizResultsVideoUploaded : quizResultsVideoUrl,
+          resultsVideoIsUploaded: quizResultsVideoSource === 'upload',
           accentColor: quizAccentColor,
           gradientFrom: quizGradientFrom,
           gradientTo: quizGradientTo,
