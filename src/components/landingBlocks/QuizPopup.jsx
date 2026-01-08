@@ -55,6 +55,7 @@ const QuizPopup = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [contactData, setContactData] = useState({});
+  const [contactErrors, setContactErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [direction, setDirection] = useState(1);
@@ -184,6 +185,14 @@ const QuizPopup = ({
   // Handle contact form change
   const handleContactChange = (field, value) => {
     setContactData(prev => ({ ...prev, [field]: value }));
+    // Rimuovi errore quando l'utente inizia a digitare
+    if (contactErrors[field]) {
+      setContactErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   // Validate contact form
@@ -215,8 +224,9 @@ const QuizPopup = ({
     }
 
     if (collectContactInfo) {
-      const { isValid } = validateContact();
+      const { isValid, errors } = validateContact();
       if (!isValid) {
+        setContactErrors(errors);
         toast?.showToast?.('Compila tutti i campi obbligatori', 'error');
         return;
       }
@@ -310,6 +320,7 @@ const QuizPopup = ({
     setCurrentStep(0);
     setAnswers({});
     setContactData({});
+    setContactErrors({});
     setIsCompleted(false);
     setDirection(1);
     onClose();
@@ -842,11 +853,23 @@ const QuizPopup = ({
                 value={contactData[field.id] || ''}
                 onChange={(e) => handleContactChange(field.id, e.target.value)}
                 placeholder={field.placeholder}
-                className="w-full px-5 py-4 bg-white/5 border-2 border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 transition-all"
+                className={`w-full px-5 py-4 bg-white/5 border-2 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 transition-all ${
+                  contactErrors[field.id] ? 'border-red-500/50 focus:ring-red-500/30' : 'border-white/10 focus:ring-2'
+                }`}
                 style={{ 
-                  borderColor: contactData[field.id] ? `${accentColor}50` : undefined 
+                  borderColor: contactErrors[field.id] ? undefined : (contactData[field.id] ? `${accentColor}50` : undefined)
                 }}
               />
+              {contactErrors[field.id] && (
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-2 text-sm text-red-400 flex items-center gap-1"
+                >
+                  <span>⚠️</span>
+                  {contactErrors[field.id]}
+                </motion.p>
+              )}
             </motion.div>
           ))}
 
