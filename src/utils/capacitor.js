@@ -8,7 +8,7 @@ import { App } from '@capacitor/app';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { PushNotifications } from '@capacitor/push-notifications';
-import { Keyboard } from '@capacitor/keyboard';
+// Keyboard importato dinamicamente per evitare errori su web
 
 // Calcola UNA SOLA VOLTA all'import del modulo
 const detectNativePlatform = () => {
@@ -90,7 +90,7 @@ export async function initializeCapacitor() {
     await initializePushNotifications();
     
     // Inizializza Keyboard listener
-    initializeKeyboard();
+    await initializeKeyboard();
     
     // Inizializza App lifecycle listeners
     initializeAppListeners();
@@ -249,16 +249,22 @@ function handleNotificationAction(notification) {
 /**
  * Inizializza listener per la tastiera
  */
-function initializeKeyboard() {
-  Keyboard.addListener('keyboardWillShow', (info) => {
-    document.body.classList.add('keyboard-open');
-    document.documentElement.style.setProperty('--keyboard-height', `${info.keyboardHeight}px`);
-  });
+async function initializeKeyboard() {
+  try {
+    const { Keyboard } = await import('@capacitor/keyboard');
+    
+    Keyboard.addListener('keyboardWillShow', (info) => {
+      document.body.classList.add('keyboard-open');
+      document.documentElement.style.setProperty('--keyboard-height', `${info.keyboardHeight}px`);
+    });
 
-  Keyboard.addListener('keyboardWillHide', () => {
-    document.body.classList.remove('keyboard-open');
-    document.documentElement.style.setProperty('--keyboard-height', '0px');
-  });
+    Keyboard.addListener('keyboardWillHide', () => {
+      document.body.classList.remove('keyboard-open');
+      document.documentElement.style.setProperty('--keyboard-height', '0px');
+    });
+  } catch (error) {
+    console.warn('[Capacitor] Keyboard plugin not available:', error.message);
+  }
 }
 
 /**
