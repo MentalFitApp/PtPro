@@ -5,9 +5,10 @@ const config: CapacitorConfig = {
   appName: 'FitFlows',
   webDir: 'dist',
   server: {
-    // App carica da Vercel - aggiornamenti istantanei senza nuovo build!
-    url: 'https://biondo-pt-pro.vercel.app',
-    cleartext: false,
+    // In produzione, l'app carica i file locali dalla cartella dist
+    // Per sviluppo, puoi decommentare la riga sotto per usare il server dev
+    // url: 'http://192.168.1.x:5173',
+    // cleartext: true
     androidScheme: 'https'
   },
   plugins: {
