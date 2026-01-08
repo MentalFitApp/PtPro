@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Download, Dumbbell, Calendar, ChevronRight, Info } from 'lucide-react';
 import { db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { auth } from '../../firebase';
 import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { exportWorkoutCardToPDF } from '../../utils/pdfExport';
@@ -45,7 +45,77 @@ const ClientSchedaAllenamento = () => {
       const schedaSnap = await getDoc(schedaRef);
       
       if (schedaSnap.exists()) {
-        setSchedaData(schedaSnap.data());
+        let schedaData = schedaSnap.data();
+        
+        // Fix missing gifUrl: cerca in platform_exercises per ID o nome
+        const giorni = schedaData.giorni || {};
+        const giorniFixed = {};
+        
+        for (const [giorno, data] of Object.entries(giorni)) {
+          const eserciziFixed = [];
+          
+          for (const esercizio of (data.esercizi || [])) {
+            // Salta marker/separatori
+            if (esercizio.isMarker) {
+              eserciziFixed.push(esercizio);
+              continue;
+            }
+            
+            // Se ha già gifUrl, usa quello
+            if (esercizio.gifUrl) {
+              eserciziFixed.push(esercizio);
+              continue;
+            }
+            
+            // Cerca di recuperare gifUrl da platform_exercises
+            let gifUrl = null;
+            
+            try {
+              // Cerca per ID se presente
+              if (esercizio.id) {
+                const exDoc = await getDoc(doc(db, 'platform_exercises', esercizio.id));
+                if (exDoc.exists()) {
+                  gifUrl = exDoc.data().gifUrl;
+                }
+              }
+              
+              // Se non trovato per ID, cerca per nome
+              if (!gifUrl && esercizio.nome) {
+                const q = query(
+                  collection(db, 'platform_exercises'),
+                  where('nome', '==', esercizio.nome.toLowerCase()),
+                  limit(1)
+                );
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                  const exData = snapshot.docs[0].data();
+                  gifUrl = exData.gifUrl;
+                  // Salva anche l'ID per il futuro
+                  esercizio.id = snapshot.docs[0].id;
+                }
+              }
+            } catch (err) {
+              console.error('Errore recupero gifUrl:', err);
+            }
+            
+            eserciziFixed.push({
+              ...esercizio,
+              ...(gifUrl && { gifUrl })
+            });
+          }
+          
+          giorniFixed[giorno] = {
+            ...data,
+            esercizi: eserciziFixed
+          };
+        }
+        
+        schedaData = {
+          ...schedaData,
+          giorni: giorniFixed
+        };
+        
+        setSchedaData(schedaData);
       }
     } catch (error) {
       console.error('Errore caricamento:', error);
