@@ -268,7 +268,7 @@ const QuizPopup = ({
 
       // Increment conversions
       if (pageId && tenantId) {
-        await incrementPageConversions(db, pageId);
+        await incrementPageConversions(tenantId, pageId);
       }
 
       setIsCompleted(true);
