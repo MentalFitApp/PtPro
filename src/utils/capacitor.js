@@ -16,6 +16,13 @@ import { Keyboard } from '@capacitor/keyboard';
  */
 export const isNativePlatform = () => {
   try {
+    // Check 0: URL localhost = app nativa Capacitor
+    const currentUrl = window.location.href || '';
+    if (currentUrl.includes('localhost') || currentUrl.includes('capacitor://')) {
+      console.log('[Capacitor] Native detected via URL:', currentUrl);
+      return true;
+    }
+    
     // Check 1: Capacitor platform
     const platform = Capacitor.getPlatform();
     if (platform === 'android' || platform === 'ios') {
@@ -44,14 +51,15 @@ export const isNativePlatform = () => {
       }
     }
     
-    // Check 4: User Agent per Capacitor WebView
+    // Check 4: User Agent per Capacitor WebView o Android WebView generico
     const userAgent = navigator.userAgent || '';
-    if (userAgent.includes('CapacitorWebView')) {
-      console.log('[Capacitor] Detected via User Agent');
+    if (userAgent.includes('CapacitorWebView') || 
+        (userAgent.includes('wv') && userAgent.includes('Android'))) {
+      console.log('[Capacitor] Detected via User Agent:', userAgent.substring(0, 100));
       return true;
     }
     
-    console.log('[Capacitor] Web platform detected');
+    console.log('[Capacitor] Web platform detected, URL:', currentUrl.substring(0, 50));
     return false;
   } catch (error) {
     console.error('[Capacitor] Error checking platform:', error);
