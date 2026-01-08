@@ -10,29 +10,26 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Keyboard } from '@capacitor/keyboard';
 
-/**
- * Verifica se l'app sta girando su piattaforma nativa
- * Usa controlli multipli per garantire il rilevamento corretto
- */
-export const isNativePlatform = () => {
+// Calcola UNA SOLA VOLTA all'import del modulo
+const detectNativePlatform = () => {
   try {
     // Check 0: URL localhost = app nativa Capacitor
     const currentUrl = window.location.href || '';
     if (currentUrl.includes('localhost') || currentUrl.includes('capacitor://')) {
-      console.log('[Capacitor] Native detected via URL:', currentUrl);
+      console.log('[Capacitor] NATIVE detected via URL:', currentUrl.substring(0, 60));
       return true;
     }
     
     // Check 1: Capacitor platform
     const platform = Capacitor.getPlatform();
     if (platform === 'android' || platform === 'ios') {
-      console.log('[Capacitor] Native platform detected:', platform);
+      console.log('[Capacitor] NATIVE platform:', platform);
       return true;
     }
     
     // Check 2: Capacitor.isNativePlatform() API
     if (typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform()) {
-      console.log('[Capacitor] isNativePlatform() returned true');
+      console.log('[Capacitor] NATIVE via isNativePlatform()');
       return true;
     }
     
@@ -41,37 +38,35 @@ export const isNativePlatform = () => {
       if (typeof window.Capacitor.getPlatform === 'function') {
         const winPlatform = window.Capacitor.getPlatform();
         if (winPlatform === 'android' || winPlatform === 'ios') {
-          console.log('[Capacitor] Native via window.Capacitor:', winPlatform);
+          console.log('[Capacitor] NATIVE via window.Capacitor:', winPlatform);
           return true;
         }
       }
-      if (typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
-        console.log('[Capacitor] Native via window.Capacitor.isNativePlatform()');
-        return true;
-      }
     }
     
-    // Check 4: User Agent per Capacitor WebView o Android WebView generico
+    // Check 4: User Agent per WebView Android
     const userAgent = navigator.userAgent || '';
-    if (userAgent.includes('CapacitorWebView') || 
-        (userAgent.includes('wv') && userAgent.includes('Android'))) {
-      console.log('[Capacitor] Detected via User Agent:', userAgent.substring(0, 100));
+    if (userAgent.includes('wv') && userAgent.includes('Android')) {
+      console.log('[Capacitor] NATIVE via WebView UA');
       return true;
     }
     
-    console.log('[Capacitor] Web platform detected, URL:', currentUrl.substring(0, 50));
+    console.log('[Capacitor] WEB platform, URL:', currentUrl.substring(0, 60));
     return false;
   } catch (error) {
-    console.error('[Capacitor] Error checking platform:', error);
-    // Fallback: controlla user agent
-    try {
-      const userAgent = navigator.userAgent || '';
-      return userAgent.includes('CapacitorWebView');
-    } catch {
-      return false;
-    }
+    console.error('[Capacitor] Detection error:', error);
+    return false;
   }
 };
+
+// VARIABILE GLOBALE - calcolata una volta all'import
+const IS_NATIVE_PLATFORM = detectNativePlatform();
+
+/**
+ * Verifica se l'app sta girando su piattaforma nativa
+ * Ritorna valore già calcolato all'avvio
+ */
+export const isNativePlatform = () => IS_NATIVE_PLATFORM;
 
 export const getPlatform = () => Capacitor.getPlatform();
 
@@ -129,7 +124,7 @@ async function initializeStatusBar() {
 /**
  * Inizializza Push Notifications
  */
-async function initializePushNotifications() {
+export async function initializePushNotifications() {
   try {
     // Richiedi permesso
     const permStatus = await PushNotifications.requestPermissions();

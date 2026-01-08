@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Cookie, X, Shield, Settings } from 'lucide-react';
 import { isNativePlatform } from '../utils/capacitor';
@@ -12,15 +12,16 @@ const CookieConsent = () => {
     marketing: false
   });
 
-  // Non mostrare su app nativa - DOPO gli hooks per evitare errori React
-  const isNative = isNativePlatform();
-  
-  console.log('[PrivacyBanner] Platform check:', {
-    isNative,
-    userAgent: navigator.userAgent,
-    capacitorExists: typeof window.Capacitor !== 'undefined',
-    platform: window.Capacitor?.getPlatform?.()
-  });
+  // Check nativa - useMemo per evitare ricalcoli
+  const isNative = useMemo(() => {
+    const native = isNativePlatform();
+    console.log('[PrivacyBanner] Platform check:', {
+      isNative: native,
+      url: window.location.href.substring(0, 50),
+      capacitorExists: typeof window.Capacitor !== 'undefined'
+    });
+    return native;
+  }, []);
   
   useEffect(() => {
     // Esci subito se app nativa

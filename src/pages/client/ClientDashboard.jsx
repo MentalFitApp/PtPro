@@ -28,6 +28,7 @@ import { CallsCompactCard } from '../../components/calls/CallScheduler';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import NetworkStatusBanner from '../../components/pwa/NetworkStatusBanner';
 import PullToRefresh from '../../components/pwa/PullToRefresh';
+import { isNativePlatform } from '../../utils/capacitor';
 import { runSmartNotificationCheck } from '../../services/smartNotifications';
 
 // Loading skeleton
@@ -181,7 +182,8 @@ const ClientDashboard = () => {
     setIsIOS(ios);
     setIsAndroid(android);
 
-    if ((ios || android) && !window.matchMedia('(display-mode: standalone)').matches) {
+    // Mostra PWA install solo su mobile web, NON su app nativa
+    if ((ios || android) && !window.matchMedia('(display-mode: standalone)').matches && !isNativePlatform()) {
       setShowPWAInstall(true);
     }
 
