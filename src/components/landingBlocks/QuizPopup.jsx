@@ -58,11 +58,40 @@ const QuizPopup = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [direction, setDirection] = useState(1);
+  const [quizStarted, setQuizStarted] = useState(false);
   const containerRef = useRef(null);
 
   // Mouse tracking for glow effect
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
+
+  // Track quiz opened (solo una volta)
+  React.useEffect(() => {
+    if (isOpen && !isPreview && !quizStarted && tenantId && pageId) {
+      setQuizStarted(true);
+      trackQuizEvent('quiz_opened');
+    }
+  }, [isOpen, isPreview, quizStarted, tenantId, pageId]);
+
+  // Funzione per tracciare eventi quiz
+  const trackQuizEvent = async (eventType, additionalData = {}) => {
+    if (!tenantId || !pageId || isPreview) return;
+    
+    try {
+      await addDoc(collection(db, `tenants/${tenantId}/landing_analytics`), {
+        pageId: pageId,
+        type: 'quiz_event',
+        eventType: eventType, // quiz_opened, quiz_step, quiz_partial, quiz_completed
+        step: currentStep,
+        totalSteps: activeQuestions.length + (collectContactInfo ? 1 : 0),
+        answersCount: Object.keys(answers).length,
+        ...additionalData,
+        timestamp: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('Errore tracking quiz:', err);
+    }
+  };
 
   // Default questions with various types (using SVG icons)
   const defaultQuestions = [
@@ -139,6 +168,8 @@ const QuizPopup = ({
       });
     } else if (questionType === 'single') {
       setAnswers(prev => ({ ...prev, [questionId]: value }));
+      // Track step completion
+      trackQuizEvent('quiz_step', { questionId, answerType: 'single' });
       // Auto advance for single selection
       setTimeout(() => {
         setDirection(1);
@@ -233,6 +264,13 @@ const QuizPopup = ({
       setIsCompleted(true);
       setDirection(1);
       setCurrentStep(totalSteps);
+      
+      // Track quiz completion
+      trackQuizEvent('quiz_completed', { 
+        answersCount: Object.keys(answers).length,
+        contactFieldsCount: Object.keys(contactData).length
+      });
+      
       handleAfterSubmitAction();
 
     } catch (error) {
@@ -285,8 +323,30 @@ const QuizPopup = ({
   };
 
   const goNext = () => {
+    // Track step progression
+    if (currentStep < activeQuestions.length) {
+      const question = activeQuestions[currentStep];
+      trackQuizEvent('quiz_step', { 
+        questionId: question.id,
+        hasAnswer: !!answers[question.id]
+      });
+    }
     setDirection(1);
     setCurrentStep(prev => prev + 1);
+  };
+
+  // Track partial completion quando l'utente chiude il quiz
+  const handleCloseWithTracking = () => {
+    // Se ha risposto ad almeno una domanda ma non ha completato, traccia abbandono
+    const answersCount = Object.keys(answers).length;
+    if (answersCount > 0 && !isCompleted) {
+      trackQuizEvent('quiz_partial', { 
+        answersCount,
+        lastStep: currentStep,
+        totalSteps: activeQuestions.length + (collectContactInfo ? 1 : 0)
+      });
+    }
+    handleClose();
   };
 
   // Check if can proceed from current question
@@ -964,7 +1024,7 @@ const QuizPopup = ({
         transition={{ delay: 0.8 }}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        onClick={handleClose}
+        onClick={handleCloseWithTracking}
         className="px-10 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all text-lg"
       >
         Chiudi
@@ -997,7 +1057,7 @@ const QuizPopup = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-          onClick={handleClose}
+          onClick={handleCloseWithTracking}
           onMouseMove={handleMouseMove}
         >
           {/* Animated gradient background */}
@@ -1051,7 +1111,7 @@ const QuizPopup = ({
             <motion.button
               whileHover={{ scale: 1.1, rotate: 90 }}
               whileTap={{ scale: 0.9 }}
-              onClick={handleClose}
+              onClick={handleCloseWithTracking}
               className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors z-10 p-2 hover:bg-white/10 rounded-xl"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

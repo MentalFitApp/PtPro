@@ -46,6 +46,11 @@ export async function initializeCapacitor() {
     
     console.log('Capacitor initialized successfully');
   } catch (error) {
+    // Ignora errori di "Java object is gone" che avvengono durante il lifecycle
+    if (error && typeof error.message === 'string' && error.message.includes('Java object is gone')) {
+      console.warn('Capacitor: Ignorato errore di lifecycle Android:', error.message);
+      return;
+    }
     console.error('Error initializing Capacitor:', error);
   }
 }
