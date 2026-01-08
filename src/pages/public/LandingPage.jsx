@@ -34,6 +34,7 @@ import {
 import { db } from '../../firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { DynamicBlock } from '../../components/landingBlocks';
+import PrivacyBanner from '../../components/PrivacyBanner';
 
 // ==================== ANIMATED COUNTER COMPONENT ====================
 const AnimatedCounter = ({ value, suffix = '', prefix = '', duration = 2 }) => {
@@ -518,6 +519,7 @@ export default function LandingPage() {
   if (blocks.length > 0) {
     return (
       <div className="bg-slate-900 min-h-screen">
+        <PrivacyBanner />
         {blocks.map((block, index) => (
           <DynamicBlock
             key={block.id || index}
@@ -536,6 +538,9 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white overflow-x-hidden">
+      {/* Cookie Banner - solo su landing pages */}
+      <PrivacyBanner />
+      
       {/* Background Effects */}
       <AnimatedStars count={150} />
       <FloatingParticles />

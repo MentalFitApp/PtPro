@@ -9,7 +9,7 @@ import { db } from '../../firebase.js';
 import { useNavigate, Link } from 'react-router-dom';
 import { getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { 
-  User, LogOut, AlertCircle, Download, Smartphone, 
+  User, LogOut, AlertCircle, 
   Dumbbell, Utensils, CheckSquare, Users, 
   FileText, CreditCard, Settings, ChevronRight, X, UserCircle
 } from 'lucide-react';
@@ -28,7 +28,6 @@ import { CallsCompactCard } from '../../components/calls/CallScheduler';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import NetworkStatusBanner from '../../components/pwa/NetworkStatusBanner';
 import PullToRefresh from '../../components/pwa/PullToRefresh';
-import { isNativePlatform } from '../../utils/capacitor';
 import { runSmartNotificationCheck } from '../../services/smartNotifications';
 
 // Loading skeleton
@@ -134,9 +133,6 @@ const ClientDashboard = () => {
   const [clientData, setClientData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showPWAInstall, setShowPWAInstall] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockMessage, setBlockMessage] = useState('');
   const [requireAnamnesi, setRequireAnamnesi] = useState(false);
@@ -173,18 +169,6 @@ const ClientDashboard = () => {
     if (!user) {
       navigate('/login');
       return;
-    }
-
-    // Detect device
-    const ua = navigator.userAgent;
-    const ios = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-    const android = /Android/.test(ua);
-    setIsIOS(ios);
-    setIsAndroid(android);
-
-    // Mostra PWA install solo su mobile web, NON su app nativa
-    if ((ios || android) && !window.matchMedia('(display-mode: standalone)').matches && !isNativePlatform()) {
-      setShowPWAInstall(true);
     }
 
     const loadingTimeout = setTimeout(() => {
@@ -398,28 +382,6 @@ const ClientDashboard = () => {
                 <X size={16} />
               </button>
             </div>
-          </motion.div>
-        )}
-
-        {/* PWA Install Banner */}
-        {showPWAInstall && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={`p-3 rounded-xl flex items-center gap-3 ${
-              isIOS 
-                ? 'bg-gradient-to-r from-blue-600/90 to-indigo-600/90' 
-                : 'bg-gradient-to-r from-emerald-600/90 to-teal-600/90'
-            }`}
-          >
-            <Smartphone size={18} className="text-white flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-white text-xs">Installa l'app</p>
-              <p className="text-[10px] text-white/80 truncate">
-                {isIOS ? 'Condividi → Aggiungi a Home' : 'Menu ⋮ → Aggiungi a Home'}
-              </p>
-            </div>
-            <Download size={16} className="text-white flex-shrink-0" />
           </motion.div>
         )}
 

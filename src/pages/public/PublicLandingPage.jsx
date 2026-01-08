@@ -5,6 +5,7 @@ import { collection, query, where, getDocs, doc, getDoc, addDoc, serverTimestamp
 import { db } from '../../firebase';
 import { DynamicBlock, FormPopup } from '../../components/landingBlocks';
 import { X } from 'lucide-react';
+import PrivacyBanner from '../../components/PrivacyBanner';
 
 /**
  * PublicLandingPage - Renderizza una landing page pubblica con il nuovo sistema di blocchi
@@ -248,6 +249,9 @@ export default function PublicLandingPage() {
 
   return (
     <>
+      {/* Cookie Banner - solo su landing pages pubbliche */}
+      <PrivacyBanner />
+      
       {/* Main Content */}
       {page?.isNewSystem ? renderNewBlocks() : renderOldSections()}
 

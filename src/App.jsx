@@ -1,7 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import GlobalUploadBar from './components/ui/GlobalUploadBar';
 import ErrorBoundary from './components/ErrorBoundary';
-import PrivacyBanner from './components/PrivacyBanner';
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
@@ -435,7 +434,6 @@ export default function App() {
       <Suspense fallback={<PageSpinner />}>
         <OfflineIndicator />
         <GlobalUploadBar />
-        <PrivacyBanner />
         <Routes>
         {/* === ROTTE PUBBLICHE === */}
         <Route path="/demo" element={<DashboardDemo />} />
