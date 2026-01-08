@@ -712,7 +712,17 @@ const ClientSettings = () => {
                         Ricevi notifiche per messaggi dal coach, nuove schede e promemoria.
                       </p>
 
-                      {notificationStatus === 'unsupported' ? (
+                      {isNativePlatform() ? (
+                        <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                          <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                            <Smartphone size={20} className="text-blue-400" />
+                          </div>
+                          <div>
+                            <p className="text-blue-400 font-medium">Notifiche Native</p>
+                            <p className="text-slate-400 text-sm">Le notifiche sono gestite dall'app. Controlla le impostazioni del tuo dispositivo.</p>
+                          </div>
+                        </div>
+                      ) : notificationStatus === 'unsupported' ? (
                         <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
                           <p className="text-amber-200 text-sm">
                             Il tuo browser non supporta le notifiche push.

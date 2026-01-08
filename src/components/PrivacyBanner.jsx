@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Cookie, X, Shield, Settings } from 'lucide-react';
+import { isNativePlatform } from '../utils/capacitor';
 
 const CookieConsent = () => {
   const [showBanner, setShowBanner] = useState(false);
@@ -10,7 +11,10 @@ const CookieConsent = () => {
     analytics: false,
     marketing: false
   });
-
+  // Non mostrare su app nativa
+  if (isNativePlatform()) {
+    return null;
+  }
   useEffect(() => {
     // Controlla se l'utente ha già dato il consenso
     const consent = localStorage.getItem('cookie_consent');

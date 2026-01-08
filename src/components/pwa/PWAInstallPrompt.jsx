@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download, X, Smartphone, Share, Plus, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { isNativePlatform } from '../../utils/capacitor';
 
 /**
  * Prompt per installazione PWA con supporto iOS e Android
@@ -13,6 +14,11 @@ export default function PWAInstallPrompt({
   delay = 3000, // Delay prima di mostrare (ms)
   position = 'bottom' // 'bottom' | 'top' | 'modal'
 }) {
+  // Non mostrare su app nativa
+  if (isNativePlatform()) {
+    return null;
+  }
+
   const [show, setShow] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
