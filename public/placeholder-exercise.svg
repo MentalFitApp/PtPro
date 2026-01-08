@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" fill="#1e293b"/>
+  <circle cx="100" cy="80" r="20" fill="#64748b"/>
+  <rect x="85" y="105" width="30" height="40" rx="4" fill="#64748b"/>
+  <rect x="70" y="115" width="15" height="25" rx="3" fill="#64748b"/>
+  <rect x="115" y="115" width="15" height="25" rx="3" fill="#64748b"/>
+  <rect x="85" y="150" width="12" height="35" rx="3" fill="#64748b"/>
+  <rect x="103" y="150" width="12" height="35" rx="3" fill="#64748b"/>
+  <text x="100" y="28" font-family="Arial, sans-serif" font-size="14" fill="#94a3b8" text-anchor="middle">
+    Esercizio
+  </text>
+  <text x="100" y="44" font-family="Arial, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">
+    GIF non disponibile
+  </text>
+</svg>

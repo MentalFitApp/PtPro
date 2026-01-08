@@ -79,7 +79,7 @@ const ClientSchedaAllenamento = () => {
                 }
               }
               
-              // Se non trovato per ID, cerca per nome
+              // Fallback 2: cerca per nome esatto
               if (!gifUrl && esercizio.nome) {
                 const q = query(
                   collection(db, 'platform_exercises'),
@@ -90,9 +90,126 @@ const ClientSchedaAllenamento = () => {
                 if (!snapshot.empty) {
                   const exData = snapshot.docs[0].data();
                   gifUrl = exData.gifUrl;
-                  // Salva anche l'ID per il futuro
                   esercizio.id = snapshot.docs[0].id;
                 }
+              }
+              
+              // Fallback 3: cerca per nameIt (nome italiano)
+              if (!gifUrl && esercizio.nome) {
+                const q = query(
+                  collection(db, 'platform_exercises'),
+                  where('nameIt', '==', esercizio.nome),
+                  limit(1)
+                );
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                  const exData = snapshot.docs[0].data();
+                  gifUrl = exData.gifUrl;
+                  esercizio.id = snapshot.docs[0].id;
+                }
+              }
+              
+              // Fallback 3.5: mapping nomi comuni
+              if (!gifUrl && esercizio.nome) {
+                const nameMapping = {
+                  // Tricipiti
+                  'push down ai cavi': 'pushdown con cavo',
+                  'push down': 'pushdown con cavo',
+                  'pushdown ai cavi': 'pushdown con cavo',
+                  'french press con bilanciere ez': null, // Non in DB
+                  
+                  // Spalle
+                  'alzate laterali con manubri': 'alzate laterali con cavo',
+                  'military press con manubri': 'military press a un braccio con kettlebell di lato',
+                  
+                  // Braccia
+                  'curl a martello con manubri': 'curl martello con bilanciere olimpico',
+                  'curl con bilanciere': 'curl con bilanciere',
+                  
+                  // Schiena
+                  'face pull ai cavi': null, // Non in DB
+                  'lat machine presa larga': 'pulldown con cavo (barra per lat)',
+                  'trazioni alla sbarra': 'trazioni',
+                  'rematore con bilanciere': 'rematore con bilanciere',
+                  'rematore con manubrio': 'rematore con bilanciere',
+                  
+                  // Petto
+                  'panca piana con bilanciere': 'panca piana con bilanciere',
+                  'croci ai cavi alti': 'croci inverse al cavo',
+                  
+                  // Gambe
+                  'squat con bilanciere': 'squat con bilanciere',
+                  'leg press': 'leg press 45° con sled (vista laterale)',
+                  'leg curl sdraiato': 'curl delle gambe sdraiato con leva',
+                  'leg extension': 'estensione delle gambe con leva',
+                  'affondi camminati con manubri': 'affondi con manubri',
+                  'calf raises in piedi': 'alzata del polpaccio in piedi con manubri',
+                  
+                  // Core
+                  'plank': 'plank frontale con torsione',
+                  'russian twist': 'torsione con bilanciere seduto',
+                  'crunch bicicletta': 'band bicycle crunch',
+                  'mountain climbers': 'scalatore',
+                  
+                  // Altro
+                  'push up': 'push-up in full planche',
+                  'burpees': 'burpee',
+                  'kettlebell swing': 'swing con kettlebell',
+                  
+                  // Cardio (alcuni mappati, altri placeholder)
+                  'cardio hiit - bike': 'corsa su cyclette v. 3',
+                  'cardio hiit - vogatore': null, // Non in DB
+                  'cardio hiit finisher': 'burpee', // Generico finisher
+                  'cardio liss - camminata inclinata': 'camminata su tapis roulant in salita',
+                  'jumping jacks': 'salto jack (maschile)',
+                };
+                
+                const lowerName = esercizio.nome.toLowerCase();
+                const mappedName = nameMapping[lowerName];
+                
+                if (mappedName !== undefined) {
+                  if (mappedName) {
+                    const q = query(
+                      collection(db, 'platform_exercises'),
+                      where('nameIt', '==', mappedName),
+                      limit(1)
+                    );
+                    const snapshot = await getDocs(q);
+                    if (!snapshot.empty) {
+                      gifUrl = snapshot.docs[0].data().gifUrl;
+                      esercizio.id = snapshot.docs[0].id;
+                    }
+                  }
+                  // Se null, usa placeholder (gestito dopo)
+                }
+              }
+              
+              // Fallback 4: cerca negli esercizi custom del tenant
+              if (!gifUrl && esercizio.nome && auth.currentUser?.uid) {
+                const userDocRef = doc(db, 'users', auth.currentUser.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists()) {
+                  const tenantId = userDoc.data().tenantId;
+                  if (tenantId) {
+                    const tenantExQ = query(
+                      collection(db, 'tenants', tenantId, 'exercises'),
+                      where('nome', '==', esercizio.nome),
+                      limit(1)
+                    );
+                    const tenantExSnap = await getDocs(tenantExQ);
+                    if (!tenantExSnap.empty) {
+                      const ex = tenantExSnap.docs[0].data();
+                      gifUrl = ex.gifUrl || ex.videoUrl;
+                      esercizio.id = tenantExSnap.docs[0].id;
+                    }
+                  }
+                }
+              }
+              
+              // Se ancora non trovato, usa placeholder
+              if (!gifUrl) {
+                gifUrl = '/placeholder-exercise.svg';
+                esercizio.missingGif = true;
               }
             } catch (err) {
               console.error('Errore recupero gifUrl:', err);
