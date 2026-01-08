@@ -211,7 +211,7 @@ const MessageBubble = ({
 
   return (
     <div 
-      className={cn("flex gap-2 group relative px-2", isOwn ? "flex-row-reverse" : "flex-row")}
+      className={cn("flex gap-3 group relative px-3 py-1", isOwn ? "flex-row-reverse" : "flex-row")}
       onTouchStart={(e) => {
         handleTouchStart(e);
         handleLongPressStart();
@@ -235,46 +235,48 @@ const MessageBubble = ({
         transition: isSwiping ? 'none' : 'transform 0.2s ease-out'
       }}
     >
-      {/* Swipe Reply Indicator */}
+      {/* Swipe Reply Indicator - WhatsApp style */}
       {swipeX > 10 && (
-        <div 
+        <motion.div 
           className={cn(
-            "absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full flex items-center justify-center transition-all",
-            swipeX > swipeThreshold ? "text-cyan-400" : "text-slate-500"
+            "absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full transition-all",
+            swipeX > swipeThreshold ? "bg-cyan-500/20 text-cyan-400" : "bg-slate-700/50 text-slate-400"
           )}
           style={{ opacity: Math.min(swipeX / swipeThreshold, 1) }}
+          initial={{ scale: 0.8 }}
+          animate={{ scale: 1 }}
         >
-          <Reply size={20} />
-        </div>
+          <Reply size={18} />
+        </motion.div>
       )}
 
-      {/* Avatar with role-colored ring */}
+      {/* Avatar with role-colored ring - WhatsApp style */}
       {!isOwn && showAvatar ? (
         message.senderPhoto ? (
           <img 
             src={message.senderPhoto} 
             alt={displayName} 
             className={cn(
-              "rounded-full object-cover flex-shrink-0 mt-auto ring-2 transition-transform hover:scale-105",
-              isMobile ? "w-8 h-8" : "w-9 h-9",
-              message.senderRole === 'admin' && "ring-amber-400 shadow-lg shadow-amber-400/30",
-              message.senderRole === 'coach' && "ring-blue-400 shadow-lg shadow-blue-400/30",
-              (!message.senderRole || message.senderRole === 'client') && "ring-slate-400/50"
+              "rounded-full object-cover flex-shrink-0 mt-auto ring-2 transition-all hover:scale-110 hover:ring-4",
+              isMobile ? "w-9 h-9" : "w-10 h-10",
+              message.senderRole === 'admin' && "ring-amber-500 hover:ring-amber-400 shadow-xl shadow-amber-500/40",
+              message.senderRole === 'coach' && "ring-blue-500 hover:ring-blue-400 shadow-xl shadow-blue-500/40",
+              (!message.senderRole || message.senderRole === 'client') && "ring-slate-500/60 hover:ring-slate-400/80"
             )}
           />
         ) : (
           <div className={cn(
-            "rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 mt-auto ring-2 transition-transform hover:scale-105",
-            isMobile ? "w-8 h-8 text-sm" : "w-9 h-9 text-base",
-            message.senderRole === 'admin' && "bg-gradient-to-br from-amber-500 to-orange-500 ring-amber-400 shadow-lg shadow-amber-400/30",
-            message.senderRole === 'coach' && "bg-gradient-to-br from-blue-500 to-cyan-500 ring-blue-400 shadow-lg shadow-blue-400/30",
-            (!message.senderRole || message.senderRole === 'client') && "bg-gradient-to-br from-slate-500 to-slate-600 ring-slate-400/50"
+            "rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 mt-auto ring-2 transition-all hover:scale-110 hover:ring-4",
+            isMobile ? "w-9 h-9 text-sm" : "w-10 h-10 text-base",
+            message.senderRole === 'admin' && "bg-gradient-to-br from-amber-500 to-orange-500 ring-amber-500 hover:ring-amber-400 shadow-xl shadow-amber-500/40",
+            message.senderRole === 'coach' && "bg-gradient-to-br from-blue-500 to-cyan-500 ring-blue-500 hover:ring-blue-400 shadow-xl shadow-blue-500/40",
+            (!message.senderRole || message.senderRole === 'client') && "bg-gradient-to-br from-slate-500 to-slate-600 ring-slate-500/60 hover:ring-slate-400/80"
           )}>
             {displayName?.charAt(0).toUpperCase()}
           </div>
         )
       ) : !isOwn ? (
-        <div className={isMobile ? "w-8" : "w-9"} />
+        <div className={isMobile ? "w-9" : "w-10"} />
       ) : null}
 
       {/* Message */}
@@ -290,24 +292,24 @@ const MessageBubble = ({
 
         <div
           className={cn(
-            "relative rounded-2xl shadow-lg transition-all duration-200",
-            isMobile ? "px-3 py-2" : "px-4 py-3",
+            "relative rounded-3xl shadow-xl backdrop-blur-xl transition-all duration-200",
+            isMobile ? "px-3 py-2.5" : "px-4 py-3",
             isOwn 
-              ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:shadow-blue-500/20 hover:shadow-xl" 
-              : "bg-slate-800/90 text-white border border-white/10 hover:bg-slate-800 hover:border-white/20",
-            isFirstInGroup && isOwn && "rounded-tr-sm",
-            isFirstInGroup && !isOwn && "rounded-tl-sm",
-            message.isPinned && "ring-2 ring-yellow-400/60"
+              ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-blue-500/25 hover:shadow-blue-500/35 hover:shadow-2xl" 
+              : "bg-slate-800/95 text-white border border-white/10 shadow-slate-900/50 hover:bg-slate-800 hover:border-white/20 hover:shadow-2xl",
+            isFirstInGroup && isOwn && "rounded-tr-md",
+            isFirstInGroup && !isOwn && "rounded-tl-md",
+            message.isPinned && "ring-2 ring-yellow-400/70 shadow-yellow-400/20"
           )}
         >
-          {/* Bubble tail */}
+          {/* Bubble tail - WhatsApp modern style */}
           {isLastInGroup && (
             <div 
               className={cn(
-                "absolute bottom-0 w-3 h-3",
+                "absolute bottom-0 w-4 h-4 rounded-br-full",
                 isOwn 
-                  ? "right-0 translate-x-1/2 bg-blue-600" 
-                  : "left-0 -translate-x-1/2 bg-slate-800/90",
+                  ? "right-0 translate-x-2 translate-y-1 bg-gradient-to-br from-blue-500 to-blue-600" 
+                  : "left-0 -translate-x-2 translate-y-1 bg-slate-800/95 border-l border-b border-white/10",
                 "[clip-path:polygon(0%_0%,100%_0%,100%_100%)]",
                 isOwn && "[clip-path:polygon(0%_0%,100%_0%,0%_100%)]"
               )}
@@ -348,105 +350,123 @@ const MessageBubble = ({
             )}
           </div>
 
-          {/* Reactions */}
+          {/* Reactions - WhatsApp style */}
           {message.reactions && Object.keys(message.reactions).length > 0 && (
-            <div className="absolute -bottom-3 left-2 flex gap-0.5">
+            <div className="absolute -bottom-4 left-2 flex gap-1">
               {Object.entries(message.reactions).map(([emoji, users]) => (
                 users.length > 0 && (
-                  <span 
+                  <motion.span 
                     key={emoji}
-                    className="bg-slate-600 rounded-full px-1.5 py-0.5 text-xs cursor-pointer 
-                               hover:bg-slate-500 transition-colors"
+                    className="bg-slate-700/90 backdrop-blur-sm rounded-full px-2 py-1 text-sm cursor-pointer 
+                               hover:bg-slate-600 hover:scale-110 transition-all shadow-lg border border-white/10"
                     onClick={() => onReaction(message.id, emoji)}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    {emoji} {users.length > 1 && users.length}
-                  </span>
+                    {emoji} {users.length > 1 && <span className="text-xs text-slate-300 ml-0.5">{users.length}</span>}
+                  </motion.span>
                 )
               ))}
             </div>
           )}
         </div>
 
-        {/* Actions Menu */}
+        {/* Actions Menu - WhatsApp style */}
         <div 
           ref={menuRef}
           className={cn(
-            "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity",
-            isOwn ? "left-0 -translate-x-full pr-2" : "right-0 translate-x-full pl-2"
+            "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200",
+            isOwn ? "left-0 -translate-x-full pr-3" : "right-0 translate-x-full pl-3"
           )}
         >
-          <div className="flex items-center gap-1 bg-slate-800 rounded-lg p-1 shadow-lg">
-            <button
+          <div className="flex items-center gap-1 bg-slate-800/95 backdrop-blur-xl rounded-xl p-1.5 shadow-2xl border border-white/10">
+            <motion.button
               onClick={() => setShowReactions(!showReactions)}
-              className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
             >
-              <Smile size={16} className="text-slate-400" />
-            </button>
-            <button
+              <Smile size={18} className="text-slate-300" />
+            </motion.button>
+            <motion.button
               onClick={() => onReply(message)}
-              className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
             >
-              <Reply size={16} className="text-slate-400" />
-            </button>
-            <button
+              <Reply size={18} className="text-slate-300" />
+            </motion.button>
+            <motion.button
               onClick={() => onForward?.(message)}
-              className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
               title="Inoltra"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
             >
-              <Forward size={16} className="text-slate-400" />
-            </button>
-            <button
+              <Forward size={18} className="text-slate-300" />
+            </motion.button>
+            <motion.button
               onClick={() => onStar?.(message.id)}
-              className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
               title="Preferiti"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
             >
-              <Star size={16} className={message.isStarred ? "text-yellow-500 fill-yellow-500" : "text-slate-400"} />
-            </button>
+              <Star size={18} className={message.isStarred ? "text-yellow-500 fill-yellow-500" : "text-slate-300"} />
+            </motion.button>
             {isOwn && !message.isDeleted && (
               <>
-                <button
+                <motion.button
                   onClick={() => onEdit(message)}
-                  className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+                  className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                 >
-                  <Edit3 size={16} className="text-slate-400" />
-                </button>
-                <button
+                  <Edit3 size={18} className="text-slate-300" />
+                </motion.button>
+                <motion.button
                   onClick={() => onDelete(message.id)}
-                  className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+                  className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                 >
-                  <Trash2 size={16} className="text-red-400" />
-                </button>
+                  <Trash2 size={18} className="text-red-400" />
+                </motion.button>
               </>
             )}
-            <button
+            <motion.button
               onClick={() => onPin(message.id)}
-              className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
             >
-              <Pin size={16} className={message.isPinned ? "text-yellow-500" : "text-slate-400"} />
-            </button>
+              <Pin size={18} className={message.isPinned ? "text-yellow-500" : "text-slate-300"} />
+            </motion.button>
           </div>
 
-          {/* Reactions Picker */}
+          {/* Reactions Picker - WhatsApp style */}
           <AnimatePresence>
             {showReactions && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                className="absolute bottom-full mb-2 left-0 bg-slate-800 rounded-xl p-2 shadow-lg flex gap-1"
+                className="absolute bottom-full mb-3 left-0 bg-slate-800/95 backdrop-blur-xl rounded-2xl p-2.5 shadow-2xl border border-white/10 flex gap-1.5"
               >
                 {reactions.map(emoji => (
-                  <button
+                  <motion.button
                     key={emoji}
                     onClick={() => {
                       onReaction(message.id, emoji);
                       setShowReactions(false);
                     }}
-                    className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded-lg 
-                               transition-colors text-lg"
+                    className="w-10 h-10 flex items-center justify-center hover:bg-slate-700 rounded-xl 
+                               transition-colors text-xl"
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
                   >
                     {emoji}
-                  </button>
+                  </motion.button>
                 ))}
               </motion.div>
             )}

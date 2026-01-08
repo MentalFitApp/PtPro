@@ -13,7 +13,7 @@ import { storage } from '../../firebase';
 import { uploadToR2 } from '../../cloudflareStorage';
 import { 
   useChat, useChatList, useTypingIndicator, useMediaUpload, 
-  useSearchMessages, getTenantId, useOnlineStatus 
+  useSearchMessages, getTenantId
 } from '../../hooks/useChat';
 
 // Import componenti modulari
@@ -29,12 +29,13 @@ import {
 } from '../../components/chat';
 
 // Import modali (da estrarre successivamente se presenti)
-import ProfileCheckModal from './ProfileCheckModal';
-import NewChatModal from './NewChatModal';
-import ForwardMessageModal from './ForwardMessageModal';
-import GlobalSearchModal from './GlobalSearchModal';
-import PinnedMessagesPanel from './PinnedMessagesPanel';
-import StarredMessagesPanel from './StarredMessagesPanel';
+// TODO: Creare questi componenti modali
+// import ProfileCheckModal from './ProfileCheckModal';
+// import NewChatModal from './NewChatModal';
+// import ForwardMessageModal from './ForwardMessageModal';
+// import GlobalSearchModal from './GlobalSearchModal';
+// import PinnedMessagesPanel from './PinnedMessagesPanel';
+// import StarredMessagesPanel from './StarredMessagesPanel';
 
 const cn = (...classes) => clsx(...classes);
 
@@ -63,8 +64,8 @@ export default function Chat() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const prevMessagesCountRef = useRef(0);
 
-  // Track online status
-  useOnlineStatus(user?.uid);
+  // Track online status - TODO: Implement useOnlineStatus hook
+  // useOnlineStatus(user?.uid);
 
   // Custom hooks
   const { chats, loading: chatsLoading, createChat } = useChatList();
@@ -606,8 +607,8 @@ export default function Chat() {
           />
         </div>
 
-        {/* Pinned Messages Panel */}
-        <AnimatePresence>
+        {/* Pinned Messages Panel - TODO: Create component */}
+        {/* <AnimatePresence>
           {showPinnedPanel && (
             <PinnedMessagesPanel
               chatId={activeChat.id}
@@ -619,10 +620,10 @@ export default function Chat() {
               }}
             />
           )}
-        </AnimatePresence>
+        </AnimatePresence> */}
 
-        {/* Starred Messages Panel */}
-        <AnimatePresence>
+        {/* Starred Messages Panel - TODO: Create component */}
+        {/* <AnimatePresence>
           {showStarredPanel && (
             <StarredMessagesPanel
               chatId={activeChat.id}
@@ -634,7 +635,7 @@ export default function Chat() {
               }}
             />
           )}
-        </AnimatePresence>
+        </AnimatePresence> */}
       </div>
     );
   };
@@ -666,8 +667,8 @@ export default function Chat() {
         bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))'
       } : undefined}
     >
-      {/* Profile Check Modal */}
-      <AnimatePresence>
+      {/* Profile Check Modal - TODO: Create component */}
+      {/* <AnimatePresence>
         {showProfileModal && (
           <ProfileCheckModal
             isOpen={showProfileModal}
@@ -675,10 +676,10 @@ export default function Chat() {
             onSave={handleProfileSave}
           />
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
-      {/* New Chat Modal */}
-      <AnimatePresence>
+      {/* New Chat Modal - TODO: Create component */}
+      {/* <AnimatePresence>
         {showNewChatModal && (
           <NewChatModal
             isOpen={showNewChatModal}
@@ -687,7 +688,7 @@ export default function Chat() {
             currentUserRole={currentUserRole}
           />
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       {/* Main Content */}
       <div className="flex-1 flex min-h-0">
@@ -746,8 +747,8 @@ export default function Chat() {
         )}
       </div>
 
-      {/* Forward Message Modal */}
-      <AnimatePresence>
+      {/* Forward Message Modal - TODO: Create component */}
+      {/* <AnimatePresence>
         {showForwardModal && messageToForward && (
           <ForwardMessageModal
             message={messageToForward}
@@ -759,10 +760,10 @@ export default function Chat() {
             }}
           />
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
-      {/* Global Search Modal */}
-      <AnimatePresence>
+      {/* Global Search Modal - TODO: Create component */}
+      {/* <AnimatePresence>
         {showGlobalSearch && (
           <GlobalSearchModal
             chats={chats}
@@ -770,7 +771,7 @@ export default function Chat() {
             onSelectMessage={handleGlobalSearchSelect}
           />
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
     </div>
   );
 }

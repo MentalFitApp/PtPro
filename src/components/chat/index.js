@@ -15,5 +15,5 @@ export { default as LinkPreview } from './components/LinkPreview';
 export { default as TypingIndicator } from './components/TypingIndicator';
 
 // Utils
-export * from './utils/chatHelpers';
+export * from './utils/chatHelpers.jsx';
 export * from './utils/sounds';
