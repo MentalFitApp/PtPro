@@ -28,9 +28,9 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
   // Role-based styling
   const getRoleRing = (role) => {
     switch(role) {
-      case 'admin': return 'ring-amber-400/70 shadow-amber-400/20';
-      case 'coach': return 'ring-blue-400/70 shadow-blue-400/20';
-      default: return 'ring-slate-500/50';
+      case 'admin': return 'ring-amber-500 shadow-xl shadow-amber-500/40';
+      case 'coach': return 'ring-blue-500 shadow-xl shadow-blue-500/40';
+      default: return 'ring-slate-500 shadow-xl shadow-slate-500/20';
     }
   };
 
@@ -93,6 +93,7 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
   return (
     <>
       <motion.div
+        whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
         onClick={onClick}
         onContextMenu={handleContextMenu}
@@ -100,17 +101,17 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
         onTouchEnd={handleTouchEnd}
         onTouchMove={handleTouchEnd}
         className={cn(
-          "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all relative group",
+          "flex items-center gap-4 py-4 px-4 rounded-2xl cursor-pointer transition-all relative group",
           isActive 
-            ? "bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 shadow-lg shadow-cyan-500/10" 
-            : "hover:bg-white/[0.07] hover:border-white/10 border border-transparent",
+            ? "bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 shadow-xl shadow-cyan-500/10" 
+            : "hover:bg-white/5 hover:border-white/10 border border-transparent",
           isArchived && "opacity-60"
         )}
       >
         {/* Indicatore chat fissata */}
         {isPinned && (
-          <div className="absolute top-1.5 right-1.5">
-            <Pin size={12} className="text-yellow-500" />
+          <div className="absolute top-2 right-2">
+            <Pin size={14} className="text-yellow-500" fill="currentColor" />
           </div>
         )}
 
@@ -121,13 +122,13 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
               src={otherPhoto} 
               alt={otherName} 
               className={cn(
-                "w-12 h-12 rounded-full object-cover ring-2 shadow-lg transition-transform group-hover:scale-105",
+                "w-[52px] h-[52px] rounded-full object-cover ring-[3px] transition-transform group-hover:scale-105",
                 getRoleRing(otherRole)
               )} 
             />
           ) : (
             <div className={cn(
-              "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ring-2 shadow-lg transition-transform group-hover:scale-105 bg-gradient-to-br",
+              "w-[52px] h-[52px] rounded-full flex items-center justify-center text-white text-lg font-bold ring-[3px] transition-transform group-hover:scale-105 bg-gradient-to-br",
               getRoleGradient(otherRole),
               getRoleRing(otherRole)
             )}>
@@ -136,60 +137,68 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
           )}
           {/* Status indicator con animazione */}
           <div className={cn(
-            "absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-slate-800 transition-colors",
+            "absolute bottom-0 right-0 w-4 h-4 rounded-full border-[3px] border-slate-900 transition-colors",
             isOnline 
-              ? "bg-green-500 shadow-lg shadow-green-500/50" 
+              ? "bg-emerald-500 shadow-lg shadow-emerald-500/50" 
               : "bg-slate-500"
           )}>
             {isOnline && (
-              <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75" />
+              <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
             )}
           </div>
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-white truncate">{otherName}</h3>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <h3 className="font-bold text-base text-white truncate">{otherName}</h3>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {chat.lastMessageAt && (
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-500 font-medium">
                   {formatMessageTime(chat.lastMessageAt)}
                 </span>
               )}
               {/* Bottone menu su hover desktop */}
-              <button
+              <motion.button
                 onClick={(e) => { e.stopPropagation(); handleContextMenu(e); }}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-600/50 rounded transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/10 rounded-lg transition-all"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
               >
-                <MoreVertical size={16} className="text-slate-400" />
-              </button>
+                <MoreVertical size={18} className="text-slate-400" />
+              </motion.button>
             </div>
           </div>
           {/* Role */}
-          <div className="flex items-center gap-1 mt-0.5">
-            <RoleIcon role={otherRole} size={12} />
-            <span className="text-xs text-slate-500">{formatRole(otherRole)}</span>
+          <div className="flex items-center gap-1.5 mb-1">
+            <RoleIcon role={otherRole} size={14} />
+            <span className="text-xs text-slate-500 font-medium">{formatRole(otherRole)}</span>
             {isArchived && (
-              <span className="text-xs text-orange-400 ml-1">• Archiviata</span>
+              <span className="text-xs text-orange-400 font-medium ml-1">• Archiviata</span>
             )}
           </div>
-          <div className="flex items-center justify-between mt-0.5">
-            <p className="text-sm text-slate-400 truncate flex items-center gap-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm text-slate-400 flex items-center gap-1.5 min-w-0 line-clamp-2">
               {chat.lastMessageBy === currentUserId && (
-                <CheckCheck size={14} className="text-blue-400 flex-shrink-0" />
+                <CheckCheck size={16} className="text-cyan-400 flex-shrink-0" />
               )}
-              {chat.lastMessageType === 'image' ? '📷 Foto' : 
-               chat.lastMessageType === 'audio' ? '🎵 Audio' :
-               chat.lastMessageType === 'file' ? '📎 File' :
-               chat.lastMessage || 'Nessun messaggio'}
+              <span className="truncate">
+                {chat.lastMessageType === 'image' ? '📷 Foto' : 
+                 chat.lastMessageType === 'audio' ? '🎵 Audio' :
+                 chat.lastMessageType === 'file' ? '📎 File' :
+                 chat.lastMessage || 'Nessun messaggio'}
+              </span>
             </p>
             {unreadCount > 0 && (
-              <span className="bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center shadow-lg shadow-pink-500/30 animate-pulse">
+              <motion.span 
+                className="bg-gradient-to-br from-pink-500 to-rose-600 text-white text-xs font-bold px-2.5 py-1 rounded-full min-w-[22px] text-center shadow-xl shadow-pink-500/40 flex-shrink-0"
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
                 {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
+              </motion.span>
             )}
           </div>
         </div>
@@ -200,69 +209,73 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
         {showMenu && (
           <motion.div
             ref={menuRef}
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            exit={{ opacity: 0, scale: 0.9 }}
             style={{
               position: 'fixed',
-              left: Math.min(menuPosition.x, window.innerWidth - 200),
-              top: Math.min(menuPosition.y, window.innerHeight - 250),
+              left: Math.min(menuPosition.x, window.innerWidth - 220),
+              top: Math.min(menuPosition.y, window.innerHeight - 280),
               zIndex: 9999
             }}
-            className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[180px]"
+            className="bg-slate-800/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden min-w-[200px]"
           >
             {/* Pin/Unpin */}
-            <button
+            <motion.button
               onClick={(e) => handleMenuAction(() => onPin?.(chat.id, !isPinned), e)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 text-left transition-colors"
+              className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/10 text-left transition-colors"
+              whileHover={{ x: 4 }}
             >
               {isPinned ? (
-                <><PinOff size={18} className="text-slate-400" />
-                <span className="text-white">Rimuovi fissata</span></>
+                <><PinOff size={20} className="text-slate-400" />
+                <span className="text-white font-medium">Rimuovi fissata</span></>
               ) : (
-                <><Pin size={18} className="text-yellow-500" />
-                <span className="text-white">Fissa in alto</span></>
+                <><Pin size={20} className="text-yellow-500" />
+                <span className="text-white font-medium">Fissa in alto</span></>
               )}
-            </button>
+            </motion.button>
 
             {/* Mark as read/unread */}
-            <button
+            <motion.button
               onClick={(e) => handleMenuAction(() => onMarkRead?.(chat.id, unreadCount > 0), e)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 text-left transition-colors"
+              className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/10 text-left transition-colors"
+              whileHover={{ x: 4 }}
             >
               {unreadCount > 0 ? (
-                <><Check size={18} className="text-green-500" />
-                <span className="text-white">Segna come letto</span></>
+                <><Check size={20} className="text-emerald-500" />
+                <span className="text-white font-medium">Segna come letto</span></>
               ) : (
-                <><MailOpen size={18} className="text-blue-400" />
-                <span className="text-white">Segna come non letto</span></>
+                <><MailOpen size={20} className="text-blue-400" />
+                <span className="text-white font-medium">Segna come non letto</span></>
               )}
-            </button>
+            </motion.button>
 
             {/* Archive/Unarchive */}
-            <button
+            <motion.button
               onClick={(e) => handleMenuAction(() => onArchive?.(chat.id, !isArchived), e)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 text-left transition-colors"
+              className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/10 text-left transition-colors"
+              whileHover={{ x: 4 }}
             >
               {isArchived ? (
-                <><Archive size={18} className="text-slate-400" />
-                <span className="text-white">Ripristina chat</span></>
+                <><Archive size={20} className="text-slate-400" />
+                <span className="text-white font-medium">Ripristina chat</span></>
               ) : (
-                <><Archive size={18} className="text-orange-400" />
-                <span className="text-white">Archivia chat</span></>
+                <><Archive size={20} className="text-orange-400" />
+                <span className="text-white font-medium">Archivia chat</span></>
               )}
-            </button>
+            </motion.button>
 
             <div className="border-t border-white/10" />
 
             {/* Delete */}
-            <button
+            <motion.button
               onClick={(e) => handleMenuAction(() => onDelete?.(chat.id), e)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/20 text-left transition-colors"
+              className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-red-500/20 text-left transition-colors"
+              whileHover={{ x: 4 }}
             >
-              <Trash2 size={18} className="text-red-400" />
-              <span className="text-red-400">Elimina chat</span>
-            </button>
+              <Trash2 size={20} className="text-red-400" />
+              <span className="text-red-400 font-medium">Elimina chat</span>
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
