@@ -112,15 +112,58 @@ async function initializePushNotifications() {
 }
 
 /**
- * Salva il token FCM (da inviare al backend)
+ * Salva il token FCM su Firestore
  */
-function savePushToken(token) {
-  // Salva in localStorage per ora, poi inviare a Firebase
-  localStorage.setItem('fcm_token_native', token);
-  
-  // TODO: Inviare al backend quando l'utente è autenticato
-  // import { updateUserPushToken } from './firebase';
-  // updateUserPushToken(userId, token);
+async function savePushToken(token) {
+  try {
+    // Salva in localStorage
+    localStorage.setItem('fcm_token_native', token);
+    console.log('[Capacitor] Token FCM salvato:', token);
+    
+    // Importa Firebase dinamicamente per evitare dipendenze circolari
+    const { auth, db } = await import('../firebase');
+    const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+    const { getTenantDoc } = await import('../config/tenant');
+    
+    // Aspetta che l'utente sia autenticato
+    const checkAuth = () => new Promise((resolve) => {
+      if (auth.currentUser) {
+        resolve(auth.currentUser);
+      } else {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          if (user) {
+            unsubscribe();
+            resolve(user);
+          }
+        });
+        
+        // Timeout dopo 10 secondi
+        setTimeout(() => {
+          unsubscribe();
+          resolve(null);
+        }, 10000);
+      }
+    });
+    
+    const user = await checkAuth();
+    
+    if (user) {
+      // Salva token su Firestore
+      const tokenRef = getTenantDoc(db, 'fcmTokens', user.uid);
+      await setDoc(tokenRef, {
+        token: token,
+        platform: 'android',
+        updatedAt: serverTimestamp(),
+        userId: user.uid
+      }, { merge: true });
+      
+      console.log('[Capacitor] Token salvato su Firestore per utente:', user.uid);
+    } else {
+      console.warn('[Capacitor] Utente non autenticato, token non salvato su Firestore');
+    }
+  } catch (error) {
+    console.error('[Capacitor] Errore salvataggio token:', error);
+  }
 }
 
 /**

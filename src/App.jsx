@@ -162,6 +162,19 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Inizializza Capacitor plugins (notifiche push native)
+  useEffect(() => {
+    const initCapacitor = async () => {
+      try {
+        const { initializeCapacitor } = await import('./utils/capacitor');
+        await initializeCapacitor();
+      } catch (error) {
+        console.error('Errore inizializzazione Capacitor:', error);
+      }
+    };
+    initCapacitor();
+  }, []);
+
   // Salva sempre l'ultima path navigata (HashRouter fornisce pathname già dopo #)
   useEffect(() => {
     try {
