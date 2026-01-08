@@ -12,24 +12,43 @@ export default function HeroStreakCard({ refreshKey = 0 }) {
   const [weeklyWorkouts, setWeeklyWorkouts] = useState(0);
   const [weeklyTarget, setWeeklyTarget] = useState(4);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadData();
   }, [refreshKey]); // Ricarica quando refreshKey cambia
 
+  if (error) {
+    return (
+      <div className="bg-red-900/40 border border-red-500/40 rounded-2xl p-4">
+        <div className="text-red-400 text-sm">Errore caricamento streak</div>
+        <button 
+          onClick={() => { setError(null); loadData(); }}
+          className="text-xs text-red-300 underline mt-1"
+        >
+          Riprova
+        </button>
+      </div>
+    );
+  }
+
   const loadData = async () => {
     if (!auth.currentUser) {
+      console.log('[HeroStreakCard] No auth user');
       setLoading(false);
       return;
     }
 
     try {
+      console.log('[HeroStreakCard] Loading data...');
       const clientDoc = await getDoc(getTenantDoc(db, 'clients', auth.currentUser.uid));
       if (!clientDoc.exists()) {
+        console.log('[HeroStreakCard] No client doc found');
         setLoading(false);
         return;
       }
 
+      console.log('[HeroStreakCard] Client doc found, calculating...');
       const data = clientDoc.data();
       const habits = data.habits || {};
       const workoutLog = data.workoutLog || {};
@@ -88,9 +107,11 @@ export default function HeroStreakCard({ refreshKey = 0 }) {
       setStreak(currentStreak);
       setWeeklyWorkouts(weekCount);
       setWeeklyTarget(weekly.target || data.habitTargets?.weeklyWorkout || 4);
+      console.log('[HeroStreakCard] Data loaded:', { currentStreak, weekCount, target: weekly.target || data.habitTargets?.weeklyWorkout || 4 });
       setLoading(false);
     } catch (error) {
-      console.error('Errore caricamento hero card:', error);
+      console.error('[HeroStreakCard] Error loading:', error);
+      setError(error.message);
       setLoading(false);
     }
   };
@@ -118,9 +139,7 @@ export default function HeroStreakCard({ refreshKey = 0 }) {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
       className={`relative overflow-hidden rounded-2xl p-4 border ${
         isOnFire 
           ? 'bg-gradient-to-br from-orange-500/20 via-red-500/20 to-yellow-500/20 border-orange-500/40' 
@@ -205,6 +224,6 @@ export default function HeroStreakCard({ refreshKey = 0 }) {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

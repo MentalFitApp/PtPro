@@ -50,11 +50,9 @@ export default function CheckReminderCard({ daysSinceLastCheck, lastCheckDate })
   const info = getNextCheckInfo();
 
   return (
-    <motion.button
+    <button
       onClick={() => navigate('/client/checks')}
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
-      className={`w-full rounded-xl p-4 border text-left transition-all ${
+      className={`w-full rounded-xl p-4 border text-left transition-all hover:scale-[1.01] active:scale-[0.99] ${
         isUrgent
           ? 'bg-gradient-to-r from-purple-600/30 to-pink-600/30 border-purple-500/50 hover:border-purple-400/60'
           : 'bg-slate-800/40 border-slate-700/50 hover:border-slate-600/50'
@@ -92,6 +90,6 @@ export default function CheckReminderCard({ daysSinceLastCheck, lastCheckDate })
           <span>Carica foto fronte, retro, lato dx e sx + peso</span>
         </div>
       )}
-    </motion.button>
+    </button>
   );
 }
