@@ -14,9 +14,21 @@ const CookieConsent = () => {
 
   // Non mostrare su app nativa - DOPO gli hooks per evitare errori React
   const isNative = isNativePlatform();
-  console.log('[PrivacyBanner] isNative:', isNative);
+  
+  console.log('[PrivacyBanner] Platform check:', {
+    isNative,
+    userAgent: navigator.userAgent,
+    capacitorExists: typeof window.Capacitor !== 'undefined',
+    platform: window.Capacitor?.getPlatform?.()
+  });
   
   useEffect(() => {
+    // Esci subito se app nativa
+    if (isNative) {
+      console.log('[PrivacyBanner] Skipping on native platform');
+      return;
+    }
+    
     // Controlla se l'utente ha già dato il consenso
     const consent = localStorage.getItem('cookie_consent');
     if (!consent) {
@@ -32,7 +44,7 @@ const CookieConsent = () => {
         console.error('Error loading cookie preferences:', e);
       }
     }
-  }, []);
+  }, [isNative]);
 
   const applyConsent = (prefs) => {
     // Analytics (Google Analytics, Mixpanel, etc.)

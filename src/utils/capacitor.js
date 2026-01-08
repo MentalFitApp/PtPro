@@ -16,23 +16,52 @@ import { Keyboard } from '@capacitor/keyboard';
  */
 export const isNativePlatform = () => {
   try {
-    // Check primario: Capacitor API
-    if (Capacitor.isNativePlatform()) {
-      console.log('[Capacitor] Running on native platform:', Capacitor.getPlatform());
+    // Check 1: Capacitor platform
+    const platform = Capacitor.getPlatform();
+    if (platform === 'android' || platform === 'ios') {
+      console.log('[Capacitor] Native platform detected:', platform);
       return true;
     }
     
-    // Fallback: controlla se window.Capacitor esiste
-    if (window.Capacitor && window.Capacitor.isNativePlatform) {
-      console.log('[Capacitor] Detected via window.Capacitor');
-      return window.Capacitor.isNativePlatform();
+    // Check 2: Capacitor.isNativePlatform() API
+    if (typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform()) {
+      console.log('[Capacitor] isNativePlatform() returned true');
+      return true;
     }
     
-    console.log('[Capacitor] Running on web platform');
+    // Check 3: window.Capacitor
+    if (window.Capacitor) {
+      if (typeof window.Capacitor.getPlatform === 'function') {
+        const winPlatform = window.Capacitor.getPlatform();
+        if (winPlatform === 'android' || winPlatform === 'ios') {
+          console.log('[Capacitor] Native via window.Capacitor:', winPlatform);
+          return true;
+        }
+      }
+      if (typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
+        console.log('[Capacitor] Native via window.Capacitor.isNativePlatform()');
+        return true;
+      }
+    }
+    
+    // Check 4: User Agent per Capacitor WebView
+    const userAgent = navigator.userAgent || '';
+    if (userAgent.includes('CapacitorWebView')) {
+      console.log('[Capacitor] Detected via User Agent');
+      return true;
+    }
+    
+    console.log('[Capacitor] Web platform detected');
     return false;
   } catch (error) {
     console.error('[Capacitor] Error checking platform:', error);
-    return false;
+    // Fallback: controlla user agent
+    try {
+      const userAgent = navigator.userAgent || '';
+      return userAgent.includes('CapacitorWebView');
+    } catch {
+      return false;
+    }
   }
 };
 

@@ -16,9 +16,16 @@ export default function PWAInstallPrompt({
 }) {
   // Non mostrare su app nativa
   const isNative = isNativePlatform();
-  console.log('[PWAInstallPrompt] isNative:', isNative);
+  
+  console.log('[PWAInstallPrompt] Platform check:', {
+    isNative,
+    userAgent: navigator.userAgent,
+    capacitorExists: typeof window.Capacitor !== 'undefined',
+    platform: window.Capacitor?.getPlatform?.()
+  });
   
   if (isNative) {
+    console.log('[PWAInstallPrompt] Hiding on native platform');
     return null;
   }
 
