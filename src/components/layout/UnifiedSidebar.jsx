@@ -81,10 +81,20 @@ export const UnifiedSidebar = ({ role = 'admin', userName = 'User', userEmail = 
 
   const handleLogout = async () => {
     try {
+      // Pulisci tutto prima del logout
+      localStorage.removeItem('tenantId');
+      localStorage.removeItem('last_path');
+      sessionStorage.removeItem('app_role');
+      sessionStorage.removeItem('creating_collaboratore');
+      
       await signOut(auth);
-      navigate('/login');
+      
+      // Forza refresh per pulire cache React
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout error:', error);
+      // In caso di errore, forza comunque il redirect
+      window.location.href = '/login';
     }
   };
 

@@ -39,6 +39,7 @@ import {
   Sparkles,
   Users,
   Bot,
+  BarChart3,
 } from 'lucide-react';
 
 const LandingPageEditor = () => {
