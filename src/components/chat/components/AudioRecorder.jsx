@@ -19,11 +19,11 @@ const LiveWaveform = ({ isRecording, barCount = 20 }) => {
   }, [isRecording, barCount]);
 
   return (
-    <div className="flex items-center gap-[3px] h-6 flex-1">
+    <div className="flex items-center gap-[4px] h-8 flex-1">
       {bars.map((height, index) => (
         <motion.div
           key={index}
-          className="w-1 rounded-full bg-red-400"
+          className="w-1.5 rounded-full bg-gradient-to-t from-cyan-500 to-purple-500"
           animate={{ height: isRecording ? `${height}%` : '20%' }}
           transition={{ duration: 0.1, ease: 'linear' }}
         />
@@ -105,51 +105,54 @@ const AudioRecorder = ({ onSend, onCancel }) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-red-500/20 to-orange-500/20 rounded-2xl border border-red-500/30 backdrop-blur-sm"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="flex items-center gap-4 px-5 py-4 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-2xl border border-cyan-500/30 backdrop-blur-2xl shadow-xl"
     >
       <motion.button
         onClick={onCancel}
+        whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.9 }}
-        className="p-2 hover:bg-slate-700 rounded-full transition-colors"
+        className="p-2.5 hover:bg-white/10 rounded-xl transition-colors"
       >
-        <X size={20} className="text-slate-400" />
+        <X size={22} className="text-slate-400" />
       </motion.button>
 
-      <div className="flex items-center gap-3 flex-1">
-        <div className="flex items-center gap-2 min-w-[60px]">
+      <div className="flex items-center gap-4 flex-1">
+        <div className="flex items-center gap-2.5 min-w-[70px]">
           <motion.div 
-            className="w-3 h-3 rounded-full bg-red-500"
+            className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/50"
             animate={isRecording ? { 
-              scale: [1, 1.2, 1],
+              scale: [1, 1.3, 1],
               opacity: [1, 0.5, 1]
             } : {}}
             transition={{ duration: 1, repeat: Infinity }}
           />
-          <span className="text-white font-mono text-sm">{formatTime(duration)}</span>
+          <span className="text-white font-mono text-base font-semibold">{formatTime(duration)}</span>
         </div>
-        <LiveWaveform isRecording={isRecording} barCount={16} />
+        <LiveWaveform isRecording={isRecording} barCount={18} />
       </div>
 
       {isRecording ? (
         <motion.button
           onClick={stopRecording}
+          whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.9 }}
-          className="p-3 bg-red-500 hover:bg-red-600 rounded-full transition-colors shadow-lg shadow-red-500/30"
+          className="p-3.5 bg-gradient-to-br from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 rounded-xl transition-colors shadow-xl shadow-red-500/40"
         >
-          <MicOff size={20} className="text-white" />
+          <MicOff size={22} className="text-white" />
         </motion.button>
       ) : (
         <motion.button
           onClick={handleSend}
+          whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.9 }}
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="p-3 bg-blue-500 hover:bg-blue-600 rounded-full transition-colors shadow-lg shadow-blue-500/30"
+          className="p-3.5 bg-gradient-to-br from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 rounded-xl transition-colors shadow-xl shadow-cyan-500/40"
         >
-          <Send size={20} className="text-white" />
+          <Send size={22} className="text-white" />
         </motion.button>
       )}
     </motion.div>

@@ -114,18 +114,23 @@ const MessagesArea = ({
       {groupedMessages.map((group) => (
         <div key={group.date}>
           {/* Date Separator - Elegant pill style */}
-          <div className="flex items-center justify-center my-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-              <div className="px-5 py-2 bg-slate-800/80 backdrop-blur-xl rounded-2xl text-xs font-medium text-slate-300 
-                              border border-white/10 shadow-xl shadow-black/20">
+          <div className="flex items-center justify-center my-8">
+            <motion.div 
+              className="relative"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent blur-xl" />
+              <div className="relative px-6 py-2.5 bg-slate-800/90 backdrop-blur-2xl rounded-full text-xs font-semibold text-slate-300 
+                              border border-white/10 shadow-xl shadow-black/30">
                 {group.date}
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Messages in group */}
-          <div className="space-y-1">
+          <div className="space-y-2">
             {group.messages.map((msg, index) => {
               const isOwn = msg.senderId === currentUserId;
               const prevMsg = group.messages[index - 1];
@@ -182,14 +187,16 @@ const MessagesArea = ({
       <AnimatePresence>
         {!autoScroll && (
           <motion.button
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
             onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
-            className="fixed bottom-24 right-6 p-3 bg-white/10 backdrop-blur-md hover:bg-white/20 rounded-full 
-                       shadow-lg transition-colors z-10 border border-white/20"
+            className="fixed bottom-28 right-6 p-4 bg-gradient-to-br from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 
+                       rounded-full shadow-2xl shadow-cyan-500/40 transition-all z-10 border border-white/20"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
           >
-            <ChevronDown size={20} className="text-white" />
+            <ChevronDown size={22} className="text-white" />
           </motion.button>
         )}
       </AnimatePresence>
