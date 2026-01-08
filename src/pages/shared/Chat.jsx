@@ -18,7 +18,6 @@ import {
 
 // Import componenti modulari
 import {
-  AnimatedStars,
   EmptyChatState,
   ChatSidebar,
   ChatHeader,
@@ -534,12 +533,7 @@ export default function Chat() {
     }
 
     return (
-      <div className="flex flex-col h-full bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 relative">
-        {/* Animated Stars Background */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          <AnimatedStars />
-        </div>
-        
+      <div className="flex flex-col h-full bg-slate-900/40 backdrop-blur-xl relative">
         {/* Header */}
         <div className="flex-shrink-0 z-20 bg-slate-900/90 backdrop-blur-xl border-b border-white/10">
           <ChatHeader
@@ -657,7 +651,7 @@ export default function Chat() {
   return (
     <div 
       className={cn(
-        "flex flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 w-full",
+        "flex flex-col bg-slate-900/30 backdrop-blur-2xl w-full",
         isMobile 
           ? "fixed inset-0 z-30"
           : "h-[calc(100vh-72px)]"
