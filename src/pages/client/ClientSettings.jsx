@@ -11,11 +11,11 @@ import LinkAccountCard from '../../components/LinkAccountCard';
 import ChangeEmailCard from '../../components/settings/ChangeEmailCard';
 import { auth, db } from '../../firebase';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
-import { getMessaging, getToken } from 'firebase/messaging';
 import { setDoc, serverTimestamp, getDoc, updateDoc, doc } from 'firebase/firestore';
 import { getTenantDoc } from '../../config/tenant';
 import { applyCardTransparency } from '../../hooks/useTenantBranding';
 import { useTheme } from '../../contexts/ThemeContext';
+import { isNativePlatform, initializePushNotifications } from '../../utils/capacitor';
 
 const VAPID_KEY = 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeDXSXKb4uffOVSupUGHQ4Q0l9Ato';
 
@@ -72,16 +72,33 @@ const ClientSettings = () => {
   }, []);
 
   const handleEnableNotifications = async () => {
-    if (typeof Notification === 'undefined') return;
-    
     setIsEnablingNotifications(true);
     
     try {
+      // Su piattaforma nativa usa Capacitor PushNotifications
+      if (isNativePlatform()) {
+        console.log('[Notifications] Using Capacitor on native platform');
+        await initializePushNotifications();
+        setNotificationStatus('granted');
+        showNotification('success', 'Notifiche native attivate!');
+        setIsEnablingNotifications(false);
+        return;
+      }
+      
+      // Su web usa Firebase Messaging
+      if (typeof Notification === 'undefined') {
+        showNotification('error', 'Il tuo browser non supporta le notifiche');
+        setIsEnablingNotifications(false);
+        return;
+      }
+    
       const permission = await Notification.requestPermission();
       setNotificationStatus(permission);
       
       if (permission === 'granted') {
         try {
+          // Import dinamico per evitare errori su piattaforma nativa
+          const { getMessaging, getToken } = await import('firebase/messaging');
           const messaging = getMessaging();
           const token = await getToken(messaging, { vapidKey: VAPID_KEY });
           

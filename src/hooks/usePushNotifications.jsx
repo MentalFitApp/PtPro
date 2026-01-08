@@ -2,10 +2,10 @@
 // Hook per gestione completa notifiche push PWA (Android + iOS 16.4+)
 
 import { useState, useEffect, useCallback } from 'react';
-import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { getTenantDoc } from '../config/tenant';
+import { isNativePlatform, initializePushNotifications } from '../utils/capacitor';
 
 const VAPID_KEY = 'BPBjZH1KnB4fCdqy5VobaJvb_mC5UTPKxodeIhyhl6PrRBZ1r6bd6nFqoloeDXSXKb4uffOVSupUGHQ4Q0l9Ato';
 
@@ -17,11 +17,23 @@ export function usePushNotifications() {
   const [isPWA, setIsPWA] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isNative, setIsNative] = useState(false);
 
   // Controlla supporto e ambiente
   useEffect(() => {
     const checkSupport = async () => {
       try {
+        // Check se piattaforma nativa Capacitor
+        const native = isNativePlatform();
+        setIsNative(native);
+        
+        if (native) {
+          console.log('[Push] Running on native platform - using Capacitor');
+          setIsSupported(true);
+          setLoading(false);
+          return;
+        }
+        
         // Detect iOS
         const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         setIsIOS(iOS);
@@ -111,11 +123,21 @@ export function usePushNotifications() {
   // Ottieni o aggiorna token FCM
   const getOrRefreshToken = useCallback(async () => {
     try {
+      // Su piattaforma nativa, usa Capacitor
+      if (isNativePlatform()) {
+        console.log('[Push] Using Capacitor for native token');
+        await initializePushNotifications();
+        setPermission('granted');
+        return null; // Token gestito da Capacitor
+      }
+      
       // Prima assicurati che il Service Worker sia registrato e attivo
       const swRegistration = await getServiceWorkerRegistration();
       
+      // Import dinamico per evitare errori su nativo
+      const { getMessaging, getToken: getFCMToken } = await import('firebase/messaging');
       const messaging = getMessaging();
-      const currentToken = await getToken(messaging, { 
+      const currentToken = await getFCMToken(messaging, { 
         vapidKey: VAPID_KEY,
         serviceWorkerRegistration: swRegistration 
       });
@@ -174,6 +196,19 @@ export function usePushNotifications() {
 
   // Richiedi permesso notifiche
   const requestPermission = useCallback(async () => {
+    // Su piattaforma nativa, usa Capacitor
+    if (isNativePlatform()) {
+      try {
+        console.log('[Push] Requesting native permission via Capacitor');
+        await initializePushNotifications();
+        setPermission('granted');
+        return { success: true, native: true };
+      } catch (err) {
+        console.error('[Push] Native permission error:', err);
+        return { success: false, reason: err.message };
+      }
+    }
+    
     if (!isSupported) {
       const reason = isIOS && !isPWA 
         ? 'Su iPhone, installa prima l\'app sulla schermata Home'
@@ -203,34 +238,45 @@ export function usePushNotifications() {
 
   // Setup listener messaggi in foreground
   const setupForegroundListener = useCallback((callback) => {
+    // Su piattaforma nativa, i listener sono gestiti da Capacitor
+    if (isNativePlatform()) {
+      console.log('[Push] Foreground listener managed by Capacitor');
+      return () => {};
+    }
+    
     try {
-      const messaging = getMessaging();
-      
-      const unsubscribe = onMessage(messaging, async (payload) => {
-        console.log('[Push] Messaggio foreground:', payload);
+      // Import dinamico
+      import('firebase/messaging').then(({ getMessaging, onMessage }) => {
+        const messaging = getMessaging();
         
-        // Mostra notifica locale se app in foreground via ServiceWorker
-        if (payload.notification && Notification.permission === 'granted') {
-          const { title, body, icon } = payload.notification;
-          try {
-            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-              const registration = await navigator.serviceWorker.ready;
-              registration.showNotification(title, {
-                body,
-                icon: icon || '/icon-192.png',
-                badge: '/icon-72.png',
-                data: payload.data
-              });
+        onMessage(messaging, async (payload) => {
+          console.log('[Push] Messaggio foreground:', payload);
+          
+          // Mostra notifica locale se app in foreground via ServiceWorker
+          if (payload.notification && Notification.permission === 'granted') {
+            const { title, body, icon } = payload.notification;
+            try {
+              if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                const registration = await navigator.serviceWorker.ready;
+                registration.showNotification(title, {
+                  body,
+                  icon: icon || '/icon-192.png',
+                  badge: '/icon-72.png',
+                  data: payload.data
+                });
+              }
+            } catch (e) {
+              console.log('Notifica foreground non disponibile');
             }
-          } catch (e) {
-            console.log('Notifica foreground non disponibile');
           }
-        }
-        
-        if (callback) callback(payload);
+          
+          if (callback) callback(payload);
+        });
+      }).catch(err => {
+        console.error('[Push] Errore import messaging:', err);
       });
       
-      return unsubscribe;
+      return () => {};
     } catch (err) {
       console.error('[Push] Errore setup listener:', err);
       return () => {};
