@@ -145,6 +145,13 @@ const LandingPagesList = () => {
           </div>
           <div className="flex items-center gap-3">
             <Link
+              to="/admin/landing-pages/analytics"
+              className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg shadow-purple-500/25"
+            >
+              <BarChart3 className="w-5 h-5" />
+              Analytics
+            </Link>
+            <Link
               to="/admin/landing-pages/leads"
               className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg shadow-green-500/25"
             >

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useTenant } from '../../contexts/TenantContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -342,13 +342,23 @@ const LandingPageEditor = () => {
 
           {/* Leads Button */}
           {!isNewPage && (
-            <button
-              onClick={() => setShowLeads(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-lg hover:shadow-lg hover:shadow-green-500/30 transition-all"
-            >
-              <Users className="w-5 h-5" />
-              <span className="hidden sm:inline">Leads</span>
-            </button>
+            <>
+              <Link
+                to="/admin/landing-pages/analytics"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/30 transition-all"
+              >
+                <BarChart3 className="w-5 h-5" />
+                <span className="hidden sm:inline">Analytics</span>
+              </Link>
+              
+              <button
+                onClick={() => setShowLeads(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-lg hover:shadow-lg hover:shadow-green-500/30 transition-all"
+              >
+                <Users className="w-5 h-5" />
+                <span className="hidden sm:inline">Leads</span>
+              </button>
+            </>
           )}
 
           <button
