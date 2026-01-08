@@ -11,10 +11,11 @@ const CookieConsent = () => {
     analytics: false,
     marketing: false
   });
-  // Non mostrare su app nativa
-  if (isNativePlatform()) {
-    return null;
-  }
+
+  // Non mostrare su app nativa - DOPO gli hooks per evitare errori React
+  const isNative = isNativePlatform();
+  console.log('[PrivacyBanner] isNative:', isNative);
+  
   useEffect(() => {
     // Controlla se l'utente ha già dato il consenso
     const consent = localStorage.getItem('cookie_consent');
@@ -100,6 +101,9 @@ const CookieConsent = () => {
     }
   ];
 
+  // Non renderizzare su app nativa
+  if (isNative) return null;
+  
   if (!showBanner) return null;
 
   return (

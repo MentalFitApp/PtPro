@@ -12,8 +12,30 @@ import { Keyboard } from '@capacitor/keyboard';
 
 /**
  * Verifica se l'app sta girando su piattaforma nativa
+ * Usa controlli multipli per garantire il rilevamento corretto
  */
-export const isNativePlatform = () => Capacitor.isNativePlatform();
+export const isNativePlatform = () => {
+  try {
+    // Check primario: Capacitor API
+    if (Capacitor.isNativePlatform()) {
+      console.log('[Capacitor] Running on native platform:', Capacitor.getPlatform());
+      return true;
+    }
+    
+    // Fallback: controlla se window.Capacitor esiste
+    if (window.Capacitor && window.Capacitor.isNativePlatform) {
+      console.log('[Capacitor] Detected via window.Capacitor');
+      return window.Capacitor.isNativePlatform();
+    }
+    
+    console.log('[Capacitor] Running on web platform');
+    return false;
+  } catch (error) {
+    console.error('[Capacitor] Error checking platform:', error);
+    return false;
+  }
+};
+
 export const getPlatform = () => Capacitor.getPlatform();
 
 /**

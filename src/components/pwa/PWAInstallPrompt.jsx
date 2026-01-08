@@ -15,7 +15,10 @@ export default function PWAInstallPrompt({
   position = 'bottom' // 'bottom' | 'top' | 'modal'
 }) {
   // Non mostrare su app nativa
-  if (isNativePlatform()) {
+  const isNative = isNativePlatform();
+  console.log('[PWAInstallPrompt] isNative:', isNative);
+  
+  if (isNative) {
     return null;
   }
 
