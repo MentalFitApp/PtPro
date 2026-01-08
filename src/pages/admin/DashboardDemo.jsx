@@ -741,11 +741,6 @@ const DashboardDemo = () => {
   const [quickActions, setQuickActions] = useState(DEFAULT_QUICK_ACTIONS);
   const [showActionsEditor, setShowActionsEditor] = useState(false);
   
-  // Obiettivo mensile personalizzabile
-  const [monthlyGoal, setMonthlyGoal] = useState(10000);
-  const [editingGoal, setEditingGoal] = useState(false);
-  const [tempGoal, setTempGoal] = useState('');
-  
   // Document title
   useDocumentTitle('Dashboard');
   usePageInfo({
@@ -780,59 +775,21 @@ const DashboardDemo = () => {
     return () => unsub();
   }, []);
 
-  // Load quick actions from user doc and monthly goal from tenant doc
+  // Load quick actions from Firestore
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
     
-    // Quick actions per utente
     const userDocRef = getTenantDoc(db, 'users', user.uid);
-    const unsubUser = onSnapshot(userDocRef, (doc) => {
+    const unsubscribe = onSnapshot(userDocRef, (doc) => {
       if (doc.exists() && doc.data().dashboardQuickActions) {
         setQuickActions(doc.data().dashboardQuickActions);
       }
     });
     
-    // Monthly goal condiviso a livello tenant
-    const tenantId = localStorage.getItem('tenantId');
-    if (tenantId) {
-      const tenantDocRef = doc(db, 'tenants', tenantId);
-      const unsubTenant = onSnapshot(tenantDocRef, (doc) => {
-        if (doc.exists() && doc.data().monthlyGoal !== undefined) {
-          setMonthlyGoal(doc.data().monthlyGoal);
-        }
-      });
-      
-      return () => {
-        unsubUser();
-        unsubTenant();
-      };
-    }
-    
-    return () => unsubUser();
+    return () => unsubscribe();
   }, []);
 
-  // Save monthly goal to tenant document (shared by all admins)
-  const handleSaveMonthlyGoal = async (newGoal) => {
-    const user = auth.currentUser;
-    if (!user) return;
-    
-    try {
-      const goalValue = parseFloat(newGoal);
-      if (isNaN(goalValue) || goalValue <= 0) return;
-      
-      const tenantId = localStorage.getItem('tenantId');
-      if (!tenantId) return;
-      
-      const tenantDocRef = doc(db, 'tenants', tenantId);
-      await setDoc(tenantDocRef, { monthlyGoal: goalValue }, { merge: true });
-      setMonthlyGoal(goalValue);
-      setEditingGoal(false);
-    } catch (error) {
-      console.error('Errore salvataggio obiettivo mensile:', error);
-    }
-  };
-  
   // Save quick actions to Firestore
   const handleSaveQuickActions = async (actions) => {
     setQuickActions(actions);
@@ -1489,52 +1446,9 @@ const DashboardDemo = () => {
                 <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500">
                   <Trophy size={20} className="text-white" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-white">Obiettivo Mensile</p>
-                    <button
-                      onClick={() => {
-                        setEditingGoal(true);
-                        setTempGoal(monthlyGoal.toString());
-                      }}
-                      className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors"
-                      title="Modifica obiettivo"
-                    >
-                      <Edit3 size={12} />
-                    </button>
-                  </div>
-                  {editingGoal ? (
-                    <div className="flex items-center gap-2 mt-1">
-                      <input
-                        type="number"
-                        value={tempGoal}
-                        onChange={(e) => setTempGoal(e.target.value)}
-                        className="w-24 px-2 py-1 bg-slate-700 text-white text-xs rounded"
-                        placeholder="10000"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveMonthlyGoal(tempGoal);
-                          if (e.key === 'Escape') setEditingGoal(false);
-                        }}
-                      />
-                      <button
-                        onClick={() => handleSaveMonthlyGoal(tempGoal)}
-                        className="p-1 rounded bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-                      >
-                        <Check size={12} />
-                      </button>
-                      <button
-                        onClick={() => setEditingGoal(false)}
-                        className="p-1 rounded bg-slate-700/50 text-slate-400 hover:text-white"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-500">
-                      € {(metrics.periodRevenue + metrics.renewalsRevenue).toLocaleString()} / € {monthlyGoal.toLocaleString()}
-                    </p>
-                  )}
+                <div>
+                  <p className="font-semibold text-white">Obiettivo Mensile</p>
+                  <p className="text-xs text-slate-500">€ {(metrics.periodRevenue + metrics.renewalsRevenue).toLocaleString()} / € 10,000</p>
                 </div>
               </div>
               
@@ -1542,7 +1456,7 @@ const DashboardDemo = () => {
               <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden mb-3">
                 <motion.div
                   initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(((metrics.periodRevenue + metrics.renewalsRevenue) / monthlyGoal) * 100, 100)}%` }}
+                  animate={{ width: `${Math.min(((metrics.periodRevenue + metrics.renewalsRevenue) / 10000) * 100, 100)}%` }}
                   transition={{ duration: 1, ease: 'easeOut' }}
                   className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full relative"
                 >
@@ -1551,8 +1465,8 @@ const DashboardDemo = () => {
               </div>
               
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">{Math.round(((metrics.periodRevenue + metrics.renewalsRevenue) / monthlyGoal) * 100)}% raggiunto</span>
-                {((metrics.periodRevenue + metrics.renewalsRevenue) / monthlyGoal) >= 0.7 && (
+                <span className="text-slate-400">{Math.round(((metrics.periodRevenue + metrics.renewalsRevenue) / 10000) * 100)}% raggiunto</span>
+                {((metrics.periodRevenue + metrics.renewalsRevenue) / 10000) >= 0.7 && (
                   <span className="text-emerald-400 font-medium flex items-center gap-1">
                     <Flame size={14} /> In trend!
                   </span>

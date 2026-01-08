@@ -55,44 +55,14 @@ const QuizPopup = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [contactData, setContactData] = useState({});
-  const [contactErrors, setContactErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [direction, setDirection] = useState(1);
-  const [quizStarted, setQuizStarted] = useState(false);
   const containerRef = useRef(null);
 
   // Mouse tracking for glow effect
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-
-  // Track quiz opened (solo una volta)
-  React.useEffect(() => {
-    if (isOpen && !isPreview && !quizStarted && tenantId && pageId) {
-      setQuizStarted(true);
-      trackQuizEvent('quiz_opened');
-    }
-  }, [isOpen, isPreview, quizStarted, tenantId, pageId]);
-
-  // Funzione per tracciare eventi quiz
-  const trackQuizEvent = async (eventType, additionalData = {}) => {
-    if (!tenantId || !pageId || isPreview) return;
-    
-    try {
-      await addDoc(collection(db, `tenants/${tenantId}/landing_analytics`), {
-        pageId: pageId,
-        type: 'quiz_event',
-        eventType: eventType, // quiz_opened, quiz_step, quiz_partial, quiz_completed
-        step: currentStep,
-        totalSteps: activeQuestions.length + (collectContactInfo ? 1 : 0),
-        answersCount: Object.keys(answers).length,
-        ...additionalData,
-        timestamp: serverTimestamp(),
-      });
-    } catch (err) {
-      console.error('Errore tracking quiz:', err);
-    }
-  };
 
   // Default questions with various types (using SVG icons)
   const defaultQuestions = [
@@ -169,8 +139,6 @@ const QuizPopup = ({
       });
     } else if (questionType === 'single') {
       setAnswers(prev => ({ ...prev, [questionId]: value }));
-      // Track step completion
-      trackQuizEvent('quiz_step', { questionId, answerType: 'single' });
       // Auto advance for single selection
       setTimeout(() => {
         setDirection(1);
@@ -185,14 +153,6 @@ const QuizPopup = ({
   // Handle contact form change
   const handleContactChange = (field, value) => {
     setContactData(prev => ({ ...prev, [field]: value }));
-    // Rimuovi errore quando l'utente inizia a digitare
-    if (contactErrors[field]) {
-      setContactErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
   };
 
   // Validate contact form
@@ -224,9 +184,8 @@ const QuizPopup = ({
     }
 
     if (collectContactInfo) {
-      const { isValid, errors } = validateContact();
+      const { isValid } = validateContact();
       if (!isValid) {
-        setContactErrors(errors);
         toast?.showToast?.('Compila tutti i campi obbligatori', 'error');
         return;
       }
@@ -268,19 +227,12 @@ const QuizPopup = ({
 
       // Increment conversions
       if (pageId && tenantId) {
-        await incrementPageConversions(tenantId, pageId);
+        await incrementPageConversions(db, pageId);
       }
 
       setIsCompleted(true);
       setDirection(1);
       setCurrentStep(totalSteps);
-      
-      // Track quiz completion
-      trackQuizEvent('quiz_completed', { 
-        answersCount: Object.keys(answers).length,
-        contactFieldsCount: Object.keys(contactData).length
-      });
-      
       handleAfterSubmitAction();
 
     } catch (error) {
@@ -320,7 +272,6 @@ const QuizPopup = ({
     setCurrentStep(0);
     setAnswers({});
     setContactData({});
-    setContactErrors({});
     setIsCompleted(false);
     setDirection(1);
     onClose();
@@ -334,30 +285,8 @@ const QuizPopup = ({
   };
 
   const goNext = () => {
-    // Track step progression
-    if (currentStep < activeQuestions.length) {
-      const question = activeQuestions[currentStep];
-      trackQuizEvent('quiz_step', { 
-        questionId: question.id,
-        hasAnswer: !!answers[question.id]
-      });
-    }
     setDirection(1);
     setCurrentStep(prev => prev + 1);
-  };
-
-  // Track partial completion quando l'utente chiude il quiz
-  const handleCloseWithTracking = () => {
-    // Se ha risposto ad almeno una domanda ma non ha completato, traccia abbandono
-    const answersCount = Object.keys(answers).length;
-    if (answersCount > 0 && !isCompleted) {
-      trackQuizEvent('quiz_partial', { 
-        answersCount,
-        lastStep: currentStep,
-        totalSteps: activeQuestions.length + (collectContactInfo ? 1 : 0)
-      });
-    }
-    handleClose();
   };
 
   // Check if can proceed from current question
@@ -853,23 +782,11 @@ const QuizPopup = ({
                 value={contactData[field.id] || ''}
                 onChange={(e) => handleContactChange(field.id, e.target.value)}
                 placeholder={field.placeholder}
-                className={`w-full px-5 py-4 bg-white/5 border-2 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 transition-all ${
-                  contactErrors[field.id] ? 'border-red-500/50 focus:ring-red-500/30' : 'border-white/10 focus:ring-2'
-                }`}
+                className="w-full px-5 py-4 bg-white/5 border-2 border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 transition-all"
                 style={{ 
-                  borderColor: contactErrors[field.id] ? undefined : (contactData[field.id] ? `${accentColor}50` : undefined)
+                  borderColor: contactData[field.id] ? `${accentColor}50` : undefined 
                 }}
               />
-              {contactErrors[field.id] && (
-                <motion.p
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-2 text-sm text-red-400 flex items-center gap-1"
-                >
-                  <span>⚠️</span>
-                  {contactErrors[field.id]}
-                </motion.p>
-              )}
             </motion.div>
           ))}
 
@@ -1047,7 +964,7 @@ const QuizPopup = ({
         transition={{ delay: 0.8 }}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        onClick={handleCloseWithTracking}
+        onClick={handleClose}
         className="px-10 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all text-lg"
       >
         Chiudi
@@ -1080,7 +997,7 @@ const QuizPopup = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-          onClick={handleCloseWithTracking}
+          onClick={handleClose}
           onMouseMove={handleMouseMove}
         >
           {/* Animated gradient background */}
@@ -1134,7 +1051,7 @@ const QuizPopup = ({
             <motion.button
               whileHover={{ scale: 1.1, rotate: 90 }}
               whileTap={{ scale: 0.9 }}
-              onClick={handleCloseWithTracking}
+              onClick={handleClose}
               className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors z-10 p-2 hover:bg-white/10 rounded-xl"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
