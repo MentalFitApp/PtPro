@@ -50,6 +50,7 @@ const getNavConfig = (role) => {
           items: [
             { to: '/admin/checks', icon: Activity, label: 'Check', hasBadge: 'checks', color: 'green' },
             { to: '/admin/anamnesi', icon: FileText, label: 'Anamnesi', hasBadge: 'anamnesi', color: 'orange' },
+            { to: '/admin/notifiche', icon: BellRing, label: 'Notifiche', color: 'purple' },
             { to: '/courses', icon: BookOpen, label: 'Corsi', color: 'indigo' },
             { to: '/community', icon: Users, label: 'Community', color: 'violet' },
             { to: '/admin/landing-pages', icon: Layout, label: 'Landing Pages', color: 'pink' },
@@ -91,6 +92,7 @@ const getNavConfig = (role) => {
           items: [
             { to: '/coach/checks', icon: Activity, label: 'Check', hasBadge: 'checks', color: 'green' },
             { to: '/coach/anamnesi', icon: FileText, label: 'Anamnesi', hasBadge: 'anamnesi', color: 'orange' },
+            { to: '/coach/notifiche', icon: BellRing, label: 'Notifiche', color: 'purple' },
             { to: '/coach/schede', icon: Target, label: 'Schede', color: 'rose' },
           ]
         },

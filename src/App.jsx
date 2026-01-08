@@ -59,6 +59,7 @@ const LandingPagesList = React.lazy(() => import('./pages/admin/LandingPagesList
 const LandingPageEditor = React.lazy(() => import('./pages/admin/LandingPageEditor'));
 const LandingPagesLeads = React.lazy(() => import('./pages/admin/LandingPagesLeads'));
 const LandingPagesAnalytics = React.lazy(() => import('./pages/admin/LandingPagesAnalytics'));
+const CentroNotifiche = React.lazy(() => import('./pages/admin/CentroNotifiche'));
 
 // Platform CEO Pages
 const CEOPlatformDashboard = React.lazy(() => import('./pages/platform/CEOPlatformDashboard'));
@@ -467,6 +468,7 @@ export default function App() {
           <Route path="/admin/checks" element={<AdminChecksList />} />
           <Route path="/admin/rates" element={<AdminRatesList />} />
           <Route path="/admin/anamnesi" element={<AdminAnamnesiList />} />
+          <Route path="/admin/notifiche" element={<CentroNotifiche />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/client/:id/anamnesi" element={<AdminAnamnesi />} />
           <Route path="/collaboratori" element={<Collaboratori />} />
@@ -521,6 +523,7 @@ export default function App() {
           <Route path="/coach/client/:id/anamnesi" element={<AdminAnamnesi />} />
           <Route path="/coach/anamnesi" element={<CoachAnamnesiList />} />
           <Route path="/coach/checks" element={<CoachChecksList />} />
+          <Route path="/coach/notifiche" element={<CentroNotifiche />} />
           <Route path="/coach/updates" element={<CoachUpdates />} />
           <Route path="/coach/analytics" element={<CoachAnalytics />} />
           <Route path="/coach/chat" element={<Chat />} />

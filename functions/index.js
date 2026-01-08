@@ -874,6 +874,93 @@ exports.onChatMessageCreated = onDocumentCreated(
 );
 
 /**
+ * Scheduled Function: Controlla check-in scaduti e invia reminder
+ * Esegue ogni giorno alle 10:00 AM
+ */
+exports.dailyCheckReminders = onSchedule('0 10 * * *', async (_event) => {
+  console.log('🔔 [SCHEDULED] Inizio controllo check-in scaduti...');
+  
+  try {
+    const tenantsSnap = await db.collection('tenants').get();
+    
+    for (const tenantDoc of tenantsSnap.docs) {
+      const tenantId = tenantDoc.id;
+      console.log(`📊 [TENANT ${tenantId}] Controllo check-in clienti...`);
+      
+      const clientsSnap = await db.collection('tenants').doc(tenantId)
+        .collection('clients')
+        .where('isDeleted', '==', false)
+        .get();
+      
+      let remindersCount = 0;
+      
+      for (const clientDoc of clientsSnap.docs) {
+        const clientId = clientDoc.id;
+        const clientData = clientDoc.data();
+        const clientName = clientData.name || 'Cliente';
+        
+        // Verifica se cliente è attivo (abbonamento non scaduto)
+        const scadenza = clientData.scadenza?.toDate?.();
+        if (!scadenza || scadenza < new Date()) {
+          continue; // Skip clienti con abbonamento scaduto
+        }
+        
+        // Ottieni ultimo check
+        const checksSnap = await db.collection('tenants').doc(tenantId)
+          .collection('clients').doc(clientId)
+          .collection('checks')
+          .orderBy('createdAt', 'desc')
+          .limit(1)
+          .get();
+        
+        const lastCheck = checksSnap.empty ? null : checksSnap.docs[0].data().createdAt?.toDate?.();
+        
+        if (!lastCheck) {
+          // Nessun check mai fatto - invia reminder dopo 7 giorni dalla registrazione
+          const joinedAt = clientData.createdAt?.toDate?.() || clientData.inizio?.toDate?.();
+          if (joinedAt) {
+            const daysSinceJoin = Math.floor((new Date() - joinedAt) / (1000 * 60 * 60 * 24));
+            if (daysSinceJoin >= 7) {
+              await createNotification(tenantId, clientId, {
+                type: 'check_reminder',
+                userType: 'client',
+                title: '📊 È ora del tuo primo check-in!',
+                body: `Carica le tue foto e misurazioni per iniziare a tracciare i progressi`,
+                data: { clientId, daysSinceJoin, firstCheck: true }
+              });
+              remindersCount++;
+            }
+          }
+        } else {
+          // Check precedenti esistono - verifica se sono passati 7+ giorni
+          const daysSinceLastCheck = Math.floor((new Date() - lastCheck) / (1000 * 60 * 60 * 24));
+          
+          if (daysSinceLastCheck >= 7) {
+            // Invia reminder solo ogni 7 giorni (non ogni giorno)
+            if (daysSinceLastCheck % 7 === 0) {
+              await createNotification(tenantId, clientId, {
+                type: 'check_reminder',
+                userType: 'client',
+                title: '📊 È ora del check-in!',
+                body: `Sono passati ${daysSinceLastCheck} giorni dall'ultimo check. Carica le tue foto e misurazioni!`,
+                data: { clientId, daysSinceLastCheck }
+              });
+              remindersCount++;
+            }
+          }
+        }
+      }
+      
+      console.log(`✅ [TENANT ${tenantId}] Inviati ${remindersCount} reminder check-in`);
+    }
+    
+    console.log('✅ [SCHEDULED] Controllo check-in completato');
+  } catch (error) {
+    console.error('💥 [SCHEDULED] Errore controllo check-in:', error);
+  }
+});
+
+/**
  * Callable: Segna notifica come letta
  */
 exports.markNotificationRead = onCall(async (request) => {

@@ -38,6 +38,8 @@ coverage/
 
 # Firebase Service Account (NEVER COMMIT THIS)
 service-account.json
+android/app/google-services.json
+google-services*.json
 .env.vercel
 .vercel
 # ExerciseDB data files with API keys in URLs

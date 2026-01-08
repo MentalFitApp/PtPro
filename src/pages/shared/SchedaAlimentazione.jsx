@@ -14,6 +14,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useEscapeKey } from '../../hooks/useKeyboardShortcut';
+import { notifyNewNutrition, notifyNutritionUpdated } from '../../services/notificationService';
 
 const OBIETTIVI = ['Definizione', 'Massa', 'Mantenimento', 'Dimagrimento', 'Sportivo'];
 const GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
@@ -261,6 +262,9 @@ const SchedaAlimentazione = () => {
       return;
     }
     
+    // Determina se è una nuova scheda o un aggiornamento
+    const isNewPlan = !schedaExists;
+    
     setSaving(true);
     try {
       // Save current card
@@ -293,6 +297,23 @@ const SchedaAlimentazione = () => {
           'schedaAlimentazione.consegnata': true,
           'schedaAlimentazione.dataConsegna': new Date()
         });
+      }
+
+      // Invia notifica push al cliente
+      try {
+        const clientDoc = await getDoc(getTenantDoc(db, 'clients', clientId));
+        const clientName = clientDoc.data()?.name || 'Cliente';
+        
+        if (isNewPlan) {
+          await notifyNewNutrition(clientId, clientName, schedaData);
+          console.log('✅ Notifica nuovo piano alimentare inviata');
+        } else {
+          await notifyNutritionUpdated(clientId, clientName, schedaData);
+          console.log('✅ Notifica piano aggiornato inviata');
+        }
+      } catch (notifError) {
+        console.error('Errore invio notifica:', notifError);
+        // Non bloccare il salvataggio se la notifica fallisce
       }
 
       // Rimuovi la bozza salvata automaticamente

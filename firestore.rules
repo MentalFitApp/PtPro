@@ -235,13 +235,15 @@ service cloud.firestore {
       match /notifications/{notifId} {
         allow read: if request.auth != null && (
           request.auth.uid == resource.data.userId ||
-          isTenantAdmin(tenantId)
+          isTenantAdmin(tenantId) ||
+          isTenantCoach(tenantId)
         );
         allow list: if request.auth != null;
-        allow create: if isTenantAdmin(tenantId);
+        allow create: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
         allow update, delete: if request.auth != null && (
           request.auth.uid == resource.data.userId ||
-          isTenantAdmin(tenantId)
+          isTenantAdmin(tenantId) ||
+          isTenantCoach(tenantId)
         );
       }
       

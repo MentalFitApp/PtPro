@@ -11,6 +11,7 @@ import { useConfirm } from '../../contexts/ConfirmContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useEscapeKey } from '../../hooks/useKeyboardShortcut';
 import RicercaEsercizi from '../../components/RicercaEsercizi';
+import { notifyNewWorkout, notifyWorkoutUpdated } from '../../services/notificationService';
 
 const OBIETTIVI = ['Forza', 'Massa', 'Definizione', 'Resistenza', 'Ricomposizione'];
 const LIVELLI = ['Principiante', 'Intermedio', 'Avanzato'];
@@ -110,6 +111,9 @@ const SchedaAllenamento = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Determina se è una nuova scheda o un aggiornamento
+      const isNewWorkout = !schedaExists;
+      
       // Save current card
       const schedaRef = getTenantDoc(db, 'schede_allenamento', clientId);
       await setDoc(schedaRef, {
@@ -138,6 +142,23 @@ const SchedaAllenamento = () => {
           'schedaAllenamento.consegnata': true,
           'schedaAllenamento.dataConsegna': new Date()
         });
+      }
+
+      // Invia notifica push al cliente
+      try {
+        const clientDoc = await getDoc(getTenantDoc(db, 'clients', clientId));
+        const clientName = clientDoc.data()?.name || 'Cliente';
+        
+        if (isNewWorkout) {
+          await notifyNewWorkout(clientId, clientName, schedaData);
+          console.log('✅ Notifica nuova scheda inviata');
+        } else {
+          await notifyWorkoutUpdated(clientId, clientName, schedaData);
+          console.log('✅ Notifica scheda aggiornata inviata');
+        }
+      } catch (notifError) {
+        console.error('Errore invio notifica:', notifError);
+        // Non bloccare il salvataggio se la notifica fallisce
       }
 
       toast.success('Scheda salvata con successo!');
