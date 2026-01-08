@@ -1,7 +1,7 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, updateDoc, enableIndexedDbPersistence, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getMessaging, isSupported } from "firebase/messaging";
 import { getFunctions } from "firebase/functions";
@@ -28,6 +28,24 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const functions = getFunctions(app, 'europe-west1');
 export { firebaseConfig };
+
+// ═══════════════════════ OFFLINE PERSISTENCE ═══════════════════════
+// Abilita cache locale Firestore per supporto offline
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(db, {
+    cacheSizeBytes: CACHE_SIZE_UNLIMITED
+  }).then(() => {
+    console.log('✅ Firestore offline persistence enabled');
+  }).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn('⚠️ Persistence failed: Multiple tabs open');
+    } else if (err.code === 'unimplemented') {
+      console.warn('⚠️ Persistence not available in this browser');
+    } else {
+      console.error('❌ Persistence error:', err);
+    }
+  });
+}
 
 // Messaging (opzionale)
 let messaging = null;

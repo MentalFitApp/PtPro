@@ -118,6 +118,7 @@ const PublicLandingPage = React.lazy(() => import('./pages/public/PublicLandingP
 const PrivacyPolicy = React.lazy(() => import('./pages/public/PrivacyPolicyDynamic'));
 const TermsOfService = React.lazy(() => import('./pages/public/TermsOfServiceDynamic'));
 const AcceptInvite = React.lazy(() => import('./pages/public/AcceptInvite'));
+const OfflineIndicator = React.lazy(() => import('./components/ui/OfflineIndicator'));
 
 // Spinner semplice per lazy loading (senza delay forzato)
 const PageSpinner = () => (
@@ -419,6 +420,7 @@ export default function App() {
     <UserPreferencesProvider>
       <OnlineStatusMonitor />
       <Suspense fallback={<PageSpinner />}>
+        <OfflineIndicator />
         <GlobalUploadBar />
         <PrivacyBanner />
         <Routes>
