@@ -44,4 +44,4 @@ google-services*.json
 .vercel
 # ExerciseDB data files with API keys in URLs
 data/exercisedb/*-translated.json
-data/exercisedb/*-r2.json
+data/exercisedb/*-r2.json*.localbackup

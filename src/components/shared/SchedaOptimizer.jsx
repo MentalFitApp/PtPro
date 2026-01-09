@@ -217,25 +217,27 @@ export function useCachedExercises(includeGlobal = true) {
 
 /**
  * Componente lazy-loaded per preview PDF
+ * Nota: PDFPreview è un placeholder, implementare se necessario
  */
-export const LazyPDFPreview = React.lazy(() =>
-  import('../pdf/PDFPreview').catch(() => ({
-    default: () => <div className="text-slate-400">Preview non disponibile</div>
-  }))
+export const LazyPDFPreview = React.lazy(() => 
+  Promise.resolve({
+    default: () => <div className="text-slate-400 p-4 text-center">Preview PDF non disponibile</div>
+  })
 );
 
 /**
  * Componente lazy-loaded per editor ricco
+ * Nota: RichTextEditor è un placeholder, usa textarea standard
  */
-export const LazyRichTextEditor = React.lazy(() =>
-  import('../ui/RichTextEditor').catch(() => ({
+export const LazyRichTextEditor = React.lazy(() => 
+  Promise.resolve({
     default: (props) => (
       <textarea
         {...props}
         className="w-full p-3 bg-slate-800 border border-slate-700 rounded-lg text-white"
       />
     )
-  }))
+  })
 );
 
 /**
