@@ -151,8 +151,22 @@ export const getSmartNotificationPreferences = async (userId) => {
       comebackReminderEnabled: true
     };
   } catch (error) {
-    console.error('Errore caricamento preferenze smart notifications:', error);
-    return null;
+    // Errore silenzioso se permessi mancanti - usa default
+    if (error.code !== 'permission-denied') {
+      console.debug('Smart notifications prefs skipped:', error.message);
+    }
+    return {
+      enabled: true,
+      quietHoursStart: '23:00',
+      quietHoursEnd: '08:00',
+      workoutReminderTime: '18:00',
+      workoutReminderEnabled: true,
+      streakAlertsEnabled: true,
+      checkinReminderDay: 'sunday',
+      checkinReminderEnabled: true,
+      motivationalQuotesEnabled: false,
+      comebackReminderEnabled: true
+    };
   }
 };
 
@@ -422,8 +436,9 @@ export const runSmartNotificationCheck = async (userId) => {
   try {
     const prefs = await getSmartNotificationPreferences(userId);
     
+    // Se prefs è null (errore di permessi), salta il check
     if (!prefs?.enabled) {
-      console.log('Smart notifications disabled for user:', userId);
+      console.debug('Smart notifications disabled for user:', userId);
       return;
     }
     

@@ -97,6 +97,16 @@ service cloud.firestore {
         allow delete: if isTenantAdmin(tenantId);
       }
 
+      // --- FCM TOKENS (push notifications per tenant) ---
+      match /fcmTokens/{userId} {
+        allow read: if request.auth != null && (
+          request.auth.uid == userId ||
+          isTenantAdmin(tenantId)
+        );
+        allow create, update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
       // --- CLIENTS ---
       match /clients/{userId} {
         allow create: if isTenantSuperAdmin(tenantId) || isTenantCoach(tenantId) || isTenantAdmin(tenantId) || isTenantCollaboratore(tenantId, request.auth.uid);

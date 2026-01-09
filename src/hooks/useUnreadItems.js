@@ -47,8 +47,10 @@ export function useUnreadItems() {
 
     const loadAnamnesi = async () => {
       try {
-        const { getDocs } = await import('firebase/firestore');
-        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+        const { getDocs, query, limit } = await import('firebase/firestore');
+        const clientsSnap = await getDocs(
+          query(getTenantCollection(db, 'clients'), limit(100))
+        );
         
         const allAnamnesi = [];
         
@@ -102,8 +104,10 @@ export function useUnreadItems() {
 
     const loadChecks = async () => {
       try {
-        const { getDocs } = await import('firebase/firestore');
-        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+        const { getDocs, query, limit } = await import('firebase/firestore');
+        const clientsSnap = await getDocs(
+          query(getTenantCollection(db, 'clients'), limit(100))
+        );
         
         const allChecks = [];
         

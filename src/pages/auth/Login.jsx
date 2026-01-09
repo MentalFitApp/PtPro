@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, db } from '../../firebase';
-import { doc, getDoc, updateDoc, serverTimestamp, setDoc, collection, getDocs } from 'firebase/firestore';
-import { Lock, Mail, Eye, EyeOff, ArrowLeft, Zap, Crown, LogIn, Sparkles } from 'lucide-react';
+import { doc, getDoc, updateDoc, serverTimestamp, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { Lock, Mail, Eye, EyeOff, LogIn, ArrowRight, Sparkles, Crown, Zap, TrendingUp, Shield, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getTenantDoc, setCurrentTenantId, getCurrentTenantId, DEFAULT_TENANT_ID } from '../../config/tenant';
 import { getDeviceInfo } from '../../utils/deviceInfo';
 import NebulaBackground from '../../components/ui/NebulaBackground';
+import { setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
+// Utility per rilevare mobile
+const isMobile = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+};
 
 /**
  * Valida se una stringa può essere un tenantId valido
@@ -160,120 +167,6 @@ async function findUserTenant(userId) {
   }
 }
 
-// === NEBULA LOADING ANIMATION ===
-const NebulaLoader = ({ message = 'Caricamento...' }) => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950"
-  >
-    {/* Nebula Background for loader */}
-    <NebulaBackground preset="geometric" className="opacity-50" />
-    
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-      className="relative z-10 flex flex-col items-center"
-    >
-      {/* Animated Logo Container */}
-      <div className="relative mb-8">
-        {/* Outer glow ring */}
-        <motion.div
-          className="absolute -inset-8 rounded-full"
-          style={{
-            background: 'conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.5), transparent, rgba(6, 182, 212, 0.5), transparent)',
-          }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-        />
-        
-        {/* Inner glow */}
-        <motion.div 
-          className="absolute -inset-4 bg-gradient-to-r from-blue-500/30 via-cyan-500/30 to-blue-500/30 rounded-full blur-xl"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        
-        {/* Logo */}
-        <motion.div 
-          className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-2xl shadow-blue-500/40"
-          animate={{ 
-            boxShadow: [
-              '0 25px 50px -12px rgba(59, 130, 246, 0.4)',
-              '0 25px 50px -12px rgba(6, 182, 212, 0.5)',
-              '0 25px 50px -12px rgba(59, 130, 246, 0.4)',
-            ]
-          }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <img 
-            src="/logo192.png" 
-            alt="Logo"
-            className="w-16 h-16 object-contain"
-            onError={(e) => { e.target.style.display = 'none'; }}
-          />
-        </motion.div>
-        
-        {/* Sparkle effects */}
-        {[...Array(3)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute"
-            style={{
-              top: ['10%', '70%', '30%'][i],
-              left: ['80%', '10%', '90%'][i],
-            }}
-            animate={{
-              scale: [0, 1, 0],
-              opacity: [0, 1, 0],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              delay: i * 0.5,
-              ease: 'easeInOut',
-            }}
-          >
-            <Sparkles size={16} className="text-cyan-400" />
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Animated progress bar */}
-      <div className="w-64 h-1.5 bg-slate-800/50 rounded-full overflow-hidden backdrop-blur-sm">
-        <motion.div
-          className="h-full rounded-full"
-          style={{
-            background: 'linear-gradient(90deg, #3b82f6, #06b6d4, #3b82f6)',
-            backgroundSize: '200% 100%',
-          }}
-          animate={{ 
-            x: ['-100%', '100%'],
-            backgroundPosition: ['0% 0%', '100% 0%']
-          }}
-          transition={{ 
-            duration: 1.2,
-            repeat: Infinity,
-            ease: 'easeInOut'
-          }}
-        />
-      </div>
-
-      {/* Message */}
-      <motion.p
-        className="mt-6 text-slate-400 text-sm tracking-wide font-medium"
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        {message}
-      </motion.p>
-    </motion.div>
-  </motion.div>
-);
-
 // === ANIMATED STARS BACKGROUND (Legacy - ora usiamo NebulaBackground) ===
 const AnimatedStars = () => {
   useEffect(() => {
@@ -395,20 +288,82 @@ const Login = () => {
   const [availableWorkspaces, setAvailableWorkspaces] = useState([]);
   const [pendingUser, setPendingUser] = useState(null);
   const [pendingNavigation, setPendingNavigation] = useState(null); // Per ritardare navigate
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [isValidEmail, setIsValidEmail] = useState(null); // null = not checked, true/false = valid/invalid
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [resetMode, setResetMode] = useState('email'); // 'email' | 'sms'
+  const [resetPhone, setResetPhone] = useState('');
+  const [phoneAvailable, setPhoneAvailable] = useState(false);
+  const [smsCodeSent, setSmsCodeSent] = useState(false); // SMS inviato
+  const [smsCode, setSmsCode] = useState(''); // Codice OTP inserito dall'utente
+  const [smsVerifying, setSmsVerifying] = useState(false); // Verifica in corso
+  const [showNewPasswordForm, setShowNewPasswordForm] = useState(false); // Form nuova password
+  const [newPassword, setNewPassword] = useState(''); // Nuova password
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState(''); // Conferma password
+  const [customToken, setCustomToken] = useState(''); // Token per cambio password
   const navigate = useNavigate();
 
-  // Quando c'è una navigazione pendente, aspetta un po' poi avvia apertura pannelli
+  // Validazione email real-time
+  const validateEmail = (email) => {
+    if (!email) return null;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Cerca numero di telefono associato all'email
+  const findPhoneByEmail = async (email) => {
+    if (!email || !validateEmail(email)) return null;
+    try {
+      const tenantId = getCurrentTenantId() || DEFAULT_TENANT_ID;
+      // Cerca nei clients
+      const clientsRef = collection(db, 'tenants', tenantId, 'clients');
+      const clientsSnap = await getDocs(query(clientsRef, where('email', '==', email.toLowerCase())));
+      
+      if (!clientsSnap.empty) {
+        const clientData = clientsSnap.docs[0].data();
+        if (clientData.phone) return clientData.phone;
+      }
+      
+      // Cerca nei collaboratori se non trovato nei client
+      const collabsRef = collection(db, 'tenants', tenantId, 'collaboratori');
+      const collabsSnap = await getDocs(query(collabsRef, where('email', '==', email.toLowerCase())));
+      
+      if (!collabsSnap.empty) {
+        const collabData = collabsSnap.docs[0].data();
+        if (collabData.phone) return collabData.phone;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Errore ricerca telefono:', error);
+      return null;
+    }
+  };
+
+  // Gestione Esc key per tornare dal reset
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showResetPassword) {
+        setShowResetPassword(false);
+        setResetEmail('');
+        setError('');
+        setResetSuccess(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showResetPassword]);
+
+  // Quando c'è una navigazione pendente, aspetta un po' poi naviga
   useEffect(() => {
     if (pendingNavigation) {
-      // Aspetta che il loader sia visibile per un po', poi avvia i pannelli
+      // Aspetta che l'animazione di loading sia visibile, poi naviga
       const timer = setTimeout(() => {
-        // Crea i pannelli nel DOM (sopravvivono allo smontaggio)
-        createTransitionPanels();
-        // Naviga subito - i pannelli si apriranno sopra la nuova pagina
-        setTimeout(() => {
-          navigate(pendingNavigation.path, pendingNavigation.options);
-        }, 50);
-      }, 1500); // 1.5 secondi di loader visibile
+        navigate(pendingNavigation.path, pendingNavigation.options);
+      }, 1200); // 1.2 secondi totali di animazione
       return () => clearTimeout(timer);
     }
   }, [pendingNavigation, navigate]);
@@ -507,7 +462,11 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setIsLoggingIn(true); // Blocca onAuthStateChanged
+    
     try {
+      // Imposta persistenza basata su remember me
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       // Cerca e salva il tenant per questo utente
@@ -597,6 +556,7 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     setError('');
     setIsLoggingIn(true); // Blocca onAuthStateChanged
+    setIsGoogleLoading(true);
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
@@ -686,6 +646,7 @@ const Login = () => {
       }
     } catch (error) {
       setIsLoggingIn(false); // Reset in caso di errore
+      setIsGoogleLoading(false);
       console.error('❌ Errore login Google:', error);
       if (error.code === 'auth/popup-closed-by-user') {
         setError('Popup chiuso. Riprova.');
@@ -697,20 +658,163 @@ const Login = () => {
     }
   };
 
-  const handleResetPassword = async () => {
-    if (!email) {
-      setError('Inserisci un\'email per reimpostare la password.\n\n⚠️ Se hai fatto accesso con Google, non hai una password da reimpostare. Usa il pulsante "Accedi con Google".');
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    
+    if (resetMode === 'email') {
+      if (!resetEmail) {
+        setError('Inserisci un\'email valida.');
+        return;
+      }
+      setError('');
+      setResetSuccess(false);
+      try {
+        await sendPasswordResetEmail(auth, resetEmail);
+        setResetSuccess(true);
+        setError('');
+        // Dopo 3 secondi torna al form di login
+        setTimeout(() => {
+          setShowResetPassword(false);
+          setResetSuccess(false);
+          setResetEmail('');
+        }, 3000);
+      } catch (error) {
+        if (error.code === 'auth/user-not-found') {
+          setError('Nessun account trovato con questa email.');
+        } else if (error.code === 'auth/invalid-email') {
+          setError('Email non valida.');
+        } else {
+          setError('Errore invio email: ' + error.message);
+        }
+      }
+    } else {
+      // Reset via SMS - Chiama Cloud Function
+      if (!resetEmail) {
+        setError('Inserisci un\'email valida.');
+        return;
+      }
+      setError('');
+      setResetSuccess(false);
+      setSmsVerifying(true);
+      
+      try {
+        const functions = getFunctions(undefined, 'europe-west1'); // Specifica region
+        const sendSmsReset = httpsCallable(functions, 'sendSmsPasswordReset');
+        
+        const result = await sendSmsReset({
+          email: resetEmail,
+          tenantId: getCurrentTenantId() || DEFAULT_TENANT_ID,
+        });
+        
+        if (result.data.success) {
+          setSmsCodeSent(true);
+          setError('');
+          // Messaggio di successo: mostra form per inserire codice
+        } else {
+          setError(result.data.message || 'Errore invio SMS');
+        }
+      } catch (error) {
+        console.error('Errore invio SMS:', error);
+        if (error.code === 'functions/resource-exhausted') {
+          setError('Troppi tentativi. Riprova tra 10 minuti.');
+        } else if (error.code === 'functions/not-found') {
+          setError('Nessun numero di telefono trovato per questa email.');
+        } else {
+          setError('Errore invio SMS: ' + error.message);
+        }
+      } finally {
+        setSmsVerifying(false);
+      }
+    }
+  };
+
+  // Verifica codice OTP SMS
+  const handleVerifySmsCode = async (e) => {
+    e.preventDefault();
+    
+    if (!smsCode || smsCode.length !== 6) {
+      setError('Inserisci un codice valido a 6 cifre.');
       return;
     }
+    
+    setError('');
+    setSmsVerifying(true);
+    
     try {
-      await sendPasswordResetEmail(auth, email);
-      setError('✅ Email di reimpostazione inviata! Controlla la posta (anche spam).\n\n💡 Se non ricevi nulla, probabilmente hai creato l\'account con Google. In quel caso usa "Accedi con Google".');
+      // Solo verifica il codice, poi mostra form password
+      setShowNewPasswordForm(true);
+      setSmsVerifying(false);
     } catch (error) {
-      if (error.code === 'auth/user-not-found') {
-        setError('Nessun account trovato con questa email.\n\n💡 Se hai usato Google per registrarti, prova con "Accedi con Google".');
+      console.error('Errore:', error);
+      setError('Errore: ' + error.message);
+      setSmsVerifying(false);
+    }
+  };
+
+  // Cambia password dopo verifica SMS
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    
+    if (!newPassword || newPassword.length < 6) {
+      setError('La password deve essere di almeno 6 caratteri');
+      return;
+    }
+    
+    if (newPassword !== newPasswordConfirm) {
+      setError('Le password non coincidono');
+      return;
+    }
+    
+    setError('');
+    setSmsVerifying(true);
+    
+    try {
+      const functions = getFunctions(undefined, 'europe-west1');
+      const verifySmsCode = httpsCallable(functions, 'verifySmsResetCode');
+      
+      const result = await verifySmsCode({
+        email: resetEmail,
+        code: smsCode,
+        newPassword: newPassword,
+      });
+      
+      if (result.data.success) {
+        // Password cambiata! Mostra messaggio
+        setResetSuccess(true);
+        setError('');
+        
+        // Dopo 2 secondi torna al login
+        setTimeout(() => {
+          setShowResetPassword(false);
+          setShowNewPasswordForm(false);
+          setResetSuccess(false);
+          setResetEmail('');
+          setSmsCodeSent(false);
+          setSmsCode('');
+          setNewPassword('');
+          setNewPasswordConfirm('');
+          setResetMode('email');
+        }, 2000);
       } else {
-        setError('Errore invio email: ' + error.message);
+        setError(result.data.message || 'Errore cambio password');
       }
+    } catch (error) {
+      console.error('Errore verifica codice:', error);
+      if (error.code === 'functions/invalid-argument') {
+        setError(error.message); // Include tentativi rimasti
+      } else if (error.code === 'functions/deadline-exceeded') {
+        setError('Codice scaduto. Richiedi un nuovo codice.');
+        setSmsCodeSent(false);
+        setSmsCode('');
+      } else if (error.code === 'functions/resource-exhausted') {
+        setError('Troppi tentativi errati. Il codice è stato invalidato.');
+        setSmsCodeSent(false);
+        setSmsCode('');
+      } else {
+        setError('Errore verifica: ' + error.message);
+      }
+    } finally {
+      setSmsVerifying(false);
     }
   };
 
@@ -795,226 +899,811 @@ const Login = () => {
     );
   }
 
-  // Fase di loading/transizione - usa NebulaLoader
+  // Fase di loading/transizione - usa animazione spettacolare
   const showLoadingPhase = isCheckingAuth || isLoggingIn || pendingNavigation;
 
   if (showLoadingPhase) {
-    return <NebulaLoader message={isLoggingIn ? 'Accesso in corso...' : 'Caricamento...'} />;
+    return (
+      <motion.div
+        initial={{ opacity: 0, filter: 'blur(20px)', scale: 0.8 }}
+        animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
+        exit={{ opacity: 0, filter: 'blur(30px)', scale: 1.3 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950"
+      >
+        {/* Nebula background con effetti intensi */}
+        <NebulaBackground preset="cosmic" className="opacity-70" />
+        
+        {/* Particelle che esplodono */}
+        <motion.div
+          className="absolute inset-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          {[...Array(50)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full"
+              initial={{ 
+                x: '50vw', 
+                y: '50vh', 
+                scale: 0,
+                opacity: 1 
+              }}
+              animate={{
+                x: `${Math.random() * 100}vw`,
+                y: `${Math.random() * 100}vh`,
+                scale: [0, 1.5, 0],
+                opacity: [1, 0.8, 0]
+              }}
+              transition={{
+                duration: 0.5,
+                delay: i * 0.008,
+                ease: "easeOut"
+              }}
+            />
+          ))}
+        </motion.div>
+        
+        {/* Onde concentriche */}
+        <motion.div className="absolute inset-0 flex items-center justify-center">
+          {[...Array(4)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute border border-cyan-400/30 rounded-full"
+              initial={{ width: 0, height: 0, opacity: 1 }}
+              animate={{ 
+                width: ['0px', '300px', '800px'], 
+                height: ['0px', '300px', '800px'], 
+                opacity: [1, 0.5, 0] 
+              }}
+              transition={{
+                duration: 0.4,
+                delay: i * 0.08,
+                ease: "easeOut"
+              }}
+            />
+          ))}
+        </motion.div>
+        
+        {/* Logo centrale con rotazione spettacolare */}
+        <motion.div
+          className="relative z-10 flex flex-col items-center"
+          initial={{ scale: 0, rotate: 0 }}
+          animate={{ 
+            scale: [0, 1.2, 1], 
+            rotate: [0, 360] 
+          }}
+          transition={{ 
+            duration: 0.5,
+            ease: "easeOut"
+          }}
+        >
+          {/* Alone luminoso */}
+          <motion.div 
+            className="absolute -inset-12 bg-gradient-to-r from-blue-500/40 via-cyan-500/40 to-blue-500/40 rounded-full blur-2xl"
+            animate={{ 
+              scale: [1, 2, 1.5, 1.2], 
+              opacity: [0.4, 0.8, 0.6, 0.5] 
+            }}
+            transition={{ 
+              duration: 0.5, 
+              ease: "easeInOut" 
+            }}
+          />
+          
+          {/* Logo */}
+          <motion.div 
+            className="relative w-32 h-32 rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-2xl shadow-blue-500/50"
+            animate={{
+              boxShadow: [
+                '0 0 50px rgba(59, 130, 246, 0.5)',
+                '0 0 100px rgba(6, 182, 212, 0.8)',
+                '0 0 80px rgba(59, 130, 246, 0.6)',
+              ]
+            }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
+          >
+            <img 
+              src="/logo192.png" 
+              alt="Logo" 
+              className="w-16 h-16 rounded-xl"
+            />
+          </motion.div>
+        </motion.div>
+        
+        {/* Testo motivazionale */}
+        <motion.div
+          className="absolute bottom-24 text-center"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <motion.h2
+            className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            {isLoggingIn ? 'Benvenuto!' : 'PtPro'}
+          </motion.h2>
+          <motion.p
+            className="text-slate-300 text-lg"
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            {isLoggingIn ? 'Accesso in corso...' : 'Caricamento...'}
+          </motion.p>
+        </motion.div>
+        
+        {/* Bordi luminosi che si espandono */}
+        <motion.div
+          className="absolute inset-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <motion.div
+            className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          />
+          <motion.div
+            className="absolute bottom-0 right-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+          />
+          <motion.div
+            className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-blue-400 to-transparent"
+            initial={{ scaleY: 0 }}
+            animate={{ scaleY: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          />
+          <motion.div
+            className="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-transparent via-cyan-400 to-transparent"
+            initial={{ scaleY: 0 }}
+            animate={{ scaleY: 1 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+          />
+        </motion.div>
+      </motion.div>
+    );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Nebula Background */}
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center">
+      {/* Sfondo Nebula Full Screen */}
       <NebulaBackground preset="aurora" />
-
-      <AnimatePresence mode="wait">
-          {/* Form di Login */}
-          <motion.div
-            key="form"
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-            className="w-full max-w-md relative z-10"
-          >
-        {/* Logo e Titolo */}
-        <div className="text-center mb-6">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="flex items-center justify-center gap-3 mb-4"
-          >
-            <div className="relative">
-              <motion.div
-                className="absolute -inset-2 bg-gradient-to-r from-blue-600/40 to-cyan-600/40 rounded-full blur-xl"
-                animate={{ 
-                  opacity: [0.4, 0.7, 0.4],
-                  scale: [1, 1.1, 1]
-                }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              />
-
-              <div className="relative w-14 h-14 rounded-xl overflow-hidden ring-2 ring-blue-500/30 shadow-xl shadow-blue-500/30">
-                <img 
-                  src="/logo192.png" 
-                  alt="FitFlows Logo" 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-
-            <motion.h1
-              className="text-4xl font-black text-white relative"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <motion.span
-                className="absolute -inset-2 bg-gradient-to-r from-blue-500 to-cyan-500 blur-xl opacity-40"
-                animate={{ opacity: [0.3, 0.6, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              />
-              <span className="relative bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">FitFlows</span>
-            </motion.h1>
-          </motion.div>
-
-          <motion.p
-            className="text-slate-400 text-base font-medium"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            Accedi alla tua area riservata
-          </motion.p>
+      
+      {/* Overlay Satinato leggero */}
+      <div className="absolute inset-0 bg-slate-950/15 backdrop-blur-[2px]" />
+      
+      {/* Logo in alto a sinistra */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6 }}
+        className="fixed top-6 left-6 z-20 flex items-center gap-3"
+      >
+        <div className="relative">
+          {/* Glow logo */}
+          <div className="absolute -inset-2 bg-gradient-to-br from-cyan-500/40 to-blue-600/40 rounded-xl blur-xl" />
+          <div className="relative w-12 h-12 rounded-xl overflow-hidden ring-2 ring-cyan-400/60 shadow-xl shadow-cyan-500/50">
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-blue-600" />
+            <img 
+              src="/logo192.png" 
+              alt="FitFlows Logo" 
+              className="relative w-full h-full object-cover z-10"
+            />
+          </div>
         </div>
+        <div>
+          <h1 className="text-xl font-black text-white drop-shadow-lg">
+            <span className="bg-gradient-to-r from-cyan-200 to-blue-200 bg-clip-text text-transparent">
+              FitFlows
+            </span>
+          </h1>
+          <p className="text-slate-300 text-xs font-semibold">Premium Fitness</p>
+        </div>
+      </motion.div>
 
-        {/* Card Login */}
+      {/* DESKTOP & MOBILE: Form Centrale */}
+      <div className="w-full max-w-md px-6 z-10">
+        {/* Form Glass */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4 }}
-          className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/40 rounded-2xl shadow-2xl shadow-black/20 p-6 sm:p-8 space-y-4 sm:space-y-5"
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="relative"
         >
-          <form onSubmit={handleLogin} className="space-y-4">
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-slate-300 mb-1.5">
-                Email
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={20} />
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="relative w-full pl-12 pr-4 py-3 bg-slate-800/40 border border-slate-700/40 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
-                  placeholder="nome@esempio.com"
-                  required
-                />
-              </div>
+          {/* Glow esterno più definito */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/40 via-blue-500/40 to-cyan-600/40 rounded-3xl blur-xl" />
+          
+          {/* Form Box Glassmorphic Premium */}
+          <div className="relative bg-slate-800/60 backdrop-blur-3xl border border-slate-500/50 rounded-3xl p-8 shadow-[0_8px_32px_0_rgba(6,182,212,0.2)]">
+            {/* Border gradient interno */}
+            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-cyan-500/10 via-transparent to-blue-500/10 pointer-events-none" />
+            
+            {/* Riflessi più evidenti */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/60 to-transparent" />
+            
+            {/* Header */}
+            <div className="text-center mb-8">
+              <motion.h2 
+                key={showResetPassword ? 'reset' : 'login'}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="text-3xl font-bold bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent mb-2 drop-shadow-lg"
+              >
+                {showResetPassword ? 'Reimposta Password' : 'Bentornato!'}
+              </motion.h2>
+              <motion.p 
+                key={showResetPassword ? 'reset-desc' : 'login-desc'}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="text-slate-300"
+              >
+                {showResetPassword 
+                  ? 'Inserisci la tua email per ricevere il link di reset'
+                  : 'Siamo così felici di rivederti!'}
+              </motion.p>
             </div>
 
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-slate-300 mb-1.5">
-                Password
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={20} />
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="relative w-full pl-12 pr-12 py-3 bg-slate-800/40 border border-slate-700/40 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
-                  placeholder="••••••••"
-                  required
-                />
+            {/* Form con AnimatePresence per transizioni */}
+            <AnimatePresence mode="wait">
+            {showResetPassword ? (
+              <motion.form 
+                key="reset-form"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+                onSubmit={handleResetPassword} 
+                className="space-y-4"
+              >
+                {/* Tab Switcher Email/SMS - SEMPRE VISIBILE */}
+                <div className="flex gap-2 p-1 bg-slate-950/90 rounded-lg border border-slate-700/40 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResetMode('email');
+                      setSmsCodeSent(false);
+                      setSmsCode('');
+                      setError('');
+                    }}
+                    className={`flex-1 py-2 px-4 rounded-md font-semibold text-sm transition-all ${
+                      resetMode === 'email'
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    📧 Email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResetMode('sms');
+                      setSmsCodeSent(false);
+                      setSmsCode('');
+                      setError('');
+                    }}
+                    className={`flex-1 py-2 px-4 rounded-md font-semibold text-sm transition-all ${
+                      resetMode === 'sms'
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    📱 SMS
+                  </button>
+                </div>
+
+                {resetMode === 'email' ? (
+                  /* Reset via Email */
+                  <div>
+                    <label htmlFor="reset-email" className="block text-xs font-bold text-slate-200 mb-2 uppercase tracking-wider">
+                      Email <span className="text-red-400">*</span>
+                    </label>
+                    <div className="relative group">
+                      <input
+                        id="reset-email"
+                        type="email"
+                        value={resetEmail}
+                        onChange={(e) => {
+                          setResetEmail(e.target.value);
+                          setIsValidEmail(validateEmail(e.target.value));
+                        }}
+                        className="w-full px-4 py-3 pr-10 bg-slate-950/90 border border-slate-600/60 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/70 focus:border-cyan-400/50 focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all backdrop-blur-sm"
+                        placeholder="nome@esempio.com"
+                        autoComplete="email"
+                        required
+                        autoFocus
+                        aria-label="Email per reset password"
+                      />
+                      {/* Checkmark validazione */}
+                      <AnimatePresence>
+                        {isValidEmail === true && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0 }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2"
+                          >
+                            <CheckCircle className="text-green-400" size={18} />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                ) : (
+                  /* Reset via SMS */
+                  !smsCodeSent ? (
+                    /* Step 1: Chiedi email per cercare numero */
+                    <div>
+                      <label htmlFor="reset-email-sms" className="block text-xs font-bold text-slate-200 mb-2 uppercase tracking-wider">
+                        Email <span className="text-red-400">*</span>
+                      </label>
+                      <div className="relative group">
+                        <input
+                          id="reset-email-sms"
+                          type="email"
+                          value={resetEmail}
+                          onChange={(e) => {
+                            setResetEmail(e.target.value);
+                            setIsValidEmail(validateEmail(e.target.value));
+                          }}
+                          className="w-full px-4 py-3 pr-10 bg-slate-950/90 border border-slate-600/60 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/70 focus:border-cyan-400/50 focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all backdrop-blur-sm"
+                          placeholder="nome@esempio.com"
+                          autoComplete="email"
+                          required
+                          autoFocus
+                          aria-label="Email per cercare numero di telefono"
+                        />
+                        {/* Checkmark validazione */}
+                        <AnimatePresence>
+                          {isValidEmail === true && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0 }}
+                              className="absolute right-3 top-1/2 -translate-y-1/2"
+                            >
+                              <CheckCircle className="text-green-400" size={18} />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-2">
+                        📲 Invieremo un codice a 6 cifre via SMS al numero associato a questa email
+                      </p>
+                    </div>
+                  ) : !showNewPasswordForm ? (
+                    /* Step 2: Form inserimento codice OTP */
+                    <div>
+                      <label htmlFor="sms-code" className="block text-xs font-bold text-slate-200 mb-2 uppercase tracking-wider">
+                        Codice SMS <span className="text-red-400">*</span>
+                      </label>
+                      <div className="relative group">
+                        <input
+                          id="sms-code"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]{6}"
+                          maxLength={6}
+                          value={smsCode}
+                          onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, ''))}
+                          className="w-full px-4 py-3 bg-slate-950/90 border border-slate-600/60 rounded-lg text-white text-center text-2xl tracking-widest placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/70 focus:border-cyan-400/50 focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all backdrop-blur-sm"
+                          placeholder="000000"
+                          required
+                          autoFocus
+                          aria-label="Codice OTP ricevuto via SMS"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-xs text-slate-400">
+                          📱 Inserisci il codice ricevuto via SMS
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSmsCodeSent(false);
+                            setSmsCode('');
+                            setError('');
+                          }}
+                          className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold"
+                        >
+                          Richiedi nuovo codice
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Step 3: Form nuova password */
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="new-password" className="block text-xs font-bold text-slate-200 mb-2 uppercase tracking-wider">
+                          Nuova Password <span className="text-red-400">*</span>
+                        </label>
+                        <div className="relative group">
+                          <input
+                            id="new-password"
+                            type={showPassword ? 'text' : 'password'}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="w-full px-4 py-3 pr-10 bg-slate-950/90 border border-slate-600/60 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/70 focus:border-cyan-400/50 focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all backdrop-blur-sm"
+                            placeholder="Almeno 6 caratteri"
+                            autoComplete="new-password"
+                            required
+                            autoFocus
+                            minLength={6}
+                            aria-label="Nuova password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-400 transition-colors"
+                          >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="confirm-password" className="block text-xs font-bold text-slate-200 mb-2 uppercase tracking-wider">
+                          Conferma Password <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          id="confirm-password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={newPasswordConfirm}
+                          onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                          className="w-full px-4 py-3 bg-slate-950/90 border border-slate-600/60 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/70 focus:border-cyan-400/50 focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all backdrop-blur-sm"
+                          placeholder="Ripeti la password"
+                          autoComplete="new-password"
+                          required
+                          minLength={6}
+                          aria-label="Conferma password"
+                        />
+                      </div>
+                      
+                      <p className="text-xs text-slate-400">
+                        🔒 La password deve essere di almeno 6 caratteri
+                      </p>
+                    </div>
+                  )
+                )}
+
+                {/* Success Message */}
+                <AnimatePresence>
+                  {resetSuccess && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 backdrop-blur-sm"
+                    >
+                      <p className="text-green-400 text-sm text-center font-medium">
+                        {resetMode === 'email' 
+                          ? '✅ Email inviata! Controlla la tua casella di posta (anche spam)'
+                          : '✅ Codice verificato! Reindirizzamento...'}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* SMS Code Sent Message */}
+                <AnimatePresence>
+                  {smsCodeSent && !resetSuccess && !error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 backdrop-blur-sm"
+                    >
+                      <p className="text-blue-400 text-sm text-center font-medium">
+                        📲 SMS inviato! Controlla il tuo telefono
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Error Message */}
+                <AnimatePresence>
+                  {error && !resetSuccess && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 backdrop-blur-sm"
+                    >
+                      <p className="text-red-400 text-sm text-center font-medium">{error}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Submit Button */}
+                <motion.button
+                  type="submit"
+                  onClick={
+                    showNewPasswordForm 
+                      ? handleChangePassword 
+                      : (smsCodeSent && resetMode === 'sms' ? handleVerifySmsCode : handleResetPassword)
+                  }
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-lg shadow-lg shadow-cyan-500/40 hover:shadow-cyan-500/60 transition-all text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  disabled={
+                    resetSuccess || 
+                    smsVerifying ||
+                    (resetMode === 'email' && !isValidEmail) || 
+                    (resetMode === 'sms' && !smsCodeSent && !showNewPasswordForm && !isValidEmail) ||
+                    (resetMode === 'sms' && smsCodeSent && !showNewPasswordForm && smsCode.length !== 6) ||
+                    (showNewPasswordForm && (!newPassword || newPassword.length < 6 || !newPasswordConfirm))
+                  }
+                  aria-label="Invia link di reset password"
+                >
+                  {smsVerifying && (
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  {resetSuccess 
+                    ? '✓ Password cambiata!' 
+                    : smsVerifying
+                      ? (showNewPasswordForm ? 'Cambio password...' : smsCodeSent ? 'Verifica...' : 'Invio SMS...')
+                      : showNewPasswordForm
+                        ? 'Cambia Password'
+                        : resetMode === 'email' 
+                          ? 'Invia Link via Email' 
+                          : smsCodeSent
+                            ? 'Verifica Codice'
+                            : 'Invia Codice via SMS'}
+                </motion.button>
+
+                {/* Back to Login */}
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-400 transition-colors z-10"
+                  onClick={() => {
+                    setShowResetPassword(false);
+                    setResetEmail('');
+                    setResetPhone('');
+                    setPhoneAvailable(false);
+                    setResetMode('email');
+                    setSmsCodeSent(false);
+                    setSmsCode('');
+                    setShowNewPasswordForm(false);
+                    setNewPassword('');
+                    setNewPasswordConfirm('');
+                    setError('');
+                    setResetSuccess(false);
+                  }}
+                  className="w-full text-cyan-300 hover:text-cyan-200 text-sm font-semibold transition-colors"
+                  aria-label="Torna al form di login"
+                  disabled={smsVerifying}
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  ← Torna al login
+                </button>
+              </motion.form>
+            ) : (
+              /* Form Login Normale */
+              <motion.form 
+                key="login-form"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+                onSubmit={handleLogin} 
+                className="space-y-4"
+              >
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className="block text-xs font-bold text-slate-200 mb-2 uppercase tracking-wider">
+                  Email o numero di telefono <span className="text-red-400">*</span>
+                </label>
+                <div className="relative group">
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setIsValidEmail(validateEmail(e.target.value));
+                    }}
+                    className="w-full px-4 py-3 pr-10 bg-slate-950/90 border border-slate-600/60 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/70 focus:border-cyan-400/50 focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="nome@esempio.com"
+                    autoComplete="email"
+                    required
+                    disabled={isLoggingIn}
+                    aria-label="Email o numero di telefono"
+                  />
+                  {/* Checkmark validazione */}
+                  <AnimatePresence>
+                    {isValidEmail === true && !isLoggingIn && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0 }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2"
+                      >
+                        <CheckCircle className="text-green-400" size={18} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label htmlFor="password" className="block text-xs font-bold text-slate-200 mb-2 uppercase tracking-wider">
+                  Password <span className="text-red-400">*</span>
+                </label>
+                <div className="relative group">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-4 py-3 pr-10 bg-slate-950/90 border border-slate-600/60 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/70 focus:border-cyan-400/50 focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    required
+                    disabled={isLoggingIn}
+                    aria-label="Password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-400 transition-colors disabled:opacity-50"
+                    disabled={isLoggingIn}
+                    aria-label={showPassword ? 'Nascondi password' : 'Mostra password'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Password dimenticata */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResetPassword(true);
+                    setError('');
+                    setIsValidEmail(null);
+                    // Pre-compila email se già inserita
+                    if (email && validateEmail(email)) {
+                      setResetEmail(email);
+                    }
+                  }}
+                  className="text-xs text-cyan-300 hover:text-cyan-200 transition-colors font-semibold"
+                  disabled={isLoggingIn}
+                  aria-label="Reimposta password dimenticata"
+                >
+                  Hai dimenticato la tua password?
                 </button>
               </div>
-            </div>
 
-            {/* Error Message */}
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 backdrop-blur-sm"
-                >
-                  <p className="text-red-400 text-sm text-center font-medium">{error}</p>
-                </motion.div>
-              )}
+              {/* Checkbox "Ricordami" */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 text-cyan-500 bg-slate-900 border-slate-600 rounded focus:ring-cyan-500 focus:ring-2 cursor-pointer"
+                  disabled={isLoggingIn}
+                />
+                <label htmlFor="rememberMe" className="ml-2 text-sm text-slate-300 cursor-pointer select-none">
+                  Ricordami su questo dispositivo
+                </label>
+              </div>
+
+              {/* Error Message */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 backdrop-blur-sm"
+                  >
+                    <p className="text-red-400 text-sm text-center font-medium">{error}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Login Button */}
+              <motion.button
+                type="submit"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-lg shadow-lg shadow-cyan-500/40 hover:shadow-cyan-500/60 transition-all text-base disabled:opacity-70 disabled:cursor-not-allowed"
+                disabled={isLoggingIn}
+                aria-label="Accedi alla piattaforma"
+              >
+                {isLoggingIn ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <motion.span
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    >
+                      ⏳
+                    </motion.span>
+                    Accesso in corso...
+                  </span>
+                ) : 'Accedi'}
+              </motion.button>
+
+              {/* Footer - Solo nel form login normale */}
+              <div className="mt-4 text-center">
+                <p className="text-slate-300 text-sm font-medium">
+                  Ti serve un account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isMobile()) {
+                        window.location.href = '/landing';
+                      } else {
+                        window.open('/landing', '_blank');
+                      }
+                    }}
+                    className="text-cyan-300 hover:text-cyan-200 font-bold hover:underline transition-colors"
+                  >
+                    Registrati
+                  </button>
+                </p>
+              </div>
+
+              {/* Divider */}
+              <div className="relative flex items-center justify-center py-6 my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-600/60"></div>
+                </div>
+                <div className="relative bg-slate-800/90 backdrop-blur-sm px-3 text-xs text-slate-400 font-semibold">
+                  O accedi con passkey
+                </div>
+              </div>
+
+              {/* Google Login Button */}
+              <motion.button
+                type="button"
+                onClick={handleGoogleLogin}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                disabled={isLoggingIn || isGoogleLoading}
+                className="w-full py-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Accedi con account Google"
+              >
+                {isGoogleLoading ? (
+                  <motion.span
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  >
+                    ⏳
+                  </motion.span>
+                ) : (
+                  <img 
+                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                    alt="Google"
+                    className="w-5 h-5"
+                  />
+                )}
+                <span>{isGoogleLoading ? 'Connessione...' : 'Accedi con Google'}</span>
+              </motion.button>
+
+              <p className="text-xs text-slate-400 text-center mt-3">
+                💡 Solo se hai già collegato Google al tuo account
+              </p>
+            </motion.form>
+            )}
             </AnimatePresence>
-
-            {/* Login Button */}
-            <motion.button
-              type="submit"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="relative w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white preserve-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center gap-3 overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <LogIn size={20} className="relative" />
-              <span className="relative">Accedi</span>
-            </motion.button>
-          </form>
-
-          {/* Divider */}
-          <div className="relative flex items-center justify-center py-2">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-700/40"></div>
-            </div>
-            <div className="relative bg-slate-800/60 backdrop-blur-sm px-4 text-sm text-slate-500 rounded-full">
-              oppure
-            </div>
-          </div>
-
-          {/* Google Login Button */}
-          <motion.button
-            type="button"
-            onClick={handleGoogleLogin}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 flex items-center justify-center gap-3 group shadow-sm hover:shadow-md"
-          >
-            <img 
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google"
-              className="w-5 h-5"
-            />
-            <span>Accedi con Google</span>
-          </motion.button>
-
-          {/* Info collegamento Google */}
-          <p className="text-xs text-slate-500 text-center">
-            ℹ️ Funziona solo se hai già collegato Google al tuo account
-          </p>
-
-          {/* Password Reset Link */}
-          <div className="text-center pt-3 border-t border-slate-700/40">
-            <button
-              onClick={handleResetPassword}
-              className="text-sm text-slate-400 hover:text-cyan-400 transition-colors font-medium inline-flex items-center gap-2 group"
-              title="Solo per account email/password. Gli account Google non hanno password."
-            >
-              <Lock size={14} className="group-hover:rotate-12 transition-transform" />
-              Password dimenticata?
-            </button>
-            <p className="text-xs text-slate-600 mt-1">
-              (solo per accesso con email/password)
-            </p>
           </div>
         </motion.div>
-
-        {/* Footer info */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="text-center mt-6 space-y-1"
-        >
-          <p className="text-slate-500 text-xs">
-            Powered by <span className="text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text font-semibold">FitFlows</span> Platform
-          </p>
-          <div className="flex items-center justify-center gap-2 text-xs text-slate-600">
-            <Crown size={10} className="text-yellow-500" />
-            <span>Premium Fitness Management</span>
-          </div>
-        </motion.div>
-        </motion.div>
-      </AnimatePresence>
+      </div>
     </div>
   );
 };

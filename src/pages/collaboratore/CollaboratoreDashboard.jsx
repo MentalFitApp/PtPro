@@ -17,6 +17,7 @@ import {
 import NotificationPanel from '../../components/notifications/NotificationPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTenantBranding } from '../../hooks/useTenantBranding';
+import { useGlobalCache } from '../../hooks/useGlobalCache';
 import RadialCollaboratorChart from '../../components/charts/RadialCollaboratorChart';
 import {
   Chart as ChartJS,
@@ -46,6 +47,7 @@ const getLocalDateString = (date = new Date()) => {
 
 export default function CollaboratoreDashboard() {
   const navigate = useNavigate();
+  const globalCacheHook = useGlobalCache();
   const { branding } = useTenantBranding();
   const [collaboratore, setCollaboratore] = useState(null);
   const [allCollaboratori, setAllCollaboratori] = useState([]);

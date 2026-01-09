@@ -132,7 +132,7 @@ export default function HeroStreakCard({ refreshKey = 0 }) {
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-orange-500/20 to-red-600/20 rounded-2xl p-4 border border-orange-500/30 animate-pulse">
+      <div className="bg-slate-900 rounded-2xl p-4 border border-orange-500/30 animate-pulse">
         <div className="h-16 bg-slate-700/50 rounded-lg" />
       </div>
     );
@@ -142,8 +142,8 @@ export default function HeroStreakCard({ refreshKey = 0 }) {
     <div
       className={`relative overflow-hidden rounded-2xl p-4 border ${
         isOnFire 
-          ? 'bg-gradient-to-br from-orange-500/20 via-red-500/20 to-yellow-500/20 border-orange-500/40' 
-          : 'bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500/30'
+          ? 'bg-gradient-to-br from-slate-800/60 to-slate-900/80 border-orange-500/40' 
+          : 'bg-gradient-to-br from-slate-800/60 to-slate-900/80 border-blue-500/30'
       }`}
     >
       {/* Background decoration */}

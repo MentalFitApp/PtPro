@@ -243,9 +243,11 @@ export function usePrefetchClients() {
     const timeout = setTimeout(() => {
       if (!cache.has('clients')) {
         import('../firebase').then(({ db }) => {
-          import('firebase/firestore').then(({ collection, getDocs }) => {
+          import('firebase/firestore').then(({ getDocs, query, limit }) => {
             import('../config/tenant').then(({ getTenantCollection }) => {
-              getDocs(getTenantCollection(db, 'clients'))
+              getDocs(
+                query(getTenantCollection(db, 'clients'), limit(100))
+              )
                 .then(snap => {
                   const clients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                   cache.set('clients', { data: clients, timestamp: Date.now() });

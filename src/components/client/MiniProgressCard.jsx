@@ -57,7 +57,7 @@ export default function MiniProgressCard() {
 
   if (loading) {
     return (
-      <div className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/50 animate-pulse">
+      <div className="bg-slate-900/95 rounded-xl p-3 border border-slate-700/50 animate-pulse backdrop-blur-sm">
         <div className="h-16 bg-slate-700/30 rounded-lg" />
       </div>
     );
@@ -80,7 +80,7 @@ export default function MiniProgressCard() {
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => navigate('/client/checks')}
-      className="w-full bg-slate-800/40 rounded-xl p-3 border border-slate-700/50 hover:border-slate-600/50 transition-all text-left"
+      className="w-full bg-slate-900/95 rounded-xl p-3 border border-slate-700/50 hover:border-slate-600/50 transition-all text-left backdrop-blur-sm"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

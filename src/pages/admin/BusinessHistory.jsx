@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { onSnapshot, getDocs } from "firebase/firestore";
+import { getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db, toDate } from "../../firebase";
 import { getTenantCollection, getTenantSubcollection } from '../../config/tenant';
+import { useFirestoreSnapshot } from '../../hooks/useFirestoreOptimized';
+import { useCachedQuery } from '../../hooks/useDataCache';
 import { motion, AnimatePresence } from "framer-motion";
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { usePageInfo } from '../../contexts/PageContext';
@@ -403,18 +405,34 @@ export default function BusinessHistory() {
         }
       });
 
-      const [pagamentiDipendentiSnap, ...clientDataResults] = await Promise.all([
-        getDocs(getTenantCollection(db, 'pagamenti_dipendenti')).catch(() => ({ docs: [] })),
-        ...clientList.map(client => 
-          Promise.all([
-            getDocs(getTenantSubcollection(db, 'clients', client.id, 'payments')).catch(() => ({ docs: [] })),
-            getDocs(getTenantSubcollection(db, 'clients', client.id, 'rates')).catch(() => ({ docs: [] })),
-            getDocs(getTenantSubcollection(db, 'clients', client.id, 'checks')).catch(() => ({ docs: [] })),
-            getDocs(getTenantSubcollection(db, 'clients', client.id, 'anamnesi')).catch(() => ({ docs: [] })),
-            Promise.resolve(client)
-          ])
-        )
-      ]);
+      // OTTIMIZZATO: Batch processing per evitare troppi query simultanei
+      const BATCH_SIZE = 10;
+      const clientDataResults = [];
+      
+      for (let i = 0; i < clientList.length; i += BATCH_SIZE) {
+        const batch = clientList.slice(i, i + BATCH_SIZE);
+        
+        const batchResults = await Promise.all(
+          batch.map(client => 
+            Promise.all([
+              getDocs(query(getTenantSubcollection(db, 'clients', client.id, 'payments'), limit(100))).catch(() => ({ docs: [] })),
+              getDocs(query(getTenantSubcollection(db, 'clients', client.id, 'rates'), limit(50))).catch(() => ({ docs: [] })),
+              getDocs(query(getTenantSubcollection(db, 'clients', client.id, 'checks'), limit(50))).catch(() => ({ docs: [] })),
+              getDocs(query(getTenantSubcollection(db, 'clients', client.id, 'anamnesi'), limit(20))).catch(() => ({ docs: [] })),
+              Promise.resolve(client)
+            ])
+          )
+        );
+        
+        clientDataResults.push(...batchResults);
+        
+        // Pausa breve tra batch
+        if (i + BATCH_SIZE < clientList.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      const pagamentiDipendentiSnap = await getDocs(query(getTenantCollection(db, 'pagamenti_dipendenti'), limit(200))).catch(() => ({ docs: [] }));
 
       clientDataResults.forEach(([paymentsSnap, ratesSnap, checksSnap, anamnesiSnap, client]) => {
         const isOldClient = client.isOldClient === true;

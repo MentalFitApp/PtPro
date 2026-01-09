@@ -27,6 +27,11 @@ const r2SecretAccessKey = defineSecret('R2_SECRET_ACCESS_KEY');
 const r2BucketName = defineSecret('R2_BUCKET_NAME');
 const r2PublicUrl = defineSecret('R2_PUBLIC_URL');
 
+// Twilio Secrets per SMS
+const twilioAccountSid = defineSecret('TWILIO_ACCOUNT_SID');
+const twilioAuthToken = defineSecret('TWILIO_AUTH_TOKEN');
+const twilioPhoneNumber = defineSecret('TWILIO_PHONE_NUMBER');
+
 // ============ R2 STORAGE FUNCTIONS (SECURE) ============
 
 /**
@@ -4002,3 +4007,230 @@ exports.reactivateArchivedClient = onCall(async (request) => {
     throw new Error(error.message || 'Errore nella riattivazione del cliente');
   }
 });
+
+// ============ SMS PASSWORD RESET ============
+
+/**
+ * Invia codice OTP via SMS per reset password
+ * Genera un codice a 6 cifre, lo salva in Firestore con scadenza 10 minuti
+ * e invia SMS tramite Twilio
+ */
+exports.sendSmsPasswordReset = onCall(
+  {
+    secrets: [twilioAccountSid, twilioAuthToken, twilioPhoneNumber],
+    maxInstances: 5,
+    timeoutSeconds: 30,
+  },
+  async (request) => {
+    try {
+      const { email, tenantId } = request.data;
+
+      // Validazioni
+      if (!email || !tenantId) {
+        throw new HttpsError('invalid-argument', 'Email e tenantId richiesti');
+      }
+
+      // Rate limiting per prevenire spam SMS (max 3 tentativi in 10 minuti)
+      const rateLimitRef = db.collection('sms_rate_limits').doc(email);
+      const rateLimitDoc = await rateLimitRef.get();
+      const now = Date.now();
+      
+      if (rateLimitDoc.exists) {
+        const data = rateLimitDoc.data();
+        const attempts = data.attempts || 0;
+        const lastAttempt = data.lastAttempt?.toMillis() || 0;
+        
+        // Reset counter se sono passati più di 10 minuti
+        if (now - lastAttempt > 10 * 60 * 1000) {
+          await rateLimitRef.set({ attempts: 1, lastAttempt: admin.firestore.FieldValue.serverTimestamp() });
+        } else if (attempts >= 3) {
+          throw new HttpsError('resource-exhausted', 'Troppi tentativi. Riprova tra 10 minuti.');
+        } else {
+          await rateLimitRef.update({ 
+            attempts: admin.firestore.FieldValue.increment(1),
+            lastAttempt: admin.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      } else {
+        await rateLimitRef.set({ attempts: 1, lastAttempt: admin.firestore.FieldValue.serverTimestamp() });
+      }
+
+      // Cerca numero di telefono nei clients
+      const clientsRef = db.collection('tenants').doc(tenantId).collection('clients');
+      const clientsQuery = await clientsRef.where('email', '==', email.toLowerCase()).get();
+      
+      let phoneNumber = null;
+      let userId = null;
+
+      if (!clientsQuery.empty) {
+        const clientData = clientsQuery.docs[0].data();
+        phoneNumber = clientData.phone;
+        userId = clientsQuery.docs[0].id;
+      }
+
+      // Se non trovato nei clients, cerca nei collaboratori
+      if (!phoneNumber) {
+        const collabsRef = db.collection('tenants').doc(tenantId).collection('collaboratori');
+        const collabsQuery = await collabsRef.where('email', '==', email.toLowerCase()).get();
+        
+        if (!collabsQuery.empty) {
+          const collabData = collabsQuery.docs[0].data();
+          phoneNumber = collabData.phone || collabData.number;
+          userId = collabsQuery.docs[0].id;
+        }
+      }
+
+      // Se ancora non trovato, verifica se è un coach/admin (possono non avere phone in Firestore)
+      if (!phoneNumber) {
+        const userRecord = await admin.auth().getUserByEmail(email).catch(() => null);
+        if (userRecord) {
+          phoneNumber = userRecord.phoneNumber; // Firebase Auth phone number
+          userId = userRecord.uid;
+        }
+      }
+
+      if (!phoneNumber) {
+        throw new HttpsError('not-found', 'Nessun numero di telefono associato a questa email');
+      }
+
+      // Genera codice OTP a 6 cifre
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Salva OTP in Firestore con scadenza 10 minuti
+      const expiresAt = new Date(now + 10 * 60 * 1000); // 10 minuti
+      await db.collection('password_reset_otps').doc(email).set({
+        code: otpCode,
+        email: email.toLowerCase(),
+        phoneNumber,
+        userId,
+        tenantId,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        expiresAt,
+        verified: false,
+        attempts: 0, // Tentativi di verifica
+      });
+
+      // Invia SMS tramite Twilio
+      const twilio = require('twilio');
+      const client = twilio(twilioAccountSid.value(), twilioAuthToken.value());
+      
+      await client.messages.create({
+        body: `Il tuo codice di reset password FitFlows è: ${otpCode}\n\nValido per 10 minuti.\n\nNon condividere questo codice con nessuno.`,
+        from: twilioPhoneNumber.value(),
+        to: phoneNumber,
+      });
+
+      console.log(`✅ [SMS] Codice OTP inviato a ${phoneNumber.replace(/\d(?=\d{4})/g, '*')}`);
+
+      return {
+        success: true,
+        message: 'Codice inviato via SMS',
+        phoneLastDigits: phoneNumber.slice(-4), // Solo ultime 4 cifre per sicurezza
+      };
+
+    } catch (error) {
+      console.error('💥 [SMS] Errore invio OTP:', error);
+      
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      
+      throw new HttpsError('internal', 'Errore invio SMS: ' + error.message);
+    }
+  }
+);
+
+/**
+ * Verifica codice OTP e cambia password direttamente
+ * L'utente inserisce il codice ricevuto via SMS e la nuova password
+ */
+exports.verifySmsResetCode = onCall(
+  {
+    maxInstances: 5,
+    timeoutSeconds: 10,
+  },
+  async (request) => {
+    try {
+      const { email, code, newPassword } = request.data;
+
+      // Validazioni
+      if (!email || !code) {
+        throw new HttpsError('invalid-argument', 'Email e codice richiesti');
+      }
+      
+      if (!newPassword || newPassword.length < 6) {
+        throw new HttpsError('invalid-argument', 'Password deve essere di almeno 6 caratteri');
+      }
+
+      // Recupera OTP da Firestore
+      const otpDoc = await db.collection('password_reset_otps').doc(email).get();
+      
+      if (!otpDoc.exists) {
+        throw new HttpsError('not-found', 'Codice non trovato o scaduto');
+      }
+
+      const otpData = otpDoc.data();
+      
+      // Verifica scadenza
+      const now = Date.now();
+      const expiresAt = otpData.expiresAt.toMillis();
+      
+      if (now > expiresAt) {
+        await db.collection('password_reset_otps').doc(email).delete();
+        throw new HttpsError('deadline-exceeded', 'Codice scaduto');
+      }
+
+      // Verifica se già utilizzato
+      if (otpData.verified) {
+        throw new HttpsError('failed-precondition', 'Codice già utilizzato');
+      }
+
+      // Rate limiting per tentativi (max 5)
+      if (otpData.attempts >= 5) {
+        await db.collection('password_reset_otps').doc(email).delete();
+        throw new HttpsError('resource-exhausted', 'Troppi tentativi errati');
+      }
+
+      // Verifica codice
+      if (otpData.code !== code.toString()) {
+        // Incrementa counter tentativi
+        await db.collection('password_reset_otps').doc(email).update({
+          attempts: admin.firestore.FieldValue.increment(1),
+        });
+        
+        const remainingAttempts = 5 - (otpData.attempts + 1);
+        throw new HttpsError(
+          'invalid-argument', 
+          `Codice errato. Tentativi rimasti: ${remainingAttempts}`
+        );
+      }
+
+      // Codice corretto! Cambia password direttamente
+      await admin.auth().updateUser(otpData.userId, {
+        password: newPassword,
+      });
+      
+      // Marca OTP come utilizzato
+      await db.collection('password_reset_otps').doc(email).update({
+        verified: true,
+        verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      console.log(`✅ [SMS] Password cambiata per ${email}`);
+
+      return {
+        success: true,
+        message: 'Password cambiata con successo',
+      };
+
+    } catch (error) {
+      console.error('💥 [SMS] Errore verifica OTP:', error);
+      
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      
+      throw new HttpsError('internal', 'Errore verifica codice: ' + error.message);
+    }
+  }
+);

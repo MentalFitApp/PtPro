@@ -2,7 +2,7 @@
 // Calendario dedicato alle chiamate con i clienti
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDocs } from 'firebase/firestore';
+import { getDocs, query, limit } from 'firebase/firestore';
 import { db, auth, toDate } from '../../firebase';
 import { getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { 
@@ -24,59 +24,83 @@ export default function ClientCallsCalendar() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [view, setView] = useState('month'); // 'month' | 'week'
 
-  // Carica tutte le chiamate programmate
+  // Carica tutte le chiamate programmate - OTTIMIZZATO
   useEffect(() => {
     const loadCalls = async () => {
       setLoading(true);
       const allCalls = [];
       
       try {
-        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+        // Limit 200 clienti (più che sufficienti per calendario)
+        const clientsSnap = await getDocs(
+          query(getTenantCollection(db, 'clients'), limit(200))
+        );
         
-        for (const clientDoc of clientsSnap.docs) {
-          const clientData = clientDoc.data();
-          if (clientData.isOldClient) continue;
+        // Batch processing - 20 clienti per volta
+        const BATCH_SIZE = 20;
+        for (let i = 0; i < clientsSnap.docs.length; i += BATCH_SIZE) {
+          const batch = clientsSnap.docs.slice(i, i + BATCH_SIZE);
           
-          try {
-            const callsSnap = await getDocs(getTenantSubcollection(db, 'clients', clientDoc.id, 'calls'));
-            callsSnap.forEach(callDoc => {
-              const data = callDoc.data();
+          const batchPromises = batch.map(async (clientDoc) => {
+            const clientData = clientDoc.data();
+            if (clientData.isOldClient) return [];
+            
+            try {
+              const callsSnap = await getDocs(
+                query(getTenantSubcollection(db, 'clients', clientDoc.id, 'calls'), limit(5))
+              );
+              const calls = [];
               
-              // Chiamate programmate (next)
-              if (callDoc.id === 'next' && data?.scheduledAt) {
-                const scheduledDate = toDate(data.scheduledAt);
-                if (scheduledDate) {
-                  allCalls.push({
-                    id: `${clientDoc.id}-next`,
+              callsSnap.forEach(callDoc => {
+                const data = callDoc.data();
+                
+                // Chiamate programmate (next)
+                if (callDoc.id === 'next' && data?.scheduledAt) {
+                  const scheduledDate = toDate(data.scheduledAt);
+                  if (scheduledDate) {
+                    calls.push({
+                      id: `${clientDoc.id}-next`,
+                      clientId: clientDoc.id,
+                      clientName: clientData.name || 'Cliente',
+                      clientPhoto: clientData.photoURL,
+                      scheduledAt: scheduledDate,
+                      callType: data.callType || 'phone',
+                      notes: data.notes || '',
+                      status: 'scheduled'
+                    });
+                  }
+                }
+                
+                // Richieste di chiamata (pending)
+                if (callDoc.id === 'request' && data?.status === 'pending') {
+                  const requestDate = toDate(data.requestedAt || data.createdAt);
+                  calls.push({
+                    id: `${clientDoc.id}-request`,
                     clientId: clientDoc.id,
                     clientName: clientData.name || 'Cliente',
                     clientPhoto: clientData.photoURL,
-                    scheduledAt: scheduledDate,
+                    scheduledAt: requestDate || new Date(),
                     callType: data.callType || 'phone',
-                    notes: data.notes || '',
-                    status: 'scheduled'
+                    notes: data.notes || data.message || '',
+                    status: 'pending',
+                    preferredTime: data.preferredTime
                   });
                 }
-              }
+              });
               
-              // Richieste di chiamata (pending)
-              if (callDoc.id === 'request' && data?.status === 'pending') {
-                const requestDate = toDate(data.requestedAt || data.createdAt);
-                allCalls.push({
-                  id: `${clientDoc.id}-request`,
-                  clientId: clientDoc.id,
-                  clientName: clientData.name || 'Cliente',
-                  clientPhoto: clientData.photoURL,
-                  scheduledAt: requestDate || new Date(),
-                  callType: data.callType || 'phone',
-                  notes: data.notes || data.message || '',
-                  status: 'pending',
-                  preferredTime: data.preferredTime
-                });
-              }
-            });
-          } catch (e) {
-            console.error(`Error loading calls for ${clientData.name}:`, e);
+              return calls;
+            } catch (e) {
+              console.error(`Error loading calls for ${clientData.name}:`, e);
+              return [];
+            }
+          });
+          
+          const batchResults = await Promise.all(batchPromises);
+          allCalls.push(...batchResults.flat());
+          
+          // Pausa tra batch
+          if (i + BATCH_SIZE < clientsSnap.docs.length) {
+            await new Promise(r => setTimeout(r, 50));
           }
         }
         

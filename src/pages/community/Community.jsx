@@ -222,13 +222,16 @@ export default function Community() {
   // Carica lista membri (per tutti gli utenti)
   useEffect(() => {
     if (!auth.currentUser) return;
-    const unsub = onSnapshot(getTenantCollection(db, 'users'), (snapshot) => {
-      const members = snapshot.docs.map(doc => ({
-        uid: doc.id,
-        ...doc.data()
-      })).filter(user => !bannedUsers.includes(user.uid));
-      setMembersList(members);
-    });
+    const unsub = onSnapshot(
+      query(getTenantCollection(db, 'users'), limit(200)),
+      (snapshot) => {
+        const members = snapshot.docs.map(doc => ({
+          uid: doc.id,
+          ...doc.data()
+        })).filter(user => !bannedUsers.includes(user.uid));
+        setMembersList(members);
+      }
+    );
     return unsub;
   }, [bannedUsers]);
 

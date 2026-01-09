@@ -104,7 +104,9 @@ export default function Updates({ role: propRole }) {
 
     const loadUpdates = async () => {
       try {
-        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+        const clientsSnap = await getDocs(
+          query(getTenantCollection(db, 'clients'), limit(100))
+        );
         const checksItems = [];
         const anamnesiItems = [];
         
@@ -122,7 +124,10 @@ export default function Updates({ role: propRole }) {
           
           // Anamnesi
           const anamnesiSnap = await getDocs(
-            getTenantSubcollection(db, 'clients', clientDoc.id, 'anamnesi')
+            query(
+              getTenantSubcollection(db, 'clients', clientDoc.id, 'anamnesi'),
+              limit(10)
+            )
           );
           anamnesiSnap.docs.forEach(anamnesiDoc => {
             anamnesiItems.push({ id: anamnesiDoc.id, clientId: clientDoc.id, clientName, date: anamnesiDoc.data().createdAt });

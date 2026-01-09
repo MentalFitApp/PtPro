@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Copy, RotateCcw, X, Download, Upload, History, FileText, Sparkles, Send, AlertTriangle, Edit3 } from 'lucide-react';
 import { db } from '../../firebase';
 import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit, deleteDoc } from 'firebase/firestore';
+import { useCachedFoods, VirtualizedFoodList } from '../../components/shared/SchedaOptimizer';
 import { exportNutritionCardToPDF } from '../../utils/pdfExport';
 import AINutritionAssistant from '../../components/AINutritionAssistant';
 import { convertToGrams, inferUnitFromName } from '../../utils/nutritionUnits';

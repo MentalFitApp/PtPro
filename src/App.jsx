@@ -29,8 +29,7 @@ const FirstAccess = React.lazy(() => import('./pages/auth/FirstAccess'));
 const SetupAccount = React.lazy(() => import('./pages/auth/SetupAccount'));
 
 // Admin Pages
-const AdminDashboard = React.lazy(() => import('./pages/admin/DashboardPro'));
-const DashboardDemo = React.lazy(() => import('./pages/admin/DashboardDemo')); // Demo 2.0 Design
+const AdminDashboard = React.lazy(() => import('./pages/admin/DashboardDemo')); // Dashboard principale
 const Clients = React.lazy(() => import('./pages/admin/Clients'));
 const ClientDetail = React.lazy(() => import('./pages/admin/ClientDetail'));
 const EditClient = React.lazy(() => import('./pages/admin/EditClient'));
@@ -436,7 +435,7 @@ export default function App() {
         <GlobalUploadBar />
         <Routes>
         {/* === ROTTE PUBBLICHE === */}
-        <Route path="/demo" element={<DashboardDemo />} />
+        <Route path="/demo" element={<AdminDashboard />} />
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/site" element={<LandingPage />} />
         <Route path="/site/:tenantSlug/:slug" element={<PublicLandingPage />} />
@@ -472,7 +471,7 @@ export default function App() {
 
         <Route element={authInfo.isAdmin ? <ProLayout /> : <Navigate to="/login" replace />}>
           {/* Dashboard 2.0 Nebula - Ora dentro ProLayout con NebulaSidebar */}
-          <Route path="/" element={<DashboardDemo />} />
+          <Route path="/" element={<AdminDashboard />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/new-client" element={<NewClient />} />
           <Route path="/client/:clientId" element={<ClientDetail />} />

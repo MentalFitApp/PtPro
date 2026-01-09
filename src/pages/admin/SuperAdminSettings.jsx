@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, arrayUnion, arrayRemove, query, limit } from 'firebase/firestore';
 import { db, auth } from '../../firebase'
 import { getTenantCollection, getTenantDoc, getTenantSubcollection } from '../../config/tenant';
 import { isSuperAdmin, addSuperAdmin, removeSuperAdmin } from '../../utils/superadmin';
@@ -53,8 +53,10 @@ export default function SuperAdminSettings() {
       setCoaches(rolesData.coaches || []);
       setSuperadmins(rolesData.superadmins || []);
 
-      // Carica tutti i clienti
-      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+      // Carica tutti i clienti (limitato per performance)
+      const clientsSnap = await getDocs(
+        query(getTenantCollection(db, 'clients'), limit(200))
+      );
       const clientsList = clientsSnap.docs.map(d => ({
         id: d.id,
         email: d.data().email || 'N/D',
@@ -63,8 +65,10 @@ export default function SuperAdminSettings() {
         ...d.data()
       }));
 
-      // Carica collaboratori
-      const collabSnap = await getDocs(getTenantCollection(db, 'collaboratori'));
+      // Carica collaboratori (limitato per performance)
+      const collabSnap = await getDocs(
+        query(getTenantCollection(db, 'collaboratori'), limit(100))
+      );
       const collabList = collabSnap.docs.map(d => ({
         id: d.id,
         email: d.data().email || 'N/D',

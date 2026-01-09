@@ -60,8 +60,10 @@ export default function Notifications() {
 
   const loadClientsAndCollaboratori = async () => {
     try {
-      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
-      const collabSnap = await getDocs(getTenantCollection(db, 'collaboratori'));
+      const [clientsSnap, collabSnap] = await Promise.all([
+        getDocs(query(getTenantCollection(db, 'clients'), limit(500))),
+        getDocs(query(getTenantCollection(db, 'collaboratori'), limit(100)))
+      ]);
       
       setClients(clientsSnap.docs.map(d => ({ id: d.id, ...d.data(), type: 'client' })));
       setCollaboratori(collabSnap.docs.map(d => ({ id: d.id, ...d.data(), type: 'collaboratore' })));
@@ -75,7 +77,8 @@ export default function Notifications() {
       const q = query(
         getTenantCollection(db, 'notifications'),
         where('sentBy', '==', auth.currentUser.uid),
-        orderBy('sentAt', 'desc')
+        orderBy('sentAt', 'desc'),
+        limit(50) // Limita a ultime 50 notifiche
       );
       const snap = await getDocs(q);
       setSentNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() })));

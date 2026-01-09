@@ -51,7 +51,7 @@ const Dipendenti = () => {
   // Filtro
   const [meseFiltro, setMeseFiltro] = useState(format(new Date(), "yyyy-MM"));
 
-  // === INCASSO MESE FILTRATO ===
+  // === INCASSO MESE FILTRATO - OTTIMIZZATO ===
   useEffect(() => {
     const loadIncassoMeseFiltrato = async () => {
       try {
@@ -61,21 +61,32 @@ const Dipendenti = () => {
         const monthStart = startOfMonth(filterDate);
         const monthEnd = endOfMonth(filterDate);
         
-        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+        // Limit a 100 clienti attivi
+        const clientsSnap = await getDocs(
+          query(getTenantCollection(db, 'clients'), limit(100))
+        );
         
-        // Carica tutti i dati in parallelo per ogni cliente
-        const results = await Promise.all(
-          clientsSnap.docs.map(async (clientDoc) => {
-            const clientData = clientDoc.data();
-            const isOldClient = clientData.isOldClient === true;
-            let clientNuovi = 0;
-            let clientRinnovi = 0;
-            
-            // Carica payments e rates in parallelo
-            const [paymentsSnap, ratesSnap] = await Promise.all([
-              getDocs(getTenantSubcollection(db, 'clients', clientDoc.id, 'payments')).catch(() => ({ docs: [] })),
-              getDocs(getTenantSubcollection(db, 'clients', clientDoc.id, 'rates')).catch(() => ({ docs: [] }))
-            ]);
+        // Batch processing - 15 clienti per volta
+        const BATCH_SIZE = 15;
+        let totalNuovi = 0;
+        let totalRinnovi = 0;
+        
+        for (let i = 0; i < clientsSnap.docs.length; i += BATCH_SIZE) {
+          const batch = clientsSnap.docs.slice(i, i + BATCH_SIZE);
+          
+          // Carica tutti i dati in parallelo per ogni cliente del batch
+          const results = await Promise.all(
+            batch.map(async (clientDoc) => {
+              const clientData = clientDoc.data();
+              const isOldClient = clientData.isOldClient === true;
+              let clientNuovi = 0;
+              let clientRinnovi = 0;
+              
+              // Carica payments e rates in parallelo - CON LIMIT
+              const [paymentsSnap, ratesSnap] = await Promise.all([
+                getDocs(query(getTenantSubcollection(db, 'clients', clientDoc.id, 'payments'), limit(50))).catch(() => ({ docs: [] })),
+                getDocs(query(getTenantSubcollection(db, 'clients', clientDoc.id, 'rates'), limit(20))).catch(() => ({ docs: [] }))
+              ]);
             
             // 1. Processa payments
             paymentsSnap.docs.forEach(paymentDoc => {
@@ -123,17 +134,23 @@ const Dipendenti = () => {
             });
             
             return { nuovi: clientNuovi, rinnovi: clientRinnovi };
-          })
-        );
+            })
+          );
+          
+          // Aggrega risultati batch
+          results.forEach(({ nuovi, rinnovi }) => {
+            totalNuovi += nuovi;
+            totalRinnovi += rinnovi;
+          });
+          
+          // Pausa tra batch
+          if (i + BATCH_SIZE < clientsSnap.docs.length) {
+            await new Promise(r => setTimeout(r, 50));
+          }
+        }
         
-        // Somma tutti i risultati
-        const totals = results.reduce((acc, r) => ({
-          nuovi: acc.nuovi + r.nuovi,
-          rinnovi: acc.rinnovi + r.rinnovi
-        }), { nuovi: 0, rinnovi: 0 });
-        
-        setIncassoNuoviClienti(totals.nuovi);
-        setIncassoRinnovi(totals.rinnovi);
+        setIncassoNuoviMese(totalNuovi);
+        setIncassoRinnoviMese(totalRinnovi);
       } catch (err) {
         console.error('Errore caricamento incasso mese filtrato:', err);
       }

@@ -54,7 +54,7 @@ export default function CheckReminderCard({ daysSinceLastCheck, lastCheckDate })
       onClick={() => navigate('/client/checks')}
       className={`w-full rounded-xl p-4 border text-left transition-all hover:scale-[1.01] active:scale-[0.99] ${
         isUrgent
-          ? 'bg-gradient-to-r from-purple-600/30 to-pink-600/30 border-purple-500/50 hover:border-purple-400/60'
+          ? 'bg-gradient-to-r from-purple-600/40 to-pink-600/40 border-purple-500/50 hover:border-purple-400/60'
           : 'bg-slate-800/40 border-slate-700/50 hover:border-slate-600/50'
       }`}
     >

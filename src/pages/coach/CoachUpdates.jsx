@@ -101,12 +101,18 @@ export default function CoachUpdates() {
     // Carica checks dal tenant corrente
     const loadChecksActivity = async () => {
       try {
-        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+        const clientsSnap = await getDocs(
+          query(getTenantCollection(db, 'clients'), limit(100))
+        );
         const newChecks = [];
         
         for (const clientDoc of clientsSnap.docs) {
           const checksSnap = await getDocs(
-            query(getTenantSubcollection(db, 'clients', clientDoc.id, 'checks'), orderBy('createdAt', 'desc'))
+            query(
+              getTenantSubcollection(db, 'clients', clientDoc.id, 'checks'),
+              orderBy('createdAt', 'desc'),
+              limit(30)
+            )
           );
           
           checksSnap.docs.forEach(checkDoc => {
@@ -134,12 +140,17 @@ export default function CoachUpdates() {
     // Carica anamnesi dal tenant corrente
     const loadAnamnesiActivity = async () => {
       try {
-        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+        const clientsSnap = await getDocs(
+          query(getTenantCollection(db, 'clients'), limit(100))
+        );
         const newAnamnesi = [];
         
         for (const clientDoc of clientsSnap.docs) {
           const anamnesiSnap = await getDocs(
-            getTenantSubcollection(db, 'clients', clientDoc.id, 'anamnesi')
+            query(
+              getTenantSubcollection(db, 'clients', clientDoc.id, 'anamnesi'),
+              limit(10)
+            )
           );
           
           anamnesiSnap.docs.forEach(anamnesiDoc => {

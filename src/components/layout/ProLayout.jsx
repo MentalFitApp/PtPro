@@ -537,6 +537,8 @@ export const ProLayout = () => {
       <div className="min-h-screen bg-transparent">
         <div className="starry-background" />
         <NebulaStars />
+        {/* Overlay opaco per migliorare la leggibilità */}
+        <div className="fixed inset-0 bg-slate-900/15 backdrop-blur-[2px] pointer-events-none -z-10" />
         <Outlet />
       </div>
     );
@@ -548,6 +550,8 @@ export const ProLayout = () => {
       {/* Sfondo Nebula 2.0 */}
       <div className="starry-background" />
       <NebulaStars />
+      {/* Overlay opaco per migliorare la leggibilità */}
+      <div className="fixed inset-0 bg-slate-900/15 backdrop-blur-[2px] pointer-events-none -z-10" />
 
       {/* Desktop Sidebar - Nebula 2.0 */}
       {!isMobile && (

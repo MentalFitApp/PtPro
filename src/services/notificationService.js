@@ -1,7 +1,7 @@
 // src/services/notificationService.js
 // Servizio centralizzato per notifiche push su eventi
 
-import { addDoc, getDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
+import { addDoc, getDoc, getDocs, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { getTenantCollection, getTenantDoc, getCoachId } from '../config/tenant';
 

@@ -88,36 +88,54 @@ export default function CentroNotifiche() {
 
   const loadClients = async () => {
     try {
-      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
-      const clientsData = await Promise.all(
-        clientsSnap.docs.map(async (doc) => {
-          const data = doc.data();
-          
-          // Verifica ultimo check-in
-          const checksSnap = await getDocs(
-            query(
-              getTenantCollection(db, `clients/${doc.id}/checks`),
-              orderBy('createdAt', 'desc'),
-              limit(1)
-            )
-          );
+      // Limita il numero di clienti caricati
+      const clientsSnap = await getDocs(
+        query(getTenantCollection(db, 'clients'), limit(100))
+      );
+      
+      // Batch processing per evitare troppe chiamate parallele
+      const BATCH_SIZE = 20;
+      const clientsData = [];
+      
+      for (let i = 0; i < clientsSnap.docs.length; i += BATCH_SIZE) {
+        const batch = clientsSnap.docs.slice(i, i + BATCH_SIZE);
+        const batchResults = await Promise.all(
+          batch.map(async (doc) => {
+            const data = doc.data();
+            
+            // Verifica ultimo check-in
+            const checksSnap = await getDocs(
+              query(
+                getTenantCollection(db, `clients/${doc.id}/checks`),
+                orderBy('createdAt', 'desc'),
+                limit(1)
+              )
+            );
           
           const lastCheck = checksSnap.empty ? null : checksSnap.docs[0].data().createdAt?.toDate();
           const daysSinceLastCheck = lastCheck 
             ? Math.floor((new Date() - lastCheck) / (1000 * 60 * 60 * 24))
             : 999;
 
-          return {
-            id: doc.id,
-            name: data.name || 'Cliente',
-            email: data.email || '',
-            scadenza: data.scadenza?.toDate?.(),
-            isActive: data.scadenza?.toDate?.() > new Date(),
-            lastCheck,
-            daysSinceLastCheck
-          };
-        })
-      );
+            return {
+              id: doc.id,
+              name: data.name || 'Cliente',
+              email: data.email || '',
+              scadenza: data.scadenza?.toDate?.(),
+              isActive: data.scadenza?.toDate?.() > new Date(),
+              lastCheck,
+              daysSinceLastCheck
+            };
+          })
+        );
+        
+        clientsData.push(...batchResults);
+        
+        // Pausa tra batch
+        if (i + BATCH_SIZE < clientsSnap.docs.length) {
+          await new Promise(r => setTimeout(r, 50));
+        }
+      }
       
       setClients(clientsData);
     } catch (error) {

@@ -17,7 +17,7 @@ import {
   ChevronRight, ChevronLeft, BarChart3, BellRing, UserCheck,
   BookOpen, Target, Activity, Palette, Layout, Link2,
   Dumbbell, Utensils, CreditCard, LogOut, HelpCircle,
-  X, User, Sun, Moon, LayoutGrid, Sparkles, Zap, ChevronDown
+  X, User, Sun, Moon, LayoutGrid, Sparkles, Zap, ChevronDown, AlertTriangle
 } from 'lucide-react';
 
 // === CONFIGURAZIONE NAVIGAZIONE PER RUOLO ===
@@ -71,6 +71,7 @@ const getNavConfig = (role) => {
             { to: '/admin/branding', icon: Palette, label: 'Branding', color: 'pink' },
             { to: '/integrations', icon: Link2, label: 'Integrazioni', color: 'teal' },
             { to: '/platform-settings', icon: Settings, label: 'Piattaforma', color: 'slate' },
+            { to: '/notification-debug', icon: AlertTriangle, label: 'Debug Notifiche', color: 'amber' },
           ]
         }
       ]
@@ -102,6 +103,7 @@ const getNavConfig = (role) => {
           items: [
             { to: '/coach/updates', icon: BellRing, label: 'Aggiornamenti', color: 'amber' },
             { to: '/coach/settings', icon: Settings, label: 'Impostazioni', color: 'slate' },
+            { to: '/notification-debug', icon: AlertTriangle, label: 'Debug Notifiche', color: 'amber' },
           ]
         }
       ]
@@ -134,6 +136,7 @@ const getNavConfig = (role) => {
             { to: '/client/payments', icon: CreditCard, label: 'Pagamenti', color: 'emerald' },
             { to: '/client/courses', icon: BookOpen, label: 'Corsi', color: 'indigo' },
             { to: '/client/settings', icon: Settings, label: 'Impostazioni', color: 'slate' },
+            { to: '/notification-debug', icon: AlertTriangle, label: 'Debug Notifiche', color: 'amber' },
           ]
         }
       ]
@@ -798,8 +801,8 @@ export const MobileNebulaSidebar = ({
             {/* Content */}
             <div className="relative flex flex-col h-full">
               
-              {/* Header */}
-              <div className="p-4 flex items-center justify-between">
+              {/* Header - Extra padding top per evitare overlap con status bar mobile */}
+              <div className="pt-8 pb-4 px-4 flex items-center justify-between">
                 <SidebarLogo isCollapsed={false} branding={branding} />
                 <motion.button
                   onClick={onClose}

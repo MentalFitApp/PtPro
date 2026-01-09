@@ -85,14 +85,20 @@ export default function Analytics() {
   useEffect(() => {
     const loadPayments = async () => {
       try {
-        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+        const clientsSnap = await getDocs(
+          query(getTenantCollection(db, 'clients'), limit(100))
+        );
         const paymentsList = [];
         
         for (const clientDoc of clientsSnap.docs) {
           const clientData = clientDoc.data();
           if (!clientData.isOldClient) {
             const paymentsSnap = await getDocs(
-              query(getTenantSubcollection(db, 'clients', clientDoc.id, 'payments'), orderBy('paymentDate', 'desc'))
+              query(
+                getTenantSubcollection(db, 'clients', clientDoc.id, 'payments'),
+                orderBy('paymentDate', 'desc'),
+                limit(50)
+              )
             );
             
             paymentsSnap.docs.forEach(paymentDoc => {
@@ -121,12 +127,18 @@ export default function Analytics() {
   useEffect(() => {
     const loadChecks = async () => {
       try {
-        const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+        const clientsSnap = await getDocs(
+          query(getTenantCollection(db, 'clients'), limit(100))
+        );
         const checksList = [];
         
         for (const clientDoc of clientsSnap.docs) {
           const checksSnap = await getDocs(
-            query(getTenantSubcollection(db, 'clients', clientDoc.id, 'checks'), orderBy('createdAt', 'desc'))
+            query(
+              getTenantSubcollection(db, 'clients', clientDoc.id, 'checks'),
+              orderBy('createdAt', 'desc'),
+              limit(30)
+            )
           );
           
           checksSnap.docs.forEach(checkDoc => {

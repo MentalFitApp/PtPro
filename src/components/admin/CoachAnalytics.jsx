@@ -170,8 +170,10 @@ export default function CoachAnalytics() {
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-      // Carica tutti i clienti
-      const clientsSnap = await getDocs(getTenantCollection(db, 'clients'));
+      // Carica clienti (limitato per performance)
+      const clientsSnap = await getDocs(
+        query(getTenantCollection(db, 'clients'), limit(100))
+      );
       const clients = clientsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       
       // Clienti attivi (hanno fatto qualcosa negli ultimi 30 giorni)
