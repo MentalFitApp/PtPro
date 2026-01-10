@@ -68,7 +68,7 @@ const ChatSidebar = ({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex-shrink-0 p-5 border-b border-white/10 bg-slate-900/95 backdrop-blur-2xl shadow-lg">
+      <div className="flex-shrink-0 p-5 border-b border-white/10 bg-slate-900/60 backdrop-blur-2xl shadow-lg">
         <div className="flex items-center justify-between mb-5">
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">
             <MessageSquare className="text-cyan-400" size={28} />

@@ -1,13 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { MessageSquare } from 'lucide-react';
-import AnimatedStars from './AnimatedStars';
 
 const EmptyChatState = () => (
-  <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/80 text-slate-500 relative overflow-hidden">
-    <AnimatedStars />
+  <div className="flex-1 flex flex-col items-center justify-center text-slate-500 relative overflow-hidden">
     <motion.div 
-      className="relative z-10"
+      className="relative z-10 bg-white/5 backdrop-blur-xl rounded-3xl p-10 border border-white/10 shadow-2xl"
       initial={{ opacity: 0, scale: 0.9, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.5 }}

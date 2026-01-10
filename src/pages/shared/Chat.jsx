@@ -533,9 +533,9 @@ export default function Chat() {
     }
 
     return (
-      <div className="flex flex-col h-full bg-slate-900/40 backdrop-blur-xl relative">
+      <div className="flex flex-col h-full relative">
         {/* Header */}
-        <div className="flex-shrink-0 z-20 bg-slate-900/90 backdrop-blur-xl border-b border-white/10">
+        <div className="flex-shrink-0 z-20 bg-slate-900/60 backdrop-blur-xl border-b border-white/10">
           <ChatHeader
             chat={activeChat}
             currentUserId={user?.uid}
@@ -586,7 +586,7 @@ export default function Chat() {
         </div>
 
         {/* Input Area */}
-        <div className="flex-shrink-0 z-20 bg-slate-900/90 backdrop-blur-xl border-t border-white/10" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        <div className="flex-shrink-0 z-20 bg-slate-900/60 backdrop-blur-xl border-t border-white/10" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           <MessageInput
             onSend={handleSendMessage}
             onTyping={setTyping}
@@ -638,7 +638,7 @@ export default function Chat() {
 
   if (!user) {
     return (
-      <div className="h-[calc(100vh-120px)] flex items-center justify-center bg-slate-900">
+      <div className="h-[calc(100vh-120px)] flex items-center justify-center">
         <div className="text-center">
           <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Accesso Richiesto</h2>
@@ -651,7 +651,7 @@ export default function Chat() {
   return (
     <div 
       className={cn(
-        "flex flex-col bg-slate-900/30 backdrop-blur-2xl w-full",
+        "flex flex-col w-full",
         isMobile 
           ? "fixed inset-0 z-30"
           : "h-[calc(100vh-72px)]"
@@ -685,11 +685,11 @@ export default function Chat() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex min-h-0 h-full">
         {/* Desktop Layout */}
         {!isMobile && (
           <>
-            <div className="w-80 lg:w-[360px] xl:w-[400px] flex-shrink-0 border-r border-white/10 flex flex-col bg-slate-900/50 backdrop-blur-sm overflow-hidden">
+            <div className="w-80 lg:w-[360px] xl:w-[400px] flex-shrink-0 border-r border-white/5 flex flex-col overflow-hidden h-full">
               <ChatSidebar
                 chats={(chats || []).filter(c => !c.deletedBy?.includes(user?.uid))}
                 loading={chatsLoading}

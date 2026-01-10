@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MoreVertical, Pin, PinOff, Check, CheckCheck, MailOpen, 
@@ -45,25 +46,49 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
   // Chiudi menu quando si clicca fuori
   useEffect(() => {
     const handleClickOutside = (e) => {
+      // Ignora se è il bottone del menu
+      if (e.target.closest('[data-menu-trigger]')) return;
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setShowMenu(false);
       }
     };
     if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
+      // Aggiungi un piccolo delay per evitare che il click che apre il menu lo chiuda subito
+      const timer = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);
+      }, 100);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+      };
     }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
   }, [showMenu]);
 
   const handleContextMenu = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setMenuPosition({ x: e.clientX, y: e.clientY });
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMenuPosition({ 
+      x: e.clientX || rect.right, 
+      y: e.clientY || rect.bottom 
+    });
     setShowMenu(true);
+  };
+
+  const handleMenuButtonClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('🔘 Menu button clicked!');
+    const rect = e.currentTarget.getBoundingClientRect();
+    console.log('📍 Button rect:', rect);
+    setMenuPosition({ 
+      x: rect.left, 
+      y: rect.bottom + 5
+    });
+    setShowMenu(true);
+    console.log('📋 showMenu set to true');
   };
 
   const handleTouchStart = (e) => {
@@ -102,9 +127,10 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
         onTouchMove={handleTouchEnd}
         className={cn(
           "flex items-center gap-4 py-4 px-4 rounded-2xl cursor-pointer transition-all relative group",
+          "bg-white/5 backdrop-blur-sm border border-white/10",
           isActive 
-            ? "bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 shadow-xl shadow-cyan-500/10" 
-            : "hover:bg-white/5 hover:border-white/10 border border-transparent",
+            ? "bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-cyan-500/30 shadow-xl shadow-cyan-500/10" 
+            : "hover:bg-white/10 hover:border-white/20",
           isArchived && "opacity-60"
         )}
       >
@@ -162,7 +188,8 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
               )}
               {/* Bottone menu su hover desktop */}
               <motion.button
-                onClick={(e) => { e.stopPropagation(); handleContextMenu(e); }}
+                data-menu-trigger
+                onClick={handleMenuButtonClick}
                 className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/10 rounded-lg transition-all"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -204,9 +231,9 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
         </div>
       </motion.div>
 
-      {/* Menu contestuale */}
-      <AnimatePresence>
-        {showMenu && (
+      {/* Menu contestuale - usa Portal per renderizzare fuori dal contenitore */}
+      {showMenu && createPortal(
+        <AnimatePresence>
           <motion.div
             ref={menuRef}
             initial={{ opacity: 0, scale: 0.9 }}
@@ -216,9 +243,9 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
               position: 'fixed',
               left: Math.min(menuPosition.x, window.innerWidth - 220),
               top: Math.min(menuPosition.y, window.innerHeight - 280),
-              zIndex: 9999
+              zIndex: 99999
             }}
-            className="bg-slate-800/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden min-w-[200px]"
+            className="bg-slate-800 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden min-w-[200px]"
           >
             {/* Pin/Unpin */}
             <motion.button
@@ -277,8 +304,9 @@ const ChatListItem = ({ chat, isActive, onClick, currentUserId, onArchive, onPin
               <span className="text-red-400 font-medium">Elimina chat</span>
             </motion.button>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 };
