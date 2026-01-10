@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Download, Dumbbell, Calendar, ChevronRight, Info } from 'lucide-react';
+import { Play, Download, Dumbbell, Calendar, ChevronRight, Info, CheckCircle2, Circle } from 'lucide-react';
 import { db } from '../../firebase';
 import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { auth } from '../../firebase';
@@ -23,6 +23,74 @@ const ClientSchedaAllenamento = () => {
   const [clientName, setClientName] = useState('');
   const [showWorkoutPlayer, setShowWorkoutPlayer] = useState(false);
   const [expandedExercise, setExpandedExercise] = useState(null);
+  
+  // Progress tracking - salva quali esercizi sono stati completati oggi
+  const [completedExercises, setCompletedExercises] = useState({});
+  
+  // Carica progresso dal localStorage
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = `workout-progress-${today}`;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        setCompletedExercises(JSON.parse(saved));
+      } catch (e) {
+        console.error('Errore caricamento progresso:', e);
+      }
+    }
+    
+    // Pulisci vecchi progressi (mantieni solo oggi e ieri)
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('workout-progress-') && 
+          !key.includes(today) && 
+          !key.includes(yesterday)) {
+        localStorage.removeItem(key);
+      }
+    });
+  }, []);
+  
+  // Salva progresso nel localStorage
+  const saveProgress = (newProgress) => {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = `workout-progress-${today}`;
+    localStorage.setItem(storageKey, JSON.stringify(newProgress));
+  };
+  
+  // Toggle completamento esercizio
+  const toggleExerciseComplete = (dayName, exerciseIndex, e) => {
+    e.stopPropagation(); // Previene espansione card
+    const key = `${dayName}-${exerciseIndex}`;
+    const newProgress = { ...completedExercises };
+    
+    if (newProgress[key]) {
+      delete newProgress[key];
+    } else {
+      newProgress[key] = true;
+    }
+    
+    setCompletedExercises(newProgress);
+    saveProgress(newProgress);
+  };
+  
+  // Calcola progresso giorno
+  const getDayProgress = (dayName) => {
+    const dayExercises = schedaData?.giorni[dayName]?.esercizi?.filter(e => !e.isMarker) || [];
+    if (dayExercises.length === 0) return { completed: 0, total: 0, percentage: 0 };
+    
+    let completed = 0;
+    dayExercises.forEach((_, index) => {
+      const key = `${dayName}-${index}`;
+      if (completedExercises[key]) completed++;
+    });
+    
+    return {
+      completed,
+      total: dayExercises.length,
+      percentage: Math.round((completed / dayExercises.length) * 100)
+    };
+  };
 
   useEffect(() => {
     loadScheda();
@@ -351,6 +419,39 @@ const ClientSchedaAllenamento = () => {
           </div>
         ) : (
           <div className="space-y-3">
+            {/* Progress Bar */}
+            {(() => {
+              const progress = getDayProgress(selectedDay);
+              return progress.total > 0 && (
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-slate-300 text-sm font-medium">
+                      Progresso {selectedDay}
+                    </span>
+                    <span className="text-green-400 font-bold">
+                      {progress.completed}/{progress.total} ({progress.percentage}%)
+                    </span>
+                  </div>
+                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress.percentage}%` }}
+                      className="h-full bg-gradient-to-r from-green-600 to-green-400 rounded-full"
+                    />
+                  </div>
+                  {progress.percentage === 100 && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-green-400 text-center text-sm mt-2 font-semibold"
+                    >
+                      🎉 Allenamento completato! Ottimo lavoro!
+                    </motion.p>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="flex items-center justify-between">
               <h3 className="text-slate-400 text-sm font-medium">
                 {schedaData.giorni[selectedDay]?.esercizi?.filter(e => !e.isMarker)?.length} esercizi
@@ -380,6 +481,7 @@ const ClientSchedaAllenamento = () => {
               }
 
               const isExpanded = expandedExercise === index;
+              const isCompleted = completedExercises[`${selectedDay}-${index}`];
 
               // Exercise item - Compact Card with GIF
               return (
@@ -388,15 +490,37 @@ const ClientSchedaAllenamento = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden"
+                  className={`bg-slate-800/50 border rounded-xl overflow-hidden transition-colors ${
+                    isCompleted 
+                      ? 'border-green-500/50 bg-green-900/10' 
+                      : 'border-slate-700'
+                  }`}
                 >
                   {/* Main Row */}
                   <div 
                     className="flex items-center gap-3 p-3 cursor-pointer hover:bg-slate-800/70 transition-colors"
                     onClick={() => setExpandedExercise(isExpanded ? null : index)}
                   >
+                    {/* Complete Checkbox */}
+                    <button
+                      onClick={(e) => toggleExerciseComplete(selectedDay, index, e)}
+                      className={`flex-shrink-0 transition-colors ${
+                        isCompleted 
+                          ? 'text-green-400 hover:text-green-300' 
+                          : 'text-slate-500 hover:text-slate-400'
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle2 size={24} />
+                      ) : (
+                        <Circle size={24} />
+                      )}
+                    </button>
+                    
                     {/* GIF Thumbnail */}
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0">
+                    <div className={`w-16 h-16 sm:w-20 sm:h-20 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0 transition-opacity ${
+                      isCompleted ? 'opacity-60' : ''
+                    }`}>
                       {item.gifUrl ? (
                         <img
                           src={item.gifUrl}
@@ -412,10 +536,24 @@ const ClientSchedaAllenamento = () => {
                     </div>
                     
                     {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold text-sm sm:text-base truncate">
-                        {item.nome || item.nameIt || item.name}
-                      </h3>
+                    <div className={`flex-1 min-w-0 ${isCompleted ? 'opacity-70' : ''}`}>
+                      <div className="flex items-center gap-2">
+                        <h3 className={`font-semibold text-sm sm:text-base truncate ${
+                          isCompleted 
+                            ? 'text-green-400 line-through decoration-green-400/50' 
+                            : 'text-white'
+                        }`}>
+                          {item.nome || item.nameIt || item.name}
+                        </h3>
+                        {isCompleted && (
+                          <span className="text-green-400 text-xs">✓</span>
+                        )}
+                        {item.noteEsercizio && (
+                          <span className="flex-shrink-0 px-1.5 py-0.5 bg-amber-500/20 border border-amber-500/30 rounded text-amber-400 text-[10px]" title="Hai note del coach">
+                            💬
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
                         <span className="px-2 py-0.5 bg-slate-700 rounded">
                           {item.gruppoMuscolare || item.bodyPartIt}

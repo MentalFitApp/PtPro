@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ArrowLeft, Plus, Trash2, Copy, RotateCcw, X, ChevronUp, ChevronDown, Play, Download, Upload, History, FileText, Sparkles, Send, AlertTriangle, Edit3 } from 'lucide-react';
+import { Save, ArrowLeft, Plus, Trash2, Copy, RotateCcw, X, ChevronUp, ChevronDown, Play, Download, Upload, History, FileText, Sparkles, Send, AlertTriangle, Edit3, ChevronRight, Layers, Check } from 'lucide-react';
 import { db } from '../../firebase';
 import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit, deleteDoc } from 'firebase/firestore';
@@ -33,11 +33,18 @@ const SchedaAllenamento = () => {
     setShowAddEsercizio(false);
     setShowSavePresetModal(false);
     setShowImportPresetModal(false);
+    setShowActionModal(false);
   });
   
   // View/Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
   const [schedaExists, setSchedaExists] = useState(false);
+  
+  // Scheda expiry and action modal
+  const [schedaExpiry, setSchedaExpiry] = useState(null);
+  const [isSchedaExpired, setIsSchedaExpired] = useState(false);
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [updateMode, setUpdateMode] = useState(null); // 'update' | 'new' | 'renew'
   
   // Delete modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -76,6 +83,10 @@ const SchedaAllenamento = () => {
   // History functionality
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [cardHistory, setCardHistory] = useState([]);
+  
+  // Superset selection mode
+  const [supersetMode, setSupersetMode] = useState(false);
+  const [selectedForSuperset, setSelectedForSuperset] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -88,7 +99,16 @@ const SchedaAllenamento = () => {
       const clientSnap = await getDoc(clientRef);
       
       if (clientSnap.exists()) {
-        setClientName(clientSnap.data().name || 'N/D');
+        const clientData = clientSnap.data();
+        setClientName(clientData.name || 'N/D');
+        
+        // Check scheda expiry
+        const schedaInfo = clientData.schedaAllenamento;
+        if (schedaInfo?.scadenza) {
+          const expiry = schedaInfo.scadenza.toDate ? schedaInfo.scadenza.toDate() : new Date(schedaInfo.scadenza);
+          setSchedaExpiry(expiry);
+          setIsSchedaExpired(expiry < new Date());
+        }
       }
 
       // Load scheda allenamento if exists
@@ -106,6 +126,38 @@ const SchedaAllenamento = () => {
       console.error('Errore caricamento:', error);
     }
     setLoading(false);
+  };
+
+  // Handle action modal choices
+  const handleActionChoice = (action) => {
+    setUpdateMode(action);
+    setShowActionModal(false);
+    
+    if (action === 'update') {
+      // Aggiorna scheda: mantieni tutto, entra in edit mode
+      setIsEditMode(true);
+    } else if (action === 'new') {
+      // Nuova scheda: reset completo
+      setSchedaData({
+        obiettivo: '',
+        livello: '',
+        note: '',
+        durataSettimane: '',
+        giorni: GIORNI_SETTIMANA.reduce((acc, giorno) => {
+          acc[giorno] = { esercizi: [] };
+          return acc;
+        }, {})
+      });
+      setSchedaExists(false);
+      setIsEditMode(true);
+    } else if (action === 'renew') {
+      // Rinnova: mantieni esercizi, reset durata
+      setSchedaData(prev => ({
+        ...prev,
+        durataSettimane: ''
+      }));
+      setIsEditMode(true);
+    }
   };
 
   const handleSave = async () => {
@@ -174,11 +226,96 @@ const SchedaAllenamento = () => {
   };
 
   const addEsercizio = (esercizio) => {
+    // Applica template serie/rep in base all'obiettivo se non già impostati
+    const esercizioConTemplate = { ...esercizio };
+    if (!esercizioConTemplate.serie && !esercizioConTemplate.ripetizioni && schedaData.obiettivo) {
+      const templates = {
+        'Forza': { serie: '5', ripetizioni: '3-5', recupero: '180' },
+        'Massa': { serie: '4', ripetizioni: '8-12', recupero: '90' },
+        'Definizione': { serie: '3', ripetizioni: '12-15', recupero: '60' },
+        'Resistenza': { serie: '3', ripetizioni: '15-20', recupero: '45' },
+        'Ricomposizione': { serie: '4', ripetizioni: '10-12', recupero: '75' }
+      };
+      const template = templates[schedaData.obiettivo];
+      if (template) {
+        esercizioConTemplate.serie = template.serie;
+        esercizioConTemplate.ripetizioni = template.ripetizioni;
+        esercizioConTemplate.recupero = template.recupero;
+      }
+    }
     setSchedaData(prev => {
       const newData = JSON.parse(JSON.stringify(prev));
-      newData.giorni[selectedDay].esercizi.push(esercizio);
+      newData.giorni[selectedDay].esercizi.push(esercizioConTemplate);
       return newData;
     });
+  };
+
+  // Duplica esercizio nello stesso giorno
+  const duplicateEsercizio = (esercizioIndex) => {
+    setSchedaData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      const esercizio = { ...newData.giorni[selectedDay].esercizi[esercizioIndex] };
+      // Inserisci dopo l'esercizio corrente
+      newData.giorni[selectedDay].esercizi.splice(esercizioIndex + 1, 0, esercizio);
+      return newData;
+    });
+    toast.success('Esercizio duplicato');
+  };
+
+  // Copia esercizio in un altro giorno
+  const [showCopyToDay, setShowCopyToDay] = useState(null);
+  
+  const copyEsercizioToDay = (esercizioIndex, targetDay) => {
+    setSchedaData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      const esercizio = { ...newData.giorni[selectedDay].esercizi[esercizioIndex] };
+      if (!newData.giorni[targetDay]) {
+        newData.giorni[targetDay] = { esercizi: [] };
+      }
+      newData.giorni[targetDay].esercizi.push(esercizio);
+      return newData;
+    });
+    toast.success(`Esercizio copiato in ${targetDay}`);
+    setShowCopyToDay(null);
+  };
+
+  // Toggle selezione esercizio per superset
+  const toggleSupersetSelection = (esercizioIndex) => {
+    setSelectedForSuperset(prev => {
+      if (prev.includes(esercizioIndex)) {
+        return prev.filter(i => i !== esercizioIndex);
+      }
+      return [...prev, esercizioIndex].sort((a, b) => a - b);
+    });
+  };
+
+  // Crea superset dagli esercizi selezionati
+  const createSupersetFromSelection = () => {
+    if (selectedForSuperset.length < 2) {
+      toast.warning('Seleziona almeno 2 esercizi per creare una superserie');
+      return;
+    }
+
+    setSchedaData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      const esercizi = newData.giorni[selectedDay].esercizi;
+      
+      // Trova il primo indice selezionato (dove inseriremo il marker di inizio)
+      const firstIndex = selectedForSuperset[0];
+      // Trova l'ultimo indice selezionato (dove inseriremo il marker di fine)
+      const lastIndex = selectedForSuperset[selectedForSuperset.length - 1];
+      
+      // Inserisci marker fine superserie DOPO l'ultimo esercizio selezionato
+      esercizi.splice(lastIndex + 1, 0, { type: 'superset-end', isMarker: true });
+      // Inserisci marker inizio superserie PRIMA del primo esercizio selezionato
+      esercizi.splice(firstIndex, 0, { type: 'superset-start', isMarker: true });
+      
+      return newData;
+    });
+
+    toast.success(`Superserie creata con ${selectedForSuperset.length} esercizi!`);
+    setSelectedForSuperset([]);
+    setSupersetMode(false);
   };
 
   const removeEsercizio = (esercizioIndex) => {
@@ -529,11 +666,17 @@ const SchedaAllenamento = () => {
             <div className="flex gap-2">
               {!isEditMode && (
                 <button
-                  onClick={() => setIsEditMode(true)}
+                  onClick={() => {
+                    if (schedaExists) {
+                      setShowActionModal(true);
+                    } else {
+                      setIsEditMode(true);
+                    }
+                  }}
                   className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                 >
                   <Sparkles size={18} />
-                  {schedaExists ? 'Modifica Scheda' : 'Crea Scheda'}
+                  {schedaExists ? 'Gestisci Scheda' : 'Crea Scheda'}
                 </button>
               )}
               {isEditMode && (
@@ -629,9 +772,36 @@ const SchedaAllenamento = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-slate-800/50 border border-slate-700 rounded-xl p-6"
         >
-          <h1 className="text-2xl font-bold text-slate-100 mb-6">
-            Scheda Allenamento - {clientName}
-          </h1>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <h1 className="text-2xl font-bold text-slate-100">
+              Scheda Allenamento - {clientName}
+            </h1>
+            
+            {/* Status Badge */}
+            {schedaExists && (
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${
+                isSchedaExpired 
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                  : schedaExpiry 
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                    : 'bg-slate-700 text-slate-300 border border-slate-600'
+              }`}>
+                {isSchedaExpired ? (
+                  <>
+                    <AlertTriangle size={16} />
+                    Scaduta {schedaExpiry?.toLocaleDateString('it-IT')}
+                  </>
+                ) : schedaExpiry ? (
+                  <>
+                    <Check size={16} />
+                    Attiva fino al {schedaExpiry.toLocaleDateString('it-IT')}
+                  </>
+                ) : (
+                  'Scheda esistente'
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
@@ -865,9 +1035,29 @@ const SchedaAllenamento = () => {
                   key={esercizioIndex}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="bg-slate-800/50 border border-slate-700 rounded-xl p-6"
+                  className={`bg-slate-800/50 border rounded-xl p-6 transition-all ${
+                    supersetMode && selectedForSuperset.includes(esercizioIndex)
+                      ? 'border-purple-500 ring-2 ring-purple-500/30'
+                      : 'border-slate-700'
+                  }`}
                 >
                   <div className="flex items-start gap-4 mb-4">
+                    {/* Checkbox per superset mode */}
+                    {supersetMode && (
+                      <button
+                        onClick={() => toggleSupersetSelection(esercizioIndex)}
+                        className={`mt-2 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                          selectedForSuperset.includes(esercizioIndex)
+                            ? 'bg-purple-500 border-purple-500 text-white'
+                            : 'border-slate-600 hover:border-purple-400'
+                        }`}
+                      >
+                        {selectedForSuperset.includes(esercizioIndex) && (
+                          <span className="text-sm font-bold">{selectedForSuperset.indexOf(esercizioIndex) + 1}</span>
+                        )}
+                      </button>
+                    )}
+                    
                     {/* GIF Animazione Esercizio */}
                     {item.gifUrl && (
                       <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-slate-900 border border-slate-700">
@@ -921,7 +1111,39 @@ const SchedaAllenamento = () => {
                     </div>
                     
                     {isEditMode && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        {/* Duplica esercizio */}
+                        <button
+                          onClick={() => duplicateEsercizio(esercizioIndex)}
+                          className="p-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                          title="Duplica esercizio"
+                        >
+                          <Copy size={18} />
+                        </button>
+                        {/* Copia in altro giorno */}
+                        <div className="relative">
+                          <button
+                            onClick={() => setShowCopyToDay(showCopyToDay === esercizioIndex ? null : esercizioIndex)}
+                            className="p-2 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                            title="Copia in altro giorno"
+                          >
+                            <ChevronRight size={18} />
+                          </button>
+                          {showCopyToDay === esercizioIndex && (
+                            <div className="absolute right-0 top-full mt-1 z-20 bg-slate-800 border border-slate-600 rounded-lg shadow-xl p-2 min-w-[140px]">
+                              <div className="text-xs text-slate-400 mb-2 px-2">Copia in:</div>
+                              {GIORNI_SETTIMANA.filter(g => g !== selectedDay).map(giorno => (
+                                <button
+                                  key={giorno}
+                                  onClick={() => copyEsercizioToDay(esercizioIndex, giorno)}
+                                  className="w-full text-left px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700 rounded transition-colors"
+                                >
+                                  {schedaData.giorni[giorno]?.nomePersonalizzato || giorno}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <button
                           onClick={() => moveEsercizioUp(esercizioIndex)}
                           disabled={esercizioIndex === 0}
@@ -1004,6 +1226,47 @@ const SchedaAllenamento = () => {
         {/* Add Exercise and Markers Buttons */}
         {isEditMode && (
           <>
+            {/* Superset Mode Active Banner */}
+            {supersetMode && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-purple-600/20 border-2 border-purple-500/50 rounded-xl p-4"
+              >
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold">{selectedForSuperset.length}</span>
+                    </div>
+                    <div>
+                      <p className="text-purple-200 font-semibold">Modalità Superserie</p>
+                      <p className="text-purple-300/70 text-sm">Seleziona 2+ esercizi da raggruppare</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {selectedForSuperset.length >= 2 && (
+                      <button
+                        onClick={createSupersetFromSelection}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2 font-semibold"
+                      >
+                        <Check size={18} />
+                        Crea Superserie
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setSupersetMode(false);
+                        setSelectedForSuperset([]);
+                      }}
+                      className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors"
+                    >
+                      Annulla
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
               <button
                 onClick={() => setShowAddEsercizio(true)}
@@ -1013,18 +1276,34 @@ const SchedaAllenamento = () => {
                 Aggiungi Esercizio
               </button>
               
+              {/* Quick Superset Button */}
               <button
-                onClick={() => addMarkerAtEnd('superset-start')}
-                className="px-4 py-3 bg-purple-600/20 hover:bg-purple-600/30 border-2 border-purple-500/50 text-purple-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+                onClick={() => {
+                  if (supersetMode) {
+                    setSupersetMode(false);
+                    setSelectedForSuperset([]);
+                  } else {
+                    setSupersetMode(true);
+                    setSelectedForSuperset([]);
+                  }
+                }}
+                className={`md:col-span-2 px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium ${
+                  supersetMode 
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-purple-600/20 hover:bg-purple-600/30 border-2 border-purple-500/50 text-purple-300'
+                }`}
               >
-                Inizio Superserie
-              </button>
-              
-              <button
-                onClick={() => addMarkerAtEnd('superset-end')}
-                className="px-4 py-3 bg-purple-600/20 hover:bg-purple-600/30 border-2 border-purple-500/50 text-purple-300 rounded-xl transition-colors flex items-center justify-center gap-2 font-medium text-sm"
-              >
-                Fine Superserie
+                {supersetMode ? (
+                  <>
+                    <X size={18} />
+                    Esci Superserie
+                  </>
+                ) : (
+                  <>
+                    <Layers size={18} />
+                    Superserie Rapida
+                  </>
+                )}
               </button>
             </div>
 
@@ -1058,6 +1337,125 @@ const SchedaAllenamento = () => {
               }}
               onCancel={() => setShowAddEsercizio(false)}
             />
+          )}
+        </AnimatePresence>
+
+        {/* Action Choice Modal */}
+        <AnimatePresence>
+          {showActionModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => setShowActionModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-lg w-full"
+              >
+                <h3 className="text-xl font-bold text-slate-100 mb-2">
+                  Gestisci Scheda Allenamento
+                </h3>
+                
+                {/* Status Badge */}
+                {schedaExpiry && (
+                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium mb-4 ${
+                    isSchedaExpired 
+                      ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                      : 'bg-green-500/20 text-green-400 border border-green-500/30'
+                  }`}>
+                    {isSchedaExpired ? (
+                      <>
+                        <AlertTriangle size={16} />
+                        Scheda scaduta il {schedaExpiry.toLocaleDateString('it-IT')}
+                      </>
+                    ) : (
+                      <>
+                        <Check size={16} />
+                        Scheda attiva fino al {schedaExpiry.toLocaleDateString('it-IT')}
+                      </>
+                    )}
+                  </div>
+                )}
+                
+                <p className="text-slate-400 text-sm mb-6">
+                  Scegli come vuoi procedere con questa scheda:
+                </p>
+                
+                <div className="space-y-3">
+                  {/* Aggiorna Scheda */}
+                  <button
+                    onClick={() => handleActionChoice('update')}
+                    className="w-full p-4 bg-blue-600/20 hover:bg-blue-600/30 border-2 border-blue-500/50 rounded-xl text-left transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <Edit3 size={20} className="text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-blue-300 font-semibold group-hover:text-blue-200">
+                          Aggiorna Scheda
+                        </h4>
+                        <p className="text-slate-400 text-sm">
+                          Modifica gli esercizi senza cambiare durata o scadenza
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  {/* Rinnova con modifiche */}
+                  <button
+                    onClick={() => handleActionChoice('renew')}
+                    className="w-full p-4 bg-purple-600/20 hover:bg-purple-600/30 border-2 border-purple-500/50 rounded-xl text-left transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <RotateCcw size={20} className="text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-purple-300 font-semibold group-hover:text-purple-200">
+                          Rinnova Scheda
+                        </h4>
+                        <p className="text-slate-400 text-sm">
+                          Usa questa scheda come base e imposta una nuova durata
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  {/* Nuova Scheda */}
+                  <button
+                    onClick={() => handleActionChoice('new')}
+                    className="w-full p-4 bg-emerald-600/20 hover:bg-emerald-600/30 border-2 border-emerald-500/50 rounded-xl text-left transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
+                        <Plus size={20} className="text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-emerald-300 font-semibold group-hover:text-emerald-200">
+                          Nuova Scheda
+                        </h4>
+                        <p className="text-slate-400 text-sm">
+                          Crea una scheda completamente nuova da zero
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+                
+                <button
+                  onClick={() => setShowActionModal(false)}
+                  className="w-full mt-4 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
+                >
+                  Annulla
+                </button>
+              </motion.div>
+            </motion.div>
           )}
         </AnimatePresence>
 

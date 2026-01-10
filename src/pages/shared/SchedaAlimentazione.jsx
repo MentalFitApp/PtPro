@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Copy, RotateCcw, X, Download, Upload, History, FileText, Sparkles, Send, AlertTriangle, Edit3 } from 'lucide-react';
+import { Save, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Copy, RotateCcw, X, Download, Upload, History, FileText, Sparkles, Send, AlertTriangle, Edit3 } from 'lucide-react';
 import { db } from '../../firebase';
-import { getTenantDoc, getTenantCollection, getTenantSubcollection } from '../../config/tenant';
+import { getTenantDoc, getTenantCollection, getTenantSubcollection, getCurrentTenantId } from '../../config/tenant';
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, query, orderBy, limit, deleteDoc } from 'firebase/firestore';
 import { useCachedFoods, VirtualizedFoodList } from '../../components/shared/SchedaOptimizer';
 import { exportNutritionCardToPDF } from '../../utils/pdfExport';
@@ -40,7 +40,14 @@ const SchedaAlimentazione = () => {
     setShowAddAlimento({ pastoIndex: null });
     setShowSavePresetModal(false);
     setShowImportPresetModal(false);
+    setShowActionModal(false);
   });
+  
+  // Scheda expiry and action modal
+  const [schedaExpiry, setSchedaExpiry] = useState(null);
+  const [isSchedaExpired, setIsSchedaExpired] = useState(false);
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [updateMode, setUpdateMode] = useState(null); // 'update' | 'new' | 'renew'
   
   const [schedaData, setSchedaData] = useState({
     obiettivo: '',
@@ -100,14 +107,21 @@ const SchedaAlimentazione = () => {
     loadClientAndScheda();
   }, [clientId]);
 
-  // Carica dati salvati automaticamente da localStorage (solo una volta)
+  // Carica dati salvati automaticamente da localStorage (solo una volta, DOPO il caricamento)
   useEffect(() => {
+    // Aspetta che il caricamento sia completato
     if (!clientId || draftChecked || loading) return;
+    
+    // Se la scheda esiste già nel DB, non proporre bozze
+    if (schedaExists) {
+      setDraftChecked(true);
+      return;
+    }
     
     const autosavedKey = `scheda_alimentazione_draft_${clientId}`;
     const savedDraft = localStorage.getItem(autosavedKey);
     
-    if (savedDraft && !schedaExists) {
+    if (savedDraft) {
       try {
         const parsedDraft = JSON.parse(savedDraft);
         const savedTime = new Date(parsedDraft.savedAt);
@@ -123,6 +137,7 @@ const SchedaAlimentazione = () => {
           
           if (shouldRestore) {
             setSchedaData(parsedDraft.data);
+            setIsEditMode(true);
           } else {
             // Rimuovi la bozza se l'utente non vuole ripristinarla
             localStorage.removeItem(autosavedKey);
@@ -159,43 +174,117 @@ const SchedaAlimentazione = () => {
   }, [schedaData, clientId, isEditMode]);
 
   const loadClientAndScheda = async () => {
+    console.log('🔄 loadClientAndScheda called for clientId:', clientId);
+    console.log('🏢 Current tenantId:', getCurrentTenantId());
+    console.log('👤 Current user UID:', auth.currentUser?.uid);
     try {
       // Load client info
       const clientRef = getTenantDoc(db, 'clients', clientId);
       const clientSnap = await getDoc(clientRef);
+      console.log('📋 clientSnap.exists():', clientSnap.exists());
       
       if (clientSnap.exists()) {
         const client = clientSnap.data();
         setClientName(client.name || 'N/D');
         setClientData(client);
-        console.log('✅ Client data loaded:', client);
+        console.log('✅ Client data loaded:', client.name);
+        
+        // Check scheda expiry
+        const schedaInfo = client.schedaAlimentazione;
+        if (schedaInfo?.scadenza) {
+          const expiry = schedaInfo.scadenza.toDate ? schedaInfo.scadenza.toDate() : new Date(schedaInfo.scadenza);
+          setSchedaExpiry(expiry);
+          setIsSchedaExpired(expiry < new Date());
+        }
         
         // Load anamnesis
         const anamnesisRef = getTenantDoc(db, 'anamnesis', clientId);
-        const anamnesisSnap = await getDoc(anamnesisRef);
-        if (anamnesisSnap.exists()) {
-          setAnamnesisData(anamnesisSnap.data());
-          console.log('✅ Anamnesis data loaded:', anamnesisSnap.data());
-        } else {
-          console.log('⚠️ Nessuna anamnesi trovata per questo cliente');
+        console.log('🔍 Loading anamnesis from:', anamnesisRef.path);
+        try {
+          const anamnesisSnap = await getDoc(anamnesisRef);
+          if (anamnesisSnap.exists()) {
+            setAnamnesisData(anamnesisSnap.data());
+            console.log('✅ Anamnesis loaded');
+          } else {
+            console.log('⚠️ No anamnesis found');
+          }
+        } catch (anamnesisError) {
+          console.warn('⚠️ Could not load anamnesis (permissions?):', anamnesisError.message);
         }
         
         // Load scheda alimentazione if exists
         const schedaRef = getTenantDoc(db, 'schede_alimentazione', clientId);
+        console.log('🔍 Loading scheda from:', schedaRef.path);
         const schedaSnap = await getDoc(schedaRef);
+        console.log('📋 schedaSnap.exists():', schedaSnap.exists());
         
         if (schedaSnap.exists()) {
-          setSchedaData(schedaSnap.data());
+          const loadedData = schedaSnap.data();
+          console.log('✅ Scheda alimentazione loaded, giorni:', Object.keys(loadedData.giorni || {}));
+          
+          // Normalizza struttura giorni se necessario
+          const normalizedData = {
+            ...loadedData,
+            giorni: GIORNI_SETTIMANA.reduce((acc, giorno) => {
+              const existingDay = loadedData.giorni?.[giorno];
+              acc[giorno] = {
+                pasti: existingDay?.pasti || PASTI.map(nome => ({ nome, alimenti: [] }))
+              };
+              return acc;
+            }, {})
+          };
+          
+          setSchedaData(normalizedData);
           setSchedaExists(true);
-          setIsEditMode(false); // Modalità visualizzazione per schede esistenti
+          setIsEditMode(false);
+          console.log('✅ schedaExists set to TRUE, isEditMode set to FALSE');
         } else {
-          setIsEditMode(true); // Modalità modifica per nuove schede
+          console.log('⚠️ Nessuna scheda alimentazione trovata - schedaExists remains FALSE');
+          setIsEditMode(true);
         }
       }
     } catch (error) {
-      console.error('Errore caricamento:', error);
+      console.error('❌ Errore caricamento:', error);
     }
     setLoading(false);
+    console.log('✅ Loading set to FALSE');
+  };
+
+  // Handle action modal choices
+  const handleActionChoice = (action) => {
+    setUpdateMode(action);
+    setShowActionModal(false);
+    
+    if (action === 'update') {
+      // Aggiorna scheda: mantieni tutto, entra in edit mode
+      setIsEditMode(true);
+    } else if (action === 'new') {
+      // Nuova scheda: reset completo
+      setSchedaData({
+        obiettivo: '',
+        note: '',
+        durataSettimane: '',
+        integrazione: '',
+        giorni: GIORNI_SETTIMANA.reduce((acc, giorno) => {
+          acc[giorno] = {
+            pasti: PASTI.map(nome => ({
+              nome,
+              alimenti: []
+            }))
+          };
+          return acc;
+        }, {})
+      });
+      setSchedaExists(false);
+      setIsEditMode(true);
+    } else if (action === 'renew') {
+      // Rinnova: mantieni pasti/alimenti, reset durata
+      setSchedaData(prev => ({
+        ...prev,
+        durataSettimane: ''
+      }));
+      setIsEditMode(true);
+    }
   };
 
   const handleSaveDraft = () => {
@@ -555,6 +644,49 @@ const SchedaAlimentazione = () => {
       newData.giorni[selectedDay].pasti.splice(pastoIndex + 1, 0, pasto);
       return newData;
     });
+    toast.success('Pasto duplicato');
+  };
+
+  // Copia pasto in altri giorni
+  const [showCopyPastoToDay, setShowCopyPastoToDay] = useState(null);
+  
+  const copyPastoToDay = (pastoIndex, targetDay) => {
+    setSchedaData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      const pasto = JSON.parse(JSON.stringify(newData.giorni[selectedDay].pasti[pastoIndex]));
+      if (!newData.giorni[targetDay]) {
+        newData.giorni[targetDay] = { pasti: [] };
+      }
+      newData.giorni[targetDay].pasti.push(pasto);
+      return newData;
+    });
+    toast.success(`${schedaData.giorni[selectedDay].pasti[pastoIndex].nome} copiato in ${targetDay}`);
+    setShowCopyPastoToDay(null);
+  };
+  
+  const copyPastoToAllDays = (pastoIndex) => {
+    const otherDays = GIORNI_SETTIMANA.filter(g => g !== selectedDay);
+    setSchedaData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      const pasto = JSON.parse(JSON.stringify(newData.giorni[selectedDay].pasti[pastoIndex]));
+      otherDays.forEach(day => {
+        if (!newData.giorni[day]) {
+          newData.giorni[day] = { pasti: [] };
+        }
+        // Trova se esiste già un pasto con lo stesso nome
+        const existingIndex = newData.giorni[day].pasti.findIndex(p => p.nome === pasto.nome);
+        if (existingIndex !== -1) {
+          // Sostituisci
+          newData.giorni[day].pasti[existingIndex] = JSON.parse(JSON.stringify(pasto));
+        } else {
+          // Aggiungi
+          newData.giorni[day].pasti.push(JSON.parse(JSON.stringify(pasto)));
+        }
+      });
+      return newData;
+    });
+    toast.success(`${schedaData.giorni[selectedDay].pasti[pastoIndex].nome} copiato in tutti i giorni`);
+    setShowCopyPastoToDay(null);
   };
 
   const removePasto = async (pastoIndex) => {
@@ -612,11 +744,11 @@ const SchedaAlimentazione = () => {
   };
 
   const calculateDayTotals = () => {
-    const pasti = schedaData.giorni[selectedDay].pasti;
+    const pasti = schedaData.giorni[selectedDay]?.pasti || [];
     let totals = { kcal: 0, proteine: 0, carboidrati: 0, grassi: 0, quantita: 0 };
     
     pasti.forEach(pasto => {
-      pasto.alimenti.forEach(alimento => {
+      (pasto.alimenti || []).forEach(alimento => {
         const factor = alimento.quantita / 100;
         totals.kcal += (alimento.kcal || 0) * factor;
         totals.proteine += (alimento.proteine || 0) * factor;
@@ -632,7 +764,7 @@ const SchedaAlimentazione = () => {
   const calculatePastoTotals = (pasto) => {
     let totals = { kcal: 0, proteine: 0, carboidrati: 0, grassi: 0 };
     
-    pasto.alimenti.forEach(alimento => {
+    (pasto?.alimenti || []).forEach(alimento => {
       const factor = alimento.quantita / 100;
       totals.kcal += (alimento.kcal || 0) * factor;
       totals.proteine += (alimento.proteine || 0) * factor;
@@ -829,11 +961,17 @@ const SchedaAlimentazione = () => {
               )}
               {!isEditMode && (
                 <button
-                  onClick={() => setIsEditMode(true)}
+                  onClick={() => {
+                    if (schedaExists) {
+                      setShowActionModal(true);
+                    } else {
+                      setIsEditMode(true);
+                    }
+                  }}
                   className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white preserve-white rounded-lg transition-colors"
                 >
                   <Sparkles size={18} />
-                  {schedaExists ? 'Modifica Scheda' : 'Crea Scheda'}
+                  {schedaExists ? 'Gestisci Scheda' : 'Crea Scheda'}
                 </button>
               )}
               {isEditMode && (
@@ -928,9 +1066,36 @@ const SchedaAlimentazione = () => {
           animate={{ opacity: 1, y: 0 }}
           className="bg-slate-800/50 border border-slate-700 rounded-xl p-6"
         >
-          <h1 className="text-2xl font-bold text-slate-100 mb-6">
-            Scheda Alimentazione - {clientName}
-          </h1>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <h1 className="text-2xl font-bold text-slate-100">
+              Scheda Alimentazione - {clientName}
+            </h1>
+            
+            {/* Status Badge */}
+            {schedaExists && (
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${
+                isSchedaExpired 
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                  : schedaExpiry 
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                    : 'bg-slate-700 text-slate-300 border border-slate-600'
+              }`}>
+                {isSchedaExpired ? (
+                  <>
+                    <AlertTriangle size={16} />
+                    Scaduta {schedaExpiry?.toLocaleDateString('it-IT')}
+                  </>
+                ) : schedaExpiry ? (
+                  <>
+                    <span className="text-green-400">✓</span>
+                    Attiva fino al {schedaExpiry.toLocaleDateString('it-IT')}
+                  </>
+                ) : (
+                  'Scheda esistente'
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
@@ -1022,9 +1187,61 @@ const SchedaAlimentazione = () => {
           )}
         </div>
 
+        {/* Sticky Macro Bar */}
+        {(() => {
+          const dayTotals = calculateDayTotals();
+          return (
+            <div className="sticky top-0 z-10 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium text-slate-300">{selectedDay} - Totali</div>
+                <div className="flex items-center gap-6">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-emerald-400">{Math.round(dayTotals.kcal)}</div>
+                    <div className="text-xs text-slate-500">Kcal</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-blue-400">{dayTotals.proteine.toFixed(0)}g</div>
+                    <div className="text-xs text-slate-500">Proteine</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-yellow-400">{dayTotals.carboidrati.toFixed(0)}g</div>
+                    <div className="text-xs text-slate-500">Carb</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-orange-400">{dayTotals.grassi.toFixed(0)}g</div>
+                    <div className="text-xs text-slate-500">Grassi</div>
+                  </div>
+                </div>
+              </div>
+              {/* Barra visuale delle macro */}
+              <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden flex">
+                {dayTotals.kcal > 0 && (
+                  <>
+                    <div 
+                      className="bg-blue-500 h-full" 
+                      style={{ width: `${(dayTotals.proteine * 4 / dayTotals.kcal) * 100}%` }}
+                      title={`Proteine: ${((dayTotals.proteine * 4 / dayTotals.kcal) * 100).toFixed(0)}%`}
+                    />
+                    <div 
+                      className="bg-yellow-500 h-full" 
+                      style={{ width: `${(dayTotals.carboidrati * 4 / dayTotals.kcal) * 100}%` }}
+                      title={`Carboidrati: ${((dayTotals.carboidrati * 4 / dayTotals.kcal) * 100).toFixed(0)}%`}
+                    />
+                    <div 
+                      className="bg-orange-500 h-full" 
+                      style={{ width: `${(dayTotals.grassi * 9 / dayTotals.kcal) * 100}%` }}
+                      title={`Grassi: ${((dayTotals.grassi * 9 / dayTotals.kcal) * 100).toFixed(0)}%`}
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Meals for Selected Day */}
         <div className="space-y-4">
-          {schedaData.giorni[selectedDay].pasti.map((pasto, pastoIndex) => {
+          {(schedaData.giorni[selectedDay]?.pasti || []).map((pasto, pastoIndex) => {
             const pastoTotals = calculatePastoTotals(pasto);
             
             return (
@@ -1109,6 +1326,37 @@ const SchedaAlimentazione = () => {
                       >
                         <Copy size={18} />
                       </button>
+                      {/* Copia in altri giorni */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowCopyPastoToDay(showCopyPastoToDay === pastoIndex ? null : pastoIndex)}
+                          className="p-2 text-cyan-400 hover:text-cyan-300"
+                          title="Copia in altri giorni"
+                        >
+                          <ChevronRight size={18} />
+                        </button>
+                        {showCopyPastoToDay === pastoIndex && (
+                          <div className="absolute right-0 top-full mt-1 z-20 bg-slate-800 border border-slate-600 rounded-lg shadow-xl p-2 min-w-[160px]">
+                            <div className="text-xs text-slate-400 mb-2 px-2">Copia in:</div>
+                            <button
+                              onClick={() => copyPastoToAllDays(pastoIndex)}
+                              className="w-full text-left px-3 py-1.5 text-sm text-emerald-400 hover:bg-slate-700 rounded transition-colors font-medium"
+                            >
+                              ✨ Tutti i giorni
+                            </button>
+                            <div className="border-t border-slate-700 my-1"></div>
+                            {GIORNI_SETTIMANA.filter(g => g !== selectedDay).map(giorno => (
+                              <button
+                                key={giorno}
+                                onClick={() => copyPastoToDay(pastoIndex, giorno)}
+                                className="w-full text-left px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700 rounded transition-colors"
+                              >
+                                {giorno}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <button
                         onClick={() => removePasto(pastoIndex)}
                         className="p-2 text-red-400 hover:text-red-300"
@@ -1344,6 +1592,125 @@ const SchedaAlimentazione = () => {
             placeholder="Tips sull'integrazione, consigli, note..."
           />
         </div>
+
+        {/* Action Choice Modal */}
+        <AnimatePresence>
+          {showActionModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => setShowActionModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-lg w-full"
+              >
+                <h3 className="text-xl font-bold text-slate-100 mb-2">
+                  Gestisci Scheda Alimentazione
+                </h3>
+                
+                {/* Status Badge */}
+                {schedaExpiry && (
+                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium mb-4 ${
+                    isSchedaExpired 
+                      ? 'bg-red-500/20 text-red-400 border border-red-500/30' 
+                      : 'bg-green-500/20 text-green-400 border border-green-500/30'
+                  }`}>
+                    {isSchedaExpired ? (
+                      <>
+                        <AlertTriangle size={16} />
+                        Scheda scaduta il {schedaExpiry.toLocaleDateString('it-IT')}
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-green-400">✓</span>
+                        Scheda attiva fino al {schedaExpiry.toLocaleDateString('it-IT')}
+                      </>
+                    )}
+                  </div>
+                )}
+                
+                <p className="text-slate-400 text-sm mb-6">
+                  Scegli come vuoi procedere con questa scheda:
+                </p>
+                
+                <div className="space-y-3">
+                  {/* Aggiorna Scheda */}
+                  <button
+                    onClick={() => handleActionChoice('update')}
+                    className="w-full p-4 bg-blue-600/20 hover:bg-blue-600/30 border-2 border-blue-500/50 rounded-xl text-left transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <Edit3 size={20} className="text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-blue-300 font-semibold group-hover:text-blue-200">
+                          Aggiorna Scheda
+                        </h4>
+                        <p className="text-slate-400 text-sm">
+                          Modifica i pasti senza cambiare durata o scadenza
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  {/* Rinnova con modifiche */}
+                  <button
+                    onClick={() => handleActionChoice('renew')}
+                    className="w-full p-4 bg-purple-600/20 hover:bg-purple-600/30 border-2 border-purple-500/50 rounded-xl text-left transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <RotateCcw size={20} className="text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-purple-300 font-semibold group-hover:text-purple-200">
+                          Rinnova Scheda
+                        </h4>
+                        <p className="text-slate-400 text-sm">
+                          Usa questa scheda come base e imposta una nuova durata
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  {/* Nuova Scheda */}
+                  <button
+                    onClick={() => handleActionChoice('new')}
+                    className="w-full p-4 bg-emerald-600/20 hover:bg-emerald-600/30 border-2 border-emerald-500/50 rounded-xl text-left transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
+                        <Plus size={20} className="text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-emerald-300 font-semibold group-hover:text-emerald-200">
+                          Nuova Scheda
+                        </h4>
+                        <p className="text-slate-400 text-sm">
+                          Crea una scheda completamente nuova da zero
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+                
+                <button
+                  onClick={() => setShowActionModal(false)}
+                  className="w-full mt-4 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
+                >
+                  Annulla
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Save Preset Modal */}
         <AnimatePresence>

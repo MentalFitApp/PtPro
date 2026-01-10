@@ -8,10 +8,6 @@ import { uploadToR2 } from '../cloudflareStorage';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../contexts/ConfirmContext';
 
-// PERMESSI TEMPORANEI: Tenant che possono modificare esercizi globali
-// Rimuovere quando non più necessario
-const GLOBAL_EXERCISE_EDITORS = ['biondo-fitness-coach'];
-
 const ListaEsercizi = ({ onBack }) => {
   const toast = useToast();
   const { confirmDelete } = useConfirm();
@@ -23,8 +19,8 @@ const ListaEsercizi = ({ onBack }) => {
   const [attrezziOptions, setAttrezziOptions] = useState([]);
   const [gruppiOptions, setGruppiOptions] = useState([]);
   
-  // Verifica se l'utente corrente può modificare esercizi globali
-  const canEditGlobalExercises = GLOBAL_EXERCISE_EDITORS.includes(getCurrentTenantId());
+  // Verifica se l'utente corrente può modificare esercizi globali (caricato da Firestore)
+  const [canEditGlobalExercises, setCanEditGlobalExercises] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('all'); // 'all', 'global', 'custom'
   const [isAddingExercise, setIsAddingExercise] = useState(false);
   const [editingExercise, setEditingExercise] = useState(null);
@@ -80,16 +76,27 @@ const ListaEsercizi = ({ onBack }) => {
       const settings = settingsSnap.exists() ? settingsSnap.data() : { useGlobalDatabase: true };
       setUseGlobalDatabase(settings.useGlobalDatabase);
 
+      // 2. Verifica se il tenant può modificare esercizi globali
+      let canEditGlobal = false;
+      try {
+        const editorsRef = doc(db, 'platform_admins', 'exercise_editors');
+        const editorsSnap = await getDoc(editorsRef);
+        if (editorsSnap.exists()) {
+          const editorTenants = editorsSnap.data().tenantIds || [];
+          canEditGlobal = editorTenants.includes(getCurrentTenantId());
+        }
+      } catch (err) {
+        console.log('Non autorizzato a leggere exercise_editors, usando default false');
+      }
+      setCanEditGlobalExercises(canEditGlobal);
+
       let globalExercisesData = [];
       let customExercisesData = [];
 
-      // 2. Carica esercizi globali (se abilitato)
+      // 3. Carica esercizi globali (se abilitato)
       if (settings.useGlobalDatabase) {
         const globalRef = collection(db, 'platform_exercises');
         const globalSnap = await getDocs(globalRef);
-        
-        // Verifica se l'utente può modificare esercizi globali
-        const canEditGlobal = GLOBAL_EXERCISE_EDITORS.includes(getCurrentTenantId());
         
         globalExercisesData = globalSnap.docs.map(doc => ({
           id: doc.id,
@@ -99,7 +106,7 @@ const ListaEsercizi = ({ onBack }) => {
         }));
       }
 
-      // 3. Carica esercizi custom del tenant
+      // 4. Carica esercizi custom del tenant
       const customRef = getTenantCollection(db, 'exercises');
       const customSnap = await getDocs(customRef);
       customExercisesData = customSnap.docs.map(doc => ({
@@ -109,7 +116,7 @@ const ListaEsercizi = ({ onBack }) => {
         editable: true
       }));
 
-      // 4. Merge (custom override global se ha campo overridesGlobal)
+      // 5. Merge (custom override global se ha campo overridesGlobal)
       const exerciseMap = new Map();
       
       globalExercisesData.forEach(ex => {

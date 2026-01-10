@@ -11,7 +11,20 @@ service cloud.firestore {
              request.auth.uid in get(/databases/$(database)/documents/platform_admins/superadmins).data.uids;
     }
 
-    // [RIMOSSO 03/01/2026] Editor temporanei - ora solo isPlatformCEO gestisce platform_exercises
+    // Editor di esercizi globali (tenant specifici che possono modificare nomi esercizi)
+    // Possono SOLO aggiornare, non creare o eliminare
+    function isGlobalExerciseEditor() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/platform_admins/exercise_editors) &&
+             getUserTenantId() in get(/databases/$(database)/documents/platform_admins/exercise_editors).data.tenantIds;
+    }
+    
+    // Helper per ottenere tenantId dell'utente corrente
+    function getUserTenantId() {
+      return exists(/databases/$(database)/documents/user_tenants/$(request.auth.uid)) 
+             ? get(/databases/$(database)/documents/user_tenants/$(request.auth.uid)).data.tenantId 
+             : '';
+    }
 
     // SuperAdmin di un tenant specifico (proprietario business)
     function isTenantSuperAdmin(tenantId) {
@@ -482,6 +495,17 @@ service cloud.firestore {
         allow write: if isTenantAdmin(tenantId);
       }
       
+      // --- ANAMNESIS (collection separata) ---
+      match /anamnesis/{userId} {
+        allow read: if request.auth != null && (
+          request.auth.uid == userId ||
+          isTenantAdmin(tenantId) ||
+          isTenantCoach(tenantId)
+        );
+        allow create, update: if isTenantAdmin(tenantId) || isTenantCoach(tenantId) || request.auth.uid == userId;
+        allow delete: if isTenantAdmin(tenantId);
+      }
+      
       // --- SCHEDE ALIMENTAZIONE ---
       match /schede_alimentazione/{userId} {
         allow read: if request.auth != null && (
@@ -691,7 +715,13 @@ service cloud.firestore {
     // --- PLATFORM EXERCISES (database globale esercizi) ---
     match /platform_exercises/{exerciseId} {
       allow read: if request.auth != null; // Tutti gli utenti autenticati possono leggere
-      allow create, update, delete: if isPlatformCEO(); // Solo platform CEO può gestire
+      allow create, delete: if isPlatformCEO(); // Solo platform CEO può creare/eliminare
+      // Update: CEO o editor autorizzati (solo nomi, non GIF)
+      allow update: if isPlatformCEO() || (
+        isGlobalExerciseEditor() &&
+        // L'editor può modificare solo nome e nameIt, non gifUrl
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['gifUrl', 'id']))
+      );
     }
 
     // --- PLATFORM FOODS (database globale alimenti) ---

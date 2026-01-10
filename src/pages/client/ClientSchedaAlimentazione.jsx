@@ -311,6 +311,41 @@ const ClientSchedaAlimentazione = () => {
           </div>
         </div>
 
+        {/* Sticky Macro Bar - Client Version */}
+        <div className="sticky top-0 z-10 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-3 lg:p-4 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="text-xs lg:text-sm font-medium text-slate-300">{selectedDay}</div>
+            <div className="flex items-center gap-4 lg:gap-6">
+              <div className="text-center">
+                <div className="text-base lg:text-lg font-bold text-emerald-400">{Math.round(dayTotals.kcal)}</div>
+                <div className="text-[10px] lg:text-xs text-slate-500">Kcal</div>
+              </div>
+              <div className="text-center">
+                <div className="text-base lg:text-lg font-bold text-blue-400">{dayTotals.proteine.toFixed(0)}g</div>
+                <div className="text-[10px] lg:text-xs text-slate-500">Pro</div>
+              </div>
+              <div className="text-center">
+                <div className="text-base lg:text-lg font-bold text-yellow-400">{dayTotals.carboidrati.toFixed(0)}g</div>
+                <div className="text-[10px] lg:text-xs text-slate-500">Carb</div>
+              </div>
+              <div className="text-center">
+                <div className="text-base lg:text-lg font-bold text-orange-400">{dayTotals.grassi.toFixed(0)}g</div>
+                <div className="text-[10px] lg:text-xs text-slate-500">Fat</div>
+              </div>
+            </div>
+          </div>
+          {/* Barra visuale */}
+          <div className="mt-2 h-1.5 lg:h-2 bg-white/10 rounded-full overflow-hidden flex">
+            {dayTotals.kcal > 0 && (
+              <>
+                <div className="bg-blue-500 h-full" style={{ width: `${(dayTotals.proteine * 4 / dayTotals.kcal) * 100}%` }} />
+                <div className="bg-yellow-500 h-full" style={{ width: `${(dayTotals.carboidrati * 4 / dayTotals.kcal) * 100}%` }} />
+                <div className="bg-orange-500 h-full" style={{ width: `${(dayTotals.grassi * 9 / dayTotals.kcal) * 100}%` }} />
+              </>
+            )}
+          </div>
+        </div>
+
         {/* Meals Grid - 2 Columns on Desktop */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 lg:gap-4">
           {schedaData.giorni[selectedDay]?.pasti?.map((pasto, index) => {
