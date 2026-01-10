@@ -95,6 +95,7 @@ const CalendarPage = React.lazy(() => import('./pages/shared/CalendarPage'));
 const CalendarReport = React.lazy(() => import('./pages/shared/CalendarReport'));
 const Notifications = React.lazy(() => import('./pages/shared/Notifications'));
 const AlimentazioneAllenamento = React.lazy(() => import('./pages/shared/AlimentazioneAllenamento'));
+const SchedeCenter = React.lazy(() => import('./pages/shared/SchedeCenter'));
 const SchedaAlimentazione = React.lazy(() => import('./pages/shared/SchedaAlimentazione'));
 const SchedaAllenamento = React.lazy(() => import('./pages/shared/SchedaAllenamento'));
 const OnboardingFlow = React.lazy(() => import('./pages/shared/OnboardingFlow'));
@@ -499,7 +500,8 @@ export default function App() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/coach-analytics" element={<CoachAnalytics />} />
           <Route path="/notifications" element={<Notifications />} />
-          <Route path="/alimentazione-allenamento" element={<AlimentazioneAllenamento />} />
+          <Route path="/alimentazione-allenamento" element={<SchedeCenter />} />
+          <Route path="/alimentazione-allenamento/legacy" element={<AlimentazioneAllenamento />} />
           <Route path="/scheda-alimentazione/:clientId" element={<SchedaAlimentazione />} />
           <Route path="/scheda-allenamento/:clientId" element={<SchedaAllenamento />} />
           <Route path="/courses" element={<CourseAdmin />} />

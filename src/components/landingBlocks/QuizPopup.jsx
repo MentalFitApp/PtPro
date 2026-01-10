@@ -672,8 +672,12 @@ const QuizPopup = ({
               value={answers[question.id] || ''}
               onChange={(e) => handleAnswer(question.id, e.target.value, 'text')}
               placeholder={question.placeholder || 'Scrivi la tua risposta...'}
-              className="w-full px-5 py-4 bg-white/5 border-2 border-white/10 rounded-2xl text-white text-lg placeholder-slate-500 focus:outline-none focus:border-opacity-100 transition-all"
-              style={{ borderColor: answers[question.id] ? accentColor : undefined }}
+              className="w-full px-5 py-4 bg-slate-800 border-2 border-white/10 rounded-2xl text-white text-lg placeholder-slate-500 focus:outline-none focus:border-opacity-100 transition-all appearance-none"
+              style={{ 
+                borderColor: answers[question.id] ? accentColor : undefined,
+                WebkitAppearance: 'none',
+                backgroundColor: '#1e293b' // slate-800 solid for iOS
+              }}
             />
             <motion.button
               whileHover={canProceed() ? { scale: 1.02 } : {}}
@@ -707,8 +711,12 @@ const QuizPopup = ({
                 placeholder={question.placeholder || 'Descrivi in dettaglio...'}
                 maxLength={question.maxLength || 500}
                 rows={4}
-                className="w-full px-5 py-4 bg-white/5 border-2 border-white/10 rounded-2xl text-white text-lg placeholder-slate-500 focus:outline-none focus:border-opacity-100 transition-all resize-none"
-                style={{ borderColor: answers[question.id] ? accentColor : undefined }}
+                className="w-full px-5 py-4 bg-slate-800 border-2 border-white/10 rounded-2xl text-white text-lg placeholder-slate-500 focus:outline-none focus:border-opacity-100 transition-all resize-none appearance-none"
+                style={{ 
+                  borderColor: answers[question.id] ? accentColor : undefined,
+                  WebkitAppearance: 'none',
+                  backgroundColor: '#1e293b' // slate-800 solid for iOS
+                }}
               />
               {question.maxLength && (
                 <div className="absolute bottom-3 right-3 text-xs text-slate-500">
@@ -782,9 +790,11 @@ const QuizPopup = ({
                 value={contactData[field.id] || ''}
                 onChange={(e) => handleContactChange(field.id, e.target.value)}
                 placeholder={field.placeholder}
-                className="w-full px-5 py-4 bg-white/5 border-2 border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 transition-all"
+                className="w-full px-5 py-4 bg-slate-800 border-2 border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 transition-all appearance-none"
                 style={{ 
-                  borderColor: contactData[field.id] ? `${accentColor}50` : undefined 
+                  borderColor: contactData[field.id] ? `${accentColor}50` : undefined,
+                  WebkitAppearance: 'none',
+                  backgroundColor: '#1e293b' // slate-800 solid for iOS
                 }}
               />
             </motion.div>

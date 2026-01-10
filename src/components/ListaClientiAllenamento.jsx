@@ -68,7 +68,44 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
     try {
       const clientsRef = getTenantCollection(db, 'clients');
       const snapshot = await getDocs(clientsRef);
-      const clientsData = snapshot.docs.map(doc => {
+      
+      // Carica anche le schede dalle collection separate
+      const schedeAllenamentoRef = getTenantCollection(db, 'schede_allenamento');
+      const schedeAlimentazioneRef = getTenantCollection(db, 'schede_alimentazione');
+      
+      const [schedeAllenSnap, schedeAlimSnap] = await Promise.all([
+        getDocs(schedeAllenamentoRef),
+        getDocs(schedeAlimentazioneRef)
+      ]);
+      
+      // Crea mappe per lookup veloce
+      const schedeAllenMap = {};
+      schedeAllenSnap.docs.forEach(doc => {
+        const data = doc.data();
+        schedeAllenMap[doc.id] = {
+          consegnata: true,
+          scadenza: data.scadenza || data.validoFino || null,
+          dataConsegna: data.createdAt || data.updatedAt || null
+        };
+      });
+      
+      const schedeAlimMap = {};
+      schedeAlimSnap.docs.forEach(doc => {
+        const data = doc.data();
+        schedeAlimMap[doc.id] = {
+          consegnata: true,
+          scadenza: data.scadenza || data.validoFino || null,
+          dataConsegna: data.createdAt || data.updatedAt || null
+        };
+      });
+      
+      const clientsData = snapshot.docs
+        .filter(doc => {
+          const data = doc.data();
+          // Escludi clienti eliminati o archiviati
+          return !data.isDeleted && !data.isArchived;
+        })
+        .map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -76,10 +113,10 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
           email: data.email || '',
           phone: data.phone || '',
           createdAt: data.createdAt || data.startDate || null,
-          // Scheda Allenamento
-          schedaAllenamento: data.schedaAllenamento || {},
-          // Scheda Alimentazione
-          schedaAlimentazione: data.schedaAlimentazione || {}
+          // Scheda Allenamento - Prima cerca nella collection, poi nel doc client
+          schedaAllenamento: schedeAllenMap[doc.id] || data.schedaAllenamento || {},
+          // Scheda Alimentazione - Prima cerca nella collection, poi nel doc client
+          schedaAlimentazione: schedeAlimMap[doc.id] || data.schedaAlimentazione || {}
         };
       });
       setClients(clientsData);
@@ -134,16 +171,17 @@ const ListaClientiAllenamento = ({ onBack, initialFilter }) => {
       if (activeTab === 'nuovi') {
         return isNewClient(client);
       } else if (activeTab === 'alimentazione_scade') {
-        const days = getDaysUntilExpiry(client.schedaAlimentazione?.scadenza);
-        return days !== null && days >= 0 && days <= 7;
+        // Mostra chi HA una scheda alimentazione attiva (consegnata)
+        const status = getStatusForCard(client.schedaAlimentazione);
+        return status === 'consegnata' || status === 'scaduta';
       } else if (activeTab === 'allenamento_scade') {
-        const days = getDaysUntilExpiry(client.schedaAllenamento?.scadenza);
-        return days !== null && days >= 0 && days <= 7;
+        // Mostra chi HA una scheda allenamento attiva (consegnata)
+        const status = getStatusForCard(client.schedaAllenamento);
+        return status === 'consegnata' || status === 'scaduta';
       } else if (activeTab === 'scaduti') {
-        const allenamentoDays = getDaysUntilExpiry(client.schedaAllenamento?.scadenza);
-        const alimentazioneDays = getDaysUntilExpiry(client.schedaAlimentazione?.scadenza);
-        return (allenamentoDays !== null && allenamentoDays < 0) || 
-               (alimentazioneDays !== null && alimentazioneDays < 0);
+        const allenamentoStatus = getStatusForCard(client.schedaAllenamento);
+        const alimentazioneStatus = getStatusForCard(client.schedaAlimentazione);
+        return allenamentoStatus === 'scaduta' || alimentazioneStatus === 'scaduta';
       }
 
       // Status filter (for 'tutti' tab)

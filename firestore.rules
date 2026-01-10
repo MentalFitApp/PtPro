@@ -355,12 +355,17 @@ service cloud.firestore {
       // Questa regola aggiunge il create pubblico per form.
       match /leads/{leadId} {
         // Validazione anti-spam: richiede campi minimi e limita dimensioni
-        allow create: if request.resource.data.keys().hasAny(['email', 'phone', 'name']) &&
-                        request.resource.data.size() < 20 &&
+        // Supporta sia campi inglesi (email, phone, name) che italiani (nome, cognome, telefono)
+        allow create: if request.resource.data.keys().hasAny(['email', 'phone', 'name', 'nome', 'cognome', 'telefono']) &&
+                        request.resource.data.size() < 30 &&
                         (!request.resource.data.keys().hasAny(['email']) || 
                          (request.resource.data.email is string && request.resource.data.email.size() < 100)) &&
                         (!request.resource.data.keys().hasAny(['name']) || 
-                         (request.resource.data.name is string && request.resource.data.name.size() < 200));
+                         (request.resource.data.name is string && request.resource.data.name.size() < 200)) &&
+                        (!request.resource.data.keys().hasAny(['nome']) || 
+                         (request.resource.data.nome is string && request.resource.data.nome.size() < 200)) &&
+                        (!request.resource.data.keys().hasAny(['cognome']) || 
+                         (request.resource.data.cognome is string && request.resource.data.cognome.size() < 200));
         
         // Solo admin possono leggere e gestire i leads
         allow read, list: if isTenantAdmin(tenantId) || isPlatformCEO();
