@@ -77,6 +77,7 @@ const QuizPopup = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [direction, setDirection] = useState(1);
+  const [isTransitioning, setIsTransitioning] = useState(false); // Blocca click rapidi
   const containerRef = useRef(null);
 
   // Mouse tracking for glow effect
@@ -156,6 +157,9 @@ const QuizPopup = ({
 
   // Handle answer for different question types
   const handleAnswer = useCallback((questionId, value, questionType, maxSelections) => {
+    // Blocca click durante transizione per evitare skip
+    if (isTransitioning) return;
+    
     if (questionType === 'multiple') {
       setAnswers(prev => {
         const currentAnswers = prev[questionId] || [];
@@ -169,16 +173,19 @@ const QuizPopup = ({
       });
     } else if (questionType === 'single') {
       setAnswers(prev => ({ ...prev, [questionId]: value }));
-      // Auto advance for single selection
+      // Auto advance for single selection - con protezione anti-spam
+      setIsTransitioning(true);
       setTimeout(() => {
         setDirection(1);
         setCurrentStep(prev => prev + 1);
+        // Sblocca dopo che la transizione è completata
+        setTimeout(() => setIsTransitioning(false), 300);
       }, 400);
     } else {
       // Text/textarea - just update the value
       setAnswers(prev => ({ ...prev, [questionId]: value }));
     }
-  }, []);
+  }, [isTransitioning]);
 
   // Handle contact form change
   const handleContactChange = (field, value) => {
@@ -349,15 +356,21 @@ const QuizPopup = ({
   };
 
   const goBack = () => {
-    if (currentStep > 0) {
+    if (currentStep > 0 && !isTransitioning) {
+      setIsTransitioning(true);
       setDirection(-1);
       setCurrentStep(prev => prev - 1);
+      setTimeout(() => setIsTransitioning(false), 300);
     }
   };
 
   const goNext = () => {
-    setDirection(1);
-    setCurrentStep(prev => prev + 1);
+    if (!isTransitioning) {
+      setIsTransitioning(true);
+      setDirection(1);
+      setCurrentStep(prev => prev + 1);
+      setTimeout(() => setIsTransitioning(false), 300);
+    }
   };
 
   // Check if can proceed from current question
@@ -580,8 +593,15 @@ const QuizPopup = ({
         transition={{ delay: 0.7 }}
         whileHover={{ scale: 1.03, boxShadow: `0 20px 60px -15px ${accentColor}80` }}
         whileTap={{ scale: 0.98 }}
-        onClick={() => { setDirection(1); setCurrentStep(1); }}
-        className="w-full py-5 px-8 text-white font-bold text-xl rounded-2xl shadow-2xl transition-all relative overflow-hidden group"
+        onClick={() => { 
+          if (isTransitioning) return;
+          setIsTransitioning(true);
+          setDirection(1); 
+          setCurrentStep(1);
+          setTimeout(() => setIsTransitioning(false), 300);
+        }}
+        disabled={isTransitioning}
+        className="w-full py-5 px-8 text-white font-bold text-xl rounded-2xl shadow-2xl transition-all relative overflow-hidden group disabled:opacity-70"
         style={{ 
           background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})`,
         }}
