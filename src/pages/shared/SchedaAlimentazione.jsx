@@ -94,19 +94,20 @@ const SchedaAlimentazione = () => {
   // Edit pasto name
   const [editingPastoIndex, setEditingPastoIndex] = useState(null);
   const [editingPastoName, setEditingPastoName] = useState('');
+  const [draftChecked, setDraftChecked] = useState(false);
 
   useEffect(() => {
     loadClientAndScheda();
   }, [clientId]);
 
-  // Carica dati salvati automaticamente da localStorage
+  // Carica dati salvati automaticamente da localStorage (solo una volta)
   useEffect(() => {
-    if (!clientId) return;
+    if (!clientId || draftChecked || loading) return;
     
     const autosavedKey = `scheda_alimentazione_draft_${clientId}`;
     const savedDraft = localStorage.getItem(autosavedKey);
     
-    if (savedDraft) {
+    if (savedDraft && !schedaExists) {
       try {
         const parsedDraft = JSON.parse(savedDraft);
         const savedTime = new Date(parsedDraft.savedAt);
@@ -114,8 +115,9 @@ const SchedaAlimentazione = () => {
         const hoursSinceSave = (now - savedTime) / (1000 * 60 * 60);
         
         // Mostra prompt solo se ci sono dati salvati nelle ultime 24 ore
-        if (hoursSinceSave < 24 && !schedaExists) {
-          const shouldRestore = confirm(
+        if (hoursSinceSave < 24) {
+          setDraftChecked(true); // Segna che abbiamo già controllato
+          const shouldRestore = window.confirm(
             `Trovata bozza salvata automaticamente il ${savedTime.toLocaleString('it-IT')}. Vuoi ripristinarla?`
           );
           
@@ -130,7 +132,8 @@ const SchedaAlimentazione = () => {
         console.error('Errore ripristino bozza:', error);
       }
     }
-  }, [clientId, schedaExists]);
+    setDraftChecked(true);
+  }, [clientId, schedaExists, loading, draftChecked]);
 
   // Autosalvataggio in localStorage ogni volta che schedaData cambia
   useEffect(() => {
@@ -645,15 +648,39 @@ const SchedaAlimentazione = () => {
     exportNutritionCardToPDF(schedaData, clientName);
   };
 
-  // Preset Management - Multi-tenant
+  // Preset Management - Multi-tenant with legacy fallback
   const loadPresets = async () => {
     try {
-      const presetsRef = getTenantCollection(db, 'preset_alimentazione');
-      const snapshot = await getDocs(presetsRef);
       const presets = [];
+      
+      // Carica preset dal nuovo formato multi-tenant
+      const presetsRef = getTenantCollection(db, 'preset_alimentazione');
+      console.log('🔍 Loading presets from tenant collection...');
+      const snapshot = await getDocs(presetsRef);
+      console.log(`📦 Found ${snapshot.size} tenant presets`);
       snapshot.forEach(doc => {
-        presets.push({ id: doc.id, ...doc.data() });
+        console.log('  - Preset:', doc.id, doc.data().name);
+        presets.push({ id: doc.id, ...doc.data(), source: 'tenant' });
       });
+      
+      // Fallback: carica anche preset dal vecchio formato (root level)
+      try {
+        const legacyPresetsRef = collection(db, 'preset_alimentazione');
+        console.log('🔍 Loading presets from legacy root collection...');
+        const legacySnapshot = await getDocs(legacyPresetsRef);
+        console.log(`📦 Found ${legacySnapshot.size} legacy presets`);
+        legacySnapshot.forEach(doc => {
+          console.log('  - Legacy Preset:', doc.id, doc.data().name);
+          // Evita duplicati
+          if (!presets.find(p => p.id === doc.id)) {
+            presets.push({ id: doc.id, ...doc.data(), source: 'legacy' });
+          }
+        });
+      } catch (legacyError) {
+        console.log('No legacy presets found:', legacyError.message);
+      }
+      
+      console.log(`✅ Total presets loaded: ${presets.length}`);
       setAvailablePresets(presets);
     } catch (error) {
       console.error('Errore caricamento preset:', error);
@@ -800,13 +827,13 @@ const SchedaAlimentazione = () => {
                   Salvataggio automatico attivo
                 </span>
               )}
-              {schedaExists && !isEditMode && (
+              {!isEditMode && (
                 <button
                   onClick={() => setIsEditMode(true)}
                   className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white preserve-white rounded-lg transition-colors"
                 >
                   <Sparkles size={18} />
-                  Modifica Scheda
+                  {schedaExists ? 'Modifica Scheda' : 'Crea Scheda'}
                 </button>
               )}
               {isEditMode && (

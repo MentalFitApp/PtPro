@@ -512,6 +512,24 @@ service cloud.firestore {
         allow delete: if isTenantAdmin(tenantId);
       }
       
+      // --- PRESET ALIMENTAZIONE ---
+      match /preset_alimentazione/{presetId} {
+        allow read, list: if request.auth != null && (
+          isTenantAdmin(tenantId) ||
+          isTenantCoach(tenantId)
+        );
+        allow create, update, delete: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
+      }
+      
+      // --- PRESET ALLENAMENTO ---
+      match /preset_allenamento/{presetId} {
+        allow read, list: if request.auth != null && (
+          isTenantAdmin(tenantId) ||
+          isTenantCoach(tenantId)
+        );
+        allow create, update, delete: if isTenantAdmin(tenantId) || isTenantCoach(tenantId);
+      }
+      
       // --- ESERCIZI CUSTOM (per tenant) ---
       match /exercises/{exerciseId} {
         allow read: if request.auth != null && (

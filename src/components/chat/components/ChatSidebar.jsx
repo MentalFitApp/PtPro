@@ -84,16 +84,6 @@ const ChatSidebar = ({
             )}
           </h1>
           <div className="flex items-center gap-2">
-            {/* Global Search Button */}
-            <motion.button
-              onClick={onGlobalSearch}
-              className="p-3 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-colors"
-              title="Cerca in tutte le chat"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Search size={22} />
-            </motion.button>
             <motion.button
               onClick={onNewChat}
               className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-xl transition-colors shadow-xl shadow-cyan-500/40"

@@ -1,0 +1,1159 @@
+[
+  {
+    "id": "0501",
+    "name": "jack burpee",
+    "nameIt": "Jack Burpee",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves",
+      "shoulders",
+      "triceps",
+      "core"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci",
+      "shoulders",
+      "Tricipiti",
+      "core"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0501.gif",
+    "instructions": [
+      "Start in a standing position with your feet shoulder-width apart.",
+      "Lower your body into a squat position, placing your hands on the ground in front of you.",
+      "Kick your feet back, landing in a push-up position.",
+      "Perform a push-up, lowering your chest to the ground and then pushing back up.",
+      "Jump your feet forward, landing in a squat position.",
+      "Jump up explosively, reaching your arms overhead.",
+      "Land softly and immediately lower back into the squat position to begin the next repetition."
+    ],
+    "description": "The jack burpee is a high-intensity, full-body exercise that combines a squat, push-up, and jump to elevate heart rate and improve cardiovascular fitness while also engaging multiple muscle groups.",
+    "difficulty": "advanced",
+    "difficultyIt": "Avanzato",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.442Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0501.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0501&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0630",
+    "name": "mountain climber",
+    "nameIt": "Mountain Climber",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "core",
+      "shoulders",
+      "triceps"
+    ],
+    "secondaryMusclesIt": [
+      "core",
+      "shoulders",
+      "Tricipiti"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0630&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Start in a high plank position with your hands directly under your shoulders and your body in a straight line.",
+      "Engage your core and bring your right knee towards your chest, then quickly switch and bring your left knee towards your chest.",
+      "Continue alternating legs in a running motion, keeping your hips low and your core engaged.",
+      "Maintain a steady pace and breathe evenly throughout the exercise.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "Mountain climbers are a dynamic bodyweight exercise that targets the cardiovascular system while also engaging the core, shoulders, and triceps. The movement mimics a running motion in a plank position, making it effective for both cardio and muscular endurance.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.444Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0630&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0684",
+    "name": "run (equipment)",
+    "nameIt": "Run (equipment)",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0684.gif",
+    "instructions": [
+      "Start by standing upright with your feet hip-width apart.",
+      "Engage your core and keep your upper body relaxed.",
+      "Begin jogging in place, lifting your knees up towards your chest and landing softly on the balls of your feet.",
+      "Maintain a steady pace and continue jogging for the desired duration or distance.",
+      "Remember to breathe deeply and maintain good posture throughout the exercise."
+    ],
+    "description": "Running in place is a cardiovascular exercise that elevates the heart rate and improves overall endurance. It requires no equipment and can be performed anywhere, making it accessible for most fitness levels.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.445Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0684.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0684&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0685",
+    "name": "run",
+    "nameIt": "Run",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0685.gif",
+    "instructions": [
+      "Start by standing upright with your feet hip-width apart.",
+      "Engage your core and keep your upper body relaxed.",
+      "Begin jogging in place, lifting your knees up towards your chest and landing softly on the balls of your feet.",
+      "Maintain a steady pace and continue jogging for the desired duration or distance.",
+      "Remember to breathe deeply and maintain good posture throughout the exercise."
+    ],
+    "description": "Running is a fundamental cardiovascular exercise that involves jogging or running in place or over a distance. It primarily targets the cardiovascular system and also engages the lower body muscles.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.445Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0685.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0685&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0798",
+    "name": "stationary bike walk",
+    "nameIt": "Stationary Bike Walk",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "leverage machine",
+    "equipmentIt": "Macchina a leva",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0798&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Adjust the seat height and position on the stationary bike to ensure proper alignment.",
+      "Place your feet on the pedals and secure them with the straps if available.",
+      "Start pedaling at a comfortable pace, keeping your back straight and core engaged.",
+      "Maintain a steady rhythm and increase the resistance level if desired.",
+      "Continue pedaling for the desired duration of your cardio workout.",
+      "Cool down by gradually reducing your pace and resistance level.",
+      "Stretch your leg muscles after the workout to prevent tightness and promote recovery."
+    ],
+    "description": "The stationary bike walk is a cardiovascular exercise performed on a leverage machine (stationary bike). It primarily targets the cardiovascular system and also engages the quadriceps, hamstrings, and calves. The exercise involves pedaling at a steady pace, with the option to adjust resistance for increased intensity.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.446Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0798&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1160",
+    "name": "burpee",
+    "nameIt": "Burpee",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves",
+      "shoulders",
+      "chest"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci",
+      "shoulders",
+      "chest"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1160.gif",
+    "instructions": [
+      "Start in a standing position with your feet shoulder-width apart.",
+      "Lower your body into a squat position by bending your knees and placing your hands on the floor in front of you.",
+      "Kick your feet back into a push-up position.",
+      "Perform a push-up, keeping your body in a straight line.",
+      "Jump your feet back into the squat position.",
+      "Jump up explosively, reaching your arms overhead.",
+      "Land softly and immediately lower back into a squat position to begin the next repetition."
+    ],
+    "description": "The burpee is a full-body exercise that combines a squat, push-up, and jump to elevate heart rate and build strength and endurance.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.449Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1160.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1160&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1201",
+    "name": "dumbbell burpee",
+    "nameIt": "Manubrio Burpee",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves",
+      "shoulders",
+      "triceps",
+      "core"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci",
+      "shoulders",
+      "Tricipiti",
+      "core"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1201.gif",
+    "instructions": [
+      "Start in a standing position with your feet shoulder-width apart and a dumbbell in each hand.",
+      "Lower your body into a squat position, placing the dumbbells on the ground in front of you.",
+      "Kick your feet back into a push-up position, keeping your body in a straight line.",
+      "Perform a push-up, bending your elbows and lowering your chest towards the ground.",
+      "Jump your feet back towards your hands, landing in a squat position.",
+      "Stand up explosively, lifting the dumbbells off the ground and bringing them to your shoulders.",
+      "Press the dumbbells overhead, fully extending your arms.",
+      "Lower the dumbbells back to your shoulders and repeat the entire sequence for the desired number of repetitions."
+    ],
+    "description": "The dumbbell burpee is a full-body exercise that combines a squat, push-up, and overhead press using dumbbells. It targets the cardiovascular system while also engaging multiple muscle groups, including the legs, shoulders, triceps, and core.",
+    "difficulty": "advanced",
+    "difficultyIt": "Avanzato",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.449Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1201.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1201&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "2138",
+    "name": "stationary bike run v. 3",
+    "nameIt": "Stationary Bike Run V. 3",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "stationary bike",
+    "equipmentIt": "Cyclette",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/2138.gif",
+    "instructions": [
+      "Adjust the seat height and position to ensure proper alignment.",
+      "Place your feet on the pedals and secure them with the straps if available.",
+      "Start pedaling at a comfortable pace.",
+      "Maintain a steady rhythm and increase the resistance as desired.",
+      "Engage your core muscles to maintain stability and proper posture.",
+      "Continue pedaling for the desired duration of your workout.",
+      "Gradually decrease the resistance and slow down before coming to a complete stop.",
+      "Stretch your legs and cool down after the workout."
+    ],
+    "description": "The stationary bike run v. 3 is a cardiovascular exercise performed on a stationary bike. It primarily targets the cardiovascular system and also engages the quadriceps, hamstrings, and calves. The exercise involves pedaling at a steady rhythm, adjusting resistance as needed, and maintaining proper posture throughout the workout.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.457Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/2138.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=2138&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "2141",
+    "name": "walk elliptical cross trainer",
+    "nameIt": "Walk Elliptical Cross Trainer",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "elliptical machine",
+    "equipmentIt": "Ellittica",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "glutes",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Glutei",
+      "Polpacci"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=2141&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Adjust the resistance level and incline of the elliptical machine to your desired settings.",
+      "Step onto the pedals of the machine and grip the handles lightly.",
+      "Begin by pushing down with your feet and pulling the handles towards your body.",
+      "Continue this motion, alternating between pushing and pulling, to simulate a walking or running motion.",
+      "Maintain a steady pace and keep your core engaged throughout the exercise.",
+      "Continue for the desired duration of your cardio workout.",
+      "Gradually decrease the intensity and speed of the machine before stepping off."
+    ],
+    "description": "The walk elliptical cross trainer is a cardiovascular exercise performed on an elliptical machine. It simulates a walking or running motion with low impact on the joints, making it suitable for a wide range of fitness levels. The exercise targets the cardiovascular system while also engaging the quadriceps, hamstrings, glutes, and calves.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.457Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=2141&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "2311",
+    "name": "walking on stepmill",
+    "nameIt": "Walking On Stepmill",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "stepmill machine",
+    "equipmentIt": "Stepper",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "glutes",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Glutei",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/2311.gif",
+    "instructions": [
+      "Adjust the stepmill machine to a comfortable level.",
+      "Step onto the machine and place your hands on the handrails for support.",
+      "Start walking by placing one foot on a step and then the other, alternating between legs.",
+      "Maintain an upright posture and engage your core muscles.",
+      "Continue walking for the desired duration or distance.",
+      "Gradually increase the intensity or speed as you become more comfortable with the exercise.",
+      "Remember to cool down and stretch after completing the exercise."
+    ],
+    "description": "Walking on a stepmill is a cardiovascular exercise performed on a machine that simulates stair climbing. It primarily targets the cardiovascular system while also engaging the lower body muscles.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.458Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/2311.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=2311&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "2331",
+    "name": "cycle cross trainer",
+    "nameIt": "Cycle Cross Trainer",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "leverage machine",
+    "equipmentIt": "Macchina a leva",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/2331.gif",
+    "instructions": [
+      "Adjust the seat height and position yourself on the cycle cross trainer.",
+      "Place your feet on the pedals and grip the handlebars.",
+      "Start pedaling in a smooth and controlled motion.",
+      "Maintain a steady pace and increase the resistance if desired.",
+      "Continue pedaling for the desired duration of your cardio workout."
+    ],
+    "description": "The cycle cross trainer is a cardiovascular exercise performed on a leverage machine, targeting the cardiovascular system while also engaging the quadriceps, hamstrings, and glutes. It is performed by pedaling in a smooth and controlled motion, with adjustable resistance for varying intensity.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.458Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/2331.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=2331&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "2612",
+    "name": "jump rope",
+    "nameIt": "Jump Rope",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "rope",
+    "equipmentIt": "Corda",
+    "secondaryMuscles": [
+      "calves",
+      "quadriceps",
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Polpacci",
+      "quadriceps",
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/2612.gif",
+    "instructions": [
+      "Hold the handles of the jump rope with your hands, palms facing inward.",
+      "Stand with your feet shoulder-width apart and knees slightly bent.",
+      "Swing the rope over your head and jump over it as it comes towards your feet.",
+      "Land softly on the balls of your feet and repeat the jump as the rope comes around again.",
+      "Continue jumping for the desired duration or number of repetitions."
+    ],
+    "description": "Jump rope is a cardiovascular exercise that involves continuously jumping over a swinging rope. It primarily targets the cardiovascular system while also engaging the calves, quadriceps, hamstrings, and glutes.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.459Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/2612.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=2612&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3219",
+    "name": "scissor jumps (male)",
+    "nameIt": "Scissor Jumps (male)",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=3219&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Stand with your feet shoulder-width apart.",
+      "Jump off the ground and simultaneously cross your right leg in front of your left leg.",
+      "As you land, quickly switch legs, crossing your left leg in front of your right leg.",
+      "Continue alternating legs and jumping as quickly as possible.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "Scissor jumps are a plyometric cardio exercise that involves jumping and alternating the crossing of your legs in mid-air. This movement elevates the heart rate and challenges coordination and lower body strength.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.460Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3219&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3220",
+    "name": "astride jumps (male)",
+    "nameIt": "Astride Jumps (male)",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3220.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart.",
+      "Bend your knees and lower your body into a squat position.",
+      "Jump explosively upwards, extending your legs and arms.",
+      "While in the air, spread your legs apart and bring your arms out to the sides.",
+      "Land softly with your feet shoulder-width apart, bending your knees to absorb the impact.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "Astride jumps (male) are a plyometric cardio exercise that involves jumping explosively from a squat position, spreading the legs and arms in the air, and landing softly. This movement targets the cardiovascular system while also engaging the quadriceps, hamstrings, and calves.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.460Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3220.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3220&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3221",
+    "name": "half knee bends (male)",
+    "nameIt": "Half Knee Bends (male)",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3221.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart.",
+      "Bend your knees and lower your body down as if you were sitting back into a chair.",
+      "Keep your chest up and your weight in your heels.",
+      "Pause for a moment at the bottom, then push through your heels to return to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "Half knee bends (male) are a bodyweight exercise that primarily targets the cardiovascular system while also engaging the quadriceps, hamstrings, and glutes. The movement involves bending the knees and lowering the body as if sitting back into a chair, then returning to standing. This exercise is often used for light cardio, warm-ups, or rehabilitation.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.460Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3221.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3221&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3222",
+    "name": "semi squat jump (male)",
+    "nameIt": "Semi Squat Jump (male)",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=3222&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Stand with your feet shoulder-width apart.",
+      "Bend your knees and lower your body into a squat position.",
+      "Jump explosively, extending your hips and knees while swinging your arms for momentum.",
+      "Land softly on the balls of your feet and immediately go into the next repetition.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The semi squat jump is a plyometric exercise that targets the cardiovascular system while also engaging the quadriceps, hamstrings, and calves. It involves performing a partial squat followed by an explosive jump, making it effective for improving cardiovascular fitness, lower body power, and coordination.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.460Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3222&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3223",
+    "name": "star jump (male)",
+    "nameIt": "Star Jump (male)",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3223.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart and your arms by your sides.",
+      "Bend your knees slightly and jump up explosively.",
+      "As you jump, spread your legs and extend your arms out to the sides, forming a star shape with your body.",
+      "Land softly on the balls of your feet with your knees slightly bent.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The star jump (male) is a plyometric cardio exercise that involves jumping explosively while spreading the arms and legs out to form a star shape in the air. It targets the cardiovascular system and also engages the quadriceps, hamstrings, and calves.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.460Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3223.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3223&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3224",
+    "name": "jack jump (male)",
+    "nameIt": "Jack Jump (male)",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3224.gif",
+    "instructions": [
+      "Stand with your feet together and your arms by your sides.",
+      "Jump up, spreading your feet apart and raising your arms above your head.",
+      "As you land, quickly jump back to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "A dynamic bodyweight exercise that involves jumping with feet apart and arms overhead, then returning to the starting position. This movement elevates the heart rate and targets the cardiovascular system, with secondary emphasis on the quadriceps and calves.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.460Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3224.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3224&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3318",
+    "name": "swing 360",
+    "nameIt": "Swing 360",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "shoulders",
+      "core"
+    ],
+    "secondaryMusclesIt": [
+      "shoulders",
+      "core"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3318.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart and knees slightly bent.",
+      "Hold your arms straight out in front of you, parallel to the ground.",
+      "Engage your core and swing your arms in a circular motion, rotating your torso as you do so.",
+      "Continue the circular motion, swinging your arms and rotating your torso for the desired number of repetitions.",
+      "Remember to breathe throughout the exercise."
+    ],
+    "description": "The swing 360 is a dynamic bodyweight exercise that targets the cardiovascular system while also engaging the shoulders and core. It involves swinging the arms in a circular motion while rotating the torso, making it a great movement for increasing heart rate and improving coordination.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.461Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3318.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3318&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3360",
+    "name": "bear crawl",
+    "nameIt": "Bear Crawl",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "core",
+      "shoulders",
+      "triceps"
+    ],
+    "secondaryMusclesIt": [
+      "core",
+      "shoulders",
+      "Tricipiti"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3360.gif",
+    "instructions": [
+      "Start on all fours with your hands directly under your shoulders and your knees directly under your hips.",
+      "Lift your knees slightly off the ground, keeping your back flat and your core engaged.",
+      "Move your right hand and left foot forward simultaneously, followed by your left hand and right foot.",
+      "Continue crawling forward, alternating your hand and foot movements.",
+      "Maintain a steady pace and keep your core tight throughout the exercise.",
+      "Continue for the desired distance or time."
+    ],
+    "description": "The bear crawl is a full-body movement that targets the cardiovascular system while also engaging the core, shoulders, and triceps. It involves crawling on all fours with knees off the ground, requiring coordination and endurance.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.461Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3360.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3360&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3361",
+    "name": "skater hops",
+    "nameIt": "Skater Hops",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "glutes",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Glutei",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3361.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart.",
+      "Bend your knees slightly and jump to the right, landing on your right foot.",
+      "As you land, swing your left leg behind your right leg and tap the ground with your left toes.",
+      "Immediately jump to the left, landing on your left foot.",
+      "As you land, swing your right leg behind your left leg and tap the ground with your right toes.",
+      "Continue alternating sides, jumping and tapping the ground with each leg.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "Skater hops are a dynamic, lateral jumping exercise that targets the cardiovascular system while also engaging the lower body muscles. The movement mimics a speed skater's motion, helping to improve agility, coordination, and cardiovascular endurance.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.461Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3361.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3361&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3636",
+    "name": "high knee against wall",
+    "nameIt": "High Knee Against Wall",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "glutes",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Glutei",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3636.gif",
+    "instructions": [
+      "Stand facing a wall with your feet hip-width apart.",
+      "Place your hands on the wall for support.",
+      "Engage your core and lift your right knee up towards your chest, while keeping your left foot on the ground.",
+      "Quickly switch legs, bringing your left knee up towards your chest and lowering your right foot back down.",
+      "Continue alternating legs in a running motion, bringing your knees up as high as possible.",
+      "Maintain a fast pace and keep your upper body stable throughout the exercise.",
+      "Repeat for the desired duration or number of repetitions."
+    ],
+    "description": "High knee against wall is a bodyweight cardio exercise that involves running in place while bringing your knees up high, using a wall for balance and support. It targets the cardiovascular system and also works the quadriceps, hamstrings, glutes, and calves.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.462Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3636.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3636&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3637",
+    "name": "wheel run",
+    "nameIt": "Wheel Run",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3637.gif",
+    "instructions": [
+      "Start in a plank position with your hands on the wheel and your body straight.",
+      "Engage your core and start rolling the wheel forward by extending your arms.",
+      "Continue rolling until your body is fully extended and your arms are overhead.",
+      "Reverse the movement by pulling the wheel back towards your body, using your core and arms.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The wheel run is a dynamic exercise that targets the cardiovascular system while also engaging the core, quadriceps, hamstrings, and calves. It involves rolling a wheel forward and backward from a plank position, requiring both strength and coordination.",
+    "difficulty": "advanced",
+    "difficultyIt": "Avanzato",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.462Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3637.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3637&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3638",
+    "name": "push to run",
+    "nameIt": "Push To Run",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3638.gif",
+    "instructions": [
+      "Start in a push-up position with your hands shoulder-width apart and your body in a straight line.",
+      "Lower your chest towards the ground by bending your elbows, keeping your body straight.",
+      "Push through your hands to extend your arms and return to the starting position.",
+      "Quickly bring one knee towards your chest, then quickly switch and bring the other knee towards your chest.",
+      "Continue alternating knees as fast as you can while maintaining good form.",
+      "Continue for the desired duration or number of repetitions."
+    ],
+    "description": "The 'push to run' exercise combines a push-up with a running-in-place motion, alternating knees towards the chest in a plank position. This movement elevates the heart rate and challenges both upper body strength and cardiovascular endurance.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.462Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3638.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3638&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3655",
+    "name": "walking high knees lunge",
+    "nameIt": "Walking High Knees Affondi",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "glutes",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Glutei",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3655.gif",
+    "instructions": [
+      "Stand with your feet hip-width apart.",
+      "Lift your right knee up towards your chest as high as you can while balancing on your left leg.",
+      "Step forward with your right foot and lower your body into a lunge position, bending both knees to a 90-degree angle.",
+      "Push off with your right foot and bring your left knee up towards your chest.",
+      "Step forward with your left foot and lower your body into a lunge position.",
+      "Continue alternating legs and lunging forward, keeping your core engaged and maintaining a steady pace.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The walking high knees lunge is a dynamic exercise that combines high knee raises with forward lunges, targeting the cardiovascular system while also engaging the quadriceps, hamstrings, glutes, and calves. It is performed using only body weight and is effective for improving cardiovascular endurance, coordination, and lower body strength.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.462Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3655.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3655&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3656",
+    "name": "short stride run",
+    "nameIt": "Short Stride Run",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3656.gif",
+    "instructions": [
+      "Find an open space or a treadmill to perform the exercise.",
+      "Stand tall with your feet hip-width apart.",
+      "Start jogging in place, lifting your knees high and pumping your arms.",
+      "After a few seconds, start taking short strides forward, maintaining a quick pace.",
+      "Continue running with short strides for the desired duration or distance."
+    ],
+    "description": "Short stride run is a cardiovascular exercise performed by running with quick, short steps, either in place or moving forward. It primarily targets the cardiovascular system and also engages the quadriceps, hamstrings, and calves.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.462Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3656.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3656&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3666",
+    "name": "walking on incline treadmill",
+    "nameIt": "Walking On Inclinata Treadmill",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "leverage machine",
+    "equipmentIt": "Macchina a leva",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Polpacci"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=3666&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Adjust the incline level on the treadmill to your desired intensity.",
+      "Stand on the treadmill with your feet shoulder-width apart.",
+      "Start walking at a comfortable pace, ensuring that you maintain proper form.",
+      "Engage your core muscles and keep your back straight throughout the exercise.",
+      "Continue walking on the incline treadmill for the desired duration of your cardio workout.",
+      "Gradually decrease the incline and speed of the treadmill to cool down before stopping."
+    ],
+    "description": "Walking on an incline treadmill is a cardiovascular exercise performed on a treadmill with the incline set to increase intensity. It primarily targets the cardiovascular system while also engaging the quadriceps, hamstrings, and calves.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.462Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3666&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3671",
+    "name": "ski step",
+    "nameIt": "Ski Step",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "glutes",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Glutei",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3671.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart.",
+      "Bend your knees slightly and keep your back straight.",
+      "Jump to the right, landing on your right foot while swinging your left leg behind your right leg.",
+      "Immediately jump to the left, landing on your left foot while swinging your right leg behind your left leg.",
+      "Continue alternating jumps from side to side, mimicking a skiing motion.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The ski step is a dynamic, bodyweight exercise that mimics the motion of skiing. It involves lateral jumps from side to side, engaging the cardiovascular system while also working the lower body muscles.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.462Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3671.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3671&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3672",
+    "name": "back and forth step",
+    "nameIt": "Schiena And Forth Step",
+    "bodyPart": "cardio",
+    "bodyPartIt": "Cardio",
+    "target": "cardiovascular system",
+    "targetIt": "Sistema cardiovascolare",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "glutes",
+      "calves"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Glutei",
+      "Polpacci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3672.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart.",
+      "Step forward with your right foot, bending your knee and lowering your body into a lunge position.",
+      "Push off with your right foot and step back to the starting position.",
+      "Repeat the movement with your left foot, alternating legs with each step.",
+      "Continue stepping back and forth, maintaining a steady pace.",
+      "Repeat for the desired duration or number of repetitions."
+    ],
+    "description": "A dynamic bodyweight exercise that alternates stepping forward and backward, targeting the cardiovascular system and lower body muscles.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "cardio",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.462Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3672.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3672&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  }
+]

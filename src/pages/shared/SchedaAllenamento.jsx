@@ -362,15 +362,39 @@ const SchedaAllenamento = () => {
     exportWorkoutCardToPDF(schedaData, clientName);
   };
 
-  // Preset Management - Multi-tenant
+  // Preset Management - Multi-tenant with legacy fallback
   const loadPresets = async () => {
     try {
-      const presetsRef = getTenantCollection(db, 'preset_allenamento');
-      const snapshot = await getDocs(presetsRef);
       const presets = [];
+      
+      // Carica preset dal nuovo formato multi-tenant
+      const presetsRef = getTenantCollection(db, 'preset_allenamento');
+      console.log('🔍 Loading workout presets from tenant collection...');
+      const snapshot = await getDocs(presetsRef);
+      console.log(`📦 Found ${snapshot.size} tenant workout presets`);
       snapshot.forEach(doc => {
-        presets.push({ id: doc.id, ...doc.data() });
+        console.log('  - Preset:', doc.id, doc.data().name);
+        presets.push({ id: doc.id, ...doc.data(), source: 'tenant' });
       });
+      
+      // Fallback: carica anche preset dal vecchio formato (root level)
+      try {
+        const legacyPresetsRef = collection(db, 'preset_allenamento');
+        console.log('🔍 Loading workout presets from legacy root collection...');
+        const legacySnapshot = await getDocs(legacyPresetsRef);
+        console.log(`📦 Found ${legacySnapshot.size} legacy workout presets`);
+        legacySnapshot.forEach(doc => {
+          console.log('  - Legacy Preset:', doc.id, doc.data().name);
+          // Evita duplicati
+          if (!presets.find(p => p.id === doc.id)) {
+            presets.push({ id: doc.id, ...doc.data(), source: 'legacy' });
+          }
+        });
+      } catch (legacyError) {
+        console.log('No legacy workout presets found:', legacyError.message);
+      }
+      
+      console.log(`✅ Total workout presets loaded: ${presets.length}`);
       setAvailablePresets(presets);
     } catch (error) {
       console.error('Errore caricamento preset:', error);
@@ -503,13 +527,13 @@ const SchedaAllenamento = () => {
               Torna indietro
             </button>
             <div className="flex gap-2">
-              {schedaExists && !isEditMode && (
+              {!isEditMode && (
                 <button
                   onClick={() => setIsEditMode(true)}
                   className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                 >
                   <Sparkles size={18} />
-                  Modifica Scheda
+                  {schedaExists ? 'Modifica Scheda' : 'Crea Scheda'}
                 </button>
               )}
               {isEditMode && (

@@ -1,0 +1,1347 @@
+[
+  {
+    "id": "0079",
+    "name": "barbell reverse wrist curl v. 2",
+    "nameIt": "Bilanciere Reverse Wrist Curl V. 2",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0079.gif",
+    "instructions": [
+      "Sit on a bench with your feet flat on the ground and your knees bent.",
+      "Hold a barbell with an overhand grip, palms facing down, and your hands shoulder-width apart.",
+      "Rest your forearms on your thighs, allowing your wrists to hang off the edge.",
+      "Keeping your forearms stationary, exhale and curl your wrists upward as far as possible.",
+      "Hold the contracted position for a brief pause, then inhale and slowly lower the barbell back to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell reverse wrist curl v. 2 is an isolation exercise that targets the forearms, specifically the extensor muscles. It is performed seated, with the forearms resting on the thighs and the wrists curling a barbell upward using an overhand grip.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.422Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0079.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0079&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0082",
+    "name": "barbell reverse wrist curl",
+    "nameIt": "Bilanciere Reverse Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0082.gif",
+    "instructions": [
+      "Sit on a bench with your feet flat on the ground and hold a barbell with an overhand grip, palms facing down.",
+      "Rest your forearms on your thighs, allowing your wrists to hang off the edge.",
+      "Slowly curl your wrists upward, bringing the barbell towards your body.",
+      "Pause for a moment at the top, then slowly lower the barbell back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell reverse wrist curl is an isolation exercise targeting the forearms, specifically the wrist extensors. It is performed seated, with the forearms resting on the thighs and the wrists curling a barbell upward using an overhand grip.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.422Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0082.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0082&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0104",
+    "name": "barbell standing back wrist curl",
+    "nameIt": "Bilanciere In Piedi Schiena Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "biceps",
+      "shoulders"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "shoulders"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0104.gif",
+    "instructions": [
+      "Stand up straight with your feet shoulder-width apart and hold a barbell with an overhand grip.",
+      "Rest the barbell on the back of your hands with your palms facing down and your fingers pointing towards your body.",
+      "Keeping your upper arms stationary, exhale and curl your wrists upwards as far as possible.",
+      "Hold the contracted position for a brief pause, then inhale and slowly lower the barbell back to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell standing back wrist curl is an isolation exercise targeting the forearms, specifically the wrist extensors. It involves curling the barbell upwards using only the wrists while standing.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.424Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0104.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0104&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0125",
+    "name": "barbell wrist curl v. 2",
+    "nameIt": "Bilanciere Wrist Curl V. 2",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0125.gif",
+    "instructions": [
+      "Sit on a bench with your feet flat on the ground and your knees bent.",
+      "Hold a barbell with an underhand grip, palms facing up, and your hands shoulder-width apart.",
+      "Rest your forearms on your thighs, allowing your wrists to hang off the edge.",
+      "Slowly curl your wrists upward, bringing the barbell towards your forearms.",
+      "Pause for a moment at the top, then slowly lower the barbell back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell wrist curl v. 2 is an isolation exercise that targets the forearm muscles, specifically the wrist flexors. It is performed seated, with the forearms resting on the thighs and the wrists hanging off the edge, curling a barbell upward using only the wrists.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.425Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0125.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0125&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0126",
+    "name": "barbell wrist curl",
+    "nameIt": "Bilanciere Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0126&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Sit on a bench with your feet flat on the ground and your forearms resting on your thighs, holding a barbell with an underhand grip.",
+      "Allow the barbell to roll down to your fingertips, keeping your wrists straight.",
+      "Slowly curl the barbell up towards your forearms by flexing your wrists.",
+      "Pause for a moment at the top, then slowly lower the barbell back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell wrist curl is an isolation exercise targeting the forearm muscles, particularly the wrist flexors. It is performed seated, with the forearms resting on the thighs and the wrists curling a barbell upward.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.425Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0126&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0210",
+    "name": "cable reverse wrist curl",
+    "nameIt": "Cavo Reverse Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "cable",
+    "equipmentIt": "Cavo",
+    "secondaryMuscles": [
+      "forearms",
+      "wrists"
+    ],
+    "secondaryMusclesIt": [
+      "Avambracci",
+      "wrists"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0210&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Attach a cable to a low pulley and sit on a bench facing the cable machine.",
+      "Grasp the cable handle with an overhand grip, palms facing down.",
+      "Rest your forearms on your thighs, with your wrists hanging off the edge.",
+      "Keeping your forearms stationary, exhale and curl your wrists upward as far as possible.",
+      "Pause for a moment at the top, then inhale and slowly lower your wrists back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The cable reverse wrist curl is an isolation exercise targeting the forearms, specifically the wrist extensors. It is performed using a cable machine and focuses on strengthening the muscles responsible for wrist extension.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.428Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0210&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0224",
+    "name": "cable standing back wrist curl",
+    "nameIt": "Cavo In Piedi Schiena Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "cable",
+    "equipmentIt": "Cavo",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0224.gif",
+    "instructions": [
+      "Stand facing a cable machine with your feet shoulder-width apart.",
+      "Hold the cable handle with an overhand grip, palms facing down.",
+      "Keep your arms straight and your elbows close to your sides.",
+      "Slowly curl your wrists upward, bringing the cable handle towards your body.",
+      "Pause for a moment at the top, then slowly lower the cable handle back to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The cable standing back wrist curl is an isolation exercise targeting the forearms. It is performed using a cable machine and focuses on strengthening the wrist extensors.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.428Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0224.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0224&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0247",
+    "name": "cable wrist curl",
+    "nameIt": "Cavo Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "cable",
+    "equipmentIt": "Cavo",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0247&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Attach a straight bar to a low pulley cable machine.",
+      "Stand facing the machine with your feet shoulder-width apart.",
+      "Grasp the bar with an underhand grip, palms facing up, and your hands shoulder-width apart.",
+      "Rest your forearms on a bench or pad, with your wrists hanging off the edge.",
+      "Keeping your forearms stationary, exhale and curl your wrists upward as far as possible.",
+      "Pause for a moment at the top, then inhale and slowly lower the bar back to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The cable wrist curl is an isolation exercise targeting the forearm muscles, particularly the wrist flexors. It is performed using a cable machine and a straight bar, focusing on curling the wrists upward while keeping the forearms stationary.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.430Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0247&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0347",
+    "name": "dumbbell lying pronation",
+    "nameIt": "Manubrio Sdraiato Pronation",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "biceps",
+      "shoulders"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "shoulders"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0347&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Lie flat on a bench with your chest facing down and your arms extended straight down, holding a dumbbell in each hand.",
+      "Rotate your palms so they are facing up.",
+      "Keeping your upper arms stationary, exhale and curl the dumbbells as you rotate your palms to face down.",
+      "Inhale and slowly lower the dumbbells back to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The dumbbell lying pronation is an exercise targeting the forearms, specifically focusing on pronation strength. It is performed lying face down on a bench, holding dumbbells, and rotating the wrists to work the forearm muscles.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.435Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0347&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0349",
+    "name": "dumbbell lying supination",
+    "nameIt": "Manubrio Sdraiato Supination",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "biceps",
+      "shoulders"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "shoulders"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0349.gif",
+    "instructions": [
+      "Lie flat on a bench with your feet flat on the ground.",
+      "Hold a dumbbell in each hand with your palms facing up and your arms fully extended.",
+      "Keeping your upper arms stationary, curl the dumbbells towards your shoulders by contracting your forearms.",
+      "Pause for a moment at the top, then slowly lower the dumbbells back to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The dumbbell lying supination is an isolation exercise targeting the forearms, specifically focusing on the supinator muscles. It also engages the biceps and shoulders as secondary muscles. The movement involves curling dumbbells while lying on a bench, emphasizing forearm rotation and strength.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.435Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0349.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0349&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0358",
+    "name": "dumbbell one arm reverse wrist curl",
+    "nameIt": "Manubrio One Arm Reverse Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "wrist extensors"
+    ],
+    "secondaryMusclesIt": [
+      "wrist extensors"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0358.gif",
+    "instructions": [
+      "Sit on a bench or chair with your feet flat on the ground.",
+      "Hold a dumbbell in one hand with an overhand grip, palm facing down.",
+      "Rest your forearm on your thigh, with your wrist hanging off the edge.",
+      "Slowly lower the dumbbell towards the ground by flexing your wrist.",
+      "Pause for a moment at the bottom, then slowly curl your wrist back up towards your body.",
+      "Repeat for the desired number of repetitions, then switch to the other arm."
+    ],
+    "description": "The dumbbell one arm reverse wrist curl targets the forearms and wrist extensors by requiring the lifter to curl a dumbbell upward using only the wrist, with the forearm supported on the thigh. This exercise helps build forearm strength and endurance.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.435Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0358.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0358&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0364",
+    "name": "dumbbell one arm wrist curl",
+    "nameIt": "Manubrio One Arm Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0364.gif",
+    "instructions": [
+      "Sit on a bench or chair with your feet flat on the ground.",
+      "Hold a dumbbell in one hand with an underhand grip, resting your forearm on your thigh.",
+      "Allow your wrist to extend, letting the dumbbell roll down towards your fingers.",
+      "Slowly curl your wrist back up, bringing the dumbbell towards your forearm.",
+      "Repeat for the desired number of repetitions, then switch to the other hand."
+    ],
+    "description": "The dumbbell one arm wrist curl is an isolation exercise targeting the forearm muscles, particularly the wrist flexors. It is performed seated, with the forearm supported and the wrist curling a dumbbell upward.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.436Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0364.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0364&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0367",
+    "name": "dumbbell over bench one arm wrist curl",
+    "nameIt": "Manubrio Over Bench One Arm Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "biceps",
+      "shoulders"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "shoulders"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0367.gif",
+    "instructions": [
+      "Sit on a bench with your feet flat on the ground and hold a dumbbell in one hand, palm facing down.",
+      "Rest your forearm on the bench with your wrist hanging off the edge.",
+      "Slowly curl your wrist upwards, bringing the dumbbell towards your forearm.",
+      "Pause for a moment at the top, then slowly lower the dumbbell back down to the starting position.",
+      "Repeat for the desired number of repetitions, then switch to the other arm."
+    ],
+    "description": "The dumbbell over bench one arm wrist curl is an isolation exercise targeting the forearm muscles. It is performed seated, with the forearm resting on a bench and the wrist curling a dumbbell upward.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.436Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0367.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0367&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0368",
+    "name": "dumbbell over bench reverse wrist curl",
+    "nameIt": "Manubrio Over Bench Reverse Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0368.gif",
+    "instructions": [
+      "Sit on a bench with your feet flat on the ground and hold a dumbbell in each hand, palms facing down.",
+      "Rest your forearms on the bench, allowing your wrists to hang off the edge.",
+      "Slowly curl your wrists upward, bringing the dumbbells towards your body.",
+      "Pause for a moment at the top, then slowly lower the dumbbells back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The dumbbell over bench reverse wrist curl is an isolation exercise targeting the forearms, specifically the wrist extensors. It is performed seated with the forearms resting on a bench and the wrists hanging off the edge, curling the dumbbells upward with the backs of the hands facing up.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.436Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0368.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0368&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0369",
+    "name": "dumbbell over bench wrist curl",
+    "nameIt": "Manubrio Over Bench Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0369.gif",
+    "instructions": [
+      "Sit on a bench with your forearms resting on the bench and your palms facing up, holding a dumbbell in each hand.",
+      "Allow your wrists to hang over the edge of the bench.",
+      "Slowly curl your wrists upward, squeezing your forearms at the top of the movement.",
+      "Pause for a moment, then slowly lower your wrists back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The dumbbell over bench wrist curl is an isolation exercise targeting the forearms. It is performed by sitting on a bench with your forearms resting on the bench, palms up, and curling your wrists upward with dumbbells.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.436Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0369.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0369&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0385",
+    "name": "dumbbell reverse wrist curl",
+    "nameIt": "Manubrio Reverse Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0385&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Sit on a bench or chair with your feet flat on the ground.",
+      "Hold a dumbbell in each hand with an overhand grip, palms facing down.",
+      "Rest your forearms on your thighs, allowing your wrists to hang off the edge.",
+      "Slowly curl your wrists upward, bringing the dumbbells towards your body.",
+      "Pause for a moment at the top, then slowly lower the dumbbells back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The dumbbell reverse wrist curl is an isolation exercise targeting the forearms, specifically the extensor muscles. It is performed seated, with the forearms resting on the thighs and the wrists curling the dumbbells upward using an overhand grip.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.437Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0385&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0399",
+    "name": "dumbbell seated one arm rotate",
+    "nameIt": "Manubrio Seduto One Arm Rotate",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "shoulders",
+      "biceps"
+    ],
+    "secondaryMusclesIt": [
+      "shoulders",
+      "Bicipiti"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0399.gif",
+    "instructions": [
+      "Sit on a bench with your back straight and hold a dumbbell in one hand, resting it on your thigh.",
+      "Raise the dumbbell up to shoulder height, keeping your elbow close to your body.",
+      "Rotate your forearm outward, away from your body, while keeping your upper arm stationary.",
+      "Pause for a moment at the top, then slowly rotate your forearm back to the starting position.",
+      "Repeat for the desired number of repetitions, then switch to the other arm."
+    ],
+    "description": "The dumbbell seated one arm rotate is an isolation exercise targeting the forearms, with secondary emphasis on the shoulders and biceps. It involves rotating the forearm outward while keeping the upper arm stationary, helping to improve forearm strength and mobility.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.438Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0399.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0399&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0401",
+    "name": "dumbbell seated palms up wrist curl",
+    "nameIt": "Manubrio Seduto Palms Up Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "biceps",
+      "shoulders"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "shoulders"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0401.gif",
+    "instructions": [
+      "Sit on a bench with your feet flat on the ground and hold a dumbbell in each hand, palms facing up.",
+      "Rest your forearms on your thighs, allowing your wrists to hang off the edge.",
+      "Slowly curl your wrists upward, squeezing your forearms at the top of the movement.",
+      "Pause for a moment, then lower your wrists back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The dumbbell seated palms up wrist curl is an isolation exercise targeting the forearm muscles, specifically the wrist flexors. It is performed seated, with the forearms resting on the thighs and the wrists curling the dumbbells upward.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.438Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0401.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0401&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0455",
+    "name": "finger curls",
+    "nameIt": "Finger Curls",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "wrist flexors",
+      "grip muscles"
+    ],
+    "secondaryMusclesIt": [
+      "wrist flexors",
+      "grip muscles"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0455.gif",
+    "instructions": [
+      "Sit on a bench with your feet flat on the ground and hold a barbell with an underhand grip, palms facing up.",
+      "Rest your forearms on your thighs, allowing your wrists to hang off the edge.",
+      "Slowly curl your fingers towards your palms, squeezing the barbell tightly.",
+      "Hold the contraction for a moment, then slowly release your fingers back to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "Finger curls are an isolation exercise targeting the forearms, specifically the finger flexors and grip muscles. This movement helps improve grip strength and forearm development.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.441Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0455.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0455&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0518",
+    "name": "kettlebell alternating hang clean",
+    "nameIt": "Kettlebell Alternato Hang Clean",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "kettlebell",
+    "equipmentIt": "Kettlebell",
+    "secondaryMuscles": [
+      "shoulders",
+      "traps",
+      "core"
+    ],
+    "secondaryMusclesIt": [
+      "shoulders",
+      "Trapezi",
+      "core"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0518.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart, holding a kettlebell in each hand with an overhand grip.",
+      "Bend your knees slightly and hinge forward at the hips, keeping your back straight and chest up.",
+      "Allow the kettlebells to hang in front of your body with your arms fully extended.",
+      "In one fluid motion, explosively extend your hips, shrug your shoulders, and pull the kettlebells up towards your shoulders.",
+      "As the kettlebells reach shoulder height, rotate your wrists and catch the kettlebells in the rack position, with your palms facing inward and the kettlebells resting on the outside of your forearms.",
+      "Lower the kettlebells back down to the starting position and repeat the movement with the opposite arm.",
+      "Continue alternating arms for the desired number of repetitions."
+    ],
+    "description": "The kettlebell alternating hang clean is a dynamic exercise targeting the forearms, with significant involvement of the shoulders, traps, and core. It requires coordination, explosive power, and proper technique to safely transition the kettlebell from the hang to the rack position while alternating arms.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.442Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0518.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0518&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0721",
+    "name": "side wrist pull stretch",
+    "nameIt": "Side Wrist Pull Stretch",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "wrists",
+      "hands"
+    ],
+    "secondaryMusclesIt": [
+      "wrists",
+      "hands"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0721&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Stand with your feet shoulder-width apart and your arms extended in front of you.",
+      "Extend your right arm out to the side, parallel to the ground, with your palm facing down.",
+      "With your left hand, grab your right hand and gently pull it towards your body, feeling a stretch in your right forearm.",
+      "Hold the stretch for 15-30 seconds, then release.",
+      "Repeat on the other side."
+    ],
+    "description": "The side wrist pull stretch is a bodyweight exercise that targets the forearms and helps improve flexibility and mobility in the wrists and hands. It is performed by extending one arm to the side and gently pulling the hand towards the body with the opposite hand, creating a stretch in the forearm.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "stretching",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.445Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0721&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0771",
+    "name": "smith standing back wrist curl",
+    "nameIt": "Multipower In Piedi Schiena Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "smith machine",
+    "equipmentIt": "Multipower",
+    "secondaryMuscles": [
+      "biceps",
+      "triceps"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "Tricipiti"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0771.gif",
+    "instructions": [
+      "Stand facing the smith machine with your feet shoulder-width apart.",
+      "Grasp the barbell with an overhand grip, hands shoulder-width apart.",
+      "Keep your back straight and your elbows close to your body.",
+      "Slowly curl your wrists upwards, bringing the barbell towards your body.",
+      "Pause for a moment at the top, then slowly lower the barbell back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The smith standing back wrist curl is an isolation exercise targeting the forearms, performed using a smith machine. It involves curling the wrists upwards while holding the barbell with an overhand grip, focusing on forearm strength.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.446Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0771.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0771&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0854",
+    "name": "weighted standing hand squeeze",
+    "nameIt": "Weighted In Piedi Hand Squeeze",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "weighted",
+    "equipmentIt": "Con zavorra",
+    "secondaryMuscles": [
+      "biceps",
+      "triceps"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "Tricipiti"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0854.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart and hold a weight in each hand.",
+      "Extend your arms straight in front of you, palms facing each other.",
+      "Squeeze your hands together as hard as you can, engaging your forearms.",
+      "Hold the squeeze for a few seconds, then release.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The weighted standing hand squeeze is an exercise targeting the forearms, performed by squeezing weights in each hand while standing. This movement helps to improve grip strength and forearm endurance.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.447Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0854.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0854&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0859",
+    "name": "wrist rollerer",
+    "nameIt": "Wrist Rollerer",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "weighted",
+    "equipmentIt": "Con zavorra",
+    "secondaryMuscles": [
+      "biceps",
+      "triceps"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "Tricipiti"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0859.gif",
+    "instructions": [
+      "Attach a weight to one end of a rope or bar.",
+      "Hold the other end of the rope or bar with both hands, palms facing down.",
+      "Stand with your feet shoulder-width apart and your arms fully extended in front of you.",
+      "Slowly roll the weight up towards your hands by flexing your wrists.",
+      "Pause for a moment at the top, then slowly lower the weight back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The wrist roller is an exercise that targets the forearms by using a weighted rope or bar. It involves rolling a weight up and down using wrist flexion and extension, which helps build forearm strength and endurance.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.447Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0859.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0859&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0994",
+    "name": "band reverse wrist curl",
+    "nameIt": "Elastico Reverse Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "band",
+    "equipmentIt": "Elastico",
+    "secondaryMuscles": [
+      "forearms"
+    ],
+    "secondaryMusclesIt": [
+      "Avambracci"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0994.gif",
+    "instructions": [
+      "Sit on a bench or chair with your feet flat on the ground.",
+      "Hold the band with an overhand grip, palms facing down, and wrap it around your fingers.",
+      "Rest your forearms on your thighs, with your wrists hanging off the edge.",
+      "Slowly curl your wrists upward, squeezing your forearms.",
+      "Pause for a moment at the top, then slowly lower your wrists back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The band reverse wrist curl is an isolation exercise targeting the forearms, specifically the wrist extensors, using a resistance band. It is performed seated, with the forearms resting on the thighs and the wrists curling upward against the resistance of the band.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.448Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0994.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0994&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1016",
+    "name": "band wrist curl",
+    "nameIt": "Elastico Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "band",
+    "equipmentIt": "Elastico",
+    "secondaryMuscles": [
+      "biceps",
+      "triceps"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "Tricipiti"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=1016&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Sit on a bench or chair with your feet flat on the ground.",
+      "Hold the band with both hands, palms facing up, and rest your forearms on your thighs.",
+      "Slowly curl your wrists upward, squeezing your forearms.",
+      "Pause for a moment at the top, then slowly lower your wrists back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The band wrist curl is an isolation exercise targeting the forearms using a resistance band. It is performed seated, with the forearms resting on the thighs, and involves curling the wrists upward to strengthen the forearm muscles.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.448Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1016&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1411",
+    "name": "barbell palms down wrist curl over a bench",
+    "nameIt": "Bilanciere Palms Down Wrist Curl Over A Bench",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1411.gif",
+    "instructions": [
+      "Sit on a bench with your feet flat on the ground and your forearms resting on your thighs, palms facing down.",
+      "Hold a barbell with an overhand grip, hands shoulder-width apart.",
+      "Lower the barbell towards the ground by flexing your wrists, keeping your forearms stationary.",
+      "Pause for a moment at the bottom, then slowly raise the barbell back up by extending your wrists.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell palms down wrist curl over a bench is an isolation exercise targeting the forearms, specifically the wrist extensors. It is performed by sitting on a bench, resting the forearms on the thighs or a bench, and curling a barbell upward using only the wrists.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.453Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1411.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1411&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1412",
+    "name": "barbell palms up wrist curl over a bench",
+    "nameIt": "Bilanciere Palms Up Wrist Curl Over A Bench",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "biceps",
+      "shoulders"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "shoulders"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=1412&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Sit on a bench with your feet flat on the ground and hold a barbell with an underhand grip, palms facing up.",
+      "Rest your forearms on the bench, allowing your wrists to hang off the edge.",
+      "Keeping your forearms stationary, exhale and curl your wrists upwards as far as possible.",
+      "Hold the contracted position for a brief pause, then inhale and slowly lower the barbell back to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell palms up wrist curl over a bench is an isolation exercise targeting the forearms, specifically the wrist flexors. It is performed by sitting on a bench, resting the forearms on the bench with wrists hanging off, and curling a barbell upwards using only the wrists.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.453Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1412&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1415",
+    "name": "dumbbell one arm seated neutral wrist curl",
+    "nameIt": "Manubrio One Arm Seduto Neutral Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1415.gif",
+    "instructions": [
+      "Sit on a bench with your feet flat on the ground and hold a dumbbell in one hand, palm facing up.",
+      "Rest your forearm on your thigh, allowing your wrist to hang off the edge.",
+      "Keeping your forearm stationary, curl your wrist upward as far as possible.",
+      "Pause for a moment at the top, then slowly lower your wrist back down to the starting position.",
+      "Repeat for the desired number of repetitions, then switch to the other hand."
+    ],
+    "description": "The dumbbell one arm seated neutral wrist curl is an isolation exercise targeting the forearm muscles, particularly the wrist flexors. It is performed seated, with the forearm resting on the thigh and the wrist curling a dumbbell upward.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.453Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1415.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1415&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1421",
+    "name": "modified push up to lower arms",
+    "nameIt": "Modified Piegamenti To Lower Arms",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "triceps",
+      "chest",
+      "shoulders"
+    ],
+    "secondaryMusclesIt": [
+      "Tricipiti",
+      "chest",
+      "shoulders"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1421.gif",
+    "instructions": [
+      "Start in a push-up position with your hands directly under your shoulders and your body in a straight line.",
+      "Lower your body down towards the ground by bending your elbows, keeping them close to your sides.",
+      "Once your elbows are at a 90-degree angle, lower your forearms to the ground, keeping your elbows directly under your shoulders.",
+      "Pause for a moment, then push through your palms to lift your forearms back up to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The modified push up to lower arms is a bodyweight exercise targeting the forearms, with secondary emphasis on the triceps, chest, and shoulders. It involves transitioning from a push-up position to lowering the forearms to the ground and then pressing back up.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.453Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1421.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1421&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1426",
+    "name": "smith seated wrist curl",
+    "nameIt": "Multipower Seduto Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "smith machine",
+    "equipmentIt": "Multipower",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1426.gif",
+    "instructions": [
+      "Sit on a bench in front of a Smith machine with your feet flat on the ground.",
+      "Grasp the barbell with an underhand grip, hands shoulder-width apart.",
+      "Rest your forearms on your thighs, allowing your wrists to hang off.",
+      "Slowly curl your wrists upward, bringing the barbell towards your forearms.",
+      "Pause for a moment at the top, then slowly lower the barbell back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The smith seated wrist curl is an isolation exercise targeting the forearms, performed using a Smith machine. It involves curling the wrists upward while seated, with the forearms resting on the thighs.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.453Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1426.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1426&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1428",
+    "name": "wrist circles",
+    "nameIt": "Wrist Circles",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "hands",
+      "wrists"
+    ],
+    "secondaryMusclesIt": [
+      "hands",
+      "wrists"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1428.gif",
+    "instructions": [
+      "Extend your arms straight out in front of you.",
+      "Make a fist with both hands.",
+      "Rotate your wrists in a circular motion, keeping your arms still.",
+      "Continue the wrist circles for the desired number of repetitions."
+    ],
+    "description": "Wrist circles are a bodyweight exercise focused on improving mobility and flexibility in the wrists and forearms. This movement is commonly used as a warm-up or rehabilitation exercise to increase blood flow and prepare the wrists for more strenuous activities.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "mobility",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.454Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1428.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1428&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1437",
+    "name": "dumbbell finger curls",
+    "nameIt": "Manubrio Finger Curls",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "wrist flexors",
+      "wrist extensors"
+    ],
+    "secondaryMusclesIt": [
+      "wrist flexors",
+      "wrist extensors"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1437.gif",
+    "instructions": [
+      "Sit on a bench or chair with your feet flat on the ground and your back straight.",
+      "Hold a dumbbell in one hand with an underhand grip, resting your forearm on your thigh, palm facing up.",
+      "Allow the dumbbell to roll down to your fingertips, then curl it back up by flexing your fingers.",
+      "Repeat for the desired number of repetitions, then switch to the other hand."
+    ],
+    "description": "Dumbbell finger curls are an isolation exercise targeting the forearms, specifically the muscles responsible for finger flexion. This exercise helps improve grip strength and forearm development.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.454Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1437.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1437&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1441",
+    "name": "dumbbell over bench one arm reverse wrist curl",
+    "nameIt": "Manubrio Over Bench One Arm Reverse Wrist Curl",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "biceps",
+      "brachialis"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "brachialis"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1441.gif",
+    "instructions": [
+      "Sit on a bench with your feet flat on the ground and hold a dumbbell in one hand, palm facing down.",
+      "Rest your forearm on the bench with your wrist hanging off the edge.",
+      "Slowly curl your wrist upwards, bringing the dumbbell towards your forearm.",
+      "Pause for a moment at the top, then slowly lower the dumbbell back down to the starting position.",
+      "Repeat for the desired number of repetitions, then switch to the other arm."
+    ],
+    "description": "The dumbbell over bench one arm reverse wrist curl targets the forearms, specifically the extensors, and is performed by curling the wrist upwards while the forearm is supported on a bench.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.454Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1441.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1441&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "2288",
+    "name": "lever gripper hands",
+    "nameIt": "Lever Gripper Hands",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "leverage machine",
+    "equipmentIt": "Macchina a leva",
+    "secondaryMuscles": [
+      "biceps",
+      "triceps"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "Tricipiti"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/2288.gif",
+    "instructions": [
+      "Adjust the seat height and grip the handles of the leverage machine.",
+      "Keep your back straight and your feet flat on the ground.",
+      "Exhale and squeeze the handles, contracting your forearms.",
+      "Hold the contraction for a second, then slowly release and return to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The lever gripper hands exercise targets the forearms using a leverage machine. It involves gripping and squeezing the handles to strengthen the forearm muscles, with secondary activation of the biceps and triceps.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.458Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/2288.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=2288&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "2705",
+    "name": "dumbbell lying pronation on floor",
+    "nameIt": "Manubrio Sdraiato Pronation On Floor",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "biceps",
+      "triceps"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "Tricipiti"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/2705.gif",
+    "instructions": [
+      "Lie flat on the floor with your face down and your arms extended straight out in front of you, holding a dumbbell in each hand.",
+      "Rotate your palms so they are facing down towards the floor.",
+      "Keeping your arms straight, lift the dumbbells off the floor by contracting your forearms.",
+      "Continue lifting until your forearms are fully contracted and the dumbbells are at shoulder level.",
+      "Hold for a moment, then slowly lower the dumbbells back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The dumbbell lying pronation on floor targets the forearms by requiring you to rotate your palms downward while lifting dumbbells, emphasizing forearm strength and stability.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.459Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/2705.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=2705&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "2706",
+    "name": "dumbbell lying supination on floor",
+    "nameIt": "Manubrio Sdraiato Supination On Floor",
+    "bodyPart": "lower arms",
+    "bodyPartIt": "Avambracci",
+    "target": "forearms",
+    "targetIt": "Avambracci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "biceps",
+      "shoulders"
+    ],
+    "secondaryMusclesIt": [
+      "Bicipiti",
+      "shoulders"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/2706.gif",
+    "instructions": [
+      "Lie flat on your back on the floor with your legs extended and your arms by your sides, holding a dumbbell in each hand.",
+      "Rotate your palms to face up, keeping your elbows close to your sides.",
+      "Slowly curl the dumbbells towards your shoulders, squeezing your forearms.",
+      "Pause for a moment at the top, then slowly lower the dumbbells back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The dumbbell lying supination on floor is an isolation exercise targeting the forearms, with secondary engagement of the biceps and shoulders. It involves lying on your back and performing a supination curl motion with dumbbells.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.459Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/2706.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=2706&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  }
+]

@@ -13,6 +13,7 @@ export { default as AudioRecorder } from './components/AudioRecorder';
 export { default as AudioPlayer } from './components/AudioPlayer';
 export { default as LinkPreview } from './components/LinkPreview';
 export { default as TypingIndicator } from './components/TypingIndicator';
+export { default as NewChatModal } from './components/NewChatModal';
 
 // Utils
 export * from './utils/chatHelpers.jsx';

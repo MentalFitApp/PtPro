@@ -1,0 +1,2136 @@
+[
+  {
+    "id": "0088",
+    "name": "barbell seated calf raise",
+    "nameIt": "Bilanciere Seduto Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "hamstrings",
+      "quadriceps"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "quadriceps"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0088.gif",
+    "instructions": [
+      "Sit on a bench with your feet flat on the floor and a barbell resting on your thighs.",
+      "Place the balls of your feet on a raised platform, such as a block or step.",
+      "Position the barbell across your thighs and hold it securely with your hands.",
+      "Keeping your back straight and your core engaged, lift your heels off the ground by extending your ankles.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell seated calf raise is an exercise that targets the calf muscles by lifting a barbell placed on the thighs while seated. It primarily focuses on strengthening the calves and also engages the hamstrings and quadriceps as secondary muscles.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.422Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0088.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0088&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0108",
+    "name": "barbell standing leg calf raise",
+    "nameIt": "Bilanciere In Piedi Gamba Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0108.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart and place a barbell across your upper back.",
+      "Raise your heels off the ground as high as possible, using your calves.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell standing leg calf raise is a strength exercise targeting the calves. It involves standing with a barbell across your upper back and raising your heels off the ground to engage the calf muscles.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.424Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0108.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0108&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0111",
+    "name": "barbell standing rocking leg calf raise",
+    "nameIt": "Bilanciere In Piedi Rocking Gamba Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "hamstrings",
+      "quadriceps"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "quadriceps"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0111&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Stand with your feet shoulder-width apart and hold a barbell across your upper back.",
+      "Raise your heels off the ground as high as possible, balancing on the balls of your feet.",
+      "Slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell standing rocking leg calf raise targets the calves and involves raising your heels while balancing a barbell across your upper back. This exercise also engages the hamstrings and quadriceps as secondary muscles.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.424Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0111&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0257",
+    "name": "circles knee stretch",
+    "nameIt": "Circles Knee Stretch",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "hamstrings",
+      "quadriceps"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "quadriceps"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0257&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Stand with your feet shoulder-width apart and your hands on your hips.",
+      "Bend your knees slightly and lift your heels off the ground, balancing on the balls of your feet.",
+      "Keeping your knees bent, rotate your knees in a circular motion, first clockwise and then counterclockwise.",
+      "Perform the movement for the desired number of repetitions."
+    ],
+    "description": "The circles knee stretch is a bodyweight exercise that targets the calves and also engages the hamstrings and quadriceps. It involves standing on the balls of your feet with knees bent and rotating the knees in circular motions to improve mobility and flexibility in the lower legs.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "mobility",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.431Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0257&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0284",
+    "name": "donkey calf raise",
+    "nameIt": "Donkey Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0284.gif",
+    "instructions": [
+      "Stand with your toes on an elevated surface, such as a step or block.",
+      "Place your hands on a stable support, such as a wall or railing, for balance.",
+      "Raise your heels as high as possible, lifting your body weight onto the balls of your feet.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The donkey calf raise is a bodyweight exercise that targets the calves. It involves standing with your toes on an elevated surface and raising your heels as high as possible to work the calf muscles.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.431Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0284.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0284&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0400",
+    "name": "dumbbell seated one leg calf raise",
+    "nameIt": "Manubrio Seduto One Gamba Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0400&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Sit on a bench or chair with your feet flat on the ground and a dumbbell resting on your right thigh.",
+      "Extend your left leg straight out in front of you, keeping your foot flexed.",
+      "Place the ball of your right foot on an elevated surface, such as a step or weight plate.",
+      "Using your calf muscles, raise your right heel as high as possible.",
+      "Pause for a moment at the top, then slowly lower your heel back down to the starting position.",
+      "Repeat for the desired number of repetitions, then switch legs."
+    ],
+    "description": "The dumbbell seated one leg calf raise is an isolation exercise targeting the calf muscles, performed while seated with a dumbbell placed on the working thigh. It helps build strength and muscle in the calves, with some engagement of the hamstrings and glutes for stabilization.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.438Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0400&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0409",
+    "name": "dumbbell single leg calf raise",
+    "nameIt": "Manubrio Singola Gamba Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "ankles"
+    ],
+    "secondaryMusclesIt": [
+      "ankles"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0409&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Stand on the edge of a step or platform with your heels hanging off and your toes on the step.",
+      "Hold a dumbbell in one hand and place your other hand on a wall or railing for support.",
+      "Raise your heel as high as possible, lifting your body up onto your toes.",
+      "Pause for a moment at the top, then slowly lower your heel back down below the step.",
+      "Repeat for the desired number of repetitions, then switch to the other leg."
+    ],
+    "description": "The dumbbell single leg calf raise is a unilateral lower leg exercise that targets the calves, performed while holding a dumbbell for added resistance. It challenges balance and strength by isolating one leg at a time.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.439Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0409&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0417",
+    "name": "dumbbell standing calf raise",
+    "nameIt": "Manubrio In Piedi Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "ankles"
+    ],
+    "secondaryMusclesIt": [
+      "ankles"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0417.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart, holding a dumbbell in each hand.",
+      "Raise your heels off the ground as high as possible, using your calves.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The dumbbell standing calf raise is an exercise that targets the calf muscles by lifting the heels off the ground while holding dumbbells for added resistance.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.439Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0417.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0417&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0594",
+    "name": "lever seated calf raise",
+    "nameIt": "Lever Seduto Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "leverage machine",
+    "equipmentIt": "Macchina a leva",
+    "secondaryMuscles": [
+      "soleus",
+      "ankle stabilizers"
+    ],
+    "secondaryMusclesIt": [
+      "soleus",
+      "ankle stabilizers"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0594.gif",
+    "instructions": [
+      "Adjust the seat height so that your knees are slightly bent and your feet are flat on the footplate.",
+      "Place your toes on the footplate with your heels hanging off the edge.",
+      "Grasp the handles or the sides of the seat for stability.",
+      "Push through the balls of your feet to raise your heels as high as possible.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The lever seated calf raise is a machine-based exercise that targets the calf muscles, particularly the gastrocnemius and soleus. It is performed while seated, using a leverage machine to provide resistance as you raise and lower your heels.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.444Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0594.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0594&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0605",
+    "name": "lever standing calf raise",
+    "nameIt": "Lever In Piedi Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "leverage machine",
+    "equipmentIt": "Macchina a leva",
+    "secondaryMuscles": [
+      "soleus",
+      "ankle stabilizers"
+    ],
+    "secondaryMusclesIt": [
+      "soleus",
+      "ankle stabilizers"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0605.gif",
+    "instructions": [
+      "Adjust the machine to your height and stand with your feet shoulder-width apart.",
+      "Place your shoulders under the pads and hold onto the handles for stability.",
+      "Raise your heels as high as possible by extending your ankles.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The lever standing calf raise is a strength exercise performed on a leverage machine, targeting the calves. It involves raising and lowering the heels while standing, using resistance provided by the machine.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.444Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0605.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0605&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0727",
+    "name": "single leg calf raise (on a dumbbell)",
+    "nameIt": "Singola Gamba Polpaccio Alzate (on A Manubrio)",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "ankles",
+      "feet"
+    ],
+    "secondaryMusclesIt": [
+      "ankles",
+      "feet"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0727.gif",
+    "instructions": [
+      "Stand with your feet hip-width apart and hold a dumbbell in one hand.",
+      "Lift one foot off the ground and balance on the other foot.",
+      "Slowly raise your heel as high as possible, using your calf muscles.",
+      "Pause for a moment at the top, then slowly lower your heel back down.",
+      "Repeat for the desired number of repetitions, then switch to the other leg."
+    ],
+    "description": "The single leg calf raise (on a dumbbell) is a lower leg exercise that targets the calves, with secondary emphasis on the ankles and feet. It involves balancing on one leg while holding a dumbbell and performing a calf raise, which increases the challenge to balance and strength.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.445Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0727.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0727&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0738",
+    "name": "sled 45° calf press",
+    "nameIt": "Sled 45° Polpaccio Spinta",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "sled machine",
+    "equipmentIt": "Slitta",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0738.gif",
+    "instructions": [
+      "Adjust the sled machine to a 45-degree angle.",
+      "Place your feet on the sled platform with your toes pointing forward.",
+      "Push the sled platform away from you by extending your ankles and calves.",
+      "Pause for a moment at the top, then slowly lower the sled platform back to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The sled 45° calf press is a machine-based exercise that targets the calves by pressing a weighted sled away using the balls of your feet, focusing on ankle extension.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.445Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0738.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0738&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0742",
+    "name": "sled forward angled calf raise",
+    "nameIt": "Sled Forward Angled Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "sled machine",
+    "equipmentIt": "Slitta",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0742.gif",
+    "instructions": [
+      "Adjust the sled machine to a comfortable weight and position yourself on the machine with your toes on the platform and your heels hanging off.",
+      "Place your hands on the handles or the sides of the machine for support.",
+      "Engage your calves and slowly raise your heels as high as possible, pushing against the resistance of the sled.",
+      "Pause for a moment at the top of the movement, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The sled forward angled calf raise is a resistance exercise performed on a sled machine, targeting the calf muscles. The movement involves raising and lowering the heels while the toes remain on the platform, using the sled machine for added resistance.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.445Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0742.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0742&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0763",
+    "name": "smith reverse calf raises",
+    "nameIt": "Multipower Reverse Polpaccio Alzates",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "smith machine",
+    "equipmentIt": "Multipower",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0763.gif",
+    "instructions": [
+      "Adjust the smith machine bar to a height just below your shoulders.",
+      "Stand facing the bar with your feet hip-width apart and toes pointing forward.",
+      "Place the balls of your feet on the edge of a step or platform, with your heels hanging off.",
+      "Hold onto the bar for support, keeping your back straight and core engaged.",
+      "Raise your heels as high as possible, lifting your body weight onto the balls of your feet.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The smith reverse calf raises is a lower leg exercise performed on a smith machine, primarily targeting the calves and secondarily engaging the hamstrings. The movement involves raising and lowering the heels while standing on a step, using the smith machine bar for support.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.446Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0763.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0763&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0773",
+    "name": "smith standing leg calf raise",
+    "nameIt": "Multipower In Piedi Gamba Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "smith machine",
+    "equipmentIt": "Multipower",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0773&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Adjust the smith machine bar to a height that allows you to stand with your feet flat on the ground and your shoulders under the bar.",
+      "Position yourself under the bar with your feet shoulder-width apart and your toes pointing forward.",
+      "Place your hands on the bar for stability.",
+      "Engage your calves and slowly raise your heels off the ground, lifting your body up onto your toes.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The smith standing leg calf raise is a lower leg exercise performed using a smith machine. It primarily targets the calves, with secondary emphasis on the hamstrings and glutes. The movement involves raising the heels to stand on the toes, then lowering back down, using the smith machine for stability and added resistance.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.446Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0773&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0833",
+    "name": "weighted donkey calf raise",
+    "nameIt": "Weighted Donkey Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "weighted",
+    "equipmentIt": "Con zavorra",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/0833.gif",
+    "instructions": [
+      "Stand on a raised platform with your toes on the edge and your heels hanging off.",
+      "Hold onto a stable object for support.",
+      "Raise your heels as high as possible by extending your ankles.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The weighted donkey calf raise is a calf-focused exercise performed on a raised platform, where the lifter raises and lowers their heels while holding additional weight. This movement targets the calves and also engages the hamstrings and glutes as secondary muscles.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.446Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/0833.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0833&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "0999",
+    "name": "band single leg calf raise",
+    "nameIt": "Elastico Singola Gamba Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "band",
+    "equipmentIt": "Elastico",
+    "secondaryMuscles": [
+      "ankles",
+      "feet"
+    ],
+    "secondaryMusclesIt": [
+      "ankles",
+      "feet"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=0999&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Stand with your feet hip-width apart and place the band around the ball of your left foot.",
+      "Hold onto a stable object for balance if needed.",
+      "Slowly raise your left heel off the ground, lifting your body weight onto the ball of your foot.",
+      "Pause for a moment at the top, then slowly lower your left heel back down to the starting position.",
+      "Repeat for the desired number of repetitions, then switch to the right leg."
+    ],
+    "description": "The band single leg calf raise is a lower leg exercise that targets the calves using a resistance band. It also engages the ankles and feet, helping to improve strength and stability in the lower leg. The movement is performed one leg at a time, which increases the balance and coordination required.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.448Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=0999&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1000",
+    "name": "band single leg reverse calf raise",
+    "nameIt": "Elastico Singola Gamba Reverse Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "band",
+    "equipmentIt": "Elastico",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1000.gif",
+    "instructions": [
+      "Stand with your feet hip-width apart and place the band around the ball of your foot.",
+      "Hold onto a stable object for balance.",
+      "Slowly raise your heel off the ground, lifting your body weight onto the ball of your foot.",
+      "Pause for a moment at the top, then slowly lower your heel back down to the starting position.",
+      "Repeat for the desired number of repetitions, then switch to the other leg."
+    ],
+    "description": "The band single leg reverse calf raise is a lower leg exercise that targets the calves, with secondary emphasis on the hamstrings and glutes. It uses a resistance band and requires balance and control as you raise your heel off the ground on one leg.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.448Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1000.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1000&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1253",
+    "name": "lever donkey calf raise",
+    "nameIt": "Lever Donkey Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "leverage machine",
+    "equipmentIt": "Macchina a leva",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1253.gif",
+    "instructions": [
+      "Adjust the leverage machine to the appropriate height for your body.",
+      "Position yourself facing the machine, with your toes on the foot platform and your heels hanging off the edge.",
+      "Place your hands on the handles or the support bars for stability.",
+      "Engage your calves and lift your heels as high as possible, using the balls of your feet.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The lever donkey calf raise is a machine-based exercise targeting the calf muscles. It involves standing on a platform with your heels hanging off, then raising and lowering your heels to work the calves. The leverage machine provides resistance and support, making it a controlled movement.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.449Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1253.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1253&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1368",
+    "name": "ankle circles",
+    "nameIt": "Ankle Circles",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "ankle stabilizers"
+    ],
+    "secondaryMusclesIt": [
+      "ankle stabilizers"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=1368&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Sit on the ground with your legs extended in front of you.",
+      "Lift one leg off the ground and rotate your ankle in a circular motion.",
+      "Perform the desired number of circles in one direction, then switch to the other direction.",
+      "Repeat with the other leg."
+    ],
+    "description": "Ankle circles are a bodyweight exercise that targets the calves and ankle stabilizers. This movement involves rotating the ankle in a circular motion while seated, helping to improve mobility and flexibility in the ankle joint.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "mobility",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1368&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1369",
+    "name": "band two legs calf raise - (band under both legs) v. 2",
+    "nameIt": "Elastico Two Gambas Polpaccio Alzate - (elastico Under Both Gambas) V. 2",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "band",
+    "equipmentIt": "Elastico",
+    "secondaryMuscles": [
+      "ankles",
+      "feet"
+    ],
+    "secondaryMusclesIt": [
+      "ankles",
+      "feet"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1369.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart and place a resistance band under both feet.",
+      "Hold the ends of the band with your hands for stability.",
+      "Raise your heels off the ground as high as possible, using your calves.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "A resistance band calf raise performed with the band under both feet, targeting the calves and also engaging the ankles and feet.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1369.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1369&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1370",
+    "name": "barbell floor calf raise",
+    "nameIt": "Bilanciere Floor Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=1370&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Place a barbell on the floor in front of you.",
+      "Stand with the balls of your feet on the edge of the barbell, with your heels hanging off.",
+      "Hold onto a stable object for balance if needed.",
+      "Raise your heels as high as possible, using your calves to lift your body.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell floor calf raise is a strength exercise targeting the calves. It involves standing with the balls of your feet on a barbell and raising your heels to work the calf muscles.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1370&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1371",
+    "name": "barbell seated calf raise",
+    "nameIt": "Bilanciere Seduto Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1371.gif",
+    "instructions": [
+      "Sit on a bench with your feet flat on the floor and a barbell resting on your thighs.",
+      "Place the balls of your feet on a raised platform, such as a block or step.",
+      "Lower your heels as far as possible, feeling a stretch in your calves.",
+      "Raise your heels as high as possible, contracting your calves.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell seated calf raise targets the calf muscles by having the lifter sit on a bench with a barbell resting on their thighs, raising and lowering their heels to work the calves through a full range of motion.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1371.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1371&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1372",
+    "name": "barbell standing calf raise",
+    "nameIt": "Bilanciere In Piedi Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "barbell",
+    "equipmentIt": "Bilanciere",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1372.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart and place a barbell across your upper back.",
+      "Raise your heels off the ground as high as possible, using only your toes.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The barbell standing calf raise is a strength exercise targeting the calves. It involves standing with a barbell across your upper back and raising your heels off the ground to work the calf muscles.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1372.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1372&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1373",
+    "name": "bodyweight standing calf raise",
+    "nameIt": "Bodyweight In Piedi Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "ankles",
+      "feet"
+    ],
+    "secondaryMusclesIt": [
+      "ankles",
+      "feet"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1373.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart, toes pointing forward.",
+      "Place your hands on a wall or stable surface for balance.",
+      "Slowly raise your heels off the ground, lifting your body weight onto the balls of your feet.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The bodyweight standing calf raise is a simple exercise that targets the calf muscles. It involves lifting your heels off the ground while standing, using only your body weight for resistance. This movement helps to strengthen and tone the calves, and can also improve ankle stability.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1373.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1373&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1374",
+    "name": "box jump down with one leg stabilization",
+    "nameIt": "Box Jump Down With One Gamba Staddominaleilization",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=1374&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Stand in front of a box or platform with your feet shoulder-width apart.",
+      "Bend your knees and jump onto the box, landing softly with one foot on the box and the other foot hanging off the edge.",
+      "Stabilize yourself on the box with the foot that is on it, while keeping the other foot off the ground.",
+      "Hold this position for a few seconds, engaging your calf muscles to maintain balance.",
+      "Slowly step down with the foot that is on the box, returning to the starting position.",
+      "Repeat the exercise with the other leg."
+    ],
+    "description": "The box jump down with one leg stabilization is a plyometric exercise that targets the calves and challenges balance and stability. It involves jumping onto a box and stabilizing on one leg, which also engages the quadriceps, hamstrings, and glutes.",
+    "difficulty": "advanced",
+    "difficultyIt": "Avanzato",
+    "category": "plyometrics",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1374&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1375",
+    "name": "cable standing calf raise",
+    "nameIt": "Cavo In Piedi Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "cable",
+    "equipmentIt": "Cavo",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1375.gif",
+    "instructions": [
+      "Stand facing a cable machine with your feet shoulder-width apart.",
+      "Hold onto the cable machine handles or attach a cable ankle strap to your ankles.",
+      "Raise your heels off the ground by extending your ankles as high as possible.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The cable standing calf raise is an exercise that targets the calf muscles using a cable machine for resistance. It involves standing upright and raising your heels off the ground to engage the calves, with secondary activation of the hamstrings and glutes.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1375.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1375&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1376",
+    "name": "cable standing one leg calf raise",
+    "nameIt": "Cavo In Piedi One Gamba Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "cable",
+    "equipmentIt": "Cavo",
+    "secondaryMuscles": [
+      "ankles",
+      "feet"
+    ],
+    "secondaryMusclesIt": [
+      "ankles",
+      "feet"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1376.gif",
+    "instructions": [
+      "Stand facing a cable machine with your feet shoulder-width apart.",
+      "Hold onto the cable machine for support.",
+      "Lift one leg off the ground and balance on the other leg.",
+      "Slowly raise your heel off the ground, lifting your body up onto your toes.",
+      "Pause for a moment at the top, then slowly lower your heel back down to the starting position.",
+      "Repeat for the desired number of repetitions, then switch legs."
+    ],
+    "description": "The cable standing one leg calf raise is a lower leg exercise that targets the calves using a cable machine for resistance. It is performed on one leg at a time, which increases the balance and stabilization demands.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1376.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1376&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1377",
+    "name": "calf stretch with hands against wall",
+    "nameIt": "Polpaccio Stretch With Hands Against Wall",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1377.gif",
+    "instructions": [
+      "Stand facing a wall with your feet hip-width apart.",
+      "Place your hands against the wall at shoulder height.",
+      "Step your right foot back, keeping your heel on the ground and your leg straight.",
+      "Bend your left knee and lean forward, keeping your back leg straight and your heel on the ground.",
+      "Hold the stretch for 20-30 seconds.",
+      "Switch legs and repeat the stretch."
+    ],
+    "description": "A stretch targeting the calves, performed by leaning against a wall with one leg extended back and the heel pressed to the ground.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "stretching",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1377.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1377&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1378",
+    "name": "calf stretch with rope",
+    "nameIt": "Polpaccio Stretch With Rope",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "rope",
+    "equipmentIt": "Corda",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1378.gif",
+    "instructions": [
+      "Stand facing a wall or sturdy object with your feet hip-width apart.",
+      "Hold the ends of the rope in each hand and place the middle of the rope around the ball of your right foot.",
+      "Step back with your left foot, keeping your heel on the ground and your leg straight.",
+      "Lean forward, keeping your back straight, and gently pull on the rope to stretch your calf.",
+      "Hold the stretch for 20-30 seconds, then release.",
+      "Repeat on the other leg."
+    ],
+    "description": "A static stretching exercise using a rope to increase flexibility in the calves and hamstrings.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "stretching",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1378.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1378&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1379",
+    "name": "dumbbell seated calf raise",
+    "nameIt": "Manubrio Seduto Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=1379&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Sit on a bench or chair with your feet flat on the ground and a dumbbell resting on your thighs.",
+      "Place the balls of your feet on a raised surface such as a step or block, with your heels hanging off the edge.",
+      "Hold onto the dumbbell for stability.",
+      "Raise your heels as high as possible, lifting your body weight onto the balls of your feet.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The dumbbell seated calf raise is an isolation exercise targeting the calf muscles, performed while seated with a dumbbell resting on the thighs. It is effective for building strength and muscle in the calves.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1379&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1380",
+    "name": "dumbbell seated one leg calf raise - hammer grip",
+    "nameIt": "Manubrio Seduto One Gamba Polpaccio Alzate - Hammer Grip",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1380.gif",
+    "instructions": [
+      "Sit on a bench or chair with your feet flat on the ground and a dumbbell resting on your thighs.",
+      "Place one foot on a raised surface, such as a step or block, with your heel hanging off the edge.",
+      "Hold the dumbbell with a hammer grip, meaning your palms are facing each other and your fingers are wrapped around the handle.",
+      "Keeping your core engaged and your back straight, slowly raise your heel as high as possible by pushing through the ball of your foot.",
+      "Pause for a moment at the top, then slowly lower your heel back down to the starting position.",
+      "Repeat for the desired number of repetitions, then switch to the other leg."
+    ],
+    "description": "The dumbbell seated one leg calf raise - hammer grip is a lower leg exercise that targets the calves, with secondary emphasis on the hamstrings and glutes. It is performed seated, using a dumbbell for resistance, and involves raising and lowering the heel to strengthen the calf muscles.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1380.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1380&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1381",
+    "name": "dumbbell seated one leg calf raise - palm up",
+    "nameIt": "Manubrio Seduto One Gamba Polpaccio Alzate - Palm Up",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1381.gif",
+    "instructions": [
+      "Sit on a bench or chair with your back straight and your feet flat on the ground.",
+      "Hold a dumbbell in one hand and place it on top of your thigh, palm facing up.",
+      "Lift one leg off the ground and extend it in front of you, keeping your knee slightly bent.",
+      "Raise your heel as high as possible by pushing through the ball of your foot.",
+      "Pause for a moment at the top, then slowly lower your heel back down.",
+      "Repeat for the desired number of repetitions, then switch legs and repeat."
+    ],
+    "description": "The dumbbell seated one leg calf raise - palm up is an isolation exercise targeting the calf muscles, performed while seated with a dumbbell placed on the thigh. It helps build strength and muscle endurance in the calves, with some secondary activation of the hamstrings and glutes.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1381.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1381&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1382",
+    "name": "exercise ball on the wall calf raise",
+    "nameIt": "Exercise Ball On The Wall Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "hamstrings",
+      "quadriceps"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "quadriceps"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1382.gif",
+    "instructions": [
+      "Stand with your back against a wall and place an exercise ball between your lower back and the wall.",
+      "Position your feet shoulder-width apart, with your toes pointing forward.",
+      "Hold a dumbbell in each hand, with your arms extended by your sides.",
+      "Raise your heels off the ground, lifting your body weight onto the balls of your feet.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "This exercise targets the calves by performing a calf raise while standing against a wall with an exercise ball for support and holding dumbbells for added resistance.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1382.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1382&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1383",
+    "name": "hack calf raise",
+    "nameIt": "Hack Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "sled machine",
+    "equipmentIt": "Slitta",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=1383&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Adjust the sled machine to a comfortable weight.",
+      "Stand on the sled machine with your toes on the platform and your heels hanging off.",
+      "Hold onto the handles for stability.",
+      "Raise your heels as high as possible by pushing through the balls of your feet.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The hack calf raise is a lower leg exercise performed on a sled machine, primarily targeting the calves. It involves raising and lowering the heels while standing on the platform, focusing on calf muscle contraction.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1383&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1384",
+    "name": "hack one leg calf raise",
+    "nameIt": "Hack One Gamba Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "sled machine",
+    "equipmentIt": "Slitta",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=1384&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Adjust the sled machine to an appropriate weight.",
+      "Stand on the sled machine with one foot, keeping the other foot off the ground.",
+      "Hold onto the handles for stability.",
+      "Raise your heel as high as possible, lifting your body up on the ball of your foot.",
+      "Pause for a moment at the top, then slowly lower your heel back down to the starting position.",
+      "Repeat for the desired number of repetitions.",
+      "Switch legs and repeat the exercise."
+    ],
+    "description": "The hack one leg calf raise is performed on a sled machine, targeting the calves with additional engagement of the hamstrings and glutes. It is executed one leg at a time, requiring balance and unilateral strength.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1384&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1385",
+    "name": "lever seated squat calf raise on leg press machine",
+    "nameIt": "Lever Seduto Squat Polpaccio Alzate On Gamba Spinta Macchina",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "leverage machine",
+    "equipmentIt": "Macchina a leva",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1385.gif",
+    "instructions": [
+      "Adjust the seat of the leg press machine so that your knees are slightly bent when your feet are on the footplate.",
+      "Sit on the machine with your back against the backrest and your feet flat on the footplate, shoulder-width apart.",
+      "Place your toes and the balls of your feet on the footplate, keeping your heels off the edge.",
+      "Release the safety handles and push the footplate away from you by extending your knees.",
+      "Once your knees are fully extended, slowly lower your heels by flexing your calves.",
+      "Pause for a moment at the bottom, then push the footplate back up by extending your calves.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The lever seated squat calf raise on leg press machine is an isolation exercise targeting the calves, performed on a leg press machine by extending and flexing the ankles while seated.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1385.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1385&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1386",
+    "name": "one leg donkey calf raise",
+    "nameIt": "One Gamba Donkey Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1386.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart, toes pointing forward.",
+      "Place your hands on a stable surface for support, such as a wall or a bar.",
+      "Lift one leg off the ground, keeping your knee slightly bent.",
+      "Raise your heel as high as possible, using your calf muscles.",
+      "Pause for a moment at the top, then slowly lower your heel back down.",
+      "Repeat for the desired number of repetitions, then switch legs."
+    ],
+    "description": "The one leg donkey calf raise is a bodyweight exercise targeting the calves, performed by raising the heel of one foot while the other leg is lifted, often using a wall or bar for balance.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1386.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1386&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1387",
+    "name": "one leg floor calf raise",
+    "nameIt": "One Gamba Floor Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "ankles",
+      "feet"
+    ],
+    "secondaryMusclesIt": [
+      "ankles",
+      "feet"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1387.gif",
+    "instructions": [
+      "Stand with your feet hip-width apart and place your hands on a wall or sturdy object for balance.",
+      "Lift one foot off the ground and balance on the other foot.",
+      "Slowly raise your heel off the ground, lifting your body up onto the ball of your foot.",
+      "Pause for a moment at the top, then slowly lower your heel back down to the starting position.",
+      "Repeat for the desired number of repetitions, then switch legs and repeat."
+    ],
+    "description": "The one leg floor calf raise is a bodyweight exercise targeting the calves, performed by standing on one leg and raising the heel to engage the calf muscles. It also involves the ankles and feet as secondary muscles.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1387.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1387&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1388",
+    "name": "peroneals stretch",
+    "nameIt": "Peroneals Stretch",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "rope",
+    "equipmentIt": "Corda",
+    "secondaryMuscles": [
+      "ankles",
+      "feet"
+    ],
+    "secondaryMusclesIt": [
+      "ankles",
+      "feet"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1388.gif",
+    "instructions": [
+      "Sit on the ground with your legs extended in front of you.",
+      "Loop the rope around the ball of your foot and hold the ends of the rope with your hands.",
+      "Gently pull the rope towards you, flexing your foot and stretching your calf muscles.",
+      "Hold the stretch for 15-30 seconds.",
+      "Release the tension on the rope and repeat the stretch on the other leg.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The peroneals stretch is a flexibility exercise targeting the calf muscles, ankles, and feet. It uses a rope to assist in stretching the lower leg, improving mobility and reducing tightness.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "stretching",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1388.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1388&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1389",
+    "name": "posterior tibialis stretch",
+    "nameIt": "Posterior Tibialis Stretch",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "rope",
+    "equipmentIt": "Corda",
+    "secondaryMuscles": [
+      "hamstrings",
+      "quadriceps"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "quadriceps"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=1389&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Sit on the ground with your legs extended in front of you.",
+      "Loop the rope around the ball of your foot and hold the ends of the rope with your hands.",
+      "Gently pull the rope towards you, flexing your foot and stretching your calf muscles.",
+      "Hold the stretch for 20-30 seconds.",
+      "Release the tension on the rope and relax your foot.",
+      "Repeat the stretch on the other leg."
+    ],
+    "description": "A stretch targeting the calves using a rope to assist in flexing the foot and lengthening the posterior tibialis and calf muscles.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "stretching",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1389&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1390",
+    "name": "seated calf stretch (male)",
+    "nameIt": "Seduto Polpaccio Stretch (male)",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1390.gif",
+    "instructions": [
+      "Sit on the edge of a chair or bench with your feet flat on the ground.",
+      "Extend one leg straight out in front of you, keeping your heel on the ground.",
+      "Lean forward slightly, feeling a stretch in your calf muscle.",
+      "Hold the stretch for 20-30 seconds.",
+      "Switch legs and repeat the stretch."
+    ],
+    "description": "The seated calf stretch (male) is a flexibility exercise targeting the calf muscles. It is performed while seated, requiring no equipment other than a chair or bench, and focuses on stretching the calves and, to a lesser extent, the hamstrings.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "stretching",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1390.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1390&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1391",
+    "name": "sled calf press on leg press",
+    "nameIt": "Sled Polpaccio Spinta On Gamba Spinta",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "sled machine",
+    "equipmentIt": "Slitta",
+    "secondaryMuscles": [
+      "hamstrings",
+      "quadriceps"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "quadriceps"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1391.gif",
+    "instructions": [
+      "Adjust the seat of the leg press machine so that your knees are slightly bent when your feet are on the sled.",
+      "Place your feet shoulder-width apart on the sled, with your toes pointing forward.",
+      "Release the safety handles and push the sled away from you by extending your knees and ankles.",
+      "Pause for a moment at the top of the movement, then slowly lower the sled back down by bending your knees and ankles.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The sled calf press on leg press is an exercise that targets the calves using a sled (leg press) machine. It also engages the hamstrings and quadriceps as secondary muscles. The movement involves pressing the sled away using the balls of your feet, focusing on ankle extension.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1391.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1391&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1392",
+    "name": "sled one leg calf press on leg press",
+    "nameIt": "Sled One Gamba Polpaccio Spinta On Gamba Spinta",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "sled machine",
+    "equipmentIt": "Slitta",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1392.gif",
+    "instructions": [
+      "Adjust the seat of the leg press machine so that your knees are slightly bent when your feet are on the sled.",
+      "Sit on the machine with your back against the backrest and your feet on the sled, shoulder-width apart.",
+      "Place your toes and the balls of your feet on the sled, keeping your heels off.",
+      "Push the sled forward by extending your ankles, keeping your knees slightly bent.",
+      "Pause for a moment at the top, then slowly lower the sled back down by flexing your ankles.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The sled one leg calf press on leg press is a machine-based exercise targeting the calves, performed one leg at a time for increased isolation and intensity. It also engages the hamstrings and glutes as secondary muscles.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.452Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1392.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1392&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1393",
+    "name": "smith one leg floor calf raise",
+    "nameIt": "Multipower One Gamba Floor Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "smith machine",
+    "equipmentIt": "Multipower",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1393.gif",
+    "instructions": [
+      "Position yourself on the floor under the smith machine bar, facing away from the machine.",
+      "Place the balls of your feet on a raised surface, such as a weight plate or block.",
+      "Position the smith machine bar across your lower legs, just above your ankles.",
+      "Hold onto the bar with your hands for stability.",
+      "Raise your heels off the ground by extending your ankles, lifting your body up.",
+      "Pause at the top of the movement, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The smith one leg floor calf raise is a lower leg exercise performed using a Smith machine. It targets the calves and also engages the hamstrings and glutes as secondary muscles. The exercise involves raising your heel off the ground while balancing on one leg, with the Smith machine bar providing resistance.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.453Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1393.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1393&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1394",
+    "name": "smith reverse calf raises",
+    "nameIt": "Multipower Reverse Polpaccio Alzates",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "smith machine",
+    "equipmentIt": "Multipower",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=1394&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Adjust the smith machine bar to a height just below your shoulders.",
+      "Stand facing the bar with your feet hip-width apart and toes pointing forward.",
+      "Place the balls of your feet on the edge of a step or platform, with your heels hanging off.",
+      "Hold onto the bar for support.",
+      "Raise your heels as high as possible, lifting your body up onto your toes.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "Smith reverse calf raises are performed using a Smith machine and primarily target the calves, with secondary emphasis on the hamstrings. The exercise involves raising the heels while standing on the balls of the feet on a step or platform, using the Smith machine bar for support.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.453Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1394&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1395",
+    "name": "smith seated one leg calf raise",
+    "nameIt": "Multipower Seduto One Gamba Polpaccio Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "smith machine",
+    "equipmentIt": "Multipower",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1395.gif",
+    "instructions": [
+      "Sit on the machine with your back against the pad and your feet on the footrest.",
+      "Place one leg on the footrest and keep the other leg off the footrest.",
+      "Using your calf muscles, raise your heel as high as possible.",
+      "Pause for a moment at the top, then slowly lower your heel back down to the starting position.",
+      "Repeat for the desired number of repetitions, then switch legs and repeat."
+    ],
+    "description": "The smith seated one leg calf raise is a lower leg exercise performed on a smith machine, targeting the calf muscles by raising one heel at a time while seated.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.453Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1395.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1395&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1396",
+    "name": "smith toe raise",
+    "nameIt": "Multipower Toe Alzate",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "smith machine",
+    "equipmentIt": "Multipower",
+    "secondaryMuscles": [
+      "ankles",
+      "shins"
+    ],
+    "secondaryMusclesIt": [
+      "ankles",
+      "shins"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1396.gif",
+    "instructions": [
+      "Adjust the smith machine bar to a height that allows you to comfortably stand with your feet flat on the ground.",
+      "Position yourself under the bar with your shoulders directly below it and your feet shoulder-width apart.",
+      "Place the balls of your feet on a raised platform or weight plates, with your heels hanging off the edge.",
+      "Grasp the bar with an overhand grip, slightly wider than shoulder-width apart.",
+      "Engage your core and keep your back straight throughout the exercise.",
+      "Slowly raise your heels as high as possible, lifting your body weight onto the balls of your feet.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The smith toe raise is a calf exercise performed on a Smith machine, focusing on raising the heels to strengthen the calves. It uses a raised platform to increase the range of motion and is performed with the barbell resting on the shoulders.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.453Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1396.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1396&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1397",
+    "name": "standing calves",
+    "nameIt": "In Piedi Calves",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1397.gif",
+    "instructions": [
+      "Stand with your feet shoulder-width apart, toes pointing forward.",
+      "Raise your heels off the ground as high as possible, standing on your toes.",
+      "Hold the position for a moment, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The standing calves exercise is a bodyweight movement targeting the calf muscles. It involves raising your heels off the ground to stand on your toes, then lowering them back down, which helps build strength and endurance in the calves.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.453Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1397.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1397&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1398",
+    "name": "standing calves calf stretch",
+    "nameIt": "In Piedi Calves Polpaccio Stretch",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1398.gif",
+    "instructions": [
+      "Stand facing a wall or sturdy object, about an arm's length away.",
+      "Place your hands on the wall or object at shoulder height.",
+      "Step back with one foot, keeping your heel flat on the ground.",
+      "Bend your front knee slightly and lean forward, keeping your back leg straight.",
+      "You should feel a stretch in your calf muscle.",
+      "Hold the stretch for 20-30 seconds.",
+      "Repeat on the other leg."
+    ],
+    "description": "The standing calves calf stretch is a bodyweight exercise designed to stretch the calf muscles. It is performed by standing facing a wall, placing your hands on the wall, stepping one foot back, and leaning forward to stretch the calf of the back leg.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "stretching",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.453Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1398.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1398&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1407",
+    "name": "calf push stretch with hands against wall",
+    "nameIt": "Polpaccio Push Stretch With Hands Against Wall",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1407.gif",
+    "instructions": [
+      "Stand facing a wall with your feet hip-width apart.",
+      "Place your hands against the wall at shoulder height.",
+      "Step back with one foot, keeping your heel on the ground and your leg straight.",
+      "Bend your front knee slightly and lean forward, feeling a stretch in your calf.",
+      "Hold the stretch for 20-30 seconds.",
+      "Switch legs and repeat the stretch."
+    ],
+    "description": "The calf push stretch with hands against wall is a bodyweight exercise that targets the calves and also stretches the hamstrings. It is performed by standing facing a wall, placing your hands against it, stepping one foot back, and leaning forward to stretch the calf muscle.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "stretching",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.453Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1407.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1407&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1490",
+    "name": "standing calf raise (on a staircase)",
+    "nameIt": "In Piedi Polpaccio Alzate (on A Staircase)",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "body weight",
+    "equipmentIt": "Corpo libero",
+    "secondaryMuscles": [
+      "ankles",
+      "feet"
+    ],
+    "secondaryMusclesIt": [
+      "ankles",
+      "feet"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/1490.gif",
+    "instructions": [
+      "Stand on the edge of a step or a sturdy platform with your heels hanging off and your toes on the step.",
+      "Hold onto a railing or wall for balance if needed.",
+      "Slowly raise your heels as high as possible, lifting your body weight onto the balls of your feet.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The standing calf raise (on a staircase) is a bodyweight exercise that targets the calves by raising and lowering the heels while standing on the edge of a step. It also engages the ankles and feet for stabilization.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.454Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/1490.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1490&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "1708",
+    "name": "assisted lying calves stretch",
+    "nameIt": "Assisted Sdraiato Calves Stretch",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "assisted",
+    "equipmentIt": "Assistito",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=1708&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Lie on your back with your legs extended.",
+      "Bend one knee and place your foot flat on the ground.",
+      "Using your hands or a towel, gently pull your toes towards your body, feeling a stretch in your calf.",
+      "Hold the stretch for 20-30 seconds.",
+      "Release the stretch and repeat on the other leg."
+    ],
+    "description": "The assisted lying calves stretch is a flexibility exercise targeting the calves, performed lying on your back and using your hands or a towel to gently pull your toes toward your body.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "stretching",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.456Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=1708&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "2289",
+    "name": "lever calf press",
+    "nameIt": "Lever Polpaccio Spinta",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "leverage machine",
+    "equipmentIt": "Macchina a leva",
+    "secondaryMuscles": [
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=2289&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Adjust the seat of the leverage machine so that your shoulders are aligned with the lever pad.",
+      "Place your toes on the lever pad, with your heels hanging off the edge.",
+      "Grasp the handles or side supports for stability.",
+      "Push the lever pad down by extending your ankles, contracting your calf muscles.",
+      "Pause for a moment at the bottom of the movement.",
+      "Slowly return to the starting position by allowing your heels to rise back up.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The lever calf press is a machine-based exercise targeting the calf muscles. It involves pressing a lever pad with the toes while the heels hang off the edge, focusing on ankle extension to contract the calves. The movement is controlled and supported by the machine, making it accessible for most users.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.458Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=2289&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "2315",
+    "name": "lever rotary calf",
+    "nameIt": "Lever Rotary Polpaccio",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "leverage machine",
+    "equipmentIt": "Macchina a leva",
+    "secondaryMuscles": [
+      "soleus",
+      "ankle stabilizers"
+    ],
+    "secondaryMusclesIt": [
+      "soleus",
+      "ankle stabilizers"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=2315&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Adjust the seat height so that your knees are slightly bent and your feet are flat on the footplate.",
+      "Place your toes on the footplate, with your heels hanging off the edge.",
+      "Grasp the handles or the sides of the machine for stability.",
+      "Push through the balls of your feet, raising your heels as high as possible.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The lever rotary calf exercise targets the calves using a leverage machine. It involves raising and lowering the heels while seated, focusing on the calf muscles and ankle stabilizers.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.458Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=2315&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "2334",
+    "name": "sled lying calf press",
+    "nameIt": "Sled Sdraiato Polpaccio Spinta",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "sled machine",
+    "equipmentIt": "Slitta",
+    "secondaryMuscles": [
+      "hamstrings",
+      "glutes"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "Glutei"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/2334.gif",
+    "instructions": [
+      "Adjust the sled machine to a comfortable weight.",
+      "Sit on the sled machine with your back against the pad and your feet on the platform.",
+      "Place your toes and the balls of your feet on the edge of the platform, with your heels hanging off.",
+      "Push the platform away from you by extending your ankles, keeping your knees slightly bent.",
+      "Continue pushing until your calves are fully contracted.",
+      "Hold the contraction for a moment, then slowly lower the platform back to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The sled lying calf press is a machine-based exercise targeting the calves, performed by pressing a weighted sled away using the balls of the feet while lying on the machine.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.458Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/2334.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=2334&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "2335",
+    "name": "lever seated calf press",
+    "nameIt": "Lever Seduto Polpaccio Spinta",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "leverage machine",
+    "equipmentIt": "Macchina a leva",
+    "secondaryMuscles": [
+      "soleus",
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "soleus",
+      "Femorali"
+    ],
+    "gifUrl": "https://exercisedb.p.rapidapi.com/image?exerciseId=2335&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372",
+    "instructions": [
+      "Adjust the seat of the machine so that your shoulders are aligned with the lever pad.",
+      "Place your toes on the lower portion of the platform and position your knees under the lever pad.",
+      "Grasp the handles on the sides of the seat for stability.",
+      "Press the lever pad down by extending your ankles, lifting your heels as high as possible.",
+      "Pause for a moment at the top of the movement, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "The lever seated calf press is a machine-based exercise targeting the calf muscles. It involves pressing a weighted lever with the balls of your feet while seated, focusing on ankle extension to work the calves.",
+    "difficulty": "beginner",
+    "difficultyIt": "Principiante",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.458Z",
+    "gifUrlR2": null,
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=2335&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3240",
+    "name": "exercise ball on the wall calf raise (tennis ball between knees)",
+    "nameIt": "Exercise Ball On The Wall Polpaccio Alzate (tennis Ball Between Knees)",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "dumbbell",
+    "equipmentIt": "Manubrio",
+    "secondaryMuscles": [
+      "quadriceps",
+      "hamstrings"
+    ],
+    "secondaryMusclesIt": [
+      "quadriceps",
+      "Femorali"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3240.gif",
+    "instructions": [
+      "Stand with your back against a wall and place an exercise ball between your lower back and the wall.",
+      "Position your feet shoulder-width apart and slightly in front of you.",
+      "Hold a dumbbell in each hand, with your arms extended by your sides.",
+      "Place a tennis ball between your knees.",
+      "Raise your heels off the ground, lifting your body up onto your toes.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "This exercise targets the calves by performing a calf raise while standing against a wall with an exercise ball supporting the lower back and a tennis ball held between the knees. Dumbbells are held for added resistance, and the movement requires balance and coordination.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.460Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3240.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3240&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  },
+  {
+    "id": "3241",
+    "name": "exercise ball on the wall calf raise (tennis ball between ankles)",
+    "nameIt": "Exercise Ball On The Wall Polpaccio Alzate (tennis Ball Between Ankles)",
+    "bodyPart": "lower legs",
+    "bodyPartIt": "Polpacci",
+    "target": "calves",
+    "targetIt": "Polpacci",
+    "equipment": "dumbbell, exercise ball, tennis ball",
+    "equipmentIt": "dumbbell, exercise ball, tennis ball",
+    "secondaryMuscles": [
+      "hamstrings",
+      "quadriceps"
+    ],
+    "secondaryMusclesIt": [
+      "Femorali",
+      "quadriceps"
+    ],
+    "gifUrl": "https://media.flowfitpro.it/exercises/gifs/3241.gif",
+    "instructions": [
+      "Stand facing a wall with your feet shoulder-width apart.",
+      "Place an exercise ball between the wall and your lower back.",
+      "Hold a dumbbell in each hand, with your arms extended by your sides.",
+      "Place a tennis ball between your ankles.",
+      "Raise your heels off the ground, lifting your body up onto your toes.",
+      "Pause for a moment at the top, then slowly lower your heels back down to the starting position.",
+      "Repeat for the desired number of repetitions."
+    ],
+    "description": "This exercise targets the calves by performing a calf raise while holding a dumbbell in each hand, using an exercise ball for back support against the wall, and squeezing a tennis ball between the ankles to increase activation and control.",
+    "difficulty": "intermediate",
+    "difficultyIt": "Intermedio",
+    "category": "strength",
+    "isGlobal": true,
+    "source": "exercisedb",
+    "createdAt": "2025-12-28T02:06:04.460Z",
+    "gifUrlR2": "https://media.flowfitpro.it/exercises/gifs/3241.gif",
+    "gifUrlOriginal": "https://exercisedb.p.rapidapi.com/image?exerciseId=3241&resolution=360&rapidapi-key=5784209371msh5aad73a88b42fdbp129326jsn5071805c9372"
+  }
+]

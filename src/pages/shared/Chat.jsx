@@ -23,6 +23,7 @@ import {
   ChatHeader,
   MessagesArea,
   MessageInput,
+  NewChatModal,
   getCurrentUserRole,
   playNotificationSound
 } from '../../components/chat';
@@ -30,7 +31,6 @@ import {
 // Import modali (da estrarre successivamente se presenti)
 // TODO: Creare questi componenti modali
 // import ProfileCheckModal from './ProfileCheckModal';
-// import NewChatModal from './NewChatModal';
 // import ForwardMessageModal from './ForwardMessageModal';
 // import GlobalSearchModal from './GlobalSearchModal';
 // import PinnedMessagesPanel from './PinnedMessagesPanel';
@@ -672,8 +672,8 @@ export default function Chat() {
         )}
       </AnimatePresence> */}
 
-      {/* New Chat Modal - TODO: Create component */}
-      {/* <AnimatePresence>
+      {/* New Chat Modal */}
+      <AnimatePresence>
         {showNewChatModal && (
           <NewChatModal
             isOpen={showNewChatModal}
@@ -682,7 +682,7 @@ export default function Chat() {
             currentUserRole={currentUserRole}
           />
         )}
-      </AnimatePresence> */}
+      </AnimatePresence>
 
       {/* Main Content */}
       <div className="flex-1 flex min-h-0">
