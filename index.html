@@ -2,7 +2,7 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
     <title>FitFlows</title>
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
@@ -25,9 +25,41 @@
 
     <style>
       *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-      html { overflow-x: hidden; width: 100%; max-width: 100%; position: relative; }
-      body { height: 100%; width: 100%; max-width: 100vw; overflow-x: hidden; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; position: relative; }
-      #root { overflow-x: hidden; max-width: 100vw; }
+      html { 
+        overflow-x: hidden; 
+        width: 100%; 
+        max-width: 100%; 
+        position: relative;
+        /* Previeni pull-to-refresh iOS */
+        overscroll-behavior-y: none;
+      }
+      body { 
+        height: 100%; 
+        width: 100%; 
+        max-width: 100vw; 
+        overflow-x: hidden; 
+        font-family: 'Inter', sans-serif; 
+        -webkit-font-smoothing: antialiased; 
+        position: relative;
+        /* Previeni pull-to-refresh iOS */
+        overscroll-behavior-y: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      #root { 
+        overflow-x: hidden; 
+        max-width: 100vw;
+        /* Previeni bounce effect iOS */
+        overscroll-behavior: none;
+      }
+      /* Fix iOS input zoom */
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+      /* Fix iOS touch delay */
+      * {
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+      }
     </style>
   </head>
   <body>

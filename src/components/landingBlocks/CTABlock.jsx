@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import FormPopup from './FormPopup';
 import QuizPopup from './QuizPopup';
@@ -71,6 +71,53 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
 
   const [showFormPopup, setShowFormPopup] = useState(false);
   const [showQuizPopup, setShowQuizPopup] = useState(false);
+
+  // Memoizza le settings del quiz per evitare re-render inutili
+  const quizSettings = useMemo(() => ({
+    title: quizTitle,
+    subtitle: quizSubtitle,
+    questions: quizQuestions,
+    collectContactInfo: true,
+    contactTitle: quizContactTitle,
+    contactSubtitle: quizContactSubtitle,
+    contactFields: quizContactFields,
+    showResults: true,
+    resultsTitle: quizResultsTitle,
+    resultsSubtitle: quizResultsSubtitle,
+    resultsVideoUrl: quizResultsVideoSource === 'upload' ? quizResultsVideoUploaded : quizResultsVideoUrl,
+    resultsVideoIsUploaded: quizResultsVideoSource === 'upload',
+    accentColor: quizAccentColor,
+    gradientFrom: quizGradientFrom,
+    gradientTo: quizGradientTo,
+    afterSubmit: quizAfterSubmit,
+    successMessage: quizSuccessMessage,
+    redirectUrl: quizRedirectUrl,
+    whatsappNumber: quizWhatsappNumber,
+    whatsappMessage: quizWhatsappMessage,
+  }), [
+    quizTitle, quizSubtitle, quizQuestions, quizContactTitle, quizContactSubtitle,
+    quizContactFields, quizResultsTitle, quizResultsSubtitle, quizResultsVideoSource,
+    quizResultsVideoUploaded, quizResultsVideoUrl, quizAccentColor, quizGradientFrom,
+    quizGradientTo, quizAfterSubmit, quizSuccessMessage, quizRedirectUrl,
+    quizWhatsappNumber, quizWhatsappMessage
+  ]);
+
+  // Memoizza le settings del form per evitare re-render inutili
+  const formSettings = useMemo(() => ({
+    title: formPopupTitle,
+    subtitle: formPopupSubtitle,
+    fields: formPopupFields,
+    customFields: formPopupCustomFields,
+    submitText: formPopupSubmitText,
+    successMessage: formPopupSuccessMessage,
+    afterSubmit: formPopupAfterSubmit,
+    redirectUrl: formPopupRedirectUrl,
+    whatsappNumber: formPopupWhatsappNumber,
+  }), [
+    formPopupTitle, formPopupSubtitle, formPopupFields, formPopupCustomFields,
+    formPopupSubmitText, formPopupSuccessMessage, formPopupAfterSubmit,
+    formPopupRedirectUrl, formPopupWhatsappNumber
+  ]);
 
   // Gestisce click sul pulsante principale
   const handleCtaClick = (e) => {
@@ -218,17 +265,7 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
       <FormPopup
         isOpen={showFormPopup}
         onClose={() => setShowFormPopup(false)}
-        settings={{
-          title: formPopupTitle,
-          subtitle: formPopupSubtitle,
-          fields: formPopupFields,
-          customFields: formPopupCustomFields,
-          submitText: formPopupSubmitText,
-          successMessage: formPopupSuccessMessage,
-          afterSubmit: formPopupAfterSubmit,
-          redirectUrl: formPopupRedirectUrl,
-          whatsappNumber: formPopupWhatsappNumber,
-        }}
+        settings={formSettings}
         pageId={pageId}
         tenantId={tenantId}
         isPreview={isPreview}
@@ -242,28 +279,7 @@ const CTABlock = ({ settings, isPreview = false, pageId = null, tenantId = null 
       <QuizPopup
         isOpen={showQuizPopup}
         onClose={() => setShowQuizPopup(false)}
-        settings={{
-          title: quizTitle,
-          subtitle: quizSubtitle,
-          questions: quizQuestions,
-          collectContactInfo: true,
-          contactTitle: quizContactTitle,
-          contactSubtitle: quizContactSubtitle,
-          contactFields: quizContactFields,
-          showResults: true,
-          resultsTitle: quizResultsTitle,
-          resultsSubtitle: quizResultsSubtitle,
-          resultsVideoUrl: quizResultsVideoSource === 'upload' ? quizResultsVideoUploaded : quizResultsVideoUrl,
-          resultsVideoIsUploaded: quizResultsVideoSource === 'upload',
-          accentColor: quizAccentColor,
-          gradientFrom: quizGradientFrom,
-          gradientTo: quizGradientTo,
-          afterSubmit: quizAfterSubmit,
-          successMessage: quizSuccessMessage,
-          redirectUrl: quizRedirectUrl,
-          whatsappNumber: quizWhatsappNumber,
-          whatsappMessage: quizWhatsappMessage,
-        }}
+        settings={quizSettings}
         pageId={pageId}
         tenantId={tenantId}
         isPreview={isPreview}

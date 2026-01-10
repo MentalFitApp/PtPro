@@ -7,6 +7,25 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { incrementPageConversions } from '../../services/landingPageService';
 import { quizIconMap } from './QuizIcons';
 
+// Prefissi telefonici internazionali più comuni
+const PHONE_PREFIXES = [
+  { code: '+39', country: '🇮🇹 Italia', minLength: 9, maxLength: 10 },
+  { code: '+41', country: '🇨🇭 Svizzera', minLength: 9, maxLength: 9 },
+  { code: '+44', country: '🇬🇧 UK', minLength: 10, maxLength: 10 },
+  { code: '+33', country: '🇫🇷 Francia', minLength: 9, maxLength: 9 },
+  { code: '+49', country: '🇩🇪 Germania', minLength: 10, maxLength: 11 },
+  { code: '+34', country: '🇪🇸 Spagna', minLength: 9, maxLength: 9 },
+  { code: '+1', country: '🇺🇸 USA/Canada', minLength: 10, maxLength: 10 },
+  { code: '+43', country: '🇦🇹 Austria', minLength: 10, maxLength: 11 },
+  { code: '+32', country: '🇧🇪 Belgio', minLength: 9, maxLength: 9 },
+  { code: '+351', country: '🇵🇹 Portogallo', minLength: 9, maxLength: 9 },
+  { code: '+31', country: '🇳🇱 Olanda', minLength: 9, maxLength: 9 },
+  { code: '+48', country: '🇵🇱 Polonia', minLength: 9, maxLength: 9 },
+  { code: '+40', country: '🇷🇴 Romania', minLength: 9, maxLength: 10 },
+  { code: '+385', country: '🇭🇷 Croazia', minLength: 8, maxLength: 9 },
+  { code: '+386', country: '🇸🇮 Slovenia', minLength: 8, maxLength: 8 },
+];
+
 /**
  * QuizPopup - Quiz interattivo RIVOLUZIONARIO con animazioni fluide
  * Supporta: selezione singola, multipla, testo libero, email, telefono, instagram, ecc.
@@ -105,20 +124,31 @@ const QuizPopup = ({
     cognome: { id: 'cognome', label: 'Cognome', type: 'text', placeholder: 'Il tuo cognome', required: true, icon: '👤' },
     name: { id: 'name', label: 'Nome Completo', type: 'text', placeholder: 'Nome e Cognome', required: true, icon: '👤' },
     email: { id: 'email', label: 'Email', type: 'email', placeholder: 'La tua email', required: true, icon: '📧' },
-    phone: { id: 'phone', label: 'Telefono', type: 'tel', placeholder: '+39 333 1234567', required: true, icon: '📱' },
-    telefono: { id: 'telefono', label: 'Telefono', type: 'tel', placeholder: '+39 333 1234567', required: true, icon: '📱' },
-    instagram: { id: 'instagram', label: 'Instagram', type: 'text', placeholder: '@tuoprofilo', required: false, icon: '📸' },
+    phone: { id: 'phone', label: 'Telefono', type: 'phone', placeholder: '333 1234567', required: true, icon: '📱' },
+    telefono: { id: 'telefono', label: 'Telefono', type: 'phone', placeholder: '333 1234567', required: true, icon: '📱' },
+    instagram: { id: 'instagram', label: 'Instagram', type: 'text', placeholder: '@tuoprofilo', required: true, icon: '📸' },
     eta: { id: 'eta', label: 'Età', type: 'number', placeholder: 'La tua età', required: false, icon: '🎂' },
     citta: { id: 'citta', label: 'Città', type: 'text', placeholder: 'La tua città', required: false, icon: '📍' },
   };
+  
+  // State per prefisso telefono
+  const [phonePrefix, setPhonePrefix] = useState('+39');
+  const [showPrefixDropdown, setShowPrefixDropdown] = useState(false);
+  
+  // Detect mobile/touch device and iOS
+  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  const isIOS = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+  
+  // Disabilita animazioni pesanti su iOS per performance
+  const reduceAnimations = isIOS || isTouchDevice;
 
   const activeQuestions = questions && questions.length > 0 ? questions : defaultQuestions;
   const totalSteps = activeQuestions.length + (collectContactInfo ? 1 : 0) + 1;
   const progress = Math.min((currentStep / totalSteps) * 100, 100);
 
-  // Handle mouse move for glow effect
+  // Handle mouse move for glow effect - disabled on touch devices
   const handleMouseMove = (e) => {
-    if (!containerRef.current) return;
+    if (isTouchDevice || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     mouseX.set(e.clientX - rect.left);
     mouseY.set(e.clientY - rect.top);
@@ -152,13 +182,23 @@ const QuizPopup = ({
 
   // Handle contact form change
   const handleContactChange = (field, value) => {
+    // Per il telefono, rimuovi caratteri non numerici
+    if (field === 'phone' || field === 'telefono') {
+      value = value.replace(/\D/g, '');
+    }
     setContactData(prev => ({ ...prev, [field]: value }));
+  };
+  
+  // Ottieni la configurazione del prefisso corrente
+  const getCurrentPrefixConfig = () => {
+    return PHONE_PREFIXES.find(p => p.code === phonePrefix) || PHONE_PREFIXES[0];
   };
 
   // Validate contact form
   const validateContact = () => {
     const errors = {};
     const activeFields = contactFields.map(f => contactFieldConfig[f]).filter(Boolean);
+    const prefixConfig = getCurrentPrefixConfig();
     
     activeFields.forEach(field => {
       if (field.required && !contactData[field.id]?.trim()) {
@@ -167,6 +207,21 @@ const QuizPopup = ({
       if (field.type === 'email' && contactData[field.id]) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactData[field.id])) {
           errors[field.id] = 'Email non valida';
+        }
+      }
+      // Validazione telefono
+      if (field.type === 'phone' && contactData[field.id]) {
+        const phoneNumber = contactData[field.id].replace(/\D/g, '');
+        if (phoneNumber.length < prefixConfig.minLength || phoneNumber.length > prefixConfig.maxLength) {
+          errors[field.id] = `Il numero deve avere ${prefixConfig.minLength === prefixConfig.maxLength ? prefixConfig.minLength : `${prefixConfig.minLength}-${prefixConfig.maxLength}`} cifre per ${prefixConfig.country}`;
+        }
+      }
+      // Validazione Instagram
+      if (field.id === 'instagram' && contactData[field.id]) {
+        const ig = contactData[field.id].trim();
+        if (ig && !ig.startsWith('@')) {
+          // Auto-aggiungi @ se mancante
+          setContactData(prev => ({ ...prev, instagram: '@' + ig }));
         }
       }
     });
@@ -206,9 +261,25 @@ const QuizPopup = ({
           }
         });
 
+        // Normalizza il campo name per la visualizzazione in Leads
+        const normalizedName = contactData.name || 
+          (contactData.nome && contactData.cognome 
+            ? `${contactData.nome} ${contactData.cognome}` 
+            : contactData.nome || contactData.cognome || '');
+
+        // Normalizza il telefono con prefisso
+        const phoneField = contactData.phone || contactData.telefono;
+        const fullPhone = phoneField ? `${phonePrefix}${phoneField.replace(/\D/g, '')}` : '';
+
         const leadData = {
+          // Campo name normalizzato per la lista leads
+          name: normalizedName,
           // Dati contatto (nome, cognome, email, telefono, instagram, ecc.)
           ...contactData,
+          // Telefono con prefisso completo
+          phone: fullPhone,
+          telefono: fullPhone,
+          phonePrefix: phonePrefix,
           // Risposte quiz flatten per visualizzazione
           ...flattenedAnswers,
           // Risposte quiz originali
@@ -307,8 +378,12 @@ const QuizPopup = ({
     return true;
   };
 
-  // Animation variants
-  const slideVariants = {
+  // Animation variants - più leggere su dispositivi mobili/iOS
+  const slideVariants = reduceAnimations ? {
+    enter: { opacity: 0 },
+    center: { opacity: 1 },
+    exit: { opacity: 0 },
+  } : {
     enter: (dir) => ({
       x: dir > 0 ? '100%' : '-100%',
       opacity: 0,
@@ -326,7 +401,9 @@ const QuizPopup = ({
     }),
   };
 
-  const springConfig = { type: 'spring', stiffness: 300, damping: 30 };
+  const springConfig = reduceAnimations 
+    ? { duration: 0.15 }
+    : { type: 'spring', stiffness: 300, damping: 30 };
 
   // Helper per renderizzare icona (SVG o emoji)
   const renderOptionIcon = (option) => {
@@ -355,9 +432,9 @@ const QuizPopup = ({
     return null;
   };
 
-  // Particle effect component - OTTIMIZZATO con CSS animations
+  // Particle effect component - OTTIMIZZATO con CSS animations, disabilitato su mobile
   const FloatingParticles = React.memo(() => {
-    if (!enableParticles) return null;
+    if (!enableParticles || reduceAnimations) return null;
     
     // Genera posizioni fisse per evitare re-render
     const particles = React.useMemo(() => 
@@ -543,27 +620,29 @@ const QuizPopup = ({
       >
         {/* Question number badge */}
         <motion.div
-          initial={{ scale: 0, rotate: -180 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: 'spring', stiffness: 300 }}
+          initial={reduceAnimations ? { opacity: 0 } : { scale: 0, rotate: -180 }}
+          animate={reduceAnimations ? { opacity: 1 } : { scale: 1, rotate: 0 }}
+          transition={reduceAnimations ? { duration: 0.15 } : { type: 'spring', stiffness: 300 }}
           className="w-14 h-14 mx-auto mb-6 rounded-2xl flex items-center justify-center text-white font-bold text-xl relative"
           style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
         >
           <span className="relative z-10">{questionIndex + 1}</span>
-          <motion.div
-            className="absolute inset-0 rounded-2xl"
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-            style={{ 
-              background: `conic-gradient(from 0deg, transparent, ${accentColor}40, transparent)`,
-            }}
-          />
+          {!reduceAnimations && (
+            <motion.div
+              className="absolute inset-0 rounded-2xl"
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+              style={{ 
+                background: `conic-gradient(from 0deg, transparent, ${accentColor}40, transparent)`,
+              }}
+            />
+          )}
         </motion.div>
 
         <motion.h3
-          initial={{ opacity: 0, y: 10 }}
+          initial={reduceAnimations ? { opacity: 0 } : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={reduceAnimations ? { duration: 0.1 } : { delay: 0.1 }}
           className="text-2xl md:text-3xl font-bold text-white text-center mb-8 leading-tight"
         >
           {question.question}
@@ -585,11 +664,11 @@ const QuizPopup = ({
               return (
                 <motion.button
                   key={option.value}
-                  initial={{ opacity: 0, x: -30 }}
+                  initial={reduceAnimations ? { opacity: 0 } : { opacity: 0, x: -30 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.15 + idx * 0.08 }}
-                  whileHover={{ scale: 1.02, x: 8 }}
-                  whileTap={{ scale: 0.98 }}
+                  transition={reduceAnimations ? { duration: 0.1, delay: idx * 0.03 } : { delay: 0.15 + idx * 0.08 }}
+                  whileHover={reduceAnimations ? undefined : { scale: 1.02, x: 8 }}
+                  whileTap={reduceAnimations ? { scale: 0.98 } : { scale: 0.98 }}
                   onClick={() => handleAnswer(question.id, option.value, question.type, question.maxSelections)}
                   className={`w-full p-4 rounded-2xl border-2 transition-all text-left flex items-center gap-4 relative overflow-hidden ${
                     isSelected
@@ -747,6 +826,8 @@ const QuizPopup = ({
   // Render contact form - Supporta tutti i campi richiesti
   const renderContactForm = () => {
     const activeFields = contactFields.map(f => contactFieldConfig[f]).filter(Boolean);
+    const prefixConfig = getCurrentPrefixConfig();
+    const { errors } = validateContact();
 
     return (
       <motion.div
@@ -785,18 +866,104 @@ const QuizPopup = ({
                 {field.label}
                 {field.required && <span className="text-red-400">*</span>}
               </label>
-              <input
-                type={field.type}
-                value={contactData[field.id] || ''}
-                onChange={(e) => handleContactChange(field.id, e.target.value)}
-                placeholder={field.placeholder}
-                className="w-full px-5 py-4 bg-slate-800 border-2 border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 transition-all appearance-none"
-                style={{ 
-                  borderColor: contactData[field.id] ? `${accentColor}50` : undefined,
-                  WebkitAppearance: 'none',
-                  backgroundColor: '#1e293b' // slate-800 solid for iOS
-                }}
-              />
+              
+              {/* Campo telefono con selettore prefisso */}
+              {field.type === 'phone' ? (
+                <div className="flex gap-2">
+                  {/* Selettore Prefisso */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowPrefixDropdown(!showPrefixDropdown)}
+                      className="h-full px-3 py-4 bg-slate-800 border-2 border-white/10 rounded-xl text-white flex items-center gap-2 min-w-[100px] justify-between"
+                      style={{ backgroundColor: '#1e293b' }}
+                    >
+                      <span>{phonePrefix}</span>
+                      <svg className={`w-4 h-4 transition-transform ${showPrefixDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {/* Dropdown prefissi */}
+                    <AnimatePresence>
+                      {showPrefixDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute top-full left-0 mt-1 w-56 max-h-60 overflow-y-auto bg-slate-800 border border-white/20 rounded-xl shadow-2xl z-50"
+                          style={{ backgroundColor: '#1e293b' }}
+                        >
+                          {PHONE_PREFIXES.map((prefix) => (
+                            <button
+                              key={prefix.code}
+                              type="button"
+                              onClick={() => {
+                                setPhonePrefix(prefix.code);
+                                setShowPrefixDropdown(false);
+                              }}
+                              className={`w-full px-4 py-3 text-left text-sm hover:bg-white/10 transition-colors flex items-center justify-between ${
+                                phonePrefix === prefix.code ? 'bg-white/10 text-orange-400' : 'text-white'
+                              }`}
+                            >
+                              <span>{prefix.country}</span>
+                              <span className="text-slate-400">{prefix.code}</span>
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  
+                  {/* Input numero */}
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={contactData[field.id] || ''}
+                    onChange={(e) => handleContactChange(field.id, e.target.value)}
+                    placeholder={field.placeholder}
+                    maxLength={prefixConfig.maxLength}
+                    className="flex-1 px-5 py-4 bg-slate-800 border-2 border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 transition-all appearance-none"
+                    style={{ 
+                      borderColor: contactData[field.id] ? `${accentColor}50` : undefined,
+                      WebkitAppearance: 'none',
+                      backgroundColor: '#1e293b'
+                    }}
+                  />
+                </div>
+              ) : (
+                /* Altri campi standard */
+                <input
+                  type={field.type === 'phone' ? 'tel' : field.type}
+                  value={contactData[field.id] || ''}
+                  onChange={(e) => handleContactChange(field.id, e.target.value)}
+                  placeholder={field.placeholder}
+                  className="w-full px-5 py-4 bg-slate-800 border-2 border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 transition-all appearance-none"
+                  style={{ 
+                    borderColor: contactData[field.id] ? `${accentColor}50` : undefined,
+                    WebkitAppearance: 'none',
+                    backgroundColor: '#1e293b'
+                  }}
+                />
+              )}
+              
+              {/* Errore validazione */}
+              {errors[field.id] && contactData[field.id] && (
+                <motion.p
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-red-400 text-xs mt-1"
+                >
+                  {errors[field.id]}
+                </motion.p>
+              )}
+              
+              {/* Helper per telefono */}
+              {field.type === 'phone' && contactData[field.id] && (
+                <p className="text-slate-500 text-xs mt-1">
+                  {contactData[field.id].length}/{prefixConfig.minLength === prefixConfig.maxLength ? prefixConfig.maxLength : `${prefixConfig.minLength}-${prefixConfig.maxLength}`} cifre
+                </p>
+              )}
             </motion.div>
           ))}
 
@@ -1006,7 +1173,8 @@ const QuizPopup = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overscroll-none"
+          style={{ touchAction: 'none' }}
           onClick={handleClose}
           onMouseMove={handleMouseMove}
         >
@@ -1090,7 +1258,7 @@ const QuizPopup = ({
 
             {/* Content */}
             <div className="mt-6 overflow-hidden">
-              <AnimatePresence mode="wait" custom={direction}>
+              <AnimatePresence mode={reduceAnimations ? "sync" : "wait"} custom={direction}>
                 {getCurrentContent()}
               </AnimatePresence>
             </div>
@@ -1127,4 +1295,4 @@ const QuizPopup = ({
   );
 };
 
-export default QuizPopup;
+export default React.memo(QuizPopup);

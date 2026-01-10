@@ -61,6 +61,7 @@ const LandingPagesLeads = () => {
     email: 'Email',
     phone: 'Telefono',
     telefono: 'Telefono',
+    instagram: 'Instagram',
     message: 'Messaggio',
     messaggio: 'Messaggio',
     goal: 'Obiettivo',
@@ -158,6 +159,11 @@ const LandingPagesLeads = () => {
   // Helper per ottenere il telefono del lead
   const getLeadPhone = (lead) => {
     return getFieldValue(lead, 'phone', 'telefono', 'tel', 'cellulare', 'mobile');
+  };
+
+  // Helper per ottenere Instagram del lead
+  const getLeadInstagram = (lead) => {
+    return getFieldValue(lead, 'instagram', 'ig', 'Instagram');
   };
 
   // Helper per ottenere l'email del lead
@@ -745,33 +751,101 @@ const LandingPagesLeads = () => {
                         </a>
                       </>
                     )}
+                    {getLeadInstagram(selectedLead) && (
+                      <a
+                        href={`https://instagram.com/${getLeadInstagram(selectedLead).replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity"
+                      >
+                        📸 Instagram
+                      </a>
+                    )}
                   </div>
                 </div>
 
-                {/* All Lead Data */}
+                {/* Dati Contatto */}
                 <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
                   <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
                     <User className="w-4 h-4" />
-                    Tutti i Dati del Lead
+                    Dati Contatto
                   </h3>
-                  <div className="space-y-3">
-                    {discoveredFields.map(field => {
-                      const value = selectedLead[field];
-                      if (value === null || value === undefined || value === '') return null;
-                      
-                      return (
-                        <div key={field} className="flex flex-col">
-                          <label className="text-xs text-slate-500 uppercase tracking-wide">
-                            {getFieldLabel(field)}
-                          </label>
-                          <p className="text-white mt-0.5 break-words">
-                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                          </p>
-                        </div>
-                      );
-                    })}
+                  <div className="grid grid-cols-2 gap-3">
+                    {discoveredFields
+                      .filter(field => !field.startsWith('quiz_') && field !== 'quizAnswers')
+                      .map(field => {
+                        const value = selectedLead[field];
+                        if (value === null || value === undefined || value === '') return null;
+                        
+                        // Link cliccabile per Instagram
+                        if (field === 'instagram') {
+                          return (
+                            <div key={field} className="flex flex-col">
+                              <label className="text-xs text-slate-500 uppercase tracking-wide">
+                                📸 Instagram
+                              </label>
+                              <a 
+                                href={`https://instagram.com/${value.replace('@', '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-pink-400 hover:text-pink-300 mt-0.5"
+                              >
+                                {value}
+                              </a>
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <div key={field} className="flex flex-col">
+                            <label className="text-xs text-slate-500 uppercase tracking-wide">
+                              {getFieldLabel(field)}
+                            </label>
+                            <p className="text-white mt-0.5 break-words">
+                              {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                            </p>
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
+
+                {/* Risposte Quiz */}
+                {(selectedLead.quizAnswers || discoveredFields.some(f => f.startsWith('quiz_'))) && (
+                  <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-500/30">
+                    <h3 className="text-sm font-semibold text-purple-300 mb-3 flex items-center gap-2">
+                      📋 Risposte Quiz
+                    </h3>
+                    <div className="space-y-2">
+                      {/* Prima mostra quizAnswers se esiste */}
+                      {selectedLead.quizAnswers && Object.entries(selectedLead.quizAnswers).map(([key, value]) => (
+                        <div key={key} className="bg-slate-800/50 rounded-lg p-2">
+                          <label className="text-xs text-purple-400 uppercase tracking-wide block">
+                            {key.replace(/_/g, ' ')}
+                          </label>
+                          <p className="text-white mt-0.5">
+                            {Array.isArray(value) ? value.join(', ') : String(value)}
+                          </p>
+                        </div>
+                      ))}
+                      {/* Poi mostra i campi quiz_ flattened */}
+                      {!selectedLead.quizAnswers && discoveredFields
+                        .filter(f => f.startsWith('quiz_'))
+                        .map(field => {
+                          const value = selectedLead[field];
+                          if (!value) return null;
+                          return (
+                            <div key={field} className="bg-slate-800/50 rounded-lg p-2">
+                              <label className="text-xs text-purple-400 uppercase tracking-wide block">
+                                {field.replace('quiz_', '').replace(/_/g, ' ')}
+                              </label>
+                              <p className="text-white mt-0.5">{String(value)}</p>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Metadata */}
                 <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">

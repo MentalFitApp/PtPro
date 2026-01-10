@@ -16,6 +16,13 @@ import {
   Filter,
   Search,
   RefreshCw,
+  Instagram,
+  MapPin,
+  Target,
+  User,
+  Clock,
+  FileText,
+  ExternalLink,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -26,9 +33,9 @@ export default function LandingPageLeads({ pageId, tenantId, isOpen, onClose }) 
   const toast = useToast();
   const [leads, setLeads] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedLead, setSelectedLead] = useState(null);
   const [filter, setFilter] = useState('all'); // all, new, contacted, converted
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDetailModal, setShowDetailModal] = useState(null); // Lead object or null
 
   // Carica leads in tempo reale
   useEffect(() => {
@@ -96,7 +103,6 @@ export default function LandingPageLeads({ pageId, tenantId, isOpen, onClose }) 
     try {
       await deleteDoc(doc(db, `tenants/${tenantId}/leads`, leadId));
       toast?.showToast?.('Lead eliminato', 'success');
-      setSelectedLead(null);
     } catch (error) {
       console.error('Errore eliminazione:', error);
       toast?.showToast?.('Errore eliminazione', 'error');
@@ -266,20 +272,18 @@ export default function LandingPageLeads({ pageId, tenantId, isOpen, onClose }) 
                 {filteredLeads.map((lead) => (
                   <div
                     key={lead.id}
-                    className={`p-4 rounded-xl border transition-all cursor-pointer ${
-                      selectedLead?.id === lead.id
-                        ? 'bg-green-500/10 border-green-500/50'
-                        : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
-                    }`}
-                    onClick={() => setSelectedLead(lead.id === selectedLead?.id ? null : lead)}
+                    className="p-4 rounded-xl border bg-slate-700/50 border-slate-600 hover:border-emerald-500/50 hover:bg-slate-700/70 transition-all cursor-pointer"
+                    onClick={() => setShowDetailModal(lead)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-semibold">
-                          {(lead.name || lead.email || '?')[0].toUpperCase()}
+                          {(lead.name || lead.nome || lead.email || '?')[0].toUpperCase()}
                         </div>
                         <div>
-                          <h4 className="font-medium text-white">{lead.name || 'Nome non fornito'}</h4>
+                          <h4 className="font-medium text-white">
+                            {lead.name || (lead.nome && lead.cognome ? `${lead.nome} ${lead.cognome}` : lead.nome) || 'Nome non fornito'}
+                          </h4>
                           <div className="flex items-center gap-3 text-sm text-slate-400">
                             {lead.email && (
                               <span className="flex items-center gap-1">
@@ -287,10 +291,10 @@ export default function LandingPageLeads({ pageId, tenantId, isOpen, onClose }) 
                                 {lead.email}
                               </span>
                             )}
-                            {lead.phone && (
+                            {(lead.phone || lead.telefono) && (
                               <span className="flex items-center gap-1">
                                 <Phone className="w-4 h-4" />
-                                {lead.phone}
+                                {lead.phone || lead.telefono}
                               </span>
                             )}
                           </div>
@@ -303,81 +307,15 @@ export default function LandingPageLeads({ pageId, tenantId, isOpen, onClose }) 
                           <Calendar className="w-4 h-4" />
                           {formatDate(lead.createdAt)}
                         </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setShowDetailModal(lead); }}
+                          className="p-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 rounded-lg transition-colors"
+                          title="Vedi dettagli"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-
-                    {/* Expanded details */}
-                    {selectedLead?.id === lead.id && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-4 pt-4 border-t border-slate-600 space-y-4"
-                      >
-                        {/* Campi extra */}
-                        <div className="grid grid-cols-2 gap-4">
-                          {lead.goal && (
-                            <div>
-                              <label className="text-xs text-slate-400">Obiettivo</label>
-                              <p className="text-white">{lead.goal}</p>
-                            </div>
-                          )}
-                          {lead.message && (
-                            <div className="col-span-2">
-                              <label className="text-xs text-slate-400">Messaggio</label>
-                              <p className="text-white">{lead.message}</p>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-400 mr-2">Cambia status:</span>
-                          {['new', 'contacted', 'converted', 'lost'].map((status) => (
-                            <button
-                              key={status}
-                              onClick={(e) => { e.stopPropagation(); handleUpdateStatus(lead.id, status); }}
-                              className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                                lead.status === status
-                                  ? 'bg-green-500 text-white'
-                                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                              }`}
-                            >
-                              {status === 'new' ? 'Nuovo' : status === 'contacted' ? 'Contattato' : status === 'converted' ? 'Convertito' : 'Perso'}
-                            </button>
-                          ))}
-                          
-                          <div className="flex-1" />
-                          
-                          {lead.email && (
-                            <a
-                              href={`mailto:${lead.email}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                            >
-                              <Mail className="w-4 h-4" />
-                            </a>
-                          )}
-                          {lead.phone && (
-                            <a
-                              href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                            </a>
-                          )}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteLead(lead.id); }}
-                            className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -418,6 +356,248 @@ export default function LandingPageLeads({ pageId, tenantId, isOpen, onClose }) 
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Lead Detail Modal */}
+      <AnimatePresence>
+        {showDetailModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowDetailModal(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl"
+            >
+              {/* Header con gradient */}
+              <div className="bg-gradient-to-r from-emerald-600 to-green-600 p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                      {(showDetailModal.name || showDetailModal.nome || showDetailModal.email || '?')[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">
+                        {showDetailModal.name || 
+                         (showDetailModal.nome && showDetailModal.cognome ? `${showDetailModal.nome} ${showDetailModal.cognome}` : showDetailModal.nome) || 
+                         'Lead'}
+                      </h2>
+                      <p className="text-emerald-100 text-sm mt-1">
+                        Ricevuto il {formatDate(showDetailModal.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowDetailModal(null)}
+                    className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                  >
+                    <X className="w-6 h-6 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)] space-y-6">
+                
+                {/* Status Section */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-sm text-slate-400">Status:</span>
+                  {['new', 'contacted', 'converted', 'lost'].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => {
+                        handleUpdateStatus(showDetailModal.id, status);
+                        setShowDetailModal(prev => ({ ...prev, status }));
+                      }}
+                      className={`px-4 py-2 text-sm rounded-xl font-medium transition-all ${
+                        showDetailModal.status === status
+                          ? status === 'new' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' :
+                            status === 'contacted' ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-500/30' :
+                            status === 'converted' ? 'bg-green-500 text-white shadow-lg shadow-green-500/30' :
+                            'bg-red-500 text-white shadow-lg shadow-red-500/30'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      {status === 'new' ? '🆕 Nuovo' : 
+                       status === 'contacted' ? '📞 Contattato' : 
+                       status === 'converted' ? '✅ Convertito' : 
+                       '❌ Perso'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Contact Info Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Email */}
+                  {showDetailModal.email && (
+                    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <Mail className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-slate-400">Email</p>
+                        <p className="text-white font-medium truncate">{showDetailModal.email}</p>
+                      </div>
+                      <a
+                        href={`mailto:${showDetailModal.email}`}
+                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        title="Invia Email"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Telefono */}
+                  {(showDetailModal.phone || showDetailModal.telefono) && (
+                    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                        <Phone className="w-5 h-5 text-green-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-slate-400">Telefono</p>
+                        <p className="text-white font-medium">{showDetailModal.phone || showDetailModal.telefono}</p>
+                      </div>
+                      <a
+                        href={`https://wa.me/${(showDetailModal.phone || showDetailModal.telefono).replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                        title="WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Instagram */}
+                  {showDetailModal.instagram && (
+                    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
+                        <span className="text-lg">📸</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-slate-400">Instagram</p>
+                        <p className="text-pink-400 font-medium">{showDetailModal.instagram}</p>
+                      </div>
+                      <a
+                        href={`https://instagram.com/${showDetailModal.instagram.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-gradient-to-br from-purple-600 to-pink-500 hover:opacity-90 text-white rounded-lg transition-colors"
+                        title="Vai su Instagram"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Età */}
+                  {showDetailModal.eta && (
+                    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                        <User className="w-5 h-5 text-amber-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">Età</p>
+                        <p className="text-white font-medium">{showDetailModal.eta} anni</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Città */}
+                  {showDetailModal.citta && (
+                    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                        <MapPin className="w-5 h-5 text-cyan-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">Città</p>
+                        <p className="text-white font-medium">{showDetailModal.citta}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Obiettivo */}
+                  {showDetailModal.goal && (
+                    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                        <Target className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">Obiettivo</p>
+                        <p className="text-white font-medium">{showDetailModal.goal}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quiz Answers Section */}
+                {showDetailModal.quizAnswers && Object.keys(showDetailModal.quizAnswers).length > 0 && (
+                  <div className="bg-gradient-to-br from-purple-900/30 to-indigo-900/30 border border-purple-500/30 rounded-xl p-5">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-purple-200">Risposte Quiz</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {Object.entries(showDetailModal.quizAnswers).map(([key, value]) => (
+                        <div key={key} className="bg-slate-800/50 rounded-lg p-3">
+                          <p className="text-xs text-purple-300 uppercase tracking-wide mb-1">
+                            {key.replace(/_/g, ' ')}
+                          </p>
+                          <p className="text-white font-medium">
+                            {Array.isArray(value) ? value.join(', ') : value}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Messaggio */}
+                {showDetailModal.message && (
+                  <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center">
+                        <MessageCircle className="w-5 h-5 text-slate-400" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-200">Messaggio</h3>
+                    </div>
+                    <p className="text-slate-300 whitespace-pre-wrap">{showDetailModal.message}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer Actions */}
+              <div className="border-t border-slate-700 p-4 bg-slate-800/50 flex items-center justify-between gap-3">
+                <button
+                  onClick={() => {
+                    handleDeleteLead(showDetailModal.id);
+                    setShowDetailModal(null);
+                  }}
+                  className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 rounded-xl transition-colors flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Elimina
+                </button>
+                <button
+                  onClick={() => setShowDetailModal(null)}
+                  className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors font-medium"
+                >
+                  Chiudi
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 }

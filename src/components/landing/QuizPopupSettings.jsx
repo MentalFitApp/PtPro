@@ -265,7 +265,7 @@ const QuizPopupSettings = ({
 
   // Parse delle domande esistenti
   const questions = localSettings.quizQuestions || [];
-  const contactFields = localSettings.quizContactFields || ['nome', 'email', 'phone'];
+  const contactFields = localSettings.quizContactFields || ['nome', 'cognome', 'email', 'phone', 'instagram'];
 
   // Aggiorna le domande
   const updateQuestions = (newQuestions) => {
