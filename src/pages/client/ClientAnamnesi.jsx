@@ -295,13 +295,11 @@ const StepPersonal = ({ register, errors }) => (
       <FormSelect
         label="Sesso"
         icon={User}
-        required
         options={[
           { value: 'male', label: 'Maschio' },
           { value: 'female', label: 'Femmina' }
         ]}
-        {...register('gender', { required: 'Campo obbligatorio' })}
-        error={errors.gender}
+        {...register('gender')}
       />
     </div>
 
@@ -660,11 +658,7 @@ const ClientAnamnesi = () => {
   };
 
   const nextStep = async () => {
-    // Validate current step if needed
-    if (currentStep === 0) {
-      const isValid = await trigger('gender');
-      if (!isValid) return;
-    }
+    // Nessuna validazione obbligatoria sullo step 0
     
     if (!completedSteps.includes(currentStep)) {
       setCompletedSteps(prev => [...prev, currentStep]);
