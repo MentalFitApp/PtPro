@@ -343,6 +343,64 @@ exports.getR2UploadUrl = onCall(
   }
 );
 
+/**
+ * Proxy per scaricare immagini da R2 evitando CORS
+ * Restituisce l'immagine come base64
+ */
+exports.proxyR2Image = onCall(
+  { 
+    secrets: [r2PublicUrl],
+    maxInstances: 20,
+    timeoutSeconds: 30,
+    memory: '512MiB',
+  },
+  async (request) => {
+    // Auth obbligatoria
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Autenticazione richiesta');
+    }
+
+    // Rate limiting
+    enforceRateLimit(request, 'proxyR2Image');
+
+    const { imageUrl } = request.data;
+
+    if (!imageUrl) {
+      throw new HttpsError('invalid-argument', 'imageUrl richiesto');
+    }
+
+    // Verifica che l'URL sia del nostro bucket R2
+    const publicUrl = r2PublicUrl.value().replace(/\/$/, '');
+    if (!imageUrl.startsWith(publicUrl)) {
+      throw new HttpsError('invalid-argument', 'URL non valido - deve essere del bucket R2');
+    }
+
+    try {
+      // Scarica l'immagine usando fetch (server-side non ha CORS)
+      const response = await fetch(imageUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const arrayBuffer = await response.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+      console.log(`[proxyR2Image] Proxy per ${imageUrl} by ${request.auth.uid} - ${Math.round(arrayBuffer.byteLength/1024)}KB`);
+
+      return { 
+        base64,
+        contentType,
+        size: arrayBuffer.byteLength
+      };
+    } catch (error) {
+      console.error('[proxyR2Image] Errore:', error);
+      throw new HttpsError('internal', 'Errore download immagine: ' + error.message);
+    }
+  }
+);
+
 exports.getUidByEmail = onCall(async (request) => {
   // Rate limiting
   enforceRateLimit(request, 'getUidByEmail');

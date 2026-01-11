@@ -30,101 +30,151 @@ import NetworkStatusBanner from '../../components/pwa/NetworkStatusBanner';
 import PullToRefresh from '../../components/pwa/PullToRefresh';
 import { runSmartNotificationCheck } from '../../services/smartNotifications';
 
-// Loading skeleton
+// Loading skeleton migliorato
 const LoadingSpinner = () => (
-  <div className="min-h-screen bg-slate-900 px-4 py-4 space-y-4">
-    <div className="h-12 w-48 bg-slate-700/50 rounded-lg animate-pulse" />
-    <div className="h-24 bg-slate-700/50 rounded-2xl animate-pulse" />
-    <div className="grid grid-cols-3 gap-3">
-      <div className="h-24 bg-slate-700/50 rounded-xl animate-pulse" />
-      <div className="h-24 bg-slate-700/50 rounded-xl animate-pulse" />
-      <div className="h-24 bg-slate-700/50 rounded-xl animate-pulse" />
+  <div className="min-h-screen bg-slate-900 px-4 py-5 space-y-5">
+    <div className="flex items-center justify-between">
+      <div>
+        <div className="h-6 w-40 bg-slate-700/50 rounded-lg animate-pulse" />
+        <div className="h-3 w-24 bg-slate-700/30 rounded mt-2 animate-pulse" />
+      </div>
+      <div className="flex gap-2">
+        <div className="h-10 w-10 bg-slate-700/50 rounded-xl animate-pulse" />
+        <div className="h-10 w-10 bg-slate-700/50 rounded-xl animate-pulse" />
+      </div>
     </div>
-    <div className="h-20 bg-slate-700/50 rounded-xl animate-pulse" />
+    <div className="h-28 bg-gradient-to-br from-slate-700/30 to-slate-800/30 rounded-2xl animate-pulse" />
+    <div className="grid grid-cols-3 gap-3">
+      <div className="h-24 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-2xl animate-pulse" />
+      <div className="h-24 bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-2xl animate-pulse" />
+      <div className="h-24 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-2xl animate-pulse" />
+    </div>
+    <div className="h-20 bg-slate-700/30 rounded-2xl animate-pulse" />
+    <div className="h-16 bg-slate-700/30 rounded-2xl animate-pulse" />
   </div>
 );
 
-// Bottone azione primaria grande
+// Bottone azione primaria grande con glow effect
 const PrimaryActionButton = ({ to, icon: Icon, label, color, badge }) => {
-  const colorClasses = {
-    blue: 'from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-500/25',
-    green: 'from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 shadow-emerald-500/25',
-    purple: 'from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 shadow-purple-500/25',
+  const colorConfig = {
+    blue: {
+      gradient: 'from-blue-600 to-blue-500',
+      glow: 'shadow-blue-500/30',
+      iconBg: 'bg-blue-400/20',
+      hoverGlow: 'hover:shadow-blue-500/50',
+    },
+    green: {
+      gradient: 'from-emerald-600 to-emerald-500',
+      glow: 'shadow-emerald-500/30',
+      iconBg: 'bg-emerald-400/20',
+      hoverGlow: 'hover:shadow-emerald-500/50',
+    },
+    purple: {
+      gradient: 'from-purple-600 to-purple-500',
+      glow: 'shadow-purple-500/30',
+      iconBg: 'bg-purple-400/20',
+      hoverGlow: 'hover:shadow-purple-500/50',
+    },
   };
+
+  const config = colorConfig[color];
 
   return (
     <Link to={to}>
       <motion.div
-        whileHover={{ scale: 1.03, y: -2 }}
-        whileTap={{ scale: 0.97 }}
-        className={`relative bg-gradient-to-br ${colorClasses[color]} rounded-xl p-4 shadow-lg transition-all`}
+        whileHover={{ scale: 1.05, y: -4 }}
+        whileTap={{ scale: 0.95 }}
+        className={`relative bg-gradient-to-br ${config.gradient} rounded-2xl p-4 shadow-lg ${config.glow} ${config.hoverGlow} transition-all duration-300 overflow-hidden`}
       >
+        {/* Glow overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
+        
         {badge && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+          <motion.span 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-lg shadow-red-500/50 z-10"
+          >
             {badge}
-          </span>
+          </motion.span>
         )}
-        <div className="flex flex-col items-center gap-2">
-          <Icon size={28} className="text-white" />
-          <span className="text-xs font-semibold text-white">{label}</span>
+        <div className="relative flex flex-col items-center gap-2">
+          <div className={`p-2 rounded-xl ${config.iconBg} backdrop-blur-sm`}>
+            <Icon size={24} className="text-white drop-shadow-lg" />
+          </div>
+          <span className="text-xs font-bold text-white tracking-wide">{label}</span>
         </div>
       </motion.div>
     </Link>
   );
 };
 
-// Link secondario compatto
+// Link secondario compatto con glassmorphism
 const SecondaryLink = ({ to, icon: Icon, label }) => (
   <Link to={to}>
     <motion.div
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: 1.02, x: 2 }}
       whileTap={{ scale: 0.98 }}
-      className="flex items-center gap-2 px-3 py-2 bg-slate-800/20 hover:bg-slate-700/50 rounded-lg border border-slate-700/30 transition-all"
+      className="flex items-center gap-3 px-3 py-2.5 bg-slate-800/40 hover:bg-slate-700/60 rounded-xl border border-slate-700/40 hover:border-slate-600/50 transition-all duration-200 backdrop-blur-sm group"
     >
-      <Icon size={16} className="text-slate-400" />
-      <span className="text-xs text-slate-300">{label}</span>
-      <ChevronRight size={14} className="text-slate-500 ml-auto" />
+      <div className="p-1.5 rounded-lg bg-slate-700/50 group-hover:bg-slate-600/50 transition-colors">
+        <Icon size={14} className="text-slate-400 group-hover:text-slate-300 transition-colors" />
+      </div>
+      <span className="text-xs font-medium text-slate-300 group-hover:text-white transition-colors">{label}</span>
+      <ChevronRight size={14} className="text-slate-600 group-hover:text-slate-400 ml-auto transition-colors" />
     </motion.div>
   </Link>
 );
 
-// Progress bar scadenza abbonamento
+// Progress bar scadenza abbonamento con design migliorato
 const SubscriptionProgress = ({ daysLeft, totalDays = 30 }) => {
   const progress = Math.max(0, Math.min((daysLeft / totalDays) * 100, 100));
   const isUrgent = daysLeft <= 7;
   const isExpired = daysLeft <= 0;
 
   return (
-    <div className={`rounded-xl p-3 border ${
-      isExpired 
-        ? 'bg-red-500/10 border-red-500/30' 
-        : isUrgent 
-          ? 'bg-orange-500/10 border-orange-500/30' 
-          : 'bg-slate-800/20 border-slate-700/30'
-    }`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-slate-400">Abbonamento</span>
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`rounded-2xl p-4 border backdrop-blur-sm ${
+        isExpired 
+          ? 'bg-red-500/10 border-red-500/30 shadow-lg shadow-red-500/10' 
+          : isUrgent 
+            ? 'bg-orange-500/10 border-orange-500/30 shadow-lg shadow-orange-500/10' 
+            : 'bg-slate-800/30 border-slate-700/40'
+      }`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${
+            isExpired ? 'bg-red-500 animate-pulse' : isUrgent ? 'bg-orange-500 animate-pulse' : 'bg-blue-500'
+          }`} />
+          <span className="text-xs font-medium text-slate-400">Abbonamento</span>
+        </div>
         <span className={`text-sm font-bold ${
-          isExpired ? 'text-red-400' : isUrgent ? 'text-orange-400' : 'text-slate-300'
+          isExpired ? 'text-red-400' : isUrgent ? 'text-orange-400' : 'text-slate-200'
         }`}>
-          {isExpired ? 'Scaduto' : `${daysLeft} giorni`}
+          {isExpired ? 'Scaduto' : `${daysLeft} giorni rimasti`}
         </span>
       </div>
-      <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+      <div className="h-2 bg-slate-700/50 rounded-full overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.8 }}
-          className={`h-full rounded-full ${
+          transition={{ duration: 1, ease: 'easeOut' }}
+          className={`h-full rounded-full relative ${
             isExpired 
               ? 'bg-red-500' 
               : isUrgent 
                 ? 'bg-gradient-to-r from-orange-500 to-yellow-500' 
-                : 'bg-gradient-to-r from-blue-500 to-cyan-500'
+                : 'bg-gradient-to-r from-blue-500 to-cyan-400'
           }`}
-        />
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -325,15 +375,20 @@ const ClientDashboard = () => {
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }}
-            className="w-full max-w-lg mx-auto px-4 py-4 space-y-4"
+            transition={{ duration: 0.3 }}
+            className="w-full max-w-lg mx-auto px-4 py-5 space-y-5"
           >
-            {/* Header Minimal */}
+            {/* Header con greeting migliorato */}
             <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-white">
-              Ciao, {clientData.name?.split(' ')[0]}! 👋
-            </h1>
-            <p className="text-xs text-slate-500">{branding.clientAreaName}</p>
+            <motion.h1 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-xl font-bold text-white"
+            >
+              Ciao, <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{clientData.name?.split(' ')[0]}</span>! 👋
+            </motion.h1>
+            <p className="text-xs text-slate-500 mt-0.5">{branding.clientAreaName}</p>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -341,15 +396,17 @@ const ClientDashboard = () => {
             </div>
             <motion.button 
               onClick={() => navigate('/client/profile')} 
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="p-2 bg-slate-800/60 hover:bg-slate-700/60 rounded-lg border border-slate-700/30"
+              className="p-2.5 bg-slate-800/50 hover:bg-slate-700/60 rounded-xl border border-slate-700/40 backdrop-blur-sm transition-colors"
             >
               <User size={18} className="text-slate-300" />
             </motion.button>
             <motion.button 
               onClick={handleLogout} 
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="p-2 bg-slate-800/60 hover:bg-slate-700/60 rounded-lg border border-slate-700/30"
+              className="p-2.5 bg-slate-800/50 hover:bg-slate-700/60 rounded-xl border border-slate-700/40 backdrop-blur-sm transition-colors"
             >
               <LogOut size={18} className="text-slate-400" />
             </motion.button>
@@ -364,17 +421,19 @@ const ClientDashboard = () => {
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-purple-600/90 to-indigo-600/90 text-white rounded-xl p-3 border border-purple-500/30"
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-4 border border-purple-500/30 shadow-lg shadow-purple-500/20"
           >
             <div className="flex items-center gap-3">
-              <UserCircle size={20} />
+              <div className="p-2 rounded-xl bg-white/10 backdrop-blur-sm">
+                <UserCircle size={20} />
+              </div>
               <div className="flex-1">
-                <p className="text-sm font-medium">Completa la tua Anamnesi</p>
-                <p className="text-xs text-purple-200">Aggiungi il tuo sesso per calcoli più precisi</p>
+                <p className="text-sm font-semibold">Completa la tua Anamnesi</p>
+                <p className="text-xs text-purple-200/80">Aggiungi il tuo sesso per calcoli più precisi</p>
               </div>
               <button
                 onClick={() => navigate('/client/anamnesi')}
-                className="px-3 py-1.5 bg-white text-purple-700 font-semibold text-xs rounded-lg"
+                className="px-4 py-2 bg-white text-purple-700 font-bold text-xs rounded-xl shadow-lg hover:bg-purple-50 transition-colors"
               >
                 Vai
               </button>
@@ -385,46 +444,82 @@ const ClientDashboard = () => {
           </motion.div>
         )}
 
-        {/* Hero Streak Card */}
-        <HeroStreakCard refreshKey={heroRefreshKey} />
-
-        {/* 3 Azioni Primarie */}
-        <div className="grid grid-cols-3 gap-3">
-          <PrimaryActionButton 
-            to="/client/scheda-allenamento" 
-            icon={Dumbbell} 
-            label="Allenamento" 
-            color="blue" 
+        {/* SEZIONE PRINCIPALE - Card unificata con streak + azioni + abitudini */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 rounded-3xl p-4 space-y-4 overflow-hidden"
+        >
+          {/* Gradient decorativo */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none" />
+          
+          {/* Hero Streak (inline) */}
+          <div className="relative">
+            <HeroStreakCard refreshKey={heroRefreshKey} />
+          </div>
+          
+          {/* Separatore stilizzato */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-600/50 to-transparent" />
+            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Azioni Rapide</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-600/50 to-transparent" />
+          </div>
+          
+          {/* 3 Azioni Primarie */}
+          <div className="relative grid grid-cols-3 gap-3">
+            <PrimaryActionButton 
+              to="/client/scheda-allenamento" 
+              icon={Dumbbell} 
+              label="Allenamento" 
+              color="blue" 
+            />
+            <PrimaryActionButton 
+              to="/client/scheda-alimentazione" 
+              icon={Utensils} 
+              label="Dieta" 
+              color="green" 
+            />
+            <PrimaryActionButton 
+              to="/client/checks" 
+              icon={CheckSquare} 
+              label="Check" 
+              color="purple"
+              badge={pendingCheckDays >= 7 || pendingCheckDays === -1 ? '!' : null}
+            />
+          </div>
+          
+          {/* Separatore */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-600/50 to-transparent" />
+            <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Oggi</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-600/50 to-transparent" />
+          </div>
+          
+          {/* Quick Habits */}
+          <div className="relative">
+            <QuickHabits onWorkoutChange={handleWorkoutChange} />
+          </div>
+        </motion.div>
+        
+        {/* SEZIONE SECONDARIA - Info e promemoria */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="space-y-3"
+        >
+          {/* Check Reminder Card */}
+          <CheckReminderCard 
+            daysSinceLastCheck={pendingCheckDays} 
+            lastCheckDate={lastCheckDate}
           />
-          <PrimaryActionButton 
-            to="/client/scheda-alimentazione" 
-            icon={Utensils} 
-            label="Dieta" 
-            color="green" 
-          />
-          <PrimaryActionButton 
-            to="/client/checks" 
-            icon={CheckSquare} 
-            label="Check" 
-            color="purple"
-            badge={pendingCheckDays >= 7 || pendingCheckDays === -1 ? '!' : null}
-          />
-        </div>
 
-        {/* Check Reminder Card */}
-        <CheckReminderCard 
-          daysSinceLastCheck={pendingCheckDays} 
-          lastCheckDate={lastCheckDate}
-        />
+          {/* Chiamate schedulate */}
+          <CallsCompactCard clientId={user?.uid} clientName={clientData?.name} />
 
-        {/* Chiamate schedulate */}
-        <CallsCompactCard clientId={user?.uid} clientName={clientData?.name} />
-
-        {/* Quick Habits */}
-        <QuickHabits onWorkoutChange={handleWorkoutChange} />
-
-        {/* Mini Progress Card */}
-        <MiniProgressCard />
+          {/* Mini Progress Card */}
+          <MiniProgressCard />
+        </motion.div>
 
         {/* Scadenza Abbonamento */}
         {daysLeft !== null && (
@@ -432,15 +527,20 @@ const ClientDashboard = () => {
         )}
 
         {/* Link Secondari */}
-        <div className="space-y-2">
-          <h3 className="text-xs font-semibold text-slate-500 px-1">Altro</h3>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="space-y-3"
+        >
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1">Altro</h3>
           <div className="grid grid-cols-2 gap-2">
             <SecondaryLink to="/client/community" icon={Users} label="Community" />
             <SecondaryLink to="/client/anamnesi" icon={FileText} label="Anamnesi" />
             <SecondaryLink to="/client/payments" icon={CreditCard} label="Pagamenti" />
             <SecondaryLink to="/client/settings" icon={Settings} label="Impostazioni" />
           </div>
-        </div>
+        </motion.div>
 
         {/* Celebration Overlay */}
         <CelebrationMoments />

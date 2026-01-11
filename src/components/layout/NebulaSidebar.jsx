@@ -17,7 +17,8 @@ import {
   ChevronRight, ChevronLeft, BarChart3, BellRing, UserCheck,
   BookOpen, Target, Activity, Palette, Layout, Link2,
   Dumbbell, Utensils, CreditCard, LogOut, HelpCircle,
-  X, User, Sun, Moon, LayoutGrid, Sparkles, Zap, ChevronDown, AlertTriangle
+  X, User, Sun, Moon, LayoutGrid, Sparkles, Zap, ChevronDown, AlertTriangle,
+  Search, Star, Clock, Maximize2, Grid3X3
 } from 'lucide-react';
 
 // === CONFIGURAZIONE NAVIGAZIONE PER RUOLO ===
@@ -71,7 +72,6 @@ const getNavConfig = (role) => {
             { to: '/admin/branding', icon: Palette, label: 'Branding', color: 'pink' },
             { to: '/integrations', icon: Link2, label: 'Integrazioni', color: 'teal' },
             { to: '/platform-settings', icon: Settings, label: 'Piattaforma', color: 'slate' },
-            { to: '/notification-debug', icon: AlertTriangle, label: 'Debug Notifiche', color: 'amber' },
           ]
         }
       ]
@@ -103,7 +103,6 @@ const getNavConfig = (role) => {
           items: [
             { to: '/coach/updates', icon: BellRing, label: 'Aggiornamenti', color: 'amber' },
             { to: '/coach/settings', icon: Settings, label: 'Impostazioni', color: 'slate' },
-            { to: '/notification-debug', icon: AlertTriangle, label: 'Debug Notifiche', color: 'amber' },
           ]
         }
       ]
@@ -131,12 +130,12 @@ const getNavConfig = (role) => {
           id: 'profile',
           title: 'Profilo',
           items: [
+            { to: '/client/habits', icon: Target, label: 'Abitudini', color: 'violet' },
             { to: '/client/anamnesi', icon: FileText, label: 'Anamnesi', color: 'orange' },
             { to: '/client/checks', icon: Activity, label: 'Check', color: 'green' },
             { to: '/client/payments', icon: CreditCard, label: 'Pagamenti', color: 'emerald' },
             { to: '/client/courses', icon: BookOpen, label: 'Corsi', color: 'indigo' },
             { to: '/client/settings', icon: Settings, label: 'Impostazioni', color: 'slate' },
-            { to: '/notification-debug', icon: AlertTriangle, label: 'Debug Notifiche', color: 'amber' },
           ]
         }
       ]
@@ -173,6 +172,390 @@ const colorMap = {
   pink: { bg: 'bg-pink-500/20', text: 'text-pink-400', glow: 'shadow-pink-500/30', border: 'border-pink-500/30' },
   teal: { bg: 'bg-teal-500/20', text: 'text-teal-400', glow: 'shadow-teal-500/30', border: 'border-teal-500/30' },
   slate: { bg: 'bg-slate-500/20', text: 'text-slate-400', glow: 'shadow-slate-500/30', border: 'border-slate-500/30' },
+};
+
+// === COMMAND CENTER - Full Screen Navigation ===
+export const CommandCenter = ({ isOpen, onClose, role = 'admin', onNavigate, badges = {} }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [recentPages, setRecentPages] = useState([]);
+  const [pinnedPages, setPinnedPages] = useState([]);
+  const { isDark } = useTheme();
+  const navigate = useNavigate();
+  
+  const navConfig = getNavConfig(role);
+  
+  // Carica pagine recenti e pinnate da localStorage
+  useEffect(() => {
+    if (isOpen) {
+      const storedRecent = localStorage.getItem('recentPages');
+      const storedPinned = localStorage.getItem('pinnedPages');
+      if (storedRecent) {
+        try { setRecentPages(JSON.parse(storedRecent)); } catch (e) {}
+      }
+      if (storedPinned) {
+        try { setPinnedPages(JSON.parse(storedPinned)); } catch (e) {}
+      }
+    }
+  }, [isOpen]);
+  
+  // Blocca scroll quando aperto
+  useEffect(() => {
+    if (isOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
+  
+  // Keyboard shortcut ESC per chiudere
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+  
+  // Tutte le pagine flat per la ricerca
+  const allPages = useMemo(() => {
+    return navConfig.sections.flatMap(section => 
+      section.items.map(item => ({ ...item, section: section.title }))
+    );
+  }, [navConfig]);
+  
+  // Filtra pagine in base alla ricerca
+  const filteredPages = useMemo(() => {
+    if (!searchQuery) return null;
+    const query = searchQuery.toLowerCase();
+    return allPages.filter(page => 
+      page.label.toLowerCase().includes(query) ||
+      page.section.toLowerCase().includes(query)
+    );
+  }, [searchQuery, allPages]);
+  
+  // Toggle pin pagina
+  const togglePin = (to, label, e) => {
+    e.stopPropagation();
+    const isPinned = pinnedPages.some(p => p.to === to);
+    let newPinned;
+    if (isPinned) {
+      newPinned = pinnedPages.filter(p => p.to !== to);
+    } else {
+      newPinned = [...pinnedPages, { to, label }].slice(0, 8);
+    }
+    setPinnedPages(newPinned);
+    localStorage.setItem('pinnedPages', JSON.stringify(newPinned));
+  };
+  
+  // Pagine con notifiche
+  const pagesWithBadges = useMemo(() => {
+    return allPages.filter(page => badges[page.to] > 0);
+  }, [allPages, badges]);
+  
+  const handleNavigate = (to, label) => {
+    // Salva nelle pagine recenti
+    const newRecent = [{ to, label }, ...recentPages.filter(p => p.to !== to)].slice(0, 5);
+    setRecentPages(newRecent);
+    localStorage.setItem('recentPages', JSON.stringify(newRecent));
+    
+    if (onNavigate) {
+      onNavigate(to);
+    } else {
+      navigate(to);
+    }
+    onClose();
+  };
+  
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 lg:p-6"
+        >
+          {/* Backdrop frost - più intenso */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/40 backdrop-blur-2xl"
+          />
+          
+          {/* Command Center Panel - Più grande e frost */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className={`relative w-full max-w-7xl max-h-[92vh] rounded-3xl overflow-hidden ${isDark ? 'shadow-2xl shadow-black/30' : 'shadow-2xl shadow-slate-500/20'}`}
+          >
+            {/* Frost Glass Background - Ultra trasparente */}
+            <div className={`absolute inset-0 backdrop-blur-[80px] backdrop-saturate-150 ${isDark ? 'bg-black/30' : 'bg-white/40'}`} />
+            <div className={`absolute inset-0 ring-1 ring-inset ${isDark ? 'ring-white/15' : 'ring-black/5'}`} />
+            
+            {/* Gradient overlay sottile */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${isDark ? 'from-white/[0.02] via-transparent to-white/[0.02]' : 'from-black/[0.01] via-transparent to-black/[0.01]'} pointer-events-none`} />
+            
+            {/* Content */}
+            <div className="relative flex flex-col h-full max-h-[92vh]">
+              
+              {/* Header - Compatto con safe area */}
+              <div className={`flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border-b flex-shrink-0 ${isDark ? 'border-white/5' : 'border-slate-200/50'}`}>
+                {/* Search */}
+                <div className={`flex-1 min-w-0 flex items-center gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl ${isDark ? 'bg-white/5 border border-white/10' : 'bg-slate-100/80 border border-slate-200'}`}>
+                  <Search size={16} className={`flex-shrink-0 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
+                  <input
+                    type="text"
+                    placeholder="Cerca..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={`flex-1 min-w-0 bg-transparent outline-none text-sm ${isDark ? 'text-white placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'}`}
+                  />
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="flex-shrink-0 text-slate-400 hover:text-white">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Close button */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={onClose}
+                  className={`flex-shrink-0 p-2 sm:p-2.5 rounded-xl transition-colors ${isDark ? 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10' : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200'}`}
+                >
+                  <X size={16} className="sm:w-[18px] sm:h-[18px]" />
+                </motion.button>
+              </div>
+              
+              {/* Body - Scrollbar bianca */}
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 sm:space-y-5 scrollbar-white">
+                
+                {/* Risultati Ricerca */}
+                {filteredPages && (
+                  <div>
+                    <h3 className={`text-xs font-medium mb-2.5 flex items-center gap-2 uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <Search size={12} />
+                      Risultati per "{searchQuery}"
+                    </h3>
+                    {filteredPages.length > 0 ? (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
+                        {filteredPages.map((page) => {
+                          const Icon = page.icon;
+                          const colors = colorMap[page.color] || colorMap.blue;
+                          const isPinned = pinnedPages.some(p => p.to === page.to);
+                          const badge = badges[page.to] || 0;
+                          return (
+                            <motion.button
+                              key={page.to}
+                              whileHover={{ scale: 1.03, y: -1 }}
+                              whileTap={{ scale: 0.97 }}
+                              onClick={() => handleNavigate(page.to, page.label)}
+                              className={`relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all border group ${isDark ? 'bg-white/[0.03] hover:bg-white/[0.08] border-white/5 hover:border-white/15' : 'bg-white/50 hover:bg-white/80 border-slate-200/50 hover:border-slate-300'}`}
+                            >
+                              {/* Pin button */}
+                              <button
+                                onClick={(e) => togglePin(page.to, page.label, e)}
+                                className={`absolute top-1.5 right-1.5 p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity ${isPinned ? 'opacity-100 text-amber-400' : isDark ? 'text-slate-500 hover:text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                              >
+                                <Star size={12} fill={isPinned ? 'currentColor' : 'none'} />
+                              </button>
+                              {/* Badge */}
+                              {badge > 0 && (
+                                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg">
+                                  {badge > 99 ? '99+' : badge}
+                                </span>
+                              )}
+                              <div className={`p-2 rounded-lg ${colors.bg}`}>
+                                <Icon size={18} className={colors.text} />
+                              </div>
+                              <span className={`text-xs font-medium text-center leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{page.label}</span>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className={`text-center py-6 text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Nessun risultato trovato
+                      </p>
+                    )}
+                  </div>
+                )}
+                
+                {/* Notifiche - Pagine con badge */}
+                {!filteredPages && pagesWithBadges.length > 0 && (
+                  <div>
+                    <h3 className={`text-xs font-medium mb-2.5 flex items-center gap-2 uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <BellRing size={12} />
+                      Notifiche
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {pagesWithBadges.map((page) => {
+                        const Icon = page.icon;
+                        const colors = colorMap[page.color] || colorMap.blue;
+                        const badge = badges[page.to];
+                        return (
+                          <motion.button
+                            key={page.to}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => handleNavigate(page.to, page.label)}
+                            className={`relative flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${isDark ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20' : 'bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200'}`}
+                          >
+                            <Icon size={14} className={colors.text} />
+                            {page.label}
+                            <span className="min-w-[20px] h-[20px] px-1.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                              {badge > 99 ? '99+' : badge}
+                            </span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Pagine Pinnate */}
+                {!filteredPages && pinnedPages.length > 0 && (
+                  <div>
+                    <h3 className={`text-xs font-medium mb-2.5 flex items-center gap-2 uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <Star size={12} />
+                      Preferiti
+                    </h3>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
+                      {pinnedPages.map((page) => {
+                        const fullPage = allPages.find(p => p.to === page.to);
+                        if (!fullPage) return null;
+                        const Icon = fullPage.icon;
+                        const colors = colorMap[fullPage.color] || colorMap.blue;
+                        const badge = badges[page.to] || 0;
+                        return (
+                          <motion.button
+                            key={page.to}
+                            whileHover={{ scale: 1.03, y: -1 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => handleNavigate(page.to, page.label)}
+                            className={`relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all border group ${isDark ? 'bg-amber-500/5 hover:bg-amber-500/10 border-amber-500/10 hover:border-amber-500/20' : 'bg-amber-50 hover:bg-amber-100 border-amber-200/50 hover:border-amber-300'}`}
+                          >
+                            {/* Unpin button */}
+                            <button
+                              onClick={(e) => togglePin(page.to, page.label, e)}
+                              className="absolute top-1.5 right-1.5 p-1 rounded-lg text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X size={12} />
+                            </button>
+                            {badge > 0 && (
+                              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg">
+                                {badge > 99 ? '99+' : badge}
+                              </span>
+                            )}
+                            <div className={`p-2 rounded-lg ${colors.bg}`}>
+                              <Icon size={18} className={colors.text} />
+                            </div>
+                            <span className={`text-xs font-medium text-center leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{page.label}</span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Pagine Recenti */}
+                {!filteredPages && recentPages.length > 0 && (
+                  <div>
+                    <h3 className={`text-xs font-medium mb-2.5 flex items-center gap-2 uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <Clock size={12} />
+                      Recenti
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {recentPages.map((page) => (
+                        <motion.button
+                          key={page.to}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleNavigate(page.to, page.label)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isDark ? 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'}`}
+                        >
+                          {page.label}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Tutte le Sezioni */}
+                {!filteredPages && navConfig.sections.map((section) => (
+                  <div key={section.id}>
+                    <h3 className={`text-xs font-medium mb-2.5 uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {section.title}
+                    </h3>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
+                      {section.items.map((item) => {
+                        const Icon = item.icon;
+                        const colors = colorMap[item.color] || colorMap.blue;
+                        const isPinned = pinnedPages.some(p => p.to === item.to);
+                        const badge = badges[item.to] || 0;
+                        return (
+                          <motion.button
+                            key={item.to}
+                            whileHover={{ scale: 1.03, y: -1 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => handleNavigate(item.to, item.label)}
+                            className={`relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all border group ${isDark ? 'bg-white/[0.03] hover:bg-white/[0.08] border-white/5 hover:border-white/15' : 'bg-white/50 hover:bg-white/80 border-slate-200/50 hover:border-slate-300'}`}
+                          >
+                            {/* Pin button */}
+                            <button
+                              onClick={(e) => togglePin(item.to, item.label, e)}
+                              className={`absolute top-1.5 right-1.5 p-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity ${isPinned ? 'opacity-100 text-amber-400' : isDark ? 'text-slate-500 hover:text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                            >
+                              <Star size={12} fill={isPinned ? 'currentColor' : 'none'} />
+                            </button>
+                            {/* Badge */}
+                            {badge > 0 && (
+                              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg">
+                                {badge > 99 ? '99+' : badge}
+                              </span>
+                            )}
+                            <div className={`p-2 rounded-lg ${colors.bg}`}>
+                              <Icon size={18} className={colors.text} />
+                            </div>
+                            <span className={`text-xs font-medium text-center leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.label}</span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Footer hint */}
+              <div className={`px-4 py-2.5 border-t text-center ${isDark ? 'border-white/5 text-slate-500' : 'border-slate-200 text-slate-400'}`}>
+                <span className="text-[10px]">Premi <kbd className={`px-1 py-0.5 rounded text-[10px] ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}>ESC</kbd> per chiudere · Clicca <Star size={10} className="inline" /> per pinnare</span>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 };
 
 // === SIDEBAR LOGO ===
@@ -232,7 +615,7 @@ const SidebarLogo = ({ isCollapsed, branding }) => {
   );
 };
 
-// === NAV ITEM NEBULA ===
+// === NAV ITEM NEBULA - Glass Style ===
 const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0, isDark = true }) => {
   const Icon = item.icon;
   const colors = colorMap[item.color] || colorMap.blue;
@@ -240,31 +623,32 @@ const NavItem = ({ item, isActive, isCollapsed, onClick, badge = 0, isDark = tru
   return (
     <motion.button
       onClick={onClick}
-      className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-300 group overflow-hidden ${
+      className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm transition-all duration-300 group overflow-hidden ${
         isActive
-          ? `${colors.bg} ${colors.text} border ${colors.border}`
+          ? `bg-white/10 backdrop-blur-xl ${colors.text} border border-white/15 shadow-lg shadow-black/10`
           : isDark 
-            ? 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
-            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5 border border-transparent'
+            ? 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'
+            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5 border border-transparent hover:border-slate-200'
       }`}
       whileHover={{ x: isCollapsed ? 0 : 4, scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
       title={isCollapsed ? item.label : undefined}
     >
-      {/* Glow effect on active */}
+      {/* Glow effect on active - Glass style */}
       {isActive && (
         <motion.div
           layoutId="navGlow"
-          className={`absolute inset-0 ${colors.bg} blur-xl opacity-50`}
+          className={`absolute inset-0 ${colors.bg} blur-2xl opacity-30`}
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         />
       )}
       
-      {/* Active indicator */}
+      {/* Active indicator - Vertical bar with glow */}
       {isActive && (
         <motion.div
           layoutId="activeBar"
-          className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 ${colors.text.replace('text-', 'bg-')} rounded-full`}
+          className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 ${colors.text.replace('text-', 'bg-')} rounded-full shadow-lg`}
+          style={{ boxShadow: `0 0 10px ${colors.text.includes('cyan') ? '#22d3ee' : colors.text.includes('purple') ? '#a855f7' : colors.text.includes('emerald') ? '#10b981' : '#3b82f6'}` }}
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         />
       )}
@@ -380,6 +764,7 @@ export const NebulaSidebar = ({
   const [branding, setBranding] = useState(defaultBranding);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+  const [isCommandCenterOpen, setIsCommandCenterOpen] = useState(false);
   const user = auth.currentUser;
   const { theme, toggleTheme, isDark } = useTheme();
   
@@ -486,22 +871,25 @@ export const NebulaSidebar = ({
       animate={{ width: isCollapsed ? 72 : 260 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       className={`hidden lg:flex fixed top-0 left-0 h-screen z-40 flex-col ${className}`}
+      style={{ overscrollBehavior: 'contain', isolation: 'isolate' }}
     >
-      {/* Glass Background - Light/Dark aware */}
-      <div className={`absolute inset-0 backdrop-blur-2xl ${isDark ? 'bg-slate-900/40' : 'bg-white/70'}`} />
+      {/* Frost Glass Background - Identico a mobile */}
+      <div className={`absolute inset-0 backdrop-blur-[40px] backdrop-saturate-150 ${isDark ? 'bg-black/20' : 'bg-white/30'}`} />
       
-      {/* Nebula Glow Effects */}
-      <div className={`absolute -top-20 -left-20 w-60 h-60 rounded-full blur-3xl pointer-events-none ${isDark ? 'bg-cyan-500/10' : 'bg-cyan-500/5'}`} />
-      <div className={`absolute -bottom-20 -left-10 w-40 h-40 rounded-full blur-3xl pointer-events-none ${isDark ? 'bg-purple-500/10' : 'bg-purple-500/5'}`} />
+      {/* Subtle overlay per leggibilità */}
+      <div className={`absolute inset-0 bg-gradient-to-b ${isDark ? 'from-white/[0.03] via-transparent to-white/[0.03]' : 'from-black/[0.02] via-transparent to-black/[0.02]'} pointer-events-none`} />
       
-      {/* Border Glow */}
-      <div className={`absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b ${isDark ? 'from-cyan-500/20 via-purple-500/20 to-transparent' : 'from-cyan-500/30 via-purple-500/20 to-transparent'}`} />
+      {/* Border ring come mobile */}
+      <div className={`absolute inset-0 ring-1 ring-inset ${isDark ? 'ring-white/10' : 'ring-black/5'} pointer-events-none`} />
+      
+      {/* Border Glow destro */}
+      <div className={`absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b ${isDark ? 'from-white/20 via-white/10 to-transparent' : 'from-slate-300 via-slate-200 to-transparent'}`} />
       
       {/* Content */}
       <div className="relative flex flex-col h-full">
         
-        {/* Header */}
-        <div className={`h-16 px-4 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+        {/* Header - Glass Style */}
+        <div className={`h-16 px-4 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} border-b ${isDark ? 'border-white/5' : 'border-slate-200/50'}`}>
           <SidebarLogo isCollapsed={isCollapsed} branding={branding} />
           <AnimatePresence mode="wait">
             {!isCollapsed && (
@@ -510,9 +898,9 @@ export const NebulaSidebar = ({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={onToggleCollapse}
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.1, rotate: -10 }}
                 whileTap={{ scale: 0.9 }}
-                className={`p-2 rounded-lg transition-all border ${isDark ? 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border-white/5' : 'bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 hover:text-slate-900 border-slate-200'}`}
+                className={`p-2 rounded-xl transition-all border backdrop-blur-xl ${isDark ? 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border-white/10 hover:border-white/20' : 'bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 hover:text-slate-900 border-slate-200 hover:border-slate-300'}`}
               >
                 <ChevronLeft size={16} />
               </motion.button>
@@ -520,7 +908,7 @@ export const NebulaSidebar = ({
           </AnimatePresence>
         </div>
 
-        {/* Collapse button when collapsed */}
+        {/* Collapse button when collapsed - Glass Style */}
         <AnimatePresence mode="wait">
           {isCollapsed && (
             <motion.div
@@ -533,7 +921,7 @@ export const NebulaSidebar = ({
                 onClick={onToggleCollapse}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`w-full p-2.5 rounded-xl transition-all flex items-center justify-center border ${isDark ? 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border-white/5' : 'bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 hover:text-slate-900 border-slate-200'}`}
+                className={`w-full p-2.5 rounded-2xl transition-all flex items-center justify-center border backdrop-blur-xl ${isDark ? 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border-white/10 hover:border-white/20' : 'bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 hover:text-slate-900 border-slate-200 hover:border-slate-300'}`}
               >
                 <ChevronRight size={18} />
               </motion.button>
@@ -558,37 +946,61 @@ export const NebulaSidebar = ({
           ))}
         </nav>
 
-        {/* Footer */}
-        <div className={`relative px-3 pb-4 pt-2 border-t ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
-          {/* Quick Actions */}
+        {/* Footer - Glass Style */}
+        <div className={`relative px-3 pb-4 pt-3 border-t ${isDark ? 'border-white/5' : 'border-slate-200/50'}`}>
+          
+          {/* Command Center Button */}
           {!isCollapsed ? (
-            <div className="flex gap-2 mb-3">
+            <motion.button
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setIsCommandCenterOpen(true)}
+              className={`w-full flex items-center justify-center gap-2 py-3 mb-3 rounded-2xl backdrop-blur-xl transition-all text-sm font-medium ${isDark ? 'bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-white/10 text-white hover:from-cyan-500/20 hover:to-purple-500/20 hover:border-white/20' : 'bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-slate-200 text-slate-700 hover:from-cyan-500/20 hover:to-purple-500/20'}`}
+            >
+              <Grid3X3 size={16} />
+              Tutte le Pagine
+            </motion.button>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsCommandCenterOpen(true)}
+              className={`w-full p-2.5 mb-3 rounded-2xl backdrop-blur-xl transition-all ${isDark ? 'bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-white/10 text-white hover:from-cyan-500/20 hover:to-purple-500/20' : 'bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-slate-200 text-slate-700'}`}
+              title="Tutte le Pagine"
+            >
+              <Grid3X3 size={18} className="mx-auto" />
+            </motion.button>
+          )}
+          
+          {/* Quick Actions - Glass Buttons */}
+          {!isCollapsed ? (
+            <div className="flex gap-2.5 mb-3">
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.03, y: -1 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => navigate('/guida')}
-                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors text-xs font-medium"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-amber-500/10 backdrop-blur-xl border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/30 transition-all text-xs font-medium shadow-lg shadow-amber-500/5"
               >
                 <HelpCircle size={14} />
                 Aiuto
               </motion.button>
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.03, y: -1 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={toggleTheme}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-colors text-xs font-medium ${isDark ? 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white' : 'bg-slate-900/5 text-slate-600 hover:bg-slate-900/10 hover:text-slate-900'}`}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl backdrop-blur-xl transition-all text-xs font-medium shadow-lg ${isDark ? 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:border-white/20 hover:text-white shadow-black/5' : 'bg-slate-900/5 border border-slate-200 text-slate-600 hover:bg-slate-900/10 hover:border-slate-300 hover:text-slate-900 shadow-slate-500/5'}`}
               >
                 {isDark ? <Sun size={14} /> : <Moon size={14} />}
                 {isDark ? 'Chiaro' : 'Scuro'}
               </motion.button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2 mb-3">
+            <div className="flex flex-col gap-2.5 mb-3">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/guida')}
-                className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors"
+                className="p-2.5 rounded-2xl bg-amber-500/10 backdrop-blur-xl border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/30 transition-all"
                 title="Aiuto"
               >
                 <HelpCircle size={18} />
@@ -597,7 +1009,7 @@ export const NebulaSidebar = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={toggleTheme}
-                className={`p-2.5 rounded-xl transition-colors ${isDark ? 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white' : 'bg-slate-900/5 text-slate-600 hover:bg-slate-900/10 hover:text-slate-900'}`}
+                className={`p-2.5 rounded-2xl backdrop-blur-xl transition-all ${isDark ? 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:border-white/20 hover:text-white' : 'bg-slate-900/5 border border-slate-200 text-slate-600 hover:bg-slate-900/10 hover:border-slate-300 hover:text-slate-900'}`}
                 title={isDark ? 'Tema Chiaro' : 'Tema Scuro'}
               >
                 {isDark ? <Sun size={18} /> : <Moon size={18} />}
@@ -605,25 +1017,25 @@ export const NebulaSidebar = ({
             </div>
           )}
           
-          {/* User Profile */}
+          {/* User Profile - Glass Card */}
           <div className="relative" data-user-menu>
             <motion.button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-all ${
+              className={`w-full flex items-center gap-3 p-2.5 rounded-2xl backdrop-blur-xl transition-all border shadow-lg ${
                 isUserMenuOpen 
-                  ? (isDark ? 'bg-white/10' : 'bg-slate-900/10') 
-                  : (isDark ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-900/5 hover:bg-slate-900/10')
+                  ? (isDark ? 'bg-white/10 border-white/15 shadow-black/10' : 'bg-slate-900/10 border-slate-300 shadow-slate-500/10') 
+                  : (isDark ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/15 shadow-black/5' : 'bg-slate-900/5 border-slate-200 hover:bg-slate-900/10 hover:border-slate-300 shadow-slate-500/5')
               } ${isCollapsed ? 'justify-center' : ''}`}
             >
               <div className="relative flex-shrink-0">
                 <img 
                   src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.displayName || 'U')}&background=06b6d4&color=fff`}
                   alt="User"
-                  className="w-9 h-9 rounded-xl ring-2 ring-cyan-500/30 shadow-lg shadow-cyan-500/20"
+                  className="w-9 h-9 rounded-xl ring-2 ring-white/20 shadow-lg shadow-black/20"
                 />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900" />
+                <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 shadow-lg shadow-emerald-500/50 ${isDark ? 'border-slate-950' : 'border-white'}`} />
               </div>
               {!isCollapsed && (
                 <>
@@ -636,7 +1048,7 @@ export const NebulaSidebar = ({
               )}
             </motion.button>
 
-            {/* Dropdown */}
+            {/* Dropdown - Glass Style */}
             <AnimatePresence>
               {isUserMenuOpen && (
                 <motion.div
@@ -644,38 +1056,38 @@ export const NebulaSidebar = ({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className={`absolute bottom-full mb-2 ${isCollapsed ? 'left-0' : 'left-0 right-0'} min-w-[200px] backdrop-blur-xl rounded-xl shadow-2xl overflow-hidden z-50 ${isDark ? 'bg-slate-900/95 border border-white/10' : 'bg-white/95 border border-slate-200'}`}
+                  className={`absolute bottom-full mb-2 ${isCollapsed ? 'left-0' : 'left-0 right-0'} min-w-[200px] backdrop-blur-2xl rounded-2xl shadow-2xl overflow-hidden z-50 ${isDark ? 'bg-slate-950/80 border border-white/10' : 'bg-white/90 border border-slate-200'}`}
                 >
-                  {/* User Header */}
-                  <div className={`p-3 border-b bg-gradient-to-r from-cyan-500/10 to-purple-500/10 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+                  {/* User Header - Glass */}
+                  <div className={`p-3 border-b bg-gradient-to-r from-cyan-500/10 to-purple-500/10 ${isDark ? 'border-white/5' : 'border-slate-200/50'}`}>
                     <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{user?.displayName || 'Utente'}</p>
                     <p className={`text-xs truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{user?.email}</p>
                   </div>
                   
-                  {/* Menu Items */}
-                  <div className="py-1">
-                    <button onClick={handleNavigateProfile} className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-700 hover:bg-slate-100'}`}>
+                  {/* Menu Items - Glass Hover */}
+                  <div className="py-1.5 px-1.5">
+                    <button onClick={handleNavigateProfile} className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl transition-all ${isDark ? 'text-slate-300 hover:bg-white/10 hover:text-white' : 'text-slate-700 hover:bg-slate-100'}`}>
                       <User size={16} className="text-blue-400" /> Profilo
                     </button>
-                    <button onClick={handleNavigateSettings} className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-700 hover:bg-slate-100'}`}>
+                    <button onClick={handleNavigateSettings} className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl transition-all ${isDark ? 'text-slate-300 hover:bg-white/10 hover:text-white' : 'text-slate-700 hover:bg-slate-100'}`}>
                       <Settings size={16} className="text-cyan-400" /> Impostazioni
                     </button>
                     <button 
                       onClick={() => { setIsUserMenuOpen(false); setIsCustomizerOpen(true); }} 
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-700 hover:bg-slate-100'}`}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl transition-all ${isDark ? 'text-slate-300 hover:bg-white/10 hover:text-white' : 'text-slate-700 hover:bg-slate-100'}`}
                     >
                       <LayoutGrid size={16} className="text-purple-400" /> Personalizza Menu
                     </button>
                     {role === 'admin' && (
-                      <button onClick={handleNavigateBilling} className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-700 hover:bg-slate-100'}`}>
+                      <button onClick={handleNavigateBilling} className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl transition-all ${isDark ? 'text-slate-300 hover:bg-white/10 hover:text-white' : 'text-slate-700 hover:bg-slate-100'}`}>
                         <CreditCard size={16} className="text-emerald-400" /> Abbonamento
                       </button>
                     )}
                   </div>
                   
-                  {/* Logout */}
-                  <div className={`border-t py-1 ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
-                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors">
+                  {/* Logout - Glass */}
+                  <div className={`border-t py-1.5 px-1.5 ${isDark ? 'border-white/5' : 'border-slate-200/50'}`}>
+                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all">
                       <LogOut size={16} /> Esci
                     </button>
                   </div>
@@ -692,6 +1104,14 @@ export const NebulaSidebar = ({
         onClose={() => setIsCustomizerOpen(false)} 
         role={role}
       />
+      
+      {/* Command Center */}
+      <CommandCenter 
+        isOpen={isCommandCenterOpen}
+        onClose={() => setIsCommandCenterOpen(false)}
+        role={role}
+        badges={badges}
+      />
     </motion.aside>
   );
 };
@@ -707,6 +1127,7 @@ export const MobileNebulaSidebar = ({
   const [branding, setBranding] = useState(defaultBranding);
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isCommandCenterOpen, setIsCommandCenterOpen] = useState(false);
   const user = auth.currentUser;
   const { theme, toggleTheme, isDark } = useTheme();
   
@@ -743,6 +1164,29 @@ export const MobileNebulaSidebar = ({
     loadBranding();
   }, []);
 
+  // Blocca lo scroll del body quando la sidebar è aperta
+  useEffect(() => {
+    if (isOpen) {
+      // Salva la posizione di scroll corrente
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        // Ripristina lo scroll
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
+
   const handleLogout = async () => {
     try {
       // Pulisci tutto prima del logout
@@ -773,42 +1217,58 @@ export const MobileNebulaSidebar = ({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Overlay */}
+          {/* Overlay - Blocca interazioni scroll */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 lg:hidden"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 lg:hidden touch-none"
+            style={{ overscrollBehavior: 'contain' }}
           />
           
-          {/* Sidebar */}
+          {/* Sidebar - Floating Frost Glass */}
           <motion.aside
-            initial={{ x: -300, opacity: 0 }}
+            initial={{ x: -320, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -300, opacity: 0 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 350 }}
-            className="fixed left-0 top-0 h-screen w-[300px] z-50 flex flex-col lg:hidden overflow-hidden"
+            exit={{ x: -320, opacity: 0 }}
+            transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
+            className="fixed left-3 top-3 bottom-3 w-[300px] z-50 flex flex-col lg:hidden overflow-hidden rounded-3xl"
+            style={{ 
+              overscrollBehavior: 'contain',
+              willChange: 'transform, opacity',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+              transform: 'translateZ(0)',
+            }}
           >
-            {/* Glass Background */}
-            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-2xl" />
+            {/* Frost Glass Background - Usa bg semi-trasparente per Android */}
+            <div 
+              className="absolute inset-0 rounded-3xl border border-white/20" 
+              style={{
+                backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                backdropFilter: 'blur(40px) saturate(150%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(150%)',
+              }}
+            />
             
-            {/* Nebula Effects */}
-            <div className="absolute -top-20 -left-20 w-60 h-60 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-20 -left-10 w-40 h-40 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute top-1/2 -right-20 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+            {/* Subtle overlay per leggibilità */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-white/5 rounded-3xl pointer-events-none" />
+            
+            {/* Border Glow sottile */}
+            <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/10 pointer-events-none" />
             
             {/* Content */}
             <div className="relative flex flex-col h-full">
               
-              {/* Header - Extra padding top per evitare overlap con status bar mobile */}
-              <div className="pt-8 pb-4 px-4 flex items-center justify-between">
+              {/* Header - Glass Style */}
+              <div className="pt-6 pb-4 px-4 flex items-center justify-between border-b border-white/5">
                 <SidebarLogo isCollapsed={false} branding={branding} />
                 <motion.button
                   onClick={onClose}
-                  whileHover={{ scale: 1.1 }}
+                  whileHover={{ scale: 1.1, rotate: 90 }}
                   whileTap={{ scale: 0.9 }}
-                  className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white transition-all"
+                  className="p-2.5 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:bg-white/10 hover:border-white/20 text-slate-400 hover:text-white transition-all shadow-lg shadow-black/20"
                 >
                   <X size={20} />
                 </motion.button>
@@ -816,6 +1276,17 @@ export const MobileNebulaSidebar = ({
 
               {/* Navigation */}
               <nav className="flex-1 px-3 py-2 overflow-y-auto scrollbar-hide">
+                {/* Command Center Button - Mobile */}
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsCommandCenterOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 py-3 mb-4 rounded-2xl backdrop-blur-xl transition-all text-sm font-medium bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-white/10 text-white hover:from-cyan-500/20 hover:to-purple-500/20 hover:border-white/20"
+                >
+                  <Grid3X3 size={16} />
+                  Tutte le Pagine
+                </motion.button>
+                
                 {navConfig.sections.map((section) => (
                   <NavSection
                     key={section.id}
@@ -830,21 +1301,22 @@ export const MobileNebulaSidebar = ({
                 ))}
               </nav>
 
-              {/* User Section */}
-              <div className="relative p-4 border-t border-white/10">
-                {/* User Card - Clickable */}
+              {/* User Section - Glass Card */}
+              <div className="relative p-4 border-t border-white/5">
+                {/* User Card - Glass Style */}
                 <motion.button
                   whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.01 }}
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-white/10 mb-3 hover:from-cyan-500/15 hover:to-purple-500/15 transition-all"
+                  className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 mb-3 hover:bg-white/10 hover:border-white/15 transition-all shadow-lg shadow-black/10"
                 >
                   <div className="relative">
                     <img 
                       src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.displayName || 'U')}&background=06b6d4&color=fff`}
                       alt="User"
-                      className="w-12 h-12 rounded-xl ring-2 ring-cyan-500/30 shadow-lg shadow-cyan-500/20"
+                      className="w-11 h-11 rounded-2xl ring-2 ring-white/20 shadow-lg shadow-black/30"
                     />
-                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-900" />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-slate-950 shadow-lg shadow-emerald-500/50" />
                   </div>
                   <div className="flex-1 min-w-0 text-left">
                     <p className="text-sm font-semibold text-white truncate">{user?.displayName || 'Utente'}</p>
@@ -858,41 +1330,41 @@ export const MobileNebulaSidebar = ({
                   </motion.div>
                 </motion.button>
 
-                {/* User Menu - Expandable */}
+                {/* User Menu - Glass Expandable */}
                 <AnimatePresence>
                   {isUserMenuOpen && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ duration: 0.25, ease: 'easeOut' }}
                       className="overflow-hidden"
                     >
-                      <div className="space-y-1 mb-3 pb-3 border-b border-white/10">
+                      <div className="space-y-1.5 mb-3 pb-3 border-b border-white/5 bg-white/[0.02] rounded-2xl p-2 -mx-1">
                         <motion.button
-                          whileHover={{ x: 4 }}
+                          whileHover={{ x: 4, backgroundColor: 'rgba(255,255,255,0.08)' }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => handleNavigate(role === 'client' ? '/client/settings' : role === 'coach' ? '/coach/settings' : '/settings')}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 transition-colors"
+                          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:text-white transition-all border border-transparent hover:border-white/10"
                         >
                           <Settings size={16} className="text-cyan-400" />
                           <span className="font-medium">Impostazioni</span>
                         </motion.button>
                         <motion.button
-                          whileHover={{ x: 4 }}
+                          whileHover={{ x: 4, backgroundColor: 'rgba(255,255,255,0.08)' }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => setIsCustomizerOpen(true)}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 transition-colors"
+                          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:text-white transition-all border border-transparent hover:border-white/10"
                         >
                           <LayoutGrid size={16} className="text-purple-400" />
                           <span className="font-medium">Personalizza Menu</span>
                         </motion.button>
                         {role === 'admin' && (
                           <motion.button
-                            whileHover={{ x: 4 }}
+                            whileHover={{ x: 4, backgroundColor: 'rgba(255,255,255,0.08)' }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => handleNavigate('/billing')}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:text-white transition-all border border-transparent hover:border-white/10"
                           >
                             <CreditCard size={16} className="text-emerald-400" />
                             <span className="font-medium">Abbonamento</span>
@@ -903,33 +1375,33 @@ export const MobileNebulaSidebar = ({
                   )}
                 </AnimatePresence>
                 
-                {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
+                {/* Action Buttons - Glass Style */}
+                <div className="grid grid-cols-2 gap-2.5 mb-3">
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ scale: 1.02, y: -1 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleNavigate('/guida')}
-                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors text-sm font-medium"
+                    className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-amber-500/10 backdrop-blur-xl border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/30 transition-all text-sm font-medium shadow-lg shadow-amber-500/10"
                   >
                     <HelpCircle size={16} /> Aiuto
                   </motion.button>
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ scale: 1.02, y: -1 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={toggleTheme}
-                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white transition-colors text-sm font-medium"
+                    className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20 hover:text-white transition-all text-sm font-medium shadow-lg shadow-black/10"
                   >
                     {isDark ? <Sun size={16} /> : <Moon size={16} />}
                     {isDark ? 'Chiaro' : 'Scuro'}
                   </motion.button>
                 </div>
                 
-                {/* Logout */}
+                {/* Logout - Glass Style */}
                 <motion.button
-                  whileHover={{ x: 4 }}
+                  whileHover={{ x: 4, backgroundColor: 'rgba(244,63,94,0.15)' }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-rose-400 hover:bg-rose-500/15 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-rose-400 border border-transparent hover:border-rose-500/20 transition-all"
                 >
                   <LogOut size={18} />
                   <span className="font-medium">Esci</span>
@@ -942,6 +1414,15 @@ export const MobileNebulaSidebar = ({
               isOpen={isCustomizerOpen} 
               onClose={() => setIsCustomizerOpen(false)} 
               role={role}
+            />
+            
+            {/* Command Center */}
+            <CommandCenter 
+              isOpen={isCommandCenterOpen}
+              onClose={() => setIsCommandCenterOpen(false)}
+              role={role}
+              onNavigate={handleNavigate}
+              badges={badges}
             />
           </motion.aside>
         </>

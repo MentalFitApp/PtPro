@@ -3,6 +3,8 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Image, Calendar, ArrowLeftRight, ZoomIn, ZoomOut, Move, RotateCcw, RotateCw, Download, Columns } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../../firebase';
 
 const formatDate = (date) => {
   if (!date) return 'N/D';
@@ -27,6 +29,7 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
   const [compareMode, setCompareMode] = useState(false); // false = grid, true = compare
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false); // Modal per download
   
   // Stato per allineamento foto (zoom, offset e rotazione per entrambe le foto)
   const [leftTransform, setLeftTransform] = useState({ scale: 1, x: 0, y: 0, rotate: 0 });
@@ -198,6 +201,68 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
   // Foto del tipo selezionato
   const currentPhotos = selectedType ? photosByType[selectedType] || [] : [];
 
+  // Helper per caricare immagine evitando CORS - usa Firebase Function proxy come fallback
+  const loadImageWithoutCORS = useCallback(async (url) => {
+    // Prima prova con fetch diretto (funziona se CORS è configurato)
+    try {
+      const response = await fetch(url, { mode: 'cors' });
+      if (response.ok) {
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
+        return new Promise((resolve, reject) => {
+          const img = new window.Image();
+          img.onload = () => {
+            URL.revokeObjectURL(blobUrl);
+            resolve(img);
+          };
+          img.onerror = reject;
+          img.src = blobUrl;
+        });
+      }
+    } catch (err) {
+      console.warn('Fetch diretto fallito, uso proxy Firebase:', err.message);
+    }
+    
+    // Fallback: usa Firebase Function proxy (server-side, no CORS issues)
+    try {
+      const proxyR2Image = httpsCallable(functions, 'proxyR2Image');
+      const result = await proxyR2Image({ imageUrl: url });
+      const { base64, contentType } = result.data;
+      
+      // Converti base64 in blob
+      const byteString = atob(base64);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: contentType });
+      const blobUrl = URL.createObjectURL(blob);
+      
+      return new Promise((resolve, reject) => {
+        const img = new window.Image();
+        img.onload = () => {
+          URL.revokeObjectURL(blobUrl);
+          resolve(img);
+        };
+        img.onerror = reject;
+        img.src = blobUrl;
+      });
+    } catch (proxyErr) {
+      console.error('Proxy Firebase fallito:', proxyErr);
+      
+      // Ultimo tentativo: carica direttamente (per visualizzazione, non funziona per canvas)
+      return new Promise((resolve, reject) => {
+        const img = new window.Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+  }, []);
+
   // Download foto con slider (screenshot della visualizzazione corrente)
   const downloadSliderView = useCallback(async () => {
     if (!containerRef.current) return;
@@ -215,26 +280,13 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
       const ctx = canvas.getContext('2d');
       ctx.scale(scale, scale);
       
-      // Carica entrambe le immagini
-      const leftImg = new window.Image();
-      const rightImg = new window.Image();
-      leftImg.crossOrigin = 'anonymous';
-      rightImg.crossOrigin = 'anonymous';
-      
       const leftPhoto = currentPhotos[leftPhotoIndex];
       const rightPhoto = currentPhotos[rightPhotoIndex];
       
-      await Promise.all([
-        new Promise((resolve, reject) => {
-          leftImg.onload = resolve;
-          leftImg.onerror = reject;
-          leftImg.src = leftPhoto?.url;
-        }),
-        new Promise((resolve, reject) => {
-          rightImg.onload = resolve;
-          rightImg.onerror = reject;
-          rightImg.src = rightPhoto?.url;
-        })
+      // Carica entrambe le immagini tramite fetch per evitare CORS
+      const [leftImg, rightImg] = await Promise.all([
+        loadImageWithoutCORS(leftPhoto?.url),
+        loadImageWithoutCORS(rightPhoto?.url)
       ]);
       
       // Background nero
@@ -315,9 +367,9 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
     } finally {
       setIsDownloading(false);
     }
-  }, [currentPhotos, leftPhotoIndex, rightPhotoIndex, sliderPosition, leftTransform, rightTransform, selectedType]);
+  }, [currentPhotos, leftPhotoIndex, rightPhotoIndex, sliderPosition, leftTransform, rightTransform, selectedType, loadImageWithoutCORS, toast]);
 
-  // Download foto affiancate (side by side)
+  // Download foto affiancate (side by side) con trasformazioni e barra separatrice
   const downloadSideBySide = useCallback(async () => {
     setIsDownloading(true);
     
@@ -325,38 +377,25 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
       const leftPhoto = currentPhotos[leftPhotoIndex];
       const rightPhoto = currentPhotos[rightPhotoIndex];
       
-      // Carica entrambe le immagini
-      const leftImg = new window.Image();
-      const rightImg = new window.Image();
-      leftImg.crossOrigin = 'anonymous';
-      rightImg.crossOrigin = 'anonymous';
-      
-      await Promise.all([
-        new Promise((resolve, reject) => {
-          leftImg.onload = resolve;
-          leftImg.onerror = reject;
-          leftImg.src = leftPhoto?.url;
-        }),
-        new Promise((resolve, reject) => {
-          rightImg.onload = resolve;
-          rightImg.onerror = reject;
-          rightImg.src = rightPhoto?.url;
-        })
+      // Carica entrambe le immagini tramite fetch per evitare CORS
+      const [leftImg, rightImg] = await Promise.all([
+        loadImageWithoutCORS(leftPhoto?.url),
+        loadImageWithoutCORS(rightPhoto?.url)
       ]);
       
-      // Dimensioni canvas - usa altezza massima tra le due foto
-      const maxHeight = Math.max(leftImg.height, rightImg.height);
+      // Dimensioni standard - usa altezza fissa per uniformità
+      const targetHeight = 1000;
       const leftAspect = leftImg.width / leftImg.height;
       const rightAspect = rightImg.width / rightImg.height;
       
       // Scala le larghezze per avere stessa altezza
-      const leftWidth = maxHeight * leftAspect;
-      const rightWidth = maxHeight * rightAspect;
+      const leftWidth = targetHeight * leftAspect;
+      const rightWidth = targetHeight * rightAspect;
       
-      const gap = 10; // Gap tra le foto
-      const padding = 40; // Padding per labels
-      const totalWidth = leftWidth + rightWidth + gap;
-      const totalHeight = maxHeight + padding;
+      const barWidth = 8; // Barra separatrice spessa
+      const padding = 50; // Padding per labels
+      const totalWidth = leftWidth + rightWidth + barWidth;
+      const totalHeight = targetHeight + padding;
       
       const canvas = document.createElement('canvas');
       canvas.width = totalWidth;
@@ -367,14 +406,47 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, totalWidth, totalHeight);
       
-      // Disegna foto sinistra (PRIMA)
-      ctx.drawImage(leftImg, 0, 0, leftWidth, maxHeight);
+      // Funzione helper per disegnare immagine con trasformazioni
+      const drawWithTransform = (img, x, y, width, height, transform) => {
+        ctx.save();
+        
+        // Centro dell'area immagine
+        const centerX = x + width / 2;
+        const centerY = y + height / 2;
+        
+        // Applica trasformazioni
+        ctx.translate(centerX + transform.x, centerY + transform.y);
+        ctx.rotate((transform.rotate * Math.PI) / 180);
+        ctx.scale(transform.scale, transform.scale);
+        ctx.translate(-centerX, -centerY);
+        
+        // Crea clipping per non uscire dall'area
+        ctx.beginPath();
+        ctx.rect(x, y, width, height);
+        ctx.clip();
+        
+        // Disegna immagine centrata
+        ctx.drawImage(img, x, y, width, height);
+        
+        ctx.restore();
+      };
       
-      // Disegna foto destra (DOPO)
-      ctx.drawImage(rightImg, leftWidth + gap, 0, rightWidth, maxHeight);
+      // Disegna foto sinistra (PRIMA) con trasformazioni
+      drawWithTransform(leftImg, 0, 0, leftWidth, targetHeight, leftTransform);
+      
+      // Barra separatrice verticale
+      const gradient = ctx.createLinearGradient(leftWidth, 0, leftWidth + barWidth, 0);
+      gradient.addColorStop(0, '#3b82f6'); // blu
+      gradient.addColorStop(0.5, '#ffffff'); // bianco centro
+      gradient.addColorStop(1, '#10b981'); // verde
+      ctx.fillStyle = gradient;
+      ctx.fillRect(leftWidth, 0, barWidth, targetHeight);
+      
+      // Disegna foto destra (DOPO) con trasformazioni
+      drawWithTransform(rightImg, leftWidth + barWidth, 0, rightWidth, targetHeight, rightTransform);
       
       // Labels
-      ctx.font = 'bold 16px sans-serif';
+      ctx.font = 'bold 18px sans-serif';
       ctx.fillStyle = 'white';
       ctx.textAlign = 'center';
       ctx.shadowColor = 'rgba(0,0,0,0.8)';
@@ -382,24 +454,26 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
       
       // Label PRIMA con data
       const leftDate = leftPhoto?.date ? formatDate(leftPhoto.date) : '';
-      ctx.fillText(`PRIMA${leftDate ? ' - ' + leftDate : ''}`, leftWidth / 2, maxHeight + 25);
+      ctx.fillText(`PRIMA${leftDate ? ' - ' + leftDate : ''}`, leftWidth / 2, targetHeight + 32);
       
       // Label DOPO con data
       const rightDate = rightPhoto?.date ? formatDate(rightPhoto.date) : '';
-      ctx.fillText(`DOPO${rightDate ? ' - ' + rightDate : ''}`, leftWidth + gap + rightWidth / 2, maxHeight + 25);
+      ctx.fillText(`DOPO${rightDate ? ' - ' + rightDate : ''}`, leftWidth + barWidth + rightWidth / 2, targetHeight + 32);
       
       // Download
       const link = document.createElement('a');
       link.download = `confronto-${selectedType}-affiancate-${new Date().toISOString().split('T')[0]}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
+      
+      toast.success('Immagine scaricata!');
     } catch (err) {
       console.error('Errore download side by side:', err);
       toast.error('Errore durante il download. Riprova.');
     } finally {
       setIsDownloading(false);
     }
-  }, [currentPhotos, leftPhotoIndex, rightPhotoIndex, selectedType]);
+  }, [currentPhotos, leftPhotoIndex, rightPhotoIndex, selectedType, leftTransform, rightTransform, loadImageWithoutCORS, toast]);
 
   // Se non ci sono foto confrontabili
   if (availableTypes.length === 0) {
@@ -548,35 +622,22 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
           </button>
         </div>
         
-        {/* Pulsanti Download */}
-        <div className="flex gap-2 ml-4 border-l border-slate-700 pl-4">
+        {/* Pulsante Scarica */}
+        <div className="ml-4 border-l border-slate-700 pl-4">
           <button
-            onClick={downloadSideBySide}
+            onClick={() => setShowDownloadModal(true)}
             disabled={isDownloading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 transition-colors disabled:opacity-50"
-            title="Scarica foto affiancate"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50 font-medium"
           >
-            <Columns size={16} />
-            <span className="hidden sm:inline">Affiancate</span>
+            <Download size={16} />
+            <span>Scarica</span>
           </button>
-          {compareMode && (
-            <button
-              onClick={downloadSliderView}
-              disabled={isDownloading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 transition-colors disabled:opacity-50"
-              title="Scarica vista slider"
-            >
-              <Download size={16} />
-              <span className="hidden sm:inline">Slider</span>
-            </button>
-          )}
         </div>
       </div>
 
       {/* Controlli allineamento - solo in modalità slider */}
       {compareMode && (
         <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2 sm:gap-3 px-3 py-2 bg-slate-800/60 border-b border-slate-700/50">
-          {/* Selezione foto */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-400 hidden sm:inline">Allinea:</span>
             <button
@@ -611,7 +672,6 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
                     setter(prev => ({ ...prev, scale: Math.max(0.5, prev.scale - 0.1) }));
                   }}
                   className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
-                  title="Zoom -"
                 >
                   <ZoomOut size={16} />
                 </button>
@@ -624,13 +684,12 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
                     setter(prev => ({ ...prev, scale: Math.min(2, prev.scale + 0.1) }));
                   }}
                   className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
-                  title="Zoom +"
                 >
                   <ZoomIn size={16} />
                 </button>
               </div>
               
-              {/* Sposta - frecce più precise (5px per click) */}
+              {/* Sposta */}
               <div className="flex items-center gap-1 bg-slate-700/50 rounded-lg px-2 py-1">
                 <button
                   onClick={() => {
@@ -638,7 +697,6 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
                     setter(prev => ({ ...prev, x: prev.x - 5 }));
                   }}
                   className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
-                  title="← Sinistra"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -649,7 +707,6 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
                       setter(prev => ({ ...prev, y: prev.y - 5 }));
                     }}
                     className="p-1 rounded hover:bg-slate-600 text-slate-300"
-                    title="↑ Su"
                   >
                     <ChevronLeft size={14} className="rotate-90" />
                   </button>
@@ -659,7 +716,6 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
                       setter(prev => ({ ...prev, y: prev.y + 5 }));
                     }}
                     className="p-1 rounded hover:bg-slate-600 text-slate-300"
-                    title="↓ Giù"
                   >
                     <ChevronRight size={14} className="rotate-90" />
                   </button>
@@ -670,7 +726,6 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
                     setter(prev => ({ ...prev, x: prev.x + 5 }));
                   }}
                   className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
-                  title="→ Destra"
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -684,7 +739,6 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
                     setter(prev => ({ ...prev, rotate: prev.rotate - 90 }));
                   }}
                   className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
-                  title="Ruota -90°"
                 >
                   <RotateCcw size={16} />
                 </button>
@@ -697,7 +751,6 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
                     setter(prev => ({ ...prev, rotate: prev.rotate + 90 }));
                   }}
                   className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
-                  title="Ruota +90°"
                 >
                   <RotateCw size={16} />
                 </button>
@@ -710,12 +763,10 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
                   setter({ scale: 1, x: 0, y: 0, rotate: 0 });
                 }}
                 className="px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs font-medium"
-                title="Reset tutto"
               >
                 Reset
               </button>
               
-              {/* Fine - per riattivare lo slider */}
               <button
                 onClick={() => setActiveAdjust(null)}
                 className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium"
@@ -776,6 +827,9 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
                 </button>
               </div>
             </div>
+
+            {/* Barra separatrice verticale */}
+            <div className="w-1 self-stretch bg-gradient-to-b from-blue-500 via-white to-emerald-500 rounded-full shadow-lg shadow-white/20" />
 
             {/* Right Photo */}
             <div className="flex-1 flex flex-col">
@@ -941,6 +995,266 @@ export default function PhotoCompare({ checks = [], anamnesi = null, onClose }) 
           </span>
         </div>
       </div>
+
+      {/* Modal Download */}
+      <AnimatePresence>
+        {showDownloadModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+            onClick={() => setShowDownloadModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-slate-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-slate-700">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <Download size={20} />
+                  Scarica Confronto
+                </h3>
+                <button
+                  onClick={() => setShowDownloadModal(false)}
+                  className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <X size={20} className="text-slate-400" />
+                </button>
+              </div>
+
+              {/* Anteprima */}
+              <div className="flex-1 overflow-auto p-4">
+                <p className="text-sm text-slate-400 mb-4 text-center">
+                  Regola le foto prima di scaricare. Usa i controlli qui sotto per allinearle perfettamente.
+                </p>
+                
+                {/* Preview affiancate */}
+                <div className="flex gap-2 justify-center items-stretch mb-6 bg-slate-800/50 rounded-xl p-4">
+                  {/* Left photo preview */}
+                  <div className={`flex-1 max-w-xs relative rounded-lg overflow-hidden bg-slate-900 aspect-[3/4] ${activeAdjust === 'left' ? 'ring-2 ring-blue-500' : ''}`}>
+                    <div className="w-full h-full flex items-center justify-center overflow-hidden">
+                      <img
+                        src={leftPhoto?.url}
+                        alt="Prima"
+                        className="max-w-full max-h-full object-contain"
+                        style={{
+                          transform: `translate(${leftTransform.x}px, ${leftTransform.y}px) scale(${leftTransform.scale}) rotate(${leftTransform.rotate}deg)`,
+                        }}
+                        draggable={false}
+                      />
+                    </div>
+                    <div className="absolute bottom-2 left-2 right-2 bg-black/70 rounded-lg px-2 py-1 text-center">
+                      <span className="text-xs text-blue-400 font-medium">PRIMA</span>
+                      <p className="text-xs text-white">{formatDate(leftPhoto?.date)}</p>
+                    </div>
+                  </div>
+
+                  {/* Barra separatrice */}
+                  <div className="w-1 self-stretch bg-gradient-to-b from-blue-500 via-white to-emerald-500 rounded-full" />
+
+                  {/* Right photo preview */}
+                  <div className={`flex-1 max-w-xs relative rounded-lg overflow-hidden bg-slate-900 aspect-[3/4] ${activeAdjust === 'right' ? 'ring-2 ring-emerald-500' : ''}`}>
+                    <div className="w-full h-full flex items-center justify-center overflow-hidden">
+                      <img
+                        src={rightPhoto?.url}
+                        alt="Dopo"
+                        className="max-w-full max-h-full object-contain"
+                        style={{
+                          transform: `translate(${rightTransform.x}px, ${rightTransform.y}px) scale(${rightTransform.scale}) rotate(${rightTransform.rotate}deg)`,
+                        }}
+                        draggable={false}
+                      />
+                    </div>
+                    <div className="absolute bottom-2 left-2 right-2 bg-black/70 rounded-lg px-2 py-1 text-center">
+                      <span className="text-xs text-emerald-400 font-medium">DOPO</span>
+                      <p className="text-xs text-white">{formatDate(rightPhoto?.date)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Controlli di regolazione */}
+                <div className="bg-slate-800/60 rounded-xl p-4">
+                  <div className="flex flex-wrap items-center justify-center gap-3 mb-4">
+                    <span className="text-sm text-slate-300">Regola:</span>
+                    <button
+                      onClick={() => setActiveAdjust(activeAdjust === 'left' ? null : 'left')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        activeAdjust === 'left'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      Foto Prima
+                    </button>
+                    <button
+                      onClick={() => setActiveAdjust(activeAdjust === 'right' ? null : 'right')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        activeAdjust === 'right'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      Foto Dopo
+                    </button>
+                  </div>
+
+                  {activeAdjust && (
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      {/* Zoom */}
+                      <div className="flex items-center gap-1 bg-slate-700/50 rounded-lg px-3 py-2">
+                        <button
+                          onClick={() => {
+                            const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                            setter(prev => ({ ...prev, scale: Math.max(0.5, prev.scale - 0.1) }));
+                          }}
+                          className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
+                        >
+                          <ZoomOut size={18} />
+                        </button>
+                        <span className="text-sm text-slate-300 min-w-[44px] text-center font-medium">
+                          {Math.round((activeAdjust === 'left' ? leftTransform : rightTransform).scale * 100)}%
+                        </span>
+                        <button
+                          onClick={() => {
+                            const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                            setter(prev => ({ ...prev, scale: Math.min(2, prev.scale + 0.1) }));
+                          }}
+                          className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
+                        >
+                          <ZoomIn size={18} />
+                        </button>
+                      </div>
+
+                      {/* Sposta */}
+                      <div className="flex items-center gap-1 bg-slate-700/50 rounded-lg px-3 py-2">
+                        <button
+                          onClick={() => {
+                            const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                            setter(prev => ({ ...prev, x: prev.x - 10 }));
+                          }}
+                          className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
+                        >
+                          <ChevronLeft size={18} />
+                        </button>
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            onClick={() => {
+                              const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                              setter(prev => ({ ...prev, y: prev.y - 10 }));
+                            }}
+                            className="p-1 rounded hover:bg-slate-600 text-slate-300"
+                          >
+                            <ChevronLeft size={16} className="rotate-90" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                              setter(prev => ({ ...prev, y: prev.y + 10 }));
+                            }}
+                            className="p-1 rounded hover:bg-slate-600 text-slate-300"
+                          >
+                            <ChevronRight size={16} className="rotate-90" />
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                            setter(prev => ({ ...prev, x: prev.x + 10 }));
+                          }}
+                          className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
+                        >
+                          <ChevronRight size={18} />
+                        </button>
+                      </div>
+
+                      {/* Rotazione */}
+                      <div className="flex items-center gap-1 bg-slate-700/50 rounded-lg px-3 py-2">
+                        <button
+                          onClick={() => {
+                            const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                            setter(prev => ({ ...prev, rotate: prev.rotate - 90 }));
+                          }}
+                          className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
+                        >
+                          <RotateCcw size={18} />
+                        </button>
+                        <span className="text-sm text-slate-300 min-w-[36px] text-center font-medium">
+                          {(activeAdjust === 'left' ? leftTransform : rightTransform).rotate}°
+                        </span>
+                        <button
+                          onClick={() => {
+                            const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                            setter(prev => ({ ...prev, rotate: prev.rotate + 90 }));
+                          }}
+                          className="p-1.5 rounded hover:bg-slate-600 text-slate-300"
+                        >
+                          <RotateCw size={18} />
+                        </button>
+                      </div>
+
+                      {/* Reset */}
+                      <button
+                        onClick={() => {
+                          const setter = activeAdjust === 'left' ? setLeftTransform : setRightTransform;
+                          setter({ scale: 1, x: 0, y: 0, rotate: 0 });
+                        }}
+                        className="px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm font-medium"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  )}
+
+                  {!activeAdjust && (
+                    <p className="text-center text-sm text-slate-500 italic">
+                      Seleziona una foto per regolarla
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer con pulsanti download */}
+              <div className="p-4 border-t border-slate-700 flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowDownloadModal(false);
+                    downloadSideBySide();
+                  }}
+                  disabled={isDownloading}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition-colors disabled:opacity-50"
+                >
+                  <Columns size={20} />
+                  Scarica Affiancate
+                </button>
+                {compareMode && (
+                  <button
+                    onClick={() => {
+                      setShowDownloadModal(false);
+                      downloadSliderView();
+                    }}
+                    disabled={isDownloading}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition-colors disabled:opacity-50"
+                  >
+                    <ArrowLeftRight size={20} />
+                    Scarica Slider
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowDownloadModal(false)}
+                  className="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium transition-colors"
+                >
+                  Annulla
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

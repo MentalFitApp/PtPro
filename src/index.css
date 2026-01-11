@@ -150,6 +150,25 @@ button, a, [role="button"], input, select, textarea {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  
+  /* Scrollbar bianca per Command Center */
+  .scrollbar-white {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+  .scrollbar-white::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-white::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-white::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+  }
+  .scrollbar-white::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
 }
 
 /* Custom opacity values for slate backgrounds - MUST be outside @layer for specificity */

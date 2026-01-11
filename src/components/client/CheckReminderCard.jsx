@@ -1,15 +1,11 @@
 // src/components/client/CheckReminderCard.jsx
-// Card reminder per ricordare al cliente di caricare il check settimanale
+// Card reminder COMPATTA per ricordare al cliente di caricare il check
+// Stile unificato con Dashboard Admin (GlowCard style)
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Calendar, ChevronRight, AlertCircle } from 'lucide-react';
+import { Camera, ChevronRight, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-/**
- * Card che ricorda al cliente di caricare il check
- * @param {number} daysSinceLastCheck - giorni dall'ultimo check (-1 se mai fatto)
- * @param {Date} lastCheckDate - data ultimo check
- */
 export default function CheckReminderCard({ daysSinceLastCheck, lastCheckDate }) {
   const navigate = useNavigate();
   
@@ -21,75 +17,70 @@ export default function CheckReminderCard({ daysSinceLastCheck, lastCheckDate })
   const isUrgent = daysSinceLastCheck >= 7 || daysSinceLastCheck === -1;
   const isFirstCheck = daysSinceLastCheck === -1;
 
-  // Calcola prossimo check consigliato
-  const getNextCheckInfo = () => {
+  const getInfo = () => {
     if (isFirstCheck) {
       return {
-        title: "Carica il tuo primo Check! 📸",
-        subtitle: "Foto e peso per iniziare a tracciare i progressi",
-        urgent: true
+        title: "Primo Check 📸",
+        subtitle: "Carica foto e peso per iniziare",
       };
     }
-    
     if (daysSinceLastCheck >= 7) {
       return {
-        title: "È ora del Check settimanale! 📸",
-        subtitle: `Ultimo check: ${daysSinceLastCheck} giorni fa`,
-        urgent: true
+        title: "Check settimanale 📸",
+        subtitle: `${daysSinceLastCheck} giorni fa l'ultimo`,
       };
     }
-    
-    const daysUntilNext = 7 - daysSinceLastCheck;
     return {
-      title: `Prossimo Check tra ${daysUntilNext} giorni`,
+      title: `Check tra ${7 - daysSinceLastCheck}g`,
       subtitle: lastCheckDate ? `Ultimo: ${lastCheckDate.toLocaleDateString('it-IT')}` : '',
-      urgent: false
     };
   };
 
-  const info = getNextCheckInfo();
+  const info = getInfo();
 
   return (
-    <button
+    <motion.button
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2, scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
       onClick={() => navigate('/client/checks')}
-      className={`w-full rounded-xl p-4 border text-left transition-all hover:scale-[1.01] active:scale-[0.99] ${
+      className={`w-full relative overflow-hidden rounded-2xl text-left transition-all duration-300 ${
         isUrgent
-          ? 'bg-gradient-to-r from-purple-600/40 to-pink-600/40 border-purple-500/50 hover:border-purple-400/60'
-          : 'bg-slate-800/40 border-slate-700/50 hover:border-slate-600/50'
+          ? 'bg-slate-800/40 backdrop-blur-sm border border-purple-500/40 hover:shadow-[0_0_30px_-5px_rgba(139,92,246,0.3)]'
+          : 'bg-slate-800/40 backdrop-blur-sm border border-slate-700/30 hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.2)]'
       }`}
     >
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-xl ${
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+      
+      {isUrgent && (
+        <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-full blur-2xl" />
+      )}
+      
+      <div className="relative p-3 flex items-center gap-3">
+        <div className={`p-2 rounded-xl flex-shrink-0 ${
           isUrgent 
-            ? 'bg-purple-500/30' 
+            ? 'bg-gradient-to-br from-purple-500 to-pink-500' 
             : 'bg-slate-700/50'
         }`}>
-          <Camera size={24} className={isUrgent ? 'text-purple-300' : 'text-slate-400'} />
+          <Camera size={18} className="text-white" />
         </div>
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className={`font-semibold ${isUrgent ? 'text-white' : 'text-slate-300'}`}>
+            <span className={`text-sm font-semibold ${isUrgent ? 'text-white' : 'text-slate-300'}`}>
               {info.title}
-            </h3>
+            </span>
             {isUrgent && (
-              <span className="px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded">
-                !
-              </span>
+              <Sparkles size={12} className="text-purple-400" />
             )}
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">{info.subtitle}</p>
+          <p className="text-[11px] text-slate-500">{info.subtitle}</p>
         </div>
         
-        <ChevronRight size={20} className={isUrgent ? 'text-purple-300' : 'text-slate-500'} />
+        <ChevronRight size={16} className={isUrgent ? 'text-purple-400' : 'text-slate-500'} />
       </div>
-      
-      {isUrgent && (
-        <div className="mt-3 flex items-center gap-2 text-xs text-purple-200/80">
-          <AlertCircle size={14} />
-          <span>Carica foto fronte, retro, lato dx e sx + peso</span>
-        </div>
-      )}
-    </button>
+    </motion.button>
   );
 }

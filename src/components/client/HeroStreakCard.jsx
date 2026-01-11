@@ -1,5 +1,6 @@
 // src/components/client/HeroStreakCard.jsx
-// Hero Card motivazionale con streak e progress settimanale
+// Hero Card motivazionale COMPATTA con streak e progress settimanale
+// Stile unificato con Dashboard Admin (GlowCard style)
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
@@ -16,39 +17,37 @@ export default function HeroStreakCard({ refreshKey = 0 }) {
 
   useEffect(() => {
     loadData();
-  }, [refreshKey]); // Ricarica quando refreshKey cambia
+  }, [refreshKey]);
 
   if (error) {
     return (
-      <div className="bg-red-900/40 border border-red-500/40 rounded-2xl p-4">
-        <div className="text-red-400 text-sm">Errore caricamento streak</div>
+      <motion.div 
+        className="bg-slate-800/40 backdrop-blur-sm border border-red-500/30 rounded-2xl p-3"
+      >
+        <div className="text-red-400 text-xs">Errore streak</div>
         <button 
           onClick={() => { setError(null); loadData(); }}
-          className="text-xs text-red-300 underline mt-1"
+          className="text-[10px] text-red-300 underline mt-1"
         >
           Riprova
         </button>
-      </div>
+      </motion.div>
     );
   }
 
   const loadData = async () => {
     if (!auth.currentUser) {
-      console.log('[HeroStreakCard] No auth user');
       setLoading(false);
       return;
     }
 
     try {
-      console.log('[HeroStreakCard] Loading data...');
       const clientDoc = await getDoc(getTenantDoc(db, 'clients', auth.currentUser.uid));
       if (!clientDoc.exists()) {
-        console.log('[HeroStreakCard] No client doc found');
         setLoading(false);
         return;
       }
 
-      console.log('[HeroStreakCard] Client doc found, calculating...');
       const data = clientDoc.data();
       const habits = data.habits || {};
       const workoutLog = data.workoutLog || {};
@@ -68,7 +67,6 @@ export default function HeroStreakCard({ refreshKey = 0 }) {
           currentStreak++;
           checkDate.setDate(checkDate.getDate() - 1);
         } else {
-          // Permetti 1 giorno di pausa
           const yesterday = new Date(checkDate);
           yesterday.setDate(yesterday.getDate() - 1);
           const yesterdayStr = yesterday.toISOString().split('T')[0];
@@ -107,10 +105,9 @@ export default function HeroStreakCard({ refreshKey = 0 }) {
       setStreak(currentStreak);
       setWeeklyWorkouts(weekCount);
       setWeeklyTarget(weekly.target || data.habitTargets?.weeklyWorkout || 4);
-      console.log('[HeroStreakCard] Data loaded:', { currentStreak, weekCount, target: weekly.target || data.habitTargets?.weeklyWorkout || 4 });
       setLoading(false);
     } catch (error) {
-      console.error('[HeroStreakCard] Error loading:', error);
+      console.error('[HeroStreakCard] Error:', error);
       setError(error.message);
       setLoading(false);
     }
@@ -120,115 +117,79 @@ export default function HeroStreakCard({ refreshKey = 0 }) {
   const isOnFire = streak >= 3;
   const weekComplete = weeklyWorkouts >= weeklyTarget;
 
-  // Messaggi motivazionali basati sullo streak
-  const getMessage = () => {
-    if (streak === 0) return "Inizia oggi la tua streak! 💪";
-    if (streak === 1) return "Ottimo inizio! Continua così!";
-    if (streak < 7) return "Stai costruendo l'abitudine!";
-    if (streak < 14) return "Una settimana di fuoco! 🔥";
-    if (streak < 30) return "Sei inarrestabile!";
-    return "Sei una leggenda! 🏆";
-  };
-
   if (loading) {
     return (
-      <div className="bg-slate-900 rounded-2xl p-4 border border-orange-500/30 animate-pulse">
-        <div className="h-16 bg-slate-700/50 rounded-lg" />
+      <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/30 rounded-2xl p-3 animate-pulse">
+        <div className="h-12 bg-slate-700/50 rounded-lg" />
       </div>
     );
   }
 
   return (
-    <div
-      className={`relative overflow-hidden rounded-2xl p-4 border ${
-        isOnFire 
-          ? 'bg-slate-800 border-orange-500/40' 
-          : 'bg-slate-800 border-blue-500/30'
-      }`}
-      style={{
-        background: isOnFire 
-          ? 'linear-gradient(to bottom right, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98))'
-          : 'linear-gradient(to bottom right, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98))'
-      }}
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden rounded-2xl bg-slate-800/40 backdrop-blur-sm border border-slate-700/30 transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.2)]"
     >
-      {/* Background decoration */}
-      {isOnFire && (
-        <div className="absolute top-0 right-0 opacity-20">
-          <Flame size={80} className="text-orange-400" />
-        </div>
-      )}
-
-      <div className="relative z-10">
-        {/* Streak principale */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${
-              isOnFire 
-                ? 'bg-gradient-to-br from-orange-500 to-red-500' 
-                : 'bg-gradient-to-br from-blue-500 to-cyan-500'
-            }`}>
-              {isOnFire ? (
-                <Flame size={24} className="text-white" />
-              ) : (
-                <Zap size={24} className="text-white" />
-              )}
-            </div>
-            <div>
-              <div className="flex items-baseline gap-1">
-                <span className={`text-3xl font-bold ${
-                  isOnFire ? 'text-orange-400' : 'text-blue-400'
-                }`}>
-                  {streak}
-                </span>
-                <span className="text-sm text-slate-400">
-                  {streak === 1 ? 'giorno' : 'giorni'} di streak
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">{getMessage()}</p>
-            </div>
-          </div>
-
-          {weekComplete && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="flex items-center gap-1 px-2 py-1 bg-emerald-500/20 rounded-full"
-            >
-              <Trophy size={14} className="text-emerald-400" />
-              <span className="text-xs text-emerald-400 font-medium">Settimana OK!</span>
-            </motion.div>
-          )}
-        </div>
-
-        {/* Progress settimanale */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-400 flex items-center gap-1">
-              <Target size={12} />
-              Questa settimana
-            </span>
-            <span className={`font-medium ${
-              weekComplete ? 'text-emerald-400' : 'text-slate-300'
-            }`}>
-              {weeklyWorkouts}/{weeklyTarget} allenamenti
-            </span>
+      {/* Gradient overlay come GlowCard */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+      
+      <div className="relative p-3">
+        {/* Layout compatto orizzontale */}
+        <div className="flex items-center gap-3">
+          {/* Icona streak */}
+          <div className={`p-2 rounded-xl flex-shrink-0 ${
+            isOnFire 
+              ? 'bg-gradient-to-br from-orange-500 to-red-500' 
+              : 'bg-gradient-to-br from-blue-500 to-cyan-500'
+          }`}>
+            {isOnFire ? (
+              <Flame size={18} className="text-white" />
+            ) : (
+              <Zap size={18} className="text-white" />
+            )}
           </div>
           
-          <div className="h-2.5 bg-slate-700/50 rounded-full overflow-hidden">
-            <div
-              key={`progress-${weeklyWorkouts}-${weeklyTarget}`}
-              className={`h-full rounded-full transition-all duration-700 ease-out ${
-                weekComplete
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-400'
-                  : isOnFire
-                    ? 'bg-gradient-to-r from-orange-500 to-yellow-400'
-                    : 'bg-gradient-to-r from-blue-500 to-cyan-400'
-              }`}
-              style={{ width: `${progress}%` }}
-            />
+          {/* Info streak */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className={`text-xl font-bold ${isOnFire ? 'text-orange-400' : 'text-blue-400'}`}>
+                {streak}
+              </span>
+              <span className="text-xs text-slate-400">
+                {streak === 1 ? 'giorno' : 'giorni'} streak
+              </span>
+              {weekComplete && (
+                <span className="px-1.5 py-0.5 bg-emerald-500/20 rounded-full flex items-center gap-1">
+                  <Trophy size={10} className="text-emerald-400" />
+                  <span className="text-[10px] text-emerald-400 font-medium">OK!</span>
+                </span>
+              )}
+            </div>
+            
+            {/* Mini progress bar */}
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1 h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.5 }}
+                  className={`h-full rounded-full ${
+                    weekComplete
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-400'
+                      : isOnFire
+                        ? 'bg-gradient-to-r from-orange-500 to-yellow-400'
+                        : 'bg-gradient-to-r from-blue-500 to-cyan-400'
+                  }`}
+                />
+              </div>
+              <span className="text-[10px] text-slate-500 flex-shrink-0">
+                {weeklyWorkouts}/{weeklyTarget}
+              </span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
