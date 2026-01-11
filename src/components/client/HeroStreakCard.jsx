@@ -142,9 +142,14 @@ export default function HeroStreakCard({ refreshKey = 0 }) {
     <div
       className={`relative overflow-hidden rounded-2xl p-4 border ${
         isOnFire 
-          ? 'bg-gradient-to-br from-slate-800/60 to-slate-900/80 border-orange-500/40' 
-          : 'bg-gradient-to-br from-slate-800/60 to-slate-900/80 border-blue-500/30'
+          ? 'bg-slate-800 border-orange-500/40' 
+          : 'bg-slate-800 border-blue-500/30'
       }`}
+      style={{
+        background: isOnFire 
+          ? 'linear-gradient(to bottom right, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98))'
+          : 'linear-gradient(to bottom right, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98))'
+      }}
     >
       {/* Background decoration */}
       {isOnFire && (

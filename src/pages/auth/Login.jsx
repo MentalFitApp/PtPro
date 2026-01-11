@@ -1080,17 +1080,17 @@ const Login = () => {
       {/* Overlay Satinato leggero */}
       <div className="absolute inset-0 bg-slate-950/15 backdrop-blur-[2px]" />
       
-      {/* Logo in alto a sinistra */}
+      {/* Logo in alto */}
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
-        className="fixed top-6 left-6 z-20 flex items-center gap-3"
+        className="fixed top-4 sm:top-6 left-4 sm:left-6 z-20 flex items-center gap-2.5 sm:gap-3"
       >
         <div className="relative">
           {/* Glow logo */}
           <div className="absolute -inset-2 bg-gradient-to-br from-cyan-500/40 to-blue-600/40 rounded-xl blur-xl" />
-          <div className="relative w-12 h-12 rounded-xl overflow-hidden ring-2 ring-cyan-400/60 shadow-xl shadow-cyan-500/50">
+          <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden ring-2 ring-cyan-400/60 shadow-xl shadow-cyan-500/50">
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-blue-600" />
             <img 
               src="/logo192.png" 
@@ -1100,17 +1100,17 @@ const Login = () => {
           </div>
         </div>
         <div>
-          <h1 className="text-xl font-black text-white drop-shadow-lg">
+          <h1 className="text-lg sm:text-xl font-black text-white drop-shadow-lg">
             <span className="bg-gradient-to-r from-cyan-200 to-blue-200 bg-clip-text text-transparent">
               FitFlows
             </span>
           </h1>
-          <p className="text-slate-300 text-xs font-semibold">Premium Fitness</p>
+          <p className="text-slate-300 text-[10px] sm:text-xs font-semibold">Premium Fitness</p>
         </div>
       </motion.div>
 
       {/* DESKTOP & MOBILE: Form Centrale */}
-      <div className="w-full max-w-md px-6 z-10">
+      <div className="w-full max-w-md px-4 sm:px-6 z-10">
         {/* Form Glass */}
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -1122,7 +1122,7 @@ const Login = () => {
           <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/40 via-blue-500/40 to-cyan-600/40 rounded-3xl blur-xl" />
           
           {/* Form Box Glassmorphic Premium */}
-          <div className="relative bg-slate-800/60 backdrop-blur-3xl border border-slate-500/50 rounded-3xl p-8 shadow-[0_8px_32px_0_rgba(6,182,212,0.2)]">
+          <div className="relative bg-slate-800/60 backdrop-blur-3xl border border-slate-500/50 rounded-3xl p-5 sm:p-8 shadow-[0_8px_32px_0_rgba(6,182,212,0.2)]">
             {/* Border gradient interno */}
             <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-cyan-500/10 via-transparent to-blue-500/10 pointer-events-none" />
             
@@ -1131,13 +1131,13 @@ const Login = () => {
             <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/60 to-transparent" />
             
             {/* Header */}
-            <div className="text-center mb-8">
+            <div className="text-center mb-4 sm:mb-8">
               <motion.h2 
                 key={showResetPassword ? 'reset' : 'login'}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="text-3xl font-bold bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent mb-2 drop-shadow-lg"
+                className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent mb-1 sm:mb-2 drop-shadow-lg"
               >
                 {showResetPassword ? 'Reimposta Password' : 'Bentornato!'}
               </motion.h2>
@@ -1146,7 +1146,7 @@ const Login = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3, delay: 0.1 }}
-                className="text-slate-300"
+                className="text-slate-300 text-sm sm:text-base"
               >
                 {showResetPassword 
                   ? 'Inserisci la tua email per ricevere il link di reset'
@@ -1497,7 +1497,9 @@ const Login = () => {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
                 onSubmit={handleLogin} 
-                className="space-y-4"
+                className="space-y-3 sm:space-y-4"
+                autoComplete="on"
+                name="login"
               >
               {/* Email */}
               <div>
@@ -1507,6 +1509,7 @@ const Login = () => {
                 <div className="relative group">
                   <input
                     id="email"
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(e) => {
@@ -1515,7 +1518,7 @@ const Login = () => {
                     }}
                     className="w-full px-4 py-3 pr-10 bg-slate-950/90 border border-slate-600/60 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/70 focus:border-cyan-400/50 focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     placeholder="nome@esempio.com"
-                    autoComplete="email"
+                    autoComplete="username email"
                     required
                     disabled={isLoggingIn}
                     aria-label="Email o numero di telefono"
@@ -1544,6 +1547,7 @@ const Login = () => {
                 <div className="relative group">
                   <input
                     id="password"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -1587,20 +1591,29 @@ const Login = () => {
                 </button>
               </div>
 
-              {/* Checkbox "Ricordami" */}
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 text-cyan-500 bg-slate-900 border-slate-600 rounded focus:ring-cyan-500 focus:ring-2 cursor-pointer"
-                  disabled={isLoggingIn}
-                />
-                <label htmlFor="rememberMe" className="ml-2 text-sm text-slate-300 cursor-pointer select-none">
-                  Ricordami su questo dispositivo
-                </label>
-              </div>
+              {/* Checkbox "Ricordami" - visibile solo quando c'è password */}
+              <AnimatePresence>
+                {password.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex items-center overflow-hidden"
+                  >
+                    <input
+                      type="checkbox"
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 text-cyan-500 bg-slate-900 border-slate-600 rounded focus:ring-cyan-500 focus:ring-2 cursor-pointer"
+                      disabled={isLoggingIn}
+                    />
+                    <label htmlFor="rememberMe" className="ml-2 text-sm text-slate-300 cursor-pointer select-none">
+                      Ricordami su questo dispositivo
+                    </label>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Error Message */}
               <AnimatePresence>
@@ -1659,12 +1672,12 @@ const Login = () => {
               </div>
 
               {/* Divider */}
-              <div className="relative flex items-center justify-center py-6 my-4">
+              <div className="relative flex items-center justify-center py-3 sm:py-4 mt-1">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-600/60"></div>
                 </div>
-                <div className="relative bg-slate-800/90 backdrop-blur-sm px-3 text-xs text-slate-400 font-semibold">
-                  O accedi con passkey
+                <div className="relative bg-slate-800/90 backdrop-blur-sm px-3 text-[10px] sm:text-xs text-slate-400 font-semibold">
+                  Hai già collegato Google?
                 </div>
               </div>
 
@@ -1675,7 +1688,7 @@ const Login = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 disabled={isLoggingIn || isGoogleLoading}
-                className="w-full py-3 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 sm:py-3 bg-white/10 hover:bg-white/15 border border-slate-500/50 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Accedi con account Google"
               >
                 {isGoogleLoading ? (
@@ -1689,15 +1702,11 @@ const Login = () => {
                   <img 
                     src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                     alt="Google"
-                    className="w-5 h-5"
+                    className="w-4 h-4 sm:w-5 sm:h-5"
                   />
                 )}
                 <span>{isGoogleLoading ? 'Connessione...' : 'Accedi con Google'}</span>
               </motion.button>
-
-              <p className="text-xs text-slate-400 text-center mt-3">
-                💡 Solo se hai già collegato Google al tuo account
-              </p>
             </motion.form>
             )}
             </AnimatePresence>
